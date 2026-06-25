@@ -1,31 +1,24 @@
 "use client";
 
-import Image from "next/image";
 import Logo from "./Logo";
+
+const basePath = process.env.NODE_ENV === "production" ? "/Truth-Estate" : "";
 
 export default function Hero() {
   return (
     <section className="relative h-svh w-full overflow-hidden bg-[#122620]">
       {/* Desktop background */}
-      <Image
-        src="/images/hero-desktop.jpg"
+      <img
+        src={`${basePath}/images/hero-desktop.jpg`}
         alt=""
-        fill
-        priority
-        className="hidden md:block object-cover object-center"
-        sizes="100vw"
-        quality={90}
+        className="absolute inset-0 hidden h-full w-full object-cover object-center md:block"
       />
 
       {/* Mobile background */}
-      <Image
-        src="/images/hero-mobile.jpg"
+      <img
+        src={`${basePath}/images/hero-mobile.jpg`}
         alt=""
-        fill
-        priority
-        className="block md:hidden object-cover object-center"
-        sizes="100vw"
-        quality={90}
+        className="absolute inset-0 block h-full w-full object-cover object-center md:hidden"
       />
 
       {/* Left-side gradient: dark green fading to transparent on right */}
