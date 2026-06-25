@@ -1,45 +1,81 @@
 export default function Logo({ className = "" }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 360 80"
+      viewBox="0 0 380 80"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
       {/* Window icon - 4 panes */}
-      <rect x="4" y="8" width="60" height="60" rx="1" stroke="white" strokeWidth="1.5" fill="none" />
-      <line x1="34" y1="8" x2="34" y2="68" stroke="white" strokeWidth="1.5" />
-      <line x1="4" y1="38" x2="64" y2="38" stroke="white" strokeWidth="1.5" />
-      {/* Gold dot at center */}
+      <rect x="4" y="8" width="60" height="60" rx="1" stroke="white" strokeWidth="1.8" fill="none" />
+      <line x1="34" y1="8" x2="34" y2="68" stroke="white" strokeWidth="1.8" />
+      <line x1="4" y1="38" x2="64" y2="38" stroke="white" strokeWidth="1.8" />
       <circle cx="34" cy="38" r="3" fill="#c9a96e" />
 
-      {/* TRUTH text */}
-      <text
-        x="84"
-        y="48"
-        fontFamily="'Playfair Display', Georgia, serif"
-        fontSize="42"
-        fontWeight="500"
-        fill="white"
-        letterSpacing="4"
-      >
-        TRUTH
-      </text>
-
-      {/* ESTATE text with gold lines */}
-      <line x1="92" y1="63" x2="122" y2="63" stroke="#c9a96e" strokeWidth="1.2" />
-      <text
-        x="130"
-        y="68"
-        fontFamily="'Playfair Display', Georgia, serif"
-        fontSize="15"
-        fontWeight="400"
-        fill="white"
-        letterSpacing="8"
-      >
-        ESTATE
-      </text>
-      <line x1="230" y1="63" x2="260" y2="63" stroke="#c9a96e" strokeWidth="1.2" />
+      {/* Text via foreignObject for correct CSS font */}
+      <foreignObject x="78" y="0" width="300" height="80">
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            height: "100%",
+            paddingTop: "2px",
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "var(--font-playfair), Georgia, serif",
+              fontSize: "42px",
+              fontWeight: 500,
+              letterSpacing: "5px",
+              lineHeight: 1,
+              color: "white",
+            }}
+          >
+            TRUTH
+          </span>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              marginTop: "4px",
+            }}
+          >
+            <span
+              style={{
+                display: "block",
+                width: "30px",
+                height: "1px",
+                background: "#c9a96e",
+                flexShrink: 0,
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "var(--font-playfair), Georgia, serif",
+                fontSize: "14px",
+                fontWeight: 400,
+                letterSpacing: "7px",
+                lineHeight: 1,
+                color: "white",
+              }}
+            >
+              ESTATE
+            </span>
+            <span
+              style={{
+                display: "block",
+                width: "30px",
+                height: "1px",
+                background: "#c9a96e",
+                flexShrink: 0,
+              }}
+            />
+          </div>
+        </div>
+      </foreignObject>
     </svg>
   );
 }
