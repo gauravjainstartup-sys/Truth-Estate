@@ -4,166 +4,178 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
+const investigations = [
+  "Developer",
+  "Construction",
+  "Legal",
+  "Pricing",
+  "Location",
+  "Exit Strategy",
+];
+
 function setupDesktop(root: HTMLElement) {
   gsap.registerPlugin(ScrollTrigger);
 
   const editorial = root.querySelector<HTMLElement>("[data-editorial]");
   if (!editorial) return;
 
-  const bg = editorial.querySelector<HTMLElement>("[data-bg]");
-  const headline = editorial.querySelector<HTMLElement>('[data-el="headline"]');
-  const told = editorial.querySelector<HTMLElement>('[data-el="told"]');
-  const dataLine = editorial.querySelector<HTMLElement>('[data-el="data"]');
-  const brochure = editorial.querySelector<HTMLElement>('[data-el="brochure"]');
-  const cheque = editorial.querySelector<HTMLElement>('[data-el="cheque"]');
-  const textLayer = editorial.querySelector<HTMLElement>("[data-text-layer]");
-  const verdictLayer = editorial.querySelector<HTMLElement>(
-    "[data-verdict-layer]"
-  );
+  const q = <T extends HTMLElement>(s: string) =>
+    editorial.querySelector<T>(s);
+
+  const bg = q("[data-bg]")!;
+  const glow = q("[data-glow]")!;
+  const story = q("[data-story]")!;
+  const told = q('[data-el="told"]')!;
+  const dataLine = q('[data-el="data"]')!;
+  const brochure = q('[data-el="brochure"]')!;
+  const dot = q('[data-el="dot"]')!;
+  const cheque = q('[data-el="cheque"]')!;
+  const bridge = q('[data-el="bridge"]')!;
+  const evidence = q("[data-evidence]")!;
+  const checks = evidence.querySelectorAll<HTMLElement>("[data-check]");
+  const verdict = q("[data-verdict]")!;
+
+  const exitY = -Math.round(window.innerHeight * 0.42);
 
   const tl = gsap.timeline({
     scrollTrigger: {
       trigger: editorial,
       start: "top top",
-      end: "+=250%",
+      end: "+=420%",
       pin: true,
       scrub: 0.6,
+      anticipatePin: 1,
     },
   });
 
-  // Hold initial state
-  tl.to({}, { duration: 0.06 });
-
-  // Emphasis shift — "told" dims, "data" brightens
-  tl.to(told!, { opacity: 0.25, duration: 0.14 });
-  tl.to(dataLine!, { opacity: 0.9, duration: 0.14 }, "<");
-
-  // Hold shifted state
+  // ── Recognition: emphasis transfers from "told" to "data"
+  tl.to({}, { duration: 0.05 });
+  tl.to(told, { opacity: 0.22, duration: 0.13 });
+  tl.to(dataLine, { opacity: 0.9, duration: 0.13 }, "<");
   tl.to({}, { duration: 0.04 });
 
-  // "No brochure" emerges
-  tl.to(brochure!, {
-    opacity: 0.9,
-    y: 0,
-    filter: "blur(0px)",
-    duration: 0.1,
-  });
+  // ── Reflection: "No brochure mentions this." + gold anchor
+  tl.to(dot, { opacity: 1, duration: 0.06 });
+  tl.to(
+    brochure,
+    { opacity: 0.95, y: 0, filter: "blur(0px)", duration: 0.1 },
+    "<0.02"
+  );
   tl.to({}, { duration: 0.05 });
 
-  // "Would we sign the cheque?" — the final question
-  tl.to(cheque!, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.1 });
+  // ── The committee question
+  tl.to(cheque, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.1 });
+  tl.to({}, { duration: 0.1 });
 
-  // Hold on the question
-  tl.to({}, { duration: 0.11 });
+  // ── Bridge: "Every verdict begins with evidence." (story still present)
+  tl.to(bridge, { opacity: 0.9, y: 0, filter: "blur(0px)", duration: 0.09 });
+  tl.to({}, { duration: 0.06 });
 
-  // Background darkens — the paper becomes transparent
-  tl.to(bg!, {
-    backgroundColor: "#0a0a0a",
-    duration: 0.16,
-    ease: "power1.inOut",
+  // ── The page continues downward; the story drifts up, evidence takes over
+  tl.to(story, { y: exitY, opacity: 0, duration: 0.13, ease: "power1.in" });
+  tl.to(evidence, { opacity: 1, duration: 0.11 }, "-=0.05");
+
+  // ── Evidence confirmed, one by one
+  checks.forEach((check, i) => {
+    const last = i === checks.length - 1;
+    tl.to(check, { opacity: 1, duration: 0.045 });
+    tl.to({}, { duration: last ? 0.14 : 0.05 });
   });
-  tl.to(
-    [headline!, told!, dataLine!, brochure!],
-    { opacity: 0.06, duration: 0.16 },
-    "<"
-  );
-  tl.to(cheque!, { opacity: 0.1, duration: 0.16 }, "<");
+  tl.to({}, { duration: 0.04 });
 
-  // Text layer dissolves
-  tl.to(textLayer!, { opacity: 0, duration: 0.06 });
+  // ── The paper darkens; the desk emerges
+  tl.to(bg, { backgroundColor: "#0a0a0a", duration: 0.15, ease: "power1.inOut" });
+  tl.to(glow, { opacity: 1, duration: 0.15 }, "<");
+  tl.to(evidence, { opacity: 0.05, duration: 0.13 }, "<");
 
-  // Verdict emerges from darkness
-  tl.to(verdictLayer!, {
+  // ── The verdict was always there
+  tl.to(verdict, {
     opacity: 1,
     filter: "brightness(1) blur(0px)",
     duration: 0.16,
     ease: "none",
   });
+  tl.to({}, { duration: 0.08 });
 
-  // Hold on verdict
-  tl.to({}, { duration: 0.06 });
+  ScrollTrigger.refresh();
 }
 
 function setupMobile(root: HTMLElement) {
   const observers: IntersectionObserver[] = [];
 
-  root.querySelectorAll<HTMLElement>("[data-el]").forEach((el) => {
+  root.querySelectorAll<HTMLElement>("[data-mel]").forEach((el) => {
+    el.style.transition = "opacity 0.9s ease, transform 0.9s ease";
+  });
+  root.querySelectorAll<HTMLElement>("[data-mrow]").forEach((el) => {
     el.style.transition = "opacity 0.8s ease, transform 0.8s ease";
   });
-
-  const textObs = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        const el = entry.target as HTMLElement;
-        if (entry.isIntersecting) {
-          el.style.opacity = "1";
-          el.style.transform = "translateY(0)";
-        }
-      });
-    },
-    { threshold: 0.4 }
-  );
-  root.querySelectorAll("[data-el]").forEach((el) => textObs.observe(el));
-  observers.push(textObs);
-
-  root.querySelectorAll<HTMLElement>("[data-mob-content]").forEach((el) => {
+  root.querySelectorAll<HTMLElement>("[data-mcheck]").forEach((el) => {
+    el.style.transition = "opacity 0.5s ease";
+  });
+  root.querySelectorAll<HTMLElement>("[data-mverdict]").forEach((el) => {
     el.style.transition = "opacity 1.2s ease, transform 1s ease";
   });
 
-  const verdictObs = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          const c = entry.target as HTMLElement;
-          c.style.opacity = "1";
-          c.style.transform = "translateY(0)";
-        }
-      });
-    },
-    { threshold: 0.15 }
-  );
-  const v = root.querySelector("[data-mob-content]");
-  if (v) verdictObs.observe(v);
-  observers.push(verdictObs);
+  const fade = (threshold: number, attr: string, onShow?: (el: HTMLElement) => void) => {
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const el = entry.target as HTMLElement;
+            el.style.opacity = "1";
+            el.style.transform = "translateY(0)";
+            onShow?.(el);
+          }
+        });
+      },
+      { threshold }
+    );
+    root.querySelectorAll(attr).forEach((el) => obs.observe(el));
+    observers.push(obs);
+  };
+
+  fade(0.4, "[data-mel]");
+  fade(0.45, "[data-mrow]", (el) => {
+    const check = el.querySelector<HTMLElement>("[data-mcheck]");
+    if (check) {
+      const last = el.dataset.last === "true";
+      setTimeout(() => (check.style.opacity = "1"), last ? 650 : 420);
+    }
+  });
+  fade(0.15, "[data-mverdict]");
 
   return () => observers.forEach((o) => o.disconnect());
 }
 
 const verdictCard = (
-  <div className="flex w-full max-w-sm flex-col items-center py-16 md:max-w-md">
-    <p className="text-[10px] font-light tracking-[0.4em] text-white/25">
+  <div className="flex w-full max-w-sm flex-col items-center md:max-w-md">
+    <p className="text-[10px] font-light tracking-[0.42em] text-white/30">
       PROPERTY VERDICT
     </p>
 
-    <div className="mt-10 h-px w-16 bg-[#c9a96e]/40" />
+    <div className="mt-9 h-px w-20 bg-[#c9a96e]/40" />
 
-    <p className="mt-12 font-serif text-[3rem] font-medium leading-none text-[#c9a96e] md:text-[4rem]">
+    <p className="mt-12 text-[9px] font-light tracking-[0.4em] text-white/25">
+      RECOMMENDATION
+    </p>
+    <p className="mt-4 font-serif text-[3.2rem] font-medium leading-none tracking-wide text-[#c9a96e] md:text-[4rem]">
       Proceed
     </p>
 
-    <p className="mt-4 font-serif text-[1.3rem] font-light text-white/60 md:text-[1.6rem]">
-      DLF Arbour
+    <p className="mt-12 text-[9px] font-light tracking-[0.4em] text-white/25">
+      CONFIDENCE
+    </p>
+    <p className="mt-4 font-serif text-[3.2rem] font-extralight leading-none text-white/90 md:text-[4rem]">
+      97%
     </p>
 
-    <div className="mt-14 flex flex-col items-center">
-      <p className="text-[9px] font-light tracking-[0.35em] text-white/20">
-        CONFIDENCE
-      </p>
-      <p className="mt-3 font-serif text-[3.5rem] font-extralight leading-none text-white/90 md:text-[4.5rem]">
-        97%
-      </p>
-    </div>
+    <div className="mt-12 h-px w-20 bg-[#c9a96e]/40" />
 
-    <div className="mt-14 h-px w-16 bg-[#c9a96e]/40" />
-
-    <div className="mt-8 flex flex-col items-center">
-      <p className="text-[8px] font-light tracking-[0.35em] text-white/15">
-        PREPARED BY
-      </p>
-      <p className="mt-2 font-serif text-[13px] tracking-[0.2em] text-white/35">
-        Truth Estate
-      </p>
-    </div>
+    <p className="mt-9 font-serif text-[13px] font-light italic leading-relaxed text-white/35">
+      Prepared after
+      <br />
+      independent due diligence.
+    </p>
   </div>
 );
 
@@ -179,85 +191,144 @@ export default function StorySection() {
     if (isDesktop) {
       setupDesktop(root);
       return () => ScrollTrigger.getAll().forEach((st) => st.kill(true));
-    } else {
-      return setupMobile(root);
     }
+    return setupMobile(root);
   }, []);
 
   return (
     <section ref={ref}>
-      {/* ─── ONE EDITORIAL CANVAS ─── */}
-      <div data-editorial className="relative min-h-svh">
-        {/* Background layer */}
+      {/* ════════ DESKTOP — one continuous pinned narrative ════════ */}
+      <div data-editorial className="relative hidden h-svh overflow-hidden md:block">
+        {/* Background paper → desk */}
         <div data-bg className="absolute inset-0 bg-[#F7F5F2]" />
-
-        {/* Text layer */}
+        {/* Pool of light that emerges with the desk */}
         <div
-          data-text-layer
-          className="relative z-10 flex min-h-svh flex-col items-center px-8 py-[18vh] text-center md:justify-center md:py-[12vh]"
+          data-glow
+          className="absolute inset-0"
+          style={{
+            opacity: 0,
+            background:
+              "radial-gradient(ellipse 50% 55% at 50% 52%, rgba(201,169,110,0.08) 0%, transparent 70%)",
+          }}
+        />
+
+        {/* STORY column (additive) */}
+        <div
+          data-story
+          className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center"
         >
-          <h2
-            data-el="headline"
-            className="font-serif text-[2.6rem] font-medium leading-[1.15] text-[#1a1a1a] md:text-[4.5rem] lg:text-[5.5rem]"
-            style={{ opacity: 0.9 }}
-          >
+          <h2 className="font-serif text-[3.4rem] font-medium leading-[1.12] text-[#1a1a1a] lg:text-[4.4rem]">
             Every property
             <br />
             has two stories.
           </h2>
 
-          <div className="h-12 md:h-14" />
+          <div className="h-9 lg:h-11" />
 
           <p
             data-el="told"
-            className="font-serif text-[1.6rem] leading-[1.4] text-[#1a1a1a] md:text-[2.8rem] lg:text-[3.2rem]"
+            className="font-serif text-[1.7rem] leading-[1.4] text-[#1a1a1a] lg:text-[2.1rem]"
             style={{ opacity: 0.7 }}
           >
             The one you&apos;re told.
           </p>
 
-          <div className="h-3 md:h-4" />
+          <div className="h-2.5" />
 
           <p
             data-el="data"
-            className="font-serif text-[1.6rem] leading-[1.4] text-[#1a1a1a] md:text-[2.8rem] lg:text-[3.2rem]"
+            className="font-serif text-[1.7rem] leading-[1.4] text-[#1a1a1a] lg:text-[2.1rem]"
             style={{ opacity: 0.3 }}
           >
             The one the data tells.
           </p>
 
-          <div className="h-14 md:h-16" />
+          <div className="h-11 lg:h-14" />
+
+          {/* gold anchor dot */}
+          <span
+            data-el="dot"
+            className="mb-7 block h-[6px] w-[6px] rounded-full bg-[#c9a96e]"
+            style={{ opacity: 0 }}
+          />
 
           <p
             data-el="brochure"
-            className="font-serif text-[2.2rem] font-semibold leading-[1.15] text-[#1a1a1a] md:text-[3.8rem] lg:text-[4.5rem]"
-            style={{ opacity: 0, transform: "translateY(6px)", filter: "blur(2px)" }}
+            className="font-serif text-[2.6rem] font-semibold leading-[1.12] text-[#1a1a1a] lg:text-[3.4rem]"
+            style={{ opacity: 0, transform: "translateY(8px)", filter: "blur(2px)" }}
           >
             No brochure
             <br />
             mentions this.
           </p>
 
-          <div className="h-16 md:h-20" />
+          <div className="h-12 lg:h-16" />
 
           <p
             data-el="cheque"
-            className="font-serif text-[2.4rem] font-light leading-[1.12] text-[#1a1a1a] md:text-[4rem] lg:text-[5rem]"
-            style={{ opacity: 0, transform: "translateY(6px)", filter: "blur(2px)" }}
+            className="font-serif text-[2.4rem] font-light leading-[1.12] text-[#1a1a1a] lg:text-[3.2rem]"
+            style={{ opacity: 0, transform: "translateY(8px)", filter: "blur(2px)" }}
           >
-            Would we sign
-            <br />
-            the cheque?
+            Would we sign the cheque?
+          </p>
+
+          <div className="h-12 lg:h-16" />
+
+          <p
+            data-el="bridge"
+            className="font-serif text-[1.05rem] font-light italic tracking-wide text-[#1a1a1a] lg:text-[1.25rem]"
+            style={{ opacity: 0, transform: "translateY(8px)", filter: "blur(2px)" }}
+          >
+            Every verdict begins with evidence.
           </p>
         </div>
 
-        {/* Verdict overlay — desktop only */}
+        {/* EVIDENCE — investigations confirmed one by one */}
         <div
-          data-verdict-layer
-          className="absolute inset-0 z-20 hidden items-center justify-center px-6 md:flex"
+          data-evidence
+          className="absolute inset-0 flex flex-col items-center justify-center px-8"
+          style={{ opacity: 0 }}
+        >
+          <p className="mb-12 font-serif text-[0.95rem] font-light italic tracking-wide text-[#1a1a1a]/35 lg:text-[1.1rem]">
+            Every verdict begins with evidence.
+          </p>
+          <div className="flex flex-col items-center gap-7">
+            {investigations.map((item, i) => {
+              const last = i === investigations.length - 1;
+              return (
+                <div
+                  key={item}
+                  className="flex items-center justify-center gap-4"
+                >
+                  <span
+                    className={`font-serif tracking-[0.1em] text-[#1a1a1a] ${
+                      last
+                        ? "text-[1.55rem] font-normal lg:text-[1.95rem]"
+                        : "text-[1.45rem] font-light lg:text-[1.8rem]"
+                    }`}
+                  >
+                    {item}
+                  </span>
+                  <span
+                    data-check
+                    className="text-[1.1rem] text-[#c9a96e]"
+                    style={{ opacity: 0 }}
+                  >
+                    &#10003;
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* VERDICT — emerges from the darkening desk */}
+        <div
+          data-verdict
+          className="absolute inset-0 z-20 flex items-center justify-center px-6"
           style={{
             opacity: 0,
-            filter: "brightness(0.15) blur(3px)",
+            filter: "brightness(0.12) blur(3px)",
             pointerEvents: "none",
           }}
         >
@@ -265,14 +336,122 @@ export default function StorySection() {
         </div>
       </div>
 
-      {/* ─── MOBILE: transition + verdict ─── */}
+      {/* ════════ MOBILE — native scroll, one narrative ════════ */}
       <div className="md:hidden">
-        <div className="h-[40vh] bg-gradient-to-b from-[#F7F5F2] to-[#0a0a0a]" />
-        <div className="min-h-[80vh] bg-[#0a0a0a]">
+        <div className="bg-[#F7F5F2] px-8 pb-[12vh] pt-[16vh] text-center">
+          <h2
+            data-mel
+            className="font-serif text-[2.8rem] font-medium leading-[1.14] text-[#1a1a1a]"
+            style={{ opacity: 0, transform: "translateY(16px)" }}
+          >
+            Every property
+            <br />
+            has two stories.
+          </h2>
+
+          <div className="h-[14vh]" />
+
+          <p
+            data-mel
+            className="font-serif text-[1.8rem] leading-[1.4] text-[#1a1a1a]/70"
+            style={{ opacity: 0, transform: "translateY(16px)" }}
+          >
+            The one you&apos;re told.
+          </p>
+
+          <div className="h-[3vh]" />
+
+          <p
+            data-mel
+            className="font-serif text-[1.8rem] leading-[1.4] text-[#1a1a1a]"
+            style={{ opacity: 0, transform: "translateY(16px)" }}
+          >
+            The one the data tells.
+          </p>
+
+          <div className="h-[16vh]" />
+
+          <span
+            data-mel
+            className="mx-auto mb-7 block h-[6px] w-[6px] rounded-full bg-[#c9a96e]"
+            style={{ opacity: 0, transform: "translateY(16px)" }}
+          />
+
+          <p
+            data-mel
+            className="font-serif text-[2.4rem] font-semibold leading-[1.14] text-[#1a1a1a]"
+            style={{ opacity: 0, transform: "translateY(16px)" }}
+          >
+            No brochure
+            <br />
+            mentions this.
+          </p>
+
+          <div className="h-[18vh]" />
+
+          <p
+            data-mel
+            className="font-serif text-[2.3rem] font-light leading-[1.14] text-[#1a1a1a]"
+            style={{ opacity: 0, transform: "translateY(16px)" }}
+          >
+            Would we sign
+            <br />
+            the cheque?
+          </p>
+
+          <div className="h-[16vh]" />
+
+          <p
+            data-mel
+            className="font-serif text-[1.15rem] font-light italic tracking-wide text-[#1a1a1a]/50"
+            style={{ opacity: 0, transform: "translateY(16px)" }}
+          >
+            Every verdict begins
+            <br />
+            with evidence.
+          </p>
+        </div>
+
+        {/* evidence */}
+        <div className="bg-[#F7F5F2] px-8 pb-[14vh]">
+          <div className="flex flex-col items-center">
+            {investigations.map((item, i) => {
+              const last = i === investigations.length - 1;
+              return (
+                <div
+                  key={item}
+                  data-mrow
+                  data-last={last ? "true" : "false"}
+                  className="flex min-h-[26vh] items-center justify-center gap-4"
+                  style={{ opacity: 0, transform: "translateY(16px)" }}
+                >
+                  <span
+                    className={`font-serif tracking-[0.1em] text-[#1a1a1a] ${
+                      last ? "text-[1.7rem] font-normal" : "text-[1.6rem] font-light"
+                    }`}
+                  >
+                    {item}
+                  </span>
+                  <span
+                    data-mcheck
+                    className="text-[1.2rem] text-[#c9a96e]"
+                    style={{ opacity: 0 }}
+                  >
+                    &#10003;
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* transition + verdict */}
+        <div className="h-[28vh] bg-gradient-to-b from-[#F7F5F2] to-[#0a0a0a]" />
+        <div className="bg-[#0a0a0a] pb-[18vh]">
           <div
-            data-mob-content
-            className="flex min-h-[80vh] items-center justify-center px-6"
-            style={{ opacity: 0, transform: "translateY(12px)" }}
+            data-mverdict
+            className="flex min-h-[70vh] items-center justify-center px-6"
+            style={{ opacity: 0, transform: "translateY(16px)" }}
           >
             {verdictCard}
           </div>
