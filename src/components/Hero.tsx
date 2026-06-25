@@ -6,40 +6,40 @@ const basePath = "/Truth-Estate";
 
 export default function Hero() {
   return (
-    <section className="relative min-h-svh w-full overflow-hidden bg-[#080c0a]">
+    <section className="relative min-h-svh w-full overflow-hidden">
       {/* ─── DESKTOP ─── */}
       <div className="hidden h-svh md:block">
-        {/* Full-width image — the entire section is one composition */}
+        {/* Full-bleed hero image — this IS the hero */}
         <img
           src={`${basePath}/images/hero-desktop.jpg`}
           alt=""
           className="absolute inset-0 h-full w-full object-cover"
           style={{
             objectPosition: "center center",
-            transform: "scale(1.06) rotate(-0.7deg)",
-            filter: "brightness(0.7) contrast(1.08)",
+            transform: "scale(1.04) rotate(-0.5deg)",
+            filter: "brightness(0.78) contrast(1.06)",
           }}
         />
 
-        {/* Warm spotlight on the report */}
+        {/* Warm light on the report */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 40% 50% at 62% 44%, rgba(255,235,200,0.07) 0%, transparent 100%)",
+              "radial-gradient(ellipse 35% 45% at 58% 42%, rgba(255,235,200,0.06) 0%, transparent 100%)",
           }}
         />
 
-        {/* Cinematic transition — text emerges from darkness, report emerges into light */}
+        {/* Text readability gradient — just enough, nothing more */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(105deg, rgba(8,12,10,0.97) 0%, rgba(8,12,10,0.93) 28%, rgba(8,12,10,0.5) 48%, rgba(8,12,10,0.08) 68%, rgba(8,12,10,0.12) 100%)",
+              "linear-gradient(to right, rgba(6,8,7,0.68) 0%, rgba(6,8,7,0.4) 32%, rgba(6,8,7,0.08) 52%, transparent 65%)",
           }}
         />
 
-        {/* Content */}
+        {/* Content — floating inside the photography */}
         <div className="relative z-10 flex h-full flex-col justify-between py-12 pl-20 lg:py-16 lg:pl-28">
           <nav className="animate-fade-up flex items-center pr-12 lg:pr-20">
             <Logo className="h-11 w-auto lg:h-13" />
@@ -66,7 +66,7 @@ export default function Hero() {
             <div className="h-16" />
 
             <div
-              className="animate-fade-up flex flex-col gap-[14px] text-[17px] leading-[1.8] text-white/45"
+              className="animate-fade-up flex flex-col gap-[14px] text-[17px] leading-[1.8] text-white/50"
               style={{ animationDelay: "300ms" }}
             >
               <p>Buying in India.</p>
@@ -88,7 +88,7 @@ export default function Hero() {
               </a>
               <a
                 href="#"
-                className="text-[13px] tracking-[0.06em] text-white/25 transition-colors duration-500 hover:text-white/50"
+                className="text-[13px] tracking-[0.06em] text-white/30 transition-colors duration-500 hover:text-white/55"
               >
                 See How We Think &rarr;
               </a>
