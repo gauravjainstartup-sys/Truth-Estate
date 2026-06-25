@@ -27,19 +27,19 @@ export default function Logo({ className = "" }: { className?: string }) {
       </text>
 
       {/* ESTATE text with gold lines */}
-      <line x1="84" y1="62" x2="114" y2="62" stroke="#c9a96e" strokeWidth="1" />
+      <line x1="92" y1="63" x2="122" y2="63" stroke="#c9a96e" strokeWidth="1.2" />
       <text
-        x="122"
+        x="130"
         y="68"
         fontFamily="'Playfair Display', Georgia, serif"
-        fontSize="16"
+        fontSize="15"
         fontWeight="400"
         fill="white"
         letterSpacing="8"
       >
         ESTATE
       </text>
-      <line x1="232" y1="62" x2="262" y2="62" stroke="#c9a96e" strokeWidth="1" />
+      <line x1="230" y1="63" x2="260" y2="63" stroke="#c9a96e" strokeWidth="1.2" />
     </svg>
   );
 }
