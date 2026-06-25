@@ -155,59 +155,51 @@ export default function Hero() {
       </div>
 
       {/* ─── MOBILE ─── */}
-      <div className="relative h-svh md:hidden">
+      <div className="relative h-svh md:hidden overflow-hidden">
         <img
           src={`${basePath}/images/hero-mobile.jpg`}
           alt=""
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute left-0 top-0 w-full object-cover"
           style={{
-            objectPosition: "center 85%",
-            filter: "brightness(0.58) contrast(1.10) saturate(1.02)",
+            height: "145%",
+            objectPosition: "center top",
+            filter: "brightness(0.70) contrast(1.08) saturate(1.02)",
           }}
         />
 
-        {/* Text readability — heavy at top, fading toward verdict below */}
+        {/* Text readability — dark top half, quick fade to reveal verdict */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to bottom, rgba(4,6,5,0.96) 0%, rgba(4,6,5,0.94) 35%, rgba(4,6,5,0.88) 52%, rgba(4,6,5,0.55) 65%, rgba(4,6,5,0.18) 78%, transparent 90%)",
+              "linear-gradient(to bottom, rgba(4,6,5,0.95) 0%, rgba(4,6,5,0.93) 30%, rgba(4,6,5,0.82) 44%, rgba(4,6,5,0.50) 55%, rgba(4,6,5,0.18) 66%, rgba(4,6,5,0.05) 78%, transparent 88%)",
           }}
         />
 
-        {/* Left-side text wash */}
+        {/* Subtle edge vignette */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to right, rgba(4,6,5,0.45) 0%, transparent 50%)",
-          }}
-        />
-
-        {/* Vignette */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse 80% 70% at 50% 50%, transparent 40%, rgba(4,6,5,0.40) 100%)",
+              "radial-gradient(ellipse 85% 80% at 50% 50%, transparent 45%, rgba(4,6,5,0.30) 100%)",
           }}
         />
 
         {/* Content */}
         <div className="relative z-10 flex h-full flex-col px-7 pt-10">
           <nav className="animate-fade-up flex items-center justify-between">
-            <Logo className="h-9 w-auto opacity-80" />
-            <button className="flex flex-col gap-[5px]" aria-label="Open menu">
-              <span className="block h-px w-5 bg-white/30" />
-              <span className="block h-px w-5 bg-white/30" />
+            <Logo className="h-9 w-auto opacity-85" />
+            <button className="flex flex-col gap-[6px]" aria-label="Open menu">
+              <span className="block h-[1.5px] w-6 bg-white/40" />
+              <span className="block h-[1.5px] w-6 bg-white/40" />
             </button>
           </nav>
 
-          <div style={{ height: "40px" }} />
+          <div style={{ height: "36px" }} />
 
           <div className="flex flex-col">
             <h1
-              className="animate-fade-up font-serif text-[2.8rem] font-bold leading-[1.16] text-white"
+              className="animate-fade-up font-serif text-[2.8rem] font-bold leading-[1.18] text-white"
               style={{ animationDelay: "100ms" }}
             >
               Decisions
@@ -217,10 +209,10 @@ export default function Hero() {
               Living With.
             </h1>
 
-            <div style={{ height: "36px" }} />
+            <div style={{ height: "28px" }} />
 
             <p
-              className="animate-fade-up text-[15px] leading-[1.8] text-white/55"
+              className="animate-fade-up text-[15px] leading-[1.8] text-white/60"
               style={{ animationDelay: "250ms" }}
             >
               Independent thinking
@@ -243,10 +235,10 @@ export default function Hero() {
               />
             </div>
 
-            <div style={{ height: "16px" }} />
+            <div style={{ height: "18px" }} />
 
             <p
-              className="animate-fade-up font-serif text-[15px] italic leading-[1.7] text-white/40"
+              className="animate-fade-up font-serif text-[15px] italic leading-[1.7] text-white/45"
               style={{ animationDelay: "300ms" }}
             >
               We recommend only what
@@ -254,25 +246,25 @@ export default function Hero() {
               we&apos;d buy ourselves.
             </p>
 
-            <div style={{ height: "32px" }} />
+            <div style={{ height: "28px" }} />
 
             <div
-              className="animate-fade-up flex items-center gap-6"
+              className="animate-fade-up"
               style={{ animationDelay: "350ms" }}
             >
               <a
                 href="#"
-                className="rounded bg-[#1e4d3a] px-7 py-3.5 text-[13px] tracking-[0.06em] text-white/90 transition-colors duration-500 hover:bg-[#256b4e]"
+                className="inline-block rounded bg-[#1e4d3a] px-8 py-4 text-[13px] tracking-[0.06em] text-white/90 transition-colors duration-500 hover:bg-[#256b4e]"
               >
                 Get Your Verdict
               </a>
             </div>
 
-            <div style={{ height: "12px" }} />
+            <div style={{ height: "14px" }} />
 
             <a
               href="#"
-              className="animate-fade-up text-[13px] tracking-[0.04em] text-white/25"
+              className="animate-fade-up text-[13px] tracking-[0.04em] text-[#4a9e7e]"
               style={{ animationDelay: "380ms" }}
             >
               See How We Think &rarr;
