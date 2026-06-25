@@ -155,99 +155,129 @@ export default function Hero() {
       </div>
 
       {/* ─── MOBILE ─── */}
-      <div className="flex min-h-svh flex-col bg-[#080c0a] md:hidden">
-        <nav className="animate-fade-up flex items-center justify-between px-7 py-8">
-          <Logo className="h-8 w-auto opacity-75" />
-          <button className="flex flex-col gap-[5px]" aria-label="Open menu">
-            <span className="block h-px w-5 bg-white/25" />
-            <span className="block h-px w-5 bg-white/25" />
-          </button>
-        </nav>
+      <div className="relative h-svh md:hidden">
+        <img
+          src={`${basePath}/images/hero-mobile.jpg`}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{
+            objectPosition: "center 85%",
+            filter: "brightness(0.58) contrast(1.10) saturate(1.02)",
+          }}
+        />
 
-        <div className="flex flex-1 flex-col justify-center px-7 pb-10">
-          <h1
-            className="animate-fade-up font-serif text-[2.6rem] font-bold leading-[1.18] text-white"
-            style={{ animationDelay: "100ms" }}
-          >
-            Decisions
-            <br />
-            Worth
-            <br />
-            Living With.
-          </h1>
+        {/* Text readability — heavy at top, fading toward verdict below */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(4,6,5,0.96) 0%, rgba(4,6,5,0.94) 35%, rgba(4,6,5,0.88) 52%, rgba(4,6,5,0.55) 65%, rgba(4,6,5,0.18) 78%, transparent 90%)",
+          }}
+        />
 
-          <div style={{ height: "48px" }} />
+        {/* Left-side text wash */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to right, rgba(4,6,5,0.45) 0%, transparent 50%)",
+          }}
+        />
 
-          <p
-            className="animate-fade-up text-[15px] leading-[1.8] text-white/40"
-            style={{ animationDelay: "250ms" }}
-          >
-            Independent thinking
-            <br />
-            for India&apos;s biggest purchase.
-          </p>
+        {/* Vignette */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 80% 70% at 50% 50%, transparent 40%, rgba(4,6,5,0.40) 100%)",
+          }}
+        />
 
-          <div style={{ height: "24px" }} />
+        {/* Content */}
+        <div className="relative z-10 flex h-full flex-col px-7 pt-10">
+          <nav className="animate-fade-up flex items-center justify-between">
+            <Logo className="h-9 w-auto opacity-80" />
+            <button className="flex flex-col gap-[5px]" aria-label="Open menu">
+              <span className="block h-px w-5 bg-white/30" />
+              <span className="block h-px w-5 bg-white/30" />
+            </button>
+          </nav>
 
-          <div
-            className="animate-fade-up"
-            style={{ animationDelay: "270ms" }}
-          >
-            <div
-              style={{
-                width: "32px",
-                height: "1px",
-                background: "#c9a96e",
-              }}
-            />
-          </div>
+          <div style={{ height: "40px" }} />
 
-          <div style={{ height: "20px" }} />
-
-          <p
-            className="animate-fade-up font-serif text-[15px] italic leading-[1.7] text-white/30"
-            style={{ animationDelay: "300ms" }}
-          >
-            We recommend only what
-            <br />
-            we&apos;d buy ourselves.
-          </p>
-
-          <div style={{ height: "48px" }} />
-
-          <div
-            className="animate-fade-up flex flex-col gap-5"
-            style={{ animationDelay: "350ms" }}
-          >
-            <a
-              href="#"
-              className="w-full rounded bg-[#1e4d3a] py-4 text-center text-[13px] tracking-[0.06em] text-white/90 transition-colors duration-500 hover:bg-[#256b4e]"
+          <div className="flex flex-col">
+            <h1
+              className="animate-fade-up font-serif text-[2.8rem] font-bold leading-[1.16] text-white"
+              style={{ animationDelay: "100ms" }}
             >
-              Get Your Verdict
-            </a>
+              Decisions
+              <br />
+              Worth
+              <br />
+              Living With.
+            </h1>
+
+            <div style={{ height: "36px" }} />
+
+            <p
+              className="animate-fade-up text-[15px] leading-[1.8] text-white/55"
+              style={{ animationDelay: "250ms" }}
+            >
+              Independent thinking
+              <br />
+              for India&apos;s biggest purchase.
+            </p>
+
+            <div style={{ height: "20px" }} />
+
+            <div
+              className="animate-fade-up"
+              style={{ animationDelay: "270ms" }}
+            >
+              <div
+                style={{
+                  width: "32px",
+                  height: "1px",
+                  background: "#c9a96e",
+                }}
+              />
+            </div>
+
+            <div style={{ height: "16px" }} />
+
+            <p
+              className="animate-fade-up font-serif text-[15px] italic leading-[1.7] text-white/40"
+              style={{ animationDelay: "300ms" }}
+            >
+              We recommend only what
+              <br />
+              we&apos;d buy ourselves.
+            </p>
+
+            <div style={{ height: "32px" }} />
+
+            <div
+              className="animate-fade-up flex items-center gap-6"
+              style={{ animationDelay: "350ms" }}
+            >
+              <a
+                href="#"
+                className="rounded bg-[#1e4d3a] px-7 py-3.5 text-[13px] tracking-[0.06em] text-white/90 transition-colors duration-500 hover:bg-[#256b4e]"
+              >
+                Get Your Verdict
+              </a>
+            </div>
+
+            <div style={{ height: "12px" }} />
+
             <a
               href="#"
-              className="text-center text-[13px] tracking-[0.04em] text-white/20"
+              className="animate-fade-up text-[13px] tracking-[0.04em] text-white/25"
+              style={{ animationDelay: "380ms" }}
             >
               See How We Think &rarr;
             </a>
           </div>
-        </div>
-
-        <div className="relative animate-fade-up" style={{ animationDelay: "400ms" }}>
-          <img
-            src={`${basePath}/images/hero-mobile.jpg`}
-            alt=""
-            className="h-[42vh] w-full object-cover object-top"
-            style={{ filter: "brightness(0.70) contrast(1.10)" }}
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(to bottom, rgba(8,12,10,0.35) 0%, transparent 25%, transparent 80%, rgba(8,12,10,0.25) 100%)",
-            }}
-          />
         </div>
       </div>
     </section>
