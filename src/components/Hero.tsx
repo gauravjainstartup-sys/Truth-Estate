@@ -16,20 +16,20 @@ export default function Hero() {
           style={{
             objectPosition: "center center",
             transform: "scale(1.03) rotate(-0.4deg)",
-            filter: "brightness(0.55) contrast(1.18) saturate(1.05)",
+            filter: "brightness(0.50) contrast(1.20) saturate(1.08)",
           }}
         />
 
-        {/* Depth of field — sharp zone around the memo */}
+        {/* Depth of field — sharp zone around the verdict */}
         <div
           className="absolute inset-0"
           style={{
-            backdropFilter: "blur(2.2px)",
-            WebkitBackdropFilter: "blur(2.2px)",
+            backdropFilter: "blur(2.5px)",
+            WebkitBackdropFilter: "blur(2.5px)",
             maskImage:
-              "radial-gradient(ellipse 24% 40% at 75% 50%, transparent 30%, black 100%)",
+              "radial-gradient(ellipse 26% 42% at 76% 50%, transparent 28%, black 100%)",
             WebkitMaskImage:
-              "radial-gradient(ellipse 24% 40% at 75% 50%, transparent 30%, black 100%)",
+              "radial-gradient(ellipse 26% 42% at 76% 50%, transparent 28%, black 100%)",
           }}
         />
 
@@ -38,7 +38,7 @@ export default function Hero() {
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 60% 50% at 15% 10%, rgba(255,220,170,0.03) 0%, transparent 100%)",
+              "radial-gradient(ellipse 60% 50% at 15% 10%, rgba(255,220,170,0.035) 0%, transparent 100%)",
           }}
         />
 
@@ -47,7 +47,7 @@ export default function Hero() {
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 70% 65% at 50% 50%, transparent 40%, rgba(4,6,5,0.45) 100%)",
+              "radial-gradient(ellipse 70% 65% at 50% 50%, transparent 40%, rgba(4,6,5,0.48) 100%)",
           }}
         />
 
@@ -56,23 +56,25 @@ export default function Hero() {
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to right, rgba(4,6,5,0.75) 0%, rgba(4,6,5,0.40) 25%, rgba(4,6,5,0.08) 45%, transparent 55%)",
+              "linear-gradient(to right, rgba(4,6,5,0.78) 0%, rgba(4,6,5,0.42) 25%, rgba(4,6,5,0.08) 45%, transparent 55%)",
           }}
         />
 
         {/* ─── The Verdict ─── */}
         <div
-          className="absolute right-[6%] top-1/2 z-10 hidden lg:block"
+          className="absolute right-[4%] top-1/2 z-10 hidden lg:block"
           style={{ transform: "translateY(-50%) rotate(-0.8deg)" }}
         >
-          <div className="animate-fade-up" style={{ animationDelay: "500ms" }}>
+          <div
+            className="animate-fade-up"
+            style={{ animationDelay: "500ms", perspective: "1200px" }}
+          >
             <div
-              className="w-[320px]"
+              className="verdict-card w-[358px]"
               style={{
-                background: "rgba(245, 240, 232, 0.94)",
-                boxShadow:
-                  "10px 20px 70px rgba(0,0,0,0.5), 3px 6px 20px rgba(0,0,0,0.18)",
-                padding: "56px 48px",
+                background: "rgba(245, 240, 232, 0.90)",
+                padding: "60px 52px",
+                border: "1px solid rgba(220,215,205,0.4)",
               }}
             >
               <p
@@ -93,7 +95,7 @@ export default function Hero() {
 
               <p
                 className="font-serif font-light leading-none"
-                style={{ fontSize: "2.6rem", color: "#1a1a1a" }}
+                style={{ fontSize: "2.8rem", color: "#1a1a1a" }}
               >
                 Proceed
               </p>
@@ -101,7 +103,7 @@ export default function Hero() {
               <p
                 className="mt-3 font-serif"
                 style={{
-                  fontSize: "1.1rem",
+                  fontSize: "1.15rem",
                   letterSpacing: "0.06em",
                   color: "rgba(30,30,30,0.5)",
                 }}
@@ -109,7 +111,7 @@ export default function Hero() {
                 DLF Arbour
               </p>
 
-              <div className="mt-9">
+              <div className="mt-10">
                 <p
                   className="font-sans uppercase"
                   style={{
@@ -122,14 +124,14 @@ export default function Hero() {
                 </p>
                 <p
                   className="mt-1 font-serif font-light"
-                  style={{ fontSize: "2rem", color: "#1a1a1a" }}
+                  style={{ fontSize: "2.1rem", color: "#1a1a1a" }}
                 >
                   97%
                 </p>
               </div>
 
               <div
-                className="my-7 h-px"
+                className="my-8 h-px"
                 style={{ background: "rgba(201,169,110,0.28)" }}
               />
 
@@ -161,18 +163,18 @@ export default function Hero() {
         <div className="relative z-10 flex h-full flex-col justify-between py-14 pl-20 lg:py-20 lg:pl-28">
           <nav className="animate-fade-up flex items-center pr-12 lg:pr-20">
             <Logo className="h-10 w-auto opacity-75 lg:h-[3rem]" />
-            <div className="ml-auto hidden items-center gap-16 text-[10px] font-light tracking-[0.3em] text-white/25 lg:flex">
-              <a href="#" className="transition-colors duration-500 hover:text-white/45">
-                ADVISORY
+            <div className="ml-auto hidden items-center gap-20 text-[10px] font-light tracking-[0.18em] text-white/20 lg:flex">
+              <a href="#" className="transition-colors duration-500 hover:text-white/40">
+                Projects
               </a>
-              <a href="#" className="transition-colors duration-500 hover:text-white/45">
-                RESEARCH
+              <a href="#" className="transition-colors duration-500 hover:text-white/40">
+                Compare
               </a>
-              <a href="#" className="transition-colors duration-500 hover:text-white/45">
-                ABOUT
+              <a href="#" className="transition-colors duration-500 hover:text-white/40">
+                TruthGuide
               </a>
-              <a href="#" className="transition-colors duration-500 hover:text-white/45">
-                CONTACT
+              <a href="#" className="transition-colors duration-500 hover:text-white/40">
+                Private Office
               </a>
             </div>
           </nav>
@@ -189,21 +191,21 @@ export default function Hero() {
               Living With.
             </h1>
 
-            <div style={{ height: "56px" }} />
+            <div style={{ height: "64px" }} />
 
             <p
               className="animate-fade-up text-[16px] leading-[1.8] text-white/40"
               style={{ animationDelay: "300ms" }}
             >
-              Independent intelligence
+              Independent thinking
               <br />
               for India&apos;s biggest purchase.
             </p>
 
-            <div style={{ height: "40px" }} />
+            <div style={{ height: "48px" }} />
 
             <p
-              className="animate-fade-up font-serif text-[17px] italic leading-[1.7] text-white/50"
+              className="animate-fade-up font-serif text-[17px] italic leading-[1.7] text-white/35"
               style={{ animationDelay: "350ms" }}
             >
               We recommend only what
@@ -211,7 +213,7 @@ export default function Hero() {
               we&apos;d buy ourselves.
             </p>
 
-            <div style={{ height: "56px" }} />
+            <div style={{ height: "64px" }} />
 
             <div
               className="animate-fade-up flex items-center gap-8"
@@ -221,7 +223,7 @@ export default function Hero() {
                 href="#"
                 className="rounded bg-[#1e4d3a] px-8 py-3.5 text-[13px] tracking-[0.06em] text-white/90 transition-colors duration-500 hover:bg-[#256b4e]"
               >
-                Tell Us What Matters
+                Get Your Verdict
               </a>
               <a
                 href="#"
@@ -258,21 +260,21 @@ export default function Hero() {
             Living With.
           </h1>
 
-          <div style={{ height: "44px" }} />
+          <div style={{ height: "48px" }} />
 
           <p
             className="animate-fade-up text-[15px] leading-[1.8] text-white/40"
             style={{ animationDelay: "250ms" }}
           >
-            Independent intelligence
+            Independent thinking
             <br />
             for India&apos;s biggest purchase.
           </p>
 
-          <div style={{ height: "32px" }} />
+          <div style={{ height: "36px" }} />
 
           <p
-            className="animate-fade-up font-serif text-[15px] italic leading-[1.7] text-white/45"
+            className="animate-fade-up font-serif text-[15px] italic leading-[1.7] text-white/30"
             style={{ animationDelay: "300ms" }}
           >
             We recommend only what
@@ -280,7 +282,7 @@ export default function Hero() {
             we&apos;d buy ourselves.
           </p>
 
-          <div style={{ height: "44px" }} />
+          <div style={{ height: "48px" }} />
 
           <div
             className="animate-fade-up flex flex-col gap-5"
@@ -290,7 +292,7 @@ export default function Hero() {
               href="#"
               className="w-full rounded bg-[#1e4d3a] py-4 text-center text-[13px] tracking-[0.06em] text-white/90 transition-colors duration-500 hover:bg-[#256b4e]"
             >
-              Tell Us What Matters
+              Get Your Verdict
             </a>
             <a
               href="#"
