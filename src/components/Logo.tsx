@@ -1,7 +1,7 @@
 export default function Logo({ className = "" }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 380 80"
+      viewBox="0 0 420 80"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
@@ -13,7 +13,7 @@ export default function Logo({ className = "" }: { className?: string }) {
       <circle cx="34" cy="38" r="3" fill="#c9a96e" />
 
       {/* Text via foreignObject for correct CSS font */}
-      <foreignObject x="78" y="0" width="300" height="80">
+      <foreignObject x="78" y="0" width="340" height="80">
         <div
           style={{
             display: "flex",
@@ -28,7 +28,7 @@ export default function Logo({ className = "" }: { className?: string }) {
               fontFamily: "var(--font-playfair), Georgia, serif",
               fontSize: "42px",
               fontWeight: 500,
-              letterSpacing: "5px",
+              letterSpacing: "18px",
               lineHeight: 1,
               color: "white",
             }}
@@ -39,14 +39,14 @@ export default function Logo({ className = "" }: { className?: string }) {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "6px",
-              marginTop: "4px",
+              gap: "8px",
+              marginTop: "5px",
             }}
           >
             <span
               style={{
                 display: "block",
-                width: "30px",
+                width: "35px",
                 height: "1px",
                 background: "#c9a96e",
                 flexShrink: 0,
@@ -57,7 +57,7 @@ export default function Logo({ className = "" }: { className?: string }) {
                 fontFamily: "var(--font-playfair), Georgia, serif",
                 fontSize: "14px",
                 fontWeight: 400,
-                letterSpacing: "7px",
+                letterSpacing: "14px",
                 lineHeight: 1,
                 color: "white",
               }}
@@ -67,7 +67,7 @@ export default function Logo({ className = "" }: { className?: string }) {
             <span
               style={{
                 display: "block",
-                width: "30px",
+                width: "35px",
                 height: "1px",
                 background: "#c9a96e",
                 flexShrink: 0,
