@@ -1,85 +1,155 @@
 "use client";
 
-import Image from "next/image";
 import Logo from "./Logo";
+
+const basePath = "/Truth-Estate";
 
 export default function Hero() {
   return (
-    <section className="relative h-svh w-full overflow-hidden bg-[#122620]">
-      {/* Desktop background */}
-      <Image
-        src="/images/hero-desktop.jpg"
-        alt=""
-        fill
-        priority
-        className="hidden md:block object-cover object-center"
-        sizes="100vw"
-        quality={90}
-      />
+    <section className="relative min-h-svh w-full overflow-hidden">
+      {/* ─── DESKTOP ─── */}
+      <div className="hidden h-svh md:block">
+        {/* The photograph */}
+        <img
+          src={`${basePath}/images/hero-desktop.jpg`}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{
+            objectPosition: "center center",
+            transform: "scale(1.03) rotate(-0.4deg)",
+            filter: "brightness(0.76) contrast(1.08)",
+          }}
+        />
 
-      {/* Mobile background */}
-      <Image
-        src="/images/hero-mobile.jpg"
-        alt=""
-        fill
-        priority
-        className="block md:hidden object-cover object-center"
-        sizes="100vw"
-        quality={90}
-      />
+        {/* Depth of field — everything soft except the memo */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backdropFilter: "blur(1.5px)",
+            WebkitBackdropFilter: "blur(1.5px)",
+            maskImage:
+              "radial-gradient(ellipse 26% 36% at 58% 44%, transparent 35%, black 100%)",
+            WebkitMaskImage:
+              "radial-gradient(ellipse 26% 36% at 58% 44%, transparent 35%, black 100%)",
+          }}
+        />
 
-      {/* Left-side gradient: dark green fading to transparent on right */}
-      <div className="absolute inset-0 bg-gradient-to-r from-[#122620] via-[#122620]/95 via-40% to-transparent" />
-      {/* Mobile: stronger overlay for readability */}
-      <div className="absolute inset-0 bg-[#122620]/60 md:hidden" />
+        {/* Memo spotlight */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 22% 30% at 58% 44%, rgba(255,240,210,0.09) 0%, transparent 100%)",
+          }}
+        />
 
-      {/* Content */}
-      <div className="relative z-10 flex h-full flex-col justify-between px-6 py-6 sm:px-10 md:px-16 lg:px-24">
-        {/* Logo */}
-        <nav className="flex items-center justify-between">
-          <Logo className="h-10 w-auto sm:h-12 md:h-14" />
+        {/* Morning light — upper left */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 50% 40% at 10% 5%, rgba(255,220,170,0.04) 0%, transparent 100%)",
+          }}
+        />
 
-          <div className="hidden items-center gap-8 text-xs tracking-[0.2em] text-white/60 lg:flex">
-            <a href="#" className="transition-colors hover:text-white">
-              ADVISORY
-            </a>
-            <a href="#" className="transition-colors hover:text-white">
-              RESEARCH
-            </a>
-            <a href="#" className="transition-colors hover:text-white">
-              ABOUT
-            </a>
-            <a
-              href="#"
-              className="border border-white/20 px-5 py-2.5 text-white transition-all hover:border-[#c9a96e] hover:text-[#c9a96e]"
+        {/* Vignette */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 75% 70% at 50% 50%, transparent 45%, rgba(4,6,5,0.35) 100%)",
+          }}
+        />
+
+        {/* Text gradient */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to right, rgba(4,6,5,0.72) 0%, rgba(4,6,5,0.35) 28%, rgba(4,6,5,0.06) 48%, transparent 58%)",
+          }}
+        />
+
+        {/* Content */}
+        <div className="relative z-10 flex h-full flex-col justify-between py-12 pl-20 lg:py-16 lg:pl-28">
+          <nav className="animate-fade-up flex items-center pr-12 lg:pr-20">
+            <Logo className="h-11 w-auto lg:h-[3.4rem]" />
+            <div className="ml-auto hidden items-center gap-12 text-[11px] font-light tracking-[0.25em] text-white/35 lg:flex">
+              <a href="#" className="transition-colors duration-500 hover:text-white/55">ADVISORY</a>
+              <a href="#" className="transition-colors duration-500 hover:text-white/55">RESEARCH</a>
+              <a href="#" className="transition-colors duration-500 hover:text-white/55">ABOUT</a>
+              <a href="#" className="transition-colors duration-500 hover:text-white/55">CONTACT</a>
+            </div>
+          </nav>
+
+          <div className="flex max-w-md flex-col lg:max-w-lg">
+            <h1
+              className="animate-fade-up font-serif text-[4.5rem] font-bold leading-[1.18] text-white lg:text-[5.5rem]"
+              style={{ animationDelay: "100ms" }}
             >
-              CONTACT
-            </a>
+              Decisions
+              <br />
+              Worth
+              <br />
+              Living With.
+            </h1>
+
+            <div className="h-20" />
+
+            <div
+              className="animate-fade-up flex flex-col gap-[14px] text-[17px] leading-[1.8] text-white/50"
+              style={{ animationDelay: "300ms" }}
+            >
+              <p>Buying luxury real estate from overseas?</p>
+              <p>You don&apos;t need more opinions.</p>
+              <p>
+                You need{" "}
+                <span className="font-serif italic text-[#c9a96e]">
+                  one conclusion.
+                </span>
+              </p>
+            </div>
+
+            <div className="h-14" />
+
+            <div
+              className="animate-fade-up flex items-center gap-10"
+              style={{ animationDelay: "300ms" }}
+            >
+              <a
+                href="#"
+                className="bg-[#1e4d3a] px-8 py-4 text-[13px] tracking-[0.1em] text-white/90 transition-colors duration-500 hover:bg-[#256b4e]"
+              >
+                Start My Search
+              </a>
+              <a
+                href="#"
+                className="text-[13px] tracking-[0.06em] text-white/30 transition-colors duration-500 hover:text-white/55"
+              >
+                See How We Think &rarr;
+              </a>
+            </div>
           </div>
 
-          {/* Mobile menu */}
-          <button
-            className="flex flex-col gap-1.5 lg:hidden"
-            aria-label="Open menu"
-          >
-            <span className="block h-px w-6 bg-white" />
-            <span className="block h-px w-6 bg-white" />
-            <span className="block h-px w-4 bg-white" />
+          <div />
+        </div>
+      </div>
+
+      {/* ─── MOBILE ─── */}
+      <div className="flex min-h-svh flex-col bg-[#080c0a] md:hidden">
+        <nav className="animate-fade-up flex items-center justify-between px-7 py-7">
+          <Logo className="h-9 w-auto" />
+          <button className="flex flex-col gap-[5px]" aria-label="Open menu">
+            <span className="block h-px w-5 bg-white/35" />
+            <span className="block h-px w-5 bg-white/35" />
           </button>
         </nav>
 
-        {/* Main hero content — left aligned */}
-        <div className="flex max-w-xl flex-col gap-6 md:gap-8">
-          {/* Label */}
-          <div>
-            <span className="text-[10px] tracking-[0.35em] text-white/50 sm:text-xs">
-              INDEPENDENT INTELLIGENCE
-            </span>
-            <div className="mt-2 h-px w-10 bg-[#c9a96e]" />
-          </div>
-
-          {/* Headline */}
-          <h1 className="font-serif text-[2.75rem] font-bold leading-[1.05] text-white sm:text-6xl md:text-7xl lg:text-[5.5rem]">
+        <div className="flex flex-1 flex-col justify-center px-7 pb-8">
+          <h1
+            className="animate-fade-up font-serif text-[2.6rem] font-bold leading-[1.18] text-white"
+            style={{ animationDelay: "100ms" }}
+          >
             Decisions
             <br />
             Worth
@@ -87,77 +157,57 @@ export default function Hero() {
             Living With.
           </h1>
 
-          {/* Body copy */}
-          <div className="flex max-w-sm flex-col gap-4 text-base leading-relaxed text-white/70 sm:text-lg md:max-w-md">
+          <div className="h-10" />
+
+          <div
+            className="animate-fade-up flex flex-col gap-3 text-[15px] leading-[1.8] text-white/45"
+            style={{ animationDelay: "250ms" }}
+          >
             <p>Buying luxury real estate from overseas?</p>
+            <p>You don&apos;t need more opinions.</p>
             <p>
-              You don&apos;t need
-              <br />
-              another broker.
-            </p>
-            <p>
-              You need
-              <br />
+              You need{" "}
               <span className="font-serif italic text-[#c9a96e]">
-                better judgment.
+                one conclusion.
               </span>
             </p>
           </div>
 
-          {/* CTAs */}
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <a
-              href="#"
-              className="inline-flex items-center justify-center bg-[#1e4d3a] px-8 py-4 text-sm font-semibold tracking-[0.2em] text-white transition-all hover:bg-[#256b4e] sm:justify-start"
-            >
-              START MY SEARCH
-            </a>
+          <div className="h-10" />
 
+          <div
+            className="animate-fade-up flex flex-col gap-5"
+            style={{ animationDelay: "250ms" }}
+          >
             <a
               href="#"
-              className="group inline-flex items-center gap-2 px-1 text-sm tracking-[0.15em] text-white/50 transition-colors hover:text-white sm:px-4"
+              className="w-full bg-[#1e4d3a] px-8 py-4 text-center text-[13px] tracking-[0.1em] text-white/90 transition-colors duration-500 hover:bg-[#256b4e]"
             >
-              <span className="underline underline-offset-4">
-                SEE HOW WE THINK
-              </span>
-              <svg
-                className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M17 8l4 4m0 0l-4 4m4-4H3"
-                />
-              </svg>
+              Start My Search
+            </a>
+            <a
+              href="#"
+              className="text-center text-[13px] tracking-[0.06em] text-white/25"
+            >
+              See How We Think &rarr;
             </a>
           </div>
         </div>
 
-        {/* Bottom tagline */}
-        <div className="flex items-center gap-3">
-          {/* Family icon */}
-          <svg
-            className="h-6 w-6 text-[#c9a96e] sm:h-7 sm:w-7"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <circle cx="12" cy="4" r="2" />
-            <circle cx="6" cy="6" r="1.5" />
-            <circle cx="18" cy="6" r="1.5" />
-            <path d="M12 8c-1.5 0-2.5 1-2.5 2.5V14h5v-3.5C14.5 9 13.5 8 12 8z" />
-            <path d="M6 9c-1 0-2 .8-2 2v3h3v-3.5c0-.6.1-1.1.3-1.5H6z" />
-            <path d="M18 9h-.3c.2.4.3.9.3 1.5V14h3v-3c0-1.2-1-2-2-2z" />
-            <rect x="5" y="15" width="14" height="1" rx="0.5" />
-          </svg>
-          <p className="font-serif text-xs italic text-white/50 sm:text-sm">
-            Prepared as if it were
-            <br className="sm:hidden" />
-            {" "}our own family&apos;s decision.
-          </p>
+        <div className="relative animate-fade-up" style={{ animationDelay: "400ms" }}>
+          <img
+            src={`${basePath}/images/hero-mobile.jpg`}
+            alt=""
+            className="h-[42vh] w-full object-cover object-top"
+            style={{ filter: "brightness(0.72) contrast(1.08)" }}
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(to bottom, rgba(8,12,10,0.3) 0%, transparent 25%, transparent 80%, rgba(8,12,10,0.2) 100%)",
+            }}
+          />
         </div>
       </div>
     </section>
