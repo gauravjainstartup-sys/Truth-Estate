@@ -1,10 +1,11 @@
 "use client";
 
 import Image from "next/image";
+import Logo from "./Logo";
 
 export default function Hero() {
   return (
-    <section className="relative h-svh w-full overflow-hidden">
+    <section className="relative h-svh w-full overflow-hidden bg-[#122620]">
       {/* Desktop background */}
       <Image
         src="/images/hero-desktop.jpg"
@@ -27,21 +28,18 @@ export default function Hero() {
         quality={90}
       />
 
-      {/* Gradient overlays */}
-      <div className="absolute inset-0 bg-black/40" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30" />
+      {/* Left-side gradient: dark green fading to transparent on right */}
+      <div className="absolute inset-0 bg-gradient-to-r from-[#122620] via-[#122620]/95 via-40% to-transparent" />
+      {/* Mobile: stronger overlay for readability */}
+      <div className="absolute inset-0 bg-[#122620]/60 md:hidden" />
 
       {/* Content */}
-      <div className="relative z-10 flex h-full flex-col justify-between px-6 py-8 sm:px-12 md:px-20 lg:px-28">
-        {/* Top nav bar */}
+      <div className="relative z-10 flex h-full flex-col justify-between px-6 py-6 sm:px-10 md:px-16 lg:px-24">
+        {/* Logo */}
         <nav className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="font-serif text-xl tracking-[0.2em] text-white sm:text-2xl">
-              TRUTH ESTATE
-            </span>
-          </div>
+          <Logo className="h-10 w-auto sm:h-12 md:h-14" />
 
-          <div className="hidden items-center gap-8 text-sm tracking-widest text-white/70 md:flex">
+          <div className="hidden items-center gap-8 text-xs tracking-[0.2em] text-white/60 lg:flex">
             <a href="#" className="transition-colors hover:text-white">
               ADVISORY
             </a>
@@ -53,15 +51,15 @@ export default function Hero() {
             </a>
             <a
               href="#"
-              className="border border-white/30 px-5 py-2 text-white transition-all hover:border-[#c9a96e] hover:text-[#c9a96e]"
+              className="border border-white/20 px-5 py-2.5 text-white transition-all hover:border-[#c9a96e] hover:text-[#c9a96e]"
             >
               CONTACT
             </a>
           </div>
 
-          {/* Mobile menu button */}
+          {/* Mobile menu */}
           <button
-            className="flex flex-col gap-1.5 md:hidden"
+            className="flex flex-col gap-1.5 lg:hidden"
             aria-label="Open menu"
           >
             <span className="block h-px w-6 bg-white" />
@@ -70,36 +68,60 @@ export default function Hero() {
           </button>
         </nav>
 
-        {/* Hero content */}
-        <div className="flex max-w-2xl flex-col gap-6 pb-16 sm:pb-24 md:pb-28 lg:pb-32">
-          <div className="flex items-center gap-3">
-            <span className="h-px w-8 bg-[#c9a96e]" />
-            <span className="text-xs tracking-[0.3em] text-[#c9a96e] sm:text-sm">
-              INDEPENDENT ADVISORY
+        {/* Main hero content — left aligned */}
+        <div className="flex max-w-xl flex-col gap-6 md:gap-8">
+          {/* Label */}
+          <div>
+            <span className="text-[10px] tracking-[0.35em] text-white/50 sm:text-xs">
+              INDEPENDENT INTELLIGENCE
             </span>
+            <div className="mt-2 h-px w-10 bg-[#c9a96e]" />
           </div>
 
-          <h1 className="font-serif text-4xl font-medium leading-[1.15] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
-            The truth behind
+          {/* Headline */}
+          <h1 className="font-serif text-[2.75rem] font-bold leading-[1.05] text-white sm:text-6xl md:text-7xl lg:text-[5.5rem]">
+            Decisions
             <br />
-            every property
+            Worth
             <br />
-            <span className="italic text-[#c9a96e]">decision.</span>
+            Living With.
           </h1>
 
-          <p className="max-w-lg text-base leading-relaxed text-white/60 sm:text-lg">
-            Research-driven real estate advisory for discerning NRI investors.
-            We help you see what developers won&apos;t show you.
-          </p>
+          {/* Body copy */}
+          <div className="flex max-w-sm flex-col gap-4 text-base leading-relaxed text-white/70 sm:text-lg md:max-w-md">
+            <p>Buying luxury real estate from overseas?</p>
+            <p>
+              You don&apos;t need
+              <br />
+              another broker.
+            </p>
+            <p>
+              You need
+              <br />
+              <span className="font-serif italic text-[#c9a96e]">
+                better judgment.
+              </span>
+            </p>
+          </div>
 
-          <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
+          {/* CTAs */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <a
               href="#"
-              className="group inline-flex items-center gap-3 bg-[#c9a96e] px-8 py-4 text-sm tracking-widest text-black transition-all hover:bg-[#d4b97a]"
+              className="inline-flex items-center justify-center bg-[#1e4d3a] px-8 py-4 text-sm font-semibold tracking-[0.2em] text-white transition-all hover:bg-[#256b4e] sm:justify-start"
             >
-              REQUEST A DECISION MEMO
+              START MY SEARCH
+            </a>
+
+            <a
+              href="#"
+              className="group inline-flex items-center gap-2 px-1 text-sm tracking-[0.15em] text-white/50 transition-colors hover:text-white sm:px-4"
+            >
+              <span className="underline underline-offset-4">
+                SEE HOW WE THINK
+              </span>
               <svg
-                className="h-4 w-4 transition-transform group-hover:translate-x-1"
+                className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -112,25 +134,30 @@ export default function Hero() {
                 />
               </svg>
             </a>
-
-            <a
-              href="#"
-              className="inline-flex items-center gap-2 px-2 py-4 text-sm tracking-widest text-white/50 transition-colors hover:text-white sm:px-4"
-            >
-              VIEW SAMPLE REPORT
-            </a>
           </div>
         </div>
 
-        {/* Bottom bar */}
-        <div className="flex items-end justify-between border-t border-white/10 pt-6">
-          <div className="hidden text-xs tracking-widest text-white/30 sm:block">
-            TRUSTED BY NRI FAMILIES ACROSS 12 COUNTRIES
-          </div>
-          <div className="flex items-center gap-2 text-xs tracking-widest text-white/30">
-            <span className="inline-block h-2 w-2 rounded-full bg-[#c9a96e]" />
-            SCROLL TO EXPLORE
-          </div>
+        {/* Bottom tagline */}
+        <div className="flex items-center gap-3">
+          {/* Family icon */}
+          <svg
+            className="h-6 w-6 text-[#c9a96e] sm:h-7 sm:w-7"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <circle cx="12" cy="4" r="2" />
+            <circle cx="6" cy="6" r="1.5" />
+            <circle cx="18" cy="6" r="1.5" />
+            <path d="M12 8c-1.5 0-2.5 1-2.5 2.5V14h5v-3.5C14.5 9 13.5 8 12 8z" />
+            <path d="M6 9c-1 0-2 .8-2 2v3h3v-3.5c0-.6.1-1.1.3-1.5H6z" />
+            <path d="M18 9h-.3c.2.4.3.9.3 1.5V14h3v-3c0-1.2-1-2-2-2z" />
+            <rect x="5" y="15" width="14" height="1" rx="0.5" />
+          </svg>
+          <p className="font-serif text-xs italic text-white/50 sm:text-sm">
+            Prepared as if it were
+            <br className="sm:hidden" />
+            {" "}our own family&apos;s decision.
+          </p>
         </div>
       </div>
     </section>
