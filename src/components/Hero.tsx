@@ -15,21 +15,21 @@ export default function Hero() {
           className="absolute inset-0 h-full w-full object-cover"
           style={{
             objectPosition: "center center",
-            transform: "scale(1.03) rotate(-0.4deg)",
-            filter: "brightness(0.50) contrast(1.20) saturate(1.08)",
+            transform: "scale(1.01) rotate(-0.15deg)",
+            filter: "brightness(0.68) contrast(1.10) saturate(1.02)",
           }}
         />
 
-        {/* Depth of field — sharp zone around the verdict */}
+        {/* Depth of field — verdict document stays sharp */}
         <div
           className="absolute inset-0"
           style={{
-            backdropFilter: "blur(2.5px)",
-            WebkitBackdropFilter: "blur(2.5px)",
+            backdropFilter: "blur(1.8px)",
+            WebkitBackdropFilter: "blur(1.8px)",
             maskImage:
-              "radial-gradient(ellipse 26% 42% at 76% 50%, transparent 28%, black 100%)",
+              "radial-gradient(ellipse 28% 48% at 60% 50%, transparent 28%, black 100%)",
             WebkitMaskImage:
-              "radial-gradient(ellipse 26% 42% at 76% 50%, transparent 28%, black 100%)",
+              "radial-gradient(ellipse 28% 48% at 60% 50%, transparent 28%, black 100%)",
           }}
         />
 
@@ -38,7 +38,7 @@ export default function Hero() {
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 60% 50% at 15% 10%, rgba(255,220,170,0.035) 0%, transparent 100%)",
+              "radial-gradient(ellipse 60% 50% at 15% 10%, rgba(255,220,170,0.025) 0%, transparent 100%)",
           }}
         />
 
@@ -47,7 +47,7 @@ export default function Hero() {
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 70% 65% at 50% 50%, transparent 40%, rgba(4,6,5,0.48) 100%)",
+              "radial-gradient(ellipse 72% 68% at 50% 50%, transparent 42%, rgba(4,6,5,0.42) 100%)",
           }}
         />
 
@@ -56,108 +56,9 @@ export default function Hero() {
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to right, rgba(4,6,5,0.78) 0%, rgba(4,6,5,0.42) 25%, rgba(4,6,5,0.08) 45%, transparent 55%)",
+              "linear-gradient(to right, rgba(4,6,5,0.78) 0%, rgba(4,6,5,0.45) 22%, rgba(4,6,5,0.10) 38%, transparent 48%)",
           }}
         />
-
-        {/* ─── The Verdict ─── */}
-        <div
-          className="absolute right-[4%] top-1/2 z-10 hidden lg:block"
-          style={{ transform: "translateY(-50%) rotate(-0.8deg)" }}
-        >
-          <div
-            className="animate-fade-up"
-            style={{ animationDelay: "500ms", perspective: "1200px" }}
-          >
-            <div
-              className="verdict-card w-[358px]"
-              style={{
-                background: "rgba(245, 240, 232, 0.90)",
-                padding: "60px 52px",
-                border: "1px solid rgba(220,215,205,0.4)",
-              }}
-            >
-              <p
-                className="font-sans uppercase"
-                style={{
-                  fontSize: "9px",
-                  letterSpacing: "0.35em",
-                  color: "rgba(30,30,30,0.38)",
-                }}
-              >
-                Property Verdict
-              </p>
-
-              <div
-                className="my-7 h-px"
-                style={{ background: "rgba(201,169,110,0.28)" }}
-              />
-
-              <p
-                className="font-serif font-light leading-none"
-                style={{ fontSize: "2.8rem", color: "#1a1a1a" }}
-              >
-                Proceed
-              </p>
-
-              <p
-                className="mt-3 font-serif"
-                style={{
-                  fontSize: "1.15rem",
-                  letterSpacing: "0.06em",
-                  color: "rgba(30,30,30,0.5)",
-                }}
-              >
-                DLF Arbour
-              </p>
-
-              <div className="mt-10">
-                <p
-                  className="font-sans uppercase"
-                  style={{
-                    fontSize: "9px",
-                    letterSpacing: "0.3em",
-                    color: "rgba(30,30,30,0.32)",
-                  }}
-                >
-                  Confidence
-                </p>
-                <p
-                  className="mt-1 font-serif font-light"
-                  style={{ fontSize: "2.1rem", color: "#1a1a1a" }}
-                >
-                  97%
-                </p>
-              </div>
-
-              <div
-                className="my-8 h-px"
-                style={{ background: "rgba(201,169,110,0.28)" }}
-              />
-
-              <p
-                className="font-sans uppercase"
-                style={{
-                  fontSize: "8px",
-                  letterSpacing: "0.3em",
-                  color: "rgba(30,30,30,0.25)",
-                }}
-              >
-                Prepared by
-              </p>
-              <p
-                className="mt-1 font-serif"
-                style={{
-                  fontSize: "12px",
-                  letterSpacing: "0.1em",
-                  color: "rgba(30,30,30,0.42)",
-                }}
-              >
-                Truth Estate
-              </p>
-            </div>
-          </div>
-        </div>
 
         {/* Content */}
         <div className="relative z-10 flex h-full flex-col justify-between py-14 pl-20 lg:py-20 lg:pl-28">
@@ -202,7 +103,22 @@ export default function Hero() {
               for India&apos;s biggest purchase.
             </p>
 
-            <div style={{ height: "48px" }} />
+            <div style={{ height: "28px" }} />
+
+            <div
+              className="animate-fade-up"
+              style={{ animationDelay: "320ms" }}
+            >
+              <div
+                style={{
+                  width: "40px",
+                  height: "1px",
+                  background: "#c9a96e",
+                }}
+              />
+            </div>
+
+            <div style={{ height: "24px" }} />
 
             <p
               className="animate-fade-up font-serif text-[17px] italic leading-[1.7] text-white/35"
@@ -271,7 +187,22 @@ export default function Hero() {
             for India&apos;s biggest purchase.
           </p>
 
-          <div style={{ height: "36px" }} />
+          <div style={{ height: "24px" }} />
+
+          <div
+            className="animate-fade-up"
+            style={{ animationDelay: "270ms" }}
+          >
+            <div
+              style={{
+                width: "32px",
+                height: "1px",
+                background: "#c9a96e",
+              }}
+            />
+          </div>
+
+          <div style={{ height: "20px" }} />
 
           <p
             className="animate-fade-up font-serif text-[15px] italic leading-[1.7] text-white/30"
@@ -308,13 +239,13 @@ export default function Hero() {
             src={`${basePath}/images/hero-mobile.jpg`}
             alt=""
             className="h-[42vh] w-full object-cover object-top"
-            style={{ filter: "brightness(0.60) contrast(1.14)" }}
+            style={{ filter: "brightness(0.70) contrast(1.10)" }}
           />
           <div
             className="absolute inset-0"
             style={{
               background:
-                "linear-gradient(to bottom, rgba(8,12,10,0.4) 0%, transparent 25%, transparent 80%, rgba(8,12,10,0.3) 100%)",
+                "linear-gradient(to bottom, rgba(8,12,10,0.35) 0%, transparent 25%, transparent 80%, rgba(8,12,10,0.25) 100%)",
             }}
           />
         </div>
