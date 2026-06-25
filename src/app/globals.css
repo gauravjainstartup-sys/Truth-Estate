@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: #122620;
+  --color-background: #080c0a;
   --color-foreground: #ededed;
   --color-cream: #f5f0e8;
   --color-gold: #c9a96e;
   --color-gold-light: #d4b97a;
-  --color-green-dark: #122620;
+  --color-green-dark: #080c0a;
   --color-green-cta: #1e4d3a;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -16,4 +16,20 @@
 body {
   background: var(--color-green-dark);
   color: var(--foreground);
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  opacity: 0;
+  animation: fade-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
