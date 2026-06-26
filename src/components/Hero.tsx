@@ -167,17 +167,29 @@ export default function Hero() {
           style={{
             height: "140%",
             objectPosition: "center 8%",
-            filter: "brightness(0.66) contrast(1.08) saturate(1.03)",
+            filter: "brightness(0.52) contrast(1.10) saturate(1.02)",
           }}
         />
 
-        {/* Reveal scrim — dark behind the headline + CTAs, lifts over the
-            verdict document below so the "Proceed / 97%" photo anchors */}
+        {/* Depth blur — verdict document becomes an atmospheric artifact */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backdropFilter: "blur(2.5px)",
+            WebkitBackdropFilter: "blur(2.5px)",
+            maskImage:
+              "linear-gradient(to bottom, black 0%, black 55%, transparent 78%, transparent 100%)",
+            WebkitMaskImage:
+              "linear-gradient(to bottom, black 0%, black 55%, transparent 78%, transparent 100%)",
+          }}
+        />
+
+        {/* Dark scrim */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to bottom, rgba(4,6,5,0.82) 0%, rgba(4,6,5,0.78) 24%, rgba(4,6,5,0.74) 46%, rgba(4,6,5,0.68) 62%, rgba(4,6,5,0.50) 72%, rgba(4,6,5,0.40) 84%, rgba(4,6,5,0.44) 100%)",
+              "linear-gradient(to bottom, rgba(4,6,5,0.90) 0%, rgba(4,6,5,0.88) 30%, rgba(4,6,5,0.82) 52%, rgba(4,6,5,0.72) 68%, rgba(4,6,5,0.55) 82%, rgba(4,6,5,0.50) 100%)",
           }}
         />
 
@@ -186,12 +198,12 @@ export default function Hero() {
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 85% 80% at 50% 50%, transparent 45%, rgba(4,6,5,0.35) 100%)",
+              "radial-gradient(ellipse 85% 80% at 50% 50%, transparent 45%, rgba(4,6,5,0.40) 100%)",
           }}
         />
 
         {/* Content */}
-        <div className="relative z-10 flex h-full flex-col px-7 pt-10 pb-10">
+        <div className="relative z-10 flex h-full flex-col px-7 pt-10 pb-12">
           <nav className="animate-fade-up flex items-center justify-between">
             <Logo className="h-9 w-auto opacity-85" />
             <button className="flex flex-col gap-[6px]" aria-label="Open menu">
@@ -200,7 +212,7 @@ export default function Hero() {
             </button>
           </nav>
 
-          <div className="mt-[11vh] flex flex-col">
+          <div className="mt-[13vh] flex flex-col">
             <h1
               className="animate-fade-up font-serif text-[2.8rem] font-bold leading-[1.18] text-white"
               style={{ animationDelay: "100ms" }}
@@ -212,51 +224,46 @@ export default function Hero() {
               Living With.
             </h1>
 
-            <div style={{ height: "28px" }} />
+            <div style={{ height: "36px" }} />
 
             <p
-              className="animate-fade-up text-[15px] leading-[1.8] text-white/72"
-              style={{ animationDelay: "250ms", textShadow: "0 1px 12px rgba(4,6,5,0.5)" }}
+              className="animate-fade-up text-[15px] leading-[1.85] text-white/60"
+              style={{ animationDelay: "250ms", textShadow: "0 1px 14px rgba(4,6,5,0.6)" }}
             >
               Independent thinking for
               <br />
-              life&apos;s biggest real estate decisions.
+              India&apos;s biggest purchase.
             </p>
 
-            <div style={{ height: "20px" }} />
+            <div style={{ height: "36px" }} />
 
+            {/* Brand belief — editorial pull quote */}
             <div
               className="animate-fade-up"
-              style={{ animationDelay: "270ms" }}
+              style={{ animationDelay: "300ms" }}
             >
-              <div
-                style={{
-                  width: "32px",
-                  height: "1px",
-                  background: "#c9a96e",
-                }}
-              />
+              <div className="w-12 h-px bg-[#c9a96e]/50" />
+              <p
+                className="my-5 font-serif text-[15px] italic leading-[1.75] text-white/45"
+                style={{ textShadow: "0 1px 14px rgba(4,6,5,0.6)" }}
+              >
+                We recommend only what
+                <br />
+                we&apos;d buy ourselves.
+              </p>
+              <div className="w-12 h-px bg-[#c9a96e]/50" />
             </div>
 
-            <div style={{ height: "18px" }} />
+            <div style={{ height: "44px" }} />
 
-            <p
-              className="animate-fade-up font-serif text-[15px] italic leading-[1.7] text-white/55"
-              style={{ animationDelay: "300ms", textShadow: "0 1px 12px rgba(4,6,5,0.5)" }}
-            >
-              We recommend only what
-              <br />
-              we&apos;d buy ourselves.
-            </p>
-
-            {/* CTAs lifted to sit with the copy, above the verdict photo */}
-            <div className="mt-9 flex flex-col gap-4">
+            {/* CTAs */}
+            <div className="flex flex-col gap-5">
               <a
                 href="#"
-                className="animate-fade-up inline-block rounded-sm bg-[#1e6b45] px-9 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/30 transition-all duration-500 hover:bg-[#238c55]"
-                style={{ animationDelay: "350ms" }}
+                className="animate-fade-up inline-block self-start rounded-sm bg-[#1e6b45] px-9 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/30 transition-all duration-500 hover:bg-[#238c55]"
+                style={{ animationDelay: "380ms" }}
               >
-                Get Your Verdict
+                Start Your Private Office
               </a>
 
               <button
@@ -265,10 +272,10 @@ export default function Hero() {
                     .getElementById("editorial")
                     ?.scrollIntoView({ behavior: "smooth" })
                 }
-                className="animate-fade-up text-[13px] tracking-[0.04em] text-white/55"
-                style={{ animationDelay: "380ms" }}
+                className="animate-fade-up self-start text-[13px] tracking-[0.04em] text-white/45 transition-colors duration-500 hover:text-white/70"
+                style={{ animationDelay: "420ms" }}
               >
-                See How We Think &rarr;
+                Ask TruthGuide &rarr;
               </button>
             </div>
           </div>
