@@ -83,56 +83,28 @@ export default function Hero() {
             </div>
           </nav>
 
-          <div className="flex max-w-md flex-col lg:max-w-lg">
+          <div className="flex max-w-xl flex-col">
             <h1
-              className="animate-fade-up font-serif text-[4.5rem] font-bold leading-[1.15] text-white lg:text-[5.5rem]"
+              className="animate-fade-up font-serif text-[3.2rem] font-bold leading-[1.1] text-white lg:text-[3.9rem]"
               style={{ animationDelay: "100ms" }}
             >
               Decisions
               <br />
-              Worth
-              <br />
-              Living With.
+              Worth Living With.
             </h1>
 
-            <div style={{ height: "64px" }} />
+            <div style={{ height: "40px" }} />
 
             <p
-              className="animate-fade-up text-[16px] leading-[1.8] text-white/40"
+              className="animate-fade-up text-[16px] leading-[1.8] text-white/45"
               style={{ animationDelay: "300ms" }}
             >
-              Independent thinking for
+              Independent representation for
               <br />
               life&apos;s biggest real estate decisions.
             </p>
 
-            <div style={{ height: "28px" }} />
-
-            <div
-              className="animate-fade-up"
-              style={{ animationDelay: "320ms" }}
-            >
-              <div
-                style={{
-                  width: "40px",
-                  height: "1px",
-                  background: "#c9a96e",
-                }}
-              />
-            </div>
-
-            <div style={{ height: "24px" }} />
-
-            <p
-              className="animate-fade-up font-serif text-[17px] italic leading-[1.7] text-white/35"
-              style={{ animationDelay: "350ms" }}
-            >
-              We recommend only what
-              <br />
-              we&apos;d buy ourselves.
-            </p>
-
-            <div style={{ height: "64px" }} />
+            <div style={{ height: "44px" }} />
 
             <div
               className="animate-fade-up flex items-center gap-8"
@@ -153,7 +125,16 @@ export default function Hero() {
             </div>
           </div>
 
-          <div />
+          {/* Verdict-paper belief — captioned at the foot of the hero */}
+          <div
+            className="animate-fade-up max-w-md"
+            style={{ animationDelay: "560ms" }}
+          >
+            <div className="h-px w-full bg-white/15" />
+            <p className="mt-7 font-serif text-[17px] italic leading-[1.7] text-white/40">
+              &ldquo;We recommend only what we&apos;d buy ourselves.&rdquo;
+            </p>
+          </div>
         </div>
       </div>
 
@@ -202,56 +183,35 @@ export default function Hero() {
             </button>
           </nav>
 
-          <div className="mt-[10vh] flex flex-col">
+          <div className="mt-[9vh] flex flex-col">
             <h1
-              className="animate-fade-up font-serif text-[2.8rem] font-bold leading-[1.18] text-white"
+              className="animate-fade-up font-serif text-[2.3rem] font-bold leading-[1.16] text-white"
               style={{ animationDelay: "100ms" }}
             >
               Decisions
               <br />
-              Worth
-              <br />
-              Living With.
+              Worth Living With.
             </h1>
 
-            <div style={{ height: "28px" }} />
+            <div style={{ height: "26px" }} />
 
             <p
               className="animate-fade-up text-[15px] leading-[1.85] text-white/60"
               style={{ animationDelay: "250ms", textShadow: "0 1px 14px rgba(4,6,5,0.6)" }}
             >
-              Independent thinking for
+              Independent representation for
               <br />
-              India&apos;s biggest purchase.
+              life&apos;s biggest real estate decisions.
             </p>
 
-            <div style={{ height: "28px" }} />
-
-            {/* Brand belief — editorial pull quote */}
-            <div
-              className="animate-fade-up"
-              style={{ animationDelay: "300ms" }}
-            >
-              <div className="w-12 h-px bg-[#c9a96e]/50" />
-              <p
-                className="my-4 font-serif text-[15px] italic leading-[1.75] text-white/45"
-                style={{ textShadow: "0 1px 14px rgba(4,6,5,0.6)" }}
-              >
-                We recommend only what
-                <br />
-                we&apos;d buy ourselves.
-              </p>
-              <div className="w-12 h-px bg-[#c9a96e]/50" />
-            </div>
-
-            <div style={{ height: "32px" }} />
+            <div style={{ height: "34px" }} />
 
             {/* CTAs */}
             <div className="flex flex-col gap-4">
               <button
                 onClick={() => open()}
                 className="animate-fade-up inline-block self-start rounded-sm bg-[#1e6b45] px-9 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/30 transition-all duration-500 hover:bg-[#238c55]"
-                style={{ animationDelay: "380ms" }}
+                style={{ animationDelay: "350ms" }}
               >
                 {PRIMARY_CTA}
               </button>
@@ -259,11 +219,22 @@ export default function Hero() {
               <button
                 onClick={() => open("research")}
                 className="animate-fade-up self-start text-[13px] tracking-[0.04em] text-white/45 transition-colors duration-500 hover:text-white/70"
-                style={{ animationDelay: "420ms" }}
+                style={{ animationDelay: "400ms" }}
               >
                 Challenge TruthGuide &rarr;
               </button>
             </div>
+          </div>
+
+          {/* Verdict-paper belief — captioned at the foot of the hero */}
+          <div className="animate-fade-up mt-auto" style={{ animationDelay: "520ms" }}>
+            <div className="h-px w-full bg-white/15" />
+            <p
+              className="mt-6 font-serif text-[15px] italic leading-[1.7] text-white/55"
+              style={{ textShadow: "0 1px 14px rgba(4,6,5,0.6)" }}
+            >
+              &ldquo;We recommend only what we&apos;d buy ourselves.&rdquo;
+            </p>
           </div>
         </div>
       </div>
