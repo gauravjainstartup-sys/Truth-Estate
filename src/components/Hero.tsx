@@ -163,16 +163,16 @@ export default function Hero() {
           style={{
             height: "145%",
             objectPosition: "center top",
-            filter: "brightness(0.70) contrast(1.08) saturate(1.02)",
+            filter: "brightness(0.48) contrast(1.10) saturate(1.02)",
           }}
         />
 
-        {/* Text readability — dark top half, quick fade to reveal verdict */}
+        {/* Full-screen dark overlay — image as barely-there texture */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to bottom, rgba(4,6,5,0.95) 0%, rgba(4,6,5,0.93) 30%, rgba(4,6,5,0.82) 44%, rgba(4,6,5,0.50) 55%, rgba(4,6,5,0.18) 66%, rgba(4,6,5,0.05) 78%, transparent 88%)",
+              "linear-gradient(to bottom, rgba(4,6,5,0.97) 0%, rgba(4,6,5,0.95) 20%, rgba(4,6,5,0.90) 40%, rgba(4,6,5,0.92) 55%, rgba(4,6,5,0.93) 70%, rgba(4,6,5,0.96) 85%, rgba(4,6,5,0.98) 100%)",
           }}
         />
 
@@ -181,12 +181,12 @@ export default function Hero() {
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 85% 80% at 50% 50%, transparent 45%, rgba(4,6,5,0.30) 100%)",
+              "radial-gradient(ellipse 85% 80% at 50% 50%, transparent 45%, rgba(4,6,5,0.35) 100%)",
           }}
         />
 
         {/* Content */}
-        <div className="relative z-10 flex h-full flex-col px-7 pt-10">
+        <div className="relative z-10 flex h-full flex-col justify-between px-7 pt-10 pb-12">
           <nav className="animate-fade-up flex items-center justify-between">
             <Logo className="h-9 w-auto opacity-85" />
             <button className="flex flex-col gap-[6px]" aria-label="Open menu">
@@ -194,8 +194,6 @@ export default function Hero() {
               <span className="block h-[1.5px] w-6 bg-white/40" />
             </button>
           </nav>
-
-          <div style={{ height: "36px" }} />
 
           <div className="flex flex-col">
             <h1
@@ -245,9 +243,9 @@ export default function Hero() {
               <br />
               we&apos;d buy ourselves.
             </p>
+          </div>
 
-            <div style={{ height: "28px" }} />
-
+          <div className="flex flex-col gap-4">
             <div
               className="animate-fade-up"
               style={{ animationDelay: "350ms" }}
@@ -259,8 +257,6 @@ export default function Hero() {
                 Get Your Verdict
               </a>
             </div>
-
-            <div style={{ height: "14px" }} />
 
             <a
               href="#"
