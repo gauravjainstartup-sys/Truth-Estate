@@ -49,15 +49,15 @@ function setupDesktop(root: HTMLElement) {
       anticipatePin: 1,
       onUpdate: (self) => {
         if (railFill) gsap.set(railFill, { scaleY: self.progress });
+        // Show the scroll nudge only while resting at the very start
+        if (scrollNudge)
+          scrollNudge.style.opacity = self.progress > 0.02 ? "0" : "1";
       },
     },
   });
 
-  // ── Scroll nudge fades out immediately as user engages
-  if (scrollNudge) tl.to(scrollNudge, { opacity: 0, duration: 0.04 });
-
   // ── Recognition: emphasis transfers from "told" to "data"
-  tl.to({}, { duration: 0.03 });
+  tl.to({}, { duration: 0.05 });
   tl.to(told, { opacity: 0.22, duration: 0.13 });
   tl.to(dataLine, { opacity: 0.9, duration: 0.13 }, "<");
   tl.to({}, { duration: 0.04 });
@@ -260,27 +260,37 @@ export default function StorySection() {
             The one the data tells.
           </p>
 
-          {/* Scroll nudge — breathes gently, GSAP fades it out on first scroll */}
+          {/* Scroll nudge — visible & animated when Section 2 is at rest;
+              JS fades it out the moment the user scrolls (see onUpdate) */}
           <div
             data-el="scroll-nudge"
-            className="mt-14 flex flex-col items-center gap-[3px]"
-            style={{ opacity: 0.35 }}
+            className="mt-16 flex flex-col items-center"
+            style={{ opacity: 1, transition: "opacity 0.55s ease" }}
           >
+            <span className="mb-3 text-[10px] font-light uppercase tracking-[0.4em] text-[#1a1a1a]/45">
+              Scroll
+            </span>
             <svg
-              width="18"
-              height="10"
-              viewBox="0 0 18 10"
+              width="26"
+              height="22"
+              viewBox="0 0 26 22"
               fill="none"
-              style={{
-                animation: "nudge-down 2.6s ease-in-out infinite",
-              }}
+              style={{ animation: "nudge-down 1.7s ease-in-out infinite" }}
             >
               <path
-                d="M1 1L9 8L17 1"
+                d="M2 2L13 11L24 2"
                 stroke="#c9a96e"
-                strokeWidth="1"
+                strokeWidth="1.6"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+              />
+              <path
+                d="M2 11L13 20L24 11"
+                stroke="#c9a96e"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity="0.4"
               />
             </svg>
           </div>
