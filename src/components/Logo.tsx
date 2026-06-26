@@ -1,4 +1,10 @@
-export default function Logo({ className = "" }: { className?: string }) {
+export default function Logo({
+  className = "",
+  color = "white",
+}: {
+  className?: string;
+  color?: string;
+}) {
   return (
     <svg
       viewBox="0 0 420 80"
@@ -7,9 +13,9 @@ export default function Logo({ className = "" }: { className?: string }) {
       className={className}
     >
       {/* Window icon - 4 panes */}
-      <rect x="4" y="8" width="60" height="60" rx="1" stroke="white" strokeWidth="1.8" fill="none" />
-      <line x1="34" y1="8" x2="34" y2="68" stroke="white" strokeWidth="1.8" />
-      <line x1="4" y1="38" x2="64" y2="38" stroke="white" strokeWidth="1.8" />
+      <rect x="4" y="8" width="60" height="60" rx="1" stroke={color} strokeWidth="1.8" fill="none" />
+      <line x1="34" y1="8" x2="34" y2="68" stroke={color} strokeWidth="1.8" />
+      <line x1="4" y1="38" x2="64" y2="38" stroke={color} strokeWidth="1.8" />
       <circle cx="34" cy="38" r="3" fill="#c9a96e" />
 
       {/* Text via foreignObject for correct CSS font */}
@@ -30,7 +36,7 @@ export default function Logo({ className = "" }: { className?: string }) {
               fontWeight: 500,
               letterSpacing: "18px",
               lineHeight: 1,
-              color: "white",
+              color: color,
             }}
           >
             TRUTH
@@ -59,7 +65,7 @@ export default function Logo({ className = "" }: { className?: string }) {
                 fontWeight: 400,
                 letterSpacing: "14px",
                 lineHeight: 1,
-                color: "white",
+                color: color,
               }}
             >
               ESTATE
