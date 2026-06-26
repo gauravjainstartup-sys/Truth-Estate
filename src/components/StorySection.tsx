@@ -195,7 +195,7 @@ const verdictCard = (
       }}
       className="mt-8 text-[11px] font-light tracking-[0.35em] text-white/30 transition-colors duration-300 hover:text-white/55"
     >
-      Experience this intelligence ↓
+      Experience Independent Representation ↓
     </button>
   </div>
 );
