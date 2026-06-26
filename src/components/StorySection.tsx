@@ -35,6 +35,7 @@ function setupDesktop(root: HTMLElement) {
   const checks = evidence.querySelectorAll<HTMLElement>("[data-check]");
   const verdict = q("[data-verdict]")!;
   const railFill = q("[data-rail-fill]");
+  const scrollNudge = q('[data-el="scroll-nudge"]');
 
   const exitY = -Math.round(window.innerHeight * 0.42);
 
@@ -52,8 +53,11 @@ function setupDesktop(root: HTMLElement) {
     },
   });
 
+  // ── Scroll nudge fades out immediately as user engages
+  if (scrollNudge) tl.to(scrollNudge, { opacity: 0, duration: 0.04 });
+
   // ── Recognition: emphasis transfers from "told" to "data"
-  tl.to({}, { duration: 0.05 });
+  tl.to({}, { duration: 0.03 });
   tl.to(told, { opacity: 0.22, duration: 0.13 });
   tl.to(dataLine, { opacity: 0.9, duration: 0.13 }, "<");
   tl.to({}, { duration: 0.04 });
@@ -255,6 +259,31 @@ export default function StorySection() {
           >
             The one the data tells.
           </p>
+
+          {/* Scroll nudge — breathes gently, GSAP fades it out on first scroll */}
+          <div
+            data-el="scroll-nudge"
+            className="mt-14 flex flex-col items-center gap-[3px]"
+            style={{ opacity: 0.35 }}
+          >
+            <svg
+              width="18"
+              height="10"
+              viewBox="0 0 18 10"
+              fill="none"
+              style={{
+                animation: "nudge-down 2.6s ease-in-out infinite",
+              }}
+            >
+              <path
+                d="M1 1L9 8L17 1"
+                stroke="#c9a96e"
+                strokeWidth="1"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
 
           <div className="h-11 lg:h-14" />
 
