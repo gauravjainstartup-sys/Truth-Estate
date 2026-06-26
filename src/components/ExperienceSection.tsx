@@ -520,7 +520,7 @@ function TruthGuideSection() {
 
         <div data-r className="mt-14" style={{ opacity: 0, transform: "translateY(12px)" }}>
           <button className="group inline-flex items-center gap-2 text-[0.85rem] font-light tracking-[0.16em] text-[#1a1a1a]/75 transition-colors duration-300 hover:text-[#1a1a1a]">
-            Challenge TruthGuide
+            Challenge Our Thinking
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
           </button>
         </div>
