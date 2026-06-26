@@ -112,30 +112,9 @@ function Storytelling() {
   useEffect(() => {
     const root = ref.current;
     if (!root) return;
-    const isDesktop = window.matchMedia("(min-width: 768px)").matches;
-
-    if (!isDesktop) {
-      const els = root.querySelectorAll<HTMLElement>("[data-sm]");
-      els.forEach((el) => {
-        el.style.transition = "opacity 1s ease, transform 1s ease";
-      });
-      const obs = new IntersectionObserver(
-        (entries) =>
-          entries.forEach((e) => {
-            if (e.isIntersecting) {
-              const el = e.target as HTMLElement;
-              el.style.opacity = "1";
-              el.style.transform = "translateY(0)";
-              obs.unobserve(el);
-            }
-          }),
-        { threshold: 0.4 }
-      );
-      els.forEach((el) => obs.observe(el));
-      return () => obs.disconnect();
-    }
 
     gsap.registerPlugin(ScrollTrigger);
+    ScrollTrigger.config({ ignoreMobileResize: true });
     const pin = root.querySelector<HTMLElement>("[data-s5-pin]");
     if (!pin) return;
 
@@ -181,62 +160,31 @@ function Storytelling() {
 
   return (
     <div ref={ref} id="experience">
-      {/* Desktop — pinned */}
-      <div data-s5-pin className="relative hidden h-svh overflow-hidden md:block">
+      {/* One pinned, scrubbed narrative — desktop and mobile alike */}
+      <div data-s5-pin className="relative block h-svh overflow-hidden">
         <div data-s5-bg className="absolute inset-0 bg-[#0a0a0a]" />
         <div className="absolute inset-0 z-10">
           {/* The tension — three premises stacking */}
           <div className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center">
-            <p data-s5-d className="font-serif text-[1.7rem] font-light leading-[1.3] text-white/45 lg:text-[2.1rem]" style={{ opacity: 0 }}>
+            <p data-s5-d className="font-serif text-[1.3rem] font-light leading-[1.3] text-white/45 md:text-[1.7rem] lg:text-[2.1rem]" style={{ opacity: 0 }}>
               Every developer has a sales office.
             </p>
-            <p data-s5-d className="mt-7 font-serif text-[1.7rem] font-light leading-[1.3] text-white/45 lg:text-[2.1rem]" style={{ opacity: 0 }}>
+            <p data-s5-d className="mt-6 font-serif text-[1.3rem] font-light leading-[1.3] text-white/45 md:mt-7 md:text-[1.7rem] lg:text-[2.1rem]" style={{ opacity: 0 }}>
               Every broker has an incentive.
             </p>
-            <p data-s5-d className="mt-16 font-serif text-[3.2rem] font-medium leading-[1.06] text-white/90 lg:text-[4.4rem]" style={{ opacity: 0, transform: "translateY(16px)" }}>
+            <p data-s5-d className="mt-12 font-serif text-[2.3rem] font-medium leading-[1.06] text-white/90 md:mt-16 md:text-[3.2rem] lg:text-[4.4rem]" style={{ opacity: 0, transform: "translateY(16px)" }}>
               Every buyer&hellip;
             </p>
-            <p data-s5-d className="mt-5 font-serif text-[2.3rem] font-light italic leading-[1.2] text-white/50 lg:text-[3rem]" style={{ opacity: 0, transform: "translateY(16px)" }}>
+            <p data-s5-d className="mt-5 font-serif text-[1.7rem] font-light italic leading-[1.2] text-white/50 md:text-[2.3rem] lg:text-[3rem]" style={{ opacity: 0, transform: "translateY(16px)" }}>
               &hellip;is left alone.
             </p>
           </div>
           {/* The turn */}
           <div data-s5-i className="absolute inset-0 flex items-center justify-center px-8 text-center" style={{ opacity: 0, transform: "translateY(18px)" }}>
-            <p className="font-serif text-[2.8rem] font-medium leading-[1.1] text-[#1a1a1a] lg:text-[3.8rem]">
+            <p className="font-serif text-[2.1rem] font-medium leading-[1.1] text-[#1a1a1a] md:text-[2.8rem] lg:text-[3.8rem]">
               We decided to change that.
             </p>
           </div>
-        </div>
-      </div>
-
-      {/* Mobile — natural scroll: each premise gets its own scroll moment */}
-      <div className="md:hidden">
-        <div className="bg-[#0a0a0a] text-center">
-          <div className="flex min-h-[70svh] items-center justify-center px-10">
-            <p data-sm className="font-serif text-[1.35rem] font-light leading-[1.4] text-white/45" style={{ opacity: 0, transform: "translateY(16px)" }}>
-              Every developer has a sales office.
-            </p>
-          </div>
-          <div className="flex min-h-[70svh] items-center justify-center px-10">
-            <p data-sm className="font-serif text-[1.35rem] font-light leading-[1.4] text-white/45" style={{ opacity: 0, transform: "translateY(16px)" }}>
-              Every broker has an incentive.
-            </p>
-          </div>
-          <div className="flex min-h-[85svh] flex-col items-center justify-center px-10">
-            <p data-sm className="font-serif text-[2.4rem] font-medium leading-[1.08] text-white/90" style={{ opacity: 0, transform: "translateY(16px)" }}>
-              Every buyer&hellip;
-            </p>
-            <div className="h-[8vh]" />
-            <p data-sm className="font-serif text-[1.7rem] font-light italic leading-[1.2] text-white/50" style={{ opacity: 0, transform: "translateY(16px)" }}>
-              &hellip;is left alone.
-            </p>
-          </div>
-        </div>
-        <div className="h-[25vh] bg-gradient-to-b from-[#0a0a0a] to-[#F5F0E8]" />
-        <div className="flex min-h-[60svh] items-center justify-center bg-[#F5F0E8] px-10 text-center">
-          <p data-sm className="font-serif text-[2.2rem] font-medium leading-[1.12] text-[#1a1a1a]" style={{ opacity: 0, transform: "translateY(16px)" }}>
-            We decided to change that.
-          </p>
         </div>
       </div>
     </div>
