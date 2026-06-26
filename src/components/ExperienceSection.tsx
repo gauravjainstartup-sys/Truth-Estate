@@ -207,28 +207,32 @@ function Storytelling() {
         </div>
       </div>
 
-      {/* Mobile — natural scroll */}
+      {/* Mobile — natural scroll: each premise gets its own scroll moment */}
       <div className="md:hidden">
-        <div className="bg-[#0a0a0a] px-8 py-[16vh] text-center">
-          <p data-sm className="font-serif text-[1.6rem] font-light leading-[1.3] text-white/45" style={{ opacity: 0, transform: "translateY(16px)" }}>
-            Every developer has a sales office.
-          </p>
-          <div className="h-[13vh]" />
-          <p data-sm className="font-serif text-[1.6rem] font-light leading-[1.3] text-white/45" style={{ opacity: 0, transform: "translateY(16px)" }}>
-            Every broker has an incentive.
-          </p>
-          <div className="h-[16vh]" />
-          <p data-sm className="font-serif text-[2.8rem] font-medium leading-[1.08] text-white/90" style={{ opacity: 0, transform: "translateY(16px)" }}>
-            Every buyer&hellip;
-          </p>
-          <div className="h-[6vh]" />
-          <p data-sm className="font-serif text-[2.1rem] font-light italic leading-[1.2] text-white/50" style={{ opacity: 0, transform: "translateY(16px)" }}>
-            &hellip;is left alone.
-          </p>
+        <div className="bg-[#0a0a0a] text-center">
+          <div className="flex min-h-[70svh] items-center justify-center px-10">
+            <p data-sm className="font-serif text-[1.35rem] font-light leading-[1.4] text-white/45" style={{ opacity: 0, transform: "translateY(16px)" }}>
+              Every developer has a sales office.
+            </p>
+          </div>
+          <div className="flex min-h-[70svh] items-center justify-center px-10">
+            <p data-sm className="font-serif text-[1.35rem] font-light leading-[1.4] text-white/45" style={{ opacity: 0, transform: "translateY(16px)" }}>
+              Every broker has an incentive.
+            </p>
+          </div>
+          <div className="flex min-h-[85svh] flex-col items-center justify-center px-10">
+            <p data-sm className="font-serif text-[2.4rem] font-medium leading-[1.08] text-white/90" style={{ opacity: 0, transform: "translateY(16px)" }}>
+              Every buyer&hellip;
+            </p>
+            <div className="h-[8vh]" />
+            <p data-sm className="font-serif text-[1.7rem] font-light italic leading-[1.2] text-white/50" style={{ opacity: 0, transform: "translateY(16px)" }}>
+              &hellip;is left alone.
+            </p>
+          </div>
         </div>
-        <div className="h-[18vh] bg-gradient-to-b from-[#0a0a0a] to-[#F5F0E8]" />
-        <div className="bg-[#F5F0E8] px-8 py-[18vh] text-center">
-          <p data-sm className="font-serif text-[2.6rem] font-medium leading-[1.12] text-[#1a1a1a]" style={{ opacity: 0, transform: "translateY(16px)" }}>
+        <div className="h-[25vh] bg-gradient-to-b from-[#0a0a0a] to-[#F5F0E8]" />
+        <div className="flex min-h-[60svh] items-center justify-center bg-[#F5F0E8] px-10 text-center">
+          <p data-sm className="font-serif text-[2.2rem] font-medium leading-[1.12] text-[#1a1a1a]" style={{ opacity: 0, transform: "translateY(16px)" }}>
             We decided to change that.
           </p>
         </div>
@@ -255,45 +259,45 @@ function BuyersOffice() {
   useStaggerReveal(ref, "[data-step]", 150);
 
   return (
-    <div ref={ref} className="bg-[#F5F0E8] px-6 pb-[16vh] pt-[16vh] md:px-8">
+    <div ref={ref} className="bg-[#F5F0E8] px-6 pb-[12vh] pt-[12vh] md:px-8 md:pb-[16vh] md:pt-[16vh]">
       <div className="mx-auto max-w-2xl text-center">
         <span data-r className="block text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]/70" style={{ opacity: 0, transform: "translateY(16px)" }}>
           Truth Private
         </span>
 
-        <h2 data-r className="mt-8 font-serif text-[3rem] font-medium leading-[1.06] text-[#1a1a1a] md:text-[3.8rem] lg:text-[4.6rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
+        <h2 data-r className="mt-6 font-serif text-[2.2rem] font-medium leading-[1.08] text-[#1a1a1a] md:mt-8 md:text-[3.8rem] lg:text-[4.6rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
           Your Independent
           <br />
           Buyer&apos;s Office.
         </h2>
 
-        <div data-r className="mx-auto mt-12 max-w-md space-y-1.5" style={{ opacity: 0, transform: "translateY(16px)" }}>
-          <p className="text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/45">Not another broker.</p>
-          <p className="text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/45">Not another property portal.</p>
-          <p className="text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/45">Not another opinion.</p>
+        <div data-r className="mx-auto mt-10 max-w-md space-y-1.5 md:mt-12" style={{ opacity: 0, transform: "translateY(16px)" }}>
+          <p className="text-[0.85rem] font-light leading-relaxed text-[#1a1a1a]/45 md:text-[0.95rem]">Not another broker.</p>
+          <p className="text-[0.85rem] font-light leading-relaxed text-[#1a1a1a]/45 md:text-[0.95rem]">Not another property portal.</p>
+          <p className="text-[0.85rem] font-light leading-relaxed text-[#1a1a1a]/45 md:text-[0.95rem]">Not another opinion.</p>
         </div>
 
-        <p data-r className="mx-auto mt-8 max-w-md font-serif text-[1.15rem] font-light leading-relaxed text-[#1a1a1a]/70 md:text-[1.3rem]" style={{ opacity: 0, transform: "translateY(16px)" }}>
+        <p data-r className="mx-auto mt-8 max-w-md font-serif text-[1.05rem] font-light leading-relaxed text-[#1a1a1a]/70 md:text-[1.3rem]" style={{ opacity: 0, transform: "translateY(16px)" }}>
           An independent office that represents
           <br className="hidden md:block" /> only one side.{" "}
           <span className="italic text-[#1a1a1a]">Yours.</span>
         </p>
 
         {/* The journey */}
-        <div className="mx-auto mt-24 flex max-w-md flex-col items-center">
+        <div className="mx-auto mt-16 flex max-w-md flex-col items-center md:mt-24">
           {journey.map((step, i) => {
             const isLast = i === journey.length - 1;
             return (
               <div key={step} className="flex w-full flex-col items-center">
                 {i > 0 && (
-                  <div data-step className="my-5 h-8 w-px bg-[#c9a96e]/30" style={{ opacity: 0, transform: "translateY(8px)" }} />
+                  <div data-step className="my-4 h-7 w-px bg-[#c9a96e]/30 md:my-5 md:h-8" style={{ opacity: 0, transform: "translateY(8px)" }} />
                 )}
                 <p
                   data-step
                   className={
                     isLast
-                      ? "font-serif text-[1.5rem] font-medium leading-snug text-[#1a1a1a] md:text-[1.7rem]"
-                      : "font-serif text-[1.15rem] font-light leading-snug text-[#1a1a1a]/65 md:text-[1.3rem]"
+                      ? "font-serif text-[1.25rem] font-medium leading-snug text-[#1a1a1a] md:text-[1.7rem]"
+                      : "font-serif text-[1rem] font-light leading-snug text-[#1a1a1a]/65 md:text-[1.3rem]"
                   }
                   style={{ opacity: 0, transform: "translateY(10px)" }}
                 >
@@ -304,8 +308,8 @@ function BuyersOffice() {
           })}
         </div>
 
-        <div data-r className="mt-20" style={{ opacity: 0, transform: "translateY(12px)" }}>
-          <button className="group inline-flex items-center gap-2 border-b border-[#c9a96e]/30 pb-1.5 font-serif text-[1rem] font-light tracking-[0.1em] text-[#1a1a1a] transition-colors duration-300 hover:border-[#c9a96e]/70 md:text-[1.1rem]">
+        <div data-r className="mt-14 md:mt-20" style={{ opacity: 0, transform: "translateY(12px)" }}>
+          <button className="group inline-flex items-center gap-2 border-b border-[#c9a96e]/30 pb-1.5 font-serif text-[0.9rem] font-light tracking-[0.1em] text-[#1a1a1a] transition-colors duration-300 hover:border-[#c9a96e]/70 md:text-[1.1rem]">
             Start Your Private Office
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
           </button>
@@ -334,15 +338,15 @@ function IntelligenceEngine() {
   useStaggerReveal(ref, "[data-eng]", 170);
 
   return (
-    <div ref={ref} className="bg-[#F5F0E8] px-6 pb-[16vh] pt-[16vh] md:px-8">
+    <div ref={ref} className="bg-[#F5F0E8] px-6 pb-[12vh] pt-[12vh] md:px-8 md:pb-[16vh] md:pt-[16vh]">
       <div className="mx-auto max-w-2xl text-center">
-        <h2 data-r className="font-serif text-[2.8rem] font-medium leading-[1.08] text-[#1a1a1a] md:text-[3.4rem] lg:text-[4rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
+        <h2 data-r className="font-serif text-[2rem] font-medium leading-[1.1] text-[#1a1a1a] md:text-[3.4rem] lg:text-[4rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
           Every recommendation
           <br />
           is earned.
         </h2>
 
-        <div className="mx-auto mt-20 flex max-w-xs flex-col items-center">
+        <div className="mx-auto mt-14 flex max-w-xs flex-col items-center md:mt-20">
           {engineLayers.map((label, i) => {
             const isLast = i === engineLayers.length - 1;
             const isHero = label === "Truth Private";
@@ -375,7 +379,7 @@ function IntelligenceEngine() {
           })}
         </div>
 
-        <p data-r className="mt-20 font-serif text-[1rem] font-light italic leading-relaxed text-[#1a1a1a]/40 md:text-[1.15rem]" style={{ opacity: 0, transform: "translateY(12px)" }}>
+        <p data-r className="mt-14 font-serif text-[0.9rem] font-light italic leading-relaxed text-[#1a1a1a]/40 md:mt-20 md:text-[1.15rem]" style={{ opacity: 0, transform: "translateY(12px)" }}>
           Technology doesn&apos;t replace judgement.
           <br />
           It strengthens it.
@@ -448,27 +452,27 @@ function TruthGuideSection() {
   }, []);
 
   return (
-    <div ref={ref} className="bg-[#F5F0E8] px-6 pb-[16vh] pt-[16vh] md:px-8">
+    <div ref={ref} className="bg-[#F5F0E8] px-6 pb-[12vh] pt-[12vh] md:px-8 md:pb-[16vh] md:pt-[16vh]">
       <div className="mx-auto max-w-2xl text-center">
         <span data-r className="block text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]/70" style={{ opacity: 0, transform: "translateY(16px)" }}>
           TruthGuide
         </span>
 
-        <h2 data-r className="mt-8 font-serif text-[2.6rem] font-medium leading-[1.1] text-[#1a1a1a] md:text-[3.2rem] lg:text-[3.8rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
+        <h2 data-r className="mt-6 font-serif text-[1.9rem] font-medium leading-[1.12] text-[#1a1a1a] md:mt-8 md:text-[3.2rem] lg:text-[3.8rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
           Every recommendation
           <br />
           can be questioned.
         </h2>
 
-        <p data-r className="mx-auto mt-8 max-w-md text-[1rem] font-light leading-relaxed text-[#1a1a1a]/50 md:text-[1.05rem]" style={{ opacity: 0, transform: "translateY(16px)" }}>
+        <p data-r className="mx-auto mt-6 max-w-md text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/50 md:mt-8 md:text-[1.05rem]" style={{ opacity: 0, transform: "translateY(16px)" }}>
           Trust comes from transparency. Every recommendation should be explainable.
         </p>
 
         {/* Conversational interface */}
-        <div data-r data-type-trigger className="mx-auto mt-16 max-w-lg text-left" style={{ opacity: 0, transform: "translateY(16px)" }}>
+        <div data-r data-type-trigger className="mx-auto mt-10 max-w-lg text-left md:mt-16" style={{ opacity: 0, transform: "translateY(16px)" }}>
           <div className="flex items-center gap-3 border-b border-[#1a1a1a]/12 pb-3">
             <span
-              className="font-serif text-[1.05rem] italic text-[#1a1a1a]/50"
+              className="font-serif text-[0.92rem] italic text-[#1a1a1a]/50 md:text-[1.05rem]"
               style={{ opacity: promptVisible ? 1 : 0, transition: "opacity 0.4s ease" }}
             >
               {guidePrompts[promptIdx]}
@@ -478,7 +482,7 @@ function TruthGuideSection() {
 
           {typed && (
             <div className="mt-8">
-              <p className="text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/65">
+              <p className="text-[0.84rem] font-light leading-[1.7] text-[#1a1a1a]/65 md:text-[0.92rem]">
                 {typed}
                 {!answered && (
                   <span className="ml-0.5 inline-block h-[0.9em] w-px bg-[#c9a96e]/60 align-middle" style={{ animation: "caret-blink 1.1s ease-in-out infinite" }} />
@@ -533,23 +537,23 @@ function TruthIntelligenceSection() {
   useReveal(ref, 0.2);
 
   return (
-    <div ref={ref} className="bg-[#F5F0E8] px-6 pb-[16vh] pt-[10vh] md:px-8">
+    <div ref={ref} className="bg-[#F5F0E8] px-6 pb-[10vh] pt-[10vh] md:px-8 md:pb-[16vh]">
       <div className="mx-auto max-w-xl text-center">
         <span data-r className="block text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]/60" style={{ opacity: 0, transform: "translateY(16px)" }}>
           Truth Intelligence
         </span>
 
-        <h2 data-r className="mt-8 font-serif text-[2.3rem] font-medium leading-[1.12] text-[#1a1a1a]/85 md:text-[2.9rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
+        <h2 data-r className="mt-6 font-serif text-[1.8rem] font-medium leading-[1.15] text-[#1a1a1a]/85 md:mt-8 md:text-[2.9rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
           Prefer to investigate
           <br />
           before trusting us?
         </h2>
 
-        <p data-r className="mt-7 font-serif text-[1.6rem] font-light leading-snug text-[#1a1a1a] md:text-[1.9rem]" style={{ opacity: 0, transform: "translateY(16px)" }}>
+        <p data-r className="mt-5 font-serif text-[1.35rem] font-light leading-snug text-[#1a1a1a] md:mt-7 md:text-[1.9rem]" style={{ opacity: 0, transform: "translateY(16px)" }}>
           Good. So do we.
         </p>
 
-        <p data-r className="mt-12 text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/45" style={{ opacity: 0, transform: "translateY(14px)" }}>
+        <p data-r className="mt-10 text-[0.85rem] font-light leading-relaxed text-[#1a1a1a]/45 md:mt-12 md:text-[0.95rem]" style={{ opacity: 0, transform: "translateY(14px)" }}>
           Independent project intelligence.
         </p>
 
@@ -562,14 +566,14 @@ function TruthIntelligenceSection() {
             "Real ROI.",
             "Opportunity analysis.",
           ].map((t) => (
-            <li key={t} className="font-serif text-[1rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.1rem]">
+            <li key={t} className="font-serif text-[0.9rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.1rem]">
               {t}
             </li>
           ))}
         </ul>
 
-        <div data-r className="mt-12" style={{ opacity: 0, transform: "translateY(12px)" }}>
-          <button className="group inline-flex items-center gap-2 text-[0.85rem] font-light tracking-[0.16em] text-[#1a1a1a]/60 transition-colors duration-300 hover:text-[#1a1a1a]">
+        <div data-r className="mt-10 md:mt-12" style={{ opacity: 0, transform: "translateY(12px)" }}>
+          <button className="group inline-flex items-center gap-2 text-[0.82rem] font-light tracking-[0.16em] text-[#1a1a1a]/60 transition-colors duration-300 hover:text-[#1a1a1a] md:text-[0.85rem]">
             Explore Reports
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
           </button>
@@ -594,24 +598,24 @@ function CoverageSection() {
   useReveal(ref, 0.15);
 
   return (
-    <div ref={ref} className="bg-[#0a0a0a] px-6 pb-[14vh] pt-[14vh] md:px-8">
+    <div ref={ref} className="bg-[#0a0a0a] px-6 pb-[10vh] pt-[10vh] md:px-8 md:pb-[14vh] md:pt-[14vh]">
       <div className="mx-auto max-w-3xl text-center">
         <span data-r className="block text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]/50" style={{ opacity: 0, transform: "translateY(16px)" }}>
           Coverage
         </span>
 
-        <h2 data-r className="mt-8 font-serif text-[2.8rem] font-medium leading-[1.1] text-white/90 md:text-[3.4rem] lg:text-[4rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
+        <h2 data-r className="mt-6 font-serif text-[2.2rem] font-medium leading-[1.1] text-white/90 md:mt-8 md:text-[3.4rem] lg:text-[4rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
           Built for Gurugram.
         </h2>
-        <p data-r className="mt-6 font-serif text-[1.4rem] font-light leading-[1.3] text-white/40 md:text-[1.7rem]" style={{ opacity: 0, transform: "translateY(14px)" }}>
+        <p data-r className="mt-4 font-serif text-[1.1rem] font-light leading-[1.3] text-white/40 md:mt-6 md:text-[1.7rem]" style={{ opacity: 0, transform: "translateY(14px)" }}>
           Because expertise
           <br />
           comes before scale.
         </p>
 
         {/* Abstract coverage pattern */}
-        <div data-r className="mx-auto mt-16 flex items-center justify-center" style={{ opacity: 0 }}>
-          <svg width="180" height="180" viewBox="0 0 180 180" fill="none" className="text-[#c9a96e]">
+        <div data-r className="mx-auto mt-10 flex items-center justify-center md:mt-16" style={{ opacity: 0 }}>
+          <svg width="140" height="140" viewBox="0 0 180 180" fill="none" className="text-[#c9a96e] md:h-[180px] md:w-[180px]">
             <circle cx="90" cy="90" r="18" stroke="currentColor" strokeWidth="0.5" opacity="0.5" />
             <circle cx="90" cy="90" r="50" stroke="currentColor" strokeWidth="0.5" opacity="0.3" />
             <circle cx="90" cy="90" r="82" stroke="currentColor" strokeWidth="0.5" opacity="0.15" strokeDasharray="4 6" />
@@ -628,13 +632,13 @@ function CoverageSection() {
         </div>
 
         {/* Metrics */}
-        <div data-r className="mx-auto mt-16 grid max-w-lg grid-cols-2 gap-12 md:max-w-2xl md:grid-cols-4" style={{ opacity: 0, transform: "translateY(16px)" }}>
+        <div data-r className="mx-auto mt-10 grid max-w-xs grid-cols-2 gap-8 md:mt-16 md:max-w-2xl md:grid-cols-4 md:gap-12" style={{ opacity: 0, transform: "translateY(16px)" }}>
           {metrics.map((m) => (
             <div key={m.label} className="flex flex-col items-center">
-              <span className="font-serif text-[2.6rem] font-light leading-none text-white/85 md:text-[3rem]">
+              <span className="font-serif text-[2rem] font-light leading-none text-white/85 md:text-[3rem]">
                 <Counter end={m.value} suffix={m.suffix} />
               </span>
-              <span className="mt-3 text-[10px] font-light uppercase tracking-[0.3em] text-white/30">
+              <span className="mt-2 text-[9px] font-light uppercase tracking-[0.25em] text-white/30 md:mt-3 md:text-[10px] md:tracking-[0.3em]">
                 {m.label}
               </span>
             </div>
@@ -653,9 +657,9 @@ function ClosingSection() {
   useReveal(ref, 0.2);
 
   return (
-    <div ref={ref} className="bg-[#0a0a0a] px-6 pb-[16vh] pt-[12vh] md:px-8">
+    <div ref={ref} className="bg-[#0a0a0a] px-6 pb-[14vh] pt-[10vh] md:px-8 md:pb-[16vh] md:pt-[12vh]">
       <div className="mx-auto max-w-2xl text-center">
-        <h2 data-r className="font-serif text-[2.6rem] font-medium leading-[1.14] text-white/90 md:text-[3.4rem] lg:text-[4.2rem]" style={{ opacity: 0, transform: "translateY(24px)" }}>
+        <h2 data-r className="font-serif text-[2rem] font-medium leading-[1.16] text-white/90 md:text-[3.4rem] lg:text-[4.2rem]" style={{ opacity: 0, transform: "translateY(24px)" }}>
           Life&apos;s biggest property decision
           <br />
           <span className="font-light italic text-white/55">deserves</span>
@@ -663,26 +667,26 @@ function ClosingSection() {
           an independent buyer&apos;s office.
         </h2>
 
-        <div data-r className="mt-16 flex flex-col items-center gap-8" style={{ opacity: 0, transform: "translateY(16px)" }}>
-          <button className="group inline-flex items-center gap-2 border-b border-[#c9a96e]/30 pb-1.5 font-serif text-[1rem] font-light tracking-[0.12em] text-[#c9a96e] transition-colors duration-300 hover:border-[#c9a96e]/60 md:text-[1.15rem]">
+        <div data-r className="mt-12 flex flex-col items-center gap-6 md:mt-16 md:gap-8" style={{ opacity: 0, transform: "translateY(16px)" }}>
+          <button className="group inline-flex items-center gap-2 border-b border-[#c9a96e]/30 pb-1.5 font-serif text-[0.9rem] font-light tracking-[0.12em] text-[#c9a96e] transition-colors duration-300 hover:border-[#c9a96e]/60 md:text-[1.15rem]">
             Start Your Private Office
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
           </button>
 
-          <button className="group inline-flex items-center gap-2 text-[0.85rem] font-light tracking-[0.14em] text-white/50 transition-colors duration-300 hover:text-white/75">
+          <button className="group inline-flex items-center gap-2 text-[0.8rem] font-light tracking-[0.14em] text-white/50 transition-colors duration-300 hover:text-white/75 md:text-[0.85rem]">
             Ask TruthGuide
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
           </button>
 
-          <button className="text-[0.8rem] font-light tracking-[0.12em] text-white/25 transition-colors duration-300 hover:text-white/45">
+          <button className="text-[0.75rem] font-light tracking-[0.12em] text-white/25 transition-colors duration-300 hover:text-white/45 md:text-[0.8rem]">
             Explore Reports &rarr;
           </button>
         </div>
 
         {/* The thesis — bookend to where this chapter began */}
-        <div data-r className="mt-28" style={{ opacity: 0, transform: "translateY(16px)" }}>
-          <div className="mx-auto mb-8 h-px w-12 bg-[#c9a96e]/20" />
-          <p className="font-serif text-[0.95rem] font-light italic leading-[1.9] text-white/30 md:text-[1.05rem]">
+        <div data-r className="mt-20 md:mt-28" style={{ opacity: 0, transform: "translateY(16px)" }}>
+          <div className="mx-auto mb-6 h-px w-12 bg-[#c9a96e]/20 md:mb-8" />
+          <p className="font-serif text-[0.82rem] font-light italic leading-[1.9] text-white/30 md:text-[1.05rem]">
             Every developer has a sales office.
             <br />
             Every buyer deserves a buyer&apos;s office.
@@ -704,7 +708,7 @@ export default function ExperienceSection() {
       <IntelligenceEngine />
       <TruthGuideSection />
       <TruthIntelligenceSection />
-      <div className="h-[30vh] bg-gradient-to-b from-[#F5F0E8] to-[#0a0a0a]" />
+      <div className="h-[20vh] bg-gradient-to-b from-[#F5F0E8] to-[#0a0a0a] md:h-[30vh]" />
       <CoverageSection />
       <ClosingSection />
     </section>
