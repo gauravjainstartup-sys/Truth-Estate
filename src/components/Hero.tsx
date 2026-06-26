@@ -142,7 +142,7 @@ export default function Hero() {
                 Get Your Verdict
               </a>
               <a
-                href="#"
+                href="#editorial"
                 className="text-[13px] tracking-[0.04em] text-white/55 transition-colors duration-500 hover:text-white/80"
               >
                 See How We Think &rarr;
@@ -259,7 +259,7 @@ export default function Hero() {
             </div>
 
             <a
-              href="#"
+              href="#editorial"
               className="animate-fade-up text-[13px] tracking-[0.04em] text-white/55"
               style={{ animationDelay: "380ms" }}
             >
