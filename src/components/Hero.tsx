@@ -64,17 +64,17 @@ export default function Hero() {
         <div className="relative z-10 flex h-full flex-col justify-between py-14 pl-20 lg:py-20 lg:pl-28">
           <nav className="animate-fade-up flex items-center pr-12 lg:pr-20">
             <Logo className="h-10 w-auto opacity-75 lg:h-[3rem]" />
-            <div className="ml-auto hidden items-center gap-20 text-[10px] font-light tracking-[0.18em] text-white/20 lg:flex">
-              <a href="#" className="transition-colors duration-500 hover:text-white/40">
+            <div className="ml-auto hidden items-center gap-20 text-[10px] font-light tracking-[0.18em] text-white/50 lg:flex">
+              <a href="#" className="transition-colors duration-500 hover:text-white/80">
                 Projects
               </a>
-              <a href="#" className="transition-colors duration-500 hover:text-white/40">
+              <a href="#" className="transition-colors duration-500 hover:text-white/80">
                 Compare
               </a>
-              <a href="#" className="transition-colors duration-500 hover:text-white/40">
+              <a href="#" className="transition-colors duration-500 hover:text-white/80">
                 TruthGuide
               </a>
-              <a href="#" className="transition-colors duration-500 hover:text-white/40">
+              <a href="#" className="transition-colors duration-500 hover:text-white/80">
                 Private Office
               </a>
             </div>
