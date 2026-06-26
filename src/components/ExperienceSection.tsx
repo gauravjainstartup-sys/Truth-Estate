@@ -310,7 +310,7 @@ function BuyersOffice() {
 
         <div data-r className="mt-14 md:mt-20" style={{ opacity: 0, transform: "translateY(12px)" }}>
           <button className="group inline-flex items-center gap-2 border-b border-[#c9a96e]/30 pb-1.5 font-serif text-[0.9rem] font-light tracking-[0.1em] text-[#1a1a1a] transition-colors duration-300 hover:border-[#c9a96e]/70 md:text-[1.1rem]">
-            Start Your Private Office
+            Become a Private Client
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
           </button>
         </div>
@@ -520,7 +520,7 @@ function TruthGuideSection() {
 
         <div data-r className="mt-14" style={{ opacity: 0, transform: "translateY(12px)" }}>
           <button className="group inline-flex items-center gap-2 text-[0.85rem] font-light tracking-[0.16em] text-[#1a1a1a]/75 transition-colors duration-300 hover:text-[#1a1a1a]">
-            Ask TruthGuide
+            Challenge TruthGuide
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
           </button>
         </div>
@@ -669,12 +669,12 @@ function ClosingSection() {
 
         <div data-r className="mt-12 flex flex-col items-center gap-6 md:mt-16 md:gap-8" style={{ opacity: 0, transform: "translateY(16px)" }}>
           <button className="group inline-flex items-center gap-2 border-b border-[#c9a96e]/30 pb-1.5 font-serif text-[0.9rem] font-light tracking-[0.12em] text-[#c9a96e] transition-colors duration-300 hover:border-[#c9a96e]/60 md:text-[1.15rem]">
-            Start Your Private Office
+            Become a Private Client
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
           </button>
 
           <button className="group inline-flex items-center gap-2 text-[0.8rem] font-light tracking-[0.14em] text-white/50 transition-colors duration-300 hover:text-white/75 md:text-[0.85rem]">
-            Ask TruthGuide
+            Challenge TruthGuide
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
           </button>
 
