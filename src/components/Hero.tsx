@@ -167,29 +167,20 @@ export default function Hero() {
           style={{
             height: "140%",
             objectPosition: "center 8%",
-            filter: "brightness(0.52) contrast(1.10) saturate(1.02)",
+            /* Blur applied directly to the image — reliable on iOS Safari,
+               unlike masked backdrop-filter. Keeps the document soft. */
+            filter: "brightness(0.42) contrast(1.06) saturate(1.0) blur(2px)",
           }}
         />
 
-        {/* Depth blur — verdict document becomes an atmospheric artifact */}
-        <div
-          className="absolute inset-0"
-          style={{
-            backdropFilter: "blur(2.5px)",
-            WebkitBackdropFilter: "blur(2.5px)",
-            maskImage:
-              "linear-gradient(to bottom, black 0%, black 55%, transparent 78%, transparent 100%)",
-            WebkitMaskImage:
-              "linear-gradient(to bottom, black 0%, black 55%, transparent 78%, transparent 100%)",
-          }}
-        />
-
-        {/* Dark scrim */}
+        {/* Dark scrim — heavy enough that the verdict document reads only
+            as faint atmospheric texture, never a competing focal point,
+            even on bright OLED displays */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to bottom, rgba(4,6,5,0.90) 0%, rgba(4,6,5,0.88) 30%, rgba(4,6,5,0.82) 52%, rgba(4,6,5,0.72) 68%, rgba(4,6,5,0.55) 82%, rgba(4,6,5,0.50) 100%)",
+              "linear-gradient(to bottom, rgba(4,6,5,0.96) 0%, rgba(4,6,5,0.95) 38%, rgba(4,6,5,0.92) 58%, rgba(4,6,5,0.88) 74%, rgba(4,6,5,0.78) 88%, rgba(4,6,5,0.66) 100%)",
           }}
         />
 
