@@ -574,7 +574,7 @@ function TruthIntelligenceSection() {
 
         <div data-r className="mt-10 md:mt-12" style={{ opacity: 0, transform: "translateY(12px)" }}>
           <button className="group inline-flex items-center gap-2 text-[0.82rem] font-light tracking-[0.16em] text-[#1a1a1a]/60 transition-colors duration-300 hover:text-[#1a1a1a] md:text-[0.85rem]">
-            Explore Reports
+            Investigate Independently
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
           </button>
         </div>
