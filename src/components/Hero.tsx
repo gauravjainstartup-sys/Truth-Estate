@@ -165,19 +165,19 @@ export default function Hero() {
           alt=""
           className="absolute left-0 top-0 w-full object-cover"
           style={{
-            height: "135%",
-            objectPosition: "center 18%",
+            height: "140%",
+            objectPosition: "center 8%",
             filter: "brightness(0.66) contrast(1.08) saturate(1.03)",
           }}
         />
 
         {/* Reveal scrim — dark behind the headline + CTAs, lifts over the
-            verdict document so the "Proceed / 97%" photo reads through */}
+            verdict document below so the "Proceed / 97%" photo anchors */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to bottom, rgba(4,6,5,0.82) 0%, rgba(4,6,5,0.76) 20%, rgba(4,6,5,0.70) 38%, rgba(4,6,5,0.64) 54%, rgba(4,6,5,0.42) 68%, rgba(4,6,5,0.46) 79%, rgba(4,6,5,0.78) 90%, rgba(4,6,5,0.90) 100%)",
+              "linear-gradient(to bottom, rgba(4,6,5,0.82) 0%, rgba(4,6,5,0.78) 24%, rgba(4,6,5,0.74) 46%, rgba(4,6,5,0.68) 62%, rgba(4,6,5,0.50) 72%, rgba(4,6,5,0.40) 84%, rgba(4,6,5,0.44) 100%)",
           }}
         />
 
@@ -191,7 +191,7 @@ export default function Hero() {
         />
 
         {/* Content */}
-        <div className="relative z-10 flex h-full flex-col justify-between px-7 pt-10 pb-12">
+        <div className="relative z-10 flex h-full flex-col px-7 pt-10 pb-10">
           <nav className="animate-fade-up flex items-center justify-between">
             <Logo className="h-9 w-auto opacity-85" />
             <button className="flex flex-col gap-[6px]" aria-label="Open menu">
@@ -200,7 +200,7 @@ export default function Hero() {
             </button>
           </nav>
 
-          <div className="flex flex-col">
+          <div className="mt-[11vh] flex flex-col">
             <h1
               className="animate-fade-up font-serif text-[2.8rem] font-bold leading-[1.18] text-white"
               style={{ animationDelay: "100ms" }}
@@ -248,32 +248,29 @@ export default function Hero() {
               <br />
               we&apos;d buy ourselves.
             </p>
-          </div>
 
-          <div className="flex flex-col gap-4 pb-1">
-            <div
-              className="animate-fade-up"
-              style={{ animationDelay: "350ms" }}
-            >
+            {/* CTAs lifted to sit with the copy, above the verdict photo */}
+            <div className="mt-9 flex flex-col gap-4">
               <a
                 href="#"
-                className="inline-block rounded-sm bg-[#1e6b45] px-9 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/30 transition-all duration-500 hover:bg-[#238c55]"
+                className="animate-fade-up inline-block rounded-sm bg-[#1e6b45] px-9 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/30 transition-all duration-500 hover:bg-[#238c55]"
+                style={{ animationDelay: "350ms" }}
               >
                 Get Your Verdict
               </a>
-            </div>
 
-            <button
-              onClick={() =>
-                document
-                  .getElementById("editorial")
-                  ?.scrollIntoView({ behavior: "smooth" })
-              }
-              className="animate-fade-up text-[13px] tracking-[0.04em] text-white/55"
-              style={{ animationDelay: "380ms" }}
-            >
-              See How We Think &rarr;
-            </button>
+              <button
+                onClick={() =>
+                  document
+                    .getElementById("editorial")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
+                className="animate-fade-up text-[13px] tracking-[0.04em] text-white/55"
+                style={{ animationDelay: "380ms" }}
+              >
+                See How We Think &rarr;
+              </button>
+            </div>
           </div>
         </div>
       </div>
