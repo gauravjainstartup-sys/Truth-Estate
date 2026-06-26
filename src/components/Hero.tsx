@@ -141,12 +141,16 @@ export default function Hero() {
               >
                 Get Your Verdict
               </a>
-              <a
-                href="#editorial"
+              <button
+                onClick={() =>
+                  document
+                    .getElementById("editorial")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
                 className="text-[13px] tracking-[0.04em] text-white/55 transition-colors duration-500 hover:text-white/80"
               >
                 See How We Think &rarr;
-              </a>
+              </button>
             </div>
           </div>
 
@@ -258,13 +262,17 @@ export default function Hero() {
               </a>
             </div>
 
-            <a
-              href="#editorial"
+            <button
+              onClick={() =>
+                document
+                  .getElementById("editorial")
+                  ?.scrollIntoView({ behavior: "smooth" })
+              }
               className="animate-fade-up text-[13px] tracking-[0.04em] text-white/55"
               style={{ animationDelay: "380ms" }}
             >
               See How We Think &rarr;
-            </a>
+            </button>
           </div>
         </div>
       </div>
