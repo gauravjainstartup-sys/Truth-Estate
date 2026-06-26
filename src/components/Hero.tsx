@@ -145,22 +145,22 @@ export default function Hero() {
           alt=""
           className="absolute left-0 top-0 w-full object-cover"
           style={{
-            height: "140%",
-            objectPosition: "center 8%",
-            /* Blur applied directly to the image — reliable on iOS Safari,
-               unlike masked backdrop-filter. Keeps the document soft. */
-            filter: "brightness(0.42) contrast(1.06) saturate(1.0) blur(2px)",
+            /* Scale tuned so the verdict page lands in the gap between the
+               secondary CTA and the foot quote */
+            height: "122%",
+            objectPosition: "center center",
+            filter: "brightness(0.58) contrast(1.05) saturate(1.0) blur(0.6px)",
           }}
         />
 
-        {/* Dark scrim — heavy enough that the verdict document reads only
-            as faint atmospheric texture, never a competing focal point,
-            even on bright OLED displays */}
+        {/* Scrim — dark over the headline/CTAs up top, lifts through the
+            middle so the verdict page reads clearly in the gap, then settles
+            again behind the foot quote */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to bottom, rgba(4,6,5,0.96) 0%, rgba(4,6,5,0.95) 38%, rgba(4,6,5,0.92) 58%, rgba(4,6,5,0.88) 74%, rgba(4,6,5,0.78) 88%, rgba(4,6,5,0.66) 100%)",
+              "linear-gradient(to bottom, rgba(4,6,5,0.95) 0%, rgba(4,6,5,0.93) 46%, rgba(4,6,5,0.82) 54%, rgba(4,6,5,0.44) 64%, rgba(4,6,5,0.28) 74%, rgba(4,6,5,0.34) 84%, rgba(4,6,5,0.58) 94%, rgba(4,6,5,0.74) 100%)",
           }}
         />
 
