@@ -184,6 +184,19 @@ const verdictCard = (
       <br />
       independent due diligence.
     </p>
+
+    <div className="mt-14 h-px w-10 bg-[#c9a96e]/20" />
+
+    <button
+      onClick={() => {
+        document
+          .getElementById("experience")
+          ?.scrollIntoView({ behavior: "smooth" });
+      }}
+      className="mt-8 text-[11px] font-light tracking-[0.35em] text-white/30 transition-colors duration-300 hover:text-white/55"
+    >
+      Experience this intelligence ↓
+    </button>
   </div>
 );
 
