@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useJourney } from "./journey/JourneyProvider";
-import { PRIMARY_CTA } from "@/lib/journey";
+import { ADVISORS, PRIMARY_CTA } from "@/lib/journey";
 
 /* ── Shared reveal: any [data-r] child fades up on intersect ── */
 function useReveal(ref: React.RefObject<HTMLElement | null>, threshold = 0.25) {
@@ -192,72 +192,259 @@ function Storytelling() {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   SECTION 6 — YOUR INDEPENDENT BUYER'S OFFICE
+   SECTION 6 — INDEPENDENT REPRESENTATION  (the flagship)
+   From first thought to final signature — one quiet vertical spine.
+   Not a process. Watching an independent advisor think.
    ════════════════════════════════════════════════════════════════ */
-const journey: string[][] = [
-  ["You tell us what you're looking for."],
-  ["We investigate independently."],
-  ["We challenge assumptions."],
-  ["We recommend only", "what we'd buy ourselves."],
-  ["If you choose,", "we represent your interests."],
-];
+function Stage({
+  kicker,
+  heading,
+  headingClass,
+  children,
+}: {
+  kicker: string;
+  heading: React.ReactNode;
+  headingClass?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div data-stage className="relative pl-9 md:pl-14" style={{ opacity: 0.16, willChange: "opacity" }}>
+      <span className="absolute left-0 top-[7px] flex h-3 w-3 items-center justify-center rounded-full border border-[#1a1a1a]/20 bg-[#F5F0E8]">
+        <span
+          data-dotcore
+          className="h-[5px] w-[5px] rounded-full"
+          style={{ background: "rgba(201,169,110,0.3)", transition: "all 0.45s ease" }}
+        />
+      </span>
+      <p className="text-[10px] font-light uppercase tracking-[0.4em] text-[#c9a96e]">{kicker}</p>
+      <h3 className={headingClass ?? "mt-4 font-serif text-[1.7rem] font-medium leading-[1.12] text-[#1a1a1a] md:text-[2.2rem]"}>
+        {heading}
+      </h3>
+      {children}
+    </div>
+  );
+}
 
-function BuyersOffice() {
-  const ref = useRef<HTMLDivElement>(null);
+function IndependentRepresentation() {
   const { open } = useJourney();
-  useReveal(ref, 0.18);
-  useStaggerReveal(ref, "[data-step]", 150);
+  const rootRef = useRef<HTMLElement>(null);
+  const spineRef = useRef<HTMLDivElement>(null);
+  const fillRef = useRef<HTMLDivElement>(null);
+  const advisor = ADVISORS[0];
+
+  useEffect(() => {
+    const root = rootRef.current;
+    const spine = spineRef.current;
+    const fill = fillRef.current;
+    if (!root || !spine || !fill) return;
+    const stages = Array.from(root.querySelectorAll<HTMLElement>("[data-stage]"));
+
+    let ticking = false;
+    const update = () => {
+      ticking = false;
+      const vh = window.innerHeight;
+      const sr = spine.getBoundingClientRect();
+      const fillH = Math.max(0, Math.min(vh * 0.5 - sr.top, sr.height));
+      fill.style.height = `${fillH}px`;
+      const fillBottom = sr.top + fillH;
+      const focus = vh * 0.4;
+
+      stages.forEach((el) => {
+        const r = el.getBoundingClientRect();
+        const anchor = r.top + 14;
+        const op =
+          anchor >= focus
+            ? Math.max(0.16, Math.min(1, 1 - (anchor - focus) / (vh * 0.5))) // upcoming, fading in
+            : Math.max(0.42, Math.min(1, 1 - (focus - anchor) / (vh * 1.3))); // passed, stays visible
+        el.style.opacity = op.toFixed(3);
+
+        const core = el.querySelector<HTMLElement>("[data-dotcore]");
+        if (core) {
+          const active = fillBottom >= r.top + 13;
+          core.style.background = active ? "#c9a96e" : "rgba(201,169,110,0.3)";
+          core.style.transform = active ? "scale(1.3)" : "scale(1)";
+        }
+      });
+    };
+
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    update();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
+
+  const dna: [string, number][] = [
+    ["Budget", 72],
+    ["Timeline", 46],
+    ["Risk Appetite", 58],
+    ["Lifestyle", 80],
+    ["Investment Goals", 64],
+  ];
 
   return (
-    <div ref={ref} className="bg-[#F5F0E8] px-6 pb-[12vh] pt-[12vh] md:px-8 md:pb-[16vh] md:pt-[16vh]">
-      <div className="mx-auto max-w-2xl text-center">
-        <div data-r className="mx-auto h-px w-full max-w-md bg-[#1a1a1a]/12" style={{ opacity: 0, transform: "translateY(16px)" }} />
-
-        <h2 data-r className="mt-12 font-serif text-[2.2rem] font-medium leading-[1.08] text-[#1a1a1a] md:mt-16 md:text-[3.8rem] lg:text-[4.6rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
-          Your Independent
+    <section ref={rootRef} className="bg-[#F5F0E8] px-6 pb-[14vh] pt-[14vh] text-[#1a1a1a] md:px-8 md:pb-[20vh] md:pt-[20vh]">
+      {/* Header */}
+      <div className="mx-auto max-w-2xl">
+        <h2 className="font-serif text-[2.5rem] font-medium leading-[1.05] text-[#1a1a1a] md:text-[4rem] lg:text-[4.6rem]">
+          Independent
           <br />
-          Buyer&apos;s Office.
+          Representation.
         </h2>
+        <p className="mt-7 font-serif text-[1.25rem] font-light italic leading-snug text-[#1a1a1a]/60 md:text-[1.7rem]">
+          From first thought to final signature.
+        </p>
+        <p className="mt-6 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/50 md:text-[1.05rem]">
+          Every great property decision begins with understanding&mdash;not selling.
+        </p>
+      </div>
 
-        {/* The journey — what working with us actually feels like */}
-        <div className="mx-auto mt-14 flex max-w-md flex-col items-center md:mt-20">
-          {journey.map((step, i) => {
-            const isLast = i === journey.length - 1;
-            return (
-              <div key={step[0]} className="flex w-full flex-col items-center">
-                {i > 0 && (
-                  <div data-step className="my-4 h-7 w-px bg-[#c9a96e]/30 md:my-5 md:h-8" style={{ opacity: 0, transform: "translateY(8px)" }} />
-                )}
-                <p
-                  data-step
-                  className={
-                    isLast
-                      ? "font-serif text-[1.25rem] font-medium leading-snug text-[#1a1a1a] md:text-[1.7rem]"
-                      : "font-serif text-[1rem] font-light leading-snug text-[#1a1a1a]/65 md:text-[1.3rem]"
-                  }
-                  style={{ opacity: 0, transform: "translateY(10px)" }}
-                >
-                  {step.map((line, j) => (
-                    <span key={j} className="block">
-                      {line}
-                    </span>
-                  ))}
+      {/* The spine */}
+      <div ref={spineRef} className="relative mx-auto mt-[16vh] max-w-2xl md:mt-[20vh]">
+        <div className="absolute bottom-1 left-[5.5px] top-1 w-px bg-[#1a1a1a]/12" />
+        <div ref={fillRef} className="absolute left-[5.5px] top-1 w-px bg-[#c9a96e]" style={{ height: 0 }} />
+
+        <div className="flex flex-col gap-[16vh] md:gap-[20vh]">
+          <Stage kicker="Start" heading="Tell us what you're looking for.">
+            <p className="mt-5 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.05rem]">
+              Your goals, priorities and timeline become the starting point&mdash;not inventory.
+            </p>
+          </Stage>
+
+          <Stage kicker="Understand" heading="Buyer DNA">
+            <p className="mt-5 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.05rem]">
+              We understand what matters most to you before recommending anything.
+            </p>
+            <div className="mt-8 max-w-md space-y-3.5">
+              {dna.map(([label, w]) => (
+                <div key={label} className="flex items-center gap-4">
+                  <span className="w-32 shrink-0 text-[10px] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/45">
+                    {label}
+                  </span>
+                  <span className="relative h-px flex-1 bg-[#1a1a1a]/12">
+                    <span className="absolute left-0 top-0 h-px bg-[#c9a96e]" style={{ width: `${w}%` }} />
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Stage>
+
+          <Stage kicker="Investigate" heading="Truth Intelligence">
+            <p className="mt-6 font-serif text-[1.05rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.25rem]">
+              Projects&nbsp;&middot;&nbsp;Developers&nbsp;&middot;&nbsp;Construction&nbsp;&middot;&nbsp;Legal&nbsp;&middot;&nbsp;Pricing&nbsp;&middot;&nbsp;Location
+            </p>
+            <p className="mt-6 font-serif text-[1.1rem] font-light italic text-[#1a1a1a]/75 md:text-[1.3rem]">
+              Every recommendation begins with evidence.
+            </p>
+          </Stage>
+
+          <Stage kicker="Challenge" heading="TruthGuide">
+            <p className="mt-5 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.05rem]">
+              Ask anything. Question every recommendation. Every answer is transparent and evidence-backed.
+            </p>
+            <div className="mt-8 max-w-md border-l border-[#c9a96e]/35 pl-6">
+              <p className="font-serif text-[1.2rem] font-light italic leading-snug text-[#1a1a1a]/75 md:text-[1.4rem]">
+                &ldquo;Should I buy DLF Arbour?&rdquo;
+              </p>
+              <div className="mt-5 flex flex-col gap-3 text-[0.85rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[0.92rem]">
+                <p>
+                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#c9a96e]">Evidence</span>
+                  92% on-time delivery &middot; ~8% below comparable GCE towers
+                </p>
+                <p>
+                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#c9a96e]">Confidence</span>
+                  High
+                </p>
+                <p>
+                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#c9a96e]">Sources</span>
+                  Haryana RERA &middot; DLF delivery records
                 </p>
               </div>
-            );
-          })}
+            </div>
+          </Stage>
+
+          <Stage kicker="Consult" heading="Independent Consultation">
+            <p className="mt-5 max-w-md font-serif text-[1.05rem] font-light leading-relaxed text-[#1a1a1a]/60 md:text-[1.2rem]">
+              Technology builds confidence.
+              <br />
+              Human judgement builds conviction.
+            </p>
+            <div className="mt-8 max-w-sm rounded-xl border border-[#1a1a1a]/12 bg-white/40 p-6">
+              <div className="flex items-center gap-4">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#c9a96e]/50 bg-[#c9a96e]/10 font-serif text-[1rem] font-medium text-[#1a1a1a]/70">
+                  {advisor.initials}
+                </span>
+                <div>
+                  <p className="font-serif text-[1.2rem] font-medium text-[#1a1a1a]">{advisor.name}</p>
+                  <p className="mt-0.5 text-[0.78rem] font-light text-[#1a1a1a]/50">{advisor.experience} of experience</p>
+                </div>
+              </div>
+              <div className="mt-5 space-y-0.5 text-[0.85rem] font-light text-[#1a1a1a]/60">
+                <p>Luxury Residential Specialist</p>
+                <p className="text-[#1a1a1a]/40">Independent Advisor</p>
+              </div>
+              <button
+                onClick={() => open()}
+                className="mt-6 w-full rounded-sm bg-[#1e6b45] px-6 py-3 text-[12px] font-medium tracking-[0.08em] text-white transition-colors duration-500 hover:bg-[#238c55]"
+              >
+                Book Consultation
+              </button>
+            </div>
+          </Stage>
+
+          {/* Climax */}
+          <Stage
+            kicker="Represent"
+            heading="Independent Representation"
+            headingClass="mt-4 font-serif text-[2.4rem] font-medium leading-[1.04] text-[#1a1a1a] md:text-[3.6rem]"
+          >
+            <p className="mt-6 font-serif text-[1.5rem] font-light leading-[1.4] text-[#1a1a1a]/70 md:text-[2.1rem]">
+              Only if you choose.
+              <br />
+              We represent one side.{" "}
+              <span className="italic text-[#1a1a1a]">Yours.</span>
+            </p>
+          </Stage>
         </div>
+      </div>
 
-        <div data-r className="mx-auto mt-14 h-px w-full max-w-md bg-[#1a1a1a]/12 md:mt-20" style={{ opacity: 0, transform: "translateY(16px)" }} />
-
-        <div data-r className="mt-12 md:mt-16" style={{ opacity: 0, transform: "translateY(12px)" }}>
-          <button onClick={() => open()} className="group inline-flex items-center gap-2 border-b border-[#c9a96e]/30 pb-1.5 font-serif text-[0.9rem] font-light tracking-[0.1em] text-[#1a1a1a] transition-colors duration-300 hover:border-[#c9a96e]/70 md:text-[1.1rem]">
+      {/* Final */}
+      <div
+        data-stage
+        className="mx-auto mt-[18vh] max-w-2xl text-center md:mt-[24vh]"
+        style={{ opacity: 0.16, willChange: "opacity" }}
+      >
+        <h2 className="font-serif text-[2.2rem] font-medium leading-[1.14] text-[#1a1a1a] md:text-[3.6rem]">
+          One confident decision.
+          <br />
+          <span className="font-light text-[#1a1a1a]/55">Backed by independent judgement.</span>
+        </h2>
+        <div className="mt-12 flex flex-col items-center gap-6 md:mt-14">
+          <button
+            onClick={() => open()}
+            className="rounded-sm bg-[#1e6b45] px-10 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/10 transition-colors duration-500 hover:bg-[#238c55]"
+          >
             {PRIMARY_CTA}
+          </button>
+          <button
+            onClick={() => open("research")}
+            className="group inline-flex items-center gap-2 text-[12px] font-light tracking-[0.14em] text-[#1a1a1a]/55 transition-colors duration-300 hover:text-[#1a1a1a]"
+          >
+            Challenge TruthGuide
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
           </button>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -649,7 +836,7 @@ export default function ExperienceSection() {
   return (
     <section>
       <Storytelling />
-      <BuyersOffice />
+      <IndependentRepresentation />
       <IntelligenceEngine />
       <TruthGuideSection />
       <TruthIntelligenceSection />
