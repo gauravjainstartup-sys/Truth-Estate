@@ -165,18 +165,19 @@ export default function Hero() {
           alt=""
           className="absolute left-0 top-0 w-full object-cover"
           style={{
-            height: "145%",
-            objectPosition: "center top",
-            filter: "brightness(0.48) contrast(1.10) saturate(1.02)",
+            height: "135%",
+            objectPosition: "center 18%",
+            filter: "brightness(0.66) contrast(1.08) saturate(1.03)",
           }}
         />
 
-        {/* Full-screen dark overlay — image as barely-there texture */}
+        {/* Reveal scrim — dark behind the headline + CTAs, lifts over the
+            verdict document so the "Proceed / 97%" photo reads through */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to bottom, rgba(4,6,5,0.97) 0%, rgba(4,6,5,0.95) 20%, rgba(4,6,5,0.90) 40%, rgba(4,6,5,0.92) 55%, rgba(4,6,5,0.93) 70%, rgba(4,6,5,0.96) 85%, rgba(4,6,5,0.98) 100%)",
+              "linear-gradient(to bottom, rgba(4,6,5,0.82) 0%, rgba(4,6,5,0.76) 20%, rgba(4,6,5,0.70) 38%, rgba(4,6,5,0.64) 54%, rgba(4,6,5,0.42) 68%, rgba(4,6,5,0.46) 79%, rgba(4,6,5,0.78) 90%, rgba(4,6,5,0.90) 100%)",
           }}
         />
 
@@ -214,8 +215,8 @@ export default function Hero() {
             <div style={{ height: "28px" }} />
 
             <p
-              className="animate-fade-up text-[15px] leading-[1.8] text-white/60"
-              style={{ animationDelay: "250ms" }}
+              className="animate-fade-up text-[15px] leading-[1.8] text-white/72"
+              style={{ animationDelay: "250ms", textShadow: "0 1px 12px rgba(4,6,5,0.5)" }}
             >
               Independent thinking for
               <br />
@@ -240,8 +241,8 @@ export default function Hero() {
             <div style={{ height: "18px" }} />
 
             <p
-              className="animate-fade-up font-serif text-[15px] italic leading-[1.7] text-white/45"
-              style={{ animationDelay: "300ms" }}
+              className="animate-fade-up font-serif text-[15px] italic leading-[1.7] text-white/55"
+              style={{ animationDelay: "300ms", textShadow: "0 1px 12px rgba(4,6,5,0.5)" }}
             >
               We recommend only what
               <br />
@@ -249,7 +250,7 @@ export default function Hero() {
             </p>
           </div>
 
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 pb-1">
             <div
               className="animate-fade-up"
               style={{ animationDelay: "350ms" }}
