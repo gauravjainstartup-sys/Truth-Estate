@@ -196,7 +196,7 @@ export default function StorySection() {
   }, []);
 
   return (
-    <section ref={ref}>
+    <section ref={ref} id="editorial">
       {/* ════════ DESKTOP — one continuous pinned narrative ════════ */}
       <div data-editorial className="relative hidden h-svh overflow-hidden md:block">
         {/* Background paper → desk */}
