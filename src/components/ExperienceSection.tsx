@@ -30,6 +30,36 @@ function useReveal(ref: React.RefObject<HTMLElement | null>, threshold = 0.25) {
   }, [ref, threshold]);
 }
 
+/* ── Staggered reveal: cascade a list of items on intersect ── */
+function useStaggerReveal(
+  ref: React.RefObject<HTMLElement | null>,
+  selector: string,
+  stepMs = 160
+) {
+  useEffect(() => {
+    const root = ref.current;
+    if (!root) return;
+    const items = root.querySelectorAll<HTMLElement>(selector);
+    items.forEach((el, i) => {
+      el.style.transition = `opacity 0.9s ease ${i * stepMs}ms, transform 0.9s ease ${i * stepMs}ms`;
+    });
+    const obs = new IntersectionObserver(
+      (entries) =>
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            const el = e.target as HTMLElement;
+            el.style.opacity = "1";
+            el.style.transform = "translateY(0)";
+            obs.unobserve(el);
+          }
+        }),
+      { threshold: 0.15 }
+    );
+    items.forEach((el) => obs.observe(el));
+    return () => obs.disconnect();
+  }, [ref, selector, stepMs]);
+}
+
 /* ── Animated counter ── */
 function Counter({ end, suffix = "" }: { end: number; suffix?: string }) {
   const [count, setCount] = useState(0);
@@ -70,8 +100,9 @@ function Counter({ end, suffix = "" }: { end: number; suffix?: string }) {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   SECTION 5 — STORYTELLING
-   "You have two choices … Or … Let us do it for you."
+   SECTION 5 — THE TENSION
+   "Every developer has a sales office. Every broker has an incentive.
+    Every buyer… is left alone."  →  "We decided to change that."
    ════════════════════════════════════════════════════════════════ */
 function Storytelling() {
   const ref = useRef<HTMLDivElement>(null);
@@ -96,7 +127,7 @@ function Storytelling() {
               obs.unobserve(el);
             }
           }),
-        { threshold: 0.35 }
+        { threshold: 0.4 }
       );
       els.forEach((el) => obs.observe(el));
       return () => obs.disconnect();
@@ -108,36 +139,35 @@ function Storytelling() {
 
     const bg = pin.querySelector<HTMLElement>("[data-s5-bg]")!;
     const dark = pin.querySelectorAll<HTMLElement>("[data-s5-d]");
-    const ivory = pin.querySelectorAll<HTMLElement>("[data-s5-i]");
+    const ivory = pin.querySelector<HTMLElement>("[data-s5-i]")!;
 
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: pin,
         start: "top top",
-        end: "+=350%",
+        end: "+=420%",
         pin: true,
         scrub: 0.6,
         anticipatePin: 1,
       },
     });
 
-    tl.to(dark[0], { opacity: 1, duration: 0.08 });
+    // The three premises stack, building the argument.
+    tl.to(dark[0], { opacity: 1, duration: 0.06 });
     tl.to({}, { duration: 0.06 });
-    tl.to(dark[1], { opacity: 1, y: 0, duration: 0.08 });
+    tl.to(dark[1], { opacity: 1, duration: 0.06 });
     tl.to({}, { duration: 0.06 });
-    tl.to(dark[2], { opacity: 1, duration: 0.07 });
-    tl.to({}, { duration: 0.1 });
+    tl.to(dark[2], { opacity: 1, y: 0, duration: 0.07 }); // Every buyer…
+    tl.to({}, { duration: 0.14 }); // the long pause
+    tl.to(dark[3], { opacity: 1, y: 0, duration: 0.07 }); // …is left alone.
+    tl.to({}, { duration: 0.16 }); // let it land
 
-    dark.forEach((el) => tl.to(el, { opacity: 0, duration: 0.06 }, "<"));
-    tl.to(bg, { backgroundColor: "#F5F0E8", duration: 0.13 });
+    // Everything dissolves; warmth arrives.
+    tl.to(dark, { opacity: 0, duration: 0.08 });
+    tl.to(bg, { backgroundColor: "#F5F0E8", duration: 0.11 }, "<+=0.02");
     tl.to({}, { duration: 0.03 });
-
-    tl.to(ivory[0], { opacity: 1, y: 0, duration: 0.09 });
-    tl.to({}, { duration: 0.1 });
-    tl.to(ivory[0], { opacity: 0, duration: 0.06 });
-
-    tl.to(ivory[1], { opacity: 1, y: 0, duration: 0.09 });
-    tl.to({}, { duration: 0.08 });
+    tl.to(ivory, { opacity: 1, y: 0, duration: 0.1 });
+    tl.to({}, { duration: 0.14 });
 
     const st = tl.scrollTrigger;
     ScrollTrigger.refresh();
@@ -152,55 +182,54 @@ function Storytelling() {
       {/* Desktop — pinned */}
       <div data-s5-pin className="relative hidden h-svh overflow-hidden md:block">
         <div data-s5-bg className="absolute inset-0 bg-[#0a0a0a]" />
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-8 text-center">
-          <p data-s5-d className="font-serif text-[2.8rem] font-medium leading-[1.15] text-white/90 lg:text-[3.6rem]" style={{ opacity: 0 }}>
-            You have two choices.
-          </p>
-          <div className="h-10" />
-          <p data-s5-d className="font-serif text-[2rem] font-light leading-[1.3] text-white/55 lg:text-[2.4rem]" style={{ opacity: 0, transform: "translateY(12px)" }}>
-            Spend weeks researching.
-          </p>
-          <div className="h-10" />
-          <p data-s5-d className="font-serif text-[3.4rem] font-medium leading-[1.1] text-white/80 lg:text-[4.2rem]" style={{ opacity: 0 }}>
-            Or&hellip;
-          </p>
-
-          <p data-s5-i className="absolute font-serif text-[3rem] font-medium leading-[1.12] text-[#1a1a1a] lg:text-[4rem]" style={{ opacity: 0, transform: "translateY(16px)" }}>
-            Let us do it for you.
-          </p>
-          <p data-s5-i className="absolute max-w-2xl font-serif text-[2rem] font-light leading-[1.35] text-[#1a1a1a]/75 lg:text-[2.6rem]" style={{ opacity: 0, transform: "translateY(16px)" }}>
-            The biggest property decisions
-            <br />
-            deserve independent representation.
-          </p>
+        <div className="absolute inset-0 z-10">
+          {/* The tension — three premises stacking */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center">
+            <p data-s5-d className="font-serif text-[1.7rem] font-light leading-[1.3] text-white/45 lg:text-[2.1rem]" style={{ opacity: 0 }}>
+              Every developer has a sales office.
+            </p>
+            <p data-s5-d className="mt-7 font-serif text-[1.7rem] font-light leading-[1.3] text-white/45 lg:text-[2.1rem]" style={{ opacity: 0 }}>
+              Every broker has an incentive.
+            </p>
+            <p data-s5-d className="mt-16 font-serif text-[3.2rem] font-medium leading-[1.06] text-white/90 lg:text-[4.4rem]" style={{ opacity: 0, transform: "translateY(16px)" }}>
+              Every buyer&hellip;
+            </p>
+            <p data-s5-d className="mt-5 font-serif text-[2.3rem] font-light italic leading-[1.2] text-white/50 lg:text-[3rem]" style={{ opacity: 0, transform: "translateY(16px)" }}>
+              &hellip;is left alone.
+            </p>
+          </div>
+          {/* The turn */}
+          <div data-s5-i className="absolute inset-0 flex items-center justify-center px-8 text-center" style={{ opacity: 0, transform: "translateY(18px)" }}>
+            <p className="font-serif text-[2.8rem] font-medium leading-[1.1] text-[#1a1a1a] lg:text-[3.8rem]">
+              We decided to change that.
+            </p>
+          </div>
         </div>
       </div>
 
       {/* Mobile — natural scroll */}
       <div className="md:hidden">
-        <div className="bg-[#0a0a0a] px-8 py-[18vh] text-center">
-          <p data-sm className="font-serif text-[2.4rem] font-medium leading-[1.15] text-white/90" style={{ opacity: 0, transform: "translateY(16px)" }}>
-            You have two choices.
+        <div className="bg-[#0a0a0a] px-8 py-[16vh] text-center">
+          <p data-sm className="font-serif text-[1.6rem] font-light leading-[1.3] text-white/45" style={{ opacity: 0, transform: "translateY(16px)" }}>
+            Every developer has a sales office.
+          </p>
+          <div className="h-[13vh]" />
+          <p data-sm className="font-serif text-[1.6rem] font-light leading-[1.3] text-white/45" style={{ opacity: 0, transform: "translateY(16px)" }}>
+            Every broker has an incentive.
           </p>
           <div className="h-[16vh]" />
-          <p data-sm className="font-serif text-[1.8rem] font-light leading-[1.3] text-white/55" style={{ opacity: 0, transform: "translateY(16px)" }}>
-            Spend weeks researching.
+          <p data-sm className="font-serif text-[2.8rem] font-medium leading-[1.08] text-white/90" style={{ opacity: 0, transform: "translateY(16px)" }}>
+            Every buyer&hellip;
           </p>
-          <div className="h-[16vh]" />
-          <p data-sm className="font-serif text-[2.8rem] font-medium leading-[1.1] text-white/80" style={{ opacity: 0, transform: "translateY(16px)" }}>
-            Or&hellip;
+          <div className="h-[6vh]" />
+          <p data-sm className="font-serif text-[2.1rem] font-light italic leading-[1.2] text-white/50" style={{ opacity: 0, transform: "translateY(16px)" }}>
+            &hellip;is left alone.
           </p>
         </div>
-        <div className="h-[16vh] bg-gradient-to-b from-[#0a0a0a] to-[#F5F0E8]" />
-        <div className="bg-[#F5F0E8] px-8 py-[16vh] text-center">
+        <div className="h-[18vh] bg-gradient-to-b from-[#0a0a0a] to-[#F5F0E8]" />
+        <div className="bg-[#F5F0E8] px-8 py-[18vh] text-center">
           <p data-sm className="font-serif text-[2.6rem] font-medium leading-[1.12] text-[#1a1a1a]" style={{ opacity: 0, transform: "translateY(16px)" }}>
-            Let us do it for you.
-          </p>
-          <div className="h-[20vh]" />
-          <p data-sm className="max-w-sm mx-auto font-serif text-[1.7rem] font-light leading-[1.35] text-[#1a1a1a]/75" style={{ opacity: 0, transform: "translateY(16px)" }}>
-            The biggest property decisions
-            <br />
-            deserve independent representation.
+            We decided to change that.
           </p>
         </div>
       </div>
@@ -209,64 +238,74 @@ function Storytelling() {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   SECTION 6 — TRUTH PRIVATE (HERO PRODUCT)
+   SECTION 6 — YOUR INDEPENDENT BUYER'S OFFICE
    ════════════════════════════════════════════════════════════════ */
-function TruthPrivateHero() {
+const journey = [
+  "You share your requirements.",
+  "We investigate the market.",
+  "We challenge assumptions.",
+  "We shortlist only what deserves your attention.",
+  "We negotiate in your interest.",
+  "You make one confident decision.",
+];
+
+function BuyersOffice() {
   const ref = useRef<HTMLDivElement>(null);
-  useReveal(ref, 0.2);
+  useReveal(ref, 0.18);
+  useStaggerReveal(ref, "[data-step]", 150);
 
   return (
-    <div ref={ref} className="bg-[#F5F0E8] px-6 pb-[14vh] pt-[14vh] md:px-8">
+    <div ref={ref} className="bg-[#F5F0E8] px-6 pb-[16vh] pt-[16vh] md:px-8">
       <div className="mx-auto max-w-2xl text-center">
         <span data-r className="block text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]/70" style={{ opacity: 0, transform: "translateY(16px)" }}>
           Truth Private
         </span>
 
-        <h2 data-r className="mt-8 font-serif text-[3rem] font-medium leading-[1.08] text-[#1a1a1a] md:text-[3.8rem] lg:text-[4.6rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
-          Independent
+        <h2 data-r className="mt-8 font-serif text-[3rem] font-medium leading-[1.06] text-[#1a1a1a] md:text-[3.8rem] lg:text-[4.6rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
+          Your Independent
           <br />
-          Real Estate Office.
+          Buyer&apos;s Office.
         </h2>
 
-        <div data-r className="mx-auto mt-12 h-px w-16 bg-[#c9a96e]/30" style={{ opacity: 0 }} />
+        <div data-r className="mx-auto mt-12 max-w-md space-y-1.5" style={{ opacity: 0, transform: "translateY(16px)" }}>
+          <p className="text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/45">Not another broker.</p>
+          <p className="text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/45">Not another property portal.</p>
+          <p className="text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/45">Not another opinion.</p>
+        </div>
 
-        <p data-r className="mt-10 text-[1rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.1rem]" style={{ opacity: 0, transform: "translateY(16px)" }}>
-          Tell us what you&apos;re looking for.
+        <p data-r className="mx-auto mt-8 max-w-md font-serif text-[1.15rem] font-light leading-relaxed text-[#1a1a1a]/70 md:text-[1.3rem]" style={{ opacity: 0, transform: "translateY(16px)" }}>
+          An independent office that represents
+          <br className="hidden md:block" /> only one side.{" "}
+          <span className="italic text-[#1a1a1a]">Yours.</span>
         </p>
 
-        <ul data-r className="mt-8 space-y-2.5" style={{ opacity: 0, transform: "translateY(16px)" }}>
-          {[
-            "We’ll investigate.",
-            "We’ll shortlist.",
-            "We’ll negotiate.",
-            "You make one confident decision.",
-          ].map((t) => (
-            <li key={t} className="font-serif text-[1.1rem] font-light leading-relaxed text-[#1a1a1a]/70 md:text-[1.25rem]">
-              {t}
-            </li>
-          ))}
-        </ul>
+        {/* The journey */}
+        <div className="mx-auto mt-24 flex max-w-md flex-col items-center">
+          {journey.map((step, i) => {
+            const isLast = i === journey.length - 1;
+            return (
+              <div key={step} className="flex w-full flex-col items-center">
+                {i > 0 && (
+                  <div data-step className="my-5 h-8 w-px bg-[#c9a96e]/30" style={{ opacity: 0, transform: "translateY(8px)" }} />
+                )}
+                <p
+                  data-step
+                  className={
+                    isLast
+                      ? "font-serif text-[1.5rem] font-medium leading-snug text-[#1a1a1a] md:text-[1.7rem]"
+                      : "font-serif text-[1.15rem] font-light leading-snug text-[#1a1a1a]/65 md:text-[1.3rem]"
+                  }
+                  style={{ opacity: 0, transform: "translateY(10px)" }}
+                >
+                  {step}
+                </p>
+              </div>
+            );
+          })}
+        </div>
 
-        <div data-r className="mx-auto mt-12 h-px w-10 bg-[#1a1a1a]/10" style={{ opacity: 0 }} />
-
-        <ul data-r className="mt-10 space-y-2" style={{ opacity: 0, transform: "translateY(12px)" }}>
-          {[
-            "No broker spam.",
-            "No conflicting opinions.",
-            "No endless site visits.",
-          ].map((t) => (
-            <li key={t} className="text-[0.9rem] font-light leading-relaxed text-[#1a1a1a]/40">
-              {t}
-            </li>
-          ))}
-        </ul>
-
-        <p data-r className="mt-10 font-serif text-[1rem] font-light italic leading-relaxed text-[#1a1a1a]/45 md:text-[1.1rem]" style={{ opacity: 0, transform: "translateY(12px)" }}>
-          Just one recommendation backed by evidence.
-        </p>
-
-        <div data-r className="mt-14" style={{ opacity: 0, transform: "translateY(12px)" }}>
-          <button className="group inline-flex items-center gap-2 text-[0.85rem] font-light tracking-[0.16em] text-[#1a1a1a]/75 transition-colors duration-300 hover:text-[#1a1a1a]">
+        <div data-r className="mt-20" style={{ opacity: 0, transform: "translateY(12px)" }}>
+          <button className="group inline-flex items-center gap-2 border-b border-[#c9a96e]/30 pb-1.5 font-serif text-[1rem] font-light tracking-[0.1em] text-[#1a1a1a] transition-colors duration-300 hover:border-[#c9a96e]/70 md:text-[1.1rem]">
             Start Your Private Office
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
           </button>
@@ -277,50 +316,30 @@ function TruthPrivateHero() {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   SECTION 7 — INTELLIGENCE ENGINE
+   SECTION 7 — THE INTELLIGENCE ENGINE
+   "Every recommendation is earned."
    ════════════════════════════════════════════════════════════════ */
 const engineLayers = [
   "Truth Intelligence",
   "TruthGuide",
-  "Independent Analysts",
+  "Independent Research",
+  "Human Judgement",
   "Truth Private",
   "One Recommendation",
 ];
 
 function IntelligenceEngine() {
   const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const root = ref.current;
-    if (!root) return;
-    const items = root.querySelectorAll<HTMLElement>("[data-eng]");
-    items.forEach((el, i) => {
-      el.style.transition = `opacity 0.9s ease ${i * 180}ms, transform 0.9s ease ${i * 180}ms`;
-    });
-    const obs = new IntersectionObserver(
-      (entries) =>
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            const el = e.target as HTMLElement;
-            el.style.opacity = "1";
-            el.style.transform = "translateY(0)";
-          }
-        }),
-      { threshold: 0.15 }
-    );
-    items.forEach((el) => obs.observe(el));
-    return () => obs.disconnect();
-  }, []);
-
   useReveal(ref, 0.2);
+  useStaggerReveal(ref, "[data-eng]", 170);
 
   return (
-    <div ref={ref} className="bg-[#F5F0E8] px-6 pb-[14vh] pt-[14vh] md:px-8">
+    <div ref={ref} className="bg-[#F5F0E8] px-6 pb-[16vh] pt-[16vh] md:px-8">
       <div className="mx-auto max-w-2xl text-center">
-        <h2 data-r className="font-serif text-[2.6rem] font-medium leading-[1.1] text-[#1a1a1a] md:text-[3.2rem] lg:text-[3.8rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
-          Because every recommendation
+        <h2 data-r className="font-serif text-[2.8rem] font-medium leading-[1.08] text-[#1a1a1a] md:text-[3.4rem] lg:text-[4rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
+          Every recommendation
           <br />
-          is backed by intelligence.
+          is earned.
         </h2>
 
         <div className="mx-auto mt-20 flex max-w-xs flex-col items-center">
@@ -331,22 +350,22 @@ function IntelligenceEngine() {
               <div key={label} className="flex flex-col items-center">
                 {i > 0 && (
                   <div data-eng className="flex flex-col items-center" style={{ opacity: 0, transform: "translateY(10px)" }}>
-                    <div className="h-8 w-px bg-[#c9a96e]/30" />
-                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none" className="mt-0.5 mb-0.5">
+                    <div className="h-7 w-px bg-[#c9a96e]/30" />
+                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none" className="my-0.5">
                       <path d="M1 1L5 5L9 1" stroke="#c9a96e" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" />
                     </svg>
-                    <div className="h-8 w-px bg-[#c9a96e]/30" />
+                    <div className="h-7 w-px bg-[#c9a96e]/30" />
                   </div>
                 )}
                 <p
                   data-eng
-                  className={`${
+                  className={
                     isHero
                       ? "font-serif text-[1.5rem] font-medium text-[#1a1a1a] md:text-[1.7rem]"
                       : isLast
                         ? "font-serif text-[1.8rem] font-medium text-[#c9a96e] md:text-[2rem]"
                         : "text-[0.95rem] font-light tracking-[0.12em] text-[#1a1a1a]/55 md:text-[1.05rem]"
-                  }`}
+                  }
                   style={{ opacity: 0, transform: "translateY(10px)" }}
                 >
                   {label}
@@ -357,7 +376,7 @@ function IntelligenceEngine() {
         </div>
 
         <p data-r className="mt-20 font-serif text-[1rem] font-light italic leading-relaxed text-[#1a1a1a]/40 md:text-[1.15rem]" style={{ opacity: 0, transform: "translateY(12px)" }}>
-          Technology doesn&apos;t replace human judgement.
+          Technology doesn&apos;t replace judgement.
           <br />
           It strengthens it.
         </p>
@@ -368,23 +387,26 @@ function IntelligenceEngine() {
 
 /* ════════════════════════════════════════════════════════════════
    SECTION 8 — TRUTHGUIDE
+   "Every recommendation can be questioned."
    ════════════════════════════════════════════════════════════════ */
 const guidePrompts = [
   "Should I buy DLF Arbour?",
   "Compare Arbour with Puri Aravallis.",
-  "Show me DLF’s Haryana track record.",
-  "Is this project overpriced?",
-  "How is this layout?",
+  "Show DLF’s Haryana RERA history.",
+  "Why is this project risky?",
 ];
 
 const typedResponse =
-  "Based on our analysis of 80+ proprietary signals, DLF Arbour shows strong fundamentals. Developer track record: 92% on-time delivery in Haryana. Current pricing is approximately 8% below comparable projects on Golf Course Extension Road.";
+  "DLF Arbour shows strong fundamentals. Developer track record: 92% on-time delivery across Haryana. Current pricing sits roughly 8% below comparable towers on Golf Course Extension Road — with two risks worth weighing before you commit.";
+
+const guideSources = ["Haryana RERA", "DLF delivery records", "6 comparable projects"];
 
 function TruthGuideSection() {
   const ref = useRef<HTMLDivElement>(null);
   const [promptIdx, setPromptIdx] = useState(0);
   const [promptVisible, setPromptVisible] = useState(true);
   const [typed, setTyped] = useState("");
+  const [answered, setAnswered] = useState(false);
   const typingStarted = useRef(false);
 
   useReveal(ref, 0.2);
@@ -396,7 +418,7 @@ function TruthGuideSection() {
         setPromptIdx((p) => (p + 1) % guidePrompts.length);
         setPromptVisible(true);
       }, 400);
-    }, 3000);
+    }, 3200);
     return () => clearInterval(id);
   }, []);
 
@@ -411,11 +433,14 @@ function TruthGuideSection() {
           const tid = setInterval(() => {
             i++;
             setTyped(typedResponse.slice(0, i));
-            if (i >= typedResponse.length) clearInterval(tid);
-          }, 22);
+            if (i >= typedResponse.length) {
+              clearInterval(tid);
+              setTimeout(() => setAnswered(true), 350);
+            }
+          }, 20);
         }
       },
-      { threshold: 0.3 }
+      { threshold: 0.4 }
     );
     const target = el.querySelector("[data-type-trigger]");
     if (target) obs.observe(target);
@@ -423,19 +448,23 @@ function TruthGuideSection() {
   }, []);
 
   return (
-    <div ref={ref} className="bg-[#F5F0E8] px-6 pb-[14vh] pt-[14vh] md:px-8">
+    <div ref={ref} className="bg-[#F5F0E8] px-6 pb-[16vh] pt-[16vh] md:px-8">
       <div className="mx-auto max-w-2xl text-center">
         <span data-r className="block text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]/70" style={{ opacity: 0, transform: "translateY(16px)" }}>
           TruthGuide
         </span>
 
         <h2 data-r className="mt-8 font-serif text-[2.6rem] font-medium leading-[1.1] text-[#1a1a1a] md:text-[3.2rem] lg:text-[3.8rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
-          Every question deserves
+          Every recommendation
           <br />
-          an evidence-backed answer.
+          can be questioned.
         </h2>
 
-        {/* Interactive prompt */}
+        <p data-r className="mx-auto mt-8 max-w-md text-[1rem] font-light leading-relaxed text-[#1a1a1a]/50 md:text-[1.05rem]" style={{ opacity: 0, transform: "translateY(16px)" }}>
+          Trust comes from transparency. Every recommendation should be explainable.
+        </p>
+
+        {/* Conversational interface */}
         <div data-r data-type-trigger className="mx-auto mt-16 max-w-lg text-left" style={{ opacity: 0, transform: "translateY(16px)" }}>
           <div className="flex items-center gap-3 border-b border-[#1a1a1a]/12 pb-3">
             <span
@@ -449,17 +478,45 @@ function TruthGuideSection() {
 
           {typed && (
             <div className="mt-8">
-              <p className="text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/60">
+              <p className="text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/65">
                 {typed}
-                <span className="ml-0.5 inline-block h-[0.9em] w-px bg-[#c9a96e]/60" style={{ animation: "caret-blink 1.1s ease-in-out infinite" }} />
+                {!answered && (
+                  <span className="ml-0.5 inline-block h-[0.9em] w-px bg-[#c9a96e]/60 align-middle" style={{ animation: "caret-blink 1.1s ease-in-out infinite" }} />
+                )}
               </p>
+
+              {answered && (
+                <div className="mt-7 animate-fade-up space-y-5 border-t border-[#1a1a1a]/8 pt-6">
+                  <div>
+                    <span className="block text-[9px] font-light uppercase tracking-[0.35em] text-[#1a1a1a]/35">
+                      Sources
+                    </span>
+                    <div className="mt-2.5 flex flex-wrap gap-2">
+                      {guideSources.map((s) => (
+                        <span key={s} className="rounded-full border border-[#1a1a1a]/12 px-3 py-1 text-[0.72rem] font-light text-[#1a1a1a]/55">
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[9px] font-light uppercase tracking-[0.35em] text-[#1a1a1a]/35">
+                      Confidence
+                    </span>
+                    <div className="h-px flex-1 bg-[#1a1a1a]/10">
+                      <div className="h-px w-[86%] bg-[#c9a96e]" />
+                    </div>
+                    <span className="text-[0.72rem] font-light tracking-[0.1em] text-[#1a1a1a]/55">High</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
 
         <div data-r className="mt-14" style={{ opacity: 0, transform: "translateY(12px)" }}>
           <button className="group inline-flex items-center gap-2 text-[0.85rem] font-light tracking-[0.16em] text-[#1a1a1a]/75 transition-colors duration-300 hover:text-[#1a1a1a]">
-            Talk to TruthGuide
+            Ask TruthGuide
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
           </button>
         </div>
@@ -469,25 +526,42 @@ function TruthGuideSection() {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   SECTION 9 — TRUTH INTELLIGENCE (quieter)
+   SECTION 9 — TRUTH INTELLIGENCE (self-service, intentionally quieter)
    ════════════════════════════════════════════════════════════════ */
 function TruthIntelligenceSection() {
   const ref = useRef<HTMLDivElement>(null);
   useReveal(ref, 0.2);
 
   return (
-    <div ref={ref} className="bg-[#F5F0E8] px-6 pb-[14vh] pt-[10vh] md:px-8">
+    <div ref={ref} className="bg-[#F5F0E8] px-6 pb-[16vh] pt-[10vh] md:px-8">
       <div className="mx-auto max-w-xl text-center">
-        <h2 data-r className="font-serif text-[2.2rem] font-medium leading-[1.12] text-[#1a1a1a]/85 md:text-[2.8rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
-          Prefer to investigate yourself?
+        <span data-r className="block text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]/60" style={{ opacity: 0, transform: "translateY(16px)" }}>
+          Truth Intelligence
+        </span>
+
+        <h2 data-r className="mt-8 font-serif text-[2.3rem] font-medium leading-[1.12] text-[#1a1a1a]/85 md:text-[2.9rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
+          Prefer to investigate
+          <br />
+          before trusting us?
         </h2>
 
-        <p data-r className="mt-6 text-[1rem] font-light leading-relaxed text-[#1a1a1a]/45 md:text-[1.1rem]" style={{ opacity: 0, transform: "translateY(14px)" }}>
-          Explore independent project intelligence.
+        <p data-r className="mt-7 font-serif text-[1.6rem] font-light leading-snug text-[#1a1a1a] md:text-[1.9rem]" style={{ opacity: 0, transform: "translateY(16px)" }}>
+          Good. So do we.
         </p>
 
-        <ul data-r className="mt-10 space-y-2" style={{ opacity: 0, transform: "translateY(14px)" }}>
-          {["Deep research.", "Evidence.", "Risk analysis.", "Opportunity analysis.", "Real ROI."].map((t) => (
+        <p data-r className="mt-12 text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/45" style={{ opacity: 0, transform: "translateY(14px)" }}>
+          Independent project intelligence.
+        </p>
+
+        <ul data-r className="mt-8 space-y-2" style={{ opacity: 0, transform: "translateY(14px)" }}>
+          {[
+            "Evidence.",
+            "Developer analysis.",
+            "Legal analysis.",
+            "Construction monitoring.",
+            "Real ROI.",
+            "Opportunity analysis.",
+          ].map((t) => (
             <li key={t} className="font-serif text-[1rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.1rem]">
               {t}
             </li>
@@ -509,9 +583,9 @@ function TruthIntelligenceSection() {
    SECTION 10 — COVERAGE
    ════════════════════════════════════════════════════════════════ */
 const metrics = [
-  { value: 100, suffix: "+", label: "Projects Covered" },
+  { value: 100, suffix: "+", label: "Projects" },
   { value: 80, suffix: "+", label: "Proprietary Signals" },
-  { value: 4500, suffix: "+", label: "Intelligence Pages" },
+  { value: 4500, suffix: "+", label: "Knowledge Pages" },
   { value: 24, suffix: "×7", label: "TruthGuide" },
 ];
 
@@ -522,7 +596,11 @@ function CoverageSection() {
   return (
     <div ref={ref} className="bg-[#0a0a0a] px-6 pb-[14vh] pt-[14vh] md:px-8">
       <div className="mx-auto max-w-3xl text-center">
-        <h2 data-r className="font-serif text-[2.8rem] font-medium leading-[1.1] text-white/90 md:text-[3.4rem] lg:text-[4rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
+        <span data-r className="block text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]/50" style={{ opacity: 0, transform: "translateY(16px)" }}>
+          Coverage
+        </span>
+
+        <h2 data-r className="mt-8 font-serif text-[2.8rem] font-medium leading-[1.1] text-white/90 md:text-[3.4rem] lg:text-[4rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
           Built for Gurugram.
         </h2>
         <p data-r className="mt-6 font-serif text-[1.4rem] font-light leading-[1.3] text-white/40 md:text-[1.7rem]" style={{ opacity: 0, transform: "translateY(14px)" }}>
@@ -550,7 +628,7 @@ function CoverageSection() {
         </div>
 
         {/* Metrics */}
-        <div data-r className="mx-auto mt-16 grid max-w-lg grid-cols-2 gap-12 md:grid-cols-4 md:max-w-2xl" style={{ opacity: 0, transform: "translateY(16px)" }}>
+        <div data-r className="mx-auto mt-16 grid max-w-lg grid-cols-2 gap-12 md:max-w-2xl md:grid-cols-4" style={{ opacity: 0, transform: "translateY(16px)" }}>
           {metrics.map((m) => (
             <div key={m.label} className="flex flex-col items-center">
               <span className="font-serif text-[2.6rem] font-light leading-none text-white/85 md:text-[3rem]">
@@ -575,24 +653,24 @@ function ClosingSection() {
   useReveal(ref, 0.2);
 
   return (
-    <div ref={ref} className="bg-[#0a0a0a] px-6 pb-[16vh] pt-[10vh] md:px-8">
+    <div ref={ref} className="bg-[#0a0a0a] px-6 pb-[16vh] pt-[12vh] md:px-8">
       <div className="mx-auto max-w-2xl text-center">
-        <h2 data-r className="font-serif text-[2.6rem] font-medium leading-[1.12] text-white/90 md:text-[3.4rem] lg:text-[4.2rem]" style={{ opacity: 0, transform: "translateY(24px)" }}>
-          Life&apos;s biggest property decisions
+        <h2 data-r className="font-serif text-[2.6rem] font-medium leading-[1.14] text-white/90 md:text-[3.4rem] lg:text-[4.2rem]" style={{ opacity: 0, transform: "translateY(24px)" }}>
+          Life&apos;s biggest property decision
           <br />
-          <span className="font-light italic text-white/55">deserve</span>
+          <span className="font-light italic text-white/55">deserves</span>
           <br />
-          independent representation.
+          an independent buyer&apos;s office.
         </h2>
 
         <div data-r className="mt-16 flex flex-col items-center gap-8" style={{ opacity: 0, transform: "translateY(16px)" }}>
-          <button className="group inline-flex items-center gap-2 border-b border-[#c9a96e]/30 pb-1.5 font-serif text-[1rem] font-light tracking-[0.12em] text-[#c9a96e] transition-colors duration-300 hover:border-[#c9a96e]/60 hover:text-[#c9a96e] md:text-[1.15rem]">
+          <button className="group inline-flex items-center gap-2 border-b border-[#c9a96e]/30 pb-1.5 font-serif text-[1rem] font-light tracking-[0.12em] text-[#c9a96e] transition-colors duration-300 hover:border-[#c9a96e]/60 md:text-[1.15rem]">
             Start Your Private Office
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
           </button>
 
           <button className="group inline-flex items-center gap-2 text-[0.85rem] font-light tracking-[0.14em] text-white/50 transition-colors duration-300 hover:text-white/75">
-            Talk to TruthGuide
+            Ask TruthGuide
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
           </button>
 
@@ -601,7 +679,15 @@ function ClosingSection() {
           </button>
         </div>
 
-        <div data-r className="mx-auto mt-16 h-px w-12 bg-[#c9a96e]/20" style={{ opacity: 0 }} />
+        {/* The thesis — bookend to where this chapter began */}
+        <div data-r className="mt-28" style={{ opacity: 0, transform: "translateY(16px)" }}>
+          <div className="mx-auto mb-8 h-px w-12 bg-[#c9a96e]/20" />
+          <p className="font-serif text-[0.95rem] font-light italic leading-[1.9] text-white/30 md:text-[1.05rem]">
+            Every developer has a sales office.
+            <br />
+            Every buyer deserves a buyer&apos;s office.
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -614,7 +700,7 @@ export default function ExperienceSection() {
   return (
     <section>
       <Storytelling />
-      <TruthPrivateHero />
+      <BuyersOffice />
       <IntelligenceEngine />
       <TruthGuideSection />
       <TruthIntelligenceSection />
