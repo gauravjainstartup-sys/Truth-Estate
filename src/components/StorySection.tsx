@@ -217,10 +217,10 @@ export default function StorySection() {
         />
 
         {/* Progress rail — confirms your scrolling is advancing the narrative */}
-        <div className="absolute right-10 top-1/2 z-30 hidden h-40 w-px -translate-y-1/2 bg-[#c9a96e]/25 lg:block">
+        <div className="absolute right-8 top-1/2 z-30 hidden h-32 w-px -translate-y-1/2 bg-[#c9a96e]/12 lg:block">
           <div
             data-rail-fill
-            className="absolute left-0 top-0 h-full w-px origin-top bg-[#c9a96e]"
+            className="absolute left-0 top-0 h-full w-px origin-top bg-[#c9a96e]/55"
             style={{ transform: "scaleY(0)" }}
           />
         </div>
