@@ -194,7 +194,7 @@ export default function Hero() {
         />
 
         {/* Content */}
-        <div className="relative z-10 flex h-full flex-col px-7 pt-10 pb-12">
+        <div className="relative z-10 flex h-full flex-col px-7 pt-10 pb-8">
           <nav className="animate-fade-up flex items-center justify-between">
             <Logo className="h-9 w-auto opacity-85" />
             <button className="flex flex-col gap-[6px]" aria-label="Open menu">
@@ -203,7 +203,7 @@ export default function Hero() {
             </button>
           </nav>
 
-          <div className="mt-[13vh] flex flex-col">
+          <div className="mt-[10vh] flex flex-col">
             <h1
               className="animate-fade-up font-serif text-[2.8rem] font-bold leading-[1.18] text-white"
               style={{ animationDelay: "100ms" }}
@@ -215,7 +215,7 @@ export default function Hero() {
               Living With.
             </h1>
 
-            <div style={{ height: "36px" }} />
+            <div style={{ height: "28px" }} />
 
             <p
               className="animate-fade-up text-[15px] leading-[1.85] text-white/60"
@@ -226,7 +226,7 @@ export default function Hero() {
               India&apos;s biggest purchase.
             </p>
 
-            <div style={{ height: "36px" }} />
+            <div style={{ height: "28px" }} />
 
             {/* Brand belief — editorial pull quote */}
             <div
@@ -235,7 +235,7 @@ export default function Hero() {
             >
               <div className="w-12 h-px bg-[#c9a96e]/50" />
               <p
-                className="my-5 font-serif text-[15px] italic leading-[1.75] text-white/45"
+                className="my-4 font-serif text-[15px] italic leading-[1.75] text-white/45"
                 style={{ textShadow: "0 1px 14px rgba(4,6,5,0.6)" }}
               >
                 We recommend only what
@@ -245,10 +245,10 @@ export default function Hero() {
               <div className="w-12 h-px bg-[#c9a96e]/50" />
             </div>
 
-            <div style={{ height: "44px" }} />
+            <div style={{ height: "32px" }} />
 
             {/* CTAs */}
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-4">
               <a
                 href="#"
                 className="animate-fade-up inline-block self-start rounded-sm bg-[#1e6b45] px-9 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/30 transition-all duration-500 hover:bg-[#238c55]"
