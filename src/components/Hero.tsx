@@ -98,9 +98,9 @@ export default function Hero() {
               className="animate-fade-up text-[16px] leading-[1.8] text-white/40"
               style={{ animationDelay: "300ms" }}
             >
-              Independent thinking
+              Independent thinking for
               <br />
-              for India&apos;s biggest purchase.
+              life&apos;s biggest real estate decisions.
             </p>
 
             <div style={{ height: "28px" }} />
@@ -213,9 +213,9 @@ export default function Hero() {
               className="animate-fade-up text-[15px] leading-[1.8] text-white/60"
               style={{ animationDelay: "250ms" }}
             >
-              Independent thinking
+              Independent thinking for
               <br />
-              for India&apos;s biggest purchase.
+              life&apos;s biggest real estate decisions.
             </p>
 
             <div style={{ height: "20px" }} />
