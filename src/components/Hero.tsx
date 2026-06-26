@@ -139,7 +139,7 @@ export default function Hero() {
                 href="#"
                 className="rounded-sm bg-[#1e6b45] px-9 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/30 transition-all duration-500 hover:bg-[#238c55]"
               >
-                Get Your Verdict
+                Become a Private Client
               </a>
               <button
                 onClick={() =>
@@ -149,7 +149,7 @@ export default function Hero() {
                 }
                 className="text-[13px] tracking-[0.04em] text-white/55 transition-colors duration-500 hover:text-white/80"
               >
-                See How We Think &rarr;
+                Challenge TruthGuide &rarr;
               </button>
             </div>
           </div>
@@ -254,7 +254,7 @@ export default function Hero() {
                 className="animate-fade-up inline-block self-start rounded-sm bg-[#1e6b45] px-9 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/30 transition-all duration-500 hover:bg-[#238c55]"
                 style={{ animationDelay: "380ms" }}
               >
-                Start Your Private Office
+                Become a Private Client
               </a>
 
               <button
@@ -266,7 +266,7 @@ export default function Hero() {
                 className="animate-fade-up self-start text-[13px] tracking-[0.04em] text-white/45 transition-colors duration-500 hover:text-white/70"
                 style={{ animationDelay: "420ms" }}
               >
-                Ask TruthGuide &rarr;
+                Challenge TruthGuide &rarr;
               </button>
             </div>
           </div>
