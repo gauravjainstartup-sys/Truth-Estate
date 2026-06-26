@@ -246,13 +246,12 @@ function Storytelling() {
 /* ════════════════════════════════════════════════════════════════
    SECTION 6 — YOUR INDEPENDENT BUYER'S OFFICE
    ════════════════════════════════════════════════════════════════ */
-const journey = [
-  "You share your requirements.",
-  "We investigate the market.",
-  "We challenge assumptions.",
-  "We shortlist only what deserves your attention.",
-  "We negotiate in your interest.",
-  "You make one confident decision.",
+const journey: string[][] = [
+  ["You tell us what you're looking for."],
+  ["We investigate independently."],
+  ["We challenge assumptions."],
+  ["We recommend only", "what we'd buy ourselves."],
+  ["If you choose,", "we represent your interests."],
 ];
 
 function BuyersOffice() {
@@ -264,34 +263,20 @@ function BuyersOffice() {
   return (
     <div ref={ref} className="bg-[#F5F0E8] px-6 pb-[12vh] pt-[12vh] md:px-8 md:pb-[16vh] md:pt-[16vh]">
       <div className="mx-auto max-w-2xl text-center">
-        <span data-r className="block text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]/70" style={{ opacity: 0, transform: "translateY(16px)" }}>
-          Truth Private
-        </span>
+        <div data-r className="mx-auto h-px w-full max-w-md bg-[#1a1a1a]/12" style={{ opacity: 0, transform: "translateY(16px)" }} />
 
-        <h2 data-r className="mt-6 font-serif text-[2.2rem] font-medium leading-[1.08] text-[#1a1a1a] md:mt-8 md:text-[3.8rem] lg:text-[4.6rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
+        <h2 data-r className="mt-12 font-serif text-[2.2rem] font-medium leading-[1.08] text-[#1a1a1a] md:mt-16 md:text-[3.8rem] lg:text-[4.6rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
           Your Independent
           <br />
           Buyer&apos;s Office.
         </h2>
 
-        <div data-r className="mx-auto mt-10 max-w-md space-y-1.5 md:mt-12" style={{ opacity: 0, transform: "translateY(16px)" }}>
-          <p className="text-[0.85rem] font-light leading-relaxed text-[#1a1a1a]/45 md:text-[0.95rem]">Not another broker.</p>
-          <p className="text-[0.85rem] font-light leading-relaxed text-[#1a1a1a]/45 md:text-[0.95rem]">Not another property portal.</p>
-          <p className="text-[0.85rem] font-light leading-relaxed text-[#1a1a1a]/45 md:text-[0.95rem]">Not another opinion.</p>
-        </div>
-
-        <p data-r className="mx-auto mt-8 max-w-md font-serif text-[1.05rem] font-light leading-relaxed text-[#1a1a1a]/70 md:text-[1.3rem]" style={{ opacity: 0, transform: "translateY(16px)" }}>
-          An independent office that represents
-          <br className="hidden md:block" /> only one side.{" "}
-          <span className="italic text-[#1a1a1a]">Yours.</span>
-        </p>
-
-        {/* The journey */}
-        <div className="mx-auto mt-16 flex max-w-md flex-col items-center md:mt-24">
+        {/* The journey — what working with us actually feels like */}
+        <div className="mx-auto mt-14 flex max-w-md flex-col items-center md:mt-20">
           {journey.map((step, i) => {
             const isLast = i === journey.length - 1;
             return (
-              <div key={step} className="flex w-full flex-col items-center">
+              <div key={step[0]} className="flex w-full flex-col items-center">
                 {i > 0 && (
                   <div data-step className="my-4 h-7 w-px bg-[#c9a96e]/30 md:my-5 md:h-8" style={{ opacity: 0, transform: "translateY(8px)" }} />
                 )}
@@ -304,14 +289,20 @@ function BuyersOffice() {
                   }
                   style={{ opacity: 0, transform: "translateY(10px)" }}
                 >
-                  {step}
+                  {step.map((line, j) => (
+                    <span key={j} className="block">
+                      {line}
+                    </span>
+                  ))}
                 </p>
               </div>
             );
           })}
         </div>
 
-        <div data-r className="mt-14 md:mt-20" style={{ opacity: 0, transform: "translateY(12px)" }}>
+        <div data-r className="mx-auto mt-14 h-px w-full max-w-md bg-[#1a1a1a]/12 md:mt-20" style={{ opacity: 0, transform: "translateY(16px)" }} />
+
+        <div data-r className="mt-12 md:mt-16" style={{ opacity: 0, transform: "translateY(12px)" }}>
           <button onClick={() => open()} className="group inline-flex items-center gap-2 border-b border-[#c9a96e]/30 pb-1.5 font-serif text-[0.9rem] font-light tracking-[0.1em] text-[#1a1a1a] transition-colors duration-300 hover:border-[#c9a96e]/70 md:text-[1.1rem]">
             {PRIMARY_CTA}
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
