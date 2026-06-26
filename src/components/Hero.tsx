@@ -1,10 +1,12 @@
 "use client";
 
 import Logo from "./Logo";
+import { useJourney } from "./journey/JourneyProvider";
 
 const basePath = "/Truth-Estate";
 
 export default function Hero() {
+  const { open } = useJourney();
   return (
     <section className="relative min-h-svh w-full overflow-hidden">
       {/* ─── DESKTOP ─── */}
@@ -135,18 +137,14 @@ export default function Hero() {
               className="animate-fade-up flex items-center gap-8"
               style={{ animationDelay: "400ms" }}
             >
-              <a
-                href="#"
+              <button
+                onClick={() => open()}
                 className="rounded-sm bg-[#1e6b45] px-9 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/30 transition-all duration-500 hover:bg-[#238c55]"
               >
-                Become a Private Client
-              </a>
+                Start Your Journey
+              </button>
               <button
-                onClick={() =>
-                  document
-                    .getElementById("editorial")
-                    ?.scrollIntoView({ behavior: "smooth" })
-                }
+                onClick={() => open("research")}
                 className="text-[13px] tracking-[0.04em] text-white/55 transition-colors duration-500 hover:text-white/80"
               >
                 Challenge TruthGuide &rarr;
@@ -249,20 +247,16 @@ export default function Hero() {
 
             {/* CTAs */}
             <div className="flex flex-col gap-4">
-              <a
-                href="#"
+              <button
+                onClick={() => open()}
                 className="animate-fade-up inline-block self-start rounded-sm bg-[#1e6b45] px-9 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/30 transition-all duration-500 hover:bg-[#238c55]"
                 style={{ animationDelay: "380ms" }}
               >
-                Become a Private Client
-              </a>
+                Start Your Journey
+              </button>
 
               <button
-                onClick={() =>
-                  document
-                    .getElementById("editorial")
-                    ?.scrollIntoView({ behavior: "smooth" })
-                }
+                onClick={() => open("research")}
                 className="animate-fade-up self-start text-[13px] tracking-[0.04em] text-white/45 transition-colors duration-500 hover:text-white/70"
                 style={{ animationDelay: "420ms" }}
               >
