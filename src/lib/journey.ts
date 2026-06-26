@@ -2,8 +2,11 @@
    THE TRUTH ESTATE JOURNEY ENGINE — data model & intelligence
    Pure functions + mock dataset. No backend; everything is derived
    client-side so the visitor receives value before being asked
-   for anything.
+   for anything. Auth & returning users are simulated via localStorage.
    ════════════════════════════════════════════════════════════════ */
+
+/* The primary CTA is configurable in one place — we may rename later. */
+export const PRIMARY_CTA = "Start Your Journey";
 
 export type Intent = "buy" | "sell" | "invest" | "research";
 
@@ -25,7 +28,14 @@ export const emptyBuyData: BuyData = {
   priorities: [],
 };
 
-/* ── Option vocabularies ── */
+/* ── Option vocabularies (configurable) ── */
+export const GOALS = [
+  { key: "buy" as Intent, icon: "🏡", label: "Buy Property", live: true },
+  { key: "sell" as Intent, icon: "🏷", label: "Sell Property", live: false },
+  { key: "invest" as Intent, icon: "📈", label: "Invest", live: false },
+  { key: "research" as Intent, icon: "🔍", label: "Research & Compare", live: false },
+];
+
 export const PURCHASE_TYPES = ["First Home", "Upgrade", "Investment", "Holiday Home"];
 
 export const LOCATIONS = [
@@ -38,20 +48,20 @@ export const LOCATIONS = [
   "Noida",
 ];
 
-export const CONFIGS = ["2 BHK", "3 BHK", "4 BHK", "Penthouse", "Duplex", "No Preference"];
+export const CONFIGS = ["2 BHK", "3 BHK", "4 BHK", "5 BHK", "Penthouse", "Duplex", "Flexible"];
 
 export const TIMELINES = [
   "Immediately",
   "Within 3 Months",
   "Within 6 Months",
-  "Within 1 Year",
-  "Exploring",
+  "Within 12 Months",
+  "Just Exploring",
 ];
 
 export const PRIORITIES = [
   "Capital Appreciation",
-  "Construction Certainty",
   "Low Risk",
+  "Construction Progress",
   "Developer Reputation",
   "Luxury Lifestyle",
   "Layouts",
@@ -75,8 +85,12 @@ export type Project = {
   configs: string[];
   budget: [number, number]; // Cr
   truthScore: number; // 0..100
+  recommendation: string;
+  confidence: string;
   tags: string[]; // priorities this project genuinely serves
   reason: string;
+  strengths: string[];
+  watchouts: string[];
 };
 
 export const PROJECTS: Project[] = [
@@ -87,8 +101,16 @@ export const PROJECTS: Project[] = [
     configs: ["3 BHK", "4 BHK"],
     budget: [5, 8],
     truthScore: 94,
+    recommendation: "Strong Buy",
+    confidence: "High",
     tags: ["Capital Appreciation", "Developer Reputation", "Liquidity", "Location"],
     reason: "Strongest resale liquidity on SPR with a proven delivery record.",
+    strengths: [
+      "Best resale liquidity in the micro-market",
+      "DLF brand depth and delivery record",
+      "Strong end-user and investor demand",
+    ],
+    watchouts: ["Premium entry pricing for SPR", "Possession timeline still maturing"],
   },
   {
     name: "DLF Arbour",
@@ -97,8 +119,16 @@ export const PROJECTS: Project[] = [
     configs: ["3 BHK", "4 BHK"],
     budget: [5, 7],
     truthScore: 92,
-    tags: ["Capital Appreciation", "Developer Reputation", "Construction Certainty", "Liquidity"],
+    recommendation: "Strong Buy",
+    confidence: "High",
+    tags: ["Capital Appreciation", "Developer Reputation", "Construction Progress", "Liquidity"],
     reason: "Priced ~8% below comparable GCE towers with high delivery certainty.",
+    strengths: [
+      "~8% below comparable GCE towers",
+      "92% on-time delivery across Haryana",
+      "High handover certainty",
+    ],
+    watchouts: ["Floor-rise premium structure", "Limited inventory in preferred stacks"],
   },
   {
     name: "M3M Golf Estate II",
@@ -107,8 +137,12 @@ export const PROJECTS: Project[] = [
     configs: ["3 BHK", "4 BHK", "Penthouse"],
     budget: [6, 11],
     truthScore: 88,
+    recommendation: "Buy",
+    confidence: "Medium-High",
     tags: ["Luxury Lifestyle", "Layouts", "Location"],
     reason: "Golf-facing layouts that command a durable lifestyle premium.",
+    strengths: ["Golf-facing layouts", "Durable lifestyle premium", "Established M3M ecosystem"],
+    watchouts: ["Higher maintenance and density", "Thinner near-term price upside"],
   },
   {
     name: "Godrej Aristocrat",
@@ -117,8 +151,16 @@ export const PROJECTS: Project[] = [
     configs: ["3 BHK", "4 BHK"],
     budget: [4, 7],
     truthScore: 90,
-    tags: ["Construction Certainty", "Developer Reputation", "Low Risk", "Construction Quality"],
+    recommendation: "Strong Buy",
+    confidence: "High",
+    tags: ["Construction Progress", "Developer Reputation", "Low Risk", "Construction Quality"],
     reason: "Institutional-grade execution with a low-risk delivery profile.",
+    strengths: [
+      "Institutional-grade execution",
+      "Low delivery risk profile",
+      "Strong build-quality reputation",
+    ],
+    watchouts: ["Tighter unit availability", "Amenities still developing"],
   },
   {
     name: "Smartworld One DXP",
@@ -127,8 +169,12 @@ export const PROJECTS: Project[] = [
     configs: ["2 BHK", "3 BHK", "4 BHK"],
     budget: [3, 6],
     truthScore: 84,
+    recommendation: "Buy",
+    confidence: "Medium",
     tags: ["Capital Appreciation", "Value Buying", "Rental Yield"],
     reason: "Early-corridor pricing with the widest appreciation runway.",
+    strengths: ["Early-corridor pricing", "Widest appreciation runway", "Healthy rental demand"],
+    watchouts: ["Corridor infrastructure maturing", "Developer record still building"],
   },
   {
     name: "Signature Global Titanium SPR",
@@ -137,8 +183,12 @@ export const PROJECTS: Project[] = [
     configs: ["2 BHK", "3 BHK"],
     budget: [2, 4],
     truthScore: 82,
+    recommendation: "Consider",
+    confidence: "Medium",
     tags: ["Value Buying", "Rental Yield", "Low Risk"],
     reason: "Best entry value on SPR with healthy rental demand.",
+    strengths: ["Best entry value on SPR", "Healthy rental absorption", "Strong value-to-quality ratio"],
+    watchouts: ["Mid-tier finishes", "Higher project density"],
   },
   {
     name: "Puri Aravallis",
@@ -147,8 +197,12 @@ export const PROJECTS: Project[] = [
     configs: ["3 BHK", "4 BHK"],
     budget: [2, 4],
     truthScore: 80,
+    recommendation: "Consider",
+    confidence: "Medium",
     tags: ["Value Buying", "Capital Appreciation", "Layouts"],
     reason: "Generous layouts at a value entry point along the Sohna belt.",
+    strengths: ["Generous layouts", "Value entry point", "Sohna-belt appreciation potential"],
+    watchouts: ["Longer appreciation horizon", "Connectivity still improving"],
   },
   {
     name: "Birla Navya",
@@ -157,8 +211,12 @@ export const PROJECTS: Project[] = [
     configs: ["3 BHK", "4 BHK", "Duplex"],
     budget: [6, 12],
     truthScore: 89,
+    recommendation: "Buy",
+    confidence: "Medium-High",
     tags: ["Luxury Lifestyle", "Developer Reputation", "Construction Quality", "Layouts"],
     reason: "Low-density luxury with brand-grade build quality.",
+    strengths: ["Low-density luxury", "Brand-grade build quality", "Efficient premium layouts"],
+    watchouts: ["Premium pricing", "Smaller community scale"],
   },
   {
     name: "Conscient Parq",
@@ -167,8 +225,12 @@ export const PROJECTS: Project[] = [
     configs: ["3 BHK", "4 BHK"],
     budget: [4, 7],
     truthScore: 83,
+    recommendation: "Consider",
+    confidence: "Medium",
     tags: ["Luxury Lifestyle", "Location", "Layouts"],
     reason: "Boutique address with efficient, livable floor plans.",
+    strengths: ["Boutique address", "Efficient, livable floor plans", "Strong GCE location"],
+    watchouts: ["Boutique developer scale", "Limited amenity footprint"],
   },
   {
     name: "Emaar Urban Ascent",
@@ -177,8 +239,12 @@ export const PROJECTS: Project[] = [
     configs: ["2 BHK", "3 BHK"],
     budget: [2, 4],
     truthScore: 81,
+    recommendation: "Buy",
+    confidence: "Medium",
     tags: ["Value Buying", "Rental Yield", "Capital Appreciation"],
     reason: "New Gurgaon value play with steady rental absorption.",
+    strengths: ["New Gurgaon value play", "Steady rental absorption", "Emaar delivery credibility"],
+    watchouts: ["Longer growth horizon", "Submarket still maturing"],
   },
 ];
 
@@ -188,7 +254,7 @@ export type Scored = Project & { matchPct: number };
 export function rankProjects(d: BuyData): Scored[] {
   const wantsConfig = (p: Project) =>
     d.configs.length === 0 ||
-    d.configs.includes("No Preference") ||
+    d.configs.includes("Flexible") ||
     p.configs.some((c) => d.configs.includes(c));
 
   const raw = PROJECTS.map((p) => {
@@ -268,13 +334,11 @@ export function deriveDNA(d: BuyData): DNA {
   else if (d.purchaseType === "Upgrade") archetype = "Upgrade Buyer";
 
   let risk = "Medium";
-  if (p.includes("Low Risk") || p.includes("Construction Certainty")) risk = "Conservative";
+  if (p.includes("Low Risk") || p.includes("Construction Progress")) risk = "Conservative";
   if (d.purchaseType === "Investment" && p.includes("Capital Appreciation")) risk = "Medium–High";
 
   const config =
-    d.configs.length === 0 || d.configs.includes("No Preference")
-      ? "Open"
-      : d.configs.join(" · ");
+    d.configs.length === 0 || d.configs.includes("Flexible") ? "Flexible" : d.configs.join(" · ");
 
   const markets =
     d.locations.length === 0
@@ -288,6 +352,82 @@ export function deriveDNA(d: BuyData): DNA {
     markets,
     config,
     topPriorities: p.length ? p : ["To be discovered together"],
-    timeline: d.timeline ?? "Exploring",
+    timeline: d.timeline ?? "Just Exploring",
   };
+}
+
+/* ── Advisors ── */
+export type Advisor = {
+  name: string;
+  initials: string;
+  experience: string;
+  specialisation: string;
+  languages: string[];
+  slots: string[];
+};
+
+export const ADVISORS: Advisor[] = [
+  {
+    name: "Aarav Mehta",
+    initials: "AM",
+    experience: "14 years",
+    specialisation: "Golf Course Extension · Luxury",
+    languages: ["English", "Hindi"],
+    slots: ["Today · 6:00 PM", "Tomorrow · 11:30 AM", "Thu · 4:00 PM"],
+  },
+  {
+    name: "Nisha Kapoor",
+    initials: "NK",
+    experience: "11 years",
+    specialisation: "SPR · Investment Strategy",
+    languages: ["English", "Hindi", "Punjabi"],
+    slots: ["Tomorrow · 10:00 AM", "Tomorrow · 5:30 PM", "Fri · 1:00 PM"],
+  },
+  {
+    name: "Rohan Verma",
+    initials: "RV",
+    experience: "9 years",
+    specialisation: "New Gurgaon · Value Buying",
+    languages: ["English", "Hindi"],
+    slots: ["Today · 7:30 PM", "Wed · 12:00 PM", "Sat · 11:00 AM"],
+  },
+];
+
+/* ── Account persistence (front-end simulation only) ── */
+export type Booking = { advisorName: string; slot: string } | null;
+export type Account = {
+  name: string;
+  createdAt: number;
+  buy: BuyData;
+  booking: Booking;
+};
+
+const ACCOUNT_KEY = "truthEstate.account";
+
+export function loadAccount(): Account | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(ACCOUNT_KEY);
+    return raw ? (JSON.parse(raw) as Account) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveAccount(a: Account): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(ACCOUNT_KEY, JSON.stringify(a));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function clearAccount(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(ACCOUNT_KEY);
+  } catch {
+    /* ignore */
+  }
 }

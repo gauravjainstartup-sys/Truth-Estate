@@ -4,18 +4,27 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Logo from "../Logo";
 import BuyersOffice from "./BuyersOffice";
 import {
+  ACTIVE_PROJECT_COUNT,
+  ADVISORS,
+  Account,
+  Advisor,
+  Booking,
   BuyData,
   CONFIGS,
+  DNA,
+  GOALS,
   Intent,
   LOCATIONS,
   MAX_PRIORITIES,
   PRIORITIES,
   PURCHASE_TYPES,
+  Scored,
   TIMELINES,
   budgetLabel,
   deriveDNA,
   emptyBuyData,
   rankProjects,
+  saveAccount,
 } from "@/lib/journey";
 
 /* ════════════════════════════════════════════════════════════════
@@ -31,13 +40,12 @@ function Shell({
 }: {
   onClose: () => void;
   onBack?: () => void;
-  progress?: number | null; // 0..1
+  progress?: number | null;
   eyebrow?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-[#F5F0E8] text-[#1a1a1a]">
-      {/* progress hairline */}
+    <div className="relative flex h-full w-full flex-col bg-[#F5F0E8] text-[#1a1a1a]">
       <div className="h-[2px] w-full bg-[#1a1a1a]/8">
         {progress != null && (
           <div
@@ -47,7 +55,6 @@ function Shell({
         )}
       </div>
 
-      {/* top bar */}
       <header className="flex items-center justify-between px-6 py-5 md:px-12 md:py-7">
         <Logo color="#1a1a1a" className="h-7 w-auto opacity-80 md:h-8" />
         {eyebrow && (
@@ -64,14 +71,12 @@ function Shell({
         </button>
       </header>
 
-      {/* scrollable body */}
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto flex min-h-full max-w-3xl flex-col justify-center px-6 py-10 md:px-10 md:py-16">
+        <div className="mx-auto flex min-h-full max-w-3xl flex-col justify-center px-6 py-10 md:px-10 md:py-14">
           {children}
         </div>
       </div>
 
-      {/* back affordance */}
       {onBack && (
         <button
           onClick={onBack}
@@ -84,7 +89,15 @@ function Shell({
   );
 }
 
-function ScreenHeading({ kicker, title, sub }: { kicker?: string; title: React.ReactNode; sub?: string }) {
+function ScreenHeading({
+  kicker,
+  title,
+  sub,
+}: {
+  kicker?: string;
+  title: React.ReactNode;
+  sub?: string;
+}) {
   return (
     <div className="mb-10 md:mb-14">
       {kicker && (
@@ -106,23 +119,46 @@ function PrimaryButton({
   children,
   onClick,
   disabled,
+  full,
 }: {
   children: React.ReactNode;
   onClick: () => void;
   disabled?: boolean;
+  full?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className="rounded-sm bg-[#1e6b45] px-10 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/10 transition-all duration-500 enabled:hover:bg-[#238c55] disabled:cursor-not-allowed disabled:opacity-30"
+      className={`rounded-sm bg-[#1e6b45] px-10 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/10 transition-all duration-500 enabled:hover:bg-[#238c55] disabled:cursor-not-allowed disabled:opacity-30 ${
+        full ? "w-full" : ""
+      }`}
     >
       {children}
     </button>
   );
 }
 
-function NextBar({ onNext, disabled, label = "Continue" }: { onNext: () => void; disabled?: boolean; label?: string }) {
+function GhostButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="rounded-sm border border-[#1a1a1a]/20 bg-white/30 px-8 py-4 text-[13px] font-light tracking-[0.05em] text-[#1a1a1a]/80 transition-all duration-300 hover:border-[#1a1a1a]/40 hover:bg-white/60"
+    >
+      {children}
+    </button>
+  );
+}
+
+function NextBar({
+  onNext,
+  disabled,
+  label = "Continue",
+}: {
+  onNext: () => void;
+  disabled?: boolean;
+  label?: string;
+}) {
   return (
     <div className="mt-12 flex justify-end md:mt-16">
       <PrimaryButton onClick={onNext} disabled={disabled}>
@@ -132,8 +168,15 @@ function NextBar({ onNext, disabled, label = "Continue" }: { onNext: () => void;
   );
 }
 
-/* radio-style single select */
-function OptionRow({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) {
+function OptionRow({
+  label,
+  selected,
+  onClick,
+}: {
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
   return (
     <button
       onClick={onClick}
@@ -159,8 +202,17 @@ function OptionRow({ label, selected, onClick }: { label: string; selected: bool
   );
 }
 
-/* multi-select chip */
-function Chip({ label, selected, onClick, disabled }: { label: string; selected: boolean; onClick: () => void; disabled?: boolean }) {
+function Chip({
+  label,
+  selected,
+  onClick,
+  disabled,
+}: {
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
   return (
     <button
       onClick={onClick}
@@ -178,7 +230,25 @@ function Chip({ label, selected, onClick, disabled }: { label: string; selected:
   );
 }
 
-/* eased count-up */
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-[10px] font-light uppercase tracking-[0.22em] text-[#1a1a1a]/40">{label}</dt>
+      <dd className="mt-2 font-serif text-[1.02rem] font-light leading-snug text-[#1a1a1a] md:text-[1.15rem]">
+        {value}
+      </dd>
+    </div>
+  );
+}
+
+function Avatar({ initials }: { initials: string }) {
+  return (
+    <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[#c9a96e]/50 bg-[#c9a96e]/10 font-serif text-[1.1rem] font-medium text-[#1a1a1a]/70">
+      {initials}
+    </span>
+  );
+}
+
 function useCountUp(end: number, run: boolean, dur = 1600) {
   const [n, setN] = useState(0);
   useEffect(() => {
@@ -199,45 +269,71 @@ function useCountUp(end: number, run: boolean, dur = 1600) {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   THE MODAL
+   STEP MACHINE
    ════════════════════════════════════════════════════════════════ */
 
 const BUY_STEPS = ["purchase", "budget", "locations", "configs", "timeline", "priorities"] as const;
 type BuyStep = (typeof BUY_STEPS)[number];
-type Step = "intent" | BuyStep | "loading" | "dna" | "save" | "office" | "sell" | "invest" | "research";
+type Step =
+  | "welcome"
+  | "goal"
+  | "coming-soon"
+  | BuyStep
+  | "processing"
+  | "dna"
+  | "shortlist"
+  | "preview"
+  | "truthguide"
+  | "intelligence"
+  | "consultation"
+  | "auth"
+  | "office"
+  | "welcome-back"
+  | "research";
 
 const INTENT_STEP: Record<Intent, Step> = {
   buy: "purchase",
-  sell: "sell",
-  invest: "invest",
+  sell: "coming-soon",
+  invest: "coming-soon",
   research: "research",
 };
 
 export default function JourneyModal({
   initialIntent,
+  account,
   onClose,
 }: {
   initialIntent?: Intent;
+  account: Account | null;
   onClose: () => void;
 }) {
-  const [step, setStep] = useState<Step>(initialIntent ? INTENT_STEP[initialIntent] : "intent");
-  const [buy, setBuy] = useState<BuyData>(emptyBuyData);
+  const initialStep: Step = initialIntent
+    ? INTENT_STEP[initialIntent]
+    : account
+    ? "welcome-back"
+    : "welcome";
 
-  // Esc to close
+  const [step, setStep] = useState<Step>(initialStep);
+  const [goal, setGoal] = useState<Intent>(initialIntent ?? "buy");
+  const [buy, setBuy] = useState<BuyData>(account?.buy ?? emptyBuyData);
+  const [selected, setSelected] = useState<Scored | null>(null);
+  const [booking, setBooking] = useState<Booking>(account?.booking ?? null);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const set = <K extends keyof BuyData>(k: K, v: BuyData[K]) => setBuy((b) => ({ ...b, [k]: v }));
+  const recs = useMemo(() => rankProjects(buy).slice(0, 3), [buy]);
+  const dna = useMemo(() => deriveDNA(buy), [buy]);
 
+  const set = <K extends keyof BuyData>(k: K, v: BuyData[K]) => setBuy((b) => ({ ...b, [k]: v }));
   const toggle = (k: "locations" | "configs", value: string) =>
     setBuy((b) => {
       const has = b[k].includes(value);
       return { ...b, [k]: has ? b[k].filter((x) => x !== value) : [...b[k], value] };
     });
-
   const togglePriority = (value: string) =>
     setBuy((b) => {
       const has = b.priorities.includes(value);
@@ -246,19 +342,12 @@ export default function JourneyModal({
       return { ...b, priorities: [...b.priorities, value] };
     });
 
-  /* ── navigation ── */
   const buyIndex = BUY_STEPS.indexOf(step as BuyStep);
   const inBuyFlow = buyIndex >= 0;
   const progress = inBuyFlow ? (buyIndex + 1) / BUY_STEPS.length : null;
-
-  const nextBuy = () => {
-    if (buyIndex < BUY_STEPS.length - 1) setStep(BUY_STEPS[buyIndex + 1]);
-    else setStep("loading");
-  };
-  const backBuy = () => {
-    if (buyIndex <= 0) setStep("intent");
-    else setStep(BUY_STEPS[buyIndex - 1]);
-  };
+  const nextBuy = () =>
+    buyIndex < BUY_STEPS.length - 1 ? setStep(BUY_STEPS[buyIndex + 1]) : setStep("processing");
+  const backBuy = () => (buyIndex <= 0 ? setStep("goal") : setStep(BUY_STEPS[buyIndex - 1]));
 
   const canContinue: Record<BuyStep, boolean> = {
     purchase: buy.purchaseType !== null,
@@ -269,17 +358,25 @@ export default function JourneyModal({
     priorities: buy.priorities.length > 0,
   };
 
-  /* ── INTENT (Screen 1) ── */
-  if (step === "intent") {
-    const choices: { icon: string; label: string; go: () => void }[] = [
-      { icon: "🏡", label: "Buy a Property", go: () => setStep("purchase") },
-      { icon: "💰", label: "Sell a Property", go: () => setStep("sell") },
-      { icon: "📈", label: "Invest in Real Estate", go: () => setStep("invest") },
-      { icon: "🔍", label: "Research & Compare", go: () => setStep("research") },
-    ];
-    return (
+  const completeAuth = () => {
+    saveAccount({ name: "Member", createdAt: Date.now(), buy, booking });
+    setStep("office");
+  };
+
+  /* ── outer frame: entrance + background blur ── */
+  const frame = (inner: React.ReactNode) => (
+    <div className="fixed inset-0 z-[100]">
+      <div className="absolute inset-0 animate-journey-fade bg-[#0a0a0a]/45 backdrop-blur-xl" />
+      <div className="absolute inset-0 animate-journey-in">{inner}</div>
+    </div>
+  );
+
+  /* ─────────────── render by step ─────────────── */
+
+  if (step === "welcome") {
+    return frame(
       <Shell onClose={onClose} eyebrow="The Truth Estate Journey">
-        <div key="intent" className="animate-fade-up">
+        <div key="welcome" className="animate-fade-up max-w-2xl">
           <ScreenHeading
             title={
               <>
@@ -287,26 +384,48 @@ export default function JourneyModal({
                 <br />
                 Let&apos;s understand
                 <br />
-                what brings you here.
+                what you&apos;re looking for.
               </>
             }
-            sub="Choose what you'd like to accomplish today."
+            sub="We'll personalize everything from here."
           />
-          <div className="flex flex-col">
-            {choices.map((c) => (
+          <p className="mb-12 text-[0.8rem] font-light uppercase tracking-[0.28em] text-[#1a1a1a]/40">
+            Around 2 minutes
+          </p>
+          <PrimaryButton onClick={() => setStep("goal")}>Continue</PrimaryButton>
+        </div>
+      </Shell>
+    );
+  }
+
+  if (step === "goal") {
+    const pick = (g: Intent, live: boolean) => {
+      setGoal(g);
+      setStep(live ? "purchase" : "coming-soon");
+    };
+    return frame(
+      <Shell onClose={onClose} onBack={() => setStep("welcome")} eyebrow="The Truth Estate Journey">
+        <div key="goal" className="animate-fade-up">
+          <ScreenHeading title="What's your goal today?" />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {GOALS.map((g) => (
               <button
-                key={c.label}
-                onClick={c.go}
-                className="group flex items-center gap-5 border-b border-[#1a1a1a]/10 py-6 text-left md:py-7"
+                key={g.key}
+                onClick={() => pick(g.key, g.live)}
+                className="group flex flex-col items-start gap-6 rounded-xl border border-[#1a1a1a]/12 bg-white/30 px-7 py-8 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-[#1a1a1a]/25 hover:bg-white/55 hover:shadow-lg hover:shadow-black/[0.04] md:px-8 md:py-10"
               >
-                <span className="text-[1.6rem] opacity-80 transition-transform duration-500 group-hover:scale-110 md:text-[2rem]">
-                  {c.icon}
+                <span className="text-[2rem] transition-transform duration-500 group-hover:scale-110 md:text-[2.4rem]">
+                  {g.icon}
                 </span>
-                <span className="relative font-serif text-[1.5rem] font-light text-[#1a1a1a]/70 transition-all duration-500 group-hover:translate-x-1.5 group-hover:text-[#1a1a1a] md:text-[2.1rem]">
-                  {c.label}
-                </span>
-                <span className="ml-auto text-[1.1rem] text-[#1a1a1a]/0 transition-all duration-500 group-hover:translate-x-0 group-hover:text-[#c9a96e] md:text-[1.3rem]">
-                  &rarr;
+                <span className="flex w-full items-center justify-between">
+                  <span className="font-serif text-[1.3rem] font-medium text-[#1a1a1a] md:text-[1.6rem]">
+                    {g.label}
+                  </span>
+                  {!g.live && (
+                    <span className="text-[9px] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/35">
+                      Soon
+                    </span>
+                  )}
                 </span>
               </button>
             ))}
@@ -316,15 +435,40 @@ export default function JourneyModal({
     );
   }
 
-  /* ── BUY: Screen 2 — purchase type ── */
+  if (step === "coming-soon") {
+    const g = GOALS.find((x) => x.key === goal);
+    return frame(
+      <Shell onClose={onClose} onBack={() => setStep("goal")} eyebrow={g?.label}>
+        <div key="coming-soon" className="animate-fade-up text-center">
+          <span className="text-[3rem] md:text-[3.6rem]">{g?.icon}</span>
+          <h2 className="mt-8 font-serif text-[2rem] font-medium leading-[1.15] text-[#1a1a1a] md:text-[3rem]">
+            {g?.label} is coming soon.
+          </h2>
+          <p className="mx-auto mt-6 max-w-md text-[0.98rem] font-light leading-relaxed text-[#1a1a1a]/55">
+            We&apos;re building this with the same independence and depth as our Buy experience.
+            You&apos;ll be among the first to know when it opens.
+          </p>
+          <div className="mt-12 flex justify-center">
+            <GhostButton onClick={() => setStep("goal")}>Explore Buying Instead</GhostButton>
+          </div>
+        </div>
+      </Shell>
+    );
+  }
+
   if (step === "purchase") {
-    return (
-      <Shell onClose={onClose} onBack={backBuy} progress={progress} eyebrow="Buy a Property">
+    return frame(
+      <Shell onClose={onClose} onBack={backBuy} progress={progress} eyebrow="Buy Property">
         <div key="purchase" className="animate-fade-up">
           <ScreenHeading title="What best describes your purchase?" />
           <div className="flex flex-col">
             {PURCHASE_TYPES.map((t) => (
-              <OptionRow key={t} label={t} selected={buy.purchaseType === t} onClick={() => set("purchaseType", t)} />
+              <OptionRow
+                key={t}
+                label={t}
+                selected={buy.purchaseType === t}
+                onClick={() => set("purchaseType", t)}
+              />
             ))}
           </div>
           <NextBar onNext={nextBuy} disabled={!canContinue.purchase} />
@@ -333,10 +477,9 @@ export default function JourneyModal({
     );
   }
 
-  /* ── BUY: Screen 3 — budget ── */
   if (step === "budget") {
-    return (
-      <Shell onClose={onClose} onBack={backBuy} progress={progress} eyebrow="Buy a Property">
+    return frame(
+      <Shell onClose={onClose} onBack={backBuy} progress={progress} eyebrow="Buy Property">
         <div key="budget" className="animate-fade-up">
           <ScreenHeading title="What's your budget?" sub="Drag to set the range you're comfortable exploring." />
           <div className="mt-4">
@@ -366,12 +509,14 @@ export default function JourneyModal({
     );
   }
 
-  /* ── BUY: Screen 4 — locations ── */
   if (step === "locations") {
-    return (
-      <Shell onClose={onClose} onBack={backBuy} progress={progress} eyebrow="Buy a Property">
+    return frame(
+      <Shell onClose={onClose} onBack={backBuy} progress={progress} eyebrow="Buy Property">
         <div key="locations" className="animate-fade-up">
-          <ScreenHeading title="Preferred locations" sub="Select any that interest you — or none, and we'll guide you." />
+          <ScreenHeading
+            title="Preferred locations"
+            sub="Select any that interest you — or none, and we'll guide you."
+          />
           <div className="flex flex-wrap gap-3">
             {LOCATIONS.map((l) => (
               <Chip key={l} label={l} selected={buy.locations.includes(l)} onClick={() => toggle("locations", l)} />
@@ -383,10 +528,9 @@ export default function JourneyModal({
     );
   }
 
-  /* ── BUY: Screen 5 — configuration ── */
   if (step === "configs") {
-    return (
-      <Shell onClose={onClose} onBack={backBuy} progress={progress} eyebrow="Buy a Property">
+    return frame(
+      <Shell onClose={onClose} onBack={backBuy} progress={progress} eyebrow="Buy Property">
         <div key="configs" className="animate-fade-up">
           <ScreenHeading title="Configuration" sub="What sizes feel right? Choose as many as you like." />
           <div className="flex flex-wrap gap-3">
@@ -400,10 +544,9 @@ export default function JourneyModal({
     );
   }
 
-  /* ── BUY: Screen 6 — timeline ── */
   if (step === "timeline") {
-    return (
-      <Shell onClose={onClose} onBack={backBuy} progress={progress} eyebrow="Buy a Property">
+    return frame(
+      <Shell onClose={onClose} onBack={backBuy} progress={progress} eyebrow="Buy Property">
         <div key="timeline" className="animate-fade-up">
           <ScreenHeading title="What's your timeline?" />
           <div className="flex flex-col">
@@ -417,11 +560,10 @@ export default function JourneyModal({
     );
   }
 
-  /* ── BUY: Screen 7 — priorities ── */
   if (step === "priorities") {
     const full = buy.priorities.length >= MAX_PRIORITIES;
-    return (
-      <Shell onClose={onClose} onBack={backBuy} progress={progress} eyebrow="Buy a Property">
+    return frame(
+      <Shell onClose={onClose} onBack={backBuy} progress={progress} eyebrow="Buy Property">
         <div key="priorities" className="animate-fade-up">
           <ScreenHeading
             title="What matters most?"
@@ -438,91 +580,174 @@ export default function JourneyModal({
               />
             ))}
           </div>
-          <NextBar onNext={nextBuy} disabled={!canContinue.priorities} label="See my matches" />
+          <NextBar onNext={nextBuy} disabled={!canContinue.priorities} label="See my results" />
         </div>
       </Shell>
     );
   }
 
-  /* ── BUY: Screen 8 — loading ── */
-  if (step === "loading") {
-    return <LoadingScreen onDone={() => setStep("dna")} />;
+  if (step === "processing") {
+    return frame(<ProcessingScreen onDone={() => setStep("dna")} />);
   }
 
-  /* ── BUY: Screen 9 — Buyer DNA ── */
   if (step === "dna") {
-    return (
+    return frame(
       <Shell onClose={onClose} onBack={() => setStep("priorities")} eyebrow="Your Buyer DNA">
-        <DnaScreen buy={buy} onContinue={() => setStep("save")} />
+        <DnaScreen dna={dna} onContinue={() => setStep("shortlist")} />
       </Shell>
     );
   }
 
-  /* ── Screen 10 — save journey ── */
-  if (step === "save") {
-    return (
-      <Shell onClose={onClose} onBack={() => setStep("dna")} eyebrow="Your Buyer's Office">
-        <SaveScreen onContinue={() => setStep("office")} />
+  if (step === "shortlist") {
+    return frame(
+      <Shell onClose={onClose} onBack={() => setStep("dna")} eyebrow="Your Shortlist">
+        <ShortlistScreen
+          recs={recs}
+          onPick={(r) => {
+            setSelected(r);
+            setStep("preview");
+          }}
+        />
       </Shell>
     );
   }
 
-  /* ── Screen 11 — Buyer's Office ── */
+  if (step === "preview" && selected) {
+    return frame(
+      <Shell onClose={onClose} onBack={() => setStep("shortlist")} eyebrow="Project Preview">
+        <ProjectPreview
+          project={selected}
+          onTruthGuide={() => setStep("truthguide")}
+          onIntelligence={() => setStep("intelligence")}
+          onConsult={() => setStep("consultation")}
+        />
+      </Shell>
+    );
+  }
+
+  if (step === "truthguide" && selected) {
+    return frame(
+      <Shell onClose={onClose} onBack={() => setStep("preview")} eyebrow="TruthGuide">
+        <ContextualTruthGuide
+          project={selected}
+          dna={dna}
+          onConsult={() => setStep("consultation")}
+          onExplore={() => setStep("shortlist")}
+        />
+      </Shell>
+    );
+  }
+
+  if (step === "intelligence" && selected) {
+    return frame(
+      <Shell onClose={onClose} onBack={() => setStep("preview")} eyebrow="Full Intelligence">
+        <FullIntelligence
+          project={selected}
+          alternatives={recs.filter((r) => r.name !== selected.name)}
+          onConsult={() => setStep("consultation")}
+          onExplore={() => setStep("shortlist")}
+        />
+      </Shell>
+    );
+  }
+
+  if (step === "consultation") {
+    return frame(
+      <Shell onClose={onClose} onBack={() => setStep(selected ? "preview" : "shortlist")} eyebrow="Consultation">
+        <ConsultationScreen
+          onBook={(advisorName, slot) => {
+            setBooking({ advisorName, slot });
+            setStep("auth");
+          }}
+        />
+      </Shell>
+    );
+  }
+
+  if (step === "auth") {
+    return frame(
+      <Shell onClose={onClose} onBack={() => setStep("consultation")} eyebrow="Your Buyer's Office">
+        <AuthScreen booking={booking} onContinue={completeAuth} />
+      </Shell>
+    );
+  }
+
   if (step === "office") {
-    return <BuyersOffice buy={buy} onClose={onClose} />;
+    return frame(<BuyersOffice buy={buy} booking={booking} onClose={onClose} />);
   }
 
-  /* ── FLOW 2 / 3 — waitlists ── */
-  if (step === "sell") {
-    return (
-      <Shell onClose={onClose} onBack={() => setStep("intent")} eyebrow="Sell a Property">
-        <WaitlistScreen
-          kicker="Private Beta"
-          title="Selling Intelligence is currently in private beta."
-          body="We're onboarding a small group of sellers first. Leave your email and we'll invite you ahead of the public release."
-        />
+  if (step === "welcome-back") {
+    return frame(
+      <Shell onClose={onClose} eyebrow="Welcome Back">
+        <div key="welcome-back" className="animate-fade-up max-w-2xl">
+          <ScreenHeading title={<>Welcome back.<br />Continue your journey.</>} />
+          <div className="flex flex-col gap-3.5">
+            <PrimaryButton
+              onClick={() => {
+                if (account) {
+                  setBuy(account.buy);
+                  setBooking(account.booking);
+                }
+                setStep("office");
+              }}
+            >
+              Open Your Buyer&apos;s Office
+            </PrimaryButton>
+            <GhostButton
+              onClick={() => {
+                if (account) setBuy(account.buy);
+                setStep("purchase");
+              }}
+            >
+              Update My Requirements
+            </GhostButton>
+            <GhostButton
+              onClick={() => {
+                setBuy(emptyBuyData);
+                setStep("welcome");
+              }}
+            >
+              Start a New Journey
+            </GhostButton>
+          </div>
+        </div>
       </Shell>
     );
   }
-  if (step === "invest") {
-    return (
-      <Shell onClose={onClose} onBack={() => setStep("intent")} eyebrow="Invest in Real Estate">
-        <WaitlistScreen
-          kicker="Coming Soon"
-          title="The Investment Office is coming soon."
-          body="A dedicated workspace for portfolio-grade real estate decisions. Join the waitlist and we'll bring you in early."
-        />
-      </Shell>
-    );
-  }
 
-  /* ── FLOW 4 — research (anonymous) ── */
   if (step === "research") {
-    return (
-      <Shell onClose={onClose} onBack={() => setStep("intent")} eyebrow="Research & Compare">
-        <ResearchScreen />
+    return frame(
+      <Shell onClose={onClose} onBack={onClose} eyebrow="TruthGuide">
+        <AnonymousTruthGuide />
       </Shell>
     );
   }
 
-  return null;
+  // Fallback (e.g. preview without selection): return to shortlist frame
+  return frame(
+    <Shell onClose={onClose} eyebrow="The Truth Estate Journey">
+      <div className="animate-fade-up">
+        <ScreenHeading title="Let's continue." />
+        <PrimaryButton onClick={() => setStep("welcome")}>Start Your Journey</PrimaryButton>
+      </div>
+    </Shell>
+  );
 }
 
 /* ════════════════════════════════════════════════════════════════
-   SCREEN 8 — LOADING
+   AI PROCESSING
    ════════════════════════════════════════════════════════════════ */
-function LoadingScreen({ onDone }: { onDone: () => void }) {
+function ProcessingScreen({ onDone }: { onDone: () => void }) {
   const lines = useMemo(
     () => [
       "Understanding your priorities…",
-      "Analysing projects…",
-      "Evaluating opportunities…",
-      "Matching your preferences…",
+      "Comparing active projects…",
+      "Evaluating developer quality…",
+      "Finding opportunities…",
     ],
     []
   );
   const [i, setI] = useState(0);
-
   useEffect(() => {
     const rot = setInterval(() => setI((x) => (x + 1) % 4), 1000);
     const done = setTimeout(onDone, 4200);
@@ -530,17 +755,17 @@ function LoadingScreen({ onDone }: { onDone: () => void }) {
       clearInterval(rot);
       clearTimeout(done);
     };
-  }, [onDone, lines.length]);
+  }, [onDone]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#F5F0E8] text-[#1a1a1a]">
+    <div className="flex h-full w-full flex-col items-center justify-center bg-[#F5F0E8] px-6 text-center text-[#1a1a1a]">
       <div className="relative mb-12 h-12 w-12">
         <span className="absolute inset-0 animate-spin rounded-full border-2 border-[#1a1a1a]/10 border-t-[#1e6b45]" />
       </div>
-      <p
-        key={i}
-        className="animate-fade-up font-serif text-[1.4rem] font-light italic text-[#1a1a1a]/70 md:text-[2rem]"
-      >
+      <h2 className="mb-6 font-serif text-[1.7rem] font-medium text-[#1a1a1a] md:text-[2.4rem]">
+        Analysing your preferences…
+      </h2>
+      <p key={i} className="animate-fade-up font-serif text-[1.1rem] font-light italic text-[#1a1a1a]/55 md:text-[1.4rem]">
         {lines[i]}
       </p>
     </div>
@@ -548,66 +773,73 @@ function LoadingScreen({ onDone }: { onDone: () => void }) {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   SCREEN 9 — BUYER DNA
+   BUYER DNA (profile)
    ════════════════════════════════════════════════════════════════ */
-function DnaScreen({ buy, onContinue }: { buy: BuyData; onContinue: () => void }) {
-  const recs = useMemo(() => rankProjects(buy).slice(0, 3), [buy]);
-  const dna = useMemo(() => deriveDNA(buy), [buy]);
-  const [revealed, setRevealed] = useState(false);
-  const total = useCountUp(127, true, 1800);
-
-  useEffect(() => {
-    const t = setTimeout(() => setRevealed(true), 1400);
-    return () => clearTimeout(t);
-  }, []);
-
+function DnaScreen({ dna, onContinue }: { dna: DNA; onContinue: () => void }) {
   return (
     <div key="dna" className="animate-fade-up">
       <ScreenHeading kicker="Buyer DNA" title={<>We&apos;ve understood<br />what you&apos;re looking for.</>} />
-
-      {/* Profile card */}
       <div className="border-y border-[#1a1a1a]/15 py-8 md:py-10">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-5 h-px w-16 bg-[#c9a96e]/50" />
           <p className="font-serif text-[1.9rem] font-medium text-[#1a1a1a] md:text-[2.6rem]">{dna.archetype}</p>
           <div className="mx-auto mt-5 h-px w-16 bg-[#c9a96e]/50" />
         </div>
-
         <dl className="grid grid-cols-2 gap-x-8 gap-y-7 md:grid-cols-3">
           <Field label="Budget" value={dna.budgetRange} />
           <Field label="Preferred Markets" value={dna.markets.join("  ·  ")} />
           <Field label="Configuration" value={dna.config} />
+          <Field label="Timeline" value={dna.timeline} />
           <Field label="Risk Appetite" value={dna.risk} />
-          <Field label="Buying Timeline" value={dna.timeline} />
           <Field label="Top Priorities" value={dna.topPriorities.join("  ·  ")} />
         </dl>
       </div>
+      <NextBar onNext={onContinue} label="See what we'd investigate" />
+    </div>
+  );
+}
 
-      {/* Funnel reveal */}
-      <div className="py-12 text-center md:py-16">
-        <p className="font-serif text-[1.5rem] font-light leading-snug text-[#1a1a1a]/80 md:text-[2.1rem]">
-          Based on your profile, we&apos;d investigate
+/* ════════════════════════════════════════════════════════════════
+   SHORTLIST — 127 → 3 reveal + recommendations
+   ════════════════════════════════════════════════════════════════ */
+function ShortlistScreen({ recs, onPick }: { recs: Scored[]; onPick: (r: Scored) => void }) {
+  const [revealed, setRevealed] = useState(false);
+  const total = useCountUp(ACTIVE_PROJECT_COUNT, true, 1900);
+  useEffect(() => {
+    const t = setTimeout(() => setRevealed(true), 1700);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <div key="shortlist" className="animate-fade-up">
+      <div className="py-6 text-center md:py-10">
+        <p className="font-serif text-[1.4rem] font-light leading-snug text-[#1a1a1a]/80 md:text-[2rem]">
+          Based on everything you&apos;ve shared, there are
         </p>
-        <p className="mt-6 font-serif text-[1.5rem] font-light leading-snug text-[#1a1a1a]/80 md:text-[2.1rem]">
-          only{" "}
-          <span className="font-medium text-[#1e6b45]">3</span> out of{" "}
-          <span className="font-medium text-[#1a1a1a]">{total}</span> active projects.
+        <p className="my-6 font-serif text-[4rem] font-medium leading-none text-[#1a1a1a] md:text-[6rem]">
+          {total}
+        </p>
+        <p className="font-serif text-[1.4rem] font-light leading-snug text-[#1a1a1a]/80 md:text-[2rem]">
+          active projects. We would investigate
+        </p>
+        <p className="mt-5 font-serif text-[2.4rem] font-medium leading-none text-[#1e6b45] md:text-[3.4rem]">
+          only 3.
         </p>
       </div>
 
-      {/* Recommendations */}
       <div
         className="transition-all duration-1000"
-        style={{ opacity: revealed ? 1 : 0, transform: revealed ? "translateY(0)" : "translateY(16px)" }}
+        style={{ opacity: revealed ? 1 : 0, transform: revealed ? "translateY(0)" : "translateY(18px)" }}
       >
-        <p className="mb-7 text-center text-[10px] font-light uppercase tracking-[0.4em] text-[#c9a96e]">
-          Top 3 Recommendations
+        <p className="mb-7 mt-4 text-center text-[10px] font-light uppercase tracking-[0.4em] text-[#c9a96e]">
+          Tap a project to see why
         </p>
         <div className="flex flex-col gap-4">
           {recs.map((r, idx) => (
-            <div
+            <button
               key={r.name}
-              className="flex flex-col gap-3 border border-[#1a1a1a]/12 bg-white/40 px-6 py-5 md:flex-row md:items-center md:gap-6"
+              onClick={() => onPick(r)}
+              className="group flex items-center gap-5 border border-[#1a1a1a]/12 bg-white/40 px-6 py-5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-[#1a1a1a]/25 hover:bg-white/60 hover:shadow-lg hover:shadow-black/[0.04]"
             >
               <span className="font-serif text-[1.1rem] text-[#1a1a1a]/30 md:text-[1.3rem]">
                 {String(idx + 1).padStart(2, "0")}
@@ -619,38 +851,32 @@ function DnaScreen({ buy, onContinue }: { buy: BuyData; onContinue: () => void }
                 </p>
                 <p className="mt-2 text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/65">{r.reason}</p>
               </div>
-              <div className="flex gap-8 md:flex-col md:items-end md:gap-2 md:text-right">
-                <Metric label="Match" value={`${r.matchPct}%`} accent />
-                <Metric label="Truth Score" value={`${r.truthScore}`} />
+              <div className="flex flex-col items-end gap-2 text-right">
+                <Stat label="Truth Match" value={`${r.matchPct}%`} accent />
+                <Stat label="Truth Score" value={`${r.truthScore}`} />
               </div>
-            </div>
+              <span className="ml-1 text-[1.1rem] text-[#1a1a1a]/25 transition-all duration-300 group-hover:translate-x-1 group-hover:text-[#c9a96e]">
+                &rarr;
+              </span>
+            </button>
           ))}
         </div>
         <p className="mt-5 text-center text-[0.75rem] font-light italic text-[#1a1a1a]/35">
-          Pricing and the full investigation are shared inside your Buyer&apos;s Office.
+          No pricing yet — and no registration. Just our honest read.
         </p>
       </div>
-
-      <NextBar onNext={onContinue} label="Continue" />
     </div>
   );
 }
 
-function Field({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
-    <div>
-      <dt className="text-[10px] font-light uppercase tracking-[0.22em] text-[#1a1a1a]/40">{label}</dt>
-      <dd className="mt-2 font-serif text-[1.02rem] font-light leading-snug text-[#1a1a1a] md:text-[1.15rem]">
-        {value}
-      </dd>
-    </div>
-  );
-}
-
-function Metric({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <div className="md:text-right">
-      <p className={`font-serif text-[1.25rem] font-medium leading-none md:text-[1.5rem] ${accent ? "text-[#1e6b45]" : "text-[#1a1a1a]"}`}>
+    <div className="text-right">
+      <p
+        className={`font-serif text-[1.2rem] font-medium leading-none md:text-[1.45rem] ${
+          accent ? "text-[#1e6b45]" : "text-[#1a1a1a]"
+        }`}
+      >
         {value}
       </p>
       <p className="mt-1.5 text-[9px] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/40">{label}</p>
@@ -659,29 +885,365 @@ function Metric({ label, value, accent }: { label: string; value: string; accent
 }
 
 /* ════════════════════════════════════════════════════════════════
-   SCREEN 10 — SAVE JOURNEY  (never "sign up")
+   PROJECT PREVIEW
    ════════════════════════════════════════════════════════════════ */
-function SaveScreen({ onContinue }: { onContinue: () => void }) {
+function ProjectPreview({
+  project,
+  onTruthGuide,
+  onIntelligence,
+  onConsult,
+}: {
+  project: Scored;
+  onTruthGuide: () => void;
+  onIntelligence: () => void;
+  onConsult: () => void;
+}) {
+  return (
+    <div key={project.name} className="animate-fade-up">
+      <p className="mb-4 text-[10px] font-light uppercase tracking-[0.4em] text-[#c9a96e]">Project Preview</p>
+      <h2 className="font-serif text-[2rem] font-medium leading-[1.1] text-[#1a1a1a] md:text-[2.9rem]">
+        {project.name}
+      </h2>
+      <p className="mt-2 text-[0.9rem] font-light tracking-[0.04em] text-[#1a1a1a]/50">
+        {project.developer} · {project.market}
+      </p>
+
+      <div className="mt-9 grid grid-cols-3 gap-4 border-y border-[#1a1a1a]/15 py-7">
+        <Stat label="Truth Score" value={`${project.truthScore}`} />
+        <div className="text-center">
+          <p className="font-serif text-[1.2rem] font-medium leading-none text-[#1e6b45] md:text-[1.45rem]">
+            {project.recommendation}
+          </p>
+          <p className="mt-1.5 text-[9px] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/40">Recommendation</p>
+        </div>
+        <div className="text-right">
+          <p className="font-serif text-[1.2rem] font-medium leading-none text-[#1a1a1a] md:text-[1.45rem]">
+            {project.confidence}
+          </p>
+          <p className="mt-1.5 text-[9px] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/40">Confidence</p>
+        </div>
+      </div>
+
+      <div className="mt-9 grid grid-cols-1 gap-8 md:grid-cols-2">
+        <div>
+          <p className="mb-4 text-[10px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/40">Top Strengths</p>
+          <ul className="flex flex-col gap-3">
+            {project.strengths.map((s) => (
+              <li key={s} className="flex gap-3 text-[0.92rem] font-light leading-relaxed text-[#1a1a1a]/75">
+                <span className="text-[#1e6b45]">✓</span>
+                {s}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <p className="mb-4 text-[10px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/40">Watchouts</p>
+          <ul className="flex flex-col gap-3">
+            {project.watchouts.map((w) => (
+              <li key={w} className="flex gap-3 text-[0.92rem] font-light leading-relaxed text-[#1a1a1a]/75">
+                <span className="text-[#c9a96e]">!</span>
+                {w}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div className="mt-12 flex flex-col gap-3.5 sm:flex-row sm:flex-wrap">
+        <PrimaryButton onClick={onConsult}>Book Consultation</PrimaryButton>
+        <GhostButton onClick={onIntelligence}>View Full Intelligence</GhostButton>
+        <GhostButton onClick={onTruthGuide}>Challenge TruthGuide</GhostButton>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   CONTEXTUAL TRUTHGUIDE (knows DNA + project)
+   ════════════════════════════════════════════════════════════════ */
+type TGAnswer = { answer: string; reasoning: string; evidence: string; confidence: string; next: string };
+
+function buildAnswer(q: string, p: Scored, dna: DNA): TGAnswer {
+  if (q.startsWith("Is")) {
+    return {
+      answer: `For a ${dna.archetype.toLowerCase()} like you, ${p.name} is a ${p.recommendation.toLowerCase()}.`,
+      reasoning: `It aligns with your ${dna.budgetRange} budget and priorities (${dna.topPriorities
+        .slice(0, 2)
+        .join(", ")}). ${p.strengths[0]}.`,
+      evidence: `Truth Score ${p.truthScore}/100 · ${p.developer} delivery record · ${p.market} comparables.`,
+      confidence: p.confidence,
+      next: "Discuss your specific unit and floor with an advisor.",
+    };
+  }
+  if (q.startsWith("What are the risks")) {
+    return {
+      answer: `Two things we'd weigh before you commit to ${p.name}.`,
+      reasoning: `${p.watchouts.join(". ")}. None are deal-breakers for your profile, but they affect timing and unit selection.`,
+      evidence: `Construction tracking, RERA filings, and ${p.market} price history.`,
+      confidence: p.confidence,
+      next: "Ask an advisor which stacks avoid these issues.",
+    };
+  }
+  if (q.startsWith("Compare")) {
+    return {
+      answer: `Against your other matches, ${p.name} leads on ${p.tags[0]?.toLowerCase()}.`,
+      reasoning: `Your shortlist was ranked on fit to your DNA. ${p.name} earns a ${p.matchPct}% Truth Match versus the field.`,
+      evidence: `Relative scoring across location, budget, configuration and your top priorities.`,
+      confidence: p.confidence,
+      next: "See the full side-by-side in Full Intelligence.",
+    };
+  }
+  return {
+    answer: `We only surface what we'd seriously consider for you — and ${p.name} made the cut.`,
+    reasoning: `From ${ACTIVE_PROJECT_COUNT} active projects, three fit your ${dna.budgetRange} ${dna.archetype.toLowerCase()} profile. ${p.reason}`,
+    evidence: `Independent scoring of developer, construction, location and price.`,
+    confidence: p.confidence,
+    next: "Book a consultation to pressure-test our thinking.",
+  };
+}
+
+function ContextualTruthGuide({
+  project,
+  dna,
+  onConsult,
+  onExplore,
+}: {
+  project: Scored;
+  dna: DNA;
+  onConsult: () => void;
+  onExplore: () => void;
+}) {
+  const questions = [
+    `Is ${project.name} right for me?`,
+    "What are the risks?",
+    "Compare it with my other matches.",
+    "Why did this make the cut?",
+  ];
+  const [active, setActive] = useState<string | null>(null);
+  const [thinking, setThinking] = useState(false);
+  const [ans, setAns] = useState<TGAnswer | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const ask = (q: string) => {
+    setActive(q);
+    setAns(null);
+    setThinking(true);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      setThinking(false);
+      setAns(buildAnswer(q, project, dna));
+    }, 1000);
+  };
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+
+  return (
+    <div key="tg" className="animate-fade-up">
+      <ScreenHeading
+        kicker="TruthGuide"
+        title="Challenge our thinking."
+        sub={`TruthGuide already knows your Buyer DNA, budget and shortlist. Ask about ${project.name} — no need to repeat anything.`}
+      />
+      <div className="mb-8 flex flex-wrap gap-3">
+        {questions.map((q) => (
+          <button
+            key={q}
+            onClick={() => ask(q)}
+            className={`rounded-full border px-5 py-2.5 text-left text-[0.85rem] font-light transition-all duration-300 md:text-[0.92rem] ${
+              active === q
+                ? "border-[#1e6b45] bg-[#1e6b45] text-white"
+                : "border-[#1a1a1a]/20 text-[#1a1a1a]/70 hover:border-[#1a1a1a]/45 hover:text-[#1a1a1a]"
+            }`}
+          >
+            {q}
+          </button>
+        ))}
+      </div>
+
+      {active && (
+        <div className="border-t border-[#1a1a1a]/12 pt-8">
+          <p className="font-serif text-[1.2rem] font-light italic text-[#1a1a1a]/55 md:text-[1.4rem]">{active}</p>
+          <div className="mt-5 min-h-[3rem]">
+            {thinking ? (
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#1e6b45]" />
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#1e6b45] [animation-delay:150ms]" />
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#1e6b45] [animation-delay:300ms]" />
+              </span>
+            ) : (
+              ans && (
+                <div className="animate-fade-up flex flex-col gap-5">
+                  <TGBlock label="Answer" text={ans.answer} lead />
+                  <TGBlock label="Reasoning" text={ans.reasoning} />
+                  <TGBlock label="Evidence" text={ans.evidence} />
+                  <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
+                    <span className="text-[0.82rem] font-light text-[#1a1a1a]/55">
+                      <span className="uppercase tracking-[0.2em] text-[#1a1a1a]/35">Confidence</span>{" "}
+                      <span className="text-[#1e6b45]">{ans.confidence}</span>
+                    </span>
+                  </div>
+                  <TGBlock label="Suggested next step" text={ans.next} />
+                </div>
+              )
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="mt-12 flex flex-col gap-3.5 border-t border-[#1a1a1a]/12 pt-8 sm:flex-row">
+        <PrimaryButton onClick={onConsult}>Book Consultation</PrimaryButton>
+        <GhostButton onClick={onExplore}>Continue Exploring</GhostButton>
+      </div>
+    </div>
+  );
+}
+
+function TGBlock({ label, text, lead }: { label: string; text: string; lead?: boolean }) {
+  return (
+    <div>
+      <p className="mb-1.5 text-[9px] font-light uppercase tracking-[0.24em] text-[#c9a96e]">{label}</p>
+      <p
+        className={`font-light text-[#1a1a1a]/80 ${
+          lead ? "font-serif text-[1.15rem] leading-snug md:text-[1.35rem]" : "text-[0.95rem] leading-relaxed"
+        }`}
+      >
+        {text}
+      </p>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   FULL INTELLIGENCE (report preview)
+   ════════════════════════════════════════════════════════════════ */
+function FullIntelligence({
+  project,
+  alternatives,
+  onConsult,
+  onExplore,
+}: {
+  project: Scored;
+  alternatives: Scored[];
+  onConsult: () => void;
+  onExplore: () => void;
+}) {
+  const sections: { label: string; body: string }[] = [
+    { label: "Developer", body: `${project.developer} — ${project.strengths.find((s) => /deliver|brand|record|execution|credibility/i.test(s)) ?? "established track record in this market"}.` },
+    { label: "Construction", body: `${project.recommendation} with ${project.confidence.toLowerCase()} confidence; progress tracked against the committed handover schedule.` },
+    { label: "Legal", body: "RERA-registered with clear title and approvals on record. Full documents reviewed with your advisor." },
+    { label: "Location", body: `${project.market} — ${project.strengths.find((s) => /location|corridor|connectivity|address/i.test(s)) ?? "well-positioned within the micro-market"}.` },
+    { label: "Price", body: `${project.strengths.find((s) => /below|value|entry|pricing/i.test(s)) ?? "Positioned competitively for the segment"}. Exact pricing is discussed with your advisor — never on a portal.` },
+    { label: "ROI", body: `Aligned to ${project.tags.slice(0, 2).join(" and ").toLowerCase()}; our read on appreciation and liquidity for your horizon.` },
+    { label: "Layouts", body: `Available in ${project.configs.join(", ")}. Efficiency and livability assessed per stack.` },
+    { label: "Alternatives", body: alternatives.length ? alternatives.map((a) => a.name).join(" · ") : "Reviewed against the full active set." },
+  ];
+
+  return (
+    <div key="intel" className="animate-fade-up">
+      <ScreenHeading
+        kicker="Full Intelligence"
+        title={project.name}
+        sub="A preview of the independent report. The complete investigation is walked through with your advisor."
+      />
+      <div className="grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-[#1a1a1a]/12 bg-[#1a1a1a]/10 md:grid-cols-2">
+        {sections.map((s) => (
+          <div key={s.label} className="bg-[#F5F0E8] p-6">
+            <p className="mb-2 text-[10px] font-light uppercase tracking-[0.28em] text-[#c9a96e]">{s.label}</p>
+            <p className="text-[0.9rem] font-light leading-relaxed text-[#1a1a1a]/75">{s.body}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-12 flex flex-col gap-3.5 sm:flex-row">
+        <PrimaryButton onClick={onConsult}>Book Consultation</PrimaryButton>
+        <GhostButton onClick={onExplore}>Continue Exploring</GhostButton>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   CONSULTATION — the most important conversion
+   ════════════════════════════════════════════════════════════════ */
+function ConsultationScreen({ onBook }: { onBook: (advisorName: string, slot: string) => void }) {
+  return (
+    <div key="consult" className="animate-fade-up">
+      <ScreenHeading
+        title={
+          <>
+            You&apos;ve done the research.
+            <br />
+            The next step isn&apos;t another report.
+            <br />
+            It&apos;s a conversation.
+          </>
+        }
+        sub="Meet an independent advisor who will discuss your specific situation. No sales pitch. No obligations. Only independent advice."
+      />
+      <div className="flex flex-col gap-5">
+        {ADVISORS.map((a) => (
+          <AdvisorCard key={a.name} advisor={a} onBook={(slot) => onBook(a.name, slot)} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AdvisorCard({ advisor, onBook }: { advisor: Advisor; onBook: (slot: string) => void }) {
+  return (
+    <div className="rounded-xl border border-[#1a1a1a]/12 bg-white/40 p-6 md:p-7">
+      <div className="flex items-start gap-5">
+        <Avatar initials={advisor.initials} />
+        <div className="flex-1">
+          <p className="font-serif text-[1.3rem] font-medium text-[#1a1a1a] md:text-[1.5rem]">{advisor.name}</p>
+          <p className="mt-1 text-[0.85rem] font-light text-[#1a1a1a]/55">
+            {advisor.experience} · {advisor.specialisation}
+          </p>
+          <p className="mt-1 text-[0.8rem] font-light text-[#1a1a1a]/40">
+            Speaks {advisor.languages.join(", ")}
+          </p>
+        </div>
+      </div>
+      <div className="mt-6 flex flex-wrap gap-2.5">
+        {advisor.slots.map((slot) => (
+          <button
+            key={slot}
+            onClick={() => onBook(slot)}
+            className="rounded-full border border-[#1e6b45]/40 px-4 py-2 text-[0.82rem] font-light text-[#1e6b45] transition-all duration-300 hover:bg-[#1e6b45] hover:text-white"
+          >
+            {slot}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   AUTH — only after a consultation is booked
+   ════════════════════════════════════════════════════════════════ */
+function AuthScreen({ booking, onContinue }: { booking: Booking; onContinue: () => void }) {
   const perks = [
-    "Your recommendations",
-    "Saved projects",
-    "TruthGuide",
+    "Buyer DNA",
+    "Recommendations",
+    "TruthGuide history",
     "Documents",
-    "Advisor",
+    "Meeting recordings",
     "Future updates",
   ];
-  const buttons = [
-    { label: "Continue with Google", primary: false },
-    { label: "Continue with Apple", primary: false },
-    { label: "Continue with Phone", primary: false },
-    { label: "Continue with Email", primary: false },
-  ];
+  const providers = ["Continue with Google", "Continue with Apple", "Continue with Phone", "Continue with Email"];
   return (
-    <div key="save" className="animate-fade-up">
+    <div key="auth" className="animate-fade-up">
+      {booking && (
+        <div className="mb-8 rounded-lg border border-[#1e6b45]/25 bg-[#1e6b45]/[0.06] px-5 py-4">
+          <p className="text-[0.9rem] font-light text-[#1a1a1a]/75">
+            <span className="text-[#1e6b45]">✓</span> Consultation reserved with{" "}
+            <span className="font-medium">{booking.advisorName}</span> · {booking.slot}
+          </p>
+        </div>
+      )}
       <ScreenHeading
         kicker="Your Buyer's Office"
-        title={<>Would you like us to<br />save this journey?</>}
-        sub="We'll create your Buyer's Office — a private workspace where you'll always have access to:"
+        title={<>Let&apos;s save your journey.</>}
+        sub="We'll create your private workspace where you'll always find:"
       />
       <ul className="mb-12 grid grid-cols-1 gap-x-10 gap-y-3.5 sm:grid-cols-2">
         {perks.map((p) => (
@@ -691,74 +1253,28 @@ function SaveScreen({ onContinue }: { onContinue: () => void }) {
           </li>
         ))}
       </ul>
-
       <div className="flex flex-col gap-3.5">
-        <button
-          onClick={onContinue}
-          className="rounded-sm bg-[#1e6b45] px-8 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/10 transition-all duration-500 hover:bg-[#238c55]"
-        >
-          Continue
-        </button>
-        {buttons.map((b) => (
+        {providers.map((label) => (
           <button
-            key={b.label}
+            key={label}
             onClick={onContinue}
             className="rounded-sm border border-[#1a1a1a]/20 bg-white/30 px-8 py-4 text-[13px] font-light tracking-[0.05em] text-[#1a1a1a]/80 transition-all duration-300 hover:border-[#1a1a1a]/40 hover:bg-white/60"
           >
-            {b.label}
+            {label}
           </button>
         ))}
       </div>
       <p className="mt-7 text-[0.78rem] font-light italic leading-relaxed text-[#1a1a1a]/40">
-        No passwords to remember. Nothing shared. You can leave anytime — your journey stays private to you.
+        No passwords. Nothing shared. Your journey stays private to you.
       </p>
     </div>
   );
 }
 
 /* ════════════════════════════════════════════════════════════════
-   FLOWS 2 & 3 — WAITLIST
+   ANONYMOUS TRUTHGUIDE (homepage "Challenge TruthGuide")
    ════════════════════════════════════════════════════════════════ */
-function WaitlistScreen({ kicker, title, body }: { kicker: string; title: string; body: string }) {
-  const [email, setEmail] = useState("");
-  const [done, setDone] = useState(false);
-  return (
-    <div key={title} className="animate-fade-up">
-      <ScreenHeading kicker={kicker} title={title} sub={body} />
-      {done ? (
-        <div className="border-y border-[#1a1a1a]/15 py-10 text-center">
-          <p className="font-serif text-[1.6rem] font-light italic text-[#1a1a1a]/80 md:text-[2rem]">
-            You&apos;re on the list.
-          </p>
-          <p className="mt-4 text-[0.9rem] font-light text-[#1a1a1a]/50">
-            We&apos;ll reach out personally when it&apos;s your turn.
-          </p>
-        </div>
-      ) : (
-        <div className="flex max-w-md flex-col gap-3.5 sm:flex-row">
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="your@email.com"
-            className="flex-1 border-b border-[#1a1a1a]/25 bg-transparent py-3 text-[0.95rem] font-light text-[#1a1a1a] outline-none placeholder:text-[#1a1a1a]/30 focus:border-[#1e6b45]"
-          />
-          <button
-            onClick={() => email.includes("@") && setDone(true)}
-            className="rounded-sm bg-[#1e6b45] px-8 py-3.5 text-[13px] font-medium tracking-[0.08em] text-white transition-all duration-500 hover:bg-[#238c55]"
-          >
-            Notify me first
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   FLOW 4 — RESEARCH (anonymous TruthGuide)
-   ════════════════════════════════════════════════════════════════ */
-function ResearchScreen() {
+function AnonymousTruthGuide() {
   const prompts = [
     "Should I buy DLF Arbour?",
     "Compare DLF Arbour with Puri Aravallis.",
@@ -780,11 +1296,10 @@ function ResearchScreen() {
       setAnswer(CANNED[q] ?? "Here's how we'd think about that — grounded in delivery records, pricing, and risk.");
     }, 1100);
   };
-
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
   return (
-    <div key="research" className="animate-fade-up">
+    <div key="anon" className="animate-fade-up">
       <ScreenHeading
         kicker="TruthGuide"
         title="Ask anything. Anonymously."
@@ -805,13 +1320,12 @@ function ResearchScreen() {
           </button>
         ))}
       </div>
-
       {active && (
         <div className="border-t border-[#1a1a1a]/12 pt-8">
           <p className="font-serif text-[1.2rem] font-light italic text-[#1a1a1a]/55 md:text-[1.4rem]">{active}</p>
           <div className="mt-5 min-h-[3rem]">
             {thinking ? (
-              <span className="inline-flex items-center gap-1.5 text-[#1a1a1a]/40">
+              <span className="inline-flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#1e6b45]" />
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#1e6b45] [animation-delay:150ms]" />
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#1e6b45] [animation-delay:300ms]" />

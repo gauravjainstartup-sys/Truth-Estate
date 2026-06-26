@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useJourney } from "./journey/JourneyProvider";
+import { PRIMARY_CTA } from "@/lib/journey";
 
 /* ── Shared reveal: any [data-r] child fades up on intersect ── */
 function useReveal(ref: React.RefObject<HTMLElement | null>, threshold = 0.25) {
@@ -312,7 +313,7 @@ function BuyersOffice() {
 
         <div data-r className="mt-14 md:mt-20" style={{ opacity: 0, transform: "translateY(12px)" }}>
           <button onClick={() => open()} className="group inline-flex items-center gap-2 border-b border-[#c9a96e]/30 pb-1.5 font-serif text-[0.9rem] font-light tracking-[0.1em] text-[#1a1a1a] transition-colors duration-300 hover:border-[#c9a96e]/70 md:text-[1.1rem]">
-            Become a Private Client
+            {PRIMARY_CTA}
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
           </button>
         </div>
@@ -674,7 +675,7 @@ function ClosingSection() {
 
         <div data-r className="mt-12 flex flex-col items-center gap-6 md:mt-16 md:gap-8" style={{ opacity: 0, transform: "translateY(16px)" }}>
           <button onClick={() => open()} className="group inline-flex items-center gap-2 border-b border-[#c9a96e]/30 pb-1.5 font-serif text-[0.9rem] font-light tracking-[0.12em] text-[#c9a96e] transition-colors duration-300 hover:border-[#c9a96e]/60 md:text-[1.15rem]">
-            Become a Private Client
+            {PRIMARY_CTA}
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
           </button>
 
