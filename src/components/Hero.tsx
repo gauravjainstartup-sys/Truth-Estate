@@ -1,10 +1,19 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Logo from "./Logo";
 
 const basePath = "/Truth-Estate";
 
 export default function Hero() {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
     <section className="relative min-h-svh w-full overflow-hidden">
       {/* ─── DESKTOP ─── */}
@@ -155,6 +164,24 @@ export default function Hero() {
           </div>
 
           <div />
+        </div>
+
+        {/* Scroll cue — teaches the gesture, fades the moment you engage */}
+        <div
+          className="pointer-events-none absolute bottom-9 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center gap-3 transition-opacity duration-700"
+          style={{ opacity: scrolled ? 0 : 1 }}
+        >
+          <span className="text-[9px] font-light uppercase tracking-[0.42em] text-white/40">
+            Scroll
+          </span>
+          <span className="relative block h-12 w-px overflow-hidden bg-white/15">
+            <span
+              className="absolute left-0 top-0 block h-3 w-px bg-[#c9a96e]"
+              style={{
+                animation: "scroll-travel 2.2s cubic-bezier(0.4,0,0.2,1) infinite",
+              }}
+            />
+          </span>
         </div>
       </div>
 

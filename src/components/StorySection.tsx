@@ -34,6 +34,7 @@ function setupDesktop(root: HTMLElement) {
   const evidence = q("[data-evidence]")!;
   const checks = evidence.querySelectorAll<HTMLElement>("[data-check]");
   const verdict = q("[data-verdict]")!;
+  const railFill = q("[data-rail-fill]");
 
   const exitY = -Math.round(window.innerHeight * 0.42);
 
@@ -45,6 +46,9 @@ function setupDesktop(root: HTMLElement) {
       pin: true,
       scrub: 0.6,
       anticipatePin: 1,
+      onUpdate: (self) => {
+        if (railFill) gsap.set(railFill, { scaleY: self.progress });
+      },
     },
   });
 
@@ -211,6 +215,15 @@ export default function StorySection() {
               "radial-gradient(ellipse 50% 55% at 50% 52%, rgba(201,169,110,0.08) 0%, transparent 70%)",
           }}
         />
+
+        {/* Progress rail — confirms your scrolling is advancing the narrative */}
+        <div className="absolute right-10 top-1/2 z-30 hidden h-40 w-px -translate-y-1/2 bg-[#c9a96e]/25 lg:block">
+          <div
+            data-rail-fill
+            className="absolute left-0 top-0 h-full w-px origin-top bg-[#c9a96e]"
+            style={{ transform: "scaleY(0)" }}
+          />
+        </div>
 
         {/* STORY column (additive) */}
         <div
