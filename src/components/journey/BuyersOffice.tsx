@@ -2,28 +2,27 @@
 
 import { useMemo, useState } from "react";
 import Logo from "../Logo";
-import { BuyData, deriveDNA, rankProjects } from "@/lib/journey";
+import { Booking, BuyData, deriveDNA, rankProjects } from "@/lib/journey";
 
-const NAV = [
-  "Home",
-  "TruthGuide",
-  "Recommended Projects",
-  "Shortlists",
-  "Documents",
-  "Meetings",
-  "Messages",
-  "Settings",
-];
+const NAV = ["Home", "TruthGuide", "Projects", "Documents", "Meetings", "Messages", "Tasks"];
 
-export default function BuyersOffice({ buy, onClose }: { buy: BuyData; onClose: () => void }) {
+export default function BuyersOffice({
+  buy,
+  booking,
+  onClose,
+}: {
+  buy: BuyData;
+  booking: Booking;
+  onClose: () => void;
+}) {
   const dna = useMemo(() => deriveDNA(buy), [buy]);
   const recs = useMemo(() => rankProjects(buy).slice(0, 3), [buy]);
   const [active, setActive] = useState("Home");
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-[#F4F1EA] text-[#1a1a1a] md:flex-row">
+    <div className="flex h-full w-full flex-col bg-[#F4F1EA] text-[#1a1a1a] md:flex-row">
       {/* ── Sidebar ── */}
-      <aside className="flex shrink-0 flex-col border-b border-[#1a1a1a]/8 bg-[#EFEAE0] px-5 py-5 md:w-64 md:border-b-0 md:border-r md:px-6 md:py-7">
+      <aside className="flex shrink-0 flex-col border-b border-[#1a1a1a]/8 bg-[#EFEAE0] px-5 py-5 md:w-60 md:border-b-0 md:border-r md:px-6 md:py-7">
         <div className="flex items-center justify-between md:block">
           <Logo color="#1a1a1a" className="h-7 w-auto opacity-80" />
           <button
@@ -34,7 +33,6 @@ export default function BuyersOffice({ buy, onClose }: { buy: BuyData; onClose: 
             CLOSE
           </button>
         </div>
-
         <nav className="mt-6 flex gap-1 overflow-x-auto md:mt-10 md:flex-col md:gap-0.5 md:overflow-visible">
           {NAV.map((item) => (
             <button
@@ -50,7 +48,6 @@ export default function BuyersOffice({ buy, onClose }: { buy: BuyData; onClose: 
             </button>
           ))}
         </nav>
-
         <div className="mt-auto hidden pt-8 md:block">
           <button
             onClick={onClose}
@@ -64,12 +61,9 @@ export default function BuyersOffice({ buy, onClose }: { buy: BuyData; onClose: 
       {/* ── Main ── */}
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-4xl px-6 py-10 md:px-12 md:py-14">
-          {/* Greeting */}
           <p className="text-[10px] font-light uppercase tracking-[0.4em] text-[#c9a96e]">Welcome</p>
           <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <h1 className="font-serif text-[2.1rem] font-medium leading-[1.1] text-[#1a1a1a] md:text-[3.1rem]">
-              This is
-              <br />
               Your Buyer&apos;s Office.
             </h1>
             <span className="self-start rounded-full border border-[#c9a96e]/50 px-4 py-1.5 text-[0.78rem] font-light tracking-[0.06em] text-[#1a1a1a]/70 md:self-auto">
@@ -77,21 +71,35 @@ export default function BuyersOffice({ buy, onClose }: { buy: BuyData; onClose: 
             </span>
           </div>
 
-          {/* Today's Update */}
-          <Panel title="Today's Update">
+          {/* Today's Updates */}
+          <Panel title="Today's Updates">
             <p className="font-serif text-[1.15rem] font-light leading-relaxed text-[#1a1a1a]/80 md:text-[1.3rem]">
               We&apos;ve shortlisted{" "}
               <span className="font-medium text-[#1e6b45]">3 projects</span> worth investigating for a{" "}
               {dna.budgetRange} {dna.archetype.toLowerCase()} focused on{" "}
               {dna.topPriorities.slice(0, 2).join(" and ").toLowerCase()}.
             </p>
-            <p className="mt-3 text-[0.85rem] font-light text-[#1a1a1a]/45">
-              Your advisor will reach out to walk you through the full investigation.
-            </p>
           </Panel>
 
-          {/* Recommended Projects */}
-          <Panel title="Recommended Projects">
+          {/* Upcoming Consultation */}
+          <Panel title="Upcoming Consultation">
+            {booking ? (
+              <div className="flex items-center justify-between rounded-lg border border-[#1e6b45]/25 bg-[#1e6b45]/[0.05] px-5 py-4">
+                <div>
+                  <p className="font-serif text-[1.15rem] font-medium text-[#1a1a1a]">{booking.advisorName}</p>
+                  <p className="mt-0.5 text-[0.82rem] font-light text-[#1a1a1a]/55">Independent Advisor</p>
+                </div>
+                <p className="text-[0.9rem] font-light text-[#1e6b45]">{booking.slot}</p>
+              </div>
+            ) : (
+              <p className="text-[0.9rem] font-light text-[#1a1a1a]/50">
+                No consultation booked yet. Your advisor is one tap away whenever you&apos;re ready.
+              </p>
+            )}
+          </Panel>
+
+          {/* Recommendations */}
+          <Panel title="Recommendations">
             <div className="flex flex-col gap-3">
               {recs.map((r, i) => (
                 <div
@@ -118,24 +126,8 @@ export default function BuyersOffice({ buy, onClose }: { buy: BuyData; onClose: 
             </div>
           </Panel>
 
-          {/* Two-up: Tasks + TruthGuide */}
+          {/* Two-up: TruthGuide + Recent Activity */}
           <div className="mt-10 grid grid-cols-1 gap-10 md:grid-cols-2">
-            <div>
-              <PanelTitle>Upcoming Tasks</PanelTitle>
-              <ul className="flex flex-col gap-3.5">
-                {[
-                  "Review your 3 recommendations",
-                  "Book an advisor introduction",
-                  "Add a project to your shortlist",
-                ].map((t) => (
-                  <li key={t} className="flex items-center gap-3 text-[0.9rem] font-light text-[#1a1a1a]/70">
-                    <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-[#1a1a1a]/25" />
-                    {t}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
             <div>
               <PanelTitle>TruthGuide</PanelTitle>
               <div className="rounded-lg border border-[#1a1a1a]/12 bg-white/50 p-5">
@@ -144,16 +136,30 @@ export default function BuyersOffice({ buy, onClose }: { buy: BuyData; onClose: 
                 </p>
                 <div className="mt-4 flex items-center gap-2 border-t border-[#1a1a1a]/10 pt-4">
                   <span className="text-[#c9a96e]">›</span>
-                  <span className="text-[0.85rem] font-light italic text-[#1a1a1a]/35">
-                    Ask TruthGuide…
-                  </span>
+                  <span className="text-[0.85rem] font-light italic text-[#1a1a1a]/35">Ask TruthGuide…</span>
                 </div>
               </div>
+            </div>
+
+            <div>
+              <PanelTitle>Recent Activity</PanelTitle>
+              <ul className="flex flex-col gap-3.5">
+                {[
+                  "Buyer DNA created",
+                  "3 recommendations matched",
+                  booking ? `Consultation booked · ${booking.slot}` : "Workspace opened",
+                ].map((t) => (
+                  <li key={t} className="flex items-center gap-3 text-[0.9rem] font-light text-[#1a1a1a]/70">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#c9a96e]" />
+                    {t}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
 
           <p className="mt-16 text-[0.75rem] font-light italic text-[#1a1a1a]/35">
-            A live preview of your workspace. Pricing, documents and your advisor unlock as your journey continues.
+            A live preview of your workspace. Documents, meetings and your advisor unlock as your journey continues.
           </p>
         </div>
       </main>
@@ -162,9 +168,7 @@ export default function BuyersOffice({ buy, onClose }: { buy: BuyData; onClose: 
 }
 
 function PanelTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="mb-5 text-[10px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/40">{children}</h2>
-  );
+  return <h2 className="mb-5 text-[10px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/40">{children}</h2>;
 }
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {

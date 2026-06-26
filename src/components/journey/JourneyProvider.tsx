@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import JourneyModal from "./JourneyModal";
-import type { Intent } from "@/lib/journey";
+import { loadAccount, type Account, type Intent } from "@/lib/journey";
 
 type Ctx = { open: (intent?: Intent) => void; close: () => void; isOpen: boolean };
 
@@ -17,9 +17,11 @@ export function useJourney() {
 export default function JourneyProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [intent, setIntent] = useState<Intent | undefined>(undefined);
+  const [account, setAccount] = useState<Account | null>(null);
 
   const open = (i?: Intent) => {
     setIntent(i);
+    setAccount(loadAccount()); // returning-user detection
     setIsOpen(true);
   };
   const close = () => setIsOpen(false);
@@ -38,7 +40,7 @@ export default function JourneyProvider({ children }: { children: React.ReactNod
   return (
     <JourneyContext.Provider value={{ open, close, isOpen }}>
       {children}
-      {isOpen && <JourneyModal initialIntent={intent} onClose={close} />}
+      {isOpen && <JourneyModal initialIntent={intent} account={account} onClose={close} />}
     </JourneyContext.Provider>
   );
 }

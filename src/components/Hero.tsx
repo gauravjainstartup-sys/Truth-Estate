@@ -2,6 +2,7 @@
 
 import Logo from "./Logo";
 import { useJourney } from "./journey/JourneyProvider";
+import { PRIMARY_CTA } from "@/lib/journey";
 
 const basePath = "/Truth-Estate";
 
@@ -141,7 +142,7 @@ export default function Hero() {
                 onClick={() => open()}
                 className="rounded-sm bg-[#1e6b45] px-9 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/30 transition-all duration-500 hover:bg-[#238c55]"
               >
-                Start Your Journey
+                {PRIMARY_CTA}
               </button>
               <button
                 onClick={() => open("research")}
@@ -252,7 +253,7 @@ export default function Hero() {
                 className="animate-fade-up inline-block self-start rounded-sm bg-[#1e6b45] px-9 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/30 transition-all duration-500 hover:bg-[#238c55]"
                 style={{ animationDelay: "380ms" }}
               >
-                Start Your Journey
+                {PRIMARY_CTA}
               </button>
 
               <button
