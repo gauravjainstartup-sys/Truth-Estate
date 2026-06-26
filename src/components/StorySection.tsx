@@ -171,7 +171,7 @@ const verdictCard = (
 
     <div className="mt-12 h-px w-20 bg-[#c9a96e]/40" />
 
-    <p className="mt-9 font-serif text-[13px] font-light italic leading-relaxed text-white/35">
+    <p className="mt-9 text-center font-serif text-[13px] font-light italic leading-relaxed text-white/35">
       Prepared after
       <br />
       independent due diligence.
