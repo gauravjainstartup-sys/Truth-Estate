@@ -137,13 +137,13 @@ export default function Hero() {
             >
               <a
                 href="#"
-                className="rounded bg-[#1e4d3a] px-8 py-3.5 text-[13px] tracking-[0.06em] text-white/90 transition-colors duration-500 hover:bg-[#256b4e]"
+                className="rounded-sm bg-[#1e6b45] px-9 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/30 transition-all duration-500 hover:bg-[#238c55]"
               >
                 Get Your Verdict
               </a>
               <a
                 href="#"
-                className="text-[13px] tracking-[0.04em] text-white/25 transition-colors duration-500 hover:text-white/45"
+                className="text-[13px] tracking-[0.04em] text-white/55 transition-colors duration-500 hover:text-white/80"
               >
                 See How We Think &rarr;
               </a>
@@ -252,7 +252,7 @@ export default function Hero() {
             >
               <a
                 href="#"
-                className="inline-block rounded bg-[#1e4d3a] px-8 py-4 text-[13px] tracking-[0.06em] text-white/90 transition-colors duration-500 hover:bg-[#256b4e]"
+                className="inline-block rounded-sm bg-[#1e6b45] px-9 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/30 transition-all duration-500 hover:bg-[#238c55]"
               >
                 Get Your Verdict
               </a>
@@ -260,7 +260,7 @@ export default function Hero() {
 
             <a
               href="#"
-              className="animate-fade-up text-[13px] tracking-[0.04em] text-[#4a9e7e]"
+              className="animate-fade-up text-[13px] tracking-[0.04em] text-white/55"
               style={{ animationDelay: "380ms" }}
             >
               See How We Think &rarr;
