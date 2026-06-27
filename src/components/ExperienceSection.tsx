@@ -629,6 +629,191 @@ function ExperienceIntelligence() {
 }
 
 /* ════════════════════════════════════════════════════════════════
+   SECTION 8 — DECISIONS WE'VE HELPED MAKE
+   Editorial case studies. Not testimonials — consulting-firm style.
+   ════════════════════════════════════════════════════════════════ */
+const cases = [
+  {
+    num: "01",
+    category: "Investment",
+    value: "₹8.4 Cr",
+    challenge: "The buyer preferred Tower A because everyone recommended it.",
+    discovery:
+      "Upcoming supply in Tower A was expected to impact future resale demand.",
+    recommendation: "Choose Tower C instead.",
+    outcomes: ["Better floor.", "Better view.", "Better exit potential."],
+  },
+  {
+    num: "02",
+    category: "Decision",
+    value: "Walk Away",
+    challenge: "The launch pricing looked attractive.",
+    discovery:
+      "Construction delays across previous phases suggested execution risk.",
+    recommendation: "Do not invest.",
+    outcomes: ["Capital preserved."],
+  },
+  {
+    num: "03",
+    category: "Decision",
+    value: "Wait",
+    challenge: "The buyer wanted to book immediately.",
+    discovery:
+      "Additional inventory was expected within the next 60 days.",
+    recommendation: "Delay the decision.",
+    outcomes: ["Better unit.", "Lower purchase price."],
+  },
+];
+
+function DecisionsSection() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { open } = useJourney();
+  useReveal(ref, 0.12);
+
+  return (
+    <div
+      ref={ref}
+      className="bg-[#F5F0E8] px-6 pb-[14vh] pt-[14vh] md:px-8 md:pb-[20vh] md:pt-[20vh]"
+    >
+      {/* Heading */}
+      <div className="mx-auto max-w-3xl">
+        <h2
+          data-r
+          className="font-serif text-[2.2rem] font-medium leading-[1.08] text-[#1a1a1a] md:text-[3.6rem] lg:text-[4.2rem]"
+          style={{ opacity: 0, transform: "translateY(24px)" }}
+        >
+          Decisions We&rsquo;ve
+          <br />
+          Helped Make.
+        </h2>
+        <p
+          data-r
+          className="mt-7 max-w-lg font-serif text-[1.1rem] font-light leading-snug text-[#1a1a1a]/50 md:mt-10 md:text-[1.4rem]"
+          style={{ opacity: 0, transform: "translateY(16px)" }}
+        >
+          Independent thinking only matters
+          <br />
+          when it changes outcomes.
+        </p>
+      </div>
+
+      {/* Cases */}
+      <div className="mx-auto mt-[10vh] max-w-4xl md:mt-[14vh]">
+        {cases.map((c, i) => {
+          const flipped = i % 2 === 1;
+          return (
+            <div key={c.num}>
+              {i > 0 && (
+                <div className="mx-auto my-[8vh] h-px w-16 bg-[#1a1a1a]/10 md:my-[10vh] md:w-24" />
+              )}
+              <div
+                data-r
+                className={`flex flex-col gap-10 md:flex-row md:items-start md:gap-16 lg:gap-24 ${flipped ? "md:flex-row-reverse" : ""}`}
+                style={{ opacity: 0, transform: "translateY(28px)" }}
+              >
+                {/* Left column — number, category, value */}
+                <div className="shrink-0 md:w-[200px] lg:w-[240px]">
+                  <span className="font-serif text-[3.5rem] font-light leading-none text-[#c9a96e]/25 md:text-[4.5rem]">
+                    {c.num}
+                  </span>
+                  <div className="mt-5 flex items-baseline gap-4">
+                    <span className="text-[9px] font-light uppercase tracking-[0.4em] text-[#1a1a1a]/35">
+                      {c.category}
+                    </span>
+                  </div>
+                  <p className="mt-3 font-serif text-[1.6rem] font-medium leading-[1.1] text-[#1a1a1a] md:text-[1.9rem]">
+                    {c.value}
+                  </p>
+                </div>
+
+                {/* Right column — narrative */}
+                <div className="flex-1">
+                  <div>
+                    <span className="text-[9px] font-light uppercase tracking-[0.35em] text-[#1a1a1a]/35">
+                      Challenge
+                    </span>
+                    <p className="mt-3 font-serif text-[1.1rem] font-light leading-relaxed text-[#1a1a1a]/70 md:text-[1.25rem]">
+                      {c.challenge}
+                    </p>
+                  </div>
+
+                  <div className="mt-8">
+                    <span className="text-[9px] font-light uppercase tracking-[0.35em] text-[#c9a96e]/70">
+                      What we discovered
+                    </span>
+                    <p className="mt-3 text-[0.92rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.02rem]">
+                      {c.discovery}
+                    </p>
+                  </div>
+
+                  <div className="mt-8">
+                    <span className="text-[9px] font-light uppercase tracking-[0.35em] text-[#1a1a1a]/35">
+                      Recommendation
+                    </span>
+                    <p className="mt-3 font-serif text-[1.15rem] font-medium leading-snug text-[#1a1a1a] md:text-[1.3rem]">
+                      {c.recommendation}
+                    </p>
+                  </div>
+
+                  <div className="mt-8 border-l border-[#c9a96e]/25 pl-5">
+                    <span className="text-[9px] font-light uppercase tracking-[0.35em] text-[#1a1a1a]/35">
+                      Outcome
+                    </span>
+                    <div className="mt-3 space-y-1.5">
+                      {c.outcomes.map((o) => (
+                        <p
+                          key={o}
+                          className="font-serif text-[1rem] font-light leading-relaxed text-[#1a1a1a]/65 md:text-[1.1rem]"
+                        >
+                          {o}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Bottom editorial + CTAs */}
+      <div className="mx-auto mt-[12vh] max-w-2xl text-center md:mt-[16vh]">
+        <p
+          data-r
+          className="font-serif text-[0.92rem] font-light italic leading-[1.9] text-[#1a1a1a]/40 md:text-[1.15rem]"
+          style={{ opacity: 0, transform: "translateY(14px)" }}
+        >
+          Every recommendation changes a story.
+        </p>
+
+        <div
+          data-r
+          className="mt-12 flex flex-col items-center gap-6 md:mt-14"
+          style={{ opacity: 0, transform: "translateY(14px)" }}
+        >
+          <button
+            onClick={() => open()}
+            className="rounded-sm bg-[#1e6b45] px-10 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/10 transition-colors duration-500 hover:bg-[#238c55]"
+          >
+            {PRIMARY_CTA}
+          </button>
+          <button
+            onClick={() => open()}
+            className="group inline-flex items-center gap-2 text-[12px] font-light tracking-[0.14em] text-[#1a1a1a]/55 transition-colors duration-300 hover:text-[#1a1a1a]"
+          >
+            Book a Consultation
+            <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
+              &rarr;
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
    SECTION 10 — COVERAGE
    ════════════════════════════════════════════════════════════════ */
 const metrics = [
@@ -752,6 +937,7 @@ export default function ExperienceSection() {
       <Storytelling />
       <IndependentRepresentation />
       <ExperienceIntelligence />
+      <DecisionsSection />
       <div className="h-[20vh] bg-gradient-to-b from-[#F5F0E8] to-[#0a0a0a] md:h-[30vh]" />
       <CoverageSection />
       <ClosingSection />
