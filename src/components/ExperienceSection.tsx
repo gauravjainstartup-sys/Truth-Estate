@@ -814,6 +814,182 @@ function DecisionsSection() {
 }
 
 /* ════════════════════════════════════════════════════════════════
+   SECTION 9 — WHO WE WORK BEST WITH
+   Typography-led audience self-identification.
+   ════════════════════════════════════════════════════════════════ */
+const audiences = [
+  {
+    title: "NRI Buyers",
+    line: "Buying from another country shouldn’t mean buying with uncertainty.",
+  },
+  {
+    title: "Founders & Entrepreneurs",
+    line: "People who value independent thinking over sales pressure.",
+  },
+  {
+    title: "CXOs & Professionals",
+    line: "Busy decision-makers who value judgement over endless property visits.",
+  },
+  {
+    title: "Long-Term Investors",
+    line: "Capital deserves the same due diligence as conviction.",
+  },
+  {
+    title: "Families Buying Their Forever Home",
+    line: "Because some decisions stay with you for decades.",
+  },
+  {
+    title: "Buyers Who Want Independent Advice",
+    line: "If you don’t want to rely only on brokers, you’re in the right place.",
+  },
+];
+
+function useFocusReveal(ref: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const root = ref.current;
+    if (!root) return;
+    const items = root.querySelectorAll<HTMLElement>("[data-aud]");
+    items.forEach((el) => {
+      el.style.transition = "opacity 0.6s ease";
+    });
+
+    let ticking = false;
+    const update = () => {
+      ticking = false;
+      const vh = window.innerHeight;
+      const focus = vh * 0.45;
+      let closest: HTMLElement | null = null;
+      let closestDist = Infinity;
+
+      items.forEach((el) => {
+        const r = el.getBoundingClientRect();
+        const mid = r.top + r.height * 0.5;
+        const dist = Math.abs(mid - focus);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closest = el;
+        }
+      });
+
+      items.forEach((el) => {
+        if (el === closest) {
+          el.style.opacity = "1";
+        } else {
+          const r = el.getBoundingClientRect();
+          const mid = r.top + r.height * 0.5;
+          const dist = Math.abs(mid - focus);
+          const op = Math.max(0.18, 1 - dist / (vh * 0.6));
+          el.style.opacity = op.toFixed(2);
+        }
+      });
+    };
+
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    update();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [ref]);
+}
+
+function AudienceSection() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { open } = useJourney();
+  useReveal(ref, 0.12);
+  useFocusReveal(ref);
+
+  return (
+    <div
+      ref={ref}
+      className="bg-[#F5F0E8] px-6 pb-[14vh] pt-[14vh] md:px-8 md:pb-[20vh] md:pt-[20vh]"
+    >
+      {/* Heading */}
+      <div className="mx-auto max-w-3xl">
+        <h2
+          data-r
+          className="font-serif text-[2.2rem] font-medium leading-[1.08] text-[#1a1a1a] md:text-[3.6rem] lg:text-[4.2rem]"
+          style={{ opacity: 0, transform: "translateY(24px)" }}
+        >
+          Who We Work
+          <br />
+          Best With.
+        </h2>
+        <p
+          data-r
+          className="mt-7 max-w-lg font-serif text-[1.1rem] font-light leading-snug text-[#1a1a1a]/50 md:mt-10 md:text-[1.4rem]"
+          style={{ opacity: 0, transform: "translateY(16px)" }}
+        >
+          Independent advice is most valuable when
+          <br />
+          the decision is too important to get wrong.
+        </p>
+      </div>
+
+      {/* Audience blocks */}
+      <div className="mx-auto mt-[10vh] max-w-3xl md:mt-[14vh]">
+        {audiences.map((a, i) => (
+          <div key={a.title}>
+            {i > 0 && (
+              <div className="my-[6vh] h-px w-full bg-[#1a1a1a]/6 md:my-[7vh]" />
+            )}
+            <div data-aud style={{ opacity: 0.18 }}>
+              <h3 className="font-serif text-[1.5rem] font-medium leading-[1.15] text-[#1a1a1a] md:text-[2rem] lg:text-[2.3rem]">
+                {a.title}
+              </h3>
+              <p className="mt-4 max-w-lg text-[0.92rem] font-light leading-relaxed text-[#1a1a1a]/55 md:mt-5 md:text-[1.08rem]">
+                {a.line}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Bottom editorial + CTAs */}
+      <div className="mx-auto mt-[12vh] max-w-2xl text-center md:mt-[16vh]">
+        <h3
+          data-r
+          className="font-serif text-[1.7rem] font-medium leading-[1.2] text-[#1a1a1a] md:text-[2.6rem] lg:text-[3rem]"
+          style={{ opacity: 0, transform: "translateY(18px)" }}
+        >
+          If you value independent judgement,
+          <br />
+          <span className="font-light italic text-[#1a1a1a]/55">
+            we&rsquo;ll probably get along.
+          </span>
+        </h3>
+
+        <div
+          data-r
+          className="mt-12 flex flex-col items-center gap-6 md:mt-14"
+          style={{ opacity: 0, transform: "translateY(14px)" }}
+        >
+          <button
+            onClick={() => open()}
+            className="rounded-sm bg-[#1e6b45] px-10 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/10 transition-colors duration-500 hover:bg-[#238c55]"
+          >
+            {PRIMARY_CTA}
+          </button>
+          <button
+            onClick={() => open()}
+            className="group inline-flex items-center gap-2 text-[12px] font-light tracking-[0.14em] text-[#1a1a1a]/55 transition-colors duration-300 hover:text-[#1a1a1a]"
+          >
+            Book a Consultation
+            <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
+              &rarr;
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
    SECTION 10 — COVERAGE
    ════════════════════════════════════════════════════════════════ */
 const metrics = [
@@ -938,6 +1114,7 @@ export default function ExperienceSection() {
       <IndependentRepresentation />
       <ExperienceIntelligence />
       <DecisionsSection />
+      <AudienceSection />
       <div className="h-[20vh] bg-gradient-to-b from-[#F5F0E8] to-[#0a0a0a] md:h-[30vh]" />
       <CoverageSection />
       <ClosingSection />
