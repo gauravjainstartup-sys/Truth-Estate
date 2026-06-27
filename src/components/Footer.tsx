@@ -4,6 +4,8 @@ import Logo from "./Logo";
 import { useJourney } from "./journey/JourneyProvider";
 import { useConsultation } from "./consultation/ConsultationProvider";
 
+const basePath = "/Truth-Estate";
+
 /* ── Navigation columns ── */
 const columns: { label: string; links: { t: string; h: string; action?: boolean }[] }[] = [
   {
@@ -133,7 +135,7 @@ export default function Footer() {
                         </button>
                       ) : (
                         <a
-                          href={l.h}
+                          href={l.h.startsWith("/") ? `${basePath}${l.h}` : l.h}
                           className="text-[0.9rem] font-light leading-snug text-[#1a1a1a]/60 transition-colors duration-300 hover:text-[#1a1a1a]"
                         >
                           {l.t}
