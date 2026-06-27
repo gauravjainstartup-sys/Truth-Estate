@@ -35,7 +35,12 @@ import {
   SellData,
   SellStrategy,
   TIMELINES,
+  RESEARCH_PLACEHOLDERS,
+  RESEARCH_SUGGESTIONS,
+  RESEARCH_TOPICS,
+  ResearchResult,
   budgetLabel,
+  classifyAndResearch,
   deriveDNA,
   deriveInvestStrategy,
   deriveSellStrategy,
@@ -1134,9 +1139,11 @@ export default function JourneyModal({
 
   if (step === "research") {
     return frame(
-      <Shell onClose={onClose} onBack={onClose} eyebrow="TruthGuide">
-        <AnonymousTruthGuide />
-      </Shell>
+      <ResearchWorkspace
+        onClose={onClose}
+        onConsult={() => setStep("consultation")}
+        onStartJourney={() => setStep("goal")}
+      />
     );
   }
 
@@ -1683,6 +1690,495 @@ function AuthScreen({ booking, onContinue }: { booking: Booking; onContinue: () 
       </div>
       <p className="mt-7 text-[0.78rem] font-light italic leading-relaxed text-[#1a1a1a]/40">
         No passwords. Nothing shared. Your journey stays private to you.
+      </p>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RESEARCH WORKSPACE — premium research terminal
+   ════════════════════════════════════════════════════════════════ */
+function ResearchWorkspace({
+  onClose,
+  onConsult,
+  onStartJourney,
+}: {
+  onClose: () => void;
+  onConsult: () => void;
+  onStartJourney: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [thinking, setThinking] = useState(false);
+  const [result, setResult] = useState<ResearchResult | null>(null);
+  const [history, setHistory] = useState<string[]>([]);
+  const [placeholderIdx, setPlaceholderIdx] = useState(0);
+  const [placeholderFade, setPlaceholderFade] = useState(true);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const iv = setInterval(() => {
+      setPlaceholderFade(false);
+      setTimeout(() => {
+        setPlaceholderIdx((i) => (i + 1) % RESEARCH_PLACEHOLDERS.length);
+        setPlaceholderFade(true);
+      }, 400);
+    }, 4000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const doSearch = (q: string) => {
+    if (!q.trim()) return;
+    setQuery(q);
+    setResult(null);
+    setThinking(true);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      const r = classifyAndResearch(q);
+      setResult(r);
+      setThinking(false);
+      setHistory((h) => [q, ...h.filter((x) => x !== q)].slice(0, 8));
+    }, 2200);
+  };
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+
+  const handleSubmit = () => doSearch(query);
+  const handleKey = (e: React.KeyboardEvent) => { if (e.key === "Enter") doSearch(query); };
+
+  const clearResult = () => {
+    setResult(null);
+    setThinking(false);
+    setQuery("");
+    inputRef.current?.focus();
+  };
+
+  const showingLanding = !result && !thinking;
+
+  return (
+    <div className="flex h-full w-full flex-col bg-[#F5F0E8] text-[#1a1a1a]">
+      {/* Header */}
+      <div className="flex shrink-0 items-center justify-between px-6 py-4 md:px-10 md:py-5">
+        <div className="flex items-center gap-4">
+          <Logo />
+          <span className="text-[9px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/40">
+            Research
+          </span>
+        </div>
+        <button
+          onClick={onClose}
+          className="text-[12px] font-light tracking-[0.12em] text-[#1a1a1a]/45 transition-colors duration-300 hover:text-[#1a1a1a]"
+        >
+          CLOSE
+        </button>
+      </div>
+
+      {/* Body */}
+      <div className="flex min-h-0 flex-1">
+        {/* Main content */}
+        <div className="flex flex-1 flex-col overflow-y-auto">
+          {showingLanding ? (
+            <ResearchLanding
+              query={query}
+              setQuery={setQuery}
+              placeholderIdx={placeholderIdx}
+              placeholderFade={placeholderFade}
+              inputRef={inputRef}
+              onSubmit={handleSubmit}
+              onKey={handleKey}
+              onChip={doSearch}
+            />
+          ) : (
+            <div className="mx-auto w-full max-w-[820px] px-6 py-6 md:px-10 md:py-8">
+              {/* Persistent search bar */}
+              <div className="mb-8">
+                <div className="group flex items-center gap-3 rounded-xl border border-[#1a1a1a]/8 bg-white/50 px-5 py-3 transition-all duration-500 focus-within:border-[#c9a96e]/40 focus-within:shadow-[0_0_0_3px_rgba(201,169,110,0.08)]">
+                  <svg className="h-4 w-4 shrink-0 text-[#1a1a1a]/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                  <input
+                    ref={inputRef}
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={handleKey}
+                    className="flex-1 bg-transparent font-serif text-[1rem] font-light text-[#1a1a1a] outline-none placeholder:text-[#1a1a1a]/25 md:text-[1.1rem]"
+                    placeholder="Ask another question…"
+                  />
+                  {query && (
+                    <button onClick={clearResult} className="text-[#1a1a1a]/30 transition-colors hover:text-[#1a1a1a]/60">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path d="M6 18 18 6M6 6l12 12"/></svg>
+                    </button>
+                  )}
+                  <button onClick={handleSubmit} className="group/arrow flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1e6b45] text-white transition-transform duration-300 hover:scale-105">
+                    <svg className="h-3.5 w-3.5 transition-transform duration-300 group-hover/arrow:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              {thinking ? (
+                <ResearchThinking query={query} />
+              ) : result ? (
+                <ResearchResultView
+                  result={result}
+                  onFollowUp={doSearch}
+                  onConsult={onConsult}
+                  onStartJourney={onStartJourney}
+                />
+              ) : null}
+            </div>
+          )}
+        </div>
+
+        {/* Desktop sidebar */}
+        {!showingLanding && (
+          <div className="hidden w-[240px] shrink-0 border-l border-[#1a1a1a]/8 p-6 lg:block">
+            {history.length > 0 && (
+              <div>
+                <p className="mb-4 text-[9px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/35">
+                  Recently Viewed
+                </p>
+                <div className="flex flex-col gap-2">
+                  {history.map((h) => (
+                    <button
+                      key={h}
+                      onClick={() => doSearch(h)}
+                      className="text-left text-[0.82rem] font-light leading-snug text-[#1a1a1a]/55 transition-colors duration-300 hover:text-[#1a1a1a]"
+                    >
+                      {h}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="mt-8">
+              <button
+                onClick={onConsult}
+                className="w-full rounded-sm bg-[#1e6b45] px-4 py-3 text-[11px] font-medium tracking-[0.08em] text-white transition-all duration-500 hover:bg-[#238c55]"
+              >
+                Book Consultation
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Research landing — search-first, editorial ── */
+function ResearchLanding({
+  query,
+  setQuery,
+  placeholderIdx,
+  placeholderFade,
+  inputRef,
+  onSubmit,
+  onKey,
+  onChip,
+}: {
+  query: string;
+  setQuery: (q: string) => void;
+  placeholderIdx: number;
+  placeholderFade: boolean;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  onSubmit: () => void;
+  onKey: (e: React.KeyboardEvent) => void;
+  onChip: (q: string) => void;
+}) {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center px-6 pb-16 pt-8 md:pb-24">
+      <div className="w-full max-w-[800px]">
+        {/* Hero heading */}
+        <div className="mb-12 text-center md:mb-16">
+          <h1 className="font-serif text-[2rem] font-medium leading-[1.15] text-[#1a1a1a] md:text-[3.2rem]">
+            Ask Better Questions.
+          </h1>
+          <h2 className="mt-2 font-serif text-[2rem] font-medium leading-[1.15] text-[#1a1a1a]/50 md:text-[3.2rem]">
+            Get Better Property Decisions.
+          </h2>
+          <p className="mx-auto mt-6 max-w-[520px] text-[0.88rem] font-light leading-[1.7] text-[#1a1a1a]/50 md:text-[0.95rem]">
+            Understand projects, developers, locations, pricing, legal risks and investment opportunities.
+          </p>
+          <p className="mt-2 text-[0.78rem] font-light text-[#1a1a1a]/35">
+            No account required.
+          </p>
+        </div>
+
+        {/* Search input — the dominant element */}
+        <div className="group relative mx-auto w-full max-w-[760px]">
+          <div className="flex h-[56px] items-center gap-3 rounded-2xl border border-[#1a1a1a]/8 bg-white/60 px-5 transition-all duration-500 focus-within:border-[#c9a96e]/40 focus-within:shadow-[0_0_0_4px_rgba(201,169,110,0.1)] md:h-[60px] md:gap-4 md:px-7">
+            <svg className="h-5 w-5 shrink-0 text-[#1a1a1a]/25" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <div className="relative flex-1">
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={onKey}
+                className="w-full bg-transparent font-serif text-[1.05rem] font-light text-[#1a1a1a] outline-none md:text-[1.2rem]"
+              />
+              {!query && (
+                <span
+                  className={`pointer-events-none absolute inset-0 flex items-center font-serif text-[1.05rem] font-light text-[#1a1a1a]/30 transition-opacity duration-400 md:text-[1.2rem] ${
+                    placeholderFade ? "opacity-100" : "opacity-0"
+                  }`}
+                >
+                  {RESEARCH_PLACEHOLDERS[placeholderIdx]}
+                </span>
+              )}
+            </div>
+            <button className="hidden shrink-0 text-[#1a1a1a]/20 transition-colors hover:text-[#1a1a1a]/45 md:block" aria-label="Voice">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="23"/></svg>
+            </button>
+            <button
+              onClick={onSubmit}
+              className="group/arrow flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1e6b45] text-white transition-transform duration-300 hover:scale-105"
+            >
+              <svg className="h-4 w-4 transition-transform duration-300 group-hover/arrow:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+        </div>
+
+        {/* "Or explore a conversation" */}
+        <p className="mt-8 text-center text-[0.78rem] font-light tracking-[0.03em] text-[#1a1a1a]/30 md:mt-10">
+          Or explore a conversation
+        </p>
+
+        {/* Suggestion chips */}
+        <div className="mx-auto mt-5 flex max-w-[680px] flex-wrap justify-center gap-2.5 md:mt-6 md:gap-3">
+          {RESEARCH_SUGGESTIONS.map((s) => (
+            <button
+              key={s}
+              onClick={() => onChip(s)}
+              className="rounded-full border border-[#1a1a1a]/10 bg-white/40 px-5 py-2.5 text-[0.8rem] font-light text-[#1a1a1a]/55 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#1a1a1a]/25 hover:text-[#1a1a1a]/80 hover:shadow-md hover:shadow-black/[0.04] md:text-[0.85rem]"
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+
+        {/* Explore by Topic */}
+        <div className="mt-12 text-center md:mt-16">
+          <p className="mb-5 text-[9px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/30 md:mb-6">
+            Explore by Topic
+          </p>
+          <div className="mx-auto flex max-w-[520px] flex-wrap justify-center gap-2.5">
+            {RESEARCH_TOPICS.map((t) => (
+              <button
+                key={t}
+                onClick={() => { setQuery(t); onChip(`Best ${t.toLowerCase()} in Gurugram`); }}
+                className="rounded-full border border-[#1a1a1a]/8 px-5 py-2 text-[0.78rem] font-light tracking-[0.05em] text-[#1a1a1a]/40 transition-all duration-300 hover:border-[#1a1a1a]/20 hover:text-[#1a1a1a]/65 md:text-[0.82rem]"
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Confidence statement */}
+        <div className="mt-16 text-center md:mt-20">
+          <p className="mx-auto max-w-[480px] text-[0.72rem] font-light leading-[1.8] text-[#1a1a1a]/25 md:text-[0.76rem]">
+            Every answer combines Truth Intelligence, independent research and human judgement.
+            <br />
+            No advertisements. No sponsored results. No sales pressure.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Research thinking animation ── */
+function ResearchThinking({ query }: { query: string }) {
+  const lines = useMemo(
+    () => [
+      "Analysing market data…",
+      "Cross-referencing projects…",
+      "Reviewing developer records…",
+      "Building your research brief…",
+    ],
+    []
+  );
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    const iv = setInterval(() => setI((x) => (x + 1) % 4), 1100);
+    return () => clearInterval(iv);
+  }, []);
+
+  return (
+    <div className="flex flex-col items-center justify-center py-24 text-center">
+      <div className="relative mb-10 h-10 w-10">
+        <span className="absolute inset-0 animate-spin rounded-full border-2 border-[#1a1a1a]/8 border-t-[#1e6b45]" />
+      </div>
+      <p className="mb-4 font-serif text-[1.1rem] font-light italic text-[#1a1a1a]/40 md:text-[1.3rem]">
+        &ldquo;{query}&rdquo;
+      </p>
+      <p key={i} className="animate-fade-up text-[0.85rem] font-light text-[#1a1a1a]/45">
+        {lines[i]}
+      </p>
+    </div>
+  );
+}
+
+/* ── Research result view ── */
+function ResearchResultView({
+  result,
+  onFollowUp,
+  onConsult,
+  onStartJourney,
+}: {
+  result: ResearchResult;
+  onFollowUp: (q: string) => void;
+  onConsult: () => void;
+  onStartJourney: () => void;
+}) {
+  const typeLabel: Record<ResearchResult["type"], string> = {
+    project: "Project Analysis",
+    developer: "Developer Profile",
+    location: "Market Intelligence",
+    comparison: "Comparative Analysis",
+    question: "Research Brief",
+  };
+
+  return (
+    <div className="animate-fade-up pb-16">
+      {/* Type kicker */}
+      <p className="mb-3 text-[9px] font-light uppercase tracking-[0.3em] text-[#c9a96e]">
+        {typeLabel[result.type]}
+      </p>
+
+      {/* Title */}
+      <h2 className="font-serif text-[1.6rem] font-medium leading-[1.2] text-[#1a1a1a] md:text-[2.2rem]">
+        {result.title}
+      </h2>
+      {result.subtitle && (
+        <p className="mt-2 font-serif text-[1rem] font-light text-[#1a1a1a]/45 md:text-[1.15rem]">
+          {result.subtitle}
+        </p>
+      )}
+
+      {/* Verdict + score */}
+      {result.verdict && (
+        <div className="mt-8 flex items-start gap-5 rounded-lg border border-[#1a1a1a]/10 bg-white/40 px-6 py-5">
+          {result.score != null && (
+            <div className="flex flex-col items-center">
+              <span className="font-serif text-[2rem] font-medium text-[#1e6b45] md:text-[2.4rem]">
+                {result.score}
+              </span>
+              <span className="mt-0.5 text-[8px] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/35">
+                Truth Score
+              </span>
+            </div>
+          )}
+          <div className="flex-1">
+            <p className="mb-1 text-[9px] font-light uppercase tracking-[0.22em] text-[#c9a96e]">
+              {result.confidence ?? "Truth Verdict"}
+            </p>
+            <p className="font-serif text-[1rem] font-light leading-[1.7] text-[#1a1a1a]/75 md:text-[1.08rem]">
+              {result.verdict}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Highlights grid */}
+      {result.highlights && result.highlights.length > 0 && (
+        <div className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-[#1a1a1a]/10 bg-[#1a1a1a]/8 md:grid-cols-3">
+          {result.highlights.map((h) => (
+            <div key={h.label} className="bg-[#F5F0E8] p-4 md:p-5">
+              <p className="mb-1.5 text-[8px] font-light uppercase tracking-[0.22em] text-[#c9a96e]">
+                {h.label}
+              </p>
+              <p className="font-serif text-[0.95rem] font-medium leading-snug text-[#1a1a1a] md:text-[1.08rem]">
+                {h.value}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Strengths + Watchouts */}
+      {(result.strengths?.length || result.watchouts?.length) && (
+        <div className="mt-8 grid gap-6 md:grid-cols-2">
+          {result.strengths && result.strengths.length > 0 && (
+            <div>
+              <p className="mb-3 text-[9px] font-light uppercase tracking-[0.22em] text-[#1e6b45]">
+                Strengths
+              </p>
+              <ul className="flex flex-col gap-2">
+                {result.strengths.map((s) => (
+                  <li key={s} className="flex gap-2.5 text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/65">
+                    <span className="mt-0.5 text-[#1e6b45]">+</span>
+                    {s}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {result.watchouts && result.watchouts.length > 0 && (
+            <div>
+              <p className="mb-3 text-[9px] font-light uppercase tracking-[0.22em] text-[#c9a96e]">
+                Watchouts
+              </p>
+              <ul className="flex flex-col gap-2">
+                {result.watchouts.map((w) => (
+                  <li key={w} className="flex gap-2.5 text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/65">
+                    <span className="mt-0.5 text-[#c9a96e]">!</span>
+                    {w}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Sections */}
+      {result.sections.length > 0 && (
+        <div className="mt-8 flex flex-col gap-6 border-t border-[#1a1a1a]/8 pt-8">
+          {result.sections.map((sec) => (
+            <div key={sec.label}>
+              <p className="mb-2 text-[9px] font-light uppercase tracking-[0.22em] text-[#c9a96e]">
+                {sec.label}
+              </p>
+              <p className="font-serif text-[0.95rem] font-light leading-[1.8] text-[#1a1a1a]/65 md:text-[1.02rem]">
+                {sec.body}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Follow-up questions */}
+      {result.followUps.length > 0 && (
+        <div className="mt-10 border-t border-[#1a1a1a]/8 pt-8">
+          <p className="mb-4 text-[9px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/30">
+            Continue Researching
+          </p>
+          <div className="flex flex-wrap gap-2.5">
+            {result.followUps.map((f) => (
+              <button
+                key={f}
+                onClick={() => onFollowUp(f)}
+                className="rounded-full border border-[#1a1a1a]/10 bg-white/40 px-5 py-2.5 text-[0.8rem] font-light text-[#1a1a1a]/55 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#1a1a1a]/25 hover:text-[#1a1a1a]/80 hover:shadow-md hover:shadow-black/[0.04] md:text-[0.85rem]"
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Bottom CTA */}
+      <div className="mt-12 border-t border-[#1a1a1a]/8 pt-8 text-center">
+        <p className="mb-5 font-serif text-[1.1rem] font-light text-[#1a1a1a]/50 md:text-[1.2rem]">
+          Need independent advice?
+        </p>
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+          <PrimaryButton onClick={onConsult}>Book Consultation</PrimaryButton>
+          <GhostButton onClick={onStartJourney}>Start Your Journey</GhostButton>
+        </div>
+      </div>
+
+      {/* Confidence statement */}
+      <p className="mt-10 text-center text-[0.7rem] font-light text-[#1a1a1a]/20">
+        Every answer combines Truth Intelligence, independent research and human judgement.
       </p>
     </div>
   );

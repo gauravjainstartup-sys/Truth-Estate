@@ -33,7 +33,7 @@ export const GOALS = [
   { key: "buy" as Intent, icon: "🏡", label: "Buy Property", live: true },
   { key: "sell" as Intent, icon: "🏷", label: "Sell Property", live: true },
   { key: "invest" as Intent, icon: "📈", label: "Invest", live: true },
-  { key: "research" as Intent, icon: "🔍", label: "Research & Compare", live: false },
+  { key: "research" as Intent, icon: "🔍", label: "Research & Compare", live: true },
 ];
 
 export const PURCHASE_TYPES = ["First Home", "Upgrade", "Investment", "Holiday Home"];
@@ -771,4 +771,433 @@ export function rankInvestProjects(d: InvestData): InvestRecommendation[] {
       investRationale: rationale,
     };
   });
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RESEARCH & COMPARE
+   ════════════════════════════════════════════════════════════════ */
+
+export type DeveloperProfile = {
+  name: string;
+  est: string;
+  delivery: string;
+  financial: string;
+  completed: string;
+  building: string;
+  legal: string;
+  verdict: string;
+};
+
+export const DEVELOPER_PROFILES: DeveloperProfile[] = [
+  {
+    name: "DLF",
+    est: "1946",
+    delivery: "92% on-time delivery rate across Haryana. Industry-leading handover consistency with minimal delays in last 5 years.",
+    financial: "Listed entity (NSE: DLF). Strong balance sheet with consistent debt reduction. Commercial rental income provides stability.",
+    completed: "DLF Phase 1–5, DLF The Crest, DLF Kings Court, DLF Aralias, DLF Magnolias, DLF Park Place",
+    building: "DLF Privana South, DLF Arbour, DLF The Camellias Phase II",
+    legal: "Clean RERA compliance. No material legal disputes. Strong governance framework.",
+    verdict: "The most reliable developer in Gurugram for both end-use and investment. Premium pricing is justified by delivery certainty and resale liquidity.",
+  },
+  {
+    name: "Godrej",
+    est: "1897",
+    delivery: "Strong delivery record with minimal delays. Known for build quality that exceeds industry standards.",
+    financial: "Backed by Godrej Industries. Conservative approach to project launches. Strong parent balance sheet.",
+    completed: "Godrej Icon, Godrej 101, Godrej Habitat, Godrej Oasis",
+    building: "Godrej Aristocrat (SPR), Godrej Zenith",
+    legal: "Excellent RERA compliance. No adverse legal history. Transparent documentation.",
+    verdict: "Institutional-grade execution with a low-risk delivery profile. Ideal for conservative buyers who prioritise build quality over pricing.",
+  },
+  {
+    name: "M3M",
+    est: "2010",
+    delivery: "Mixed record — some projects delivered on time, others with delays. Recent projects show improvement in execution.",
+    financial: "Unlisted. Aggressive growth funded by project-level financing. Revenue scale has grown significantly.",
+    completed: "M3M Golf Estate Phase I, M3M Merlin, M3M Woodshire",
+    building: "M3M Golf Estate II, M3M Golf Hills, M3M Antalya Hills",
+    legal: "Some historical compliance issues. Recent RERA compliance improved. Due diligence recommended on specific projects.",
+    verdict: "Strong lifestyle positioning and GCE dominance. Higher risk-reward profile compared to DLF or Godrej. Best for buyers who value location and lifestyle.",
+  },
+  {
+    name: "Birla Estates",
+    est: "2016",
+    delivery: "Limited Gurugram delivery history but strong execution in Mumbai and Bangalore. Parent group credibility adds confidence.",
+    financial: "Backed by Aditya Birla Group. Conservative project-level financing with strong parent guarantee.",
+    completed: "Birla Centurion (Mumbai), Birla Alokya (Bangalore)",
+    building: "Birla Navya (Golf Course Extension)",
+    legal: "Clean compliance. Institutional-grade documentation. No adverse legal history.",
+    verdict: "Low-density luxury with brand-grade build quality. Limited Gurugram track record, but parent group credibility provides strong assurance.",
+  },
+  {
+    name: "Smartworld",
+    est: "2019",
+    delivery: "Limited delivery history — most projects under construction. Early signs of execution commitment are positive.",
+    financial: "Backed by strong promoter group. Aggressive but structured growth on Dwarka Expressway and SPR.",
+    completed: "Limited completed inventory",
+    building: "Smartworld One DXP, Smartworld Orchard, Smartworld Gems",
+    legal: "RERA compliant. Clean start with no historical baggage.",
+    verdict: "Early-corridor pricing with growth potential. Higher risk due to limited track record, but strong value proposition for risk-tolerant investors.",
+  },
+  {
+    name: "Emaar",
+    est: "1997",
+    delivery: "Good delivery record in India. Emaar Palm Heights and Emaar Gurgaon Greens delivered successfully.",
+    financial: "Listed globally (DFM: EMAAR). Strong international balance sheet. India operations well-capitalised.",
+    completed: "Emaar Palm Heights, Emaar Gurgaon Greens, Emaar Emerald Hills",
+    building: "Emaar Urban Ascent, Emaar Digi Homes",
+    legal: "Clean RERA compliance. International governance standards applied.",
+    verdict: "Global credibility with good India execution. Best for value-segment buyers who want reliability without premium pricing.",
+  },
+];
+
+export type MarketProfile = {
+  name: string;
+  short: string;
+  overview: string;
+  infra: string;
+  price: string;
+  supply: string;
+  demand: string;
+  outlook: string;
+  projects: string[];
+};
+
+export const MARKET_PROFILES: MarketProfile[] = [
+  {
+    name: "Golf Course Extension",
+    short: "GCE",
+    overview: "Gurugram's most active luxury micro-market. High concentration of premium developers. Strong end-user and investor demand. ₹4–12 Cr.",
+    infra: "Excellent connectivity to Golf Course Road and NH-48. Metro Phase IV planned. Established schools, hospitals, and retail.",
+    price: "18–25% appreciation over 3 years. Below Golf Course Road pricing, offering relative value in the luxury segment.",
+    supply: "Moderate new supply from DLF Arbour, M3M Golf Estate II, Birla Navya, and Conscient Parq. Absorption rate healthy.",
+    demand: "Strong from end-users upgrading and NRI investors. Rental demand growing steadily.",
+    outlook: "Positive. Infrastructure completion and limited future land availability should support continued appreciation. Best for 3–5 year growth.",
+    projects: ["DLF Arbour", "M3M Golf Estate II", "Birla Navya", "Conscient Parq"],
+  },
+  {
+    name: "SPR",
+    short: "SPR",
+    overview: "Southern Peripheral Road — Gurugram's fastest-growing corridor. Mix of premium and mid-segment. ₹2–8 Cr.",
+    infra: "SPR fully operational. Proximity to Sohna Road and NH-48. Social infrastructure developing rapidly.",
+    price: "15–22% appreciation over 3 years. Still offers value relative to GCE and GCR.",
+    supply: "Active from DLF Privana South, Godrej Aristocrat, Signature Global Titanium. New launches expected.",
+    demand: "Growing from first-time buyers and investors. Emerging value alternative to GCE for quality projects.",
+    outlook: "Strong growth trajectory. Infrastructure and developer investment signal long-term confidence. Best for 3–7 year horizon.",
+    projects: ["DLF Privana South", "Godrej Aristocrat", "Signature Global Titanium SPR"],
+  },
+  {
+    name: "Golf Course Road",
+    short: "GCR",
+    overview: "Gurugram's most established luxury address. Ultra-premium projects and commercial hubs. ₹8–25 Cr+.",
+    infra: "Best connectivity — Rapid Metro, NH-48, all major arterials. Fully developed social infrastructure.",
+    price: "Mature market with steady 8–12% annual appreciation. Limited new supply supports pricing.",
+    supply: "Very limited new supply. Most inventory is resale. DLF Camellias Phase II is the only significant launch.",
+    demand: "Ultra-high-net-worth end-users and institutional investors. Strongest rental demand in Gurugram.",
+    outlook: "Stable with premium positioning. Limited supply ensures value retention. Best for capital preservation and rental income.",
+    projects: ["DLF The Camellias", "DLF The Crest", "DLF Aralias", "DLF Magnolias"],
+  },
+  {
+    name: "Dwarka Expressway",
+    short: "Dwarka Expy",
+    overview: "Gurugram's emerging value corridor connecting to Delhi. Mid-segment and affordable luxury. ₹1.5–6 Cr.",
+    infra: "Expressway now operational. Metro extension planned. Airport proximity is key advantage.",
+    price: "Highest appreciation corridor — 25–40% over 3 years. Still offers entry-level pricing.",
+    supply: "High supply with multiple developers active. Absorption needs monitoring.",
+    demand: "Strong from first-time buyers, Delhi investors, and NRIs seeking value.",
+    outlook: "High growth potential with infrastructure catalysts. Higher risk due to supply volume. Selective picks critical.",
+    projects: ["Smartworld One DXP", "Emaar Digi Homes", "Signature Global City 81"],
+  },
+  {
+    name: "New Gurgaon",
+    short: "New Gurgaon",
+    overview: "Developing micro-market along NH-8 beyond Manesar. Affordable to mid-segment. ₹1–4 Cr.",
+    infra: "NH-8 connectivity is primary. KMP Expressway access. Social infrastructure emerging.",
+    price: "Moderate 10–15% appreciation over 3 years. Most affordable in Gurugram.",
+    supply: "Healthy from Emaar, Signature Global, and emerging developers.",
+    demand: "End-user driven. Strong rental demand from working population near IMT Manesar.",
+    outlook: "Steady growth. Infrastructure development will drive next phase. Best for long-term value investment.",
+    projects: ["Emaar Urban Ascent", "Emaar Digi Homes"],
+  },
+  {
+    name: "Sohna",
+    short: "Sohna",
+    overview: "Emerging micro-market south of Gurugram along Sohna Road. Value positioning. ₹1–4 Cr.",
+    infra: "Sohna Road and KMP Expressway connectivity. Natural topography with Aravalli proximity.",
+    price: "Early-stage 12–18% appreciation over 3 years. Maximum entry-level value in the region.",
+    supply: "Active from Puri, Central Park, and emerging developers. Land availability supports continued launches.",
+    demand: "Primarily investor-driven with growing end-user interest. Weekend home demand from Delhi.",
+    outlook: "Longer appreciation horizon. Infrastructure completion is key catalyst. Best for patient 5–7 year investors.",
+    projects: ["Puri Aravallis", "Puri The Aravallis", "Central Park Flower Valley"],
+  },
+];
+
+export const RESEARCH_SUGGESTIONS = [
+  "Should I buy DLF Arbour?",
+  "Compare DLF Arbour vs Puri Aravallis",
+  "Best luxury projects under ₹8 Cr",
+  "Which developers deliver on time?",
+  "Construction delays in Gurugram",
+  "DLF vs Godrej",
+  "Golf Course Road vs SPR",
+];
+
+export const RESEARCH_PLACEHOLDERS = [
+  "Should I buy DLF Arbour?",
+  "Compare DLF Arbour with Puri The Aravallis",
+  "Which developer has the best delivery record?",
+  "Best projects under ₹8 Cr",
+  "Where should I invest ₹5 Cr?",
+  "Should I wait before buying?",
+];
+
+export const RESEARCH_TOPICS = [
+  "Projects",
+  "Developers",
+  "Markets",
+  "Pricing",
+  "Construction",
+  "Legal",
+  "Investment",
+];
+
+export type ResearchResult = {
+  type: "project" | "developer" | "location" | "comparison" | "question";
+  title: string;
+  subtitle?: string;
+  verdict?: string;
+  score?: number;
+  confidence?: string;
+  highlights?: { label: string; value: string }[];
+  sections: { label: string; body: string }[];
+  strengths?: string[];
+  watchouts?: string[];
+  followUps: string[];
+};
+
+export function classifyAndResearch(query: string): ResearchResult {
+  const q = query.toLowerCase();
+
+  if (/\bvs\b|\bcompare\b|\bversus\b/i.test(query)) {
+    const mp = PROJECTS.filter((p) => q.includes(p.name.toLowerCase()));
+    if (mp.length >= 2) return buildProjectComparison(mp[0], mp[1]);
+    const md = DEVELOPER_PROFILES.filter((d) => q.includes(d.name.toLowerCase()));
+    if (md.length >= 2) return buildDeveloperComparison(md[0], md[1]);
+    const ml = MARKET_PROFILES.filter((m) => q.includes(m.name.toLowerCase()) || q.includes(m.short.toLowerCase()));
+    if (ml.length >= 2) return buildLocationComparison(ml[0], ml[1]);
+  }
+
+  const project = PROJECTS.find((p) => q.includes(p.name.toLowerCase()));
+  if (project) return buildProjectResult(project);
+
+  const dev = DEVELOPER_PROFILES.find((d) => q.includes(d.name.toLowerCase()));
+  if (dev) return buildDeveloperResult(dev);
+
+  const loc = MARKET_PROFILES.find((m) => q.includes(m.name.toLowerCase()) || q.includes(m.short.toLowerCase()));
+  if (loc) return buildLocationResult(loc);
+
+  return buildQuestionResult(query);
+}
+
+function buildProjectResult(p: Project): ResearchResult {
+  const dev = DEVELOPER_PROFILES.find((d) => d.name === p.developer);
+  const alts = PROJECTS.filter((x) => x.name !== p.name && x.market === p.market).map((x) => x.name);
+  return {
+    type: "project",
+    title: p.name,
+    subtitle: `${p.developer} · ${p.market} · ${p.configs.join(", ")}`,
+    verdict: p.recommendation,
+    score: p.truthScore,
+    confidence: p.confidence,
+    highlights: [
+      { label: "Truth Score", value: `${p.truthScore}/100` },
+      { label: "Recommendation", value: p.recommendation },
+      { label: "Confidence", value: p.confidence },
+      { label: "Budget Range", value: `₹${p.budget[0]}–${p.budget[1]} Cr` },
+    ],
+    sections: [
+      { label: "Executive Summary", body: p.reason },
+      { label: "Developer", body: dev ? `${p.developer} (est. ${dev.est}). ${dev.delivery}` : `${p.developer} — established developer with active projects in ${p.market}.` },
+      { label: "Construction", body: `${p.recommendation} with ${p.confidence.toLowerCase()} confidence. Progress tracked against committed handover schedule.` },
+      { label: "Legal", body: "RERA-registered with clear title and approvals on record. Full documents reviewed with your advisor." },
+      { label: "Pricing", body: `${p.strengths.find((s) => /below|value|entry|pricing/i.test(s)) ?? "Positioned competitively for the segment"}. Exact pricing discussed with your advisor — never on a portal.` },
+      { label: "ROI Alignment", body: `Aligned to ${p.tags.slice(0, 3).join(", ").toLowerCase()}. Our read on appreciation and liquidity for your specific horizon.` },
+      { label: "Alternatives", body: alts.length ? alts.join(" · ") : "Reviewed against the full active set." },
+    ],
+    strengths: p.strengths,
+    watchouts: p.watchouts,
+    followUps: [
+      `What are the risks with ${p.name}?`,
+      `Is ${p.name} good for investment?`,
+      `Tell me about ${p.developer}`,
+      `Tell me about ${p.market}`,
+    ],
+  };
+}
+
+function buildDeveloperResult(d: DeveloperProfile): ResearchResult {
+  const devProjects = PROJECTS.filter((p) => p.developer === d.name);
+  return {
+    type: "developer",
+    title: d.name,
+    subtitle: `Established ${d.est}`,
+    highlights: [
+      { label: "Active Projects", value: `${devProjects.length} tracked` },
+      { label: "Avg Truth Score", value: devProjects.length ? `${Math.round(devProjects.reduce((a, p) => a + p.truthScore, 0) / devProjects.length)}/100` : "—" },
+    ],
+    sections: [
+      { label: "Track Record", body: d.verdict },
+      { label: "Delivery History", body: d.delivery },
+      { label: "Financial Health", body: d.financial },
+      { label: "Completed Projects", body: d.completed },
+      { label: "Under Construction", body: d.building },
+      { label: "Legal Signals", body: d.legal },
+    ],
+    followUps: [
+      ...devProjects.slice(0, 2).map((p) => `Tell me about ${p.name}`),
+      `Compare ${d.name} with ${DEVELOPER_PROFILES.find((x) => x.name !== d.name)?.name ?? "alternatives"}`,
+      `Best ${d.name} project for investment?`,
+    ],
+  };
+}
+
+function buildLocationResult(m: MarketProfile): ResearchResult {
+  return {
+    type: "location",
+    title: m.name,
+    subtitle: m.overview,
+    highlights: [
+      { label: "Top Projects", value: `${m.projects.length} tracked` },
+    ],
+    sections: [
+      { label: "Market Overview", body: m.overview },
+      { label: "Infrastructure", body: m.infra },
+      { label: "Price Trends", body: m.price },
+      { label: "Supply", body: m.supply },
+      { label: "Demand", body: m.demand },
+      { label: "Future Outlook", body: m.outlook },
+      { label: "Top Projects", body: m.projects.join(" · ") },
+    ],
+    followUps: [
+      ...m.projects.slice(0, 2).map((p) => `Tell me about ${p}`),
+      `Compare ${m.name} with ${MARKET_PROFILES.find((x) => x.name !== m.name)?.name ?? "alternatives"}`,
+      `Best investment in ${m.short}?`,
+    ],
+  };
+}
+
+function buildProjectComparison(a: Project, b: Project): ResearchResult {
+  const winner = a.truthScore >= b.truthScore ? a : b;
+  const other = winner === a ? b : a;
+  return {
+    type: "comparison",
+    title: `${a.name} vs ${b.name}`,
+    subtitle: "Independent comparison based on our research",
+    sections: [
+      { label: "Executive Recommendation", body: `${winner.name} scores higher on our independent evaluation (Truth Score ${winner.truthScore} vs ${other.truthScore}). ${winner.reason} However, ${other.name} has its own strengths: ${other.strengths[0]?.toLowerCase()}.` },
+      { label: a.name, body: `Truth Score ${a.truthScore}/100 · ${a.recommendation} · ${a.confidence} confidence. ${a.developer} · ${a.market}. ${a.reason}` },
+      { label: b.name, body: `Truth Score ${b.truthScore}/100 · ${b.recommendation} · ${b.confidence} confidence. ${b.developer} · ${b.market}. ${b.reason}` },
+      { label: "Key Differences", body: `${a.name} leads on ${a.tags[0]?.toLowerCase() ?? "fundamentals"}. ${b.name} leads on ${b.tags[0]?.toLowerCase() ?? "fundamentals"}. Budget overlap: ₹${a.budget[0]}–${a.budget[1]} Cr vs ₹${b.budget[0]}–${b.budget[1]} Cr.` },
+      { label: "Who Should Buy Which?", body: `Choose ${a.name} if your priorities include ${a.tags.slice(0, 2).join(" and ").toLowerCase()}. Choose ${b.name} if you value ${b.tags.slice(0, 2).join(" and ").toLowerCase()}.` },
+    ],
+    followUps: [
+      `Tell me more about ${a.name}`,
+      `Tell me more about ${b.name}`,
+      `Is ${winner.name} good for investment?`,
+    ],
+  };
+}
+
+function buildDeveloperComparison(a: DeveloperProfile, b: DeveloperProfile): ResearchResult {
+  return {
+    type: "comparison",
+    title: `${a.name} vs ${b.name}`,
+    subtitle: "Developer comparison based on independent analysis",
+    sections: [
+      { label: "Executive Recommendation", body: `Both are credible developers with distinct positioning. ${a.name} (est. ${a.est}) and ${b.name} (est. ${b.est}) serve different buyer profiles.` },
+      { label: a.name, body: `${a.delivery} ${a.verdict}` },
+      { label: b.name, body: `${b.delivery} ${b.verdict}` },
+      { label: "Key Differences", body: `${a.name}: ${a.financial.split(".")[0]}. ${b.name}: ${b.financial.split(".")[0]}.` },
+      { label: "Who Should Choose Which?", body: `Choose ${a.name} for: ${a.verdict.split(".")[0]?.toLowerCase()}. Choose ${b.name} for: ${b.verdict.split(".")[0]?.toLowerCase()}.` },
+    ],
+    followUps: [
+      `Tell me more about ${a.name}`,
+      `Tell me more about ${b.name}`,
+      `Best ${a.name} project?`,
+      `Best ${b.name} project?`,
+    ],
+  };
+}
+
+function buildLocationComparison(a: MarketProfile, b: MarketProfile): ResearchResult {
+  return {
+    type: "comparison",
+    title: `${a.name} vs ${b.name}`,
+    subtitle: "Market comparison based on independent research",
+    sections: [
+      { label: "Executive Recommendation", body: `Both markets offer distinct opportunities. ${a.name}: ${a.overview.split(".")[0]?.toLowerCase()}. ${b.name}: ${b.overview.split(".")[0]?.toLowerCase()}.` },
+      { label: a.name, body: `${a.price} ${a.outlook}` },
+      { label: b.name, body: `${b.price} ${b.outlook}` },
+      { label: "Infrastructure", body: `${a.short}: ${a.infra.split(".")[0]}. ${b.short}: ${b.infra.split(".")[0]}.` },
+      { label: "Key Differences", body: `${a.short} demand: ${a.demand.split(".")[0]?.toLowerCase()}. ${b.short} demand: ${b.demand.split(".")[0]?.toLowerCase()}.` },
+      { label: "Who Should Invest Where?", body: `${a.name} for: ${a.outlook.split(".").slice(-1)[0]?.trim()?.toLowerCase() ?? "growth"}. ${b.name} for: ${b.outlook.split(".").slice(-1)[0]?.trim()?.toLowerCase() ?? "growth"}.` },
+    ],
+    followUps: [
+      `Top projects in ${a.name}`,
+      `Top projects in ${b.name}`,
+      `Best investment in ${a.short}?`,
+    ],
+  };
+}
+
+function buildQuestionResult(query: string): ResearchResult {
+  const q = query.toLowerCase();
+  type QA = { answer: string; followUps: string[] };
+  const answers: [RegExp, QA][] = [
+    [/luxury.*under|under.*\bcr\b|best.*project/i, {
+      answer: "Under ₹8 Cr, the strongest luxury value today sits with DLF Arbour (GCE, Truth Score 92), Godrej Aristocrat (SPR, Truth Score 90), and Conscient Parq (GCE, Truth Score 83). Each balances layout quality, developer strength, and a credible appreciation case without paying purely for a brand premium. For ultra-luxury above ₹10 Cr, M3M Golf Estate II and Birla Navya offer distinct lifestyle propositions.",
+      followUps: ["Tell me about DLF Arbour", "Compare DLF Arbour vs Godrej Aristocrat", "Tell me about Golf Course Extension"],
+    }],
+    [/deliver|on.?time|reliable|track record/i, {
+      answer: "On delivery certainty and build quality, our data favours DLF (92% on-time, est. 1946), Godrej (institutional-grade execution, est. 1897), and Birla Estates (parent-backed credibility, est. 2016) in the current Gurugram cycle. M3M leads on lifestyle positioning but has a more mixed delivery record. Emaar brings global credibility with good India execution. We weight RERA history, on-time ratios, and post-possession complaints — not marketing claims.",
+      followUps: ["Tell me about DLF", "Compare DLF vs Godrej", "Tell me about M3M"],
+    }],
+    [/investment.*location|best.*location|where.*invest/i, {
+      answer: "For growth-oriented investment: Golf Course Extension offers the best risk-adjusted returns with 18–25% appreciation over 3 years and strong developer concentration. SPR is the emerging value play with 15–22% appreciation and active new supply. Dwarka Expressway has the highest growth potential (25–40%) but higher risk due to supply volume. For capital preservation: Golf Course Road remains the most liquid and stable market.",
+      followUps: ["Tell me about Golf Course Extension", "Compare Golf Course Extension vs SPR", "Tell me about Dwarka Expressway"],
+    }],
+    [/resale|value|appreciation|roi|return/i, {
+      answer: "Resale value in Gurugram is driven by five factors, in order of impact: (1) Developer brand and delivery record — DLF and Godrej properties command 15–20% premiums in resale; (2) Location maturity — established corridors like GCR and GCE have the deepest buyer pools; (3) Construction progress — near-ready units sell faster; (4) Floor and facing — park-facing, higher floors command 8–12% premiums; (5) Market timing — avoid selling when new supply peaks in the same micro-market.",
+      followUps: ["Which developers have best resale?", "Compare Golf Course Extension vs SPR", "Best project for investment?"],
+    }],
+    [/risk|safe|worry|concern/i, {
+      answer: "The primary risks in Gurugram real estate today: (1) Over-supply on Dwarka Expressway could pressure near-term appreciation; (2) Developer execution risk with newer, unproven builders; (3) Interest rate sensitivity affecting demand cycles; (4) Infrastructure timeline delays impacting connectivity-dependent corridors. Mitigation: stick with established developers, proven micro-markets, and project-level due diligence. Never rely on projected timelines alone.",
+      followUps: ["Which developers are most reliable?", "Tell me about DLF", "Best safe investment?"],
+    }],
+  ];
+
+  for (const [re, qa] of answers) {
+    if (re.test(q)) {
+      return {
+        type: "question",
+        title: query,
+        sections: [{ label: "Our View", body: qa.answer }],
+        followUps: qa.followUps,
+      };
+    }
+  }
+
+  return {
+    type: "question",
+    title: query,
+    sections: [
+      { label: "Our View", body: "Here's how we'd approach this — grounded in delivery records, independent pricing analysis, and risk assessment rather than marketing claims. For a detailed, personalised analysis specific to your situation, speak with one of our independent advisors who can walk through the evidence." },
+    ],
+    followUps: [
+      "Which developers are most reliable?",
+      "Best investment locations in Gurugram",
+      "Compare DLF Arbour vs Godrej Aristocrat",
+      "What affects resale value?",
+    ],
+  };
 }
