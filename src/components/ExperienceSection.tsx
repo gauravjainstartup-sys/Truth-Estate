@@ -597,15 +597,15 @@ function ExperienceIntelligence() {
           </div>
 
           <div className="mt-10">
-            <button
-              onClick={() => open("research")}
+            <a
+              href="/Truth-Estate/intelligence"
               className="group/btn inline-flex items-center gap-2 text-[0.82rem] font-light tracking-[0.14em] text-[#1a1a1a]/65 transition-colors duration-400 hover:text-[#1a1a1a]"
             >
               Explore Intelligence
               <span className="inline-block transition-transform duration-300 group-hover/btn:translate-x-1">
                 &rarr;
               </span>
-            </button>
+            </a>
           </div>
         </div>
       </div>

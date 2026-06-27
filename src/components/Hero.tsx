@@ -68,17 +68,20 @@ export default function Hero() {
           <nav className="animate-fade-up flex items-center pr-12 lg:pr-20">
             <Logo className="h-10 w-auto opacity-75 lg:h-[3rem]" />
             <div className="ml-auto hidden items-center gap-20 text-[10px] font-light tracking-[0.18em] text-white/50 lg:flex">
-              <a href="#" className="transition-colors duration-500 hover:text-white/80">
+              <a href={`${basePath}/intelligence`} className="transition-colors duration-500 hover:text-white/80">
                 Projects
               </a>
-              <a href="#" className="transition-colors duration-500 hover:text-white/80">
+              <a href={`${basePath}/intelligence`} className="transition-colors duration-500 hover:text-white/80">
                 Compare
               </a>
-              <a href="#" className="transition-colors duration-500 hover:text-white/80">
+              <button
+                onClick={() => open("research")}
+                className="tracking-[0.18em] transition-colors duration-500 hover:text-white/80"
+              >
                 TruthGuide
-              </a>
-              <a href="#" className="transition-colors duration-500 hover:text-white/80">
-                Private Office
+              </button>
+              <a href={`${basePath}/intelligence`} className="transition-colors duration-500 hover:text-white/80">
+                Intelligence
               </a>
             </div>
           </nav>
