@@ -1491,8 +1491,8 @@ export default function ExperienceSection() {
       <QuestionsSection />
       <div className="h-[20vh] bg-gradient-to-b from-[#F5F0E8] to-[#0a0a0a] md:h-[30vh]" />
       <PromiseSection />
-      <CoverageSection />
       <ClosingSection />
+      <CoverageSection />
     </section>
   );
 }
