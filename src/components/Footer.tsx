@@ -133,9 +133,9 @@ export default function Footer() {
       <footer className="bg-[#F5F0E8] text-[#1a1a1a]">
         <div className="mx-auto max-w-7xl px-6 md:px-10">
           {/* ── Top section: Brand + Columns ── */}
-          <div className="grid grid-cols-2 gap-x-8 gap-y-14 pt-[7vh] md:grid-cols-12 md:gap-x-6 md:pt-[9vh]">
+          <div className="grid grid-cols-1 gap-x-8 gap-y-14 pt-[7vh] md:grid-cols-12 md:gap-x-6 md:pt-[9vh]">
             {/* ── Brand column ── */}
-            <div className="col-span-2 md:col-span-3">
+            <div className="md:col-span-4 lg:col-span-3">
               <Logo color="#1a1a1a" className="h-11 w-auto md:h-[3.2rem]" />
               <p className="mt-7 max-w-[260px] font-serif text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/45 md:text-[1rem]">
                 Independent representation for
@@ -170,49 +170,46 @@ export default function Footer() {
             </div>
 
             {/* ── Nav columns ── */}
-            {columns.map((col, i) => (
-              <div
-                key={col.label}
-                className={
-                  i < 3
-                    ? "col-span-1 md:col-span-2"
-                    : "col-span-1 md:col-span-1"
-                }
-              >
-                <h3 className="text-[10px] font-medium uppercase tracking-[0.25em] text-[#c9a96e]">
-                  {col.label}
-                </h3>
-                <ul className="mt-5 space-y-3">
-                  {col.links.map((l) => (
-                    <li key={l.t}>
-                      {l.action ? (
-                        <button
-                          onClick={() =>
-                            l.action === "consult"
-                              ? openConsult({ sourceKind: "homepage" })
-                              : open()
-                          }
-                          className={linkClass}
-                        >
-                          {l.t}
-                        </button>
-                      ) : (
-                        <a
-                          href={
-                            l.h.startsWith("/")
-                              ? `${basePath}${l.h}`
-                              : l.h
-                          }
-                          className={linkClass}
-                        >
-                          {l.t}
-                        </a>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+            <div className="md:col-span-8 lg:col-span-9">
+              <div className="grid grid-cols-2 gap-x-8 gap-y-12 sm:grid-cols-3 lg:grid-cols-5">
+                {columns.map((col) => (
+                  <div key={col.label}>
+                    <h3 className="text-[10px] font-medium uppercase tracking-[0.25em] text-[#c9a96e]">
+                      {col.label}
+                    </h3>
+                    <ul className="mt-5 space-y-3">
+                      {col.links.map((l) => (
+                        <li key={l.t}>
+                          {l.action ? (
+                            <button
+                              onClick={() =>
+                                l.action === "consult"
+                                  ? openConsult({ sourceKind: "homepage" })
+                                  : open()
+                              }
+                              className={linkClass}
+                            >
+                              {l.t}
+                            </button>
+                          ) : (
+                            <a
+                              href={
+                                l.h.startsWith("/")
+                                  ? `${basePath}${l.h}`
+                                  : l.h
+                              }
+                              className={linkClass}
+                            >
+                              {l.t}
+                            </a>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
 
           {/* ── Thin divider ── */}
