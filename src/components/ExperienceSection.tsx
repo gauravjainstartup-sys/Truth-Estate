@@ -1402,49 +1402,76 @@ function CoverageSection() {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   SECTION 13 — CLOSING
+   SECTION 13 — CLOSING INVITATION
+   The final slide. Calm, confident, minimal.
    ════════════════════════════════════════════════════════════════ */
 function ClosingSection() {
   const ref = useRef<HTMLDivElement>(null);
   const { open } = useJourney();
-  useReveal(ref, 0.2);
+  useReveal(ref, 0.12);
 
   return (
-    <div ref={ref} className="bg-[#0a0a0a] px-6 pb-[14vh] pt-[10vh] md:px-8 md:pb-[16vh] md:pt-[12vh]">
-      <div className="mx-auto max-w-2xl text-center">
-        <h2 data-r className="font-serif text-[2rem] font-medium leading-[1.16] text-white/90 md:text-[3.4rem] lg:text-[4.2rem]" style={{ opacity: 0, transform: "translateY(24px)" }}>
-          Life&apos;s biggest property decision
-          <br />
-          <span className="font-light italic text-white/55">deserves</span>
-          <br />
-          an independent buyer&apos;s office.
+    <div
+      ref={ref}
+      className="flex min-h-[90vh] items-center justify-center bg-[#0a0a0a] px-6 md:px-8"
+    >
+      <div className="mx-auto max-w-2xl py-[14vh] text-center md:py-[16vh]">
+        <h2
+          data-r
+          className="font-serif text-[2.4rem] font-bold leading-[1.12] text-white/90 md:text-[3.8rem] lg:text-[4.6rem]"
+          style={{ opacity: 0, transform: "translateY(24px)" }}
+        >
+          One confident decision.
         </h2>
 
-        <div data-r className="mt-12 flex flex-col items-center gap-6 md:mt-16 md:gap-8" style={{ opacity: 0, transform: "translateY(16px)" }}>
-          <button onClick={() => open()} className="group inline-flex items-center gap-2 border-b border-[#c9a96e]/30 pb-1.5 font-serif text-[0.9rem] font-light tracking-[0.12em] text-[#c9a96e] transition-colors duration-300 hover:border-[#c9a96e]/60 md:text-[1.15rem]">
-            {PRIMARY_CTA}
-            <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
-          </button>
-
-          <button onClick={() => open("research")} className="group inline-flex items-center gap-2 text-[0.8rem] font-light tracking-[0.14em] text-white/50 transition-colors duration-300 hover:text-white/75 md:text-[0.85rem]">
-            Challenge TruthGuide
-            <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
-          </button>
-
-          <button onClick={() => open("research")} className="text-[0.75rem] font-light tracking-[0.12em] text-white/25 transition-colors duration-300 hover:text-white/45 md:text-[0.8rem]">
-            Explore Reports &rarr;
-          </button>
-        </div>
-
-        {/* The thesis — bookend to where this chapter began */}
-        <div data-r className="mt-20 md:mt-28" style={{ opacity: 0, transform: "translateY(16px)" }}>
-          <div className="mx-auto mb-6 h-px w-12 bg-[#c9a96e]/20 md:mb-8" />
-          <p className="font-serif text-[0.82rem] font-light italic leading-[1.9] text-white/30 md:text-[1.05rem]">
-            Every developer has a sales office.
+        <div
+          data-r
+          className="mx-auto mt-10 max-w-md md:mt-14"
+          style={{ opacity: 0, transform: "translateY(16px)" }}
+        >
+          <p className="font-serif text-[1rem] font-light leading-[2] text-white/40 md:text-[1.15rem]">
+            The right property changes your portfolio.
             <br />
-            Every buyer deserves a buyer&apos;s office.
+            The right decision changes your future.
+          </p>
+          <p className="mt-8 font-serif text-[1rem] font-light leading-[2] text-white/40 md:mt-10 md:text-[1.15rem]">
+            When you&apos;re ready,
+            <br />
+            we&apos;ll help you make it independently.
           </p>
         </div>
+
+        <div
+          data-r
+          className="mt-14 flex flex-col items-center gap-7 md:mt-20"
+          style={{ opacity: 0, transform: "translateY(14px)" }}
+        >
+          <button
+            onClick={() => open()}
+            className="group inline-flex items-center gap-3 rounded-sm border border-[#c9a96e]/30 bg-transparent px-12 py-5 font-serif text-[14px] font-light tracking-[0.1em] text-[#c9a96e] transition-all duration-500 hover:border-[#c9a96e]/50 hover:px-14 hover:shadow-lg hover:shadow-[#c9a96e]/5"
+          >
+            {PRIMARY_CTA}
+            <span className="inline-block transition-transform duration-500 group-hover:translate-x-1.5">
+              &rarr;
+            </span>
+          </button>
+
+          <button
+            onClick={() => open("research")}
+            className="group relative text-[13px] font-light tracking-[0.1em] text-white/40 transition-colors duration-400 hover:text-white/70"
+          >
+            Challenge TruthGuide &rarr;
+            <span className="absolute -bottom-1 left-0 h-px w-0 bg-white/30 transition-all duration-500 group-hover:w-full" />
+          </button>
+        </div>
+
+        <p
+          data-r
+          className="mt-14 text-[11px] font-light tracking-[0.12em] text-white/20 md:mt-18"
+          style={{ opacity: 0 }}
+        >
+          No sales pressure. No obligations. Just independent advice.
+        </p>
       </div>
     </div>
   );
