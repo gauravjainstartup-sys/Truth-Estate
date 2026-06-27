@@ -49,6 +49,13 @@ export default function ConsultationJourney({
   const [booking, setBooking] = useState<ConsultBooking>(() => emptyConsultBooking(context));
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Close on Escape — consistent with the journey modal.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   const prepLine = consultPrepLine(context);
 
   // If we already know the intent (e.g. from a journey), reason is preset.
@@ -75,7 +82,7 @@ export default function ConsultationJourney({
 
   /* ── outer frame ── */
   const frame = (inner: React.ReactNode) => (
-    <div className="fixed inset-0 z-[110]">
+    <div className="fixed inset-0 z-[110]" role="dialog" aria-modal="true" aria-label="Request Independent Advice">
       <div className="absolute inset-0 animate-journey-fade bg-[#0a0a0a]/45 backdrop-blur-xl" />
       <div className="absolute inset-0 animate-journey-in">{inner}</div>
     </div>

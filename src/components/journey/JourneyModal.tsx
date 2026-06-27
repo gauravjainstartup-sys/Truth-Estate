@@ -471,7 +471,7 @@ export default function JourneyModal({
 
   /* ── outer frame: entrance + background blur ── */
   const frame = (inner: React.ReactNode) => (
-    <div className="fixed inset-0 z-[100]">
+    <div className="fixed inset-0 z-[100]" role="dialog" aria-modal="true" aria-label="The Truth Estate Journey">
       <div className="absolute inset-0 animate-journey-fade bg-[#0a0a0a]/45 backdrop-blur-xl" />
       <div className="absolute inset-0 animate-journey-in">{inner}</div>
     </div>
