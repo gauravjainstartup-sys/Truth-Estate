@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Logo from "../Logo";
+import ProjectDecisionSystem from "./ProjectDecisionSystem";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import type { ConsultContext } from "@/lib/consultation";
 import {
@@ -221,14 +222,24 @@ export default function IntelligenceWorkspace() {
           {view.type === "developers" && <DevelopersView navigate={navigate} />}
           {view.type === "locations" && <LocationsView navigate={navigate} />}
           {view.type === "compare" && <CompareView doSearch={doSearch} />}
-          {view.type === "project" && <ProjectDetail name={view.name} navigate={navigate} doSearch={doSearch} />}
+          {view.type === "project" && (
+            <ProjectDecisionSystem
+              name={view.name}
+              scrollRoot={mainRef}
+              goProjects={() => navigate({ type: "projects" })}
+              goProject={(n) => navigate({ type: "project", name: n })}
+              goDeveloper={(n) => navigate({ type: "developer", name: n })}
+              goLocation={(n) => navigate({ type: "location", name: n })}
+              doSearch={doSearch}
+            />
+          )}
           {view.type === "developer" && <DeveloperDetail name={view.name} navigate={navigate} doSearch={doSearch} />}
           {view.type === "location" && <LocationDetail name={view.name} navigate={navigate} doSearch={doSearch} />}
-          {view.type === "search-result" && <SearchResultView query={view.query} result={view.result} navigate={navigate} doSearch={doSearch} />}
+          {view.type === "search-result" && <SearchResultView result={view.result} doSearch={doSearch} />}
         </main>
 
-        {/* ── Right sidebar (desktop) ── */}
-        <aside className="hidden w-[220px] shrink-0 border-l border-[#1a1a1a]/[0.06] p-6 lg:block">
+        {/* ── Right sidebar (desktop) — hidden on the project memo, which has its own ── */}
+        <aside className={`${view.type === "project" ? "hidden" : "hidden lg:block"} w-[220px] shrink-0 border-l border-[#1a1a1a]/[0.06] p-6`}>
           {recentSearches.length > 0 && (
             <div className="mb-8">
               <p className="mb-3 text-[9px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/25">Recent Searches</p>
@@ -568,162 +579,6 @@ function CompareView({ doSearch }: { doSearch: (q: string) => void }) {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   PROJECT DETAIL
-   ════════════════════════════════════════════════════════════════ */
-function ProjectDetail({ name, navigate, doSearch }: { name: string; navigate: (v: View) => void; doSearch: (q: string) => void }) {
-  const p = PROJECTS.find((x) => x.name === name);
-  if (!p) return <div className="p-12 text-center font-serif text-[#1a1a1a]/40">Project not found.</div>;
-
-  const dev = DEVELOPER_PROFILES.find((d) => d.name === p.developer);
-  const mkt = MARKET_PROFILES.find((m) => m.name === p.market);
-  const result = classifyAndResearch(name);
-  const comparable = PROJECTS.filter((x) => x.name !== name && x.market === p.market).slice(0, 3);
-  const contextQs = [
-    `Compare ${name} with alternatives`,
-    `Tell me about ${p.developer}`,
-    `${p.market} market outlook`,
-    `Is ${name} good for investment?`,
-  ];
-
-  return (
-    <div className="px-6 pb-24 md:px-12 lg:px-16">
-      <div className="mx-auto max-w-[820px] pt-10 md:pt-16">
-        {/* Breadcrumb */}
-        <div className="mb-8 flex items-center gap-2 text-[0.72rem] font-light text-[#1a1a1a]/30">
-          <button onClick={() => navigate({ type: "projects" })} className="hover:text-[#1a1a1a]/60">Projects</button>
-          <span>/</span>
-          <span className="text-[#1a1a1a]/50">{name}</span>
-        </div>
-
-        {/* Hero */}
-        <p className="mb-2 text-[9px] font-light uppercase tracking-[0.3em] text-[#c9a96e]">Project Analysis</p>
-        <h1 className="font-serif text-[2rem] font-medium leading-[1.15] text-[#1a1a1a] md:text-[2.8rem]">{name}</h1>
-        <p className="mt-2 font-serif text-[1rem] font-light text-[#1a1a1a]/40 md:text-[1.1rem]">
-          {p.developer} &middot; {p.market} &middot; {p.configs.join(", ")}
-        </p>
-
-        {/* Truth Verdict */}
-        <div className="mt-10 flex items-start gap-6 rounded-lg border border-[#1a1a1a]/[0.08] bg-white px-6 py-6 md:px-8">
-          <div className="flex flex-col items-center">
-            <span className="font-serif text-[2.8rem] font-medium leading-none text-[#1e6b45]">{p.truthScore}</span>
-            <span className="mt-1 text-[8px] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/30">Truth Score</span>
-          </div>
-          <div className="flex-1">
-            <p className="mb-1 text-[9px] font-light uppercase tracking-[0.22em] text-[#c9a96e]">{p.confidence} Confidence</p>
-            <p className="font-serif text-[1.15rem] font-medium text-[#1a1a1a]">{p.recommendation}</p>
-            <p className="mt-2 text-[0.88rem] font-light leading-[1.7] text-[#1a1a1a]/60">{p.reason}</p>
-          </div>
-        </div>
-
-        {/* Highlights */}
-        <div className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-[#1a1a1a]/[0.08] bg-[#1a1a1a]/[0.06] md:grid-cols-4">
-          {[
-            { l: "Truth Score", v: `${p.truthScore}/100` },
-            { l: "Verdict", v: p.recommendation },
-            { l: "Confidence", v: p.confidence },
-            { l: "Budget", v: `₹${p.budget[0]}–${p.budget[1]} Cr` },
-          ].map((h) => (
-            <div key={h.l} className="bg-[#F5F0E8] p-4 md:p-5">
-              <p className="mb-1.5 text-[8px] font-light uppercase tracking-[0.22em] text-[#c9a96e]">{h.l}</p>
-              <p className="font-serif text-[1rem] font-medium text-[#1a1a1a]">{h.v}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Strengths + Watchouts */}
-        <div className="mt-8 grid gap-6 md:grid-cols-2">
-          <div>
-            <p className="mb-3 text-[9px] font-light uppercase tracking-[0.22em] text-[#1e6b45]">Strengths</p>
-            <ul className="flex flex-col gap-2">
-              {p.strengths.map((s) => (
-                <li key={s} className="flex gap-2.5 text-[0.86rem] font-light text-[#1a1a1a]/60">
-                  <span className="mt-0.5 text-[#1e6b45]">+</span>{s}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <p className="mb-3 text-[9px] font-light uppercase tracking-[0.22em] text-[#c9a96e]">Watchouts</p>
-            <ul className="flex flex-col gap-2">
-              {p.watchouts.map((w) => (
-                <li key={w} className="flex gap-2.5 text-[0.86rem] font-light text-[#1a1a1a]/60">
-                  <span className="mt-0.5 text-[#c9a96e]">!</span>{w}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        {/* Sections from research */}
-        {result.sections.length > 0 && (
-          <div className="mt-10 flex flex-col gap-6 border-t border-[#1a1a1a]/[0.06] pt-8">
-            {result.sections.map((sec) => (
-              <div key={sec.label}>
-                <p className="mb-2 text-[9px] font-light uppercase tracking-[0.22em] text-[#c9a96e]">{sec.label}</p>
-                <p className="font-serif text-[0.92rem] font-light leading-[1.8] text-[#1a1a1a]/60">{sec.body}</p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Developer */}
-        {dev && (
-          <div className="mt-10 border-t border-[#1a1a1a]/[0.06] pt-8">
-            <p className="mb-2 text-[9px] font-light uppercase tracking-[0.22em] text-[#c9a96e]">Developer</p>
-            <button
-              onClick={() => navigate({ type: "developer", name: dev.name })}
-              className="text-left"
-            >
-              <p className="font-serif text-[1.15rem] font-medium text-[#1a1a1a] hover:text-[#1e6b45]">{dev.name} <span className="text-[0.78rem] font-light text-[#1a1a1a]/30">est. {dev.est}</span></p>
-            </button>
-            <p className="mt-2 text-[0.86rem] font-light leading-[1.7] text-[#1a1a1a]/55">{dev.delivery}</p>
-          </div>
-        )}
-
-        {/* Location */}
-        {mkt && (
-          <div className="mt-8 border-t border-[#1a1a1a]/[0.06] pt-8">
-            <p className="mb-2 text-[9px] font-light uppercase tracking-[0.22em] text-[#c9a96e]">Location</p>
-            <button
-              onClick={() => navigate({ type: "location", name: mkt.name })}
-              className="text-left"
-            >
-              <p className="font-serif text-[1.15rem] font-medium text-[#1a1a1a] hover:text-[#1e6b45]">{mkt.name}</p>
-            </button>
-            <p className="mt-2 text-[0.86rem] font-light leading-[1.7] text-[#1a1a1a]/55">{mkt.overview}</p>
-          </div>
-        )}
-
-        {/* Comparable */}
-        {comparable.length > 0 && (
-          <div className="mt-10 border-t border-[#1a1a1a]/[0.06] pt-8">
-            <SectionLabel>Comparable Projects</SectionLabel>
-            <div className="mt-5 grid gap-4 md:grid-cols-3">
-              {comparable.map((c) => (
-                <ProjectCard key={c.name} project={c} onClick={() => navigate({ type: "project", name: c.name })} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* TruthGuide context questions */}
-        <div className="mt-10 border-t border-[#1a1a1a]/[0.06] pt-8">
-          <p className="mb-4 text-[9px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/25">Ask TruthGuide</p>
-          <div className="flex flex-wrap gap-2.5">
-            {contextQs.map((q) => (
-              <button key={q} onClick={() => doSearch(q)} className="rounded-full border border-[#1a1a1a]/[0.06] px-5 py-2.5 text-[0.8rem] font-light text-[#1a1a1a]/45 transition-all duration-300 hover:-translate-y-[1px] hover:border-[#1a1a1a]/15 hover:text-[#1a1a1a]/70">
-                {q}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-      <BottomCTA context={{ source: name, sourceKind: "project", intent: "buy" }} />
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
    DEVELOPER DETAIL
    ════════════════════════════════════════════════════════════════ */
 function DeveloperDetail({ name, navigate, doSearch }: { name: string; navigate: (v: View) => void; doSearch: (q: string) => void }) {
@@ -861,7 +716,7 @@ function LocationDetail({ name, navigate, doSearch }: { name: string; navigate: 
 /* ════════════════════════════════════════════════════════════════
    SEARCH RESULT VIEW
    ════════════════════════════════════════════════════════════════ */
-function SearchResultView({ query, result, navigate, doSearch }: { query: string; result: ResearchResult; navigate: (v: View) => void; doSearch: (q: string) => void }) {
+function SearchResultView({ result, doSearch }: { result: ResearchResult; doSearch: (q: string) => void }) {
   const typeLabel: Record<ResearchResult["type"], string> = {
     project: "Project Analysis",
     developer: "Developer Profile",
