@@ -2,6 +2,7 @@
 
 import Logo from "./Logo";
 import { useJourney } from "./journey/JourneyProvider";
+import { useConsultation } from "./consultation/ConsultationProvider";
 
 /* ── Navigation columns ── */
 const columns: { label: string; links: { t: string; h: string; action?: boolean }[] }[] = [
@@ -92,6 +93,7 @@ const orgSchema = {
 
 export default function Footer() {
   const { open } = useJourney();
+  const { openConsult } = useConsultation();
 
   return (
     <>
@@ -124,7 +126,7 @@ export default function Footer() {
                     <li key={l.t}>
                       {l.action ? (
                         <button
-                          onClick={() => open()}
+                          onClick={() => (l.t === "Book a Consultation" ? openConsult({ sourceKind: "homepage" }) : open())}
                           className="text-[0.9rem] font-light leading-snug text-[#1a1a1a]/60 transition-colors duration-300 hover:text-[#1a1a1a]"
                         >
                           {l.t}

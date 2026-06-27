@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Logo from "../Logo";
+import { useConsultation } from "../consultation/ConsultationProvider";
+import type { ConsultContext } from "@/lib/consultation";
 import {
   PROJECTS,
   DEVELOPER_PROFILES,
@@ -46,6 +48,22 @@ export default function IntelligenceWorkspace() {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const searchRef = useRef<HTMLInputElement>(null);
   const mainRef = useRef<HTMLDivElement>(null);
+  const { openConsult } = useConsultation();
+
+  // Consultation context derived from where the visitor is in the workspace,
+  // so the advisor "arrives prepared" for the exact project/developer/market.
+  const consultContext = useMemo<ConsultContext>(() => {
+    switch (view.type) {
+      case "project":
+        return { source: view.name, sourceKind: "project", intent: "buy" };
+      case "developer":
+        return { source: view.name, sourceKind: "developer", intent: "advice" };
+      case "location":
+        return { source: view.name, sourceKind: "location", intent: "invest" };
+      default:
+        return { sourceKind: "intelligence" };
+    }
+  }, [view]);
 
   const doSearch = (q: string) => {
     if (!q.trim()) return;
@@ -132,7 +150,10 @@ export default function IntelligenceWorkspace() {
           >
             TruthGuide
           </a>
-          <button className="rounded-sm bg-[#1e6b45] px-4 py-2 text-[11px] font-medium tracking-[0.08em] text-white transition-all duration-500 hover:bg-[#238c55] md:px-5 md:py-2.5">
+          <button
+            onClick={() => openConsult(consultContext)}
+            className="rounded-sm bg-[#1e6b45] px-4 py-2 text-[11px] font-medium tracking-[0.08em] text-white transition-all duration-500 hover:bg-[#238c55] md:px-5 md:py-2.5"
+          >
             Book Consultation
           </button>
         </div>
@@ -224,7 +245,10 @@ export default function IntelligenceWorkspace() {
               </div>
             </div>
           )}
-          <button className="mb-3 w-full rounded-sm bg-[#1e6b45] px-4 py-3 text-[10px] font-medium tracking-[0.1em] text-white transition-all hover:bg-[#238c55]">
+          <button
+            onClick={() => openConsult(consultContext)}
+            className="mb-3 w-full rounded-sm bg-[#1e6b45] px-4 py-3 text-[10px] font-medium tracking-[0.1em] text-white transition-all hover:bg-[#238c55]"
+          >
             Book Consultation
           </button>
           <button
@@ -694,7 +718,7 @@ function ProjectDetail({ name, navigate, doSearch }: { name: string; navigate: (
           </div>
         </div>
       </div>
-      <BottomCTA />
+      <BottomCTA context={{ source: name, sourceKind: "project", intent: "buy" }} />
     </div>
   );
 }
@@ -764,7 +788,7 @@ function DeveloperDetail({ name, navigate, doSearch }: { name: string; navigate:
           </div>
         </div>
       </div>
-      <BottomCTA />
+      <BottomCTA context={{ source: name, sourceKind: "developer", intent: "advice" }} />
     </div>
   );
 }
@@ -829,7 +853,7 @@ function LocationDetail({ name, navigate, doSearch }: { name: string; navigate: 
           </div>
         </div>
       </div>
-      <BottomCTA />
+      <BottomCTA context={{ source: name, sourceKind: "location", intent: "invest" }} />
     </div>
   );
 }
@@ -992,7 +1016,8 @@ function ProjectCard({ project: p, onClick }: { project: Project; onClick: () =>
   );
 }
 
-function BottomCTA() {
+function BottomCTA({ context }: { context?: ConsultContext }) {
+  const { openConsult } = useConsultation();
   return (
     <div className="mx-auto mt-20 max-w-[600px] border-t border-[#1a1a1a]/[0.06] pt-12 text-center md:mt-28">
       <p className="font-serif text-[1.3rem] font-medium text-[#1a1a1a]/70 md:text-[1.6rem]">Need independent judgement?</p>
@@ -1000,10 +1025,16 @@ function BottomCTA() {
         Research builds confidence. Independent representation helps you decide.
       </p>
       <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-        <button className="rounded-sm bg-[#1e6b45] px-10 py-4 text-[12px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/10 transition-all hover:bg-[#238c55]">
+        <button
+          onClick={() => openConsult(context)}
+          className="rounded-sm bg-[#1e6b45] px-10 py-4 text-[12px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/10 transition-all hover:bg-[#238c55]"
+        >
           Book Consultation
         </button>
-        <button className="rounded-sm border border-[#1a1a1a]/15 px-8 py-4 text-[12px] font-light tracking-[0.05em] text-[#1a1a1a]/60 transition-all hover:border-[#1a1a1a]/30">
+        <button
+          onClick={() => openConsult(context)}
+          className="rounded-sm border border-[#1a1a1a]/15 px-8 py-4 text-[12px] font-light tracking-[0.05em] text-[#1a1a1a]/60 transition-all hover:border-[#1a1a1a]/30"
+        >
           Become a Private Client
         </button>
       </div>
