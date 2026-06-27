@@ -1353,16 +1353,16 @@ function CoverageSection() {
     <div ref={ref} className="bg-[#0a0a0a] px-6 pb-[10vh] pt-[10vh] md:px-8 md:pb-[14vh] md:pt-[14vh]">
       <div className="mx-auto max-w-3xl text-center">
         <span data-r className="block text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]/50" style={{ opacity: 0, transform: "translateY(16px)" }}>
-          Coverage
+          Our Focus
         </span>
 
         <h2 data-r className="mt-6 font-serif text-[2.2rem] font-medium leading-[1.1] text-white/90 md:mt-8 md:text-[3.4rem] lg:text-[4rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
           Built for Gurugram.
         </h2>
-        <p data-r className="mt-4 font-serif text-[1.1rem] font-light leading-[1.3] text-white/40 md:mt-6 md:text-[1.7rem]" style={{ opacity: 0, transform: "translateY(14px)" }}>
-          Because expertise
+        <p data-r className="mt-4 font-serif text-[1.1rem] font-light leading-[1.6] text-white/40 md:mt-6 md:text-[1.7rem]" style={{ opacity: 0, transform: "translateY(14px)" }}>
+          Because expertise is earned,
           <br />
-          comes before scale.
+          one market at a time.
         </p>
 
         {/* Abstract coverage pattern */}
