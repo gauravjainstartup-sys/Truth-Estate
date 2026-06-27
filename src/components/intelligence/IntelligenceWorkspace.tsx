@@ -298,7 +298,7 @@ function HomeView({ navigate, doSearch }: { navigate: (v: View) => void; doSearc
 
       {/* Universal search */}
       <div className="mx-auto mb-16 max-w-[790px] md:mb-20">
-        <div className="flex h-[56px] items-center gap-3 rounded-2xl border border-[#1a1a1a]/[0.06] bg-[#FAF7F2] px-5 transition-all duration-700 focus-within:border-[#c9a96e]/30 focus-within:shadow-[0_0_0_4px_rgba(201,169,110,0.06)] md:h-[64px] md:gap-4 md:px-7">
+        <div className="flex h-[56px] items-center gap-3 rounded-2xl border border-[#1a1a1a]/[0.06] bg-white px-5 transition-all duration-700 focus-within:border-[#c9a96e]/30 focus-within:shadow-[0_0_0_4px_rgba(201,169,110,0.06)] md:h-[64px] md:gap-4 md:px-7">
           <svg className="h-5 w-5 shrink-0 text-[#1a1a1a]/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <div className="relative flex-1">
             <input
@@ -384,7 +384,7 @@ function HomeView({ navigate, doSearch }: { navigate: (v: View) => void; doSearc
             <button
               key={p.name}
               onClick={() => navigate({ type: "project", name: p.name })}
-              className="flex items-center justify-between bg-[#FAF7F2] px-6 py-4 text-left transition-colors hover:bg-[#F5F0E8]"
+              className="flex items-center justify-between bg-white px-6 py-4 text-left transition-colors hover:bg-gray-50"
             >
               <div>
                 <span className="font-serif text-[1rem] font-medium text-[#1a1a1a]">{p.name}</span>
@@ -454,7 +454,7 @@ function DevelopersView({ navigate }: { navigate: (v: View) => void }) {
             <button
               key={d.name}
               onClick={() => navigate({ type: "developer", name: d.name })}
-              className="group rounded-lg border border-[#1a1a1a]/[0.06] bg-[#FAF7F2] p-6 text-left transition-all duration-300 hover:border-[#1a1a1a]/12 hover:shadow-lg hover:shadow-black/[0.03]"
+              className="group rounded-lg border border-[#1a1a1a]/[0.06] bg-white p-6 text-left transition-all duration-300 hover:border-[#1a1a1a]/12 hover:shadow-lg hover:shadow-black/[0.03]"
             >
               <p className="mb-1 text-[9px] font-light uppercase tracking-[0.22em] text-[#c9a96e]">Est. {d.est}</p>
               <h3 className="font-serif text-[1.4rem] font-medium text-[#1a1a1a]">{d.name}</h3>
@@ -486,7 +486,7 @@ function LocationsView({ navigate }: { navigate: (v: View) => void }) {
             <button
               key={m.name}
               onClick={() => navigate({ type: "location", name: m.name })}
-              className="group rounded-lg border border-[#1a1a1a]/[0.06] bg-[#FAF7F2] p-6 text-left transition-all duration-300 hover:border-[#1a1a1a]/12 hover:shadow-lg hover:shadow-black/[0.03]"
+              className="group rounded-lg border border-[#1a1a1a]/[0.06] bg-white p-6 text-left transition-all duration-300 hover:border-[#1a1a1a]/12 hover:shadow-lg hover:shadow-black/[0.03]"
             >
               <p className="mb-1 text-[9px] font-light uppercase tracking-[0.22em] text-[#c9a96e]">{m.short}</p>
               <h3 className="font-serif text-[1.3rem] font-medium text-[#1a1a1a]">{m.name}</h3>
@@ -553,7 +553,7 @@ function CompareView({ doSearch }: { doSearch: (q: string) => void }) {
               <button
                 key={c}
                 onClick={() => doSearch(c)}
-                className="flex items-center justify-between bg-[#FAF7F2] px-6 py-4 text-left transition-colors hover:bg-[#F5F0E8]"
+                className="flex items-center justify-between bg-white px-6 py-4 text-left transition-colors hover:bg-gray-50"
               >
                 <span className="font-serif text-[0.95rem] font-light text-[#1a1a1a]/65">{c}</span>
                 <svg className="h-4 w-4 text-[#1a1a1a]/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -603,7 +603,7 @@ function ProjectDetail({ name, navigate, doSearch }: { name: string; navigate: (
         </p>
 
         {/* Truth Verdict */}
-        <div className="mt-10 flex items-start gap-6 rounded-lg border border-[#1a1a1a]/[0.08] bg-[#FAF7F2] px-6 py-6 md:px-8">
+        <div className="mt-10 flex items-start gap-6 rounded-lg border border-[#1a1a1a]/[0.08] bg-white px-6 py-6 md:px-8">
           <div className="flex flex-col items-center">
             <span className="font-serif text-[2.8rem] font-medium leading-none text-[#1e6b45]">{p.truthScore}</span>
             <span className="mt-1 text-[8px] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/30">Truth Score</span>
@@ -752,7 +752,7 @@ function DeveloperDetail({ name, navigate, doSearch }: { name: string; navigate:
         <h1 className="font-serif text-[2rem] font-medium text-[#1a1a1a] md:text-[2.8rem]">{name}</h1>
         <p className="mt-1 text-[0.88rem] font-light text-[#1a1a1a]/35">Established {d.est}</p>
 
-        <div className="mt-8 rounded-lg border border-[#1a1a1a]/[0.08] bg-[#FAF7F2] px-6 py-5">
+        <div className="mt-8 rounded-lg border border-[#1a1a1a]/[0.08] bg-white px-6 py-5">
           <p className="mb-1 text-[9px] font-light uppercase tracking-[0.22em] text-[#c9a96e]">Truth Verdict</p>
           <p className="font-serif text-[0.95rem] font-light leading-[1.75] text-[#1a1a1a]/65">{d.verdict}</p>
         </div>
@@ -880,7 +880,7 @@ function SearchResultView({ query, result, navigate, doSearch }: { query: string
         )}
 
         {result.verdict && (
-          <div className="mt-8 flex items-start gap-5 rounded-lg border border-[#1a1a1a]/[0.08] bg-[#FAF7F2] px-6 py-5">
+          <div className="mt-8 flex items-start gap-5 rounded-lg border border-[#1a1a1a]/[0.08] bg-white px-6 py-5">
             {result.score != null && (
               <div className="flex flex-col items-center">
                 <span className="font-serif text-[2.4rem] font-medium leading-none text-[#1e6b45]">{result.score}</span>
@@ -984,7 +984,7 @@ function BrowseTile({ title, sub, onClick }: { title: string; sub: string; onCli
   return (
     <button
       onClick={onClick}
-      className="group rounded-lg border border-[#1a1a1a]/[0.06] bg-[#FAF7F2] p-6 text-left transition-all duration-300 hover:border-[#1a1a1a]/12 hover:shadow-lg hover:shadow-black/[0.03]"
+      className="group rounded-lg border border-[#1a1a1a]/[0.06] bg-white p-6 text-left transition-all duration-300 hover:border-[#1a1a1a]/12 hover:shadow-lg hover:shadow-black/[0.03]"
     >
       <h3 className="font-serif text-[1.3rem] font-medium text-[#1a1a1a] transition-colors group-hover:text-[#1e6b45]">{title}</h3>
       <p className="mt-2 text-[0.82rem] font-light leading-[1.6] text-[#1a1a1a]/45">{sub}</p>
@@ -997,7 +997,7 @@ function ProjectCard({ project: p, onClick }: { project: Project; onClick: () =>
   return (
     <button
       onClick={onClick}
-      className="group rounded-lg border border-[#1a1a1a]/[0.06] bg-[#FAF7F2] p-5 text-left transition-all duration-300 hover:border-[#1a1a1a]/12 hover:shadow-lg hover:shadow-black/[0.03]"
+      className="group rounded-lg border border-[#1a1a1a]/[0.06] bg-white p-5 text-left transition-all duration-300 hover:border-[#1a1a1a]/12 hover:shadow-lg hover:shadow-black/[0.03]"
     >
       <div className="flex items-start justify-between">
         <div>

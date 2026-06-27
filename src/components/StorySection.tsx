@@ -251,7 +251,7 @@ export default function StorySection() {
       {/* ════════ DESKTOP — one continuous pinned narrative ════════ */}
       <div data-editorial className="relative hidden h-svh overflow-hidden md:block">
         {/* Background paper → desk */}
-        <div data-bg className="absolute inset-0 bg-[#F7F5F2]" />
+        <div data-bg className="absolute inset-0 bg-[#F5F0E8]" />
         {/* Pool of light that emerges with the desk */}
         <div
           data-glow
@@ -436,7 +436,7 @@ export default function StorySection() {
         data-m-editorial
         className="relative block h-svh overflow-hidden md:hidden"
       >
-        <div data-m-bg className="absolute inset-0 bg-[#F7F5F2]" />
+        <div data-m-bg className="absolute inset-0 bg-[#F5F0E8]" />
         <div
           data-m-glow
           className="absolute inset-0"

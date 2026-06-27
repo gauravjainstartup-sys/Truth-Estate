@@ -274,7 +274,7 @@ function IntroStep({ prepLine, onContinue }: { prepLine: string | null; onContin
       )}
 
       {/* Consultation card */}
-      <div className="mt-10 rounded-xl border border-[#1a1a1a]/[0.08] bg-[#FAF7F2] p-6 md:p-8">
+      <div className="mt-10 rounded-xl border border-[#1a1a1a]/[0.08] bg-white p-6 md:p-8">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h2 className="font-serif text-[1.5rem] font-medium text-[#1a1a1a] md:text-[1.8rem]">{CONSULT_HEADLINE}</h2>
           {CONSULT_FEE != null && (
@@ -356,7 +356,7 @@ function ReasonStep({ value, onPick }: { value: ConsultIntent | null; onPick: (r
             className={`group rounded-xl border p-6 text-left transition-all duration-300 ${
               value === r.key
                 ? "border-[#1e6b45]/50 bg-[#1e6b45]/[0.05]"
-                : "border-[#1a1a1a]/[0.08] bg-[#FAF7F2] hover:border-[#1a1a1a]/15 hover:shadow-lg hover:shadow-black/[0.03]"
+                : "border-[#1a1a1a]/[0.08] bg-white hover:border-[#1a1a1a]/15 hover:shadow-lg hover:shadow-black/[0.03]"
             }`}
           >
             <h3 className="font-serif text-[1.3rem] font-medium text-[#1a1a1a] transition-colors group-hover:text-[#1e6b45]">{r.title}</h3>
@@ -502,7 +502,7 @@ function PrepStep({
         onChange={(e) => onChange(e.target.value)}
         rows={5}
         placeholder="Tell us what's on your mind…"
-        className="mt-9 w-full resize-none rounded-xl border border-[#1a1a1a]/12 bg-[#FAF7F2] p-5 font-serif text-[1.1rem] font-light leading-relaxed text-[#1a1a1a] outline-none transition-colors duration-300 placeholder:text-[#1a1a1a]/25 focus:border-[#c9a96e]/40 md:text-[1.2rem]"
+        className="mt-9 w-full resize-none rounded-xl border border-[#1a1a1a]/12 bg-white p-5 font-serif text-[1.1rem] font-light leading-relaxed text-[#1a1a1a] outline-none transition-colors duration-300 placeholder:text-[#1a1a1a]/25 focus:border-[#c9a96e]/40 md:text-[1.2rem]"
       />
 
       <div className="mt-5">
@@ -556,7 +556,7 @@ function ScheduleStep({
       </h1>
 
       {/* Advisor */}
-      <div className="mt-9 flex items-center gap-4 rounded-xl border border-[#1a1a1a]/[0.08] bg-[#FAF7F2] p-5">
+      <div className="mt-9 flex items-center gap-4 rounded-xl border border-[#1a1a1a]/[0.08] bg-white p-5">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#1e6b45]/10 font-serif text-[1rem] font-medium text-[#1e6b45]">
           {advisor.initials}
         </div>
@@ -729,7 +729,7 @@ function AccountStep({
                   onKeyDown={(e) => { if (e.key === "Backspace" && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus(); }}
                   inputMode="numeric"
                   maxLength={1}
-                  className="h-14 w-12 rounded-lg border border-[#1a1a1a]/15 bg-[#FAF7F2] text-center font-serif text-[1.5rem] font-light text-[#1a1a1a] outline-none transition-colors focus:border-[#1e6b45]/50"
+                  className="h-14 w-12 rounded-lg border border-[#1a1a1a]/15 bg-white text-center font-serif text-[1.5rem] font-light text-[#1a1a1a] outline-none transition-colors focus:border-[#1e6b45]/50"
                 />
               ))}
             </div>
@@ -800,7 +800,7 @@ function ConfirmStep({ booking, onOpenOffice }: { booking: ConsultBooking; onOpe
 
       <div className="mt-10 overflow-hidden rounded-xl border border-[#1a1a1a]/[0.08] text-left">
         {rows.map((r, i) => (
-          <div key={r.l} className={`flex items-center justify-between px-6 py-4 ${i % 2 === 0 ? "bg-[#FAF7F2]" : "bg-[#F5F0E8]"}`}>
+          <div key={r.l} className={`flex items-center justify-between px-6 py-4 ${i % 2 === 0 ? "bg-white" : "bg-[#F5F0E8]"}`}>
             <span className="text-[10px] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/40">{r.l}</span>
             <span className="font-serif text-[1.05rem] font-medium text-[#1a1a1a]">{r.v}</span>
           </div>
@@ -828,9 +828,9 @@ function PrivateOffice({ booking, onClose }: { booking: ConsultBooking; onClose:
   const [active, setActive] = useState("Home");
 
   return (
-    <div className="flex h-full w-full flex-col bg-[#F4F1EA] text-[#1a1a1a] md:flex-row">
+    <div className="flex h-full w-full flex-col bg-[#F5F0E8] text-[#1a1a1a] md:flex-row">
       {/* Sidebar */}
-      <aside className="flex shrink-0 flex-col border-b border-[#1a1a1a]/8 bg-[#EFEAE0] px-5 py-5 md:w-60 md:border-b-0 md:border-r md:px-6 md:py-7">
+      <aside className="flex shrink-0 flex-col border-b border-[#1a1a1a]/8 bg-[#F5F0E8] px-5 py-5 md:w-60 md:border-b-0 md:border-r md:px-6 md:py-7">
         <div className="flex items-center justify-between md:block">
           <Logo color="#1a1a1a" className="h-7 w-auto opacity-80" />
           <button onClick={onClose} aria-label="Close" className="text-[11px] font-light tracking-[0.18em] text-[#1a1a1a]/40 transition-colors hover:text-[#1a1a1a] md:hidden">
@@ -917,7 +917,7 @@ function OfficeCard({ title, body, note }: { title: string; body: string; note: 
   return (
     <div>
       <PanelTitle>{title}</PanelTitle>
-      <div className="rounded-lg border border-[#1a1a1a]/12 bg-white/50 p-5">
+      <div className="rounded-lg border border-[#1a1a1a]/12 bg-white p-5">
         <p className="text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/60">{body}</p>
         <div className="mt-4 flex items-center gap-2 border-t border-[#1a1a1a]/10 pt-4">
           <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#c9a96e]" />
