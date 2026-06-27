@@ -20,9 +20,9 @@ export default function BuyersOffice({
   const [active, setActive] = useState("Home");
 
   return (
-    <div className="flex h-full w-full flex-col bg-[#F4F1EA] text-[#1a1a1a] md:flex-row">
+    <div className="flex h-full w-full flex-col bg-[#F5F0E8] text-[#1a1a1a] md:flex-row">
       {/* ── Sidebar ── */}
-      <aside className="flex shrink-0 flex-col border-b border-[#1a1a1a]/8 bg-[#EFEAE0] px-5 py-5 md:w-60 md:border-b-0 md:border-r md:px-6 md:py-7">
+      <aside className="flex shrink-0 flex-col border-b border-[#1a1a1a]/8 bg-[#F5F0E8] px-5 py-5 md:w-60 md:border-b-0 md:border-r md:px-6 md:py-7">
         <div className="flex items-center justify-between md:block">
           <Logo color="#1a1a1a" className="h-7 w-auto opacity-80" />
           <button
@@ -104,7 +104,7 @@ export default function BuyersOffice({
               {recs.map((r, i) => (
                 <div
                   key={r.name}
-                  className="flex items-center gap-5 rounded-lg border border-[#1a1a1a]/10 bg-white/50 px-5 py-4"
+                  className="flex items-center gap-5 rounded-lg border border-[#1a1a1a]/10 bg-white px-5 py-4"
                 >
                   <span className="font-serif text-[1rem] text-[#1a1a1a]/25">{String(i + 1).padStart(2, "0")}</span>
                   <div className="flex-1">
@@ -130,7 +130,7 @@ export default function BuyersOffice({
           <div className="mt-10 grid grid-cols-1 gap-10 md:grid-cols-2">
             <div>
               <PanelTitle>TruthGuide</PanelTitle>
-              <div className="rounded-lg border border-[#1a1a1a]/12 bg-white/50 p-5">
+              <div className="rounded-lg border border-[#1a1a1a]/12 bg-white p-5">
                 <p className="text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/60">
                   Ask anything about your shortlist — pricing, delivery risk, resale, or how two projects compare.
                 </p>

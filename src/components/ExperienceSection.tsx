@@ -380,7 +380,7 @@ function IndependentRepresentation() {
               <br />
               Human judgement builds conviction.
             </p>
-            <div className="mt-8 max-w-sm rounded-xl border border-[#1a1a1a]/12 bg-white/40 p-6">
+            <div className="mt-8 max-w-sm rounded-xl border border-[#1a1a1a]/12 bg-white p-6">
               <div className="flex items-center gap-4">
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#c9a96e]/50 bg-[#c9a96e]/10 font-serif text-[1rem] font-medium text-[#1a1a1a]/70">
                   {advisor.initials}
@@ -512,7 +512,7 @@ function ExperienceIntelligence() {
         {/* Card 1 — TruthGuide */}
         <div
           data-ei-l
-          className="group rounded-sm border border-[#1a1a1a]/8 bg-white/30 p-8 transition-shadow duration-500 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] md:p-10 lg:p-12"
+          className="group rounded-sm border border-[#1a1a1a]/8 bg-white p-8 transition-shadow duration-500 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] md:p-10 lg:p-12"
           style={{ opacity: 0, transform: "translateX(-32px)" }}
         >
           <span className="text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]/70">
@@ -560,7 +560,7 @@ function ExperienceIntelligence() {
         {/* Card 2 — Truth Intelligence */}
         <div
           data-ei-r
-          className="group rounded-sm border border-[#1a1a1a]/8 bg-white/30 p-8 transition-shadow duration-500 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] md:p-10 lg:p-12"
+          className="group rounded-sm border border-[#1a1a1a]/8 bg-white p-8 transition-shadow duration-500 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] md:p-10 lg:p-12"
           style={{ opacity: 0, transform: "translateX(32px)" }}
         >
           <span className="text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]/70">

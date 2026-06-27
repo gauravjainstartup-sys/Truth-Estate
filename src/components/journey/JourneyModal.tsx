@@ -170,7 +170,7 @@ function GhostButton({ children, onClick }: { children: React.ReactNode; onClick
   return (
     <button
       onClick={onClick}
-      className="rounded-sm border border-[#1a1a1a]/20 bg-white/30 px-8 py-4 text-[13px] font-light tracking-[0.05em] text-[#1a1a1a]/80 transition-all duration-300 hover:border-[#1a1a1a]/40 hover:bg-white/60"
+      className="rounded-sm border border-[#1a1a1a]/20 bg-white px-8 py-4 text-[13px] font-light tracking-[0.05em] text-[#1a1a1a]/80 transition-all duration-300 hover:border-[#1a1a1a]/40 hover:bg-white"
     >
       {children}
     </button>
@@ -518,7 +518,7 @@ export default function JourneyModal({
               <button
                 key={g.key}
                 onClick={() => pick(g.key, g.live)}
-                className="group flex flex-col items-start gap-6 rounded-xl border border-[#1a1a1a]/12 bg-white/30 px-7 py-8 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-[#1a1a1a]/25 hover:bg-white/55 hover:shadow-lg hover:shadow-black/[0.04] md:px-8 md:py-10"
+                className="group flex flex-col items-start gap-6 rounded-xl border border-[#1a1a1a]/12 bg-white px-7 py-8 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-[#1a1a1a]/25 hover:bg-white hover:shadow-lg hover:shadow-black/[0.04] md:px-8 md:py-10"
               >
                 <span className="text-[2rem] transition-transform duration-500 group-hover:scale-110 md:text-[2.4rem]">
                   {g.icon}
@@ -1274,7 +1274,7 @@ function ShortlistScreen({ recs, onPick }: { recs: Scored[]; onPick: (r: Scored)
             <button
               key={r.name}
               onClick={() => onPick(r)}
-              className="group flex items-center gap-5 border border-[#1a1a1a]/12 bg-white/40 px-6 py-5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-[#1a1a1a]/25 hover:bg-white/60 hover:shadow-lg hover:shadow-black/[0.04]"
+              className="group flex items-center gap-5 border border-[#1a1a1a]/12 bg-white px-6 py-5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-[#1a1a1a]/25 hover:bg-white hover:shadow-lg hover:shadow-black/[0.04]"
             >
               <span className="font-serif text-[1.1rem] text-[#1a1a1a]/30 md:text-[1.3rem]">
                 {String(idx + 1).padStart(2, "0")}
@@ -1624,7 +1624,7 @@ function ConsultationScreen({ onBook }: { onBook: (advisorName: string, slot: st
 
 function AdvisorCard({ advisor, onBook }: { advisor: Advisor; onBook: (slot: string) => void }) {
   return (
-    <div className="rounded-xl border border-[#1a1a1a]/12 bg-white/40 p-6 md:p-7">
+    <div className="rounded-xl border border-[#1a1a1a]/12 bg-white p-6 md:p-7">
       <div className="flex items-start gap-5">
         <Avatar initials={advisor.initials} />
         <div className="flex-1">
@@ -1693,7 +1693,7 @@ function AuthScreen({ booking, onContinue }: { booking: Booking; onContinue: () 
           <button
             key={label}
             onClick={onContinue}
-            className="rounded-sm border border-[#1a1a1a]/20 bg-white/30 px-8 py-4 text-[13px] font-light tracking-[0.05em] text-[#1a1a1a]/80 transition-all duration-300 hover:border-[#1a1a1a]/40 hover:bg-white/60"
+            className="rounded-sm border border-[#1a1a1a]/20 bg-white px-8 py-4 text-[13px] font-light tracking-[0.05em] text-[#1a1a1a]/80 transition-all duration-300 hover:border-[#1a1a1a]/40 hover:bg-white"
           >
             {label}
           </button>
@@ -1795,7 +1795,7 @@ function ResearchWorkspace({
             <div className="mx-auto w-full max-w-[820px] px-6 py-6 md:px-10 md:py-8">
               {/* Persistent search bar */}
               <div className="mb-8">
-                <div className="flex h-[52px] items-center gap-3 rounded-2xl border border-[#1a1a1a]/[0.06] bg-[#FAF7F2] px-5 transition-all duration-500 focus-within:border-[#c9a96e]/30 focus-within:shadow-[0_0_0_3px_rgba(201,169,110,0.06)] md:gap-4 md:px-6">
+                <div className="flex h-[52px] items-center gap-3 rounded-2xl border border-[#1a1a1a]/[0.06] bg-white px-5 transition-all duration-500 focus-within:border-[#c9a96e]/30 focus-within:shadow-[0_0_0_3px_rgba(201,169,110,0.06)] md:gap-4 md:px-6">
                   <svg className="h-4 w-4 shrink-0 text-[#1a1a1a]/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                   <input
                     ref={inputRef}
@@ -1923,7 +1923,7 @@ function ResearchLanding({
 
         {/* ── Search input — the hero ── */}
         <div className="w-full max-w-[790px]">
-          <div className="flex h-[56px] items-center gap-3 rounded-2xl border border-[#1a1a1a]/[0.06] bg-[#FAF7F2] px-5 transition-all duration-700 focus-within:border-[#c9a96e]/30 focus-within:shadow-[0_0_0_4px_rgba(201,169,110,0.06)] md:h-[64px] md:gap-4 md:px-7">
+          <div className="flex h-[56px] items-center gap-3 rounded-2xl border border-[#1a1a1a]/[0.06] bg-white px-5 transition-all duration-700 focus-within:border-[#c9a96e]/30 focus-within:shadow-[0_0_0_4px_rgba(201,169,110,0.06)] md:h-[64px] md:gap-4 md:px-7">
             {/* Search icon */}
             <svg className="h-[18px] w-[18px] shrink-0 text-[#1a1a1a]/20 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <circle cx="11" cy="11" r="8" />
@@ -2103,7 +2103,7 @@ function ResearchResultView({
 
       {/* Verdict + score */}
       {result.verdict && (
-        <div className="mt-8 flex items-start gap-5 rounded-lg border border-[#1a1a1a]/10 bg-white/40 px-6 py-5">
+        <div className="mt-8 flex items-start gap-5 rounded-lg border border-[#1a1a1a]/10 bg-white px-6 py-5">
           {result.score != null && (
             <div className="flex flex-col items-center">
               <span className="font-serif text-[2rem] font-medium text-[#1e6b45] md:text-[2.4rem]">
@@ -2204,7 +2204,7 @@ function ResearchResultView({
               <button
                 key={f}
                 onClick={() => onFollowUp(f)}
-                className="rounded-full border border-[#1a1a1a]/10 bg-white/40 px-5 py-2.5 text-[0.8rem] font-light text-[#1a1a1a]/55 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#1a1a1a]/25 hover:text-[#1a1a1a]/80 hover:shadow-md hover:shadow-black/[0.04] md:text-[0.85rem]"
+                className="rounded-full border border-[#1a1a1a]/10 bg-white px-5 py-2.5 text-[0.8rem] font-light text-[#1a1a1a]/55 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#1a1a1a]/25 hover:text-[#1a1a1a]/80 hover:shadow-md hover:shadow-black/[0.04] md:text-[0.85rem]"
               >
                 {f}
               </button>
@@ -2615,7 +2615,7 @@ function InvestResultScreen({
           {recommendations.map((r, idx) => (
             <div
               key={r.name}
-              className="flex items-start gap-5 rounded-lg border border-[#1a1a1a]/12 bg-white/40 px-6 py-5"
+              className="flex items-start gap-5 rounded-lg border border-[#1a1a1a]/12 bg-white px-6 py-5"
             >
               <span className="mt-1 font-serif text-[1.1rem] text-[#1a1a1a]/30">
                 {String(idx + 1).padStart(2, "0")}
