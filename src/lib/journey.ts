@@ -31,7 +31,7 @@ export const emptyBuyData: BuyData = {
 /* ── Option vocabularies (configurable) ── */
 export const GOALS = [
   { key: "buy" as Intent, icon: "🏡", label: "Buy Property", live: true },
-  { key: "sell" as Intent, icon: "🏷", label: "Sell Property", live: false },
+  { key: "sell" as Intent, icon: "🏷", label: "Sell Property", live: true },
   { key: "invest" as Intent, icon: "📈", label: "Invest", live: false },
   { key: "research" as Intent, icon: "🔍", label: "Research & Compare", live: false },
 ];
@@ -430,4 +430,152 @@ export function clearAccount(): void {
   } catch {
     /* ignore */
   }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SELL PROPERTY JOURNEY
+   ════════════════════════════════════════════════════════════════ */
+
+export type SellData = {
+  project: string | null;
+  config: string | null;
+  tower: string;
+  floor: string;
+  facing: string;
+  parking: string;
+  timeline: string | null;
+  priorities: string[];
+};
+
+export const emptySellData: SellData = {
+  project: null,
+  config: null,
+  tower: "",
+  floor: "",
+  facing: "",
+  parking: "",
+  timeline: null,
+  priorities: [],
+};
+
+export const SELL_CONFIGS = ["2 BHK", "3 BHK", "4 BHK", "5 BHK", "Penthouse", "Duplex"];
+
+export const SELL_TIMELINES = [
+  "Immediately",
+  "Within 3 Months",
+  "Within 6 Months",
+  "No Fixed Timeline",
+];
+
+export const SELL_PRIORITIES = [
+  "Maximum Selling Price",
+  "Fast Transaction",
+  "Low Negotiation",
+  "Upgrade to Another Property",
+  "Capital Reallocation",
+  "Just Exploring",
+];
+
+export const MAX_SELL_PRIORITIES = 2;
+
+export const SELL_PROJECTS = [
+  "DLF Privana South",
+  "DLF Arbour",
+  "DLF The Camellias",
+  "DLF The Crest",
+  "DLF Kings Court",
+  "DLF Aralias",
+  "DLF Magnolias",
+  "M3M Golf Estate",
+  "M3M Golf Estate II",
+  "M3M Golf Hills",
+  "M3M Merlin",
+  "M3M Antalya Hills",
+  "Godrej Aristocrat",
+  "Godrej Icon",
+  "Godrej 101",
+  "Smartworld One DXP",
+  "Smartworld Orchard",
+  "Smartworld Gems",
+  "Signature Global Titanium SPR",
+  "Signature Global City 81",
+  "Puri Aravallis",
+  "Puri The Aravallis",
+  "Puri Diplomatic Greens",
+  "Birla Navya",
+  "Birla Estates Gurugram",
+  "Conscient Parq",
+  "Conscient Hines Elevate",
+  "Emaar Urban Ascent",
+  "Emaar Digi Homes",
+  "Emaar Palm Heights",
+  "Ireo Victory Valley",
+  "Ireo Grand Arch",
+  "Bestech Park View Grand Spa",
+  "Bestech Park View Sanskruti",
+  "SS Hibiscus",
+  "Adani Samsara",
+  "Central Park Flower Valley",
+  "Paras Irene",
+  "Vatika City",
+  "Tata Primanti",
+];
+
+export type SellStrategy = {
+  marketPosition: string;
+  demand: string;
+  competition: string;
+  pricingApproach: string;
+  sellingWindow: string;
+  watchout: string;
+  summary: string;
+};
+
+export function deriveSellStrategy(d: SellData): SellStrategy {
+  const isUrgent = d.timeline === "Immediately" || d.timeline === "Within 3 Months";
+  const wantsMax = d.priorities.includes("Maximum Selling Price");
+  const wantsFast = d.priorities.includes("Fast Transaction");
+
+  let marketPosition = "Healthy";
+  let demand = "Strong";
+  let competition = "Moderate";
+  let pricingApproach = "Patient";
+  let sellingWindow = "45–75 Days";
+  let watchout = "Avoid pricing above current buyer appetite.";
+
+  if (wantsFast && isUrgent) {
+    pricingApproach = "Market-Aligned";
+    sellingWindow = "30–50 Days";
+    watchout = "Speed requires precise pricing — overpricing by even 5% can double your selling time.";
+  } else if (wantsMax) {
+    pricingApproach = "Patient";
+    sellingWindow = "60–90 Days";
+    watchout = "Maximum price requires patience and the discipline to wait for the right buyer.";
+  } else if (d.priorities.includes("Upgrade to Another Property")) {
+    pricingApproach = "Strategic";
+    sellingWindow = "45–75 Days";
+    watchout = "Coordinate selling and buying timelines carefully to avoid bridge financing.";
+  } else if (d.priorities.includes("Capital Reallocation")) {
+    pricingApproach = "Decisive";
+    sellingWindow = "40–65 Days";
+    watchout = "Focus on net realisable value after tax — not gross selling price.";
+  }
+
+  if (d.priorities.includes("Low Negotiation")) {
+    competition = "Low";
+    watchout = "Price at a point where the first serious offer is close to your floor.";
+  }
+
+  const premium = ["DLF The Camellias", "DLF The Crest", "DLF Aralias", "DLF Magnolias", "DLF Kings Court"];
+  if (d.project && premium.includes(d.project)) {
+    marketPosition = "Strong";
+    demand = "Very Strong";
+    competition = "Low";
+  }
+
+  const summary = isUrgent
+    ? `Based on what you've shared, your property is well positioned for a timely transaction. Success will depend more on pricing precision and presentation than urgency alone.`
+    : `Based on what you've shared, we believe your property is well positioned, but success will depend more on pricing strategy and timing than urgency.`;
+
+  return { marketPosition, demand, competition, pricingApproach, sellingWindow, watchout, summary };
 }

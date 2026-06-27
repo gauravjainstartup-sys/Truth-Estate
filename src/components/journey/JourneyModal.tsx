@@ -16,13 +16,22 @@ import {
   Intent,
   LOCATIONS,
   MAX_PRIORITIES,
+  MAX_SELL_PRIORITIES,
   PRIORITIES,
   PURCHASE_TYPES,
+  SELL_CONFIGS,
+  SELL_PRIORITIES,
+  SELL_PROJECTS,
+  SELL_TIMELINES,
+  SellData,
+  SellStrategy,
   Scored,
   TIMELINES,
   budgetLabel,
   deriveDNA,
+  deriveSellStrategy,
   emptyBuyData,
+  emptySellData,
   rankProjects,
   saveAccount,
 } from "@/lib/journey";
@@ -274,11 +283,19 @@ function useCountUp(end: number, run: boolean, dur = 1600) {
 
 const BUY_STEPS = ["purchase", "budget", "locations", "configs", "timeline", "priorities"] as const;
 type BuyStep = (typeof BUY_STEPS)[number];
+
+const SELL_STEPS = ["sell-intro", "sell-project", "sell-config", "sell-details", "sell-timeline", "sell-priorities"] as const;
+type SellStep = (typeof SELL_STEPS)[number];
+
 type Step =
   | "welcome"
   | "goal"
   | "coming-soon"
   | BuyStep
+  | SellStep
+  | "sell-processing"
+  | "sell-result"
+  | "sell-consultation"
   | "processing"
   | "dna"
   | "shortlist"
@@ -293,7 +310,7 @@ type Step =
 
 const INTENT_STEP: Record<Intent, Step> = {
   buy: "purchase",
-  sell: "coming-soon",
+  sell: "sell-intro",
   invest: "coming-soon",
   research: "research",
 };
@@ -316,6 +333,7 @@ export default function JourneyModal({
   const [step, setStep] = useState<Step>(initialStep);
   const [goal, setGoal] = useState<Intent>(initialIntent ?? "buy");
   const [buy, setBuy] = useState<BuyData>(account?.buy ?? emptyBuyData);
+  const [sell, setSell] = useState<SellData>(emptySellData);
   const [selected, setSelected] = useState<Scored | null>(null);
   const [booking, setBooking] = useState<Booking>(account?.booking ?? null);
 
@@ -356,6 +374,30 @@ export default function JourneyModal({
     configs: true,
     timeline: buy.timeline !== null,
     priorities: buy.priorities.length > 0,
+  };
+
+  const sellIndex = SELL_STEPS.indexOf(step as SellStep);
+  const inSellFlow = sellIndex >= 0;
+  const sellProgress = inSellFlow ? (sellIndex + 1) / SELL_STEPS.length : null;
+  const nextSell = () =>
+    sellIndex < SELL_STEPS.length - 1 ? setStep(SELL_STEPS[sellIndex + 1]) : setStep("sell-processing");
+  const backSell = () => (sellIndex <= 0 ? setStep("goal") : setStep(SELL_STEPS[sellIndex - 1]));
+  const setSellField = <K extends keyof SellData>(k: K, v: SellData[K]) => setSell((s) => ({ ...s, [k]: v }));
+  const toggleSellPriority = (value: string) =>
+    setSell((s) => {
+      const has = s.priorities.includes(value);
+      if (has) return { ...s, priorities: s.priorities.filter((x) => x !== value) };
+      if (s.priorities.length >= MAX_SELL_PRIORITIES) return s;
+      return { ...s, priorities: [...s.priorities, value] };
+    });
+
+  const canContinueSell: Record<SellStep, boolean> = {
+    "sell-intro": true,
+    "sell-project": sell.project !== null,
+    "sell-config": sell.config !== null,
+    "sell-details": true,
+    "sell-timeline": sell.timeline !== null,
+    "sell-priorities": sell.priorities.length > 0,
   };
 
   const completeAuth = () => {
@@ -401,7 +443,7 @@ export default function JourneyModal({
   if (step === "goal") {
     const pick = (g: Intent, live: boolean) => {
       setGoal(g);
-      setStep(live ? "purchase" : "coming-soon");
+      setStep(live ? INTENT_STEP[g] : "coming-soon");
     };
     return frame(
       <Shell onClose={onClose} onBack={() => setStep("welcome")} eyebrow="The Truth Estate Journey">
@@ -455,6 +497,152 @@ export default function JourneyModal({
       </Shell>
     );
   }
+
+  /* ─────────────── SELL FLOW ─────────────── */
+
+  if (step === "sell-intro") {
+    return frame(
+      <Shell onClose={onClose} onBack={() => setStep("goal")} progress={sellProgress} eyebrow="Sell Property">
+        <div key="sell-intro" className="animate-fade-up max-w-2xl">
+          <ScreenHeading
+            title={<>Tell us about<br />your property.</>}
+            sub="We'll understand your property before suggesting the best selling strategy."
+          />
+          <PrimaryButton onClick={nextSell}>Continue</PrimaryButton>
+        </div>
+      </Shell>
+    );
+  }
+
+  if (step === "sell-project") {
+    return frame(
+      <Shell onClose={onClose} onBack={backSell} progress={sellProgress} eyebrow="Sell Property">
+        <div key="sell-project" className="animate-fade-up">
+          <ScreenHeading title="Which project?" sub="Search for your project name." />
+          <SellProjectSearch
+            value={sell.project}
+            onChange={(v) => setSellField("project", v)}
+          />
+          <NextBar onNext={nextSell} disabled={!canContinueSell["sell-project"]} />
+        </div>
+      </Shell>
+    );
+  }
+
+  if (step === "sell-config") {
+    return frame(
+      <Shell onClose={onClose} onBack={backSell} progress={sellProgress} eyebrow="Sell Property">
+        <div key="sell-config" className="animate-fade-up">
+          <ScreenHeading title="Configuration" />
+          <div className="flex flex-col">
+            {SELL_CONFIGS.map((c) => (
+              <OptionRow key={c} label={c} selected={sell.config === c} onClick={() => setSellField("config", c)} />
+            ))}
+          </div>
+          <NextBar onNext={nextSell} disabled={!canContinueSell["sell-config"]} />
+        </div>
+      </Shell>
+    );
+  }
+
+  if (step === "sell-details") {
+    return frame(
+      <Shell onClose={onClose} onBack={backSell} progress={sellProgress} eyebrow="Sell Property">
+        <div key="sell-details" className="animate-fade-up">
+          <ScreenHeading title="Property details" sub="All fields are optional — share what you know." />
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <SellTextField label="Tower" value={sell.tower} onChange={(v) => setSellField("tower", v)} placeholder="e.g. Tower A" />
+            <SellTextField label="Floor" value={sell.floor} onChange={(v) => setSellField("floor", v)} placeholder="e.g. 12" />
+            <SellTextField label="Facing" value={sell.facing} onChange={(v) => setSellField("facing", v)} placeholder="e.g. Park-facing" />
+            <SellTextField label="Parking" value={sell.parking} onChange={(v) => setSellField("parking", v)} placeholder="e.g. 2 covered" />
+          </div>
+          <NextBar onNext={nextSell} />
+        </div>
+      </Shell>
+    );
+  }
+
+  if (step === "sell-timeline") {
+    return frame(
+      <Shell onClose={onClose} onBack={backSell} progress={sellProgress} eyebrow="Sell Property">
+        <div key="sell-timeline" className="animate-fade-up">
+          <ScreenHeading title="When are you planning to sell?" />
+          <div className="flex flex-col">
+            {SELL_TIMELINES.map((t) => (
+              <OptionRow key={t} label={t} selected={sell.timeline === t} onClick={() => setSellField("timeline", t)} />
+            ))}
+          </div>
+          <NextBar onNext={nextSell} disabled={!canContinueSell["sell-timeline"]} />
+        </div>
+      </Shell>
+    );
+  }
+
+  if (step === "sell-priorities") {
+    const full = sell.priorities.length >= MAX_SELL_PRIORITIES;
+    return frame(
+      <Shell onClose={onClose} onBack={backSell} progress={sellProgress} eyebrow="Sell Property">
+        <div key="sell-priorities" className="animate-fade-up">
+          <ScreenHeading
+            title="What matters most?"
+            sub={`Select up to two. ${sell.priorities.length}/${MAX_SELL_PRIORITIES} chosen.`}
+          />
+          <div className="flex flex-wrap gap-3">
+            {SELL_PRIORITIES.map((p) => (
+              <Chip
+                key={p}
+                label={p}
+                selected={sell.priorities.includes(p)}
+                onClick={() => toggleSellPriority(p)}
+                disabled={full}
+              />
+            ))}
+          </div>
+          <NextBar onNext={nextSell} disabled={!canContinueSell["sell-priorities"]} label="See my strategy" />
+        </div>
+      </Shell>
+    );
+  }
+
+  if (step === "sell-processing") {
+    return frame(<SellProcessingScreen onDone={() => setStep("sell-result")} />);
+  }
+
+  if (step === "sell-result") {
+    const strategy = deriveSellStrategy(sell);
+    return frame(
+      <Shell onClose={onClose} onBack={() => setStep("sell-priorities")} eyebrow="Your Selling Strategy">
+        <SellResultScreen
+          sell={sell}
+          strategy={strategy}
+          onConsult={() => setStep("sell-consultation")}
+        />
+      </Shell>
+    );
+  }
+
+  if (step === "sell-consultation") {
+    return frame(
+      <Shell onClose={onClose} onBack={() => setStep("sell-result")} eyebrow="Consultation">
+        <div key="sell-consult" className="animate-fade-up">
+          <ScreenHeading
+            title={<>Every property deserves<br />a different selling strategy.</>}
+            sub="Meet one of our advisors to discuss pricing, positioning, timing and negotiation. No sales pressure. No obligation."
+          />
+          <div className="flex flex-col gap-5">
+            {ADVISORS.map((a) => (
+              <AdvisorCard key={a.name} advisor={a} onBook={(slot) => {
+                setBooking({ advisorName: a.name, slot });
+                setStep("auth");
+              }} />
+            ))}
+          </div>
+        </div>
+      </Shell>
+    );
+  }
+
+  /* ─────────────── BUY FLOW ─────────────── */
 
   if (step === "purchase") {
     return frame(
@@ -1338,6 +1526,221 @@ function AnonymousTruthGuide() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SELL — PROJECT SEARCH
+   ════════════════════════════════════════════════════════════════ */
+function SellProjectSearch({
+  value,
+  onChange,
+}: {
+  value: string | null;
+  onChange: (v: string | null) => void;
+}) {
+  const [query, setQuery] = useState(value ?? "");
+  const [open, setOpen] = useState(false);
+
+  const filtered = query.trim()
+    ? SELL_PROJECTS.filter((p) => p.toLowerCase().includes(query.toLowerCase())).slice(0, 8)
+    : SELL_PROJECTS.slice(0, 8);
+
+  const pick = (p: string) => {
+    onChange(p);
+    setQuery(p);
+    setOpen(false);
+  };
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setOpen(true);
+          if (!e.target.value.trim()) onChange(null);
+        }}
+        onFocus={() => setOpen(true)}
+        placeholder="Search your project…"
+        className="w-full border-b-2 border-[#1a1a1a]/15 bg-transparent py-4 font-serif text-[1.3rem] font-light text-[#1a1a1a] outline-none transition-colors duration-300 placeholder:text-[#1a1a1a]/30 focus:border-[#1e6b45]/50 md:text-[1.6rem]"
+      />
+      {open && filtered.length > 0 && (
+        <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-[280px] overflow-y-auto rounded-lg border border-[#1a1a1a]/12 bg-[#F5F0E8] shadow-xl shadow-black/[0.06]">
+          {filtered.map((p) => (
+            <button
+              key={p}
+              onClick={() => pick(p)}
+              className={`block w-full px-5 py-3.5 text-left text-[0.95rem] font-light transition-colors duration-200 hover:bg-[#1e6b45]/[0.06] md:text-[1.05rem] ${
+                value === p ? "text-[#1e6b45]" : "text-[#1a1a1a]/75"
+              }`}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+      )}
+      {value && (
+        <p className="mt-3 text-[0.8rem] font-light text-[#1e6b45]">
+          ✓ {value}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SELL — TEXT FIELD
+   ════════════════════════════════════════════════════════════════ */
+function SellTextField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <div>
+      <label className="mb-2 block text-[10px] font-light uppercase tracking-[0.22em] text-[#1a1a1a]/40">
+        {label}
+      </label>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full border-b border-[#1a1a1a]/15 bg-transparent py-3 text-[0.95rem] font-light text-[#1a1a1a] outline-none transition-colors duration-300 placeholder:text-[#1a1a1a]/25 focus:border-[#1e6b45]/40 md:text-[1.05rem]"
+      />
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SELL — AI PROCESSING
+   ════════════════════════════════════════════════════════════════ */
+function SellProcessingScreen({ onDone }: { onDone: () => void }) {
+  const lines = useMemo(
+    () => [
+      "Analysing demand…",
+      "Understanding competition…",
+      "Reviewing market behaviour…",
+      "Preparing your selling strategy…",
+    ],
+    []
+  );
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    const rot = setInterval(() => setI((x) => (x + 1) % 4), 1100);
+    const done = setTimeout(onDone, 4800);
+    return () => {
+      clearInterval(rot);
+      clearTimeout(done);
+    };
+  }, [onDone]);
+
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center bg-[#F5F0E8] px-6 text-center text-[#1a1a1a]">
+      <div className="relative mb-12 h-12 w-12">
+        <span className="absolute inset-0 animate-spin rounded-full border-2 border-[#1a1a1a]/10 border-t-[#1e6b45]" />
+      </div>
+      <h2 className="mb-6 font-serif text-[1.7rem] font-medium text-[#1a1a1a] md:text-[2.4rem]">
+        Understanding your property…
+      </h2>
+      <p key={i} className="animate-fade-up font-serif text-[1.1rem] font-light italic text-[#1a1a1a]/55 md:text-[1.4rem]">
+        {lines[i]}
+      </p>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SELL — RESULT SCREEN
+   ════════════════════════════════════════════════════════════════ */
+function SellResultScreen({
+  sell,
+  strategy,
+  onConsult,
+}: {
+  sell: SellData;
+  strategy: SellStrategy;
+  onConsult: () => void;
+}) {
+  const insights: { label: string; value: string }[] = [
+    { label: "Market Position", value: strategy.marketPosition },
+    { label: "Demand", value: strategy.demand },
+    { label: "Competition", value: strategy.competition },
+    { label: "Suggested Pricing Approach", value: strategy.pricingApproach },
+    { label: "Expected Selling Window", value: strategy.sellingWindow },
+  ];
+
+  return (
+    <div key="sell-result" className="animate-fade-up">
+      <ScreenHeading
+        kicker="Selling Strategy"
+        title={<>Your Selling<br />Strategy</>}
+      />
+
+      {sell.project && (
+        <p className="mb-10 font-serif text-[1.1rem] font-light text-[#1a1a1a]/55 md:text-[1.25rem]">
+          {sell.project}{sell.config ? ` · ${sell.config}` : ""}
+        </p>
+      )}
+
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-[#1a1a1a]/12 bg-[#1a1a1a]/10 md:grid-cols-3">
+        {insights.map((ins) => (
+          <div key={ins.label} className="bg-[#F5F0E8] p-5 md:p-6">
+            <p className="mb-2 text-[9px] font-light uppercase tracking-[0.22em] text-[#c9a96e]">
+              {ins.label}
+            </p>
+            <p className="font-serif text-[1.15rem] font-medium text-[#1a1a1a] md:text-[1.35rem]">
+              {ins.value}
+            </p>
+          </div>
+        ))}
+        <div className="bg-[#F5F0E8] p-5 md:p-6">
+          <p className="mb-2 text-[9px] font-light uppercase tracking-[0.22em] text-[#c9a96e]">
+            Most Important Watchout
+          </p>
+          <p className="text-[0.9rem] font-light leading-relaxed text-[#1a1a1a]/75">
+            {strategy.watchout}
+          </p>
+        </div>
+      </div>
+
+      <p className="mt-10 font-serif text-[1rem] font-light leading-[1.85] text-[#1a1a1a]/65 md:text-[1.1rem]">
+        {strategy.summary}
+      </p>
+
+      <div className="mt-10 border-t border-[#1a1a1a]/12 pt-8">
+        <p className="mb-2 text-[10px] font-light uppercase tracking-[0.3em] text-[#c9a96e]">
+          Next Best Steps
+        </p>
+        <ul className="flex flex-col gap-3 mt-4">
+          <li className="flex gap-3 text-[0.92rem] font-light text-[#1a1a1a]/75">
+            <span className="text-[#1e6b45]">→</span>
+            Understand recent market movement
+          </li>
+          <li className="flex gap-3 text-[0.92rem] font-light text-[#1a1a1a]/75">
+            <span className="text-[#1e6b45]">→</span>
+            Review comparable opportunities
+          </li>
+          <li className="flex gap-3 text-[0.92rem] font-light text-[#1a1a1a]/75">
+            <span className="text-[#1e6b45]">→</span>
+            Speak with an independent advisor
+          </li>
+        </ul>
+      </div>
+
+      <div className="mt-12 flex flex-col gap-3.5 sm:flex-row">
+        <PrimaryButton onClick={onConsult}>Book Consultation</PrimaryButton>
+        <GhostButton onClick={onConsult}>Explore Market Intelligence</GhostButton>
+      </div>
     </div>
   );
 }
