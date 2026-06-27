@@ -342,7 +342,7 @@ function IndependentRepresentation() {
 
           <Stage kicker="Investigate" heading="Truth Intelligence">
             <p className="mt-6 font-serif text-[1.05rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.25rem]">
-              Projects&nbsp;&middot;&nbsp;Developers&nbsp;&middot;&nbsp;Construction&nbsp;&middot;&nbsp;Legal&nbsp;&middot;&nbsp;Pricing&nbsp;&middot;&nbsp;Location
+              Projects&nbsp;&middot; Developers&nbsp;&middot; Construction&nbsp;&middot; Legal&nbsp;&middot; Pricing&nbsp;&middot; Location
             </p>
             <p className="mt-6 font-serif text-[1.1rem] font-light italic text-[#1a1a1a]/75 md:text-[1.3rem]">
               Every recommendation begins with evidence.
@@ -490,7 +490,7 @@ function ExperienceIntelligence() {
   useCardReveal(ref);
 
   return (
-    <div ref={ref} className="bg-[#F5F0E8] px-6 pb-[14vh] pt-[14vh] md:px-8 md:pb-[18vh] md:pt-[18vh]">
+    <div ref={ref} className="overflow-x-hidden bg-[#F5F0E8] px-6 pb-[14vh] pt-[14vh] md:px-8 md:pb-[18vh] md:pt-[18vh]">
       {/* Heading */}
       <div
         data-ei-h

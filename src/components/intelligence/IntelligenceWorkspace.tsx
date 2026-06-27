@@ -107,10 +107,10 @@ export default function IntelligenceWorkspace() {
   return (
     <div className="flex h-screen flex-col bg-[#F5F0E8] text-[#1a1a1a]">
       {/* ── Navigation ── */}
-      <nav className="flex shrink-0 items-center justify-between border-b border-[#1a1a1a]/[0.06] px-6 py-4 md:px-10">
+      <nav className="flex shrink-0 items-center justify-between border-b border-[#1a1a1a]/[0.06] px-4 py-4 md:px-10">
         <div className="flex items-center gap-8">
           <button onClick={() => navigate({ type: "home" })}>
-            <Logo className="h-8 w-auto md:h-12" color="#1a1a1a" />
+            <Logo className="h-7 w-auto md:h-12" color="#1a1a1a" />
           </button>
           <div className="hidden items-center gap-1 lg:flex">
             {(
