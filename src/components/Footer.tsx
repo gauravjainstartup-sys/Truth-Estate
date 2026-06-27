@@ -7,15 +7,18 @@ import { useConsultation } from "./consultation/ConsultationProvider";
 const basePath = "/Truth-Estate";
 
 /* ── Column definitions ── */
+// Links whose dedicated pages do not exist yet point at the live destination
+// where that content already lives (the /intelligence workspace, or a section
+// on /methodology) so nothing 404s. Repoint to dedicated routes as they ship.
 const columns: {
   label: string;
-  links: { t: string; h: string; action?: "journey" | "consult" }[];
+  links: { t: string; h: string; action?: "journey" | "consult" | "research" }[];
 }[] = [
   {
     label: "Start Here",
     links: [
       { t: "Start Your Journey", h: "#", action: "journey" },
-      { t: "TruthGuide", h: "/truthguide" },
+      { t: "TruthGuide", h: "#", action: "research" },
       { t: "Truth Intelligence", h: "/intelligence" },
       { t: "Request Independent Advice", h: "#", action: "consult" },
       { t: "Pricing", h: "/pricing" },
@@ -36,30 +39,30 @@ const columns: {
   {
     label: "Intelligence",
     links: [
-      { t: "Project Intelligence", h: "/intelligence/projects" },
-      { t: "Developer Intelligence", h: "/intelligence/developers" },
-      { t: "Location Intelligence", h: "/intelligence/locations" },
-      { t: "Compare Intelligence", h: "/intelligence/compare" },
-      { t: "Market Intelligence", h: "/intelligence/markets" },
-      { t: "Legal Intelligence", h: "/intelligence/legal" },
+      { t: "Project Intelligence", h: "/intelligence" },
+      { t: "Developer Intelligence", h: "/intelligence" },
+      { t: "Location Intelligence", h: "/intelligence" },
+      { t: "Compare Intelligence", h: "/intelligence" },
+      { t: "Market Intelligence", h: "/intelligence" },
+      { t: "Legal Intelligence", h: "/intelligence" },
     ],
   },
   {
     label: "Markets",
     links: [
-      { t: "Golf Course Road", h: "/markets/golf-course-road" },
-      { t: "Golf Course Extension Road", h: "/markets/golf-course-extension-road" },
-      { t: "SPR", h: "/markets/spr" },
-      { t: "Dwarka Expressway", h: "/markets/dwarka-expressway" },
-      { t: "New Gurgaon", h: "/markets/new-gurgaon" },
-      { t: "Sohna", h: "/markets/sohna" },
+      { t: "Golf Course Road", h: "/intelligence" },
+      { t: "Golf Course Extension Road", h: "/intelligence" },
+      { t: "SPR", h: "/intelligence" },
+      { t: "Dwarka Expressway", h: "/intelligence" },
+      { t: "New Gurgaon", h: "/intelligence" },
+      { t: "Sohna", h: "/intelligence" },
     ],
   },
   {
     label: "Company",
     links: [
       { t: "About", h: "/about" },
-      { t: "FAQs", h: "/faqs" },
+      { t: "FAQs", h: "/methodology#faq" },
       { t: "Privacy Policy", h: "/privacy" },
       { t: "Terms", h: "/terms" },
       { t: "Contact", h: "/contact" },
@@ -182,11 +185,11 @@ export default function Footer() {
                         <li key={l.t}>
                           {l.action ? (
                             <button
-                              onClick={() =>
-                                l.action === "consult"
-                                  ? openConsult({ sourceKind: "homepage" })
-                                  : open()
-                              }
+                              onClick={() => {
+                                if (l.action === "consult") openConsult({ sourceKind: "homepage" });
+                                else if (l.action === "research") open("research");
+                                else open();
+                              }}
                               className={linkClass}
                             >
                               {l.t}

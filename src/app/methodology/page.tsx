@@ -24,9 +24,11 @@ export const metadata: Metadata = {
 
 export default function MethodologyPage() {
   return (
-    <main>
-      <Methodology />
+    <>
+      <main>
+        <Methodology />
+      </main>
       <Footer />
-    </main>
+    </>
   );
 }
