@@ -145,12 +145,12 @@ export default function IntelligenceWorkspace() {
               <span className="hidden xl:inline">Search</span>
             </button>
           </div>
-          <a
-            href="/Truth-Estate"
+          <button
+            onClick={() => { setSearchOpen(true); setTimeout(() => searchRef.current?.focus(), 100); }}
             className="hidden text-[0.78rem] font-light text-[#1a1a1a]/40 transition-colors hover:text-[#1a1a1a]/70 xl:block"
           >
             TruthGuide
-          </a>
+          </button>
           <button
             onClick={() => openConsult(consultContext)}
             className="whitespace-nowrap rounded-sm bg-[#1e6b45] px-3 py-2 text-[10px] font-medium tracking-[0.04em] text-white transition-all duration-500 hover:bg-[#238c55] md:px-5 md:py-2.5 md:text-[11px] md:tracking-[0.08em]"
