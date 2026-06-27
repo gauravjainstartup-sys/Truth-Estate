@@ -1463,6 +1463,14 @@ function ClosingSection() {
             Challenge TruthGuide &rarr;
             <span className="absolute -bottom-1 left-0 h-px w-0 bg-white/30 transition-all duration-500 group-hover:w-full" />
           </button>
+
+          <button
+            onClick={() => open()}
+            className="group relative text-[13px] font-light tracking-[0.1em] text-white/40 transition-colors duration-400 hover:text-white/70"
+          >
+            Book a Consultation &rarr;
+            <span className="absolute -bottom-1 left-0 h-px w-0 bg-white/30 transition-all duration-500 group-hover:w-full" />
+          </button>
         </div>
 
         <p
