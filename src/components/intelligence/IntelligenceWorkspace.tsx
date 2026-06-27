@@ -109,9 +109,9 @@ export default function IntelligenceWorkspace() {
       <nav className="flex shrink-0 items-center justify-between border-b border-[#1a1a1a]/[0.06] px-6 py-4 md:px-10">
         <div className="flex items-center gap-8">
           <button onClick={() => navigate({ type: "home" })}>
-            <Logo className="h-10 w-auto md:h-12" color="#1a1a1a" />
+            <Logo className="h-8 w-auto md:h-12" color="#1a1a1a" />
           </button>
-          <div className="hidden items-center gap-1 md:flex">
+          <div className="hidden items-center gap-1 lg:flex">
             {(
               [
                 ["Projects", "projects"],
@@ -141,20 +141,20 @@ export default function IntelligenceWorkspace() {
               className="flex items-center gap-2 text-[0.78rem] font-light text-[#1a1a1a]/40 transition-colors hover:text-[#1a1a1a]/70"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              <span className="hidden md:inline">Search</span>
+              <span className="hidden xl:inline">Search</span>
             </button>
           </div>
           <a
             href="/Truth-Estate"
-            className="hidden text-[0.78rem] font-light text-[#1a1a1a]/40 transition-colors hover:text-[#1a1a1a]/70 md:block"
+            className="hidden text-[0.78rem] font-light text-[#1a1a1a]/40 transition-colors hover:text-[#1a1a1a]/70 xl:block"
           >
             TruthGuide
           </a>
           <button
             onClick={() => openConsult(consultContext)}
-            className="rounded-sm bg-[#1e6b45] px-4 py-2 text-[11px] font-medium tracking-[0.08em] text-white transition-all duration-500 hover:bg-[#238c55] md:px-5 md:py-2.5"
+            className="whitespace-nowrap rounded-sm bg-[#1e6b45] px-3 py-2 text-[10px] font-medium tracking-[0.04em] text-white transition-all duration-500 hover:bg-[#238c55] md:px-5 md:py-2.5 md:text-[11px] md:tracking-[0.08em]"
           >
-            Book Consultation
+            Request Independent Advice
           </button>
         </div>
       </nav>
@@ -249,7 +249,7 @@ export default function IntelligenceWorkspace() {
             onClick={() => openConsult(consultContext)}
             className="mb-3 w-full rounded-sm bg-[#1e6b45] px-4 py-3 text-[10px] font-medium tracking-[0.1em] text-white transition-all hover:bg-[#238c55]"
           >
-            Book Consultation
+            Request Independent Advice
           </button>
           <button
             onClick={() => { setSearchOpen(true); setTimeout(() => searchRef.current?.focus(), 100); }}
@@ -1029,7 +1029,7 @@ function BottomCTA({ context }: { context?: ConsultContext }) {
           onClick={() => openConsult(context)}
           className="rounded-sm bg-[#1e6b45] px-10 py-4 text-[12px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/10 transition-all hover:bg-[#238c55]"
         >
-          Book Consultation
+          Request Independent Advice
         </button>
         <button
           onClick={() => openConsult(context)}

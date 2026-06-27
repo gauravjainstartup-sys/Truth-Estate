@@ -6,6 +6,7 @@ import {
   CONSULT_DAYPARTS,
   CONSULT_DAYS,
   CONSULT_DURATION,
+  CONSULT_HEADLINE,
   CONSULT_FEE,
   CONSULT_FIELDS,
   CONSULT_FORMATS,
@@ -258,8 +259,8 @@ function IntroStep({ prepLine, onContinue }: { prepLine: string | null; onContin
       <div className="mt-8 max-w-[560px] space-y-4 text-[0.95rem] font-light leading-[1.85] text-[#1a1a1a]/55 md:text-[1.05rem]">
         <p>One conversation. One recommendation.</p>
         <p>
-          No sales pressure. No developer presentations. No broker bias —
-          just independent advice built around your situation.
+          No sales pressure. No developer bias. No broker incentives —
+          just independent advice tailored to your situation.
         </p>
       </div>
 
@@ -275,19 +276,25 @@ function IntroStep({ prepLine, onContinue }: { prepLine: string | null; onContin
       {/* Consultation card */}
       <div className="mt-10 rounded-xl border border-[#1a1a1a]/[0.08] bg-[#FAF7F2] p-6 md:p-8">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 className="font-serif text-[1.5rem] font-medium text-[#1a1a1a] md:text-[1.8rem]">{CONSULT_DURATION}</h2>
-          <span className="rounded-full border border-[#1e6b45]/30 px-4 py-1.5 text-[0.72rem] font-light tracking-[0.04em] text-[#1e6b45]">
-            {CONSULT_FEE == null ? "Complimentary Initial Consultation" : `₹${CONSULT_FEE.toLocaleString("en-IN")}`}
-          </span>
+          <h2 className="font-serif text-[1.5rem] font-medium text-[#1a1a1a] md:text-[1.8rem]">{CONSULT_HEADLINE}</h2>
+          {CONSULT_FEE != null && (
+            <span className="rounded-full border border-[#1e6b45]/30 px-4 py-1.5 text-[0.72rem] font-light tracking-[0.04em] text-[#1e6b45]">
+              ₹{CONSULT_FEE.toLocaleString("en-IN")}
+            </span>
+          )}
         </div>
         <div className="mt-5 flex flex-wrap gap-x-8 gap-y-2 text-[0.84rem] font-light text-[#1a1a1a]/55">
-          {["Video or Phone", "Prepared before the call", "Confidential"].map((t) => (
+          {["45 Minutes", "Video or Phone", "Prepared before the call", "100% Confidential"].map((t) => (
             <span key={t} className="flex items-center gap-2">
               <span className="text-[#c9a96e]">&#10003;</span>
               {t}
             </span>
           ))}
         </div>
+        <p className="mt-6 border-t border-[#1a1a1a]/[0.06] pt-5 text-[0.82rem] font-light leading-relaxed text-[#1a1a1a]/45">
+          Your first consultation is completely complimentary. We&apos;ll understand
+          your situation before discussing whether we should work together.
+        </p>
       </div>
 
       {/* Timeline */}
@@ -475,8 +482,8 @@ function PrepStep({
   onContinue: () => void;
 }) {
   const examples = source
-    ? [`Compare ${source} with one alternative.`, "Should I wait six months?", "Review the legal risks.", "Help me shortlist."]
-    : ["Compare DLF Arbour with Puri.", "Should I wait six months?", "Help me shortlist.", "Review legal risks."];
+    ? [`Compare ${source} with Puri The Aravallis`, "Help me shortlist projects", "Review construction quality", "Evaluate legal risks", "Should I wait six months?", "Explain Truth Score"]
+    : ["Compare DLF Arbour with Puri The Aravallis", "Help me shortlist projects", "Review construction quality", "Evaluate legal risks", "Should I wait six months?", "Explain Truth Score"];
 
   return (
     <div className="animate-fade-up mx-auto max-w-[680px] px-6 py-12 md:px-10 md:py-16">
@@ -787,7 +794,8 @@ function ConfirmStep({ booking, onOpenOffice }: { booking: ConsultBooking; onOpe
       </h1>
       <p className="mx-auto mt-6 max-w-[440px] text-[0.95rem] font-light leading-[1.85] text-[#1a1a1a]/55">
         Thank you. We&apos;ll review everything you&apos;ve shared before the
-        consultation. You won&apos;t have to repeat yourself — we&apos;ll arrive prepared.
+        consultation. You won&apos;t have to repeat yourself — your advisor will
+        arrive fully prepared.
       </p>
 
       <div className="mt-10 overflow-hidden rounded-xl border border-[#1a1a1a]/[0.08] text-left">
@@ -798,6 +806,11 @@ function ConfirmStep({ booking, onOpenOffice }: { booking: ConsultBooking; onOpe
           </div>
         ))}
       </div>
+
+      <p className="mx-auto mt-8 max-w-[420px] text-[0.82rem] font-light italic leading-relaxed text-[#1a1a1a]/40">
+        This isn&apos;t a sales call. It&apos;s an independent advisory conversation
+        focused entirely on your situation.
+      </p>
 
       <div className="mt-10">
         <PrimaryButton onClick={onOpenOffice}>Enter Your Private Office →</PrimaryButton>
@@ -811,7 +824,7 @@ function ConfirmStep({ booking, onOpenOffice }: { booking: ConsultBooking; onOpe
    ════════════════════════════════════════════════════════════════ */
 function PrivateOffice({ booking, onClose }: { booking: ConsultBooking; onClose: () => void }) {
   const advisor = advisorFor(booking.reason);
-  const NAV = ["Home", "Consultation", "Questions", "Documents", "Shortlist", "TruthGuide", "Intelligence", "Advisor Notes"];
+  const NAV = ["Home", "Consultation", "Questions", "Documents", "Shortlist", "TruthGuide", "Intelligence", "Recommendations", "Advisor Notes"];
   const [active, setActive] = useState("Home");
 
   return (
@@ -878,11 +891,12 @@ function PrivateOffice({ booking, onClose }: { booking: ConsultBooking; onClose:
 
           {/* Placeholder sections */}
           <div className="mt-12 grid grid-cols-1 gap-x-10 gap-y-10 md:grid-cols-2">
-            <OfficeCard title="Questions" body="The questions you asked us to prepare will appear here, with our answers after the consultation." note={booking.prep ? "1 prepared" : "Awaiting consultation"} />
+            <OfficeCard title="Questions for Advisor" body="The questions you asked us to prepare will appear here, with our answers after the consultation." note={booking.prep ? "1 prepared" : "Awaiting consultation"} />
             <OfficeCard title="Documents" body="Brochures, agreements and due-diligence you upload — reviewed and annotated by your advisor." note="Upload unlocks after your call" />
-            <OfficeCard title="Shortlist" body="Properties you're weighing, tracked side by side with Truth Scores and our independent view." note="Nothing shortlisted yet" />
-            <OfficeCard title="Recommendations" body="Your advisor's written recommendation — Proceed, Wait, Continue Research, or Walk Away — lands here." note="Arrives after consultation" />
-            <OfficeCard title="TruthGuide" body="Your full conversation history with TruthGuide, always in context of your situation." note="Continue any time" />
+            <OfficeCard title="Shortlisted Projects" body="Properties you're weighing, tracked side by side with Truth Scores and our independent view." note="Nothing shortlisted yet" />
+            <OfficeCard title="TruthGuide Conversations" body="Your full conversation history with TruthGuide, always in context of your situation." note="Continue any time" />
+            <OfficeCard title="Truth Intelligence" body="The project, developer and market intelligence relevant to your decision, curated for you." note="Curated before your call" />
+            <OfficeCard title="Recommendations" body="Your advisor's written recommendation — Proceed, Wait, Continue Research, Compare More, or Walk Away — lands here." note="Arrives after consultation" />
             <OfficeCard title="Advisor Notes" body="Notes your advisor shares before and after the call, so nothing gets lost between conversations." note="Your advisor will post here" />
           </div>
 

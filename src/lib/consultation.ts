@@ -30,7 +30,23 @@ export type ConsultContext = {
 
 /* Returns the contextual preparation line, or null for a generic entry. */
 export function consultPrepLine(ctx: ConsultContext | undefined): string | null {
-  if (!ctx?.source) return null;
+  if (!ctx) return null;
+
+  // Arriving from a completed buy/sell/invest journey — we already hold their DNA.
+  if (ctx.sourceKind === "journey") {
+    switch (ctx.intent) {
+      case "buy":
+        return "We've already reviewed your Buyer DNA. Your advisor will prepare before the consultation.";
+      case "sell":
+        return "We've reviewed your selling strategy. Your advisor will prepare before the consultation.";
+      case "invest":
+        return "We've reviewed your investment thesis. Your advisor will prepare before the consultation.";
+      default:
+        return "We've reviewed your responses. Your advisor will prepare before the consultation.";
+    }
+  }
+
+  if (!ctx.source) return null;
   switch (ctx.sourceKind) {
     case "developer":
       return `We'll review ${ctx.source}'s track record before speaking.`;
@@ -54,17 +70,18 @@ export const CONSULT_PILLARS = [
    Architected so payment can be inserted before scheduling without redesign. */
 export const CONSULT_FEE: number | null = null;
 export const CONSULT_DURATION = "45 Minute Consultation";
+export const CONSULT_HEADLINE = "Complimentary First Consultation";
 
 export const CONSULT_TIMELINE = [
   "Understand your goals",
   "Review your shortlisted opportunities",
+  "Challenge assumptions",
   "Discuss risks and alternatives",
-  "Answer every question",
   "Recommend the best next step",
 ];
 
 /* We never promise a "buy" recommendation. */
-export const CONSULT_OUTCOMES = ["Proceed", "Wait", "Continue Research", "Walk Away"];
+export const CONSULT_OUTCOMES = ["Proceed", "Wait", "Walk Away", "Continue Research", "Compare More Options"];
 
 /* ── Step 2: what brings you here ── */
 export type ConsultReason = { key: ConsultIntent; title: string; line: string };

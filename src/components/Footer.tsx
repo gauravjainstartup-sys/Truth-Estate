@@ -12,7 +12,7 @@ const columns: { label: string; links: { t: string; h: string; action?: boolean 
       { t: "Start Your Journey", h: "#", action: true },
       { t: "TruthGuide", h: "/truthguide" },
       { t: "Truth Intelligence", h: "/intelligence" },
-      { t: "Book a Consultation", h: "#", action: true },
+      { t: "Request Independent Advice", h: "#", action: true },
     ],
   },
   {
@@ -126,7 +126,7 @@ export default function Footer() {
                     <li key={l.t}>
                       {l.action ? (
                         <button
-                          onClick={() => (l.t === "Book a Consultation" ? openConsult({ sourceKind: "homepage" }) : open())}
+                          onClick={() => (l.t === "Request Independent Advice" ? openConsult({ sourceKind: "homepage" }) : open())}
                           className="text-[0.9rem] font-light leading-snug text-[#1a1a1a]/60 transition-colors duration-300 hover:text-[#1a1a1a]"
                         >
                           {l.t}
