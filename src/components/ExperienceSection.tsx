@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useJourney } from "./journey/JourneyProvider";
+import { useConsultation } from "./consultation/ConsultationProvider";
 import { ADVISORS, PRIMARY_CTA } from "@/lib/journey";
 
 /* ── Shared reveal: any [data-r] child fades up on intersect ── */
@@ -227,6 +228,7 @@ function Stage({
 
 function IndependentRepresentation() {
   const { open } = useJourney();
+  const { openConsult } = useConsultation();
   const rootRef = useRef<HTMLElement>(null);
   const spineRef = useRef<HTMLDivElement>(null);
   const fillRef = useRef<HTMLDivElement>(null);
@@ -393,7 +395,7 @@ function IndependentRepresentation() {
                 <p className="text-[#1a1a1a]/40">Independent Advisor</p>
               </div>
               <button
-                onClick={() => open()}
+                onClick={() => openConsult({ sourceKind: "homepage", intent: "advice" })}
                 className="mt-6 w-full rounded-sm bg-[#1e6b45] px-6 py-3 text-[12px] font-medium tracking-[0.08em] text-white transition-colors duration-500 hover:bg-[#238c55]"
               >
                 Book Consultation

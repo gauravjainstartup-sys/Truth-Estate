@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Playfair_Display } from "next/font/google";
 import "./globals.css";
 import JourneyProvider from "@/components/journey/JourneyProvider";
+import ConsultationProvider from "@/components/consultation/ConsultationProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,7 +38,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[#0a0a0a] text-white">
-        <JourneyProvider>{children}</JourneyProvider>
+        <JourneyProvider>
+          <ConsultationProvider>{children}</ConsultationProvider>
+        </JourneyProvider>
       </body>
     </html>
   );
