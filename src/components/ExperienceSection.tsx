@@ -1339,10 +1339,10 @@ function PromiseSection() {
    SECTION 12 — COVERAGE
    ════════════════════════════════════════════════════════════════ */
 const metrics = [
-  { value: 100, suffix: "+", label: "Projects" },
-  { value: 80, suffix: "+", label: "Proprietary Signals" },
-  { value: 4500, suffix: "+", label: "Knowledge Pages" },
-  { value: 24, suffix: "×7", label: "TruthGuide" },
+  { value: 100, suffix: "+", label: "Projects Analysed" },
+  { value: 80, suffix: "+", label: "Intelligence Signals" },
+  { value: 15, suffix: "", label: "Developers Covered" },
+  { value: 7, suffix: "", label: "Micro Markets" },
 ];
 
 function CoverageSection() {
