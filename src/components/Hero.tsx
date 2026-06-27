@@ -64,8 +64,9 @@ export default function Hero() {
         />
 
         {/* Content */}
-        <div className="relative z-10 flex h-full flex-col justify-between py-14 pl-20 lg:py-20 lg:pl-28">
-          <nav className="animate-fade-up flex items-center pr-12 lg:pr-20">
+        <div className="relative z-10 flex h-full flex-col justify-between px-10 py-14 lg:px-16 lg:py-20">
+          <div className="mx-auto flex h-full w-full max-w-[1200px] flex-col justify-between">
+          <nav className="animate-fade-up flex items-center">
             <Logo className="h-10 w-auto opacity-75 lg:h-[3rem]" />
             <div className="ml-auto hidden items-center gap-20 text-[10px] font-light tracking-[0.18em] text-white/50 lg:flex">
               <a href="#" className="transition-colors duration-500 hover:text-white/80">
@@ -134,6 +135,7 @@ export default function Hero() {
             <p className="mt-7 font-serif text-[17px] italic leading-[1.7] text-white/40">
               &ldquo;We recommend only what we&apos;d buy ourselves.&rdquo;
             </p>
+          </div>
           </div>
         </div>
       </div>
