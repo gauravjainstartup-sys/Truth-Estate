@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Logo from "../Logo";
 import BuyersOffice from "./BuyersOffice";
+import { useConsultation } from "../consultation/ConsultationProvider";
+import type { ConsultIntent } from "@/lib/consultation";
 import {
   ACTIVE_PROJECT_COUNT,
   ADVISORS,
@@ -360,6 +362,15 @@ export default function JourneyModal({
   const [invest, setInvest] = useState<InvestData>(emptyInvestData);
   const [selected, setSelected] = useState<Scored | null>(null);
   const [booking, setBooking] = useState<Booking>(account?.booking ?? null);
+  const { openConsult } = useConsultation();
+
+  // From any journey, "Request Independent Advice" hands off to the unified
+  // consultation flow — preserving the journey context so the advisor
+  // arrives already knowing the visitor's DNA.
+  const requestAdvice = (intent: ConsultIntent) => {
+    onClose();
+    openConsult({ sourceKind: "journey", intent });
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -668,7 +679,7 @@ export default function JourneyModal({
         <SellResultScreen
           sell={sell}
           strategy={strategy}
-          onConsult={() => setStep("sell-consultation")}
+          onConsult={() => requestAdvice("sell")}
         />
       </Shell>
     );
@@ -849,7 +860,7 @@ export default function JourneyModal({
           invest={invest}
           strategy={strategy}
           recommendations={recommendations}
-          onConsult={() => setStep("invest-consultation")}
+          onConsult={() => requestAdvice("invest")}
         />
       </Shell>
     );
@@ -1041,7 +1052,7 @@ export default function JourneyModal({
           project={selected}
           onTruthGuide={() => setStep("truthguide")}
           onIntelligence={() => setStep("intelligence")}
-          onConsult={() => setStep("consultation")}
+          onConsult={() => requestAdvice("buy")}
         />
       </Shell>
     );
@@ -1053,7 +1064,7 @@ export default function JourneyModal({
         <ContextualTruthGuide
           project={selected}
           dna={dna}
-          onConsult={() => setStep("consultation")}
+          onConsult={() => requestAdvice("buy")}
           onExplore={() => setStep("shortlist")}
         />
       </Shell>
@@ -1066,7 +1077,7 @@ export default function JourneyModal({
         <FullIntelligence
           project={selected}
           alternatives={recs.filter((r) => r.name !== selected.name)}
-          onConsult={() => setStep("consultation")}
+          onConsult={() => requestAdvice("buy")}
           onExplore={() => setStep("shortlist")}
         />
       </Shell>
@@ -1141,7 +1152,7 @@ export default function JourneyModal({
     return frame(
       <ResearchWorkspace
         onClose={onClose}
-        onConsult={() => setStep("consultation")}
+        onConsult={() => requestAdvice("research")}
         onStartJourney={() => setStep("goal")}
       />
     );
@@ -1374,7 +1385,7 @@ function ProjectPreview({
       </div>
 
       <div className="mt-12 flex flex-col gap-3.5 sm:flex-row sm:flex-wrap">
-        <PrimaryButton onClick={onConsult}>Book Consultation</PrimaryButton>
+        <PrimaryButton onClick={onConsult}>Request Independent Advice</PrimaryButton>
         <GhostButton onClick={onIntelligence}>View Full Intelligence</GhostButton>
         <GhostButton onClick={onTruthGuide}>Challenge TruthGuide</GhostButton>
       </div>
@@ -1514,7 +1525,7 @@ function ContextualTruthGuide({
       )}
 
       <div className="mt-12 flex flex-col gap-3.5 border-t border-[#1a1a1a]/12 pt-8 sm:flex-row">
-        <PrimaryButton onClick={onConsult}>Book Consultation</PrimaryButton>
+        <PrimaryButton onClick={onConsult}>Request Independent Advice</PrimaryButton>
         <GhostButton onClick={onExplore}>Continue Exploring</GhostButton>
       </div>
     </div>
@@ -1577,7 +1588,7 @@ function FullIntelligence({
         ))}
       </div>
       <div className="mt-12 flex flex-col gap-3.5 sm:flex-row">
-        <PrimaryButton onClick={onConsult}>Book Consultation</PrimaryButton>
+        <PrimaryButton onClick={onConsult}>Request Independent Advice</PrimaryButton>
         <GhostButton onClick={onExplore}>Continue Exploring</GhostButton>
       </div>
     </div>
@@ -1845,7 +1856,7 @@ function ResearchWorkspace({
                 onClick={onConsult}
                 className="w-full rounded-sm bg-[#1e6b45] px-4 py-3 text-[10px] font-medium tracking-[0.1em] text-white transition-all duration-500 hover:bg-[#238c55]"
               >
-                Book Consultation
+                Request Independent Advice
               </button>
             </div>
           </div>
@@ -2208,7 +2219,7 @@ function ResearchResultView({
           Need independent advice?
         </p>
         <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-          <PrimaryButton onClick={onConsult}>Book Consultation</PrimaryButton>
+          <PrimaryButton onClick={onConsult}>Request Independent Advice</PrimaryButton>
           <GhostButton onClick={onStartJourney}>Start Your Journey</GhostButton>
         </div>
       </div>
@@ -2500,7 +2511,7 @@ function SellResultScreen({
       </div>
 
       <div className="mt-12 flex flex-col gap-3.5 sm:flex-row">
-        <PrimaryButton onClick={onConsult}>Book Consultation</PrimaryButton>
+        <PrimaryButton onClick={onConsult}>Request Independent Advice</PrimaryButton>
         <GhostButton onClick={onConsult}>Explore Market Intelligence</GhostButton>
       </div>
     </div>
@@ -2635,7 +2646,7 @@ function InvestResultScreen({
       </div>
 
       <div className="mt-12 flex flex-col gap-3.5 sm:flex-row">
-        <PrimaryButton onClick={onConsult}>Book Consultation</PrimaryButton>
+        <PrimaryButton onClick={onConsult}>Request Independent Advice</PrimaryButton>
         <GhostButton onClick={onConsult}>Explore Market Intelligence</GhostButton>
       </div>
     </div>

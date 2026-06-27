@@ -398,7 +398,7 @@ function IndependentRepresentation() {
                 onClick={() => openConsult({ sourceKind: "homepage", intent: "advice" })}
                 className="mt-6 w-full rounded-sm bg-[#1e6b45] px-6 py-3 text-[12px] font-medium tracking-[0.08em] text-white transition-colors duration-500 hover:bg-[#238c55]"
               >
-                Book Consultation
+                Request Independent Advice
               </button>
             </div>
           </Stage>
@@ -670,6 +670,7 @@ const cases = [
 function DecisionsSection() {
   const ref = useRef<HTMLDivElement>(null);
   const { open } = useJourney();
+  const { openConsult } = useConsultation();
   useReveal(ref, 0.12);
 
   return (
@@ -801,10 +802,10 @@ function DecisionsSection() {
             {PRIMARY_CTA}
           </button>
           <button
-            onClick={() => open()}
+            onClick={() => openConsult({ sourceKind: "homepage" })}
             className="group inline-flex items-center gap-2 text-[12px] font-light tracking-[0.14em] text-[#1a1a1a]/55 transition-colors duration-300 hover:text-[#1a1a1a]"
           >
-            Book a Consultation
+            Request Independent Advice
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
               &rarr;
             </span>
@@ -902,6 +903,7 @@ function useFocusReveal(ref: React.RefObject<HTMLElement | null>) {
 function AudienceSection() {
   const ref = useRef<HTMLDivElement>(null);
   const { open } = useJourney();
+  const { openConsult } = useConsultation();
   useReveal(ref, 0.12);
   useFocusReveal(ref);
 
@@ -977,10 +979,10 @@ function AudienceSection() {
             {PRIMARY_CTA}
           </button>
           <button
-            onClick={() => open()}
+            onClick={() => openConsult({ sourceKind: "homepage" })}
             className="group inline-flex items-center gap-2 text-[12px] font-light tracking-[0.14em] text-[#1a1a1a]/55 transition-colors duration-300 hover:text-[#1a1a1a]"
           >
-            Book a Consultation
+            Request Independent Advice
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
               &rarr;
             </span>
@@ -1144,6 +1146,7 @@ function FaqItem({
 function QuestionsSection() {
   const ref = useRef<HTMLDivElement>(null);
   const { open } = useJourney();
+  const { openConsult } = useConsultation();
   const [openIdx, setOpenIdx] = useState<number | null>(null);
   useReveal(ref, 0.1);
 
@@ -1211,10 +1214,10 @@ function QuestionsSection() {
             {PRIMARY_CTA}
           </button>
           <button
-            onClick={() => open()}
+            onClick={() => openConsult({ sourceKind: "homepage" })}
             className="group inline-flex items-center gap-2 text-[12px] font-light tracking-[0.14em] text-[#1a1a1a]/55 transition-colors duration-300 hover:text-[#1a1a1a]"
           >
-            Book a Consultation
+            Request Independent Advice
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
               &rarr;
             </span>
@@ -1233,6 +1236,7 @@ function PromiseSection() {
   const ref = useRef<HTMLDivElement>(null);
   const periodRef = useRef<HTMLSpanElement>(null);
   const { open } = useJourney();
+  const { openConsult } = useConsultation();
 
   useReveal(ref, 0.15);
 
@@ -1326,10 +1330,10 @@ function PromiseSection() {
             {PRIMARY_CTA}
           </button>
           <button
-            onClick={() => open()}
+            onClick={() => openConsult({ sourceKind: "homepage" })}
             className="text-[12px] font-light tracking-[0.14em] text-white/40 transition-colors duration-300 hover:text-white/65"
           >
-            Book a Consultation &rarr;
+            Request Independent Advice &rarr;
           </button>
         </div>
       </div>
@@ -1410,6 +1414,7 @@ function CoverageSection() {
 function ClosingSection() {
   const ref = useRef<HTMLDivElement>(null);
   const { open } = useJourney();
+  const { openConsult } = useConsultation();
   useReveal(ref, 0.12);
 
   return (
@@ -1467,10 +1472,10 @@ function ClosingSection() {
           </button>
 
           <button
-            onClick={() => open()}
+            onClick={() => openConsult({ sourceKind: "homepage" })}
             className="group relative text-[13px] font-light tracking-[0.1em] text-white/40 transition-colors duration-400 hover:text-white/70"
           >
-            Book a Consultation &rarr;
+            Request Independent Advice &rarr;
             <span className="absolute -bottom-1 left-0 h-px w-0 bg-white/30 transition-all duration-500 group-hover:w-full" />
           </button>
         </div>
