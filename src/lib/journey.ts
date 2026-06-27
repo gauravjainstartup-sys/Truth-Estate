@@ -934,21 +934,22 @@ export const MARKET_PROFILES: MarketProfile[] = [
 
 export const RESEARCH_SUGGESTIONS = [
   "Should I buy DLF Arbour?",
-  "Compare DLF Arbour vs Puri Aravallis",
-  "Best luxury projects under ₹8 Cr",
+  "Compare DLF Arbour vs Puri The Aravallis",
   "Which developers deliver on time?",
+  "Best luxury projects under ₹8 Cr",
+  "Golf Course Road vs SPR",
+  "How does Truth Score work?",
   "Construction delays in Gurugram",
   "DLF vs Godrej",
-  "Golf Course Road vs SPR",
 ];
 
 export const RESEARCH_PLACEHOLDERS = [
   "Should I buy DLF Arbour?",
   "Compare DLF Arbour with Puri The Aravallis",
-  "Which developer has the best delivery record?",
-  "Best projects under ₹8 Cr",
+  "Which developer has the strongest delivery record?",
   "Where should I invest ₹5 Cr?",
-  "Should I wait before buying?",
+  "Which luxury projects are worth waiting for?",
+  "What are the legal risks in this project?",
 ];
 
 export const RESEARCH_TOPICS = [
@@ -959,6 +960,7 @@ export const RESEARCH_TOPICS = [
   "Construction",
   "Legal",
   "Investment",
+  "Home Buying",
 ];
 
 export type ResearchResult = {

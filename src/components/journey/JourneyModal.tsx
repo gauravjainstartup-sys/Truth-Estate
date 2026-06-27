@@ -1756,17 +1756,11 @@ function ResearchWorkspace({
 
   return (
     <div className="flex h-full w-full flex-col bg-[#F5F0E8] text-[#1a1a1a]">
-      {/* Header */}
-      <div className="flex shrink-0 items-center justify-between px-6 py-4 md:px-10 md:py-5">
-        <div className="flex items-center gap-4">
-          <Logo />
-          <span className="text-[9px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/40">
-            Research
-          </span>
-        </div>
+      {/* Header — minimal, only close */}
+      <div className="flex shrink-0 items-center justify-end px-6 py-5 md:px-10 md:py-6">
         <button
           onClick={onClose}
-          className="text-[12px] font-light tracking-[0.12em] text-[#1a1a1a]/45 transition-colors duration-300 hover:text-[#1a1a1a]"
+          className="text-[11px] font-light tracking-[0.15em] text-[#1a1a1a]/35 transition-colors duration-300 hover:text-[#1a1a1a]/70"
         >
           CLOSE
         </button>
@@ -1774,7 +1768,6 @@ function ResearchWorkspace({
 
       {/* Body */}
       <div className="flex min-h-0 flex-1">
-        {/* Main content */}
         <div className="flex flex-1 flex-col overflow-y-auto">
           {showingLanding ? (
             <ResearchLanding
@@ -1791,23 +1784,23 @@ function ResearchWorkspace({
             <div className="mx-auto w-full max-w-[820px] px-6 py-6 md:px-10 md:py-8">
               {/* Persistent search bar */}
               <div className="mb-8">
-                <div className="group flex items-center gap-3 rounded-xl border border-[#1a1a1a]/8 bg-white/50 px-5 py-3 transition-all duration-500 focus-within:border-[#c9a96e]/40 focus-within:shadow-[0_0_0_3px_rgba(201,169,110,0.08)]">
-                  <svg className="h-4 w-4 shrink-0 text-[#1a1a1a]/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <div className="flex h-[52px] items-center gap-3 rounded-2xl border border-[#1a1a1a]/[0.06] bg-[#FAF7F2] px-5 transition-all duration-500 focus-within:border-[#c9a96e]/30 focus-within:shadow-[0_0_0_3px_rgba(201,169,110,0.06)] md:gap-4 md:px-6">
+                  <svg className="h-4 w-4 shrink-0 text-[#1a1a1a]/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                   <input
                     ref={inputRef}
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onKeyDown={handleKey}
-                    className="flex-1 bg-transparent font-serif text-[1rem] font-light text-[#1a1a1a] outline-none placeholder:text-[#1a1a1a]/25 md:text-[1.1rem]"
+                    className="flex-1 bg-transparent font-serif text-[1rem] font-light text-[#1a1a1a] outline-none placeholder:text-[#1a1a1a]/22 md:text-[1.1rem]"
                     placeholder="Ask another question…"
                   />
                   {query && (
-                    <button onClick={clearResult} className="text-[#1a1a1a]/30 transition-colors hover:text-[#1a1a1a]/60">
+                    <button onClick={clearResult} className="text-[#1a1a1a]/25 transition-colors hover:text-[#1a1a1a]/50">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path d="M6 18 18 6M6 6l12 12"/></svg>
                     </button>
                   )}
-                  <button onClick={handleSubmit} className="group/arrow flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1e6b45] text-white transition-transform duration-300 hover:scale-105">
-                    <svg className="h-3.5 w-3.5 transition-transform duration-300 group-hover/arrow:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                  <button onClick={handleSubmit} className="group/arrow flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1e6b45] text-white transition-all duration-300 hover:scale-[1.06]">
+                    <svg className="h-3.5 w-3.5 transition-transform duration-300 group-hover/arrow:translate-x-[3px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                   </button>
                 </div>
               </div>
@@ -1826,20 +1819,20 @@ function ResearchWorkspace({
           )}
         </div>
 
-        {/* Desktop sidebar */}
+        {/* Desktop sidebar — only when viewing results */}
         {!showingLanding && (
-          <div className="hidden w-[240px] shrink-0 border-l border-[#1a1a1a]/8 p-6 lg:block">
+          <div className="hidden w-[220px] shrink-0 border-l border-[#1a1a1a]/[0.06] px-5 py-8 lg:block">
             {history.length > 0 && (
               <div>
-                <p className="mb-4 text-[9px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/35">
+                <p className="mb-4 text-[9px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/25">
                   Recently Viewed
                 </p>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2.5">
                   {history.map((h) => (
                     <button
                       key={h}
                       onClick={() => doSearch(h)}
-                      className="text-left text-[0.82rem] font-light leading-snug text-[#1a1a1a]/55 transition-colors duration-300 hover:text-[#1a1a1a]"
+                      className="text-left text-[0.8rem] font-light leading-snug text-[#1a1a1a]/40 transition-colors duration-300 hover:text-[#1a1a1a]/70"
                     >
                       {h}
                     </button>
@@ -1847,10 +1840,10 @@ function ResearchWorkspace({
                 </div>
               </div>
             )}
-            <div className="mt-8">
+            <div className="mt-10">
               <button
                 onClick={onConsult}
-                className="w-full rounded-sm bg-[#1e6b45] px-4 py-3 text-[11px] font-medium tracking-[0.08em] text-white transition-all duration-500 hover:bg-[#238c55]"
+                className="w-full rounded-sm bg-[#1e6b45] px-4 py-3 text-[10px] font-medium tracking-[0.1em] text-white transition-all duration-500 hover:bg-[#238c55]"
               >
                 Book Consultation
               </button>
@@ -1862,7 +1855,7 @@ function ResearchWorkspace({
   );
 }
 
-/* ── Research landing — search-first, editorial ── */
+/* ── Research landing — redesigned from first principles ── */
 function ResearchLanding({
   query,
   setQuery,
@@ -1882,29 +1875,51 @@ function ResearchLanding({
   onKey: (e: React.KeyboardEvent) => void;
   onChip: (q: string) => void;
 }) {
+  const [cursorVisible, setCursorVisible] = useState(true);
+  useEffect(() => {
+    const iv = setInterval(() => setCursorVisible((v) => !v), 530);
+    return () => clearInterval(iv);
+  }, []);
+
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-6 pb-16 pt-8 md:pb-24">
-      <div className="w-full max-w-[800px]">
-        {/* Hero heading */}
-        <div className="mb-12 text-center md:mb-16">
-          <h1 className="font-serif text-[2rem] font-medium leading-[1.15] text-[#1a1a1a] md:text-[3.2rem]">
+    <div className="flex flex-col items-center px-5 md:px-8">
+      {/* Top spacer — pushes content toward visual center but allows scroll */}
+      <div className="w-full pt-[max(2vh,16px)] md:pt-[max(6vh,40px)]" />
+
+      <div className="flex w-full max-w-[820px] flex-col items-center">
+        {/* Label */}
+        <p className="mb-8 text-[10px] font-medium uppercase tracking-[0.35em] text-[#c9a96e] md:mb-10">
+          TruthGuide
+        </p>
+
+        {/* Headline */}
+        <div className="mb-6 max-w-[700px] text-center md:mb-8">
+          <h1 className="font-serif text-[2.2rem] font-medium leading-[1.12] tracking-[-0.01em] text-[#1a1a1a] md:text-[3.4rem]">
             Ask Better Questions.
           </h1>
-          <h2 className="mt-2 font-serif text-[2rem] font-medium leading-[1.15] text-[#1a1a1a]/50 md:text-[3.2rem]">
+          <h2 className="mt-1 font-serif text-[2.2rem] font-medium leading-[1.12] tracking-[-0.01em] text-[#1a1a1a]/40 md:mt-1.5 md:text-[3.4rem]">
             Get Better Property Decisions.
           </h2>
-          <p className="mx-auto mt-6 max-w-[520px] text-[0.88rem] font-light leading-[1.7] text-[#1a1a1a]/50 md:text-[0.95rem]">
-            Understand projects, developers, locations, pricing, legal risks and investment opportunities.
-          </p>
-          <p className="mt-2 text-[0.78rem] font-light text-[#1a1a1a]/35">
-            No account required.
-          </p>
         </div>
 
-        {/* Search input — the dominant element */}
-        <div className="group relative mx-auto w-full max-w-[760px]">
-          <div className="flex h-[56px] items-center gap-3 rounded-2xl border border-[#1a1a1a]/8 bg-white/60 px-5 transition-all duration-500 focus-within:border-[#c9a96e]/40 focus-within:shadow-[0_0_0_4px_rgba(201,169,110,0.1)] md:h-[60px] md:gap-4 md:px-7">
-            <svg className="h-5 w-5 shrink-0 text-[#1a1a1a]/25" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        {/* Supporting copy */}
+        <p className="mb-10 max-w-[460px] text-center text-[0.85rem] font-light leading-[1.75] text-[#1a1a1a]/40 md:mb-12 md:text-[0.92rem]">
+          Independent answers about projects, developers, pricing,
+          legal risks and investment opportunities.
+          <br />
+          <span className="text-[#1a1a1a]/28">No account required. No sales pressure.</span>
+        </p>
+
+        {/* ── Search input — the hero ── */}
+        <div className="w-full max-w-[790px]">
+          <div className="flex h-[56px] items-center gap-3 rounded-2xl border border-[#1a1a1a]/[0.06] bg-[#FAF7F2] px-5 transition-all duration-700 focus-within:border-[#c9a96e]/30 focus-within:shadow-[0_0_0_4px_rgba(201,169,110,0.06)] md:h-[64px] md:gap-4 md:px-7">
+            {/* Search icon */}
+            <svg className="h-[18px] w-[18px] shrink-0 text-[#1a1a1a]/20 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+            </svg>
+
+            {/* Input + animated placeholder */}
             <div className="relative flex-1">
               <input
                 ref={inputRef}
@@ -1914,39 +1929,56 @@ function ResearchLanding({
                 className="w-full bg-transparent font-serif text-[1.05rem] font-light text-[#1a1a1a] outline-none md:text-[1.2rem]"
               />
               {!query && (
-                <span
-                  className={`pointer-events-none absolute inset-0 flex items-center font-serif text-[1.05rem] font-light text-[#1a1a1a]/30 transition-opacity duration-400 md:text-[1.2rem] ${
-                    placeholderFade ? "opacity-100" : "opacity-0"
-                  }`}
-                >
-                  {RESEARCH_PLACEHOLDERS[placeholderIdx]}
+                <span className="pointer-events-none absolute inset-0 flex items-center">
+                  <span
+                    className={`font-serif text-[1.05rem] font-light text-[#1a1a1a]/25 transition-opacity duration-500 md:text-[1.2rem] ${
+                      placeholderFade ? "opacity-100" : "opacity-0"
+                    }`}
+                  >
+                    {RESEARCH_PLACEHOLDERS[placeholderIdx]}
+                  </span>
+                  <span
+                    className={`ml-[1px] inline-block h-[1.15em] w-[1.5px] bg-[#1a1a1a]/30 transition-opacity duration-100 ${
+                      cursorVisible ? "opacity-100" : "opacity-0"
+                    }`}
+                  />
                 </span>
               )}
             </div>
-            <button className="hidden shrink-0 text-[#1a1a1a]/20 transition-colors hover:text-[#1a1a1a]/45 md:block" aria-label="Voice">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="23"/></svg>
+
+            {/* Mic icon */}
+            <button className="group/mic hidden shrink-0 text-[#1a1a1a]/18 transition-colors duration-300 hover:text-[#1a1a1a]/40 md:block" aria-label="Voice">
+              <svg className="h-[18px] w-[18px] transition-transform duration-500 group-hover/mic:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" x2="12" y1="19" y2="23" />
+              </svg>
             </button>
+
+            {/* Submit arrow */}
             <button
               onClick={onSubmit}
-              className="group/arrow flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1e6b45] text-white transition-transform duration-300 hover:scale-105"
+              className="group/arrow flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1e6b45] text-white transition-all duration-300 hover:scale-[1.06] md:h-10 md:w-10"
             >
-              <svg className="h-4 w-4 transition-transform duration-300 group-hover/arrow:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              <svg className="h-3.5 w-3.5 transition-transform duration-300 group-hover/arrow:translate-x-[3px] md:h-4 md:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
             </button>
           </div>
         </div>
 
-        {/* "Or explore a conversation" */}
-        <p className="mt-8 text-center text-[0.78rem] font-light tracking-[0.03em] text-[#1a1a1a]/30 md:mt-10">
-          Or explore a conversation
+        {/* Divider text */}
+        <p className="mt-8 text-center text-[0.76rem] font-light tracking-[0.02em] text-[#1a1a1a]/25 md:mt-10">
+          Or continue one of these conversations
         </p>
 
-        {/* Suggestion chips */}
-        <div className="mx-auto mt-5 flex max-w-[680px] flex-wrap justify-center gap-2.5 md:mt-6 md:gap-3">
+        {/* Conversation chips */}
+        <div className="mx-auto mt-4 flex max-w-[700px] flex-wrap justify-center gap-2.5 md:mt-5">
           {RESEARCH_SUGGESTIONS.map((s) => (
             <button
               key={s}
               onClick={() => onChip(s)}
-              className="rounded-full border border-[#1a1a1a]/10 bg-white/40 px-5 py-2.5 text-[0.8rem] font-light text-[#1a1a1a]/55 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#1a1a1a]/25 hover:text-[#1a1a1a]/80 hover:shadow-md hover:shadow-black/[0.04] md:text-[0.85rem]"
+              className="rounded-full border border-[#1a1a1a]/[0.06] px-5 py-2.5 text-[0.78rem] font-light text-[#1a1a1a]/45 transition-all duration-300 hover:-translate-y-[2px] hover:border-[#1a1a1a]/15 hover:text-[#1a1a1a]/70 hover:shadow-[0_4px_12px_rgba(0,0,0,0.03)] md:text-[0.84rem]"
             >
               {s}
             </button>
@@ -1954,16 +1986,16 @@ function ResearchLanding({
         </div>
 
         {/* Explore by Topic */}
-        <div className="mt-12 text-center md:mt-16">
-          <p className="mb-5 text-[9px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/30 md:mb-6">
+        <div className="mt-10 text-center md:mt-14">
+          <p className="mb-4 text-[9px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/22 md:mb-5">
             Explore by Topic
           </p>
-          <div className="mx-auto flex max-w-[520px] flex-wrap justify-center gap-2.5">
+          <div className="mx-auto flex max-w-[560px] flex-wrap justify-center gap-2">
             {RESEARCH_TOPICS.map((t) => (
               <button
                 key={t}
                 onClick={() => { setQuery(t); onChip(`Best ${t.toLowerCase()} in Gurugram`); }}
-                className="rounded-full border border-[#1a1a1a]/8 px-5 py-2 text-[0.78rem] font-light tracking-[0.05em] text-[#1a1a1a]/40 transition-all duration-300 hover:border-[#1a1a1a]/20 hover:text-[#1a1a1a]/65 md:text-[0.82rem]"
+                className="rounded-full border border-[#1a1a1a]/[0.05] px-5 py-2 text-[0.76rem] font-light tracking-[0.04em] text-[#1a1a1a]/30 transition-all duration-300 hover:border-[#1a1a1a]/12 hover:text-[#1a1a1a]/50 md:text-[0.8rem]"
               >
                 {t}
               </button>
@@ -1971,13 +2003,18 @@ function ResearchLanding({
           </div>
         </div>
 
-        {/* Confidence statement */}
-        <div className="mt-16 text-center md:mt-20">
-          <p className="mx-auto max-w-[480px] text-[0.72rem] font-light leading-[1.8] text-[#1a1a1a]/25 md:text-[0.76rem]">
-            Every answer combines Truth Intelligence, independent research and human judgement.
-            <br />
-            No advertisements. No sponsored results. No sales pressure.
-          </p>
+        {/* Trust strip */}
+        <div className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 pb-10 md:mt-16 md:pb-16">
+          {[
+            "Independent Intelligence",
+            "No Sponsored Recommendations",
+            "Answers Backed by Evidence",
+          ].map((t) => (
+            <span key={t} className="flex items-center gap-2 text-[0.7rem] font-light tracking-[0.02em] text-[#1a1a1a]/20 md:text-[0.74rem]">
+              <span className="text-[#c9a96e]/50">&#10003;</span>
+              {t}
+            </span>
+          ))}
         </div>
       </div>
     </div>
