@@ -1224,7 +1224,119 @@ function QuestionsSection() {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   SECTION 11 — COVERAGE
+   SECTION 11 — OUR PROMISE
+   Brand manifesto. Emotional climax. Dark, centered, restrained.
+   ════════════════════════════════════════════════════════════════ */
+function PromiseSection() {
+  const ref = useRef<HTMLDivElement>(null);
+  const periodRef = useRef<HTMLSpanElement>(null);
+  const { open } = useJourney();
+
+  useReveal(ref, 0.15);
+
+  useEffect(() => {
+    const el = periodRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.style.transition = "opacity 1.2s ease";
+          el.style.opacity = "1";
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.5 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className="relative flex min-h-svh items-center justify-center bg-[#0a0a0a] px-6 py-[16vh] md:px-8"
+    >
+      <div className="mx-auto max-w-2xl text-center">
+        {/* Label */}
+        <span
+          data-r
+          className="block text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]/40"
+          style={{ opacity: 0, transform: "translateY(16px)" }}
+        >
+          Our Promise
+        </span>
+
+        {/* Manifesto */}
+        <h2
+          data-r
+          className="mt-10 font-serif text-[2rem] font-medium leading-[1.3] text-white/90 md:mt-14 md:text-[3rem] lg:text-[3.6rem] lg:leading-[1.25]"
+          style={{ opacity: 0, transform: "translateY(20px)" }}
+        >
+          If we wouldn&apos;t buy it ourselves,
+          <br />
+          we won&apos;t recommend it to you.
+        </h2>
+
+        {/* Period — delayed reveal */}
+        <span
+          ref={periodRef}
+          className="mt-6 block font-serif text-[1.4rem] font-light italic text-[#c9a96e]/70 md:mt-8 md:text-[2rem]"
+          style={{ opacity: 0 }}
+        >
+          Period.
+        </span>
+
+        {/* Second beat */}
+        <p
+          data-r
+          className="mx-auto mt-14 max-w-md font-serif text-[0.95rem] font-light leading-[2] text-white/35 md:mt-20 md:text-[1.1rem]"
+          style={{ opacity: 0, transform: "translateY(14px)" }}
+        >
+          Our responsibility isn&apos;t to help you buy more property.
+          <br className="hidden md:block" />
+          It&apos;s to help you make one decision you&apos;ll be proud of
+          years from now.
+        </p>
+
+        {/* Final line */}
+        <p
+          data-r
+          className="mt-12 font-serif text-[1rem] font-medium leading-[1.7] text-white/60 md:mt-16 md:text-[1.25rem]"
+          style={{ opacity: 0, transform: "translateY(14px)" }}
+        >
+          Independent judgement.
+          <br />
+          <span className="font-light italic text-white/40">
+            Before everything else.
+          </span>
+        </p>
+
+        {/* CTAs */}
+        <div
+          data-r
+          className="mt-16 flex flex-col items-center gap-6 md:mt-20"
+          style={{ opacity: 0, transform: "translateY(14px)" }}
+        >
+          <button
+            onClick={() => open()}
+            className="rounded-sm bg-[#1e6b45] px-10 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/20 transition-colors duration-500 hover:bg-[#238c55]"
+          >
+            {PRIMARY_CTA}
+          </button>
+          <button
+            onClick={() => open()}
+            className="text-[12px] font-light tracking-[0.14em] text-white/40 transition-colors duration-300 hover:text-white/65"
+          >
+            Book a Consultation &rarr;
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SECTION 12 — COVERAGE
    ════════════════════════════════════════════════════════════════ */
 const metrics = [
   { value: 100, suffix: "+", label: "Projects" },
@@ -1290,7 +1402,7 @@ function CoverageSection() {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   SECTION 11 — CLOSING
+   SECTION 13 — CLOSING
    ════════════════════════════════════════════════════════════════ */
 function ClosingSection() {
   const ref = useRef<HTMLDivElement>(null);
@@ -1351,6 +1463,7 @@ export default function ExperienceSection() {
       <AudienceSection />
       <QuestionsSection />
       <div className="h-[20vh] bg-gradient-to-b from-[#F5F0E8] to-[#0a0a0a] md:h-[30vh]" />
+      <PromiseSection />
       <CoverageSection />
       <ClosingSection />
     </section>
