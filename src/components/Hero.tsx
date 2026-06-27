@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Logo from "./Logo";
 import { useJourney } from "./journey/JourneyProvider";
 import { PRIMARY_CTA } from "@/lib/journey";
@@ -8,6 +9,7 @@ const basePath = "/Truth-Estate";
 
 export default function Hero() {
   const { open } = useJourney();
+  const [menuOpen, setMenuOpen] = useState(false);
   return (
     <section className="relative min-h-svh w-full overflow-hidden">
       {/* ─── DESKTOP ─── */}
@@ -180,7 +182,12 @@ export default function Hero() {
         <div className="relative z-10 flex h-full flex-col px-7 pt-10 pb-8">
           <nav className="animate-fade-up flex items-center justify-between">
             <Logo className="h-9 w-auto opacity-85" />
-            <button className="flex flex-col gap-[6px]" aria-label="Open menu">
+            <button
+              onClick={() => setMenuOpen(true)}
+              className="flex flex-col gap-[6px] p-1"
+              aria-label="Open menu"
+              aria-expanded={menuOpen}
+            >
               <span className="block h-[1.5px] w-6 bg-white/40" />
               <span className="block h-[1.5px] w-6 bg-white/40" />
             </button>
@@ -241,6 +248,69 @@ export default function Hero() {
           </div>
         </div>
       </div>
+
+      {/* ─── MOBILE MENU OVERLAY ─── */}
+      {menuOpen && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col bg-[#0a0a0a] md:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Menu"
+        >
+          <div className="flex items-center justify-between px-7 pt-10">
+            <Logo className="h-9 w-auto opacity-85" />
+            <button
+              onClick={() => setMenuOpen(false)}
+              aria-label="Close menu"
+              className="text-[11px] font-light tracking-[0.18em] text-white/50 transition-colors hover:text-white/80"
+            >
+              CLOSE
+            </button>
+          </div>
+
+          <nav className="flex flex-1 flex-col justify-center gap-8 px-7">
+            <a
+              href={`${basePath}/intelligence`}
+              className="font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white"
+            >
+              Projects
+            </a>
+            <a
+              href={`${basePath}/intelligence`}
+              className="font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white"
+            >
+              Compare
+            </a>
+            <a
+              href={`${basePath}/intelligence`}
+              className="font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white"
+            >
+              Intelligence
+            </a>
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                open("research");
+              }}
+              className="text-left font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white"
+            >
+              TruthGuide
+            </button>
+          </nav>
+
+          <div className="px-7 pb-12">
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                open();
+              }}
+              className="w-full rounded-sm bg-[#1e6b45] px-9 py-4 text-[13px] font-medium tracking-[0.08em] text-white transition-colors hover:bg-[#238c55]"
+            >
+              {PRIMARY_CTA}
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

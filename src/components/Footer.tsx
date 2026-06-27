@@ -7,15 +7,18 @@ import { useConsultation } from "./consultation/ConsultationProvider";
 const basePath = "/Truth-Estate";
 
 /* ── Column definitions ── */
+// Links whose dedicated pages do not exist yet point at the live destination
+// where that content already lives (the /intelligence workspace, or a section
+// on /methodology) so nothing 404s. Repoint to dedicated routes as they ship.
 const columns: {
   label: string;
-  links: { t: string; h: string; action?: "journey" | "consult" }[];
+  links: { t: string; h: string; action?: "journey" | "consult" | "research" }[];
 }[] = [
   {
     label: "Start Here",
     links: [
       { t: "Start Your Journey", h: "#", action: "journey" },
-      { t: "TruthGuide", h: "/truthguide" },
+      { t: "TruthGuide", h: "#", action: "research" },
       { t: "Truth Intelligence", h: "/intelligence" },
       { t: "Request Independent Advice", h: "#", action: "consult" },
       { t: "Pricing", h: "/pricing" },
@@ -36,30 +39,30 @@ const columns: {
   {
     label: "Intelligence",
     links: [
-      { t: "Project Intelligence", h: "/intelligence/projects" },
-      { t: "Developer Intelligence", h: "/intelligence/developers" },
-      { t: "Location Intelligence", h: "/intelligence/locations" },
-      { t: "Compare Intelligence", h: "/intelligence/compare" },
-      { t: "Market Intelligence", h: "/intelligence/markets" },
-      { t: "Legal Intelligence", h: "/intelligence/legal" },
+      { t: "Project Intelligence", h: "/intelligence" },
+      { t: "Developer Intelligence", h: "/intelligence" },
+      { t: "Location Intelligence", h: "/intelligence" },
+      { t: "Compare Intelligence", h: "/intelligence" },
+      { t: "Market Intelligence", h: "/intelligence" },
+      { t: "Legal Intelligence", h: "/intelligence" },
     ],
   },
   {
     label: "Markets",
     links: [
-      { t: "Golf Course Road", h: "/markets/golf-course-road" },
-      { t: "Golf Course Extension Road", h: "/markets/golf-course-extension-road" },
-      { t: "SPR", h: "/markets/spr" },
-      { t: "Dwarka Expressway", h: "/markets/dwarka-expressway" },
-      { t: "New Gurgaon", h: "/markets/new-gurgaon" },
-      { t: "Sohna", h: "/markets/sohna" },
+      { t: "Golf Course Road", h: "/intelligence" },
+      { t: "Golf Course Extension Road", h: "/intelligence" },
+      { t: "SPR", h: "/intelligence" },
+      { t: "Dwarka Expressway", h: "/intelligence" },
+      { t: "New Gurgaon", h: "/intelligence" },
+      { t: "Sohna", h: "/intelligence" },
     ],
   },
   {
     label: "Company",
     links: [
       { t: "About", h: "/about" },
-      { t: "FAQs", h: "/faqs" },
+      { t: "FAQs", h: "/methodology#faq" },
       { t: "Privacy Policy", h: "/privacy" },
       { t: "Terms", h: "/terms" },
       { t: "Contact", h: "/contact" },
@@ -133,9 +136,9 @@ export default function Footer() {
       <footer className="bg-[#F5F0E8] text-[#1a1a1a]">
         <div className="mx-auto max-w-7xl px-6 md:px-10">
           {/* ── Top section: Brand + Columns ── */}
-          <div className="grid grid-cols-2 gap-x-8 gap-y-14 pt-[7vh] md:grid-cols-12 md:gap-x-6 md:pt-[9vh]">
+          <div className="grid grid-cols-1 gap-x-8 gap-y-14 pt-[7vh] md:grid-cols-12 md:gap-x-6 md:pt-[9vh]">
             {/* ── Brand column ── */}
-            <div className="col-span-2 md:col-span-3">
+            <div className="md:col-span-4 lg:col-span-3">
               <Logo color="#1a1a1a" className="h-11 w-auto md:h-[3.2rem]" />
               <p className="mt-7 max-w-[260px] font-serif text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/45 md:text-[1rem]">
                 Independent representation for
@@ -170,49 +173,46 @@ export default function Footer() {
             </div>
 
             {/* ── Nav columns ── */}
-            {columns.map((col, i) => (
-              <div
-                key={col.label}
-                className={
-                  i < 3
-                    ? "col-span-1 md:col-span-2"
-                    : "col-span-1 md:col-span-1"
-                }
-              >
-                <h3 className="text-[10px] font-medium uppercase tracking-[0.25em] text-[#c9a96e]">
-                  {col.label}
-                </h3>
-                <ul className="mt-5 space-y-3">
-                  {col.links.map((l) => (
-                    <li key={l.t}>
-                      {l.action ? (
-                        <button
-                          onClick={() =>
-                            l.action === "consult"
-                              ? openConsult({ sourceKind: "homepage" })
-                              : open()
-                          }
-                          className={linkClass}
-                        >
-                          {l.t}
-                        </button>
-                      ) : (
-                        <a
-                          href={
-                            l.h.startsWith("/")
-                              ? `${basePath}${l.h}`
-                              : l.h
-                          }
-                          className={linkClass}
-                        >
-                          {l.t}
-                        </a>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+            <div className="md:col-span-8 lg:col-span-9">
+              <div className="grid grid-cols-2 gap-x-8 gap-y-12 sm:grid-cols-3 lg:grid-cols-5">
+                {columns.map((col) => (
+                  <div key={col.label}>
+                    <h3 className="text-[10px] font-medium uppercase tracking-[0.25em] text-[#c9a96e]">
+                      {col.label}
+                    </h3>
+                    <ul className="mt-5 space-y-3">
+                      {col.links.map((l) => (
+                        <li key={l.t}>
+                          {l.action ? (
+                            <button
+                              onClick={() => {
+                                if (l.action === "consult") openConsult({ sourceKind: "homepage" });
+                                else if (l.action === "research") open("research");
+                                else open();
+                              }}
+                              className={linkClass}
+                            >
+                              {l.t}
+                            </button>
+                          ) : (
+                            <a
+                              href={
+                                l.h.startsWith("/")
+                                  ? `${basePath}${l.h}`
+                                  : l.h
+                              }
+                              className={linkClass}
+                            >
+                              {l.t}
+                            </a>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
 
           {/* ── Thin divider ── */}

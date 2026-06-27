@@ -26,9 +26,11 @@ export const metadata: Metadata = {
 
 export default function DataSourcesPage() {
   return (
-    <main>
-      <DataSources />
+    <>
+      <main>
+        <DataSources />
+      </main>
       <Footer />
-    </main>
+    </>
   );
 }
