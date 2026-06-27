@@ -990,7 +990,241 @@ function AudienceSection() {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   SECTION 10 — COVERAGE
+   SECTION 10 — QUESTIONS WORTH ASKING
+   Premium accordion FAQ. Trust-building, not support.
+   ════════════════════════════════════════════════════════════════ */
+const faqs: { q: string; a: React.ReactNode }[] = [
+  {
+    q: "How are you different from a broker?",
+    a: (
+      <>
+        A broker represents inventory. Their job is to match you with a property
+        they&rsquo;re authorised to sell, and they earn when a transaction
+        closes&mdash;regardless of whether it was the right decision for you.
+        <br /><br />
+        Truth Estate represents the buyer. We begin with your goals, conduct
+        independent research, and recommend only what survives our own due
+        diligence. If no project meets our standard, we&rsquo;ll tell you to
+        wait.
+      </>
+    ),
+  },
+  {
+    q: "How do you make money?",
+    a: (
+      <>
+        We earn through advisory and independent representation fees&mdash;paid
+        by the buyer for working in their interest. We do not earn from pushing
+        a specific project.
+        <br /><br />
+        If referral arrangements with developers ever exist, they are fully
+        disclosed and do not influence our recommendations. Our advice stays
+        independent regardless of commercial structure.
+      </>
+    ),
+  },
+  {
+    q: "Can I use TruthGuide without becoming a client?",
+    a: (
+      <>
+        Yes. TruthGuide is available to help buyers explore projects, compare
+        options and understand risks&mdash;independently and on their own
+        terms.
+        <br /><br />
+        Independent representation begins only if you choose to work with us.
+        There is no obligation.
+      </>
+    ),
+  },
+  {
+    q: "Will you recommend a project even if it isn't popular?",
+    a: (
+      <>
+        Absolutely. Our recommendations are based on evidence&mdash;developer
+        track record, construction progress, pricing analysis, legal
+        standing&mdash;not on popularity or marketing spend.
+        <br /><br />
+        Some of our strongest recommendations have been projects most buyers
+        hadn&rsquo;t considered.
+      </>
+    ),
+  },
+  {
+    q: "Do you accept commissions from developers?",
+    a: (
+      <>
+        Transparency matters more than positioning. Our primary revenue comes
+        from advisory fees paid by buyers. Where any developer arrangement
+        exists, it is disclosed before you make a decision.
+        <br /><br />
+        Our recommendation does not change based on who pays what. If it ever
+        did, we would not be worth trusting.
+      </>
+    ),
+  },
+  {
+    q: "Why should I trust your recommendations?",
+    a: (
+      <>
+        Every recommendation combines three layers: structured intelligence
+        from Truth Intelligence, transparent reasoning through TruthGuide, and
+        human judgement from experienced advisors.
+        <br /><br />
+        You can question any recommendation, examine the evidence behind it,
+        and challenge our thinking before making a decision. Trust is earned
+        through transparency, not claimed through marketing.
+      </>
+    ),
+  },
+  {
+    q: "What happens during the consultation?",
+    a: (
+      <>
+        The consultation is a collaborative strategy discussion&mdash;not a
+        sales call. We listen to your goals, share relevant intelligence, and
+        help you think through the decision clearly.
+        <br /><br />
+        You leave with greater clarity about your options regardless of whether
+        you become a client. There is no pressure and no obligation.
+      </>
+    ),
+  },
+];
+
+function FaqItem({
+  item,
+  isOpen,
+  onToggle,
+}: {
+  item: (typeof faqs)[0];
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(0);
+
+  useEffect(() => {
+    if (bodyRef.current) {
+      setHeight(isOpen ? bodyRef.current.scrollHeight : 0);
+    }
+  }, [isOpen]);
+
+  return (
+    <div data-r style={{ opacity: 0, transform: "translateY(16px)" }}>
+      <button
+        onClick={onToggle}
+        className="flex w-full items-start justify-between gap-6 py-2 text-left"
+      >
+        <h3 className="font-serif text-[1.2rem] font-medium leading-[1.3] text-[#1a1a1a] md:text-[1.5rem] lg:text-[1.7rem]">
+          {item.q}
+        </h3>
+        <span
+          className="mt-1 shrink-0 text-[1.2rem] font-light text-[#c9a96e]/60 transition-transform duration-500 md:text-[1.4rem]"
+          style={{ transform: isOpen ? "rotate(45deg)" : "rotate(0deg)" }}
+        >
+          +
+        </span>
+      </button>
+      <div
+        className="overflow-hidden transition-[height] duration-500 ease-[cubic-bezier(0.25,0.1,0.25,1)]"
+        style={{ height }}
+      >
+        <div ref={bodyRef} className="pb-2 pt-4">
+          <p className="max-w-xl text-[0.88rem] font-light leading-[1.85] text-[#1a1a1a]/50 md:text-[0.98rem]">
+            {item.a}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QuestionsSection() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { open } = useJourney();
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+  useReveal(ref, 0.1);
+
+  return (
+    <div
+      ref={ref}
+      className="bg-[#F5F0E8] px-6 pb-[14vh] pt-[14vh] md:px-8 md:pb-[20vh] md:pt-[20vh]"
+    >
+      {/* Heading */}
+      <div className="mx-auto max-w-3xl">
+        <h2
+          data-r
+          className="font-serif text-[2.2rem] font-medium leading-[1.08] text-[#1a1a1a] md:text-[3.6rem] lg:text-[4.2rem]"
+          style={{ opacity: 0, transform: "translateY(24px)" }}
+        >
+          Questions
+          <br />
+          Worth Asking.
+        </h2>
+        <p
+          data-r
+          className="mt-7 max-w-lg text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/50 md:mt-10 md:text-[1.1rem]"
+          style={{ opacity: 0, transform: "translateY(16px)" }}
+        >
+          You should understand exactly how we work before trusting us with
+          one of life&rsquo;s biggest financial decisions.
+        </p>
+      </div>
+
+      {/* Accordion */}
+      <div className="mx-auto mt-[8vh] max-w-3xl md:mt-[12vh]">
+        {faqs.map((item, i) => (
+          <div key={item.q}>
+            {i > 0 && (
+              <div className="my-7 h-px w-full bg-[#1a1a1a]/6 md:my-9" />
+            )}
+            <FaqItem
+              item={item}
+              isOpen={openIdx === i}
+              onToggle={() => setOpenIdx(openIdx === i ? null : i)}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Bottom editorial + CTAs */}
+      <div className="mx-auto mt-[12vh] max-w-2xl text-center md:mt-[16vh]">
+        <p
+          data-r
+          className="font-serif text-[1.1rem] font-light italic leading-[1.8] text-[#1a1a1a]/40 md:text-[1.35rem]"
+          style={{ opacity: 0, transform: "translateY(14px)" }}
+        >
+          Good decisions begin with good questions.
+        </p>
+
+        <div
+          data-r
+          className="mt-12 flex flex-col items-center gap-6 md:mt-14"
+          style={{ opacity: 0, transform: "translateY(14px)" }}
+        >
+          <button
+            onClick={() => open()}
+            className="rounded-sm bg-[#1e6b45] px-10 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/10 transition-colors duration-500 hover:bg-[#238c55]"
+          >
+            {PRIMARY_CTA}
+          </button>
+          <button
+            onClick={() => open()}
+            className="group inline-flex items-center gap-2 text-[12px] font-light tracking-[0.14em] text-[#1a1a1a]/55 transition-colors duration-300 hover:text-[#1a1a1a]"
+          >
+            Book a Consultation
+            <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
+              &rarr;
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SECTION 11 — COVERAGE
    ════════════════════════════════════════════════════════════════ */
 const metrics = [
   { value: 100, suffix: "+", label: "Projects" },
@@ -1115,6 +1349,7 @@ export default function ExperienceSection() {
       <ExperienceIntelligence />
       <DecisionsSection />
       <AudienceSection />
+      <QuestionsSection />
       <div className="h-[20vh] bg-gradient-to-b from-[#F5F0E8] to-[#0a0a0a] md:h-[30vh]" />
       <CoverageSection />
       <ClosingSection />
