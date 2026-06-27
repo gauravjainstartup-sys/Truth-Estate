@@ -32,7 +32,7 @@ export const emptyBuyData: BuyData = {
 export const GOALS = [
   { key: "buy" as Intent, icon: "🏡", label: "Buy Property", live: true },
   { key: "sell" as Intent, icon: "🏷", label: "Sell Property", live: true },
-  { key: "invest" as Intent, icon: "📈", label: "Invest", live: false },
+  { key: "invest" as Intent, icon: "📈", label: "Invest", live: true },
   { key: "research" as Intent, icon: "🔍", label: "Research & Compare", live: false },
 ];
 
@@ -578,4 +578,197 @@ export function deriveSellStrategy(d: SellData): SellStrategy {
     : `Based on what you've shared, we believe your property is well positioned, but success will depend more on pricing strategy and timing than urgency.`;
 
   return { marketPosition, demand, competition, pricingApproach, sellingWindow, watchout, summary };
+}
+
+/* ════════════════════════════════════════════════════════════════
+   INVEST IN REAL ESTATE JOURNEY
+   ════════════════════════════════════════════════════════════════ */
+
+export type InvestData = {
+  capitalCr: number;
+  horizon: string | null;
+  objective: string | null;
+  risk: string | null;
+  locations: string[];
+  priorities: string[];
+};
+
+export const emptyInvestData: InvestData = {
+  capitalCr: 5,
+  horizon: null,
+  objective: null,
+  risk: null,
+  locations: [],
+  priorities: [],
+};
+
+export const INVEST_HORIZONS = [
+  "1–3 Years",
+  "3–5 Years",
+  "5–7 Years",
+  "7+ Years",
+  "Flexible",
+];
+
+export const INVEST_OBJECTIVES = [
+  "Capital Appreciation",
+  "Rental Income",
+  "Portfolio Diversification",
+  "Safe Parking",
+  "Legacy Asset",
+];
+
+export const INVEST_RISKS = [
+  "Conservative",
+  "Moderate",
+  "Growth-Oriented",
+  "Aggressive",
+];
+
+export const INVEST_PRIORITIES = [
+  "Developer Track Record",
+  "Resale Liquidity",
+  "Construction Progress",
+  "Location Premium",
+  "Entry Pricing",
+  "Rental Yield",
+  "Low Maintenance",
+  "Brand Value",
+  "Tax Efficiency",
+];
+
+export const MAX_INVEST_PRIORITIES = 3;
+
+export type InvestStrategy = {
+  investmentStyle: string;
+  horizon: string;
+  riskProfile: string;
+  capitalObjective: string;
+  preferredOpportunity: string;
+  marketPosition: string;
+  view: string;
+};
+
+export function deriveInvestStrategy(d: InvestData): InvestStrategy {
+  let investmentStyle = "Balanced Investor";
+  if (d.objective === "Capital Appreciation" && (d.risk === "Growth-Oriented" || d.risk === "Aggressive"))
+    investmentStyle = "Growth Investor";
+  else if (d.objective === "Rental Income")
+    investmentStyle = "Income Investor";
+  else if (d.objective === "Safe Parking" || d.risk === "Conservative")
+    investmentStyle = "Capital Preserver";
+  else if (d.objective === "Portfolio Diversification")
+    investmentStyle = "Strategic Allocator";
+  else if (d.objective === "Legacy Asset")
+    investmentStyle = "Legacy Builder";
+
+  const horizonDesc: Record<string, string> = {
+    "1–3 Years": "Short-term · Active monitoring",
+    "3–5 Years": "Medium-term · Growth phase",
+    "5–7 Years": "Long-term · Compounding window",
+    "7+ Years": "Extended · Maximum patience",
+    "Flexible": "Opportunistic · Exit on strength",
+  };
+  const horizon = horizonDesc[d.horizon ?? "Flexible"] ?? "Opportunistic";
+
+  const riskDesc: Record<string, string> = {
+    Conservative: "Conservative · Capital safety first",
+    Moderate: "Moderate · Balanced risk-reward",
+    "Growth-Oriented": "Growth · Volatility for upside",
+    Aggressive: "Aggressive · Maximum exposure",
+  };
+  const riskProfile = riskDesc[d.risk ?? "Moderate"] ?? "Moderate";
+
+  let capitalObjective = "Wealth growth through property";
+  if (d.objective === "Capital Appreciation") capitalObjective = "Maximize appreciation over holding period";
+  else if (d.objective === "Rental Income") capitalObjective = "Generate consistent rental income";
+  else if (d.objective === "Portfolio Diversification") capitalObjective = "Diversify beyond equities and fixed income";
+  else if (d.objective === "Safe Parking") capitalObjective = "Park capital in a tangible, appreciating asset";
+  else if (d.objective === "Legacy Asset") capitalObjective = "Build a multi-generational property portfolio";
+
+  const isShort = d.horizon === "1–3 Years";
+  const isLong = d.horizon === "5–7 Years" || d.horizon === "7+ Years";
+  let preferredOpportunity = "Balanced opportunities across stages";
+  if (isShort && d.priorities.includes("Resale Liquidity"))
+    preferredOpportunity = "Ready or near-ready with proven resale";
+  else if (isShort)
+    preferredOpportunity = "Late-construction with near-term exits";
+  else if (isLong && d.priorities.includes("Entry Pricing"))
+    preferredOpportunity = "Early-stage with runway for appreciation";
+  else if (d.priorities.includes("Brand Value") || d.priorities.includes("Developer Track Record"))
+    preferredOpportunity = "Branded residences with institutional backing";
+  else if (d.priorities.includes("Rental Yield"))
+    preferredOpportunity = "High-absorption corridors with rental demand";
+
+  let marketPosition = "Stable with selective opportunity";
+  if (d.priorities.includes("Location Premium")) marketPosition = "Premium corridor focus";
+  else if (d.priorities.includes("Entry Pricing")) marketPosition = "Value corridor opportunity";
+
+  let view: string;
+  if (isShort) {
+    view = `For a ${budgetRange(d.capitalCr)} deployment on a short horizon, we would focus on projects near delivery with proven secondary market activity. Speed of exit matters more than peak pricing — liquidity is your edge.`;
+  } else if (isLong) {
+    view = `With a ${(d.horizon ?? "flexible").toLowerCase()} view and ${budgetRange(d.capitalCr)} to deploy, the opportunity is in earlier-stage projects from established developers where pricing hasn't yet absorbed full market premiums. Patience will be your greatest advantage.`;
+  } else {
+    view = `At ${budgetRange(d.capitalCr)} with a ${(d.horizon ?? "flexible").toLowerCase()} horizon, we'd look for the intersection of developer quality and pricing discipline — projects where the risk-adjusted return justifies the capital commitment.`;
+  }
+
+  return { investmentStyle, horizon, riskProfile, capitalObjective, preferredOpportunity, marketPosition, view };
+}
+
+export type InvestRecommendation = Project & { truthMatch: number; investRationale: string };
+
+export function rankInvestProjects(d: InvestData): InvestRecommendation[] {
+  const priorityTagMap: Record<string, string[]> = {
+    "Developer Track Record": ["Developer Reputation"],
+    "Resale Liquidity": ["Liquidity"],
+    "Construction Progress": ["Construction Progress"],
+    "Location Premium": ["Location"],
+    "Entry Pricing": ["Value Buying"],
+    "Rental Yield": ["Rental Yield"],
+    "Brand Value": ["Developer Reputation"],
+    "Low Maintenance": ["Construction Quality"],
+    "Tax Efficiency": ["Capital Appreciation"],
+  };
+
+  const raw = PROJECTS.map((p) => {
+    let s = 0;
+    if (d.locations.length === 0 || d.locations.includes(p.market)) s += 25;
+    else s += 5;
+
+    const [lo, hi] = p.budget;
+    if (d.capitalCr >= lo - 1 && d.capitalCr <= hi + 2) s += 22;
+    else s += Math.max(0, 14 - Math.abs(d.capitalCr - (lo + hi) / 2) * 2);
+
+    const mapped = d.priorities.flatMap((pr) => priorityTagMap[pr] ?? []);
+    s += p.tags.filter((t) => mapped.includes(t)).length * 8;
+
+    if (d.objective === "Capital Appreciation" && p.tags.includes("Capital Appreciation")) s += 12;
+    if (d.objective === "Rental Income" && p.tags.includes("Rental Yield")) s += 12;
+    if (d.objective === "Safe Parking" && (p.tags.includes("Low Risk") || p.tags.includes("Developer Reputation"))) s += 10;
+    if (d.objective === "Legacy Asset" && p.tags.includes("Luxury Lifestyle")) s += 10;
+    if (d.risk === "Conservative" && p.tags.includes("Low Risk")) s += 8;
+    if (d.risk === "Aggressive" && p.tags.includes("Capital Appreciation")) s += 6;
+
+    s += (p.truthScore - 84) * 0.7;
+
+    return { p, s };
+  }).sort((a, b) => b.s - a.s);
+
+  const max = raw[0]?.s || 1;
+  return raw.slice(0, 3).map(({ p, s }) => {
+    let rationale = p.reason;
+    if (d.objective === "Capital Appreciation")
+      rationale = `Strong appreciation profile: ${p.strengths[0]?.toLowerCase()}.`;
+    else if (d.objective === "Rental Income")
+      rationale = `High-absorption corridor with ${p.developer}'s delivery credibility.`;
+    else if (d.objective === "Safe Parking")
+      rationale = `Low-risk: ${(p.strengths.find((x) => /delivery|risk|quality|institutional/i.test(x)) ?? p.strengths[0])?.toLowerCase()}.`;
+
+    return {
+      ...p,
+      truthMatch: Math.min(99, Math.max(74, Math.round(86 + (s / max) * 12))),
+      investRationale: rationale,
+    };
+  });
 }
