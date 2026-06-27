@@ -449,266 +449,180 @@ function IndependentRepresentation() {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   SECTION 7 — THE INTELLIGENCE ENGINE
-   "Every recommendation is earned."
+   SECTION 7 — EXPERIENCE THE INTELLIGENCE
+   Two editorial cards: TruthGuide & Truth Intelligence.
+   Not products. Two ways to experience independent thinking.
    ════════════════════════════════════════════════════════════════ */
-const engineLayers = [
-  "Truth Intelligence",
-  "TruthGuide",
-  "Independent Research",
-  "Human Judgement",
-  "Truth Private",
-  "One Recommendation",
-];
-
-function IntelligenceEngine() {
-  const ref = useRef<HTMLDivElement>(null);
-  useReveal(ref, 0.2);
-  useStaggerReveal(ref, "[data-eng]", 170);
-
-  return (
-    <div ref={ref} className="bg-[#F5F0E8] px-6 pb-[12vh] pt-[12vh] md:px-8 md:pb-[16vh] md:pt-[16vh]">
-      <div className="mx-auto max-w-2xl text-center">
-        <h2 data-r className="font-serif text-[2rem] font-medium leading-[1.1] text-[#1a1a1a] md:text-[3.4rem] lg:text-[4rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
-          Every recommendation
-          <br />
-          is earned.
-        </h2>
-
-        <div className="mx-auto mt-14 flex max-w-xs flex-col items-center md:mt-20">
-          {engineLayers.map((label, i) => {
-            const isLast = i === engineLayers.length - 1;
-            const isHero = label === "Truth Private";
-            return (
-              <div key={label} className="flex flex-col items-center">
-                {i > 0 && (
-                  <div data-eng className="flex flex-col items-center" style={{ opacity: 0, transform: "translateY(10px)" }}>
-                    <div className="h-7 w-px bg-[#c9a96e]/30" />
-                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none" className="my-0.5">
-                      <path d="M1 1L5 5L9 1" stroke="#c9a96e" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" />
-                    </svg>
-                    <div className="h-7 w-px bg-[#c9a96e]/30" />
-                  </div>
-                )}
-                <p
-                  data-eng
-                  className={
-                    isHero
-                      ? "font-serif text-[1.5rem] font-medium text-[#1a1a1a] md:text-[1.7rem]"
-                      : isLast
-                        ? "font-serif text-[1.8rem] font-medium text-[#c9a96e] md:text-[2rem]"
-                        : "text-[0.95rem] font-light tracking-[0.12em] text-[#1a1a1a]/55 md:text-[1.05rem]"
-                  }
-                  style={{ opacity: 0, transform: "translateY(10px)" }}
-                >
-                  {label}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-
-        <p data-r className="mt-14 font-serif text-[0.9rem] font-light italic leading-relaxed text-[#1a1a1a]/40 md:mt-20 md:text-[1.15rem]" style={{ opacity: 0, transform: "translateY(12px)" }}>
-          Technology doesn&apos;t replace judgement.
-          <br />
-          It strengthens it.
-        </p>
-      </div>
-    </div>
-  );
+function useCardReveal(ref: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const root = ref.current;
+    if (!root) return;
+    const heading = root.querySelector<HTMLElement>("[data-ei-h]");
+    const left = root.querySelector<HTMLElement>("[data-ei-l]");
+    const right = root.querySelector<HTMLElement>("[data-ei-r]");
+    const footer = root.querySelector<HTMLElement>("[data-ei-f]");
+    const els = [heading, left, right, footer].filter(Boolean) as HTMLElement[];
+    els.forEach((el) => {
+      el.style.transition = "opacity 1.2s ease, transform 1.2s ease";
+    });
+    const obs = new IntersectionObserver(
+      (entries) =>
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            const el = e.target as HTMLElement;
+            el.style.opacity = "1";
+            el.style.transform = "translateX(0) translateY(0)";
+            obs.unobserve(el);
+          }
+        }),
+      { threshold: 0.15 }
+    );
+    els.forEach((el) => obs.observe(el));
+    return () => obs.disconnect();
+  }, [ref]);
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SECTION 8 — TRUTHGUIDE
-   "Every recommendation can be questioned."
-   ════════════════════════════════════════════════════════════════ */
-const guidePrompts = [
-  "Should I buy DLF Arbour?",
-  "Compare Arbour with Puri Aravallis.",
-  "Show DLF’s Haryana RERA history.",
-  "Why is this project risky?",
-];
-
-const typedResponse =
-  "DLF Arbour shows strong fundamentals. Developer track record: 92% on-time delivery across Haryana. Current pricing sits roughly 8% below comparable towers on Golf Course Extension Road — with two risks worth weighing before you commit.";
-
-const guideSources = ["Haryana RERA", "DLF delivery records", "6 comparable projects"];
-
-function TruthGuideSection() {
+function ExperienceIntelligence() {
   const ref = useRef<HTMLDivElement>(null);
   const { open } = useJourney();
-  const [promptIdx, setPromptIdx] = useState(0);
-  const [promptVisible, setPromptVisible] = useState(true);
-  const [typed, setTyped] = useState("");
-  const [answered, setAnswered] = useState(false);
-  const typingStarted = useRef(false);
-
-  useReveal(ref, 0.2);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setPromptVisible(false);
-      setTimeout(() => {
-        setPromptIdx((p) => (p + 1) % guidePrompts.length);
-        setPromptVisible(true);
-      }, 400);
-    }, 3200);
-    return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !typingStarted.current) {
-          typingStarted.current = true;
-          let i = 0;
-          const tid = setInterval(() => {
-            i++;
-            setTyped(typedResponse.slice(0, i));
-            if (i >= typedResponse.length) {
-              clearInterval(tid);
-              setTimeout(() => setAnswered(true), 350);
-            }
-          }, 20);
-        }
-      },
-      { threshold: 0.4 }
-    );
-    const target = el.querySelector("[data-type-trigger]");
-    if (target) obs.observe(target);
-    return () => obs.disconnect();
-  }, []);
+  useCardReveal(ref);
 
   return (
-    <div ref={ref} className="bg-[#F5F0E8] px-6 pb-[12vh] pt-[12vh] md:px-8 md:pb-[16vh] md:pt-[16vh]">
-      <div className="mx-auto max-w-2xl text-center">
-        <span data-r className="block text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]/70" style={{ opacity: 0, transform: "translateY(16px)" }}>
-          TruthGuide
-        </span>
-
-        <h2 data-r className="mt-6 font-serif text-[1.9rem] font-medium leading-[1.12] text-[#1a1a1a] md:mt-8 md:text-[3.2rem] lg:text-[3.8rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
-          Every recommendation
-          <br />
-          can be questioned.
+    <div ref={ref} className="bg-[#F5F0E8] px-6 pb-[14vh] pt-[14vh] md:px-8 md:pb-[18vh] md:pt-[18vh]">
+      {/* Heading */}
+      <div
+        data-ei-h
+        className="mx-auto max-w-3xl text-center"
+        style={{ opacity: 0, transform: "translateY(24px)" }}
+      >
+        <h2 className="font-serif text-[2.2rem] font-medium leading-[1.08] text-[#1a1a1a] md:text-[3.6rem] lg:text-[4.2rem]">
+          Experience the Intelligence.
         </h2>
-
-        <p data-r className="mx-auto mt-6 max-w-md text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/50 md:mt-8 md:text-[1.05rem]" style={{ opacity: 0, transform: "translateY(16px)" }}>
-          Trust comes from transparency. Every recommendation should be explainable.
+        <p className="mx-auto mt-8 max-w-md font-serif text-[1.1rem] font-light leading-snug text-[#1a1a1a]/50 md:mt-10 md:text-[1.4rem]">
+          The same independent thinking.
+          <br />
+          Choose the experience that fits you best.
         </p>
+      </div>
 
-        {/* Conversational interface */}
-        <div data-r data-type-trigger className="mx-auto mt-10 max-w-lg text-left md:mt-16" style={{ opacity: 0, transform: "translateY(16px)" }}>
-          <div className="flex items-center gap-3 border-b border-[#1a1a1a]/12 pb-3">
+      {/* Two editorial cards */}
+      <div className="mx-auto mt-[10vh] grid max-w-4xl gap-8 md:mt-[14vh] md:grid-cols-2 md:gap-10">
+        {/* Card 1 — TruthGuide */}
+        <div
+          data-ei-l
+          className="group rounded-sm border border-[#1a1a1a]/8 bg-white/30 p-8 transition-shadow duration-500 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] md:p-10 lg:p-12"
+          style={{ opacity: 0, transform: "translateX(-32px)" }}
+        >
+          <span className="text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]/70">
+            TruthGuide
+          </span>
+          <h3 className="mt-6 font-serif text-[1.6rem] font-medium leading-[1.12] text-[#1a1a1a] md:text-[1.9rem]">
+            For buyers who prefer
+            <br />
+            conversations.
+          </h3>
+          <div className="mt-8 space-y-3 text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/50 md:text-[0.95rem]">
+            <p>Ask natural questions.</p>
+            <p>Compare projects.</p>
+            <p>Understand layouts.</p>
+            <p>Challenge assumptions.</p>
+          </div>
+          <p className="mt-8 font-serif text-[0.85rem] font-light italic text-[#1a1a1a]/40 md:text-[0.92rem]">
+            Every answer is backed by evidence.
+          </p>
+
+          {/* Preview */}
+          <div className="mt-10 border-l border-[#c9a96e]/25 pl-5">
+            <p className="font-serif text-[1.05rem] font-light italic text-[#1a1a1a]/55 md:text-[1.15rem]">
+              &ldquo;Should I buy DLF Arbour?&rdquo;
+            </p>
             <span
-              className="font-serif text-[0.92rem] italic text-[#1a1a1a]/50 md:text-[1.05rem]"
-              style={{ opacity: promptVisible ? 1 : 0, transition: "opacity 0.4s ease" }}
-            >
-              {guidePrompts[promptIdx]}
-            </span>
-            <span className="ml-auto h-[1.1rem] w-px bg-[#c9a96e]" style={{ animation: "caret-blink 1.1s ease-in-out infinite" }} />
+              className="mt-2 inline-block h-[1rem] w-px bg-[#c9a96e]/50"
+              style={{ animation: "caret-blink 1.1s ease-in-out infinite" }}
+            />
           </div>
 
-          {typed && (
-            <div className="mt-8">
-              <p className="text-[0.84rem] font-light leading-[1.7] text-[#1a1a1a]/65 md:text-[0.92rem]">
-                {typed}
-                {!answered && (
-                  <span className="ml-0.5 inline-block h-[0.9em] w-px bg-[#c9a96e]/60 align-middle" style={{ animation: "caret-blink 1.1s ease-in-out infinite" }} />
-                )}
-              </p>
-
-              {answered && (
-                <div className="mt-7 animate-fade-up space-y-5 border-t border-[#1a1a1a]/8 pt-6">
-                  <div>
-                    <span className="block text-[9px] font-light uppercase tracking-[0.35em] text-[#1a1a1a]/35">
-                      Sources
-                    </span>
-                    <div className="mt-2.5 flex flex-wrap gap-2">
-                      {guideSources.map((s) => (
-                        <span key={s} className="rounded-full border border-[#1a1a1a]/12 px-3 py-1 text-[0.72rem] font-light text-[#1a1a1a]/55">
-                          {s}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[9px] font-light uppercase tracking-[0.35em] text-[#1a1a1a]/35">
-                      Confidence
-                    </span>
-                    <div className="h-px flex-1 bg-[#1a1a1a]/10">
-                      <div className="h-px w-[86%] bg-[#c9a96e]" />
-                    </div>
-                    <span className="text-[0.72rem] font-light tracking-[0.1em] text-[#1a1a1a]/55">High</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          <div className="mt-10">
+            <button
+              onClick={() => open("research")}
+              className="group/btn inline-flex items-center gap-2 text-[0.82rem] font-light tracking-[0.14em] text-[#1a1a1a]/65 transition-colors duration-400 hover:text-[#1a1a1a]"
+            >
+              Challenge TruthGuide
+              <span className="inline-block transition-transform duration-300 group-hover/btn:translate-x-1">
+                &rarr;
+              </span>
+            </button>
+          </div>
         </div>
 
-        <div data-r className="mt-14" style={{ opacity: 0, transform: "translateY(12px)" }}>
-          <button onClick={() => open("research")} className="group inline-flex items-center gap-2 text-[0.85rem] font-light tracking-[0.16em] text-[#1a1a1a]/75 transition-colors duration-300 hover:text-[#1a1a1a]">
-            Challenge Our Thinking
-            <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
-          </button>
+        {/* Card 2 — Truth Intelligence */}
+        <div
+          data-ei-r
+          className="group rounded-sm border border-[#1a1a1a]/8 bg-white/30 p-8 transition-shadow duration-500 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] md:p-10 lg:p-12"
+          style={{ opacity: 0, transform: "translateX(32px)" }}
+        >
+          <span className="text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]/70">
+            Truth Intelligence
+          </span>
+          <h3 className="mt-6 font-serif text-[1.6rem] font-medium leading-[1.12] text-[#1a1a1a] md:text-[1.9rem]">
+            For buyers who prefer
+            <br />
+            independent research.
+          </h3>
+          <div className="mt-8 space-y-3 text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/50 md:text-[0.95rem]">
+            <p>Read comprehensive project intelligence.</p>
+            <p>Developer intelligence.</p>
+            <p>Compare opportunities.</p>
+            <p>Understand risks before investing.</p>
+          </div>
+          <p className="mt-8 font-serif text-[0.85rem] font-light italic text-[#1a1a1a]/40 md:text-[0.92rem]">
+            Independent. Evidence-backed. No sales pressure.
+          </p>
+
+          {/* Preview */}
+          <div className="mt-10 flex items-center gap-5">
+            <div className="flex flex-col">
+              <span className="text-[9px] font-light uppercase tracking-[0.35em] text-[#1a1a1a]/35">
+                Property Verdict
+              </span>
+              <span className="mt-2 font-serif text-[0.95rem] font-medium tracking-wide text-[#1e6b45] md:text-[1.05rem]">
+                Proceed
+              </span>
+            </div>
+            <div className="ml-auto flex flex-col items-end">
+              <span className="font-serif text-[2.2rem] font-light leading-none text-[#1a1a1a]/75 md:text-[2.6rem]">
+                97<span className="text-[1.1rem] text-[#1a1a1a]/35">%</span>
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-10">
+            <button
+              onClick={() => open("research")}
+              className="group/btn inline-flex items-center gap-2 text-[0.82rem] font-light tracking-[0.14em] text-[#1a1a1a]/65 transition-colors duration-400 hover:text-[#1a1a1a]"
+            >
+              Explore Intelligence
+              <span className="inline-block transition-transform duration-300 group-hover/btn:translate-x-1">
+                &rarr;
+              </span>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
 
-/* ════════════════════════════════════════════════════════════════
-   SECTION 9 — TRUTH INTELLIGENCE (self-service, intentionally quieter)
-   ════════════════════════════════════════════════════════════════ */
-function TruthIntelligenceSection() {
-  const ref = useRef<HTMLDivElement>(null);
-  const { open } = useJourney();
-  useReveal(ref, 0.2);
-
-  return (
-    <div ref={ref} className="bg-[#F5F0E8] px-6 pb-[10vh] pt-[10vh] md:px-8 md:pb-[16vh]">
-      <div className="mx-auto max-w-xl text-center">
-        <span data-r className="block text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]/60" style={{ opacity: 0, transform: "translateY(16px)" }}>
-          Truth Intelligence
-        </span>
-
-        <h2 data-r className="mt-6 font-serif text-[1.8rem] font-medium leading-[1.15] text-[#1a1a1a]/85 md:mt-8 md:text-[2.9rem]" style={{ opacity: 0, transform: "translateY(20px)" }}>
-          Prefer to investigate
+      {/* Bottom editorial sentence */}
+      <div
+        data-ei-f
+        className="mx-auto mt-[12vh] max-w-xl text-center md:mt-[16vh]"
+        style={{ opacity: 0, transform: "translateY(16px)" }}
+      >
+        <p className="font-serif text-[0.92rem] font-light italic leading-[1.9] text-[#1a1a1a]/40 md:text-[1.15rem]">
+          Some decisions need data.
           <br />
-          before trusting us?
-        </h2>
-
-        <p data-r className="mt-5 font-serif text-[1.35rem] font-light leading-snug text-[#1a1a1a] md:mt-7 md:text-[1.9rem]" style={{ opacity: 0, transform: "translateY(16px)" }}>
-          Good. So do we.
+          Some need dialogue.
+          <br />
+          Both deserve independent thinking.
         </p>
-
-        <p data-r className="mt-10 text-[0.85rem] font-light leading-relaxed text-[#1a1a1a]/45 md:mt-12 md:text-[0.95rem]" style={{ opacity: 0, transform: "translateY(14px)" }}>
-          Independent project intelligence.
-        </p>
-
-        <ul data-r className="mt-8 space-y-2" style={{ opacity: 0, transform: "translateY(14px)" }}>
-          {[
-            "Evidence.",
-            "Developer analysis.",
-            "Legal analysis.",
-            "Construction monitoring.",
-            "Real ROI.",
-            "Opportunity analysis.",
-          ].map((t) => (
-            <li key={t} className="font-serif text-[0.9rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.1rem]">
-              {t}
-            </li>
-          ))}
-        </ul>
-
-        <div data-r className="mt-10 md:mt-12" style={{ opacity: 0, transform: "translateY(12px)" }}>
-          <button onClick={() => open("research")} className="group inline-flex items-center gap-2 text-[0.82rem] font-light tracking-[0.16em] text-[#1a1a1a]/60 transition-colors duration-300 hover:text-[#1a1a1a] md:text-[0.85rem]">
-            Investigate Independently
-            <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -837,9 +751,7 @@ export default function ExperienceSection() {
     <section>
       <Storytelling />
       <IndependentRepresentation />
-      <IntelligenceEngine />
-      <TruthGuideSection />
-      <TruthIntelligenceSection />
+      <ExperienceIntelligence />
       <div className="h-[20vh] bg-gradient-to-b from-[#F5F0E8] to-[#0a0a0a] md:h-[30vh]" />
       <CoverageSection />
       <ClosingSection />
