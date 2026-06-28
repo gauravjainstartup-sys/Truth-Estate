@@ -130,14 +130,11 @@ export default function Hero() {
             </div>
           </div>
 
-          {/* Verdict-paper belief — captioned at the foot of the hero */}
-          <div
-            className="animate-fade-up max-w-md"
-            style={{ animationDelay: "560ms" }}
-          >
+          {/* Operating philosophy — quietly revealed at the foot of the hero */}
+          <div className="max-w-md">
             <div className="h-px w-full bg-white/15" />
-            <p className="mt-7 font-serif text-[17px] italic leading-[1.7] text-white/40">
-              &ldquo;We recommend only what we&apos;d buy ourselves.&rdquo;
+            <p className="mt-7 font-serif text-[22px] italic leading-[1.7] text-[#A7A29B]">
+              Less promises. More proof.
             </p>
           </div>
         </div>
@@ -236,14 +233,11 @@ export default function Hero() {
             </div>
           </div>
 
-          {/* Verdict-paper belief — captioned at the foot of the hero */}
-          <div className="animate-fade-up mt-auto" style={{ animationDelay: "520ms" }}>
+          {/* Operating philosophy — quietly revealed at the foot of the hero */}
+          <div className="mt-auto">
             <div className="h-px w-full bg-white/15" />
-            <p
-              className="mt-6 font-serif text-[15px] italic leading-[1.7] text-white/55"
-              style={{ textShadow: "0 1px 14px rgba(4,6,5,0.6)" }}
-            >
-              &ldquo;We recommend only what we&apos;d buy ourselves.&rdquo;
+            <p className="mt-6 font-serif text-[18px] italic leading-[1.7] text-[#A7A29B]">
+              Less promises. More proof.
             </p>
           </div>
         </div>
