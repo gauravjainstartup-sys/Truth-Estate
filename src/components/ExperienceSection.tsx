@@ -294,7 +294,7 @@ function IndependentRepresentation() {
   ];
 
   return (
-    <section ref={rootRef} className="bg-[#F5F0E8] px-6 pb-[14vh] pt-[14vh] text-[#1a1a1a] md:px-8 md:pb-[20vh] md:pt-[20vh]">
+    <section id="private-office" ref={rootRef} className="scroll-mt-20 bg-[#F5F0E8] px-6 pb-[14vh] pt-[14vh] text-[#1a1a1a] md:px-8 md:pb-[20vh] md:pt-[20vh]">
       {/* Header */}
       <div className="mx-auto max-w-2xl">
         <h2 className="font-serif text-[2.5rem] font-medium leading-[1.05] text-[#1a1a1a] md:text-[4rem] lg:text-[4.6rem]">
@@ -490,7 +490,7 @@ function ExperienceIntelligence() {
   useCardReveal(ref);
 
   return (
-    <div ref={ref} className="overflow-x-hidden bg-[#F5F0E8] px-6 pb-[14vh] pt-[14vh] md:px-8 md:pb-[18vh] md:pt-[18vh]">
+    <div id="truth-intelligence" ref={ref} className="scroll-mt-20 overflow-x-hidden bg-[#F5F0E8] px-6 pb-[14vh] pt-[14vh] md:px-8 md:pb-[18vh] md:pt-[18vh]">
       {/* Heading */}
       <div
         data-ei-h
@@ -675,8 +675,9 @@ function DecisionsSection() {
 
   return (
     <div
+      id="ownership-intelligence"
       ref={ref}
-      className="bg-[#F5F0E8] px-6 pb-[14vh] pt-[14vh] md:px-8 md:pb-[20vh] md:pt-[20vh]"
+      className="scroll-mt-20 bg-[#F5F0E8] px-6 pb-[14vh] pt-[14vh] md:px-8 md:pb-[20vh] md:pt-[20vh]"
     >
       {/* Heading */}
       <div className="mx-auto max-w-3xl">
