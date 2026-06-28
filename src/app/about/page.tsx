@@ -30,7 +30,7 @@ export default function AboutPage() {
       <main>
         <About />
       </main>
-      <Footer />
+      <Footer precededByDark={false} />
     </>
   );
 }

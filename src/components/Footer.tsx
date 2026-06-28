@@ -122,13 +122,23 @@ const linkBase =
 const linkDefault = `${linkBase} text-[#1a1a1a]/45 hover:text-[#1a1a1a] hover:translate-x-px`;
 const linkFeatured = `${linkBase} text-[#1a1a1a]/55 hover:text-[#1a1a1a] hover:translate-x-px`;
 
-export default function Footer() {
+export default function Footer({
+  precededByDark = true,
+}: {
+  /** When the page ends on a dark section, fade dark→ivory into the footer.
+   *  When it ends on ivory (legal, about, pricing…), just breathe with ivory. */
+  precededByDark?: boolean;
+}) {
   const { open } = useJourney();
   const { openConsult } = useConsultation();
 
   return (
     <>
-      <div className="h-[16vh] bg-gradient-to-b from-[#0a0a0a] to-[#F5F0E8] md:h-[20vh]" />
+      {precededByDark ? (
+        <div className="h-[16vh] bg-gradient-to-b from-[#0a0a0a] to-[#F5F0E8] md:h-[20vh]" />
+      ) : (
+        <div className="h-[12vh] bg-[#F5F0E8] md:h-[16vh]" />
+      )}
 
       <footer className="bg-[#F5F0E8] text-[#1a1a1a]">
         <div className="mx-auto max-w-7xl px-6 md:px-10">

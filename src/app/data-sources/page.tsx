@@ -30,7 +30,7 @@ export default function DataSourcesPage() {
       <main>
         <DataSources />
       </main>
-      <Footer />
+      <Footer precededByDark={false} />
     </>
   );
 }

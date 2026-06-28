@@ -28,7 +28,7 @@ export default function MethodologyPage() {
       <main>
         <Methodology />
       </main>
-      <Footer />
+      <Footer precededByDark={false} />
     </>
   );
 }

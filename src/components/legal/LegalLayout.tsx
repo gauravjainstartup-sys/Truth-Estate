@@ -298,9 +298,6 @@ export default function LegalLayout({
         </div>
       </div>
 
-      {/* Ivory → Dark transition for footer */}
-      <div className="h-[8vh] bg-gradient-to-b from-[#F5F0E8] to-[#0a0a0a]" />
-
       {/* Back to top */}
       <button
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}

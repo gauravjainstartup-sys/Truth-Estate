@@ -27,7 +27,7 @@ export default function DisclaimerPage() {
       <main>
         <DisclaimerContent />
       </main>
-      <Footer />
+      <Footer precededByDark={false} />
     </>
   );
 }

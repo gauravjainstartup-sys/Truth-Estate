@@ -30,6 +30,8 @@ type View =
   | { type: "location"; name: string }
   | { type: "search-result"; query: string; result: ResearchResult };
 
+const basePath = "/Truth-Estate";
+
 const INVESTMENT_THEMES = [
   "Luxury",
   "Rental",
@@ -109,9 +111,13 @@ export default function IntelligenceWorkspace() {
       {/* ── Navigation ── */}
       <nav className="flex shrink-0 items-center justify-between border-b border-[#1a1a1a]/[0.06] px-4 py-4 md:px-10">
         <div className="flex items-center gap-8">
-          <button onClick={() => navigate({ type: "home" })}>
-            <Logo className="h-7 w-auto md:h-12" color="#1a1a1a" />
-          </button>
+          <a
+            href={basePath}
+            aria-label="Truth Estate — Home"
+            className="transition-opacity duration-300 hover:opacity-70"
+          >
+            <Logo className="h-7 w-auto md:h-9" color="#1a1a1a" />
+          </a>
           <div className="hidden items-center gap-1 lg:flex">
             {(
               [

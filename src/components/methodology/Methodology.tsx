@@ -457,9 +457,6 @@ export default function Methodology() {
         </article>
       </div>
 
-      {/* Transition into the shared footer */}
-      <div className="h-[14vh] bg-gradient-to-b from-[#F5F0E8] to-[#0a0a0a] md:h-[18vh]" />
-
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
     </div>
   );

@@ -27,7 +27,7 @@ export default function PrivacyPage() {
       <main>
         <PrivacyContent />
       </main>
-      <Footer />
+      <Footer precededByDark={false} />
     </>
   );
 }
