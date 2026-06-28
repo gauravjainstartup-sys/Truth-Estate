@@ -1,100 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import Logo from "./Logo";
 import { useJourney } from "./journey/JourneyProvider";
 import { PRIMARY_CTA } from "@/lib/journey";
 
 const basePath = "/Truth-Estate";
 
-const NAV_PILLARS = [
-  { label: "Truth Intelligence", target: "#truth-intelligence" },
-  { label: "Private Office", target: "#private-office" },
-  { label: "Ownership Intelligence", target: "#ownership-intelligence" },
-  { label: "Methodology", target: `${basePath}/methodology` },
-] as const;
-
 export default function Hero() {
   const { open } = useJourney();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const handleNav = useCallback((target: string) => {
-    if (target.startsWith("#")) {
-      const el = document.getElementById(target.slice(1));
-      el?.scrollIntoView({ behavior: "smooth", block: "start" });
-    } else {
-      window.location.href = target;
-    }
-  }, []);
-
   return (
     <section className="relative min-h-svh w-full overflow-hidden">
-      {/* ─── STICKY HEADER ─── */}
-      <header
-        className={`fixed left-0 right-0 top-0 z-50 transition-all duration-700 ${
-          scrolled
-            ? "border-b border-[#1a1a1a]/6 bg-[#F5F0E8]/90 backdrop-blur-md"
-            : "bg-transparent"
-        }`}
-      >
-        <div className="mx-auto flex max-w-[1400px] items-center justify-between px-7 py-5 md:px-12 lg:px-20">
-          <a href={basePath} className="shrink-0">
-            <Logo
-              className={`h-9 w-auto transition-opacity duration-500 lg:h-10 ${scrolled ? "opacity-85" : "opacity-75"}`}
-              color={scrolled ? "#1a1a1a" : "white"}
-            />
-          </a>
-
-          {/* Desktop nav — centered pillars */}
-          <nav className="hidden items-center gap-10 lg:flex xl:gap-12">
-            {NAV_PILLARS.map(({ label, target }) => (
-              <button
-                key={label}
-                onClick={() => handleNav(target)}
-                className={`group relative text-[14px] font-medium tracking-[0.14em] transition-colors duration-500 ${
-                  scrolled
-                    ? "text-[#1a1a1a]/40 hover:text-[#1a1a1a]/80"
-                    : "text-white/40 hover:text-[#F5F0E8]"
-                }`}
-              >
-                {label}
-                <span className="absolute -bottom-1.5 left-0 h-px w-0 bg-[#c9a96e] transition-all duration-500 group-hover:w-full" />
-              </button>
-            ))}
-          </nav>
-
-          {/* Desktop CTA */}
-          <button
-            onClick={() => open()}
-            className={`hidden rounded-sm px-7 py-3 text-[12px] font-medium tracking-[0.08em] transition-all duration-500 lg:block ${
-              scrolled
-                ? "bg-[#1e6b45] text-white shadow-sm hover:bg-[#238c55]"
-                : "bg-white/10 text-white/70 backdrop-blur-sm hover:bg-white/15 hover:text-white"
-            }`}
-          >
-            {PRIMARY_CTA}
-          </button>
-
-          {/* Mobile hamburger */}
-          <button
-            onClick={() => setMenuOpen(true)}
-            className="flex flex-col gap-[6px] p-1 lg:hidden"
-            aria-label="Open menu"
-            aria-expanded={menuOpen}
-          >
-            <span className={`block h-[1.5px] w-6 transition-colors duration-500 ${scrolled ? "bg-[#1a1a1a]/40" : "bg-white/40"}`} />
-            <span className={`block h-[1.5px] w-6 transition-colors duration-500 ${scrolled ? "bg-[#1a1a1a]/40" : "bg-white/40"}`} />
-          </button>
-        </div>
-      </header>
-
       {/* ─── DESKTOP ─── */}
       <div className="hidden h-svh md:block">
         <img
@@ -149,7 +66,28 @@ export default function Hero() {
         />
 
         {/* Content */}
-        <div className="relative z-10 flex h-full flex-col justify-between px-20 py-14 pt-32 lg:px-28 lg:py-20 lg:pt-36">
+        <div className="relative z-10 flex h-full flex-col justify-between py-14 pl-20 lg:py-20 lg:pl-28">
+          <nav className="animate-fade-up flex items-center pr-12 lg:pr-20">
+            <Logo className="h-10 w-auto opacity-75 lg:h-[3rem]" />
+            <div className="ml-auto hidden items-center gap-20 text-[10px] font-light tracking-[0.18em] text-white/50 lg:flex">
+              <a href={`${basePath}/intelligence`} className="transition-colors duration-500 hover:text-white/80">
+                Projects
+              </a>
+              <a href={`${basePath}/intelligence`} className="transition-colors duration-500 hover:text-white/80">
+                Compare
+              </a>
+              <button
+                onClick={() => open("research")}
+                className="tracking-[0.18em] transition-colors duration-500 hover:text-white/80"
+              >
+                TruthGuide
+              </button>
+              <a href={`${basePath}/intelligence`} className="transition-colors duration-500 hover:text-white/80">
+                Intelligence
+              </a>
+            </div>
+          </nav>
+
           <div className="flex max-w-xl flex-col">
             <h1
               className="animate-fade-up font-serif text-[3.2rem] font-bold leading-[1.1] text-white lg:text-[3.9rem]"
@@ -238,8 +176,21 @@ export default function Hero() {
         />
 
         {/* Content */}
-        <div className="relative z-10 flex h-full flex-col px-7 pt-24 pb-8">
-          <div className="mt-[5vh] flex flex-col">
+        <div className="relative z-10 flex h-full flex-col px-7 pt-10 pb-8">
+          <nav className="animate-fade-up flex items-center justify-between">
+            <Logo className="h-9 w-auto opacity-85" />
+            <button
+              onClick={() => setMenuOpen(true)}
+              className="flex flex-col gap-[6px] p-1"
+              aria-label="Open menu"
+              aria-expanded={menuOpen}
+            >
+              <span className="block h-[1.5px] w-6 bg-white/40" />
+              <span className="block h-[1.5px] w-6 bg-white/40" />
+            </button>
+          </nav>
+
+          <div className="mt-[9vh] flex flex-col">
             <h1
               className="animate-fade-up font-serif text-[2.3rem] font-bold leading-[1.16] text-white"
               style={{ animationDelay: "100ms" }}
@@ -295,7 +246,7 @@ export default function Hero() {
       {/* ─── MOBILE MENU OVERLAY ─── */}
       {menuOpen && (
         <div
-          className="fixed inset-0 z-[60] flex flex-col bg-[#0a0a0a]"
+          className="fixed inset-0 z-50 flex flex-col bg-[#0a0a0a] md:hidden"
           role="dialog"
           aria-modal="true"
           aria-label="Menu"
@@ -312,21 +263,33 @@ export default function Hero() {
           </div>
 
           <nav className="flex flex-1 flex-col justify-center gap-8 px-7">
-            {NAV_PILLARS.map(({ label, target }) => (
-              <button
-                key={label}
-                onClick={() => {
-                  setMenuOpen(false);
-                  handleNav(target);
-                }}
-                className="group text-left font-serif text-[2rem] font-light text-white/60 transition-colors hover:text-[#F5F0E8]"
-              >
-                <span className="relative">
-                  {label}
-                  <span className="absolute -bottom-1 left-0 h-px w-0 bg-[#c9a96e]/50 transition-all duration-500 group-hover:w-full" />
-                </span>
-              </button>
-            ))}
+            <a
+              href={`${basePath}/intelligence`}
+              className="font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white"
+            >
+              Projects
+            </a>
+            <a
+              href={`${basePath}/intelligence`}
+              className="font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white"
+            >
+              Compare
+            </a>
+            <a
+              href={`${basePath}/intelligence`}
+              className="font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white"
+            >
+              Intelligence
+            </a>
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                open("research");
+              }}
+              className="text-left font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white"
+            >
+              TruthGuide
+            </button>
           </nav>
 
           <div className="px-7 pb-12">
