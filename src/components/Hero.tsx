@@ -104,9 +104,9 @@ export default function Hero() {
               className="animate-fade-up text-[16px] leading-[1.8] text-white/45"
               style={{ animationDelay: "300ms" }}
             >
-              Independent representation for
+              The Independent Buyer&apos;s Office
               <br />
-              life&apos;s biggest real estate decisions.
+              for High-Value Real Estate Decisions.
             </p>
 
             <div style={{ height: "44px" }} />
@@ -209,9 +209,9 @@ export default function Hero() {
               className="animate-fade-up text-[15px] leading-[1.85] text-white/60"
               style={{ animationDelay: "250ms", textShadow: "0 1px 14px rgba(4,6,5,0.6)" }}
             >
-              Independent representation for
+              The Independent Buyer&apos;s Office
               <br />
-              life&apos;s biggest real estate decisions.
+              for High-Value Real Estate Decisions.
             </p>
 
             <div style={{ height: "34px" }} />
