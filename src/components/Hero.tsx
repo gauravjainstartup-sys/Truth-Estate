@@ -69,21 +69,18 @@ export default function Hero() {
         <div className="relative z-10 flex h-full flex-col justify-between py-14 pl-20 lg:py-20 lg:pl-28">
           <nav className="animate-fade-up flex items-center pr-12 lg:pr-20">
             <Logo className="h-10 w-auto opacity-75 lg:h-[3rem]" />
-            <div className="ml-auto hidden items-center gap-20 text-[10px] font-light tracking-[0.18em] text-white/50 lg:flex">
-              <a href={`${basePath}/intelligence`} className="transition-colors duration-500 hover:text-white/80">
-                Projects
+            <div className="ml-auto hidden items-center gap-12 text-[11px] font-medium tracking-[0.14em] text-white/55 lg:flex xl:gap-14">
+              <a href={`${basePath}/intelligence`} className="transition-colors duration-500 hover:text-white/90">
+                Truth Intelligence
               </a>
-              <a href={`${basePath}/intelligence`} className="transition-colors duration-500 hover:text-white/80">
-                Compare
+              <a href={`${basePath}/pricing`} className="transition-colors duration-500 hover:text-white/90">
+                Private Office
               </a>
-              <button
-                onClick={() => open("research")}
-                className="tracking-[0.18em] transition-colors duration-500 hover:text-white/80"
-              >
-                TruthGuide
-              </button>
-              <a href={`${basePath}/intelligence`} className="transition-colors duration-500 hover:text-white/80">
-                Intelligence
+              <a href={`${basePath}/intelligence`} className="transition-colors duration-500 hover:text-white/90">
+                Ownership Intelligence
+              </a>
+              <a href={`${basePath}/methodology`} className="transition-colors duration-500 hover:text-white/90">
+                Methodology
               </a>
             </div>
           </nav>
@@ -267,29 +264,26 @@ export default function Hero() {
               href={`${basePath}/intelligence`}
               className="font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white"
             >
-              Projects
+              Truth Intelligence
+            </a>
+            <a
+              href={`${basePath}/pricing`}
+              className="font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white"
+            >
+              Private Office
             </a>
             <a
               href={`${basePath}/intelligence`}
               className="font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white"
             >
-              Compare
+              Ownership Intelligence
             </a>
             <a
-              href={`${basePath}/intelligence`}
+              href={`${basePath}/methodology`}
               className="font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white"
             >
-              Intelligence
+              Methodology
             </a>
-            <button
-              onClick={() => {
-                setMenuOpen(false);
-                open("research");
-              }}
-              className="text-left font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white"
-            >
-              TruthGuide
-            </button>
           </nav>
 
           <div className="px-7 pb-12">
