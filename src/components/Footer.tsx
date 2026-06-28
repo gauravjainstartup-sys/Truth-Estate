@@ -7,11 +7,9 @@ import { useConsultation } from "./consultation/ConsultationProvider";
 const basePath = "/Truth-Estate";
 
 /* ── Column definitions ── */
-// Links whose dedicated pages do not exist yet point at the live destination
-// where that content already lives (the /intelligence workspace, or a section
-// on /methodology) so nothing 404s. Repoint to dedicated routes as they ship.
 const columns: {
   label: string;
+  featured?: boolean;
   links: { t: string; h: string; action?: "journey" | "consult" | "research" }[];
 }[] = [
   {
@@ -26,11 +24,12 @@ const columns: {
   },
   {
     label: "Research",
+    featured: true,
     links: [
-      { t: "Our Methodology", h: "/methodology" },
+      { t: "Our Research Methodology", h: "/methodology" },
+      { t: "Data Sources", h: "/data-sources" },
       { t: "Truth Score", h: "/methodology#truth-score" },
       { t: "Match Score", h: "/methodology#match-score" },
-      { t: "Data Sources", h: "/data-sources" },
       { t: "Research Principles", h: "/methodology#principles" },
       { t: "Editorial Standards", h: "/methodology#editorial" },
       { t: "Coverage", h: "/methodology#coverage" },
@@ -48,24 +47,20 @@ const columns: {
     ],
   },
   {
-    label: "Markets",
+    label: "Company",
     links: [
-      { t: "Golf Course Road", h: "/intelligence" },
-      { t: "Golf Course Extension Road", h: "/intelligence" },
-      { t: "SPR", h: "/intelligence" },
-      { t: "Dwarka Expressway", h: "/intelligence" },
-      { t: "New Gurgaon", h: "/intelligence" },
-      { t: "Sohna", h: "/intelligence" },
+      { t: "About Truth Estate", h: "/about" },
+      { t: "Our Mission", h: "/about" },
+      { t: "FAQs", h: "/methodology#faq" },
+      { t: "Contact", h: "/contact" },
     ],
   },
   {
-    label: "Company",
+    label: "Legal",
     links: [
-      { t: "About", h: "/about" },
-      { t: "FAQs", h: "/methodology#faq" },
       { t: "Privacy Policy", h: "/privacy" },
-      { t: "Terms", h: "/terms" },
-      { t: "Contact", h: "/contact" },
+      { t: "Terms of Use", h: "/terms" },
+      { t: "Disclaimer", h: "/disclaimer" },
     ],
   },
 ];
@@ -75,7 +70,7 @@ const orgSchema = {
   "@type": "Organization",
   name: "Truth Estate",
   description:
-    "Independent real estate representation for premium property decisions in Gurugram.",
+    "Independent real estate intelligence for premium property decisions in Gurugram.",
   areaServed: [
     "Golf Course Road, Gurugram",
     "Golf Course Extension Road, Gurugram",
@@ -122,8 +117,10 @@ function YouTubeIcon() {
   );
 }
 
-const linkClass =
-  "text-[0.85rem] font-light leading-snug text-[#1a1a1a]/55 transition-colors duration-300 hover:text-[#1a1a1a]";
+const linkBase =
+  "text-left text-[0.82rem] font-light leading-snug transition-all duration-300";
+const linkDefault = `${linkBase} text-[#1a1a1a]/45 hover:text-[#1a1a1a] hover:translate-x-px`;
+const linkFeatured = `${linkBase} text-[#1a1a1a]/55 hover:text-[#1a1a1a] hover:translate-x-px`;
 
 export default function Footer() {
   const { open } = useJourney();
@@ -135,103 +132,115 @@ export default function Footer() {
 
       <footer className="bg-[#F5F0E8] text-[#1a1a1a]">
         <div className="mx-auto max-w-7xl px-6 md:px-10">
-          {/* ── Top section: Brand + Columns ── */}
-          <div className="grid grid-cols-1 gap-x-8 gap-y-14 pt-[7vh] md:grid-cols-12 md:gap-x-6 md:pt-[9vh]">
+          {/* ── Main grid ── */}
+          <div className="grid grid-cols-1 gap-x-8 gap-y-16 pt-[8vh] md:grid-cols-12 md:gap-x-6 md:pt-[10vh]">
             {/* ── Brand column ── */}
             <div className="md:col-span-4 lg:col-span-3">
               <Logo color="#1a1a1a" className="h-11 w-auto md:h-[3.2rem]" />
-              <p className="mt-7 max-w-[260px] font-serif text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/45 md:text-[1rem]">
-                Independent representation for
+
+              <p className="mt-8 font-serif text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/50 md:text-[1rem]">
+                Independent intelligence for
                 <br />
                 life&apos;s biggest real estate decisions.
               </p>
 
-              {/* Social icons */}
-              <div className="mt-8 flex items-center gap-5">
+              <p className="mt-6 max-w-[280px] text-[0.82rem] font-light leading-[1.8] text-[#1a1a1a]/35">
+                Truth Estate combines research, technology and independent
+                judgement to help buyers make confident property decisions.
+              </p>
+
+              {/* Social */}
+              <div className="mt-10 flex items-center gap-5">
                 <a
                   href="#"
                   aria-label="LinkedIn"
-                  className="text-[#1a1a1a]/35 transition-colors duration-300 hover:text-[#1a1a1a]"
+                  className="text-[#1a1a1a]/30 transition-colors duration-300 hover:text-[#1a1a1a]/70"
                 >
                   <LinkedInIcon />
                 </a>
                 <a
                   href="#"
                   aria-label="X (Twitter)"
-                  className="text-[#1a1a1a]/35 transition-colors duration-300 hover:text-[#1a1a1a]"
+                  className="text-[#1a1a1a]/30 transition-colors duration-300 hover:text-[#1a1a1a]/70"
                 >
                   <XIcon />
                 </a>
-                <a
-                  href="#"
-                  aria-label="YouTube"
-                  className="text-[#1a1a1a]/35 transition-colors duration-300 hover:text-[#1a1a1a]"
+                <span
+                  className="flex items-center gap-2 text-[#1a1a1a]/15"
+                  aria-label="YouTube — Coming Soon"
                 >
                   <YouTubeIcon />
-                </a>
+                  <span className="text-[10px] font-light tracking-[0.1em] text-[#1a1a1a]/25">
+                    Coming Soon
+                  </span>
+                </span>
               </div>
             </div>
 
             {/* ── Nav columns ── */}
             <div className="md:col-span-8 lg:col-span-9">
-              <div className="grid grid-cols-2 gap-x-8 gap-y-12 sm:grid-cols-3 lg:grid-cols-5">
-                {columns.map((col) => (
-                  <div key={col.label}>
-                    <h3 className="text-[10px] font-medium uppercase tracking-[0.25em] text-[#c9a96e]">
-                      {col.label}
-                    </h3>
-                    <ul className="mt-5 space-y-3">
-                      {col.links.map((l) => (
-                        <li key={l.t}>
-                          {l.action ? (
-                            <button
-                              onClick={() => {
-                                if (l.action === "consult") openConsult({ sourceKind: "homepage" });
-                                else if (l.action === "research") open("research");
-                                else open();
-                              }}
-                              className={linkClass}
-                            >
-                              {l.t}
-                            </button>
-                          ) : (
-                            <a
-                              href={
-                                l.h.startsWith("/")
-                                  ? `${basePath}${l.h}`
-                                  : l.h
-                              }
-                              className={linkClass}
-                            >
-                              {l.t}
-                            </a>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
+              <div className="grid grid-cols-2 gap-x-6 gap-y-14 sm:grid-cols-3 lg:grid-cols-5 lg:gap-x-8">
+                {columns.map((col) => {
+                  const cls = col.featured ? linkFeatured : linkDefault;
+                  return (
+                    <div key={col.label}>
+                      <h3 className="text-[10px] font-medium uppercase tracking-[0.25em] text-[#c9a96e]">
+                        {col.label}
+                      </h3>
+                      {col.featured && (
+                        <div className="mt-2.5 h-[1.5px] w-5 bg-[#c9a96e]/40" />
+                      )}
+                      <ul
+                        className={`${col.featured ? "mt-4" : "mt-6"} space-y-3.5`}
+                      >
+                        {col.links.map((l) => (
+                          <li key={l.t}>
+                            {l.action ? (
+                              <button
+                                onClick={() => {
+                                  if (l.action === "consult")
+                                    openConsult({ sourceKind: "homepage" });
+                                  else if (l.action === "research")
+                                    open("research");
+                                  else open();
+                                }}
+                                className={cls}
+                              >
+                                {l.t}
+                              </button>
+                            ) : (
+                              <a
+                                href={
+                                  l.h.startsWith("/")
+                                    ? `${basePath}${l.h}`
+                                    : l.h
+                                }
+                                className={`inline-block ${cls}`}
+                              >
+                                {l.t}
+                              </a>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
 
-          {/* ── Thin divider ── */}
-          <div className="mt-[12vh] border-t border-[#1a1a1a]/8 md:mt-[14vh]" />
+          {/* ── Divider ── */}
+          <div className="mt-[14vh] border-t border-[#1a1a1a]/8 md:mt-[16vh]" />
 
           {/* ── Bottom bar ── */}
-          <div className="flex flex-col items-center gap-5 pb-[6vh] pt-8 md:flex-row md:justify-between md:gap-4">
-            <p className="text-[0.74rem] font-light leading-relaxed text-[#1a1a1a]/35">
+          <div className="flex flex-col items-center gap-4 pb-[6vh] pt-8 md:flex-row md:justify-between">
+            <p className="text-[0.72rem] font-light tracking-[0.04em] text-[#1a1a1a]/30">
+              &copy; Truth Estate
+            </p>
+            <p className="text-[0.72rem] font-light tracking-[0.04em] text-[#1a1a1a]/30">
               Designed in India. Built for independent property decisions.
             </p>
-            <div className="flex flex-col items-center gap-3 md:flex-row md:gap-6">
-              <p className="text-[0.74rem] font-light tracking-[0.04em] text-[#1a1a1a]/35">
-                Research updates continuously.
-              </p>
-              <span className="hidden h-3 w-px bg-[#1a1a1a]/15 md:block" />
-              <p className="text-[0.74rem] font-light tracking-[0.04em] text-[#1a1a1a]/35">
-                &copy; Truth Estate
-              </p>
-            </div>
           </div>
         </div>
 
