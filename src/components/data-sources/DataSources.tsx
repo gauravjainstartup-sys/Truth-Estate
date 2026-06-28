@@ -641,9 +641,6 @@ export default function DataSources() {
           </section>
         </article>
       </div>
-
-      {/* ── Transition gradient to footer ── */}
-      <div className="h-[14vh] bg-gradient-to-b from-[#F5F0E8] to-[#0a0a0a] md:h-[18vh]" />
     </div>
   );
 }

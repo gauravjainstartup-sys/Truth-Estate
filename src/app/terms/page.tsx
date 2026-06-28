@@ -27,7 +27,7 @@ export default function TermsPage() {
       <main>
         <TermsContent />
       </main>
-      <Footer />
+      <Footer precededByDark={false} />
     </>
   );
 }

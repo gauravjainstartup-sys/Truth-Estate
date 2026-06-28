@@ -29,7 +29,7 @@ export default function PricingPage() {
       <main>
         <Pricing />
       </main>
-      <Footer />
+      <Footer precededByDark={false} />
     </>
   );
 }

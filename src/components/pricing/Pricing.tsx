@@ -563,9 +563,6 @@ export default function Pricing() {
           </div>
         </section>
       </div>
-
-      {/* Ivory → Dark for footer */}
-      <div className="h-[8vh] bg-gradient-to-b from-[#F5F0E8] to-[#0a0a0a]" />
     </div>
   );
 }

@@ -445,9 +445,6 @@ export default function About() {
           </div>
         </section>
       </div>
-
-      {/* ─── Ivory → Dark transition to footer ─── */}
-      <div className="h-[8vh] bg-gradient-to-b from-[#F5F0E8] to-[#0a0a0a]" />
     </div>
   );
 }
