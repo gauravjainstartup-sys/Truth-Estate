@@ -4,10 +4,11 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-/* 31 chaos items — full-screen absolute positions (% of viewport).
-   Sizes vary widely (0.72rem → 2.0rem) so loud "human noise" dominates and
-   fine print recedes. The bottom-centre band (top > 82, left 25–75) is kept
-   clear for the chaos label so they never overlap. */
+/* Curated chaos — only the strongest signals of a fragmented purchase.
+   Fewer elements than a word cloud: visitors should FEEL the fragmentation,
+   not read every label. Sizes vary widely (0.76rem → 2.0rem) so the loud
+   human noise dominates and paperwork recedes. The bottom-centre band
+   (top > 82, left 25–75) is kept clear for the chaos label. */
 const CHAOS_ITEMS: {
   text: string;
   left: number;
@@ -17,42 +18,27 @@ const CHAOS_ITEMS: {
   rot: number;
 }[] = [
   /* far left */
-  { text: "Developer",            left:  7, top: 14, fs: "1.35rem", op: 0.42, rot: -1.2 },
-  { text: "WhatsApp",             left: 10, top: 32, fs: "1.75rem", op: 0.48, rot:  0.8 },
-  { text: "Lawyer",               left:  5, top: 53, fs: "0.95rem", op: 0.30, rot: -2.0 },
-  { text: "Brochures",            left:  9, top: 71, fs: "0.76rem", op: 0.26, rot:  1.4 },
-  { text: "Floor Plans",          left: 13, top: 88, fs: "0.72rem", op: 0.24, rot: -0.8 },
+  { text: "Developer",       left:  7, top: 18, fs: "1.5rem",  op: 0.44, rot: -1.2 },
+  { text: "Lawyer",          left:  6, top: 58, fs: "1.0rem",  op: 0.32, rot: -2.0 },
   /* left */
-  { text: "CA",                   left: 23, top:  9, fs: "0.90rem", op: 0.34, rot:  1.8 },
-  { text: "Emails",               left: 25, top: 25, fs: "1.45rem", op: 0.44, rot: -1.6 },
-  { text: "Bank",                 left: 19, top: 45, fs: "1.05rem", op: 0.36, rot:  0.6 },
-  { text: "Agreements",           left: 24, top: 63, fs: "0.80rem", op: 0.26, rot: -2.2 },
-  { text: "Loan Papers",          left: 16, top: 80, fs: "0.74rem", op: 0.24, rot:  1.0 },
+  { text: "WhatsApp",        left: 19, top: 30, fs: "1.85rem", op: 0.50, rot:  0.8 },
+  { text: "Bank",            left: 22, top: 62, fs: "1.1rem",  op: 0.36, rot:  0.6 },
+  { text: "Agreements",      left: 16, top: 84, fs: "0.78rem", op: 0.26, rot:  1.2 },
   /* centre-left */
-  { text: "Architect",            left: 35, top:  6, fs: "0.90rem", op: 0.32, rot: -0.9 },
-  { text: "Calls",                left: 32, top: 20, fs: "2.0rem",  op: 0.50, rot:  1.6 },
-  { text: "Parents",              left: 38, top: 39, fs: "1.40rem", op: 0.42, rot: -1.4 },
-  { text: "Payment Receipts",     left: 30, top: 56, fs: "0.74rem", op: 0.24, rot:  1.8 },
-  { text: "Legal Documents",      left: 34, top: 73, fs: "0.80rem", op: 0.26, rot: -0.5 },
+  { text: "CA",              left: 34, top: 14, fs: "0.9rem",  op: 0.32, rot:  1.8 },
+  { text: "Calls",           left: 32, top: 40, fs: "2.0rem",  op: 0.50, rot:  1.4 },
+  { text: "Documents",       left: 30, top: 68, fs: "0.98rem", op: 0.34, rot: -0.8 },
   /* centre */
-  { text: "Broker",               left: 48, top: 11, fs: "1.70rem", op: 0.46, rot: -1.8 },
-  { text: "WhatsApp",             left: 47, top: 23, fs: "0.82rem", op: 0.28, rot:  0.4 },
-  { text: "Spouse",               left: 44, top: 33, fs: "1.30rem", op: 0.40, rot:  2.4 },
-  { text: "Demand Letters",       left: 51, top: 47, fs: "0.72rem", op: 0.24, rot: -1.1 },
-  { text: "Builder Updates",      left: 46, top: 61, fs: "0.82rem", op: 0.28, rot:  1.6 },
-  { text: "Emails",               left: 49, top: 73, fs: "0.88rem", op: 0.30, rot: -2.0 },
+  { text: "Broker",          left: 47, top: 22, fs: "1.6rem",  op: 0.46, rot: -1.8 },
+  { text: "Parents",         left: 46, top: 50, fs: "1.3rem",  op: 0.42, rot:  2.0 },
   /* centre-right */
-  { text: "Relationship Manager", left: 60, top:  8, fs: "0.85rem", op: 0.30, rot:  1.3 },
-  { text: "Calls",                left: 64, top: 27, fs: "1.20rem", op: 0.40, rot: -0.6 },
-  { text: "Legal Documents",      left: 58, top: 44, fs: "0.76rem", op: 0.24, rot:  2.0 },
-  { text: "Ownership Updates",    left: 65, top: 59, fs: "0.80rem", op: 0.28, rot: -1.4 },
-  { text: "Investment Advice",    left: 61, top: 76, fs: "0.80rem", op: 0.26, rot:  0.7 },
+  { text: "Site Visits",     left: 62, top: 16, fs: "1.1rem",  op: 0.36, rot:  1.1 },
+  { text: "Emails",          left: 60, top: 42, fs: "1.45rem", op: 0.44, rot: -1.6 },
+  { text: "Payments",        left: 64, top: 70, fs: "0.98rem", op: 0.34, rot:  0.7 },
   /* right */
-  { text: "NRI Compliance",       left: 74, top: 16, fs: "0.78rem", op: 0.28, rot: -1.8 },
-  { text: "Site Visits",          left: 79, top: 34, fs: "1.15rem", op: 0.38, rot:  1.1 },
-  { text: "Broker",               left: 83, top: 54, fs: "1.50rem", op: 0.44, rot: -0.5 },
-  { text: "Site Visits",          left: 76, top: 72, fs: "0.85rem", op: 0.28, rot:  1.2 },
-  { text: "Builder Updates",      left: 80, top: 87, fs: "0.74rem", op: 0.24, rot: -1.0 },
+  { text: "Spouse",          left: 76, top: 26, fs: "1.2rem",  op: 0.40, rot: -0.6 },
+  { text: "Builder Updates", left: 79, top: 52, fs: "0.82rem", op: 0.28, rot:  1.6 },
+  { text: "Demand Letters",  left: 77, top: 82, fs: "0.76rem", op: 0.26, rot: -1.0 },
 ];
 
 const PILLARS = [
@@ -74,6 +60,7 @@ export default function ChaosToOrderSection() {
 
     const screen1   = pin.querySelector<HTMLElement>("[data-screen1]");
     const words     = pin.querySelectorAll<HTMLElement>("[data-word]");
+    const inners    = pin.querySelectorAll<HTMLElement>("[data-word-inner]");
     const chaosLbl  = pin.querySelector<HTMLElement>("[data-chaos-lbl]");
     const goldLine  = pin.querySelector<HTMLElement>("[data-gold-line]");
     const poTitle   = pin.querySelector<HTMLElement>("[data-po-title]");
@@ -82,24 +69,68 @@ export default function ChaosToOrderSection() {
 
     if (!screen1 || !goldLine || !poTitle || !finalEl) return;
 
-    /* Pre-compute convergence deltas using container dimensions */
+    /* Convergence deltas — every word has a destination: the exact centre,
+       where the Private Office will emerge. Nothing drifts off-screen. */
     const W = pin.offsetWidth  || window.innerWidth;
     const H = pin.offsetHeight || window.innerHeight;
     CHAOS_ITEMS.forEach((item, i) => {
       const word = words[i];
       if (!word) return;
-      const dx = ((50 - item.left) / 100) * W;
-      const dy = ((50 - item.top)  / 100) * H;
-      word.dataset.dx = String(Math.round(dx));
-      word.dataset.dy = String(Math.round(dy));
+      word.dataset.dx = String(Math.round(((50 - item.left) / 100) * W));
+      word.dataset.dy = String(Math.round(((50 - item.top)  / 100) * H));
     });
 
-    gsap.set(goldLine, { scaleX: 0, opacity: 0, transformOrigin: "center center" });
-    gsap.set(poTitle,  { opacity: 0, y: 8 });
-    pillarsEls.forEach((el) => gsap.set(el, { opacity: 0, y: 10 }));
-    gsap.set(finalEl,  { opacity: 0, y: 16 });
+    /* ── Initial states ── */
     gsap.set(words,    { opacity: 0 });
     gsap.set(chaosLbl, { opacity: 0 });
+    gsap.set(goldLine, { scaleX: 0, opacity: 0, transformOrigin: "center center" });
+    gsap.set(poTitle,  { opacity: 0, y: 6 });
+    pillarsEls.forEach((el) => gsap.set(el, { opacity: 0, y: 8 }));
+    gsap.set(finalEl,  { opacity: 0, y: 12 });
+
+    /* ── The chaos is ALIVE — words behave like slow molecules.
+       Each inner element drifts on its own infinite, restrained loop so
+       paths cross and opacities breathe. Frozen during the silence. ── */
+    const ambient: gsap.core.Tween[] = [];
+    inners.forEach((inner, i) => {
+      const item = CHAOS_ITEMS[i];
+      gsap.set(inner, { rotation: item?.rot ?? 0, opacity: 1 });
+      const dirX = i % 2 === 0 ? 1 : -1;
+      const dirY = i % 3 === 0 ? 1 : -1;
+      const ax = 9 + (i % 4) * 4;          // 9–21px
+      const ay = 7 + (i % 3) * 5;          // 7–17px
+      const dur = 7.5 + (i % 5) * 1.1;     // 7.5–11.9s
+      ambient.push(
+        gsap.to(inner, {
+          x: dirX * ax,
+          y: dirY * ay,
+          rotation: (item?.rot ?? 0) + (i % 2 ? 1.4 : -1.4),
+          duration: dur,
+          repeat: -1,
+          yoyo: true,
+          ease: "sine.inOut",
+          delay: (i % 5) * 0.45,
+        }),
+      );
+      // Roughly half the words also breathe in opacity
+      if (i % 2 === 0) {
+        ambient.push(
+          gsap.to(inner, {
+            opacity: 0.6,
+            duration: dur * 0.75,
+            repeat: -1,
+            yoyo: true,
+            ease: "sine.inOut",
+            delay: (i % 3) * 0.5,
+          }),
+        );
+      }
+    });
+
+    /* silenceProgress is filled in once the timeline is built; the freeze
+       holds from the silence onward (words are leaving after that anyway). */
+    let silenceProgress = 1;
+    let frozen = false;
 
     const tl = gsap.timeline({
       scrollTrigger: {
@@ -107,122 +138,130 @@ export default function ChaosToOrderSection() {
         start: "top top",
         end: "+=480%",
         pin: true,
-        scrub: 0.3,
+        scrub: 0.4,
         anticipatePin: 1,
+        onUpdate: (self) => {
+          if (self.progress >= silenceProgress && !frozen) {
+            frozen = true;
+            ambient.forEach((t) => t.pause());
+          } else if (self.progress < silenceProgress && frozen) {
+            frozen = false;
+            ambient.forEach((t) => t.resume());
+          }
+        },
       },
     });
 
-    /* ── ACT 1: REALIZATION — headline holds calm ── */
-    tl.to({}, { duration: 0.08 });
+    /* ── ACT 1 · REALIZATION — the headline simply holds ── */
+    tl.to({}, { duration: 0.09 });
+    tl.to(screen1, { opacity: 0, y: -12, duration: 0.06, ease: "power2.in" });
 
-    /* ── ACT 2: CHAOS — headline retreats, words flood in ── */
-    tl.to(screen1, { opacity: 0, y: -14, duration: 0.07, ease: "power2.in" });
-
-    /* Words flood in staggered */
+    /* ── ACT 2 · CHAOS — the fragments flood in, alive and drifting ── */
     tl.to(words, {
       opacity: (i: number) => CHAOS_ITEMS[i]?.op ?? 0.3,
-      duration: 0.14,
-      stagger: 0.004,
+      duration: 0.13,
+      stagger: 0.006,
       ease: "power1.out",
     });
+    tl.to(chaosLbl, { opacity: 1, duration: 0.06, ease: "power1.out" });
+    tl.to({}, { duration: 0.05 });
 
-    /* Chaos label appears */
-    tl.to(chaosLbl, { opacity: 1, duration: 0.07, ease: "power1.out" });
+    /* ── ACT 2½ · SILENCE — everything freezes. Held. No movement. ── */
+    const freezeStartTime = tl.duration();
+    tl.to({}, { duration: 0.17 });
 
-    /* Tension — freeze here */
-    tl.to({}, { duration: 0.07 });
-
-    /* Label fades before collapse */
+    /* ── ACT 3 · GRAVITY — fragments are pulled to centre, one by one.
+       Each travels at full presence and is absorbed only at the centre. ── */
     tl.to(chaosLbl, { opacity: 0, duration: 0.03 });
-
-    /* One-by-one gravity convergence */
-    words.forEach((word) => {
+    words.forEach((word, i) => {
       tl.to(
         word,
         {
           x: Number(word.dataset.dx ?? 0),
           y: Number(word.dataset.dy ?? 0),
-          opacity: 0,
-          scale: 0.4,
-          duration: 0.022,
-          ease: "power3.in",
+          scale: 0.32,
+          duration: 0.032,
+          ease: "power2.in",
         },
-        ">-0.008",
+        i === 0 ? ">" : ">-0.013",
       );
+      tl.to(word, { opacity: 0, duration: 0.014, ease: "power1.in" }, "<0.017");
     });
 
-    /* Empty screen — breath */
-    tl.to({}, { duration: 0.05 });
-
-    /* ── ACT 3: RELIEF — gold line unfolds ── */
+    /* ── ACT 4 · RELIEF — empty screen, then a product-launch reveal ── */
+    tl.to({}, { duration: 0.08 });                                   // empty, held
     tl.to(goldLine, { opacity: 1, scaleX: 1, duration: 0.07, ease: "power2.out" });
-    tl.to(poTitle,  { opacity: 1, y: 0,      duration: 0.07, ease: "power2.out" });
+    tl.to({}, { duration: 0.05 });                                   // pause
+    tl.to(poTitle, { opacity: 1, y: 0, duration: 0.07, ease: "power2.out" });
+    tl.to({}, { duration: 0.06 });                                   // pause before pillars
 
-    /* Pillars appear one by one */
     pillarsEls.forEach((el) => {
-      tl.to(el, { opacity: 1, y: 0, duration: 0.04, ease: "power2.out" });
-      tl.to({}, { duration: 0.018 });
+      tl.to(el, { opacity: 1, y: 0, duration: 0.045, ease: "power2.out" });
+      tl.to({}, { duration: 0.03 });                                 // breath between each
     });
+    tl.to({}, { duration: 0.06 });
 
-    /* Resolution fades, leaving only the final statement */
-    tl.to({}, { duration: 0.04 });
+    /* ── ACT 5 · THE PAYOFF — everything clears for one statement ── */
     tl.to([goldLine, poTitle, ...Array.from(pillarsEls)], {
       opacity: 0,
+      y: -6,
       duration: 0.07,
       ease: "power2.in",
     });
-
-    /* Final statement — alone on screen */
     tl.to(finalEl, { opacity: 1, y: 0, duration: 0.09, ease: "power2.out" });
+    tl.to({}, { duration: 0.18 });                                   // long emotional hold
 
-    /* Long hold */
-    tl.to({}, { duration: 0.14 });
+    /* ── Continuous narrative — the statement recedes so the next chapter
+       ("Every property has two stories.") rises on the same ivory. ── */
+    tl.to(finalEl, { opacity: 0, y: -10, duration: 0.06, ease: "power2.in" });
+
+    /* Now that the full timeline exists, anchor the freeze to its progress. */
+    silenceProgress = freezeStartTime / tl.duration();
 
     const st = tl.scrollTrigger;
     ScrollTrigger.refresh();
     return () => {
+      ambient.forEach((t) => t.kill());
       st?.kill(true);
       tl.kill();
     };
   }, []);
 
   return (
-    /* Single pinned section — full viewport height, ivory background */
-    <div
-      ref={ref}
-      className="relative h-svh w-full overflow-hidden bg-[#F5F0E8]"
-    >
-      {/* ── ACT 1: Headline ── */}
+    /* Single pinned section — full viewport, ivory (matches the next chapter) */
+    <div ref={ref} className="relative h-svh w-full overflow-hidden bg-[#F5F0E8]">
+      {/* ── ACT 1 · Headline ── */}
       <div
         data-screen1
         className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center"
       >
-        <h2 className="font-serif text-[2.6rem] font-medium leading-[1.08] tracking-[-0.02em] text-[#1a1a1a] md:text-[4rem] lg:text-[5rem]">
+        <h2 className="font-serif text-[2.5rem] font-medium leading-[1.1] tracking-[-0.015em] text-[#1a1a1a] md:text-[3.5rem] lg:text-[4.4rem]">
           One Property.
           <br />
           Too Many Conversations.
         </h2>
-        <p className="mx-auto mt-8 max-w-[38ch] text-[0.92rem] font-light leading-[2] text-[#1a1a1a]/28">
+        <p className="mx-auto mt-7 max-w-[32ch] text-[0.95rem] font-light leading-[1.95] tracking-[0.005em] text-[#1a1a1a]/30 md:mt-8 md:text-[1rem]">
           Buying a property isn&apos;t one decision. It&apos;s hundreds of
-          conversations, documents and opinions spread across different people.
+          conversations, documents and opinions — scattered across different
+          people.
         </p>
       </div>
 
-      {/* ── ACT 2: Chaos words (full-screen absolute) ── */}
+      {/* ── ACT 2 · Chaos fragments (full-screen, living) ── */}
       {CHAOS_ITEMS.map((item, i) => (
         <span
           key={`${item.text}-${i}`}
           data-word
-          className="pointer-events-none absolute select-none font-light text-[#1a1a1a]"
-          style={{
-            left:      `${item.left}%`,
-            top:       `${item.top}%`,
-            fontSize:  item.fs,
-            transform: `rotate(${item.rot}deg)`,
-            letterSpacing: "0.03em",
-          }}
+          className="pointer-events-none absolute select-none"
+          style={{ left: `${item.left}%`, top: `${item.top}%` }}
         >
-          {item.text}
+          <span
+            data-word-inner
+            className="block font-light text-[#1a1a1a]"
+            style={{ fontSize: item.fs, letterSpacing: "0.015em" }}
+          >
+            {item.text}
+          </span>
         </span>
       ))}
 
@@ -231,52 +270,49 @@ export default function ChaosToOrderSection() {
         data-chaos-lbl
         className="pointer-events-none absolute bottom-[11%] left-0 right-0 text-center"
       >
-        <p className="font-serif text-[1rem] italic text-[#1a1a1a]/22 md:text-[1.15rem]">
+        <p className="font-serif text-[1rem] italic tracking-[0.01em] text-[#1a1a1a]/25 md:text-[1.1rem]">
           Everything important lives somewhere else.
         </p>
       </div>
 
-      {/* ── ACT 3: Resolution panel ── */}
+      {/* ── ACT 4 · Resolution — gold line, title, five pillars ── */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        {/* Gold line */}
         <div
           data-gold-line
-          className="h-px w-12 bg-[#c9a96e]/60"
+          className="h-px w-10 bg-[#c9a96e]/70"
           style={{ transformOrigin: "center center" }}
         />
 
-        {/* "YOUR PRIVATE OFFICE" */}
         <p
           data-po-title
-          className="mt-6 text-[9px] font-medium uppercase tracking-[0.44em] text-[#c9a96e]"
+          className="mt-6 text-[10px] font-medium uppercase tracking-[0.42em] text-[#c9a96e]"
         >
           Your Private Office
         </p>
 
-        {/* 5 pillars */}
-        <div className="mt-10 flex flex-col items-center gap-5">
+        <div className="mt-11 flex flex-col items-center gap-7 md:mt-12 md:gap-9">
           {PILLARS.map((pillar) => (
             <p
               key={pillar}
               data-pillar
-              className="font-serif text-[1.1rem] font-light tracking-[0.01em] text-[#1a1a1a]/50 md:text-[1.4rem]"
+              className="font-serif text-[1.15rem] font-light tracking-[0.005em] text-[#1a1a1a]/55 md:text-[1.5rem]"
             >
               {pillar}
             </p>
           ))}
         </div>
+      </div>
 
-        {/* Final statement — rendered here, animated to appear after pillars fade */}
-        <div
-          data-final
-          className="absolute inset-0 flex items-center justify-center px-6 text-center"
-        >
-          <p className="font-serif text-[2.8rem] font-medium leading-[1.1] tracking-[-0.02em] text-[#1a1a1a] md:text-[4rem] lg:text-[5.2rem]">
-            Everything important.
-            <br />
-            One place.
-          </p>
-        </div>
+      {/* ── ACT 5 · Final statement — alone, then recedes into the next chapter ── */}
+      <div
+        data-final
+        className="absolute inset-0 flex items-center justify-center px-6 text-center"
+      >
+        <p className="font-serif text-[2.6rem] font-medium leading-[1.1] tracking-[-0.015em] text-[#1a1a1a] md:text-[3.6rem] lg:text-[4.4rem]">
+          Everything important.
+          <br />
+          One place.
+        </p>
       </div>
     </div>
   );
