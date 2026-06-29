@@ -49,6 +49,10 @@ const PILLARS = [
   "Ownership",
 ];
 
+/* The reveal happens in its own world — deep warm dark, lit by gold. */
+const IVORY = "#F5F0E8";
+const DARK = "#0d0b0a";
+
 export default function ChaosToOrderSection() {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -58,6 +62,8 @@ export default function ChaosToOrderSection() {
 
     gsap.registerPlugin(ScrollTrigger);
 
+    const bg        = pin.querySelector<HTMLElement>("[data-bg]");
+    const glow      = pin.querySelector<HTMLElement>("[data-glow]");
     const screen1   = pin.querySelector<HTMLElement>("[data-screen1]");
     const words     = pin.querySelectorAll<HTMLElement>("[data-word]");
     const inners    = pin.querySelectorAll<HTMLElement>("[data-word-inner]");
@@ -67,7 +73,7 @@ export default function ChaosToOrderSection() {
     const pillarsEls = pin.querySelectorAll<HTMLElement>("[data-pillar]");
     const finalEl   = pin.querySelector<HTMLElement>("[data-final]");
 
-    if (!screen1 || !goldLine || !poTitle || !finalEl) return;
+    if (!bg || !glow || !screen1 || !goldLine || !poTitle || !finalEl) return;
 
     /* Convergence deltas — every word has a destination: the exact centre,
        where the Private Office will emerge. Nothing drifts off-screen. */
@@ -81,6 +87,8 @@ export default function ChaosToOrderSection() {
     });
 
     /* ── Initial states ── */
+    gsap.set(bg,       { backgroundColor: IVORY });
+    gsap.set(glow,     { opacity: 0 });
     gsap.set(words,    { opacity: 0 });
     gsap.set(chaosLbl, { opacity: 0 });
     gsap.set(goldLine, { scaleX: 0, opacity: 0, transformOrigin: "center center" });
@@ -188,9 +196,15 @@ export default function ChaosToOrderSection() {
       tl.to(word, { opacity: 0, duration: 0.014, ease: "power1.in" }, "<0.017");
     });
 
-    /* ── ACT 4 · RELIEF — empty screen, then a product-launch reveal ── */
-    tl.to({}, { duration: 0.08 });                                   // empty, held
-    tl.to(goldLine, { opacity: 1, scaleX: 1, duration: 0.07, ease: "power2.out" });
+    /* ── THE TRANSFORMATION — as the last fragments are swallowed, the
+       lights go down. The ivory problem world dissolves into deep dark. ── */
+    tl.to(bg, { backgroundColor: DARK, duration: 0.11, ease: "power1.inOut" }, ">-0.05");
+    tl.to({}, { duration: 0.07 });                                   // darkness, held
+
+    /* ── ACT 4 · RELIEF — a pool of gold light blooms, revealing the altar.
+       Product-launch reveal: nothing arrives together. ── */
+    tl.to(glow, { opacity: 1, duration: 0.11, ease: "power2.out" });
+    tl.to(goldLine, { opacity: 1, scaleX: 1, duration: 0.07, ease: "power2.out" }, "<0.02");
     tl.to({}, { duration: 0.05 });                                   // pause
     tl.to(poTitle, { opacity: 1, y: 0, duration: 0.07, ease: "power2.out" });
     tl.to({}, { duration: 0.06 });                                   // pause before pillars
@@ -211,9 +225,12 @@ export default function ChaosToOrderSection() {
     tl.to(finalEl, { opacity: 1, y: 0, duration: 0.09, ease: "power2.out" });
     tl.to({}, { duration: 0.18 });                                   // long emotional hold
 
-    /* ── Continuous narrative — the statement recedes so the next chapter
-       ("Every property has two stories.") rises on the same ivory. ── */
+    /* ── Continuous narrative — the statement recedes and the world returns
+       to ivory so the next chapter ("Every property has two stories.")
+       rises on the same light. ── */
     tl.to(finalEl, { opacity: 0, y: -10, duration: 0.06, ease: "power2.in" });
+    tl.to(glow, { opacity: 0, duration: 0.07, ease: "power1.inOut" });
+    tl.to(bg, { backgroundColor: IVORY, duration: 0.07, ease: "power1.inOut" }, "<");
 
     /* Now that the full timeline exists, anchor the freeze to its progress. */
     silenceProgress = freezeStartTime / tl.duration();
@@ -228,9 +245,24 @@ export default function ChaosToOrderSection() {
   }, []);
 
   return (
-    /* Single pinned section — full viewport, ivory (matches the next chapter) */
-    <div ref={ref} className="relative h-svh w-full overflow-hidden bg-[#F5F0E8]">
-      {/* ── ACT 1 · Headline ── */}
+    /* Single pinned section — full viewport. The background is animated:
+       ivory for the problem, deep dark for the revelation, ivory again to
+       hand off to the next chapter. */
+    <div ref={ref} className="relative h-svh w-full overflow-hidden">
+      <div data-bg className="absolute inset-0" style={{ backgroundColor: IVORY }} />
+
+      {/* Pool of gold light — blooms only for the reveal */}
+      <div
+        data-glow
+        className="pointer-events-none absolute inset-0"
+        style={{
+          opacity: 0,
+          background:
+            "radial-gradient(ellipse 50% 56% at 50% 50%, rgba(201,169,110,0.14) 0%, rgba(201,169,110,0.045) 36%, transparent 72%)",
+        }}
+      />
+
+      {/* ── ACT 1 · Headline (the problem, on ivory) ── */}
       <div
         data-screen1
         className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center"
@@ -275,27 +307,27 @@ export default function ChaosToOrderSection() {
         </p>
       </div>
 
-      {/* ── ACT 4 · Resolution — gold line, title, five pillars ── */}
+      {/* ── ACT 4 · Resolution — gold line, title, five pillars (on dark) ── */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <div
           data-gold-line
-          className="h-px w-10 bg-[#c9a96e]/70"
+          className="h-px w-12 bg-[#c9a96e]"
           style={{ transformOrigin: "center center" }}
         />
 
         <p
           data-po-title
-          className="mt-6 text-[10px] font-medium uppercase tracking-[0.42em] text-[#c9a96e]"
+          className="mt-7 text-[11px] font-medium uppercase tracking-[0.5em] text-[#c9a96e]"
         >
           Your Private Office
         </p>
 
-        <div className="mt-11 flex flex-col items-center gap-7 md:mt-12 md:gap-9">
+        <div className="mt-12 flex flex-col items-center gap-7 md:mt-14 md:gap-9">
           {PILLARS.map((pillar) => (
             <p
               key={pillar}
               data-pillar
-              className="font-serif text-[1.15rem] font-light tracking-[0.005em] text-[#1a1a1a]/55 md:text-[1.5rem]"
+              className="font-serif text-[1.2rem] font-light tracking-[0.04em] text-[#F5F0E8]/80 md:text-[1.55rem]"
             >
               {pillar}
             </p>
@@ -303,15 +335,18 @@ export default function ChaosToOrderSection() {
         </div>
       </div>
 
-      {/* ── ACT 5 · Final statement — alone, then recedes into the next chapter ── */}
+      {/* ── ACT 5 · Final statement — alone, glowing, then recedes ── */}
       <div
         data-final
         className="absolute inset-0 flex items-center justify-center px-6 text-center"
       >
-        <p className="font-serif text-[2.6rem] font-medium leading-[1.1] tracking-[-0.015em] text-[#1a1a1a] md:text-[3.6rem] lg:text-[4.4rem]">
+        <p
+          className="font-serif text-[2.7rem] font-normal leading-[1.12] tracking-[-0.01em] text-[#F5F0E8] md:text-[3.7rem] lg:text-[4.6rem]"
+          style={{ textShadow: "0 0 64px rgba(201,169,110,0.18)" }}
+        >
           Everything important.
           <br />
-          One place.
+          <span className="text-[#c9a96e]">One place.</span>
         </p>
       </div>
     </div>
