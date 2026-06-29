@@ -4,7 +4,10 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-/* 31 chaos items — full-screen absolute positions (% of viewport) */
+/* 31 chaos items — full-screen absolute positions (% of viewport).
+   Sizes vary widely (0.72rem → 2.0rem) so loud "human noise" dominates and
+   fine print recedes. The bottom-centre band (top > 82, left 25–75) is kept
+   clear for the chaos label so they never overlap. */
 const CHAOS_ITEMS: {
   text: string;
   left: number;
@@ -13,37 +16,43 @@ const CHAOS_ITEMS: {
   op: number;
   rot: number;
 }[] = [
-  { text: "Developer",            left:  7, top: 14, fs: "0.95rem", op: 0.38, rot: -1.2 },
-  { text: "WhatsApp",             left: 13, top: 34, fs: "1.0rem",  op: 0.44, rot:  0.8 },
-  { text: "Lawyer",               left:  5, top: 54, fs: "0.88rem", op: 0.28, rot: -2.0 },
-  { text: "Brochures",            left:  9, top: 72, fs: "0.82rem", op: 0.32, rot:  1.4 },
-  { text: "Floor Plans",          left: 14, top: 88, fs: "0.78rem", op: 0.24, rot: -0.8 },
-  { text: "CA",                   left: 22, top:  9, fs: "0.85rem", op: 0.34, rot:  1.8 },
-  { text: "Emails",               left: 26, top: 26, fs: "0.92rem", op: 0.40, rot: -1.6 },
-  { text: "Bank",                 left: 19, top: 46, fs: "0.90rem", op: 0.36, rot:  0.6 },
-  { text: "Agreements",           left: 24, top: 64, fs: "0.80rem", op: 0.28, rot: -2.2 },
-  { text: "Loan Papers",          left: 17, top: 80, fs: "0.82rem", op: 0.30, rot:  1.0 },
-  { text: "Architect",            left: 35, top:  6, fs: "0.90rem", op: 0.35, rot: -0.9 },
-  { text: "Calls",                left: 33, top: 21, fs: "1.05rem", op: 0.46, rot:  2.1 },
-  { text: "Parents",              left: 38, top: 40, fs: "0.95rem", op: 0.40, rot: -1.4 },
-  { text: "Payment Receipts",     left: 30, top: 57, fs: "0.78rem", op: 0.26, rot:  1.8 },
-  { text: "Legal Documents",      left: 34, top: 74, fs: "0.80rem", op: 0.28, rot: -0.5 },
-  { text: "Site Visits",          left: 29, top: 89, fs: "0.85rem", op: 0.32, rot:  1.2 },
-  { text: "Broker",               left: 47, top: 11, fs: "1.0rem",  op: 0.42, rot: -1.8 },
-  { text: "WhatsApp",             left: 47, top: 22, fs: "0.88rem", op: 0.30, rot:  0.4 },
-  { text: "Spouse",               left: 44, top: 33, fs: "0.92rem", op: 0.38, rot:  2.4 },
-  { text: "Demand Letters",       left: 50, top: 48, fs: "0.78rem", op: 0.24, rot: -1.1 },
-  { text: "Builder Updates",      left: 46, top: 62, fs: "0.82rem", op: 0.30, rot:  1.6 },
-  { text: "Emails",               left: 49, top: 74, fs: "0.85rem", op: 0.28, rot: -2.0 },
-  { text: "Investment Advice",    left: 43, top: 86, fs: "0.80rem", op: 0.26, rot:  0.7 },
-  { text: "Relationship Manager", left: 60, top:  8, fs: "0.82rem", op: 0.32, rot:  1.3 },
-  { text: "Calls",                left: 63, top: 28, fs: "0.90rem", op: 0.38, rot: -0.6 },
-  { text: "Legal Documents",      left: 58, top: 45, fs: "0.78rem", op: 0.24, rot:  2.0 },
-  { text: "Ownership Updates",    left: 65, top: 60, fs: "0.80rem", op: 0.28, rot: -1.4 },
-  { text: "Calls",                left: 36, top: 89, fs: "0.82rem", op: 0.26, rot:  0.9 },
-  { text: "NRI Compliance",       left: 74, top: 16, fs: "0.85rem", op: 0.30, rot: -1.8 },
-  { text: "Site Visits",          left: 78, top: 35, fs: "0.90rem", op: 0.36, rot:  1.1 },
-  { text: "Broker",               left: 82, top: 55, fs: "0.88rem", op: 0.34, rot: -0.5 },
+  /* far left */
+  { text: "Developer",            left:  7, top: 14, fs: "1.35rem", op: 0.42, rot: -1.2 },
+  { text: "WhatsApp",             left: 10, top: 32, fs: "1.75rem", op: 0.48, rot:  0.8 },
+  { text: "Lawyer",               left:  5, top: 53, fs: "0.95rem", op: 0.30, rot: -2.0 },
+  { text: "Brochures",            left:  9, top: 71, fs: "0.76rem", op: 0.26, rot:  1.4 },
+  { text: "Floor Plans",          left: 13, top: 88, fs: "0.72rem", op: 0.24, rot: -0.8 },
+  /* left */
+  { text: "CA",                   left: 23, top:  9, fs: "0.90rem", op: 0.34, rot:  1.8 },
+  { text: "Emails",               left: 25, top: 25, fs: "1.45rem", op: 0.44, rot: -1.6 },
+  { text: "Bank",                 left: 19, top: 45, fs: "1.05rem", op: 0.36, rot:  0.6 },
+  { text: "Agreements",           left: 24, top: 63, fs: "0.80rem", op: 0.26, rot: -2.2 },
+  { text: "Loan Papers",          left: 16, top: 80, fs: "0.74rem", op: 0.24, rot:  1.0 },
+  /* centre-left */
+  { text: "Architect",            left: 35, top:  6, fs: "0.90rem", op: 0.32, rot: -0.9 },
+  { text: "Calls",                left: 32, top: 20, fs: "2.0rem",  op: 0.50, rot:  1.6 },
+  { text: "Parents",              left: 38, top: 39, fs: "1.40rem", op: 0.42, rot: -1.4 },
+  { text: "Payment Receipts",     left: 30, top: 56, fs: "0.74rem", op: 0.24, rot:  1.8 },
+  { text: "Legal Documents",      left: 34, top: 73, fs: "0.80rem", op: 0.26, rot: -0.5 },
+  /* centre */
+  { text: "Broker",               left: 48, top: 11, fs: "1.70rem", op: 0.46, rot: -1.8 },
+  { text: "WhatsApp",             left: 47, top: 23, fs: "0.82rem", op: 0.28, rot:  0.4 },
+  { text: "Spouse",               left: 44, top: 33, fs: "1.30rem", op: 0.40, rot:  2.4 },
+  { text: "Demand Letters",       left: 51, top: 47, fs: "0.72rem", op: 0.24, rot: -1.1 },
+  { text: "Builder Updates",      left: 46, top: 61, fs: "0.82rem", op: 0.28, rot:  1.6 },
+  { text: "Emails",               left: 49, top: 73, fs: "0.88rem", op: 0.30, rot: -2.0 },
+  /* centre-right */
+  { text: "Relationship Manager", left: 60, top:  8, fs: "0.85rem", op: 0.30, rot:  1.3 },
+  { text: "Calls",                left: 64, top: 27, fs: "1.20rem", op: 0.40, rot: -0.6 },
+  { text: "Legal Documents",      left: 58, top: 44, fs: "0.76rem", op: 0.24, rot:  2.0 },
+  { text: "Ownership Updates",    left: 65, top: 59, fs: "0.80rem", op: 0.28, rot: -1.4 },
+  { text: "Investment Advice",    left: 61, top: 76, fs: "0.80rem", op: 0.26, rot:  0.7 },
+  /* right */
+  { text: "NRI Compliance",       left: 74, top: 16, fs: "0.78rem", op: 0.28, rot: -1.8 },
+  { text: "Site Visits",          left: 79, top: 34, fs: "1.15rem", op: 0.38, rot:  1.1 },
+  { text: "Broker",               left: 83, top: 54, fs: "1.50rem", op: 0.44, rot: -0.5 },
+  { text: "Site Visits",          left: 76, top: 72, fs: "0.85rem", op: 0.28, rot:  1.2 },
+  { text: "Builder Updates",      left: 80, top: 87, fs: "0.74rem", op: 0.24, rot: -1.0 },
 ];
 
 const PILLARS = [
