@@ -214,13 +214,23 @@ export default function BuyerJourneySection() {
         data-portrait
         className="pointer-events-none absolute left-1/2 top-1/2 z-20 h-[46vh] w-[64vw] max-w-[360px] -translate-x-1/2 -translate-y-1/2 md:h-[52vh] md:w-[30vw]"
       >
-        {/* Soft silhouette placeholder — fades away once real photos exist */}
+        {/* Head-and-shoulders silhouette placeholder — clearly "a person goes
+            here," fades away once the real photos exist */}
         <div
           className={`absolute inset-0 flex items-end justify-center transition-opacity duration-700 ${
             hereReady ? "opacity-0" : "opacity-100"
           }`}
         >
-          <div className="h-[88%] w-[72%] rounded-t-[45%] bg-[#1a1a1a]/[0.05]" />
+          <svg
+            viewBox="0 0 200 250"
+            className="h-[94%] w-auto"
+            fill="#1a1a1a"
+            style={{ opacity: 0.07 }}
+            aria-hidden="true"
+          >
+            <circle cx="100" cy="66" r="46" />
+            <path d="M16 250 C16 166 52 136 100 136 C148 136 184 166 184 250 Z" />
+          </svg>
         </div>
         {/* Frames as background-images — a missing file simply shows nothing
             (no broken-image glyph), so the placeholder reads through cleanly. */}
