@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import VisionHero from "@/components/vision/VisionHero";
 import BuyerJourneySection from "@/components/BuyerJourneySection";
 import MarketIntelligence from "@/components/vision/MarketIntelligence";
+import TruthScoreAnatomy from "@/components/vision/TruthScoreAnatomy";
 import TruthGuidePreview from "@/components/vision/TruthGuidePreview";
 import TrustClose from "@/components/vision/TrustClose";
 
@@ -17,6 +18,7 @@ export default function VisionPage() {
       <VisionHero />
       <BuyerJourneySection />
       <MarketIntelligence />
+      <TruthScoreAnatomy />
       <TruthGuidePreview />
       <TrustClose />
     </main>
