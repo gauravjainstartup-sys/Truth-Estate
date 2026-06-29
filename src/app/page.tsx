@@ -1,6 +1,7 @@
 import Hero from "@/components/Hero";
-import ChaosToOrderSection from "@/components/ChaosToOrderSection";
-import StorySection from "@/components/StorySection";
+import DreamSection from "@/components/DreamSection";
+import NoiseSection from "@/components/NoiseSection";
+import ClaritySection from "@/components/ClaritySection";
 import ExperienceSection from "@/components/ExperienceSection";
 import Footer from "@/components/Footer";
 
@@ -9,8 +10,9 @@ export default function Home() {
     <>
       <main>
         <Hero />
-        <ChaosToOrderSection />
-        <StorySection />
+        <DreamSection />
+        <NoiseSection />
+        <ClaritySection />
         <ExperienceSection />
       </main>
       <Footer />
