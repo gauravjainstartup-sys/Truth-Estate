@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -83,6 +83,14 @@ const BG = ["#F3EDE3", "#EFE8DD", "#E8E0D2", "#E0D8C9", "#17140F", "#F8F5EF"];
 
 export default function BuyerJourneySection() {
   const ref = useRef<HTMLDivElement>(null);
+  const [hereReady, setHereReady] = useState(false);
+
+  /* Probe for the portrait set — hide the placeholder once photos exist */
+  useEffect(() => {
+    const img = new window.Image();
+    img.onload = () => setHereReady(true);
+    img.src = `${basePath}/images/buyer/${FRAMES[0]}.png`;
+  }, []);
 
   useEffect(() => {
     const pin = ref.current;
@@ -128,18 +136,23 @@ export default function BuyerJourneySection() {
       },
     });
 
-    /* Move from the current beat to beat `iTo`. */
+    /* Move from the current beat to beat `iTo`. The headline + pill sit at
+       the same position each beat, so they fade OUT fully before the next
+       fades IN (sequential, never ghosting). Portrait, environment and
+       background cross-fade concurrently — those are different visuals. */
     const go = (iTo: number, hold = 0.1) => {
-      tl.to(frames[cur], { opacity: 0, duration: 0.05 });
-      tl.to(frames[iTo], { opacity: 1, duration: 0.05 }, "<");
-      tl.to(tops[cur],   { opacity: 0, y: -8, duration: 0.05 }, "<");
-      tl.to(tops[iTo],   { opacity: 1, y: 0, duration: 0.05 }, "<");
-      tl.to(pills[cur],  { opacity: 0, duration: 0.05 }, "<");
-      tl.to(pills[iTo],  { opacity: 1, duration: 0.05 }, "<");
+      // ── OUT (concurrent) + portrait/env/bg cross-fade ──
+      tl.to(tops[cur],  { opacity: 0, y: -8, duration: 0.045 });
+      tl.to(pills[cur], { opacity: 0, duration: 0.045 }, "<");
+      tl.to(frames[cur], { opacity: 0, duration: 0.06 }, "<");
       if (envs[cur]) tl.to(envs[cur]!, { opacity: 0, duration: 0.05 }, "<");
-      if (envs[iTo]) tl.to(envs[iTo]!, { opacity: 1, duration: 0.07 }, "<");
       tl.to(bgEl, { backgroundColor: BG[iTo], duration: 0.09 }, "<");
       if (iTo === 1) tl.to(glow, { opacity: 0, duration: 0.07 }, "<"); // warm light leaves
+      tl.to(frames[iTo], { opacity: 1, duration: 0.06 }, "<");
+      if (envs[iTo]) tl.to(envs[iTo]!, { opacity: 1, duration: 0.07 }, "<");
+      // ── IN narrative (appended after the OUT block, so no overlap) ──
+      tl.to(tops[iTo],  { opacity: 1, y: 0, duration: 0.05 });
+      tl.to(pills[iTo], { opacity: 1, duration: 0.05 }, "<");
       tl.to({}, { duration: hold });
       cur = iTo;
     };
@@ -201,19 +214,22 @@ export default function BuyerJourneySection() {
         data-portrait
         className="pointer-events-none absolute left-1/2 top-1/2 z-20 h-[46vh] w-[64vw] max-w-[360px] -translate-x-1/2 -translate-y-1/2 md:h-[52vh] md:w-[30vw]"
       >
-        {/* Placeholder behind the frames — a soft silhouette until photos land */}
-        <div className="absolute inset-0 flex items-end justify-center">
-          <div className="h-[88%] w-[72%] rounded-t-[45%] bg-[#1a1a1a]/[0.06]" />
+        {/* Soft silhouette placeholder — fades away once real photos exist */}
+        <div
+          className={`absolute inset-0 flex items-end justify-center transition-opacity duration-700 ${
+            hereReady ? "opacity-0" : "opacity-100"
+          }`}
+        >
+          <div className="h-[88%] w-[72%] rounded-t-[45%] bg-[#1a1a1a]/[0.05]" />
         </div>
-        {FRAMES.map((name, i) => (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+        {/* Frames as background-images — a missing file simply shows nothing
+            (no broken-image glyph), so the placeholder reads through cleanly. */}
+        {FRAMES.map((name) => (
+          <div
             key={name}
             data-frame
-            src={`${basePath}/images/buyer/${name}.png`}
-            alt=""
-            onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
-            className="absolute inset-0 h-full w-full object-contain object-bottom"
+            className="absolute inset-0 bg-contain bg-bottom bg-no-repeat"
+            style={{ backgroundImage: `url(${basePath}/images/buyer/${name}.png)` }}
           />
         ))}
       </div>
