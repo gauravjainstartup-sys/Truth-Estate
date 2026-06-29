@@ -82,3 +82,16 @@ body {
 .animate-journey-in {
   animation: journey-in 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+
+/* ── Section 2 (The Dream) — warm morning light, breathing slowly ── */
+@keyframes dream-glow {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.06);
+  }
+}
