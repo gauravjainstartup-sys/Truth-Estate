@@ -1,68 +1,49 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 /* ════════════════════════════════════════════════════════════════
-   THE BUYER'S JOURNEY — one continuous scroll-film.
-   A single woman stays centred while the world changes around her.
-   Her expression (6 frames) morphs as excitement curdles into chaos,
-   then recovers into clarity. All the noise — notifications, brokers,
-   claims, clouds — is rendered in code around her.
+   THE BUYER'S JOURNEY — a calligraphic scroll-film.
+   An NRI couple, drawn as one line. Their mouths morph from a smile to
+   worry as the noise — a fine ink tangle — draws in around them. The
+   villain is never a person; it is promises without proof, and distance.
+   At the turn, the tangle unravels into a single clean gold line: proof.
 
-   Dream → Portals → Brokers → Promises → Chaos → Solution
-   Excited → Overwhelmed → Pressured → Irritated → Anxious → Confident
+   One pinned, scrubbed timeline drives every beat, so the emotion is
+   identical on desktop and mobile — only the layout reflows.
    ════════════════════════════════════════════════════════════════ */
 
-const basePath = "/Truth-Estate";
-
-const FRAMES = [
-  "excited",
-  "overwhelmed",
-  "pressured",
-  "irritated",
-  "anxious",
-  "relieved",
+const STAGES = [
+  { k: "01", emo: "Hopeful",               hero: "A home, back home.",   whisper: "The dream that started it all." },
+  { k: "02", emo: "Overwhelmed",           hero: "A thousand listings.", whisper: "None you can trust from here." },
+  { k: "03", emo: "Torn",                  hero: "A hundred opinions.",  whisper: "Family, friends, the whole internet." },
+  { k: "04", emo: "Skeptical",             hero: "Endless promises.",    whisper: "Not one of them proven." },
+  { k: "05", emo: "Anxious",               hero: "An ocean away.",       whisper: "Too far to check. Too much to trust." },
+  { k: "06", emo: "Clarity · Confidence",  hero: "Finally — proof.",     whisper: "One office. Every claim, verified." },
 ];
 
-const NARRATIVE = [
-  { kicker: "THE DREAM",          line: "It all begins with a dream home.",        pill: "Excited. Hopeful. Confident.", dark: false },
-  { kicker: "THE PORTALS",        line: "Endless listings. Endless spam.",         pill: "Overwhelmed. Confused.",        dark: false },
-  { kicker: "BROKERS EVERYWHERE", line: "One broker turns into ten.",              pill: "Pressured. Drained.",           dark: false },
-  { kicker: "VERBAL PROMISES",    line: "Best deal. Best price. No proof.",        pill: "Skeptical. Irritated.",         dark: false },
-  { kicker: "CHAOS & UNCERTAINTY",line: "Too many voices. Too many doubts.",       pill: "Anxious. Unsure. Helpless.",    dark: true  },
-  { kicker: "THE SOLUTION",       line: "From verbal promises to verified proofs.", pill: "Clarity. Confidence. Control.", dark: false },
-];
+/* Per-stage choreography */
+const MOUTH = [12, 5, 1, -6, -11, 11];     // control offset: + smile, − frown
+const DRIFT = [0, 0, 2, 5, 12, -3];        // heads drift apart, then back together
+const BG    = ["#F3EDE3", "#EFE8DD", "#E9E1D4", "#E2DACB", "#D9D2C6", "#F8F5EF"];
+const TANGLE_BY_STAGE: number[][] = [[], [0, 1], [2, 3], [4, 5], [6, 7], []];
 
-const NOTIFICATIONS = [
-  { label: "Best Deal!",      badge: 17, left: 8,  top: 24 },
-  { label: "Limited Offer!",  badge: 23, left: 14, top: 40 },
-  { label: "New Launch!",     badge: 31, left: 9,  top: 56 },
-  { label: "Luxury 4BHK",     badge: 12, left: 70, top: 26 },
-  { label: "Call Now!",       badge: 28, left: 74, top: 52 },
+/* Hand-authored ink scribbles — the noise, in SVG space (0 0 440 340) */
+const TANGLES = [
+  "M60 95 C120 62 165 120 112 150 C72 174 132 200 182 176",
+  "M380 95 C322 62 278 120 330 150 C372 174 312 202 262 182",
+  "M72 252 C142 232 182 282 132 300 C102 312 172 312 212 296",
+  "M372 252 C302 232 262 286 322 300 C352 308 302 316 250 300",
+  "M120 60 C200 40 262 50 322 72 C350 82 300 110 250 96",
+  "M92 182 C142 162 152 212 102 222 C72 228 122 242 162 232",
+  "M352 182 C302 162 292 216 342 226 C366 232 322 246 282 236",
+  "M150 300 C210 286 250 300 300 290 C220 270 300 250 250 300",
 ];
+const CLEAN = "M95 256 C180 236 262 236 347 256";
 
-const BROKER_POS = [
-  { left: 16, top: 30 }, { left: 24, top: 60 }, { left: 12, top: 46 },
-  { left: 72, top: 28 }, { left: 80, top: 48 }, { left: 70, top: 66 },
-  { left: 33, top: 78 }, { left: 60, top: 80 }, { left: 47, top: 86 },
-];
-
-const PROMISES = [
-  { text: "Top developer",    left: 12, top: 28 },
-  { text: "Unbeatable price", left: 70, top: 26 },
-  { text: "Best unit for you",left: 9,  top: 56 },
-  { text: "Guaranteed returns", left: 72, top: 56 },
-  { text: "Limited inventory",left: 40, top: 84 },
-];
-
-const DOUBTS = [
-  { text: "Will it be delivered?",      left: 11, top: 26 },
-  { text: "Is the developer stable?",   left: 66, top: 24 },
-  { text: "Is the price fair?",         left: 72, top: 58 },
-  { text: "Is the location future-proof?", left: 8, top: 60 },
-];
+const mouth = (cx: number, k: number) => `M ${cx - 13} 172 Q ${cx} ${172 + k} ${cx + 13} 172`;
 
 const PROOFS = [
   { k: "Financial Health", v: "Strong" },
@@ -71,26 +52,8 @@ const PROOFS = [
   { k: "Construction",     v: "On Track" },
 ];
 
-const VALUE_PROPS = [
-  "Verbal promises → verified proofs",
-  "One dedicated expert, not ten brokers",
-  "Every claim documented",
-  "Decide with confidence",
-];
-
-/* Background tints across the descent and recovery */
-const BG = ["#F3EDE3", "#EFE8DD", "#E8E0D2", "#E0D8C9", "#17140F", "#F8F5EF"];
-
 export default function BuyerJourneySection() {
   const ref = useRef<HTMLDivElement>(null);
-  const [hereReady, setHereReady] = useState(false);
-
-  /* Probe for the portrait set — hide the placeholder once photos exist */
-  useEffect(() => {
-    const img = new window.Image();
-    img.onload = () => setHereReady(true);
-    img.src = `${basePath}/images/buyer/${FRAMES[0]}.png`;
-  }, []);
 
   useEffect(() => {
     const pin = ref.current;
@@ -98,95 +61,94 @@ export default function BuyerJourneySection() {
 
     gsap.registerPlugin(ScrollTrigger);
 
-    const bgEl   = pin.querySelector<HTMLElement>("[data-bg]")!;
-    const glow   = pin.querySelector<HTMLElement>("[data-glow]")!;
-    const frames = Array.from(pin.querySelectorAll<HTMLElement>("[data-frame]"));
-    const tops   = Array.from(pin.querySelectorAll<HTMLElement>("[data-top]"));
-    const pills  = Array.from(pin.querySelectorAll<HTMLElement>("[data-pill]"));
-    const portrait = pin.querySelector<HTMLElement>("[data-portrait]")!;
-    const solution = pin.querySelector<HTMLElement>("[data-solution]")!;
+    const bgEl    = pin.querySelector<HTMLElement>("[data-bg]")!;
+    const svgWrap = pin.querySelector<HTMLElement>("[data-svgwrap]")!;
+    const personL = pin.querySelector<SVGGElement>("[data-person='L']")!;
+    const personR = pin.querySelector<SVGGElement>("[data-person='R']")!;
+    const mouthL  = pin.querySelector<SVGPathElement>("[data-mouth='L']")!;
+    const mouthR  = pin.querySelector<SVGPathElement>("[data-mouth='R']")!;
+    const tangles = Array.from(pin.querySelectorAll<SVGPathElement>("[data-tangle]"));
+    const clean   = pin.querySelector<SVGPathElement>("[data-clean]")!;
+    const copy    = Array.from(pin.querySelectorAll<HTMLElement>("[data-copy]"));
+    const emo     = Array.from(pin.querySelectorAll<HTMLElement>("[data-emo]"));
+    const office  = pin.querySelector<HTMLElement>("[data-officewrap]")!;
     const officeEls = Array.from(pin.querySelectorAll<HTMLElement>("[data-office]"));
-    const envs = [
-      pin.querySelector<HTMLElement>('[data-env="dream"]'),
-      pin.querySelector<HTMLElement>('[data-env="portals"]'),
-      pin.querySelector<HTMLElement>('[data-env="brokers"]'),
-      pin.querySelector<HTMLElement>('[data-env="promises"]'),
-      pin.querySelector<HTMLElement>('[data-env="chaos"]'),
-    ];
 
-    /* ── Initial states — beat 0 (Dream) is live ── */
+    /* Prime the ink: dash each scribble + the clean line so they can draw on */
+    const len = (p: SVGPathElement) => {
+      const L = p.getTotalLength();
+      p.style.strokeDasharray = `${L}`;
+      p.style.strokeDashoffset = `${L}`;
+      return L;
+    };
+    const tLens = tangles.map(len);
+    len(clean);
+
+    /* Initial states — stage 0 (the dream) is live */
     gsap.set(bgEl, { backgroundColor: BG[0] });
-    gsap.set(glow, { opacity: 1 });
-    frames.forEach((f, i) => gsap.set(f, { opacity: i === 0 ? 1 : 0 }));
-    tops.forEach((t, i)  => gsap.set(t, { opacity: i === 0 ? 1 : 0, y: i === 0 ? 0 : 8 }));
-    pills.forEach((p, i) => gsap.set(p, { opacity: i === 0 ? 1 : 0 }));
-    envs.forEach((e, i)  => e && gsap.set(e, { opacity: i === 0 ? 1 : 0 }));
-    gsap.set(solution, { opacity: 0 });
-    gsap.set(portrait, { yPercent: 0, scale: 1 });
+    copy.forEach((c, i) => gsap.set(c, { opacity: i === 0 ? 1 : 0, y: i === 0 ? 0 : 8 }));
+    emo.forEach((e, i) => gsap.set(e, { opacity: i === 0 ? 1 : 0 }));
+    gsap.set(office, { opacity: 0, y: 14 });
+    gsap.set(mouthL, { attr: { d: mouth(180, MOUTH[0]) } });
+    gsap.set(mouthR, { attr: { d: mouth(260, MOUTH[0]) } });
 
     let cur = 0;
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: pin,
         start: "top top",
-        end: "+=760%",
+        end: "+=680%",
         pin: true,
         scrub: 0.5,
         anticipatePin: 1,
       },
     });
 
-    /* Move from the current beat to beat `iTo`. The headline + pill sit at
-       the same position each beat, so they fade OUT fully before the next
-       fades IN (sequential, never ghosting). Portrait, environment and
-       background cross-fade concurrently — those are different visuals. */
+    /* A noise beat (stages 1–4): copy reflows, mouths fall, ink draws in. */
     const go = (iTo: number, hold = 0.1) => {
-      // ── OUT (concurrent) + portrait/env/bg cross-fade ──
-      tl.to(tops[cur],  { opacity: 0, y: -8, duration: 0.045 });
-      tl.to(pills[cur], { opacity: 0, duration: 0.045 }, "<");
-      tl.to(frames[cur], { opacity: 0, duration: 0.06 }, "<");
-      if (envs[cur]) tl.to(envs[cur]!, { opacity: 0, duration: 0.05 }, "<");
+      tl.to(copy[cur], { opacity: 0, y: -8, duration: 0.045 });
+      tl.to(emo[cur],  { opacity: 0, duration: 0.045 }, "<");
       tl.to(bgEl, { backgroundColor: BG[iTo], duration: 0.09 }, "<");
-      if (iTo === 1) tl.to(glow, { opacity: 0, duration: 0.07 }, "<"); // warm light leaves
-      tl.to(frames[iTo], { opacity: 1, duration: 0.06 }, "<");
-      if (envs[iTo]) tl.to(envs[iTo]!, { opacity: 1, duration: 0.07 }, "<");
-      // ── IN narrative (appended after the OUT block, so no overlap) ──
-      tl.to(tops[iTo],  { opacity: 1, y: 0, duration: 0.05 });
-      tl.to(pills[iTo], { opacity: 1, duration: 0.05 }, "<");
+      tl.to(mouthL, { attr: { d: mouth(180, MOUTH[iTo]) }, duration: 0.07, ease: "power1.inOut" }, "<");
+      tl.to(mouthR, { attr: { d: mouth(260, MOUTH[iTo]) }, duration: 0.07, ease: "power1.inOut" }, "<");
+      tl.to(personL, { x: -DRIFT[iTo], duration: 0.08, ease: "power1.inOut" }, "<");
+      tl.to(personR, { x:  DRIFT[iTo], duration: 0.08, ease: "power1.inOut" }, "<");
+      TANGLE_BY_STAGE[iTo].forEach((idx) => {
+        tl.to(tangles[idx], { strokeDashoffset: 0, duration: 0.09, ease: "power1.inOut" }, "<");
+      });
+      tl.to(copy[iTo], { opacity: 1, y: 0, duration: 0.05 });
+      tl.to(emo[iTo],  { opacity: 1, duration: 0.05 }, "<");
       tl.to({}, { duration: hold });
       cur = iTo;
     };
 
     tl.to({}, { duration: 0.07 });   // hold the dream
-    go(1);                           // Portals — spam
-    go(2);                           // Brokers — multiply
-    go(3);                           // Promises — claims
-    go(4, 0.14);                     // Chaos — dim, doubts (hold longer)
+    go(1);                            // a thousand listings
+    go(2);                            // a hundred opinions
+    go(3);                            // endless promises
+    go(4, 0.14);                      // an ocean away — densest, held
 
-    /* ── THE EXHALE — the moment of relief ── */
-    tl.to(frames[4], { opacity: 0, duration: 0.06 });
-    tl.to(frames[5], { opacity: 1, duration: 0.06 }, "<");      // smile returns
-    tl.to(tops[4],   { opacity: 0, y: -8, duration: 0.05 }, "<");
-    tl.to(pills[4],  { opacity: 0, duration: 0.05 }, "<");
-    tl.to(envs[4]!,  { opacity: 0, duration: 0.07 }, "<");
-    tl.to(bgEl, { backgroundColor: BG[5], duration: 0.13, ease: "power1.inOut" }, "<"); // dark → clean
-    tl.to({}, { duration: 0.06 });                              // breathe on her relief
+    /* ── THE TURN — the tangle unravels into one clean gold line ── */
+    tl.to(copy[4], { opacity: 0, y: -8, duration: 0.05 });
+    tl.to(emo[4],  { opacity: 0, duration: 0.05 }, "<");
+    tl.to(bgEl, { backgroundColor: BG[5], duration: 0.14, ease: "power1.inOut" }, "<");
+    tl.to(mouthL, { attr: { d: mouth(180, MOUTH[5]) }, duration: 0.1, ease: "power2.out" }, "<");
+    tl.to(mouthR, { attr: { d: mouth(260, MOUTH[5]) }, duration: 0.1, ease: "power2.out" }, "<");
+    tl.to(personL, { x: -DRIFT[5], duration: 0.1, ease: "power2.out" }, "<");
+    tl.to(personR, { x:  DRIFT[5], duration: 0.1, ease: "power2.out" }, "<");
+    tangles.forEach((p, i) => {
+      tl.to(p, { strokeDashoffset: tLens[i], duration: 0.11, ease: "power1.inOut" }, i ? "<0.004" : "<");
+    });
+    tl.to(clean, { strokeDashoffset: 0, duration: 0.13, ease: "power2.out" });
 
-    /* ── THE SOLUTION — she settles up; the Buyer Office takes centre ── */
-    tl.to(portrait, { yPercent: -22, scale: 0.74, duration: 0.1, ease: "power2.out" });
-    tl.to(tops[5],  { opacity: 1, y: 0, duration: 0.06 }, "<");
-    tl.to(pills[5], { opacity: 1, duration: 0.06 }, "<0.02");
-    tl.to(solution, { opacity: 1, duration: 0.07 }, "<");
-    tl.fromTo(
-      officeEls,
-      { opacity: 0, y: 16 },
-      { opacity: 1, y: 0, duration: 0.05, stagger: 0.028, ease: "power2.out" },
-      "<0.02",
-    );
-    tl.to({}, { duration: 0.2 });                               // hold the payoff
+    tl.to(copy[5], { opacity: 1, y: 0, duration: 0.06 });
+    tl.to(emo[5],  { opacity: 1, duration: 0.06 }, "<");
+    tl.to(office, { opacity: 1, y: 0, duration: 0.07 }, "<0.02");
+    tl.fromTo(officeEls, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.05, stagger: 0.025, ease: "power2.out" }, "<0.02");
+    tl.to({}, { duration: 0.2 });    // hold the payoff
 
-    /* ── Hand off to ExperienceSection (#0a0a0a) ── */
-    tl.to([portrait, solution, tops[5], pills[5]], { opacity: 0, y: -10, duration: 0.07, ease: "power2.in" });
+    /* Hand off to ExperienceSection (#0a0a0a) */
+    tl.to([copy[5], emo[5], office, svgWrap], { opacity: 0, y: -10, duration: 0.07, ease: "power2.in" });
     tl.to(bgEl, { backgroundColor: "#0a0a0a", duration: 0.08 }, "<");
 
     const st = tl.scrollTrigger;
@@ -200,216 +162,109 @@ export default function BuyerJourneySection() {
   return (
     <div ref={ref} className="relative h-svh w-full overflow-hidden">
       <div data-bg className="absolute inset-0" style={{ backgroundColor: BG[0] }} />
-      <div
-        data-glow
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 60% 55% at 50% 42%, rgba(201,169,110,0.16) 0%, transparent 62%)",
-        }}
-      />
 
-      {/* ─────────── HER (centred portrait, 6 cross-faded frames) ─────────── */}
-      <div
-        data-portrait
-        className="pointer-events-none absolute left-1/2 top-1/2 z-20 h-[46vh] w-[64vw] max-w-[360px] -translate-x-1/2 -translate-y-1/2 md:h-[52vh] md:w-[30vw]"
-      >
-        {/* Head-and-shoulders silhouette placeholder — clearly "a person goes
-            here," fades away once the real photos exist */}
-        <div
-          className={`absolute inset-0 flex items-end justify-center transition-opacity duration-700 ${
-            hereReady ? "opacity-0" : "opacity-100"
-          }`}
-        >
-          <svg
-            viewBox="0 0 200 250"
-            className="h-[94%] w-auto"
-            fill="#1a1a1a"
-            style={{ opacity: 0.07 }}
-            aria-hidden="true"
-          >
-            <circle cx="100" cy="66" r="46" />
-            <path d="M16 250 C16 166 52 136 100 136 C148 136 184 166 184 250 Z" />
+      <div className="relative z-10 mx-auto flex h-full max-w-6xl flex-col px-6 md:flex-row md:items-center md:px-10">
+        {/* ─────────── THE COUPLE (calligraphy) + emotion ─────────── */}
+        <div data-svgwrap className="flex h-[50%] w-full flex-col items-center justify-end md:h-full md:w-[54%] md:justify-center">
+          <svg viewBox="0 0 440 340" className="h-auto w-full max-w-[460px]" aria-hidden="true">
+            <g
+              fill="none"
+              stroke="#1a1a1a"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              {/* shared shoulder line — togetherness */}
+              <path d="M120 306 C150 252 200 246 220 246 C240 246 290 252 320 306" strokeWidth={2.2} />
+
+              {/* the ink tangle (noise) */}
+              {TANGLES.map((d, i) => (
+                <path key={i} data-tangle d={d} strokeWidth={1.4} stroke="#1a1a1a" strokeOpacity={0.5} />
+              ))}
+
+              {/* the one clean line — proof — gold */}
+              <path data-clean d={CLEAN} stroke="#c9a96e" strokeWidth={2.4} />
+
+              {/* person L */}
+              <g data-person="L">
+                <circle cx={180} cy={150} r={46} />
+                <path d="M138 120 C150 92 212 92 222 120" strokeWidth={1.8} />
+                <circle cx={168} cy={148} r={3} fill="#1a1a1a" stroke="none" />
+                <circle cx={193} cy={148} r={3} fill="#1a1a1a" stroke="none" />
+                <path data-mouth="L" d={mouth(180, 12)} strokeWidth={2} />
+              </g>
+
+              {/* person R */}
+              <g data-person="R">
+                <circle cx={260} cy={150} r={46} />
+                <path d="M220 118 C234 98 286 98 302 122" strokeWidth={1.8} />
+                <circle cx={248} cy={148} r={3} fill="#1a1a1a" stroke="none" />
+                <circle cx={273} cy={148} r={3} fill="#1a1a1a" stroke="none" />
+                <path data-mouth="R" d={mouth(260, 12)} strokeWidth={2} />
+              </g>
+            </g>
           </svg>
-        </div>
-        {/* Frames as background-images — a missing file simply shows nothing
-            (no broken-image glyph), so the placeholder reads through cleanly. */}
-        {FRAMES.map((name) => (
-          <div
-            key={name}
-            data-frame
-            className="absolute inset-0 bg-contain bg-bottom bg-no-repeat"
-            style={{ backgroundImage: `url(${basePath}/images/buyer/${name}.png)` }}
-          />
-        ))}
-      </div>
 
-      {/* ─────────── ENVIRONMENTS (the noise, rendered in code) ─────────── */}
-
-      {/* Beat 0 — Dream: a dream-home thought bubble */}
-      <div data-env="dream" className="pointer-events-none absolute inset-0 z-10">
-        <div
-          className="absolute left-[22%] top-[28%] flex h-24 w-24 items-center justify-center rounded-full bg-white/70 shadow-[0_8px_40px_rgba(201,169,110,0.18)] backdrop-blur-sm md:left-[30%] md:h-28 md:w-28"
-          style={{ animation: "soft-float 7s ease-in-out infinite" }}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="#c9a96e" strokeWidth="1.4" className="h-9 w-9">
-            <path d="M3 11l9-7 9 7M5 10v9h14v-9" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
-        <span className="absolute left-[20%] top-[44%] block h-2 w-2 rounded-full bg-white/60 md:left-[28%]" />
-        <span className="absolute left-[24%] top-[48%] block h-1.5 w-1.5 rounded-full bg-white/50 md:left-[31%]" />
-      </div>
-
-      {/* Beat 1 — Portals: notification spam */}
-      <div data-env="portals" className="pointer-events-none absolute inset-0 z-10">
-        {NOTIFICATIONS.map((n, i) => (
-          <div
-            key={n.label}
-            className="absolute flex items-center gap-2 rounded-xl bg-white/85 px-3.5 py-2 shadow-[0_6px_24px_rgba(0,0,0,0.08)] backdrop-blur-sm"
-            style={{ left: `${n.left}%`, top: `${n.top}%`, animation: `soft-float ${6 + i}s ease-in-out infinite` }}
-          >
-            <span className="text-[0.8rem] font-medium text-[#1a1a1a]/80">{n.label}</span>
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#d4503e] px-1.5 text-[0.62rem] font-semibold text-white">
-              {n.badge}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Beat 2 — Brokers: one becomes ten */}
-      <div data-env="brokers" className="pointer-events-none absolute inset-0 z-10">
-        {BROKER_POS.map((b, i) => (
-          <div
-            key={i}
-            className="absolute flex h-11 w-11 items-center justify-center rounded-full bg-[#1a1a1a]/[0.08] ring-1 ring-[#1a1a1a]/10 md:h-12 md:w-12"
-            style={{ left: `${b.left}%`, top: `${b.top}%`, animation: `soft-float ${5 + (i % 4)}s ease-in-out infinite` }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth="1.3" className="h-5 w-5 opacity-50">
-              <path d="M12 12a4 4 0 100-8 4 4 0 000 8zM4 20a8 8 0 0116 0" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#1e6b45] text-white">
-              <svg viewBox="0 0 24 24" fill="currentColor" className="h-2.5 w-2.5">
-                <path d="M6.6 10.8a15 15 0 006.6 6.6l2.2-2.2a1 1 0 011-.24 11 11 0 003.4.55 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1 11 11 0 00.55 3.4 1 1 0 01-.24 1z" />
-              </svg>
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Beat 3 — Promises: verbal claims */}
-      <div data-env="promises" className="pointer-events-none absolute inset-0 z-10">
-        {PROMISES.map((p, i) => (
-          <div
-            key={p.text}
-            className="absolute rounded-2xl rounded-bl-sm bg-[#1a1a1a] px-4 py-2.5 shadow-[0_8px_28px_rgba(0,0,0,0.16)]"
-            style={{ left: `${p.left}%`, top: `${p.top}%`, animation: `soft-float ${6 + (i % 3)}s ease-in-out infinite` }}
-          >
-            <span className="text-[0.82rem] font-medium italic text-white/90">&ldquo;{p.text}&rdquo;</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Beat 4 — Chaos: dark clouds, doubts, question marks */}
-      <div data-env="chaos" className="pointer-events-none absolute inset-0 z-10">
-        {/* clouds */}
-        <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 70% 60% at 50% 38%, rgba(0,0,0,0.45) 0%, transparent 66%)" }} />
-        {/* floating question marks */}
-        {[14, 30, 68, 84, 50].map((l, i) => (
-          <span
-            key={i}
-            className="absolute font-serif text-[1.6rem] text-white/25 md:text-[2rem]"
-            style={{ left: `${l}%`, top: `${18 + (i % 3) * 9}%`, animation: `soft-float ${5 + i}s ease-in-out infinite` }}
-          >
-            ?
-          </span>
-        ))}
-        {/* doubts */}
-        {DOUBTS.map((d, i) => (
-          <span
-            key={d.text}
-            className="absolute text-[0.82rem] font-light text-white/55 md:text-[0.9rem]"
-            style={{ left: `${d.left}%`, top: `${d.top}%`, animation: `soft-float ${7 + i}s ease-in-out infinite` }}
-          >
-            {d.text}
-          </span>
-        ))}
-      </div>
-
-      {/* ─────────── NARRATIVE (top kicker + line, bottom pill) ─────────── */}
-      <div className="pointer-events-none absolute inset-x-0 top-[8%] z-30 flex flex-col items-center px-6 text-center md:top-[10%]">
-        {NARRATIVE.map((n) => (
-          <div key={n.kicker} data-top className="absolute">
-            <p className={`text-[10px] font-medium uppercase tracking-[0.34em] ${n.dark ? "text-[#c9a96e]" : "text-[#c9a96e]"}`}>
-              {n.kicker}
-            </p>
-            <p className={`mt-3 font-serif text-[1.5rem] font-medium leading-[1.2] tracking-[-0.01em] md:text-[2.1rem] ${n.dark ? "text-white/90" : "text-[#1a1a1a]"}`}>
-              {n.line}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      <div className="pointer-events-none absolute inset-x-0 bottom-[8%] z-30 flex justify-center px-6">
-        {NARRATIVE.map((n) => (
-          <span
-            key={n.pill}
-            data-pill
-            className={`absolute rounded-full px-5 py-2 text-[0.82rem] font-light tracking-[0.02em] backdrop-blur-sm ${
-              n.dark ? "bg-white/10 text-white/85" : "bg-[#1a1a1a]/[0.05] text-[#1a1a1a]/70"
-            }`}
-          >
-            {n.pill}
-          </span>
-        ))}
-      </div>
-
-      {/* ─────────── THE SOLUTION — Buyer Office payoff ─────────── */}
-      <div
-        data-solution
-        className="absolute inset-x-0 bottom-[12%] z-30 flex justify-center px-6"
-      >
-        <div className="w-full max-w-md rounded-2xl border border-[#1a1a1a]/8 bg-white/80 p-6 shadow-[0_16px_60px_rgba(0,0,0,0.08)] backdrop-blur-md md:p-7">
-          <p data-office className="text-center text-[10px] font-medium uppercase tracking-[0.4em] text-[#c9a96e]">
-            Your Buyer Office
-          </p>
-
-          <div className="mt-5 grid grid-cols-[1fr_auto] items-center gap-4">
-            <div data-office>
-              <p className="text-[9px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/35">Recommended Verdict</p>
-              <p className="mt-1.5 font-serif text-[2rem] font-semibold leading-none text-[#1e6b45] md:text-[2.4rem]">Proceed</p>
-              <p className="mt-2 text-[0.72rem] font-light text-[#1a1a1a]/45">92% Confidence</p>
-            </div>
-            <div data-office className="text-right">
-              <div className="flex items-center justify-end gap-2.5">
-                <div className="text-right">
-                  <p className="text-[0.78rem] font-medium text-[#1a1a1a]/80">Arjun Mehta</p>
-                  <p className="text-[0.66rem] font-light text-[#1a1a1a]/45">Senior Analyst</p>
-                </div>
-                <div className="h-9 w-9 rounded-full bg-[#1a1a1a]/[0.08] ring-1 ring-[#1a1a1a]/10" />
-              </div>
-            </div>
-          </div>
-
-          <div data-office className="mt-6 grid grid-cols-2 gap-x-6 gap-y-2.5 border-t border-[#1a1a1a]/8 pt-5">
-            {PROOFS.map((p) => (
-              <div key={p.k} className="flex items-center justify-between">
-                <span className="text-[0.74rem] font-light text-[#1a1a1a]/55">{p.k}</span>
-                <span className="flex items-center gap-1 text-[0.74rem] font-medium text-[#1e6b45]">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" className="h-3 w-3">
-                    <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  {p.v}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <div data-office className="mt-6 flex flex-wrap justify-center gap-x-4 gap-y-1.5 border-t border-[#1a1a1a]/8 pt-5">
-            {VALUE_PROPS.map((v) => (
-              <span key={v} className="text-[0.68rem] font-light text-[#1a1a1a]/45">
-                {v}
+          {/* emotion tags */}
+          <div className="relative mt-3 h-7 w-full md:mt-6">
+            {STAGES.map((s, i) => (
+              <span
+                key={s.emo}
+                data-emo
+                className="absolute inset-x-0 text-center text-[0.72rem] font-light uppercase tracking-[0.32em] text-[#c9a96e]"
+                style={{ opacity: i === 0 ? 1 : 0 }}
+              >
+                {s.emo}
               </span>
             ))}
+          </div>
+        </div>
+
+        {/* ─────────── THE NARRATIVE (right / bottom) ─────────── */}
+        <div className="relative flex h-[50%] w-full items-center justify-center md:h-full md:w-[46%] md:justify-start">
+          <div className="relative h-[10rem] w-full max-w-md">
+            {STAGES.map((s, i) => (
+              <div
+                key={s.hero}
+                data-copy
+                className="absolute inset-x-0 top-0 text-center md:text-left"
+                style={{ opacity: i === 0 ? 1 : 0 }}
+              >
+                <p className="text-[10px] font-medium tracking-[0.4em] text-[#1a1a1a]/30">{s.k}</p>
+                <h2 className="mt-4 font-serif text-[2.1rem] font-medium leading-[1.1] tracking-[-0.015em] text-[#1a1a1a] md:text-[3rem] lg:text-[3.6rem]">
+                  {s.hero}
+                </h2>
+                <p className="mt-4 text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/45">
+                  {s.whisper}
+                </p>
+              </div>
+            ))}
+
+            {/* Buyer Office — the payoff, revealed at clarity */}
+            <div
+              data-officewrap
+              className="absolute inset-x-0 top-[7.5rem] mx-auto w-full max-w-sm rounded-2xl border border-[#1a1a1a]/8 bg-white/75 p-5 shadow-[0_16px_50px_rgba(0,0,0,0.07)] backdrop-blur-md"
+              style={{ opacity: 0 }}
+            >
+              <div data-office className="flex items-center justify-between">
+                <div>
+                  <p className="text-[8px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/35">Verdict</p>
+                  <p className="font-serif text-[1.7rem] font-semibold leading-none text-[#1e6b45]">Proceed</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[8px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/35">Confidence</p>
+                  <p className="font-serif text-[1.7rem] font-extralight leading-none text-[#1a1a1a]/85">92%</p>
+                </div>
+              </div>
+              <div data-office className="mt-4 grid grid-cols-2 gap-x-5 gap-y-1.5 border-t border-[#1a1a1a]/8 pt-4">
+                {PROOFS.map((p) => (
+                  <div key={p.k} className="flex items-center justify-between">
+                    <span className="text-[0.66rem] font-light text-[#1a1a1a]/50">{p.k}</span>
+                    <span className="text-[0.66rem] font-medium text-[#1e6b45]">{p.v}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
