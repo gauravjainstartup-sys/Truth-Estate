@@ -3,6 +3,7 @@
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import { fmtPsf, scoredProjectsIn, type MarketIntel } from "@/lib/markets";
+import { projectSlug } from "@/lib/projects";
 
 const basePath = "/Truth-Estate";
 
@@ -98,7 +99,7 @@ export default function MarketProfile({ m }: { m: MarketIntel }) {
                 return (
                   <div key={p.name} className="flex items-center gap-4 p-5 md:p-6">
                     <div className="min-w-0 flex-1">
-                      <p className="font-serif text-[1.15rem] text-[#1a1a1a]">{p.name}</p>
+                      <a href={`${basePath}/intelligence/projects/${projectSlug(p.name)}`} className="font-serif text-[1.15rem] text-[#1a1a1a] transition-colors hover:text-[#1e6b45]">{p.name}</a>
                       <p className="mt-1 font-mono text-[0.68rem] tracking-[0.04em] text-[#1a1a1a]/40">
                         {ds ? <a href={`${basePath}/intelligence/developers/${ds}`} className="underline decoration-[#c9a96e]/40 underline-offset-2 hover:text-[#1a1a1a]/70">{p.developer.toUpperCase()}</a> : p.developer.toUpperCase()}
                         {" "}· ₹{p.budget[0]}–{p.budget[1]} CR
