@@ -1,5 +1,5 @@
 import Hero from "@/components/Hero";
-import BuyerJourneySection from "@/components/BuyerJourneySection";
+import StorySection from "@/components/StorySection";
 import ExperienceSection from "@/components/ExperienceSection";
 import Footer from "@/components/Footer";
 
@@ -8,7 +8,7 @@ export default function Home() {
     <>
       <main>
         <Hero />
-        <BuyerJourneySection />
+        <StorySection />
         <ExperienceSection />
       </main>
       <Footer />
