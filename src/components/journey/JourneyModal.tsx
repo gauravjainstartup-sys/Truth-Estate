@@ -511,7 +511,7 @@ export default function JourneyModal({
       setStep(live ? INTENT_STEP[g] : "coming-soon");
     };
     return frame(
-      <Shell onClose={onClose} onBack={() => setStep("welcome")} eyebrow="The Truth Estate Journey">
+      <Shell onClose={onClose} eyebrow="The Truth Estate Journey">
         <div key="goal" className="animate-fade-up">
           <ScreenHeading title="What's your goal today?" />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
