@@ -362,17 +362,12 @@ function IndependentRepresentation() {
         <div ref={fillRef} className="absolute left-[5.5px] top-1 w-px bg-[#c9a96e]" style={{ height: 0 }} />
 
         <div className="flex flex-col gap-[16vh] md:gap-[20vh]">
-          <Stage kicker="Start" heading="Tell us what you're looking for.">
+          <Stage kicker="Start" heading="It starts with you — not inventory.">
             <p className="mt-5 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.05rem]">
-              Your goals, priorities and timeline become the starting point&mdash;not inventory.
+              Your goals, priorities and timeline are the brief. We translate them into your Buyer DNA&mdash;what genuinely matters to you&mdash;before recommending a single property.
             </p>
-          </Stage>
-
-          <Stage kicker="Understand" heading="Buyer DNA">
-            <p className="mt-5 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.05rem]">
-              We understand what matters most to you before recommending anything.
-            </p>
-            <div className="mt-8 max-w-md space-y-3.5">
+            <p className="mt-9 text-[10px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]/70">Your Buyer DNA</p>
+            <div className="mt-5 max-w-md space-y-3.5">
               {dna.map(([label, w]) => (
                 <div key={label} className="flex items-center gap-4">
                   <span className="w-32 shrink-0 text-[10px] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/45">
@@ -386,35 +381,33 @@ function IndependentRepresentation() {
             </div>
           </Stage>
 
-          <Stage kicker="Investigate" heading="Truth Intelligence">
-            <p className="mt-6 font-serif text-[1.05rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.25rem]">
-              Projects&nbsp;&middot; Developers&nbsp;&middot; Construction&nbsp;&middot; Legal&nbsp;&middot; Pricing&nbsp;&middot; Location
-            </p>
-            <p className="mt-6 font-serif text-[1.1rem] font-light italic text-[#1a1a1a]/75 md:text-[1.3rem]">
-              Every recommendation begins with evidence.
-            </p>
-          </Stage>
-
-          <Stage kicker="Challenge" heading="TruthGuide">
+          <Stage kicker="Clarity" heading="See clearly. Ask freely.">
             <p className="mt-5 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.05rem]">
-              Ask anything. Question every recommendation. Every answer is transparent and evidence-backed.
+              We know every project down to the unit&mdash;so you never have to guess. Ask anything, and we&rsquo;ll tell you straight.
+            </p>
+            <p className="mt-7 font-serif text-[1.05rem] font-light leading-relaxed text-[#1a1a1a]/60 md:text-[1.2rem]">
+              Developer&nbsp;&middot; Location&nbsp;&middot; Project&nbsp;&middot; Tower&nbsp;&middot; Unit&nbsp;&middot; Legal&nbsp;&middot; Pricing
             </p>
             <div className="mt-8 max-w-md border-l border-[#c9a96e]/35 pl-6">
               <p className="font-serif text-[1.2rem] font-light italic leading-snug text-[#1a1a1a]/75 md:text-[1.4rem]">
-                &ldquo;Should I buy DLF Arbour?&rdquo;
+                &ldquo;Which unit in DLF Arbour is best for natural light and vastu?&rdquo;
               </p>
               <div className="mt-5 flex flex-col gap-3 text-[0.85rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[0.92rem]">
                 <p>
-                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#c9a96e]">Evidence</span>
-                  92% on-time delivery &middot; ~8% below comparable GCE towers
+                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#c9a96e]">Pick</span>
+                  Tower C &middot; higher floors &middot; east-facing
                 </p>
                 <p>
-                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#c9a96e]">Confidence</span>
-                  High
+                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#c9a96e]">Light</span>
+                  Open morning sun; no tower planned to the east
                 </p>
                 <p>
-                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#c9a96e]">Sources</span>
-                  Haryana RERA &middot; DLF delivery records
+                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#c9a96e]">Vastu</span>
+                  North-east entry, master suite to the south-west
+                </p>
+                <p>
+                  <span className="mr-3 whitespace-nowrap text-[10px] uppercase tracking-[0.2em] text-[#c9a96e]">Worth knowing</span>
+                  A small premium over the west-facing stacks
                 </p>
               </div>
             </div>
