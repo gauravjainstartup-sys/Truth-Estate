@@ -366,18 +366,20 @@ function IndependentRepresentation() {
             <p className="mt-5 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.05rem]">
               Your goals, priorities and timeline are the brief. We translate them into your Buyer DNA&mdash;what genuinely matters to you&mdash;before recommending a single property.
             </p>
-            <p className="mt-9 text-[10px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]/70">Your Buyer DNA</p>
-            <div className="mt-5 max-w-md space-y-3.5">
-              {dna.map(([label, w]) => (
-                <div key={label} className="flex items-center gap-4">
-                  <span className="w-32 shrink-0 text-[10px] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/45">
-                    {label}
-                  </span>
-                  <span className="relative h-px flex-1 bg-[#1a1a1a]/12">
-                    <span className="absolute left-0 top-0 h-px bg-[#c9a96e]" style={{ width: `${w}%` }} />
-                  </span>
-                </div>
-              ))}
+            <div className="mt-8 max-w-md rounded-xl border border-[#1a1a1a]/12 bg-white p-6">
+              <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]/80">Your Buyer DNA</p>
+              <div className="mt-5 space-y-3.5">
+                {dna.map(([label, w]) => (
+                  <div key={label} className="flex items-center gap-4">
+                    <span className="w-32 shrink-0 text-[10px] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/45">
+                      {label}
+                    </span>
+                    <span className="relative h-px flex-1 bg-[#1a1a1a]/12">
+                      <span className="absolute left-0 top-0 h-px bg-[#c9a96e]" style={{ width: `${w}%` }} />
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </Stage>
 
@@ -388,25 +390,25 @@ function IndependentRepresentation() {
             <p className="mt-7 font-serif text-[1.05rem] font-light leading-relaxed text-[#1a1a1a]/60 md:text-[1.2rem]">
               Developer&nbsp;&middot; Location&nbsp;&middot; Project&nbsp;&middot; Tower&nbsp;&middot; Unit&nbsp;&middot; Legal&nbsp;&middot; Pricing
             </p>
-            <div className="mt-8 max-w-md">
+            <div className="mt-8 max-w-md rounded-xl border border-[#1a1a1a]/12 bg-white p-6">
               <p className="font-serif text-[1.2rem] font-light italic leading-snug text-[#1a1a1a]/75 md:text-[1.4rem]">
                 &ldquo;Which unit in DLF Arbour is best for natural light and vastu?&rdquo;
               </p>
               <div className="mt-5 flex flex-col gap-3 text-[0.85rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[0.92rem]">
                 <p>
-                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#c9a96e]">Pick</span>
+                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/45">Pick</span>
                   Tower C &middot; higher floors &middot; east-facing
                 </p>
                 <p>
-                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#c9a96e]">Light</span>
+                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/45">Light</span>
                   Open morning sun; no tower planned to the east
                 </p>
                 <p>
-                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#c9a96e]">Vastu</span>
+                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/45">Vastu</span>
                   North-east entry, master suite to the south-west
                 </p>
                 <p>
-                  <span className="mr-3 whitespace-nowrap text-[10px] uppercase tracking-[0.2em] text-[#c9a96e]">Worth knowing</span>
+                  <span className="mr-3 whitespace-nowrap text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/45">Worth knowing</span>
                   A small premium over the west-facing stacks
                 </p>
               </div>
@@ -421,7 +423,7 @@ function IndependentRepresentation() {
             <p className="mt-5 max-w-md font-serif text-[1.05rem] font-light leading-relaxed text-[#1a1a1a]/60 md:text-[1.2rem]">
               Technology builds confidence; human judgement builds conviction. When you choose to go further, a dedicated advisor sits on your side of the table&mdash;and no one else&rsquo;s.
             </p>
-            <div className="mt-8 max-w-sm rounded-xl border border-[#1a1a1a]/12 bg-white p-6">
+            <div className="mt-8 max-w-md rounded-xl border border-[#1a1a1a]/12 bg-white p-6">
               <div className="flex items-center gap-4">
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#c9a96e]/50 bg-[#c9a96e]/10 font-serif text-[1rem] font-medium text-[#1a1a1a]/70">
                   {advisor.initials}
@@ -448,6 +450,26 @@ function IndependentRepresentation() {
             <p className="mt-5 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.05rem]">
               No calling ten brokers. No haggling. No wondering if you left money on the table. Our trusted network brings you the best terms available&mdash;and we secure them on your side.
             </p>
+            <div className="mt-8 max-w-md rounded-xl border border-[#1a1a1a]/12 bg-white p-6">
+              <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]/80">The same unit, three offers</p>
+              <div className="mt-4 flex flex-col gap-1">
+                <div className="flex items-center justify-between px-3 py-2.5 text-[0.9rem] font-light text-[#1a1a1a]/55">
+                  <span>Developer&rsquo;s discounted price</span>
+                  <span className="font-mono text-[#1a1a1a]/70">&#8377;4.5 Cr</span>
+                </div>
+                <div className="flex items-center justify-between px-3 py-2.5 text-[0.9rem] font-light text-[#1a1a1a]/55">
+                  <span>Execution partner</span>
+                  <span className="font-mono text-[#1a1a1a]/70">&#8377;4.8 Cr</span>
+                </div>
+                <div className="flex items-center justify-between rounded-lg bg-[#1e6b45]/[0.07] px-3 py-2.5 text-[0.95rem] font-medium text-[#1e6b45]">
+                  <span className="flex items-center gap-2">
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#1e6b45] text-[9px] leading-none text-white">&#10003;</span>
+                    Truth Estate
+                  </span>
+                  <span className="font-mono">&#8377;4.2 Cr</span>
+                </div>
+              </div>
+            </div>
           </Stage>
 
           {/* Climax — the relationship that doesn't end */}
