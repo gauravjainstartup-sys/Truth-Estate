@@ -1074,13 +1074,14 @@ export default function JourneyModal({
 
   if (step === "shortlist") {
     return frame(
-      <Shell onClose={onClose} onBack={() => setStep("dna")} eyebrow="Your Shortlist" align="top">
+      <Shell onClose={onClose} eyebrow="Your Shortlist" align="top">
         <ShortlistScreen
           recs={recs}
           onPick={(r) => {
             setSelected(r);
             setStep("preview");
           }}
+          onChangePreferences={() => setStep("dna")}
         />
       </Shell>
     );
@@ -1301,7 +1302,15 @@ function DnaScreen({
 /* ════════════════════════════════════════════════════════════════
    SHORTLIST — 127 → 3 reveal + recommendations
    ════════════════════════════════════════════════════════════════ */
-function ShortlistScreen({ recs, onPick }: { recs: Scored[]; onPick: (r: Scored) => void }) {
+function ShortlistScreen({
+  recs,
+  onPick,
+  onChangePreferences,
+}: {
+  recs: Scored[];
+  onPick: (r: Scored) => void;
+  onChangePreferences: () => void;
+}) {
   const [revealed, setRevealed] = useState(false);
   const total = useCountUp(ACTIVE_PROJECT_COUNT, true, 1900);
   useEffect(() => {
@@ -1311,19 +1320,27 @@ function ShortlistScreen({ recs, onPick }: { recs: Scored[]; onPick: (r: Scored)
 
   return (
     <div key="shortlist" className="animate-fade-up">
-      <div className="py-3 text-center md:py-6">
-        <p className="font-serif text-[1.1rem] font-light leading-snug text-[#1a1a1a]/80 md:text-[1.5rem]">
-          Based on everything you&apos;ve shared, there are
+      <div className="py-3 text-center md:py-5">
+        <p className="font-serif text-[1.05rem] font-light leading-snug text-[#1a1a1a]/70 md:text-[1.35rem]">
+          Based on everything you&apos;ve shared
         </p>
-        <p className="my-2.5 font-serif text-[3.2rem] font-medium leading-none text-[#1a1a1a] md:my-3.5 md:text-[4.4rem]">
-          {total}
-        </p>
-        <p className="font-serif text-[1.1rem] font-light leading-snug text-[#1a1a1a]/80 md:text-[1.5rem]">
-          active projects. We would investigate
-        </p>
-        <p className="mt-2.5 font-serif text-[1.9rem] font-medium leading-none text-[#1e6b45] md:mt-3 md:text-[2.5rem]">
-          only 3.
-        </p>
+        <div className="mt-5 flex items-center justify-center gap-6 md:mt-6 md:gap-12">
+          <div>
+            <p className="font-serif text-[3rem] font-medium leading-none text-[#1a1a1a] md:text-[4.2rem]">{total}</p>
+            <p className="mt-2 text-[9px] font-light uppercase tracking-[0.18em] text-[#1a1a1a]/45 md:mt-2.5 md:text-[10px]">
+              Active projects
+            </p>
+          </div>
+          <span className="font-serif text-[1.7rem] font-light text-[#c9a96e] md:text-[2.2rem]" aria-hidden>
+            &rarr;
+          </span>
+          <div>
+            <p className="font-serif text-[3rem] font-medium leading-none text-[#1e6b45] md:text-[4.2rem]">3</p>
+            <p className="mt-2 text-[9px] font-light uppercase tracking-[0.18em] text-[#1a1a1a]/45 md:mt-2.5 md:text-[10px]">
+              Worth investigating
+            </p>
+          </div>
+        </div>
       </div>
 
       <div
@@ -1363,9 +1380,17 @@ function ShortlistScreen({ recs, onPick }: { recs: Scored[]; onPick: (r: Scored)
             </button>
           ))}
         </div>
-        <p className="mt-5 text-center text-[0.75rem] font-light italic text-[#1a1a1a]/35">
-          No pricing yet — and no registration. Just our honest read.
-        </p>
+        <div className="mt-7 flex flex-col items-center gap-4">
+          <button
+            onClick={onChangePreferences}
+            className="inline-flex items-center gap-2 rounded-full border border-[#1a1a1a]/20 px-6 py-2.5 text-[0.82rem] font-light text-[#1a1a1a]/70 transition-colors duration-300 hover:border-[#1a1a1a]/45 hover:text-[#1a1a1a]"
+          >
+            <span aria-hidden>&larr;</span> Change preferences
+          </button>
+          <p className="text-center text-[0.75rem] font-light italic text-[#1a1a1a]/35">
+            No pricing yet — and no registration. Just our honest read.
+          </p>
+        </div>
       </div>
     </div>
   );
