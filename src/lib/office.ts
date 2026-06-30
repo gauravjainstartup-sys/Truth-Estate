@@ -15,6 +15,7 @@ import { advisorFor, loadConsultation, type ConsultAdvisor } from "./consultatio
 export type DealStage =
   | "booked"
   | "call_done"
+  | "curated"
   | "paid"
   | "site_visits"
   | "buy_mandate"
@@ -27,6 +28,7 @@ export type DealStage =
 export const STAGE_ORDER: DealStage[] = [
   "booked",
   "call_done",
+  "curated",
   "paid",
   "site_visits",
   "buy_mandate",
@@ -40,6 +42,7 @@ export const STAGE_ORDER: DealStage[] = [
 export const STAGE_LABEL: Record<DealStage, string> = {
   booked: "Consultation booked",
   call_done: "Consultation done",
+  curated: "Intelligence ready",
   paid: "Mandate active",
   site_visits: "Site visits",
   buy_mandate: "Buy mandate",
@@ -63,6 +66,8 @@ export const STAGE_ARC: { stage: DealStage; short: string }[] = [
 
 export const stageIndex = (s: DealStage) => STAGE_ORDER.indexOf(s);
 export const isPaid = (s: DealStage) => stageIndex(s) >= stageIndex("paid");
+export const callDone = (s: DealStage) => stageIndex(s) >= stageIndex("call_done");
+export const isCurated = (s: DealStage) => stageIndex(s) >= stageIndex("curated");
 
 /* ── Office sections (the URL buckets) ── */
 export type SectionKey =
@@ -124,6 +129,15 @@ export type OfficeRec = {
   note?: string;
 };
 
+/* The curated intelligence our team prepares after the call. The teaser
+   numbers are real and visible — what payment unlocks is the full depth. */
+export type Curation = {
+  tat: string; // turnaround, e.g. "about 48 hours"
+  report: { pages: number; teasers: Chip[] };
+  unit: { tags: string[]; teasers: Chip[] };
+  deal: { headline: string; sub: string } | null; // best deal sourced (price-sensitive)
+};
+
 export type OfficeThread = {
   id: string;
   label: string; // BUY 1 / BUY 2 / SELL
@@ -138,6 +152,7 @@ export type OfficeThread = {
   recs: OfficeRec[];
   questions: OfficeQuestion[];
   docs: OfficeDoc[];
+  curation: Curation | null;
 };
 
 export type OfficeState = { threads: OfficeThread[]; activeId: string };
@@ -153,6 +168,44 @@ const baseDocs = (): OfficeDoc[] => [
   { id: uid(), group: "Letters & Allotment", name: "Allotment / offer letters", status: "locked", note: "Upload when received" },
 ];
 
+const buyCuration: Curation = {
+  tat: "about 48 hours",
+  report: {
+    pages: 32,
+    teasers: [
+      { label: "True price / sq ft", value: "₹12,400 — vs ₹13,200 quoted" },
+      { label: "Possession risk", value: "Low · 92% on-time record" },
+    ],
+  },
+  unit: {
+    tags: ["3D unit views", "Vastu", "Air flow", "Livability index"],
+    teasers: [
+      { label: "Best stack", value: "Tower C · 17–22 floor" },
+      { label: "Livability index", value: "8.6 / 10" },
+    ],
+  },
+  deal: null,
+};
+
+const investCuration: Curation = {
+  tat: "about 48 hours",
+  report: {
+    pages: 28,
+    teasers: [
+      { label: "True price / sq ft", value: "₹11,900 — vs ₹13,100 quoted" },
+      { label: "Rental underwrite", value: "3.1% net today, building to 4.4%" },
+    ],
+  },
+  unit: {
+    tags: ["3D unit views", "Vastu", "Air flow", "Livability index"],
+    teasers: [
+      { label: "Best stack", value: "Tower C · 14–18 floor" },
+      { label: "Livability index", value: "8.4 / 10" },
+    ],
+  },
+  deal: { headline: "₹3.05 Cr sourced", sub: "₹22 lakh below the quoted price — held for you for 7 days" },
+};
+
 /* The single most important thing to do next, by stage. */
 export function nextStep(t: OfficeThread): { title: string; body: string; cta: string; section: SectionKey } {
   switch (t.stage) {
@@ -165,9 +218,16 @@ export function nextStep(t: OfficeThread): { title: string; body: string; cta: s
       };
     case "call_done":
       return {
-        title: "Your consultation summary is ready",
-        body: "See what your advisor found, the projects we'd pursue, and what we'd do next — unlock to continue.",
-        cta: "See the summary",
+        title: "We're building your decision matrix",
+        body: `Your call went well. Our team is curating the full intelligence on your shortlist — ready in ${t.curation?.tat ?? "about 48 hours"}. We'll notify you.`,
+        cta: "Review your call notes",
+        section: "advice",
+      };
+    case "curated":
+      return {
+        title: "Your intelligence is ready",
+        body: "See what our team curated — the real numbers, the tower- and unit-level intel, and the deal we sourced for you.",
+        cta: "See what we found",
         section: "recommendations",
       };
     default:
@@ -225,7 +285,7 @@ const DEMO_BUY2: OfficeThread = {
   label: "BUY 2",
   kind: "buy",
   title: "Dwarka Expressway · Investment",
-  stage: "call_done",
+  stage: "curated",
   archetype: "The Yield Seeker",
   dna: [
     { label: "Budget", value: "₹2–4 Cr" },
@@ -246,6 +306,7 @@ const DEMO_BUY2: OfficeThread = {
     { id: uid(), q: "Is the rental demand on Dwarka Expressway real yet?", a: "Occupancy is still building — yields are a 2–3 year story, not immediate. We'd underwrite on appreciation first.", by: "Your advisor", status: "answered", at: Date.now() - 86400000 },
   ],
   docs: baseDocs(),
+  curation: investCuration,
 };
 
 const DEMO_SELL: OfficeThread = {
@@ -266,6 +327,7 @@ const DEMO_SELL: OfficeThread = {
   recs: [],
   questions: [],
   docs: baseDocs(),
+  curation: null,
 };
 
 function seed(): OfficeState {
@@ -293,6 +355,7 @@ function seed(): OfficeState {
       recs: recsFromBuy(account.buy),
       questions: [],
       docs: baseDocs(),
+      curation: buyCuration,
     };
   } else {
     // No journey completed yet — a tasteful default so the office is alive.
@@ -320,6 +383,7 @@ function seed(): OfficeState {
       ],
       questions: [],
       docs: baseDocs(),
+      curation: buyCuration,
     };
   }
 
@@ -327,7 +391,7 @@ function seed(): OfficeState {
 }
 
 /* ── Persistence ── */
-const OFFICE_KEY = "truthEstate.office.v1";
+const OFFICE_KEY = "truthEstate.office.v2";
 
 export function loadOffice(): OfficeState {
   if (typeof window === "undefined") return seed();
