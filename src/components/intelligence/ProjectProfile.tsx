@@ -48,30 +48,67 @@ function Num({ v, k, accent }: { v: string; k: string; accent?: boolean }) {
   );
 }
 
-export default function ProjectProfile({ p }: { p: ProjectIntel }) {
+export default function ProjectProfile({
+  p,
+  embedded = false,
+  onClose,
+  onBack,
+  onConsult,
+  onChallenge,
+  onSelectAlternative,
+}: {
+  p: ProjectIntel;
+  /* When rendered inside the journey modal: drop the page chrome, keep the
+     reader in the flow, and route actions back to the journey. */
+  embedded?: boolean;
+  onClose?: () => void;
+  onBack?: () => void;
+  onConsult?: () => void;
+  onChallenge?: () => void;
+  onSelectAlternative?: (name: string) => void;
+}) {
   const { open } = useJourney();
+  const consult = onConsult ?? (() => open());
   const alts = alternativesIn(p.market, p.name);
   const devHref = p.devSlug ? `${basePath}/intelligence/developers/${p.devSlug}` : undefined;
   const marketHref = p.marketSlug ? `${basePath}/intelligence/markets/${p.marketSlug}` : undefined;
 
   return (
-    <div className="min-h-svh bg-[#F5F0E8] text-[#1a1a1a]">
+    <div className={`${embedded ? "h-full overflow-y-auto" : "min-h-svh"} bg-[#F5F0E8] text-[#1a1a1a]`}>
       <header className="sticky top-0 z-40 border-b border-[#1a1a1a]/6 bg-[#F5F0E8]/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-5xl items-center gap-4 px-6 py-4 md:px-10">
-          <a href={basePath} aria-label="Home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
-          <button onClick={() => open()} className="ml-auto rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.74rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] md:px-5">
-            Request Independent Advice
-          </button>
+          {embedded ? (
+            <>
+              <Logo color="#1a1a1a" className="h-7 w-auto opacity-80" />
+              <span className="ml-auto hidden text-[10px] font-light uppercase tracking-[0.4em] text-[#1a1a1a]/40 md:block">Project Intelligence</span>
+              <button onClick={onClose} aria-label="Close" className="ml-auto text-[11px] font-light tracking-[0.18em] text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a] md:ml-8">
+                CLOSE
+              </button>
+            </>
+          ) : (
+            <>
+              <a href={basePath} aria-label="Home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
+              <button onClick={consult} className="ml-auto rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.74rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] md:px-5">
+                Request Independent Advice
+              </button>
+            </>
+          )}
         </div>
       </header>
 
       <div className="mx-auto max-w-5xl px-6 pb-[12vh] pt-[6vh] md:px-10">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-[0.74rem] font-light text-[#1a1a1a]/35">
-          <a href={`${basePath}/intelligence/projects`} className="transition-colors hover:text-[#1a1a1a]/70">Projects</a>
-          <span className="text-[#1a1a1a]/20">/</span>
-          <span className="text-[#1a1a1a]/55">{p.name}</span>
-        </div>
+        {/* Breadcrumb / back to shortlist */}
+        {embedded ? (
+          <button onClick={onBack} className="flex items-center gap-2 text-[0.74rem] font-light text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a]/80">
+            <span aria-hidden>&larr;</span> Back to shortlist
+          </button>
+        ) : (
+          <div className="flex items-center gap-2 text-[0.74rem] font-light text-[#1a1a1a]/35">
+            <a href={`${basePath}/intelligence/projects`} className="transition-colors hover:text-[#1a1a1a]/70">Projects</a>
+            <span className="text-[#1a1a1a]/20">/</span>
+            <span className="text-[#1a1a1a]/55">{p.name}</span>
+          </div>
+        )}
 
         {/* Hero */}
         <div className="mt-9 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
@@ -166,13 +203,15 @@ export default function ProjectProfile({ p }: { p: ProjectIntel }) {
           </div>
         </Section>
 
-        {/* 05 · Context — developer + market */}
-        <Section n="05" title="Context">
-          <div className="grid gap-5 md:grid-cols-2">
-            <ContextCard kicker="Developer" title={p.developer} href={devHref} cta="Open developer dossier" />
-            <ContextCard kicker="Location" title={p.market} href={marketHref} cta={`Open ${p.marketShort} intelligence`} />
-          </div>
-        </Section>
+        {/* 05 · Context — developer + market (standalone page only) */}
+        {!embedded && (
+          <Section n="05" title="Context">
+            <div className="grid gap-5 md:grid-cols-2">
+              <ContextCard kicker="Developer" title={p.developer} href={devHref} cta="Open developer dossier" />
+              <ContextCard kicker="Location" title={p.market} href={marketHref} cta={`Open ${p.marketShort} intelligence`} />
+            </div>
+          </Section>
+        )}
 
         {/* Alternatives */}
         {alts.length > 0 && (
@@ -182,16 +221,24 @@ export default function ProjectProfile({ p }: { p: ProjectIntel }) {
               <h2 className="font-serif text-[1.7rem] font-medium tracking-[-0.01em] md:text-[2.1rem]">Also in {p.marketShort}</h2>
             </div>
             <div className="mt-8 divide-y divide-[#1a1a1a]/8 overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-white/50">
-              {alts.map((a) => (
-                <a key={a.slug} href={`${basePath}/intelligence/projects/${a.slug}`} className="flex items-center gap-4 p-5 transition-colors hover:bg-white/70 md:p-6">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-serif text-[1.15rem] text-[#1a1a1a]">{a.name}</p>
-                    <p className="mt-1 font-mono text-[0.68rem] tracking-[0.04em] text-[#1a1a1a]/40">{a.developer.toUpperCase()} · ₹{a.budget[0]}–{a.budget[1]} CR</p>
-                  </div>
-                  <span className={`hidden rounded-full border px-3 py-1 text-[0.64rem] font-medium sm:inline-block ${recoTone(a.recommendation)}`}>{a.recommendation}</span>
-                  <span className="w-10 text-right font-mono text-[1.3rem] font-light text-[#1e6b45]">{a.truthScore}</span>
-                </a>
-              ))}
+              {alts.map((a) => {
+                const cls = "flex w-full items-center gap-4 p-5 text-left transition-colors hover:bg-white/70 md:p-6";
+                const inner = (
+                  <>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-serif text-[1.15rem] text-[#1a1a1a]">{a.name}</p>
+                      <p className="mt-1 font-mono text-[0.68rem] tracking-[0.04em] text-[#1a1a1a]/40">{a.developer.toUpperCase()} · ₹{a.budget[0]}–{a.budget[1]} CR</p>
+                    </div>
+                    <span className={`hidden rounded-full border px-3 py-1 text-[0.64rem] font-medium sm:inline-block ${recoTone(a.recommendation)}`}>{a.recommendation}</span>
+                    <span className="w-10 text-right font-mono text-[1.3rem] font-light text-[#1e6b45]">{a.truthScore}</span>
+                  </>
+                );
+                return embedded ? (
+                  <button key={a.slug} onClick={() => onSelectAlternative?.(a.name)} className={cls}>{inner}</button>
+                ) : (
+                  <a key={a.slug} href={`${basePath}/intelligence/projects/${a.slug}`} className={cls}>{inner}</a>
+                );
+              })}
             </div>
           </section>
         )}
@@ -202,9 +249,16 @@ export default function ProjectProfile({ p }: { p: ProjectIntel }) {
             <p className="font-serif text-[1.5rem] font-medium leading-[1.2] md:text-[1.8rem]">Considering {p.name}?</p>
             <p className="mt-2 text-[0.88rem] font-light text-white/55">Get an independent read — the right price, the right stack, the honest risks — before you commit.</p>
           </div>
-          <button onClick={() => open()} className="shrink-0 rounded-sm bg-[#1e6b45] px-7 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
-            Request Independent Advice
-          </button>
+          <div className="flex w-full shrink-0 flex-col gap-3 sm:w-auto sm:flex-row">
+            {embedded && onChallenge && (
+              <button onClick={onChallenge} className="rounded-sm border border-white/25 px-7 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:border-white/55">
+                Challenge TruthGuide
+              </button>
+            )}
+            <button onClick={consult} className="rounded-sm bg-[#1e6b45] px-7 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
+              Request Independent Advice
+            </button>
+          </div>
         </div>
 
         <p className="mt-8 text-[0.72rem] font-light leading-[1.7] text-[#1a1a1a]/35">
