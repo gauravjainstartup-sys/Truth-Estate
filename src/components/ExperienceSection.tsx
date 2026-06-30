@@ -285,6 +285,47 @@ function IndependentRepresentation() {
     };
   }, []);
 
+  // Desktop only: the thesis opens centred, then slides centre → left and
+  // docks (frozen) as the timeline scrolls in on the right. Gated to lg via
+  // matchMedia, so mobile/tablet keep the natural stacked layout untouched.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    gsap.registerPlugin(ScrollTrigger);
+    const mm = gsap.matchMedia();
+    mm.add("(min-width: 1024px)", () => {
+      const col = root.querySelector<HTMLElement>("[data-leftcol]");
+      const thesis = root.querySelector<HTMLElement>("[data-thesis]");
+      if (!col || !thesis) return;
+      // Offset that centres the thesis block in the viewport (measured from the
+      // untransformed left column + block width, so it's transform-independent).
+      const centreX = () => {
+        const cr = col.getBoundingClientRect();
+        return Math.max(0, window.innerWidth / 2 - (cr.left + thesis.offsetWidth / 2));
+      };
+      const tw = gsap.fromTo(
+        thesis,
+        { x: centreX },
+        {
+          x: 0,
+          ease: "none",
+          scrollTrigger: {
+            trigger: root,
+            start: "top top",
+            end: "+=78%",
+            scrub: 0.5,
+            invalidateOnRefresh: true,
+          },
+        }
+      );
+      return () => {
+        tw.scrollTrigger?.kill();
+        tw.kill();
+      };
+    });
+    return () => mm.revert();
+  }, []);
+
   const dna: [string, number][] = [
     ["Budget", 72],
     ["Timeline", 46],
@@ -295,23 +336,28 @@ function IndependentRepresentation() {
 
   return (
     <section ref={rootRef} className="bg-[#F5F0E8] px-6 pb-[14vh] pt-[14vh] text-[#1a1a1a] md:px-8 md:pb-[20vh] md:pt-[20vh]">
-      {/* Header */}
-      <div className="mx-auto max-w-2xl">
-        <h2 className="font-serif text-[2.5rem] font-medium leading-[1.05] text-[#1a1a1a] md:text-[4rem] lg:text-[4.6rem]">
-          Independent
-          <br />
-          Representation.
-        </h2>
-        <p className="mt-7 font-serif text-[1.25rem] font-light italic leading-snug text-[#1a1a1a]/60 md:text-[1.7rem]">
-          From first thought to final signature.
-        </p>
-        <p className="mt-6 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/50 md:text-[1.05rem]">
-          Every great property decision begins with understanding&mdash;not selling.
-        </p>
-      </div>
+      {/* Desktop: frozen thesis (left) + scrolling timeline (right). Mobile/tablet: natural stack. */}
+      <div className="mx-auto max-w-2xl lg:grid lg:max-w-6xl lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-x-12">
+        {/* Left — thesis. Sticky + vertically centred on desktop; slides centre → left on scroll. */}
+        <div data-leftcol className="lg:sticky lg:top-0 lg:flex lg:h-svh lg:flex-col lg:justify-center">
+          <div data-thesis className="lg:max-w-[30rem] lg:will-change-transform">
+            <h2 className="font-serif text-[2.5rem] font-medium leading-[1.05] text-[#1a1a1a] md:text-[4rem] lg:text-[3.7rem]">
+              Independent
+              <br />
+              Representation.
+            </h2>
+            <p className="mt-7 font-serif text-[1.25rem] font-light italic leading-snug text-[#1a1a1a]/60 md:text-[1.7rem]">
+              From first thought to final signature.
+            </p>
+            <p className="mt-6 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/50 md:text-[1.05rem]">
+              Every great property decision begins with understanding&mdash;not selling.
+            </p>
+          </div>
+        </div>
 
-      {/* The spine */}
-      <div ref={spineRef} className="relative mx-auto mt-[16vh] max-w-2xl md:mt-[20vh]">
+        {/* Right — the spine timeline (natural scroll). Desktop top-pad so the first stage enters after the intro. */}
+        <div className="mt-[16vh] md:mt-[20vh] lg:mt-0 lg:pt-[86vh]">
+          <div ref={spineRef} className="relative">
         <div className="absolute bottom-1 left-[5.5px] top-1 w-px bg-[#1a1a1a]/12" />
         <div ref={fillRef} className="absolute left-[5.5px] top-1 w-px bg-[#c9a96e]" style={{ height: 0 }} />
 
@@ -416,13 +462,15 @@ function IndependentRepresentation() {
               <span className="italic text-[#1a1a1a]">Yours.</span>
             </p>
           </Stage>
+          </div>
+          </div>
         </div>
       </div>
 
       {/* Final */}
       <div
         data-stage
-        className="mx-auto mt-[18vh] max-w-2xl text-center md:mt-[24vh]"
+        className="mx-auto mt-[18vh] max-w-2xl text-center md:mt-[24vh] lg:mt-[26vh]"
         style={{ opacity: 0.16, willChange: "opacity" }}
       >
         <h2 className="font-serif text-[2.2rem] font-medium leading-[1.14] text-[#1a1a1a] md:text-[3.6rem]">
@@ -1371,21 +1419,31 @@ function CoverageSection() {
           one market at a time.
         </p>
 
-        {/* Abstract coverage pattern */}
+        {/* Gurugram, in outline — the district silhouette, with the markets we track */}
         <div data-r className="mx-auto mt-10 flex items-center justify-center md:mt-16" style={{ opacity: 0 }}>
-          <svg width="140" height="140" viewBox="0 0 180 180" fill="none" className="text-[#c9a96e] md:h-[180px] md:w-[180px]">
-            <circle cx="90" cy="90" r="18" stroke="currentColor" strokeWidth="0.5" opacity="0.5" />
-            <circle cx="90" cy="90" r="50" stroke="currentColor" strokeWidth="0.5" opacity="0.3" />
-            <circle cx="90" cy="90" r="82" stroke="currentColor" strokeWidth="0.5" opacity="0.15" strokeDasharray="4 6" />
-            <circle cx="90" cy="90" r="3" fill="currentColor" opacity="0.8" />
-            <circle cx="90" cy="40" r="2" fill="currentColor" opacity="0.4" />
-            <circle cx="130" cy="65" r="2" fill="currentColor" opacity="0.35" />
-            <circle cx="140" cy="100" r="2" fill="currentColor" opacity="0.3" />
-            <circle cx="55" cy="120" r="2" fill="currentColor" opacity="0.3" />
-            <circle cx="50" cy="70" r="2" fill="currentColor" opacity="0.35" />
-            <circle cx="110" cy="135" r="2" fill="currentColor" opacity="0.3" />
-            <line x1="90" y1="8" x2="90" y2="172" stroke="currentColor" strokeWidth="0.3" opacity="0.1" />
-            <line x1="8" y1="90" x2="172" y2="90" stroke="currentColor" strokeWidth="0.3" opacity="0.1" />
+          <svg width="170" height="170" viewBox="0 0 200 200" fill="none" className="text-[#c9a96e] md:h-[212px] md:w-[212px]">
+            {/* faint echo for depth */}
+            <path
+              d="M62 24 L86 20 L104 28 L118 10 L146 6 L150 16 L163 30 L158 40 L176 52 L199 74 L196 96 L198 122 L183 130 L168 128 L162 138 L165 150 L186 160 L197 174 L160 176 L143 175 L126 165 L110 162 L104 172 L92 188 L68 188 L46 199 L27 180 L16 156 L7 138 L25 119 L28 90 L18 75 L27 54 L28 36 L44 30 Z"
+              stroke="currentColor" strokeWidth="0.6" strokeOpacity="0.12" strokeDasharray="3 6"
+              transform="translate(100 100) scale(1.08) translate(-100 -100)"
+            />
+            {/* the boundary */}
+            <path
+              d="M62 24 L86 20 L104 28 L118 10 L146 6 L150 16 L163 30 L158 40 L176 52 L199 74 L196 96 L198 122 L183 130 L168 128 L162 138 L165 150 L186 160 L197 174 L160 176 L143 175 L126 165 L110 162 L104 172 L92 188 L68 188 L46 199 L27 180 L16 156 L7 138 L25 119 L28 90 L18 75 L27 54 L28 36 L44 30 Z"
+              stroke="currentColor" strokeWidth="1" strokeOpacity="0.55" strokeLinejoin="round"
+              fill="currentColor" fillOpacity="0.05"
+            />
+            {/* the micro-markets we track */}
+            <circle cx="150" cy="78" r="1.7" fill="currentColor" opacity="0.5" />
+            <circle cx="152" cy="118" r="1.7" fill="currentColor" opacity="0.45" />
+            <circle cx="120" cy="150" r="1.7" fill="currentColor" opacity="0.4" />
+            <circle cx="118" cy="48" r="1.7" fill="currentColor" opacity="0.4" />
+            <circle cx="58" cy="108" r="1.7" fill="currentColor" opacity="0.4" />
+            <circle cx="150" cy="166" r="1.7" fill="currentColor" opacity="0.35" />
+            {/* the core */}
+            <circle cx="104" cy="92" r="2.6" fill="currentColor" opacity="0.85" />
+            <circle cx="104" cy="92" r="6" stroke="currentColor" strokeWidth="0.5" opacity="0.3" />
           </svg>
         </div>
 
@@ -1408,91 +1466,6 @@ function CoverageSection() {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   SECTION 13 — CLOSING INVITATION
-   The final slide. Calm, confident, minimal.
-   ════════════════════════════════════════════════════════════════ */
-function ClosingSection() {
-  const ref = useRef<HTMLDivElement>(null);
-  const { open } = useJourney();
-  const { openConsult } = useConsultation();
-  useReveal(ref, 0.12);
-
-  return (
-    <div
-      ref={ref}
-      className="flex min-h-[90vh] items-center justify-center bg-[#0a0a0a] px-6 md:px-8"
-    >
-      <div className="mx-auto max-w-2xl py-[14vh] text-center md:py-[16vh]">
-        <h2
-          data-r
-          className="font-serif text-[2.4rem] font-bold leading-[1.12] text-white/90 md:text-[3.8rem] lg:text-[4.6rem]"
-          style={{ opacity: 0, transform: "translateY(24px)" }}
-        >
-          One confident decision.
-        </h2>
-
-        <div
-          data-r
-          className="mx-auto mt-10 max-w-md md:mt-14"
-          style={{ opacity: 0, transform: "translateY(16px)" }}
-        >
-          <p className="font-serif text-[1rem] font-light leading-[2] text-white/40 md:text-[1.15rem]">
-            The right property changes your portfolio.
-            <br />
-            The right decision changes your future.
-          </p>
-          <p className="mt-8 font-serif text-[1rem] font-light leading-[2] text-white/40 md:mt-10 md:text-[1.15rem]">
-            When you&apos;re ready,
-            <br />
-            we&apos;ll help you make it independently.
-          </p>
-        </div>
-
-        <div
-          data-r
-          className="mt-14 flex flex-col items-center gap-7 md:mt-20"
-          style={{ opacity: 0, transform: "translateY(14px)" }}
-        >
-          <button
-            onClick={() => open()}
-            className="group inline-flex items-center gap-3 rounded-sm border border-[#c9a96e]/30 bg-transparent px-12 py-5 font-serif text-[14px] font-light tracking-[0.1em] text-[#c9a96e] transition-all duration-500 hover:border-[#c9a96e]/50 hover:px-14 hover:shadow-lg hover:shadow-[#c9a96e]/5"
-          >
-            {PRIMARY_CTA}
-            <span className="inline-block transition-transform duration-500 group-hover:translate-x-1.5">
-              &rarr;
-            </span>
-          </button>
-
-          <button
-            onClick={() => open("research")}
-            className="group relative text-[13px] font-light tracking-[0.1em] text-white/40 transition-colors duration-400 hover:text-white/70"
-          >
-            Challenge TruthGuide &rarr;
-            <span className="absolute -bottom-1 left-0 h-px w-0 bg-white/30 transition-all duration-500 group-hover:w-full" />
-          </button>
-
-          <button
-            onClick={() => openConsult({ sourceKind: "homepage" })}
-            className="group relative text-[13px] font-light tracking-[0.1em] text-white/40 transition-colors duration-400 hover:text-white/70"
-          >
-            Request Independent Advice &rarr;
-            <span className="absolute -bottom-1 left-0 h-px w-0 bg-white/30 transition-all duration-500 group-hover:w-full" />
-          </button>
-        </div>
-
-        <p
-          data-r
-          className="mt-14 text-[11px] font-light tracking-[0.12em] text-white/20 md:mt-18"
-          style={{ opacity: 0 }}
-        >
-          No sales pressure. No obligations. Just independent advice.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
    MAIN EXPORT
    ════════════════════════════════════════════════════════════════ */
 export default function ExperienceSection() {
@@ -1506,7 +1479,6 @@ export default function ExperienceSection() {
       <QuestionsSection />
       <div className="h-[20vh] bg-gradient-to-b from-[#F5F0E8] to-[#0a0a0a] md:h-[30vh]" />
       <PromiseSection />
-      <ClosingSection />
       <CoverageSection />
     </section>
   );
