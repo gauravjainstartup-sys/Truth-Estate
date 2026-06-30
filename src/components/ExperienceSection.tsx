@@ -448,6 +448,26 @@ function IndependentRepresentation() {
             <p className="mt-5 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.05rem]">
               No calling ten brokers. No haggling. No wondering if you left money on the table. Our trusted network brings you the best terms available&mdash;and we secure them on your side.
             </p>
+            <div className="mt-8 max-w-md rounded-xl border border-[#1a1a1a]/12 bg-white p-6">
+              <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]/80">The same unit, three offers</p>
+              <div className="mt-4 flex flex-col gap-1">
+                <div className="flex items-center justify-between px-3 py-2.5 text-[0.9rem] font-light text-[#1a1a1a]/55">
+                  <span>Developer&rsquo;s discounted price</span>
+                  <span className="font-mono text-[#1a1a1a]/70">&#8377;4.5 Cr</span>
+                </div>
+                <div className="flex items-center justify-between px-3 py-2.5 text-[0.9rem] font-light text-[#1a1a1a]/55">
+                  <span>Execution partner</span>
+                  <span className="font-mono text-[#1a1a1a]/70">&#8377;4.8 Cr</span>
+                </div>
+                <div className="flex items-center justify-between rounded-lg bg-[#1e6b45]/[0.07] px-3 py-2.5 text-[0.95rem] font-medium text-[#1e6b45]">
+                  <span className="flex items-center gap-2">
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#1e6b45] text-[9px] leading-none text-white">&#10003;</span>
+                    Truth Estate
+                  </span>
+                  <span className="font-mono">&#8377;4.2 Cr</span>
+                </div>
+              </div>
+            </div>
           </Stage>
 
           {/* Climax — the relationship that doesn't end */}
