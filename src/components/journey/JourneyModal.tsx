@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Logo from "../Logo";
 import BuyersOffice from "./BuyersOffice";
 import LocationPicker from "./LocationPicker";
@@ -393,6 +394,7 @@ export default function JourneyModal({
   const [editReturn, setEditReturn] = useState(false);
   const [booking, setBooking] = useState<Booking>(account?.booking ?? null);
   const { openConsult } = useConsultation();
+  const router = useRouter();
 
   // From any journey, "Request Independent Advice" hands off to the unified
   // consultation flow — preserving the journey context so the advisor
@@ -517,7 +519,8 @@ export default function JourneyModal({
 
   const completeAuth = () => {
     saveAccount({ name: "Member", createdAt: Date.now(), buy, booking });
-    setStep("office");
+    onClose();
+    router.push("/office");
   };
 
   /* ── outer frame: entrance + background blur ── */
@@ -1187,7 +1190,8 @@ export default function JourneyModal({
                   setBuy(account.buy);
                   setBooking(account.booking);
                 }
-                setStep("office");
+                onClose();
+                router.push("/office");
               }}
             >
               Open Your Buyer&apos;s Office

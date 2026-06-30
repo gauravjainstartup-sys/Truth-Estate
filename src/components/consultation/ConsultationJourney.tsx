@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Logo from "../Logo";
 import {
   CONSULT_DAYPARTS,
@@ -46,6 +47,7 @@ export default function ConsultationJourney({
   const [step, setStep] = useState<Step>("intro");
   const [booking, setBooking] = useState<ConsultBooking>(() => emptyConsultBooking(context));
   const scrollRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   // A "warm" visitor already shared a requirements profile (e.g. their Buyer
   // DNA) — we skip the reason/situation steps and go straight to scheduling.
@@ -157,7 +159,7 @@ export default function ConsultationJourney({
         />
       )}
       {step === "confirm" && (
-        <ConfirmStep booking={booking} onOpenOffice={() => goTo("office")} />
+        <ConfirmStep booking={booking} onOpenOffice={() => { onClose(); router.push("/office"); }} />
       )}
       {step === "office" && (
         <PrivateOffice booking={booking} onClose={onClose} />
