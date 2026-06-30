@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Logo from "../Logo";
 import {
   CONSULT_DAYPARTS,
@@ -19,6 +19,7 @@ import {
   ConsultField,
   ConsultFormat,
   ConsultIntent,
+  ConsultProfileChip,
   advisorFor,
   consultPrepLine,
   emptyConsultBooking,
@@ -35,9 +36,6 @@ type Step =
   | "confirm"
   | "office";
 
-/* Steps that show the progress indicator (the "booking" arc). */
-const FLOW: Step[] = ["intro", "reason", "situation", "prep", "schedule", "account"];
-
 export default function ConsultationJourney({
   context = {},
   onClose,
@@ -48,6 +46,13 @@ export default function ConsultationJourney({
   const [step, setStep] = useState<Step>("intro");
   const [booking, setBooking] = useState<ConsultBooking>(() => emptyConsultBooking(context));
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // A "warm" visitor already shared a requirements profile (e.g. their Buyer
+  // DNA) — we skip the reason/situation steps and go straight to scheduling.
+  const warm = !!context.profile?.length;
+  const FLOW: Step[] = warm
+    ? ["intro", "schedule", "account"]
+    : ["intro", "reason", "situation", "prep", "schedule", "account"];
 
   // Close on Escape — consistent with the journey modal.
   useEffect(() => {
@@ -64,11 +69,8 @@ export default function ConsultationJourney({
     scrollRef.current?.scrollTo(0, 0);
   };
 
-  const progress = useMemo(() => {
-    const i = FLOW.indexOf(step);
-    if (i < 0) return null; // confirm / office: hide bar
-    return (i + 1) / (FLOW.length + 1);
-  }, [step]);
+  const fi = FLOW.indexOf(step);
+  const progress = fi < 0 ? null : (fi + 1) / (FLOW.length + 1); // confirm / office: hidden
 
   const setField = (name: string, value: string | string[]) =>
     setBooking((b) => ({ ...b, details: { ...b.details, [name]: value } }));
@@ -88,13 +90,15 @@ export default function ConsultationJourney({
     </div>
   );
 
-  const back: Partial<Record<Step, Step>> = {
-    reason: "intro",
-    situation: "reason",
-    prep: "situation",
-    schedule: "prep",
-    account: "schedule",
-  };
+  const back: Partial<Record<Step, Step>> = warm
+    ? { schedule: "intro", account: "schedule" }
+    : {
+        reason: "intro",
+        situation: "reason",
+        prep: "situation",
+        schedule: "prep",
+        account: "schedule",
+      };
 
   return frame(
     <Shell
@@ -106,7 +110,12 @@ export default function ConsultationJourney({
       bare={step === "office"}
     >
       {step === "intro" && (
-        <IntroStep prepLine={prepLine} onContinue={() => goTo(booking.reason ? "situation" : "reason")} />
+        <IntroStep
+          prepLine={prepLine}
+          warm={warm}
+          profile={context.profile}
+          onContinue={() => goTo(warm ? "schedule" : booking.reason ? "situation" : "reason")}
+        />
       )}
       {step === "reason" && (
         <ReasonStep
@@ -254,43 +263,72 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
 /* ════════════════════════════════════════════════════════════════
    STEP 1 — INTRO
    ════════════════════════════════════════════════════════════════ */
-function IntroStep({ prepLine, onContinue }: { prepLine: string | null; onContinue: () => void }) {
+function IntroStep({
+  prepLine,
+  warm,
+  profile,
+  onContinue,
+}: {
+  prepLine: string | null;
+  warm: boolean;
+  profile?: ConsultProfileChip[];
+  onContinue: () => void;
+}) {
+  const ctaLabel = warm ? "Book your consultation →" : "Request your consultation →";
+
   return (
-    <div className="animate-fade-up mx-auto max-w-[760px] px-6 py-12 md:px-10 md:py-16">
+    <div className="animate-fade-up mx-auto max-w-[720px] px-6 py-6 md:px-10 md:py-12">
       <Eyebrow>Request Independent Advice</Eyebrow>
-      <h1 className="font-serif text-[2.1rem] font-medium leading-[1.12] text-[#1a1a1a] md:text-[3rem]">
-        Every important property decision
-        <br className="hidden md:block" /> deserves independent thinking.
+      <h1 className="font-serif text-[1.8rem] font-medium leading-[1.14] text-[#1a1a1a] md:text-[2.5rem]">
+        {warm ? (
+          <>Your advisor is ready<br className="hidden md:block" /> when you are.</>
+        ) : (
+          <>Every important property decision<br className="hidden md:block" /> deserves independent thinking.</>
+        )}
       </h1>
+      <p className="mt-4 max-w-[540px] text-[0.95rem] font-light leading-[1.7] text-[#1a1a1a]/55 md:text-[1.02rem]">
+        {warm
+          ? "No sales pressure, no developer bias — just one prepared conversation about your decision. Pick a time below."
+          : "One recommendation, no agenda. No sales pressure, no developer bias, no broker incentives — just independent advice tailored to your situation."}
+      </p>
 
-      <div className="mt-8 max-w-[560px] space-y-4 text-[0.95rem] font-light leading-[1.85] text-[#1a1a1a]/55 md:text-[1.05rem]">
-        <p>One conversation. One recommendation.</p>
-        <p>
-          No sales pressure. No developer bias. No broker incentives —
-          just independent advice tailored to your situation.
-        </p>
-      </div>
-
-      {prepLine && (
-        <div className="mt-8 flex items-start gap-3 rounded-lg border border-[#c9a96e]/30 bg-[#c9a96e]/[0.07] px-5 py-4">
-          <span className="mt-[2px] text-[#c9a96e]">◆</span>
-          <p className="font-serif text-[0.98rem] font-light italic leading-relaxed text-[#1a1a1a]/70 md:text-[1.05rem]">
-            {prepLine}
-          </p>
+      {/* Warm: a reminder of what we already hold */}
+      {warm && (
+        <div className="mt-6 rounded-xl border border-[#c9a96e]/30 bg-[#c9a96e]/[0.07] p-5">
+          {prepLine && (
+            <div className="flex items-start gap-3">
+              <span className="mt-[2px] text-[#c9a96e]">◆</span>
+              <p className="font-serif text-[0.96rem] font-light italic leading-relaxed text-[#1a1a1a]/70 md:text-[1.02rem]">
+                {prepLine}
+              </p>
+            </div>
+          )}
+          {profile && profile.length > 0 && (
+            <div className={`flex flex-wrap gap-2 ${prepLine ? "mt-4 border-t border-[#c9a96e]/20 pt-4" : ""}`}>
+              {profile.map((c) => (
+                <span
+                  key={c.label}
+                  className="rounded-full border border-[#1a1a1a]/10 bg-white/70 px-3.5 py-1.5 text-[0.78rem] font-light text-[#1a1a1a]/65"
+                >
+                  <span className="text-[#1a1a1a]/40">{c.label}</span> {c.value}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Consultation card */}
-      <div className="mt-10 rounded-xl border border-[#1a1a1a]/[0.08] bg-white p-6 md:p-8">
+      {/* The offer + primary CTA — deliberately kept within the first view */}
+      <div className="mt-6 rounded-xl border border-[#1a1a1a]/[0.08] bg-white p-6 shadow-sm shadow-black/[0.02] md:p-7">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 className="font-serif text-[1.5rem] font-medium text-[#1a1a1a] md:text-[1.8rem]">{CONSULT_HEADLINE}</h2>
+          <h2 className="font-serif text-[1.4rem] font-medium text-[#1a1a1a] md:text-[1.65rem]">{CONSULT_HEADLINE}</h2>
           {CONSULT_FEE != null && (
             <span className="rounded-full border border-[#1e6b45]/30 px-4 py-1.5 text-[0.72rem] font-light tracking-[0.04em] text-[#1e6b45]">
               ₹{CONSULT_FEE.toLocaleString("en-IN")}
             </span>
           )}
         </div>
-        <div className="mt-5 flex flex-wrap gap-x-8 gap-y-2 text-[0.84rem] font-light text-[#1a1a1a]/55">
+        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-[0.82rem] font-light text-[#1a1a1a]/55">
           {["45 Minutes", "Video or Phone", "Prepared before the call", "100% Confidential"].map((t) => (
             <span key={t} className="flex items-center gap-2">
               <span className="text-[#c9a96e]">&#10003;</span>
@@ -298,21 +336,24 @@ function IntroStep({ prepLine, onContinue }: { prepLine: string | null; onContin
             </span>
           ))}
         </div>
-        <p className="mt-6 border-t border-[#1a1a1a]/[0.06] pt-5 text-[0.82rem] font-light leading-relaxed text-[#1a1a1a]/45">
-          Your first consultation is completely complimentary. We&apos;ll understand
-          your situation before discussing whether we should work together.
+        <div className="mt-6">
+          <PrimaryButton onClick={onContinue} full>{ctaLabel}</PrimaryButton>
+        </div>
+        <p className="mt-4 text-center text-[0.78rem] font-light text-[#1a1a1a]/45">
+          {warm
+            ? "Takes about a minute — your details are already in."
+            : "Completely complimentary. We'll understand your situation before discussing whether we should work together."}
         </p>
       </div>
 
-      {/* Timeline */}
-      <div className="mt-12">
+      {/* ── Supporting detail, below the fold ── */}
+      <div className="mt-14">
         <p className="mb-6 text-[10px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/30">
           What happens during this consultation?
         </p>
         <ol className="relative ml-1">
           {CONSULT_TIMELINE.map((t, i) => (
             <li key={t} className="relative flex gap-5 pb-6 last:pb-0">
-              {/* connector */}
               {i < CONSULT_TIMELINE.length - 1 && (
                 <span className="absolute left-[7px] top-5 h-full w-px bg-[#1a1a1a]/12" />
               )}
@@ -335,8 +376,8 @@ function IntroStep({ prepLine, onContinue }: { prepLine: string | null; onContin
         </p>
       </div>
 
-      <div className="mt-12">
-        <PrimaryButton onClick={onContinue}>Continue →</PrimaryButton>
+      <div className="mt-10">
+        <PrimaryButton onClick={onContinue}>{ctaLabel}</PrimaryButton>
       </div>
 
       <PillarStrip />
