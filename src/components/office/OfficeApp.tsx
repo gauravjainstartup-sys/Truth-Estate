@@ -20,6 +20,9 @@ import {
   STAGE_LABEL,
   SECTIONS,
   SectionKey,
+  INR,
+  MANDATE_FEE,
+  activateMandate,
   callDone,
   isCurated,
   isPaid,
@@ -38,6 +41,8 @@ import {
 export default function OfficeApp({ section }: { section: SectionKey }) {
   const [state, setState] = useState<OfficeState | null>(null);
   const [navOpen, setNavOpen] = useState(false);
+  const [payOpen, setPayOpen] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
   useEffect(() => setState(loadOffice()), []);
 
   if (!state) {
@@ -54,6 +59,12 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
     update({ ...state, threads: state.threads.map((t) => (t.id === id ? { ...t, ...patch } : t)) });
   const setActive = (id: string) => update({ ...state, activeId: id });
   const setStage = (stage: DealStage) => patchThread(active.id, { stage });
+  const activate = () => {
+    patchThread(active.id, activateMandate(active));
+    setPayOpen(false);
+    setCelebrate(true);
+    setTimeout(() => setCelebrate(false), 4200);
+  };
 
   return (
     <div className="flex min-h-svh w-full flex-col bg-[#F5F0E8] text-[#1a1a1a] md:flex-row">
@@ -112,13 +123,18 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
                   <span className="ml-2 opacity-70">{t.kind === "sell" ? "· Sell" : t.title.split(" · ")[0]}</span>
                 </button>
               ))}
+              {isPaid(active.stage) && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#c9a96e]/50 bg-[#c9a96e]/[0.12] px-3 py-1.5 text-[0.7rem] font-medium uppercase tracking-[0.1em] text-[#9a7a2e]">
+                  <span aria-hidden>★</span> Mandate Active
+                </span>
+              )}
             </div>
             <PreviewStage value={active.stage} onChange={setStage} onReset={() => update(reseedOffice())} />
           </div>
 
           {section === "home" && <HomeSection thread={active} />}
           {section === "requirements" && <RequirementsSection state={state} activeId={active.id} onPick={setActive} />}
-          {section === "recommendations" && <RecommendationsSection thread={active} />}
+          {section === "recommendations" && <RecommendationsSection thread={active} onActivate={() => setPayOpen(true)} />}
           {section === "advice" && <AdviceSection thread={active} onReschedule={(c) => patchThread(active.id, { call: c })} />}
           {section === "questions" && (
             <QuestionsSection thread={active} onAsk={(q) => patchThread(active.id, { questions: q })} />
@@ -126,6 +142,8 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
           {section === "documents" && <DocumentsSection thread={active} />}
           {section === "portfolio" && <PortfolioSection thread={active} />}
         </div>
+        {payOpen && <PaymentSheet thread={active} onClose={() => setPayOpen(false)} onPay={activate} />}
+        {celebrate && <Celebrate />}
       </main>
     </div>
   );
@@ -360,7 +378,7 @@ function RequirementsSection({ state, activeId, onPick }: { state: OfficeState; 
 /* ════════════════════════════════════════════════════════════════
    RECOMMENDATIONS
    ════════════════════════════════════════════════════════════════ */
-function RecommendationsSection({ thread }: { thread: OfficeThread }) {
+function RecommendationsSection({ thread, onActivate }: { thread: OfficeThread; onActivate: () => void }) {
   const postCall = callDone(thread.stage);
   const paid = isPaid(thread.stage);
   return (
@@ -402,36 +420,33 @@ function RecommendationsSection({ thread }: { thread: OfficeThread }) {
         ))}
       </div>
 
-      {/* Curated intelligence — the curiosity hooks (real numbers visible) */}
-      {isCurated(thread.stage) && thread.curation && !paid && <CuratedIntel curation={thread.curation} />}
-
-      {paid && (
-        <div className="mt-7 rounded-xl border border-[#1e6b45]/25 bg-[#1e6b45]/[0.05] p-6 text-center">
-          <p className="font-serif text-[1.3rem] font-medium text-[#1a1a1a]">Mandate active — everything&apos;s unlocked.</p>
-          <p className="mx-auto mt-2 max-w-[440px] text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/55">
-            Your full report, the unit-level intel and the deal we sourced are open. The premium mandate workspace lands next.
-          </p>
-        </div>
+      {/* Curated intelligence — preview before the mandate, open after */}
+      {isCurated(thread.stage) && thread.curation && (
+        <CuratedIntel curation={thread.curation} paid={paid} onActivate={onActivate} />
       )}
     </div>
   );
 }
 
-/* The value-first conversion moment — show real edge, gate the full depth. */
-function CuratedIntel({ curation }: { curation: Curation }) {
+/* The conversion moment — preview the edge before the mandate, open it after. */
+function CuratedIntel({ curation, paid, onActivate }: { curation: Curation; paid: boolean; onActivate: () => void }) {
   return (
     <div className="mt-12">
       <div className="mb-4 flex items-center gap-3">
         <span className="font-mono text-[0.8rem] text-[#c9a96e]">★</span>
-        <h2 className="font-serif text-[1.7rem] font-medium tracking-[-0.01em] text-[#1a1a1a] md:text-[2rem]">What our team curated for you</h2>
+        <h2 className="font-serif text-[1.7rem] font-medium tracking-[-0.01em] text-[#1a1a1a] md:text-[2rem]">
+          {paid ? "Your full intelligence" : "What our team curated for you"}
+        </h2>
       </div>
       <p className="mb-7 max-w-[620px] text-[0.92rem] font-light leading-relaxed text-[#1a1a1a]/55">
-        Intelligence nobody else in the market puts in front of you. The numbers below are real — your full report, every unit-level view, and the deal we sourced unlock when you activate your mandate.
+        {paid
+          ? "Open — your complete report, every tower- and unit-level view, and the deal we sourced. We're representing you from here."
+          : "Intelligence nobody else in the market puts in front of you. The numbers below are real — your full report, every unit-level view, and the deal we sourced unlock when you activate your mandate."}
       </p>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <IntelCard title="Independent Project Report" meta={`${curation.report.pages}-page report`} teasers={curation.report.teasers} />
-        <IntelCard title="Tower & Unit Intelligence" meta={curation.unit.tags.join(" · ")} teasers={curation.unit.teasers} />
+        <IntelCard title="Independent Project Report" meta={`${curation.report.pages}-page report`} teasers={curation.report.teasers} paid={paid} />
+        <IntelCard title="Tower & Unit Intelligence" meta={curation.unit.tags.join(" · ")} teasers={curation.unit.teasers} paid={paid} />
       </div>
 
       {curation.deal && (
@@ -442,38 +457,49 @@ function CuratedIntel({ curation }: { curation: Curation }) {
               <p className="mt-2 font-serif text-[1.8rem] font-medium leading-none text-[#1a1a1a] md:text-[2.1rem]">{curation.deal.headline}</p>
               <p className="mt-2 text-[0.9rem] font-light text-[#1a1a1a]/60">{curation.deal.sub}</p>
             </div>
-            <div className="shrink-0"><LockBadge label="Offer unlocks with mandate" /></div>
+            <div className="shrink-0">
+              {paid ? <span className="text-[0.8rem] font-medium text-[#1e6b45]">View the offer →</span> : <LockBadge label="Offer unlocks with mandate" />}
+            </div>
           </div>
         </div>
       )}
 
-      <div className="mt-5 flex flex-col items-start gap-4 rounded-xl bg-[#1a1a1a] p-7 text-white sm:flex-row sm:items-center sm:justify-between md:p-8">
-        <div className="max-w-[560px]">
-          <p className="font-serif text-[1.5rem] font-medium leading-tight">Unlock the full intelligence</p>
-          <p className="mt-2 text-[0.88rem] font-light text-white/55">
-            Your complete report, every tower- and unit-level view, and the deal we sourced — and we begin representing you, end to end.
-          </p>
+      {paid ? (
+        <div className="mt-5 flex flex-col items-start gap-4 rounded-xl border border-[#1e6b45]/25 bg-[#1e6b45]/[0.05] p-7 sm:flex-row sm:items-center sm:justify-between md:p-8">
+          <div className="max-w-[560px]">
+            <p className="font-serif text-[1.5rem] font-medium leading-tight text-[#1a1a1a]">Mandate active — we&apos;re representing you.</p>
+            <p className="mt-2 text-[0.88rem] font-light text-[#1a1a1a]/55">Your reports are open and your advisor is now acting on your behalf, end to end.</p>
+          </div>
+          <Link href="/office/documents" className="shrink-0 rounded-sm bg-[#1e6b45] px-7 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
+            Open your reports →
+          </Link>
         </div>
-        <button
-          className="shrink-0 cursor-not-allowed rounded-sm bg-[#1e6b45]/70 px-7 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white/80"
-          title="Payment & invoicing land in the next phase"
-        >
-          Activate your mandate
-        </button>
-      </div>
+      ) : (
+        <div className="mt-5 flex flex-col items-start gap-4 rounded-xl bg-[#1a1a1a] p-7 text-white sm:flex-row sm:items-center sm:justify-between md:p-8">
+          <div className="max-w-[560px]">
+            <p className="font-serif text-[1.5rem] font-medium leading-tight">Unlock the full intelligence</p>
+            <p className="mt-2 text-[0.88rem] font-light text-white/55">
+              Your complete report, every tower- and unit-level view, and the deal we sourced — and we begin representing you, end to end.
+            </p>
+          </div>
+          <button onClick={onActivate} className="shrink-0 rounded-sm bg-[#1e6b45] px-7 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
+            Activate your mandate
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
-function IntelCard({ title, meta, teasers }: { title: string; meta: string; teasers: { label: string; value: string }[] }) {
+function IntelCard({ title, meta, teasers, paid }: { title: string; meta: string; teasers: { label: string; value: string }[]; paid: boolean }) {
   return (
-    <div className="rounded-xl border border-[#1a1a1a]/[0.08] bg-white p-6">
+    <div className={`rounded-xl border p-6 ${paid ? "border-[#1e6b45]/20 bg-white" : "border-[#1a1a1a]/[0.08] bg-white"}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-serif text-[1.2rem] font-medium text-[#1a1a1a]">{title}</p>
           <p className="mt-1 text-[0.72rem] font-light uppercase tracking-[0.1em] text-[#1a1a1a]/40">{meta}</p>
         </div>
-        <LockBadge label="Preview" />
+        {paid ? <span className="text-[0.72rem] font-medium text-[#1e6b45]">Open →</span> : <LockBadge label="Preview" />}
       </div>
       <div className="mt-5 flex flex-col gap-3 border-t border-[#1a1a1a]/[0.06] pt-5">
         {teasers.map((t) => (
@@ -484,7 +510,7 @@ function IntelCard({ title, meta, teasers }: { title: string; meta: string; teas
         ))}
         <div className="flex items-baseline justify-between gap-3 border-t border-dashed border-[#1a1a1a]/10 pt-3">
           <span className="text-[0.8rem] font-light text-[#1a1a1a]/50">Full breakdown</span>
-          <span className="text-[0.82rem] font-light text-[#9a7a2e]">🔒 in the report</span>
+          <span className={`text-[0.82rem] font-light ${paid ? "text-[#1e6b45]" : "text-[#9a7a2e]"}`}>{paid ? "Open report →" : "🔒 in the report"}</span>
         </div>
       </div>
     </div>
@@ -817,6 +843,7 @@ function QuestionsSection({ thread, onAsk }: { thread: OfficeThread; onAsk: (q: 
    ════════════════════════════════════════════════════════════════ */
 function DocumentsSection({ thread }: { thread: OfficeThread }) {
   const groups: OfficeDoc["group"][] = ["Project Reports", "Legal & BBA", "Letters & Allotment"];
+  const paid = isPaid(thread.stage);
   return (
     <div className="animate-fade-up">
       <SectionHead kicker="Documents & Reports" title="Everything in one place" sub="Independent reports we prepare, and the paperwork you share — reviewed and annotated by your advisor." />
@@ -833,10 +860,14 @@ function DocumentsSection({ thread }: { thread: OfficeThread }) {
                       <p className="text-[0.95rem] font-light text-[#1a1a1a]/80">{d.name}</p>
                       {d.note && <p className="mt-0.5 text-[0.76rem] font-light italic text-[#1a1a1a]/40">{d.note}</p>}
                     </div>
-                    {d.status === "locked" ? <LockBadge /> : d.status === "uploaded" ? (
-                      <span className="text-[0.74rem] font-light text-[#1e6b45]">Uploaded ✓</span>
+                    {d.status === "uploaded" ? (
+                      <span className="shrink-0 text-[0.74rem] font-light text-[#1e6b45]">Uploaded ✓</span>
+                    ) : d.status === "ready" ? (
+                      <span className="shrink-0 text-[0.74rem] font-light text-[#1e6b45]">Open →</span>
+                    ) : paid ? (
+                      <span className="shrink-0 text-[0.74rem] font-light text-[#1e6b45]">Upload →</span>
                     ) : (
-                      <span className="text-[0.74rem] font-light text-[#1e6b45]">Ready →</span>
+                      <LockBadge />
                     )}
                   </div>
                 ))}
@@ -846,7 +877,9 @@ function DocumentsSection({ thread }: { thread: OfficeThread }) {
         })}
       </div>
       <p className="mt-7 text-[0.8rem] font-light italic text-[#1a1a1a]/40">
-        Upload unlocks once your mandate is active — your advisor reviews and annotates everything you share.
+        {paid
+          ? "Your mandate is active — upload anything and your advisor reviews and annotates it for you."
+          : "Upload unlocks once your mandate is active — your advisor reviews and annotates everything you share."}
       </p>
     </div>
   );
@@ -877,6 +910,81 @@ function PortfolioSection({ thread }: { thread: OfficeThread }) {
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   PAYMENT — activate the mandate
+   ════════════════════════════════════════════════════════════════ */
+function PaymentSheet({ thread, onClose, onPay }: { thread: OfficeThread; onClose: () => void; onPay: () => void }) {
+  const [processing, setProcessing] = useState(false);
+  const pay = () => {
+    setProcessing(true);
+    setTimeout(onPay, 1500);
+  };
+  const includes = [
+    "Your full project report + tower- and unit-level intelligence, unlocked",
+    "The deal we sourced — and we negotiate to the best price",
+    "Site visits arranged and accompanied by your advisor",
+    "Every document managed — token, BBA, allotment — to handover",
+    "One independent advisor, representing only you, end to end",
+  ];
+  return (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+      <button aria-label="Close" onClick={onClose} className="absolute inset-0 cursor-default bg-[#0a0a0a]/55 backdrop-blur-sm" />
+      <div className="animate-fade-up relative max-h-[92svh] w-full max-w-[560px] overflow-y-auto rounded-2xl bg-[#F5F0E8] p-7 shadow-2xl shadow-black/30 md:p-9">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-[0.32em] text-[#c9a96e]">Truth Estate Mandate</p>
+            <h2 className="mt-3 font-serif text-[1.9rem] font-medium leading-[1.1] text-[#1a1a1a] md:text-[2.2rem]">
+              Activate {thread.label}&apos;s mandate.
+            </h2>
+          </div>
+          <button onClick={onClose} className="shrink-0 text-[11px] font-light tracking-[0.16em] text-[#1a1a1a]/40 transition-colors hover:text-[#1a1a1a]">
+            CLOSE
+          </button>
+        </div>
+
+        <ul className="mt-7 flex flex-col gap-3.5">
+          {includes.map((t) => (
+            <li key={t} className="flex gap-3 text-[0.92rem] font-light leading-snug text-[#1a1a1a]/75">
+              <span className="mt-0.5 text-[#1e6b45]">✓</span>
+              {t}
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-7 flex items-baseline justify-between border-t border-[#1a1a1a]/10 pt-6">
+          <div>
+            <p className="font-serif text-[2rem] font-medium leading-none text-[#1a1a1a]">{INR(MANDATE_FEE)}</p>
+            <p className="mt-2 text-[0.78rem] font-light text-[#1a1a1a]/50">Fully adjustable against our fee at closing</p>
+          </div>
+          <span className="text-[0.72rem] font-light text-[#1a1a1a]/40">GST included</span>
+        </div>
+
+        <button
+          onClick={pay}
+          disabled={processing}
+          className="mt-6 w-full rounded-sm bg-[#1e6b45] px-7 py-4 text-[0.86rem] font-medium tracking-[0.04em] text-white transition-all duration-300 enabled:hover:bg-[#238c55] disabled:opacity-70"
+        >
+          {processing ? "Processing…" : `Pay ${INR(MANDATE_FEE)} & activate`}
+        </button>
+        <p className="mt-4 text-center text-[0.76rem] font-light leading-relaxed text-[#1a1a1a]/45">
+          Independent · no developer commissions · refundable if we don&apos;t add value in 30 days.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function Celebrate() {
+  return (
+    <div className="fixed left-1/2 top-6 z-[130] -translate-x-1/2">
+      <div className="animate-fade-up flex items-center gap-2.5 rounded-full bg-[#1a1a1a] px-6 py-3 text-white shadow-xl shadow-black/25">
+        <span className="text-[#c9a96e]">★</span>
+        <span className="text-[0.84rem] font-light tracking-[0.02em]">Mandate activated — we&apos;re representing you.</span>
+      </div>
     </div>
   );
 }

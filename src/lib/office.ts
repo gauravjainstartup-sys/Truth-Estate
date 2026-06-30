@@ -250,6 +250,26 @@ export function wins(t: OfficeThread): { value: string; label: string }[] {
   ];
 }
 
+/* ── Mandate (Phase 2): activation fee, adjustable against our fee at close. ── */
+export const MANDATE_FEE = 50000;
+
+export const INR = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+
+/* What activation unlocks, and the receipt it leaves behind. */
+export function activateMandate(t: OfficeThread): Partial<OfficeThread> {
+  const docs: OfficeDoc[] = t.docs.map((d) =>
+    d.group === "Project Reports" ? { ...d, status: "ready" as const, note: "Unlocked · open any time" } : d
+  );
+  const invoice: OfficeDoc = {
+    id: uid(),
+    group: "Letters & Allotment",
+    name: `Invoice — Mandate activation · ${INR(MANDATE_FEE)}`,
+    status: "uploaded",
+    note: "Paid · GST included · adjustable against closing fee",
+  };
+  return { stage: "paid", docs: [invoice, ...docs] };
+}
+
 /* ── Seed: the real journey (if any) becomes BUY 1; demo threads show
    multi-thread + later stages without needing a backend. ── */
 function dnaChipsFromBuy(buy: BuyData): { archetype: string; chips: Chip[]; title: string } {
