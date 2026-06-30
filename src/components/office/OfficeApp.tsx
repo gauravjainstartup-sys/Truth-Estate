@@ -9,12 +9,18 @@ import {
   CONSULT_FORMATS,
 } from "@/lib/consultation";
 import {
+  BuyMandate,
   Curation,
+  DealOffer,
   DealStage,
+  DEAL_PHASES,
+  Negotiation,
   OfficeDoc,
   OfficeRec,
   OfficeState,
   OfficeThread,
+  SaleOffer,
+  SiteVisit,
   STAGE_ARC,
   STAGE_ORDER,
   STAGE_LABEL,
@@ -24,6 +30,8 @@ import {
   MANDATE_FEE,
   activateMandate,
   callDone,
+  dealDocs,
+  dealPhaseIndex,
   isCurated,
   isPaid,
   loadOffice,
@@ -42,7 +50,7 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
   const [state, setState] = useState<OfficeState | null>(null);
   const [navOpen, setNavOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
-  const [celebrate, setCelebrate] = useState(false);
+  const [celebrate, setCelebrate] = useState<string | null>(null);
   useEffect(() => setState(loadOffice()), []);
 
   if (!state) {
@@ -59,11 +67,18 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
     update({ ...state, threads: state.threads.map((t) => (t.id === id ? { ...t, ...patch } : t)) });
   const setActive = (id: string) => update({ ...state, activeId: id });
   const setStage = (stage: DealStage) => patchThread(active.id, { stage });
+  const cheer = (msg: string) => {
+    setCelebrate(msg);
+    setTimeout(() => setCelebrate(null), 4200);
+  };
   const activate = () => {
-    patchThread(active.id, activateMandate(active));
+    patchThread(active.id, activateMandate());
     setPayOpen(false);
-    setCelebrate(true);
-    setTimeout(() => setCelebrate(false), 4200);
+    cheer("Mandate activated — we're representing you.");
+  };
+  const advanceTo = (stage: DealStage, msg?: string) => {
+    patchThread(active.id, { stage });
+    if (msg) cheer(msg);
   };
 
   return (
@@ -83,7 +98,7 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
         </div>
 
         <nav className={`${navOpen ? "flex" : "hidden"} mt-5 flex-col gap-0.5 md:mt-10 md:flex`}>
-          {SECTIONS.map((s) => {
+          {SECTIONS.filter((s) => !s.paidOnly || isPaid(active.stage) || s.key === section).map((s) => {
             const on = s.key === section;
             return (
               <Link
@@ -135,6 +150,7 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
           {section === "home" && <HomeSection thread={active} />}
           {section === "requirements" && <RequirementsSection state={state} activeId={active.id} onPick={setActive} />}
           {section === "recommendations" && <RecommendationsSection thread={active} onActivate={() => setPayOpen(true)} />}
+          {section === "deal" && <DealSection thread={active} onAdvance={advanceTo} onActivate={() => setPayOpen(true)} />}
           {section === "advice" && <AdviceSection thread={active} onReschedule={(c) => patchThread(active.id, { call: c })} />}
           {section === "questions" && (
             <QuestionsSection thread={active} onAsk={(q) => patchThread(active.id, { questions: q })} />
@@ -143,7 +159,7 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
           {section === "portfolio" && <PortfolioSection thread={active} />}
         </div>
         {payOpen && <PaymentSheet thread={active} onClose={() => setPayOpen(false)} onPay={activate} />}
-        {celebrate && <Celebrate />}
+        {celebrate && <Celebrate message={celebrate} />}
       </main>
     </div>
   );
@@ -518,6 +534,373 @@ function IntelCard({ title, meta, teasers, paid }: { title: string; meta: string
 }
 
 /* ════════════════════════════════════════════════════════════════
+   MY DEAL — the execution room (paid → closed)
+   Site visits → lock unit → negotiate → terms → token → BBA → owned.
+   ════════════════════════════════════════════════════════════════ */
+function DealSection({ thread, onAdvance, onActivate }: { thread: OfficeThread; onAdvance: (s: DealStage, msg?: string) => void; onActivate: () => void }) {
+  if (!isPaid(thread.stage)) {
+    return (
+      <div className="animate-fade-up">
+        <SectionHead kicker="My Deal" title="Your deal room" sub="Where we take it from intelligence to keys — site visits, negotiation, paperwork and close, all run for you." />
+        <div className="rounded-2xl bg-[#1a1a1a] p-8 text-white md:p-10">
+          <p className="mx-auto mb-4 flex w-fit"><LockBadge label="Opens with your mandate" /></p>
+          <p className="font-serif text-[1.6rem] font-medium leading-tight md:text-[1.9rem]">This is where we start representing you.</p>
+          <p className="mt-3 max-w-[540px] text-[0.92rem] font-light leading-relaxed text-white/60">
+            The moment your mandate is active, your deal room opens: accompanied site visits, a locked target unit, our negotiation, your terms, token, BBA — every step, run end to end.
+          </p>
+          <button onClick={onActivate} className="mt-7 rounded-sm bg-[#1e6b45] px-7 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
+            Activate your mandate
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const curIdx = dealPhaseIndex(thread.stage);
+  return (
+    <div className="animate-fade-up">
+      <SectionHead kicker="My Deal" title="Your deal room" sub="From intelligence to keys — here's exactly where your deal stands, and the one move that's yours to make." />
+      <DealPhaseRail stage={thread.stage} />
+      <div className="mt-9 flex flex-col gap-4">
+        {DEAL_PHASES.map((p, i) => {
+          const done = stageIndex(thread.stage) > stageIndex(p.stage);
+          const active = i === curIdx && !done;
+          return (
+            <PhaseShell key={p.stage} n={i + 1} title={p.title} done={done} active={active} tag={p.stage === "closed" ? "" : "In progress"}>
+              {active && <PhaseBody thread={thread} stage={p.stage} onAdvance={onAdvance} />}
+              {done && <p className="text-[0.85rem] font-light text-[#1a1a1a]/55">{doneSummary(p.stage, thread)}</p>}
+            </PhaseShell>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* Horizontal progress spine across the deal phases. */
+function DealPhaseRail({ stage }: { stage: DealStage }) {
+  const curIdx = dealPhaseIndex(stage);
+  return (
+    <div className="mt-2 flex items-center overflow-x-auto rounded-xl border border-[#1a1a1a]/[0.08] bg-white px-5 py-5">
+      {DEAL_PHASES.map((p, i) => {
+        const done = stageIndex(stage) > stageIndex(p.stage);
+        const here = i === curIdx && !done;
+        const reached = done || here;
+        return (
+          <div key={p.stage} className="flex flex-1 items-center last:flex-none">
+            <div className="flex flex-col items-center">
+              <span className={`grid h-[22px] w-[22px] shrink-0 place-items-center rounded-full border text-[0.6rem] ${reached ? "border-[#1e6b45] bg-[#1e6b45] text-white" : "border-[#1a1a1a]/20 bg-[#F5F0E8] text-[#1a1a1a]/30"}`}>
+                {done ? "✓" : i + 1}
+              </span>
+              <span className={`mt-2 whitespace-nowrap text-[0.6rem] font-light uppercase tracking-[0.1em] ${here ? "text-[#1a1a1a]" : "text-[#1a1a1a]/40"}`}>{p.short}</span>
+            </div>
+            {i < DEAL_PHASES.length - 1 && <span className={`mx-2 mb-5 h-px flex-1 ${done ? "bg-[#1e6b45]/50" : "bg-[#1a1a1a]/12"}`} />}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* A numbered phase card — expanded when active, a quiet check when done. */
+function PhaseShell({ n, title, done, active, tag = "In progress", children }: { n: number; title: string; done: boolean; active: boolean; tag?: string; children: React.ReactNode }) {
+  return (
+    <div className={`rounded-xl border p-6 transition-all md:p-7 ${active ? "border-[#1e6b45]/30 bg-white shadow-sm" : done ? "border-[#1a1a1a]/[0.06] bg-white/60" : "border-dashed border-[#1a1a1a]/12 bg-transparent"}`}>
+      <div className="flex items-center gap-3.5">
+        <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-[0.72rem] font-medium ${done ? "bg-[#1e6b45] text-white" : active ? "border-2 border-[#1e6b45] text-[#1e6b45]" : "border border-[#1a1a1a]/20 text-[#1a1a1a]/30"}`}>
+          {done ? "✓" : n}
+        </span>
+        <p className={`font-serif text-[1.2rem] font-medium md:text-[1.35rem] ${active || done ? "text-[#1a1a1a]" : "text-[#1a1a1a]/40"}`}>{title}</p>
+        {active && tag && <span className="ml-auto text-[0.66rem] font-light uppercase tracking-[0.16em] text-[#1e6b45]">{tag}</span>}
+      </div>
+      {(active || done) && <div className="mt-5 pl-[2.6rem]">{children}</div>}
+    </div>
+  );
+}
+
+function doneSummary(stage: DealStage, t: OfficeThread): string {
+  switch (stage) {
+    case "site_visits":
+      return `${t.visits.length || 2} accompanied visits completed and noted.`;
+    case "buy_mandate":
+      return `${t.mandate?.project ?? "Your unit"} · ${t.mandate?.tower ?? ""} locked as your target.`;
+    case "offers":
+      return `Best offer selected${t.saleOffer ? ` · ${INR(t.saleOffer.price)}` : ""}.`;
+    case "sale_offer":
+      return "Terms reviewed and accepted.";
+    case "token":
+      return `Token paid${t.saleOffer ? ` · ${INR(t.saleOffer.token)}` : ""} · allotment received.`;
+    case "bba":
+      return "Builder–Buyer Agreement signed and registered.";
+    default:
+      return "Done.";
+  }
+}
+
+/* The interactive body for whichever phase is active. */
+function PhaseBody({ thread, stage, onAdvance }: { thread: OfficeThread; stage: DealStage; onAdvance: (s: DealStage, msg?: string) => void }) {
+  switch (stage) {
+    case "site_visits":
+      return <VisitsPhase thread={thread} onAdvance={onAdvance} />;
+    case "buy_mandate":
+      return <MandatePhase thread={thread} onAdvance={onAdvance} />;
+    case "offers":
+      return <OffersPhase thread={thread} onAdvance={onAdvance} />;
+    case "sale_offer":
+      return <TermsPhase thread={thread} onAdvance={onAdvance} />;
+    case "token":
+      return <TokenPhase onAdvance={onAdvance} />;
+    case "bba":
+      return <BbaPhase onAdvance={onAdvance} />;
+    case "closed":
+      return <ClosedPhase />;
+    default:
+      return null;
+  }
+}
+
+function DealCta({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="mt-6 rounded-sm bg-[#1e6b45] px-7 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
+      {label}
+    </button>
+  );
+}
+
+function visitTone(s: SiteVisit["status"]) {
+  return s === "completed"
+    ? "border-[#1e6b45]/30 bg-[#1e6b45]/8 text-[#1e6b45]"
+    : s === "confirmed"
+    ? "border-[#9a7a2e]/30 bg-[#c9a96e]/10 text-[#9a7a2e]"
+    : "border-[#1a1a1a]/15 bg-[#1a1a1a]/[0.03] text-[#1a1a1a]/55";
+}
+
+function VisitsPhase({ thread, onAdvance }: { thread: OfficeThread; onAdvance: (s: DealStage, msg?: string) => void }) {
+  const entering = thread.stage === "paid"; // visits proposed, not yet confirmed
+  if (!thread.visits.length) {
+    return <p className="text-[0.88rem] font-light text-[#1a1a1a]/55">Your advisor is lining up accompanied visits — you&apos;ll see the slots here shortly.</p>;
+  }
+  return (
+    <div>
+      <p className="text-[0.9rem] font-light leading-relaxed text-[#1a1a1a]/60">
+        {entering
+          ? "We see the real thing with you — same day, back to back, so you compare like for like. No show-flat theatre."
+          : "Visited and noted. Here's your advisor's honest read on each — then lock the one you want and we go to work on the price."}
+      </p>
+      <div className="mt-5 flex flex-col gap-3">
+        {thread.visits.map((v) => {
+          const status: SiteVisit["status"] = entering ? v.status : "completed";
+          return (
+            <div key={v.id} className="rounded-lg border border-[#1a1a1a]/[0.08] bg-[#F5F0E8]/50 px-5 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="font-serif text-[1.05rem] font-medium text-[#1a1a1a]">{v.project}</p>
+                <span className={`rounded-full border px-2.5 py-0.5 text-[0.6rem] font-medium uppercase tracking-[0.08em] ${visitTone(status)}`}>
+                  {status}
+                </span>
+              </div>
+              <p className="mt-1 text-[0.8rem] font-light text-[#1a1a1a]/50">{v.day} · {v.time}{v.note ? ` · ${v.note}` : ""}</p>
+              {!entering && (
+                <p className="mt-2.5 border-t border-[#1a1a1a]/[0.06] pt-2.5 text-[0.84rem] font-light leading-relaxed text-[#1a1a1a]/65">
+                  <span className="text-[#1e6b45]">Advisor&apos;s read · </span>
+                  {v.verdict ?? "Construction quality holds up, light and cross-ventilation are genuine. Worth your shortlist."}
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {entering ? (
+        <DealCta label="Confirm my site visits →" onClick={() => onAdvance("site_visits", "Visits confirmed — your advisor will be there with you.")} />
+      ) : (
+        <DealCta label="Lock my target unit →" onClick={() => onAdvance("buy_mandate", "Target locked — we're going to negotiate for you.")} />
+      )}
+    </div>
+  );
+}
+
+function MandatePhase({ thread, onAdvance }: { thread: OfficeThread; onAdvance: (s: DealStage, msg?: string) => void }) {
+  const m = thread.mandate;
+  if (!m) return <p className="text-[0.88rem] font-light text-[#1a1a1a]/55">We&apos;re preparing your buy mandate.</p>;
+  const rows: { label: string; value: string }[] = [
+    { label: "Project", value: m.project },
+    { label: "Developer", value: m.developer },
+    { label: "Configuration", value: m.config },
+    { label: "Tower", value: m.tower },
+    { label: "Floor", value: m.floorBand },
+    { label: "Carpet", value: m.carpet },
+  ];
+  return (
+    <div>
+      <p className="text-[0.9rem] font-light leading-relaxed text-[#1a1a1a]/60">
+        This is your target — locked in writing so we negotiate hard on one thing, not five. You can still change it before we make an offer.
+      </p>
+      <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-[#1a1a1a]/[0.08] bg-[#1a1a1a]/[0.06] md:grid-cols-3">
+        {rows.map((r) => (
+          <div key={r.label} className="bg-white px-4 py-4">
+            <p className="text-[0.62rem] font-light uppercase tracking-[0.12em] text-[#1a1a1a]/40">{r.label}</p>
+            <p className="mt-1 font-serif text-[1.02rem] font-medium text-[#1a1a1a]">{r.value}</p>
+          </div>
+        ))}
+      </div>
+      <p className="mt-4 text-[0.82rem] font-light italic text-[#1a1a1a]/50">{m.note}</p>
+      <DealCta label="Confirm mandate — start negotiating →" onClick={() => onAdvance("offers", "Mandate confirmed — your advisor is negotiating now.")} />
+    </div>
+  );
+}
+
+function OffersPhase({ thread, onAdvance }: { thread: OfficeThread; onAdvance: (s: DealStage, msg?: string) => void }) {
+  const neg = thread.negotiation;
+  if (!neg || !neg.offers.length) {
+    return (
+      <div>
+        <p className="font-serif text-[1.25rem] font-medium text-[#1a1a1a]">We&apos;re working the price.</p>
+        <p className="mt-1.5 text-[0.88rem] font-light text-[#1a1a1a]/55">Our team is pressing every channel. Offers land here.</p>
+        <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#c9a96e]/12 px-4 py-2 text-[0.8rem] font-light text-[#9a7a2e]">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#c9a96e]" />
+          {`Best terms in ${neg?.tat ?? "about 5 working days"}`}
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <p className="text-[0.9rem] font-light leading-relaxed text-[#1a1a1a]/60">{neg.note}</p>
+      <div className="mt-5 flex flex-col gap-4">
+        {neg.offers.map((o) => (
+          <OfferCard key={o.id} offer={o} onChoose={() => onAdvance("sale_offer", "Offer selected — preparing your terms.")} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function OfferCard({ offer, onChoose }: { offer: DealOffer; onChoose: () => void }) {
+  return (
+    <div className={`rounded-xl border p-5 md:p-6 ${offer.recommended ? "border-[#1e6b45]/30 bg-[#1e6b45]/[0.04]" : "border-[#1a1a1a]/[0.08] bg-white"}`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <p className="font-serif text-[1.15rem] font-medium text-[#1a1a1a]">{offer.source}</p>
+            {offer.recommended && <span className="rounded-full border border-[#1e6b45]/30 bg-[#1e6b45]/8 px-2.5 py-0.5 text-[0.6rem] font-medium uppercase tracking-[0.08em] text-[#1e6b45]">We recommend</span>}
+          </div>
+          <p className="mt-1 text-[0.8rem] font-light text-[#1a1a1a]/50">{offer.unit}</p>
+        </div>
+        <div className="text-right">
+          <p className="font-serif text-[1.5rem] font-medium leading-none text-[#1a1a1a]">{INR(offer.price)}</p>
+          <p className="mt-1 text-[0.72rem] font-light text-[#1a1a1a]/45">{INR(offer.perSqft)}/sq ft · ₹{offer.vsQuoted}L under quoted</p>
+        </div>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2 border-t border-[#1a1a1a]/[0.06] pt-4">
+        {offer.terms.map((t) => (
+          <span key={t} className="rounded-full bg-[#1a1a1a]/[0.04] px-3 py-1 text-[0.74rem] font-light text-[#1a1a1a]/65">{t}</span>
+        ))}
+        <button onClick={onChoose} className="ml-auto rounded-sm bg-[#1e6b45] px-5 py-2 text-[0.78rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
+          Take this forward →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TermsPhase({ thread, onAdvance }: { thread: OfficeThread; onAdvance: (s: DealStage, msg?: string) => void }) {
+  const [agreed, setAgreed] = useState(false);
+  const s = thread.saleOffer;
+  if (!s) return <p className="text-[0.88rem] font-light text-[#1a1a1a]/55">Your offer and terms are being drawn up.</p>;
+  return (
+    <div>
+      <div className="overflow-hidden rounded-xl border border-[#1e6b45]/20 bg-white">
+        <div className="flex items-center justify-between border-b border-[#1a1a1a]/[0.06] bg-[#1e6b45]/[0.04] px-5 py-4">
+          <div>
+            <p className="text-[0.62rem] font-light uppercase tracking-[0.16em] text-[#1e6b45]">Your offer</p>
+            <p className="mt-1 font-serif text-[1.1rem] font-medium text-[#1a1a1a]">{s.unit}</p>
+          </div>
+          <p className="font-serif text-[1.7rem] font-medium leading-none text-[#1a1a1a]">{INR(s.price)}</p>
+        </div>
+        <div className="grid grid-cols-2 gap-px bg-[#1a1a1a]/[0.06] md:grid-cols-4">
+          {s.schedule.map((m) => (
+            <div key={m.label} className="bg-white px-4 py-4">
+              <p className="text-[0.62rem] font-light uppercase tracking-[0.1em] text-[#1a1a1a]/40">{m.label}</p>
+              <p className="mt-1 text-[0.86rem] font-medium text-[#1a1a1a]">{m.value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="mt-5">
+        <p className="mb-3 text-[10px] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/40">Terms & protections</p>
+        <ul className="flex flex-col gap-2.5">
+          {s.conditions.map((c) => (
+            <li key={c} className="flex gap-2.5 text-[0.86rem] font-light leading-snug text-[#1a1a1a]/70">
+              <span className="mt-0.5 shrink-0 text-[#1e6b45]">✓</span>
+              {c}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <label className="mt-6 flex cursor-pointer items-center gap-3 text-[0.85rem] font-light text-[#1a1a1a]/70">
+        <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="h-4 w-4 accent-[#1e6b45]" />
+        I&apos;ve read the terms and want to proceed.
+      </label>
+      <button
+        onClick={() => onAdvance("token", "Token paid — your unit is held in your name.")}
+        disabled={!agreed}
+        className="mt-5 rounded-sm bg-[#1e6b45] px-7 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors enabled:hover:bg-[#238c55] disabled:cursor-not-allowed disabled:opacity-30"
+      >
+        Accept & pay token {INR(s.token)} →
+      </button>
+      <p className="mt-3 text-[0.74rem] font-light text-[#1a1a1a]/45">Paid to the developer&apos;s RERA escrow — never to us. Refundable if due-diligence flags a red line.</p>
+    </div>
+  );
+}
+
+function TokenPhase({ onAdvance }: { onAdvance: (s: DealStage, msg?: string) => void }) {
+  return (
+    <div>
+      <p className="font-serif text-[1.25rem] font-medium text-[#1a1a1a]">Your unit is held. 🎉</p>
+      <p className="mt-1.5 max-w-[520px] text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/60">
+        Token paid into RERA escrow and the allotment letter is in — both filed in your documents. Next, we prepare your Builder–Buyer Agreement and read every clause before you sign.
+      </p>
+      <Link href="/office/documents" className="mt-4 inline-block text-[0.82rem] font-light text-[#1e6b45] transition-colors hover:text-[#238c55]">
+        See your token receipt & allotment →
+      </Link>
+      <div>
+        <DealCta label="Continue to your BBA →" onClick={() => onAdvance("bba", "BBA ready — reviewed and annotated for you.")} />
+      </div>
+    </div>
+  );
+}
+
+function BbaPhase({ onAdvance }: { onAdvance: (s: DealStage, msg?: string) => void }) {
+  return (
+    <div>
+      <p className="font-serif text-[1.25rem] font-medium text-[#1a1a1a]">Your BBA — read line by line, for you.</p>
+      <p className="mt-1.5 max-w-[520px] text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/60">
+        We&apos;ve reviewed and annotated the Builder–Buyer Agreement — flagging every clause that matters before a rupee more moves. Sign when you&apos;re ready and we register it.
+      </p>
+      <Link href="/office/documents" className="mt-4 inline-block text-[0.82rem] font-light text-[#1e6b45] transition-colors hover:text-[#238c55]">
+        Open the annotated BBA →
+      </Link>
+      <div>
+        <DealCta label="Confirm registration & handover →" onClick={() => onAdvance("closed", "Congratulations — it's yours. Welcome to ownership.")} />
+      </div>
+    </div>
+  );
+}
+
+function ClosedPhase() {
+  return (
+    <div>
+      <p className="font-serif text-[1.35rem] font-medium text-[#1a1a1a]">It&apos;s yours. Welcome home.</p>
+      <p className="mt-1.5 max-w-[520px] text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/60">
+        Registration and handover are done. Your property — with every document, the price you paid and our continuing independent read — now lives in your portfolio.
+      </p>
+      <Link href="/office/portfolio" className="mt-5 inline-block rounded-sm bg-[#1e6b45] px-7 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
+        See it in your portfolio →
+      </Link>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
    INDEPENDENT ADVICE — scheduled + reschedule + before-call + past
    ════════════════════════════════════════════════════════════════ */
 function AdviceSection({ thread, onReschedule }: { thread: OfficeThread; onReschedule: (c: NonNullable<OfficeThread["call"]>) => void }) {
@@ -844,33 +1227,38 @@ function QuestionsSection({ thread, onAsk }: { thread: OfficeThread; onAsk: (q: 
 function DocumentsSection({ thread }: { thread: OfficeThread }) {
   const groups: OfficeDoc["group"][] = ["Project Reports", "Legal & BBA", "Letters & Allotment"];
   const paid = isPaid(thread.stage);
+  const allDocs = [...dealDocs(thread), ...thread.docs];
   return (
     <div className="animate-fade-up">
       <SectionHead kicker="Documents & Reports" title="Everything in one place" sub="Independent reports we prepare, and the paperwork you share — reviewed and annotated by your advisor." />
       <div className="flex flex-col gap-8">
         {groups.map((g) => {
-          const docs = thread.docs.filter((d) => d.group === g);
+          const docs = allDocs.filter((d) => d.group === g);
           return (
             <div key={g}>
               <p className="mb-3 text-[10px] font-light uppercase tracking-[0.28em] text-[#1a1a1a]/40">{g}</p>
               <div className="overflow-hidden rounded-xl border border-[#1a1a1a]/[0.08]">
-                {docs.map((d, i) => (
-                  <div key={d.id} className={`flex items-center justify-between gap-4 px-5 py-4 ${i % 2 === 0 ? "bg-white" : "bg-[#F5F0E8]/60"}`}>
-                    <div className="min-w-0">
-                      <p className="text-[0.95rem] font-light text-[#1a1a1a]/80">{d.name}</p>
-                      {d.note && <p className="mt-0.5 text-[0.76rem] font-light italic text-[#1a1a1a]/40">{d.note}</p>}
+                {docs.map((d, i) => {
+                  const report = d.group === "Project Reports";
+                  const note = report && paid && d.status !== "uploaded" ? "Prepared by your advisor · open any time" : d.note;
+                  return (
+                    <div key={d.id} className={`flex items-center justify-between gap-4 px-5 py-4 ${i % 2 === 0 ? "bg-white" : "bg-[#F5F0E8]/60"}`}>
+                      <div className="min-w-0">
+                        <p className="text-[0.95rem] font-light text-[#1a1a1a]/80">{d.name}</p>
+                        {note && <p className="mt-0.5 text-[0.76rem] font-light italic text-[#1a1a1a]/40">{note}</p>}
+                      </div>
+                      {d.status === "uploaded" ? (
+                        <span className="shrink-0 text-[0.74rem] font-light text-[#1e6b45]">Uploaded ✓</span>
+                      ) : d.status === "ready" || (report && paid) ? (
+                        <span className="shrink-0 text-[0.74rem] font-light text-[#1e6b45]">Open →</span>
+                      ) : paid ? (
+                        <span className="shrink-0 text-[0.74rem] font-light text-[#1e6b45]">Upload →</span>
+                      ) : (
+                        <LockBadge />
+                      )}
                     </div>
-                    {d.status === "uploaded" ? (
-                      <span className="shrink-0 text-[0.74rem] font-light text-[#1e6b45]">Uploaded ✓</span>
-                    ) : d.status === "ready" ? (
-                      <span className="shrink-0 text-[0.74rem] font-light text-[#1e6b45]">Open →</span>
-                    ) : paid ? (
-                      <span className="shrink-0 text-[0.74rem] font-light text-[#1e6b45]">Upload →</span>
-                    ) : (
-                      <LockBadge />
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           );
@@ -890,17 +1278,43 @@ function DocumentsSection({ thread }: { thread: OfficeThread }) {
    ════════════════════════════════════════════════════════════════ */
 function PortfolioSection({ thread }: { thread: OfficeThread }) {
   const owned = stageIndex(thread.stage) >= stageIndex("closed");
+  const name = thread.mandate?.project ?? thread.recs[0]?.name ?? "Your property";
+  const developer = thread.mandate?.developer ?? thread.recs[0]?.developer ?? "";
+  const stats: { value: string; label: string }[] = [
+    { value: thread.saleOffer ? INR(thread.saleOffer.price) : "—", label: "Acquired for" },
+    { value: thread.mandate?.tower ?? "—", label: "Tower" },
+    { value: thread.mandate?.carpet ?? "—", label: "Carpet" },
+    { value: thread.saleOffer ? `${thread.negotiation?.offers[0]?.vsQuoted ?? 18} L` : "—", label: "Saved vs quoted" },
+  ];
   return (
     <div className="animate-fade-up">
       <SectionHead kicker="My Portfolio" title="What you own" sub="Every property you close with us lives here — with the documents, the numbers, and our ongoing read." />
       {owned ? (
-        <Card className="border-[#1e6b45]/25">
-          <div className="flex items-center justify-between">
-            <p className="font-serif text-[1.4rem] font-medium text-[#1a1a1a]">{thread.recs[0]?.name ?? "Your property"}</p>
-            <span className="rounded-full border border-[#1e6b45]/30 bg-[#1e6b45]/8 px-3 py-1 text-[0.66rem] font-medium uppercase tracking-[0.08em] text-[#1e6b45]">Owned</span>
+        <div className="overflow-hidden rounded-2xl border border-[#1e6b45]/25 bg-white">
+          <div className="flex items-center justify-between border-b border-[#1a1a1a]/[0.06] px-6 py-6 md:px-8">
+            <div>
+              <p className="font-serif text-[1.6rem] font-medium text-[#1a1a1a] md:text-[1.9rem]">{name}</p>
+              <p className="mt-1 text-[0.85rem] font-light text-[#1a1a1a]/50">{developer} · {thread.mandate?.config ?? ""} · {thread.recs[0]?.market}</p>
+            </div>
+            <span className="shrink-0 rounded-full border border-[#1e6b45]/30 bg-[#1e6b45]/8 px-3.5 py-1.5 text-[0.66rem] font-medium uppercase tracking-[0.1em] text-[#1e6b45]">★ Owned</span>
           </div>
-          <p className="mt-1 text-[0.82rem] font-light text-[#1a1a1a]/50">{thread.recs[0]?.developer} · {thread.recs[0]?.market}</p>
-        </Card>
+          <div className="grid grid-cols-2 gap-px bg-[#1a1a1a]/[0.06] md:grid-cols-4">
+            {stats.map((s) => (
+              <div key={s.label} className="bg-white px-5 py-6 text-center">
+                <p className="font-serif text-[1.35rem] font-medium leading-none text-[#1a1a1a]">{s.value}</p>
+                <p className="mt-2 text-[0.64rem] font-light uppercase tracking-[0.12em] text-[#1a1a1a]/45">{s.label}</p>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-col gap-3 px-6 py-6 sm:flex-row sm:items-center sm:justify-between md:px-8">
+            <p className="text-[0.86rem] font-light leading-relaxed text-[#1a1a1a]/60">
+              Your documents, pricing history and our continued independent read all live here — so you never start from scratch again.
+            </p>
+            <Link href="/office/documents" className="shrink-0 text-[0.82rem] font-light text-[#1e6b45] transition-colors hover:text-[#238c55]">
+              View documents →
+            </Link>
+          </div>
+        </div>
       ) : (
         <div className="rounded-2xl border border-dashed border-[#1a1a1a]/15 p-10 text-center">
           <p className="mx-auto mb-4 flex w-fit"><LockBadge label="Begins at handover" /></p>
@@ -978,12 +1392,12 @@ function PaymentSheet({ thread, onClose, onPay }: { thread: OfficeThread; onClos
   );
 }
 
-function Celebrate() {
+function Celebrate({ message }: { message: string }) {
   return (
-    <div className="fixed left-1/2 top-6 z-[130] -translate-x-1/2">
+    <div className="pointer-events-none fixed left-1/2 top-6 z-[130] -translate-x-1/2 px-4">
       <div className="animate-fade-up flex items-center gap-2.5 rounded-full bg-[#1a1a1a] px-6 py-3 text-white shadow-xl shadow-black/25">
         <span className="text-[#c9a96e]">★</span>
-        <span className="text-[0.84rem] font-light tracking-[0.02em]">Mandate activated — we&apos;re representing you.</span>
+        <span className="text-[0.84rem] font-light tracking-[0.02em]">{message}</span>
       </div>
     </div>
   );
