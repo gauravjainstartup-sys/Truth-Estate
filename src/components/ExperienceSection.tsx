@@ -388,7 +388,7 @@ function IndependentRepresentation() {
             <p className="mt-7 font-serif text-[1.05rem] font-light leading-relaxed text-[#1a1a1a]/60 md:text-[1.2rem]">
               Developer&nbsp;&middot; Location&nbsp;&middot; Project&nbsp;&middot; Tower&nbsp;&middot; Unit&nbsp;&middot; Legal&nbsp;&middot; Pricing
             </p>
-            <div className="mt-8 max-w-md border-l border-[#c9a96e]/35 pl-6">
+            <div className="mt-8 max-w-md">
               <p className="font-serif text-[1.2rem] font-light italic leading-snug text-[#1a1a1a]/75 md:text-[1.4rem]">
                 &ldquo;Which unit in DLF Arbour is best for natural light and vastu?&rdquo;
               </p>
