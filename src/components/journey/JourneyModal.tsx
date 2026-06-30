@@ -66,12 +66,14 @@ function Shell({
   onBack,
   progress,
   eyebrow,
+  align = "center",
   children,
 }: {
   onClose: () => void;
   onBack?: () => void;
   progress?: number | null;
   eyebrow?: string;
+  align?: "center" | "top";
   children: React.ReactNode;
 }) {
   return (
@@ -102,7 +104,7 @@ function Shell({
       </header>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto flex min-h-full max-w-3xl flex-col justify-center px-6 py-10 md:px-10 md:py-14">
+        <div className={`mx-auto flex min-h-full max-w-3xl flex-col px-6 md:px-10 ${align === "top" ? "justify-start py-8 md:py-9" : "justify-center py-10 md:py-14"}`}>
           {children}
         </div>
       </div>
@@ -1072,13 +1074,14 @@ export default function JourneyModal({
 
   if (step === "shortlist") {
     return frame(
-      <Shell onClose={onClose} onBack={() => setStep("dna")} eyebrow="Your Shortlist">
+      <Shell onClose={onClose} eyebrow="Your Shortlist" align="top">
         <ShortlistScreen
           recs={recs}
           onPick={(r) => {
             setSelected(r);
             setStep("preview");
           }}
+          onChangePreferences={() => setStep("dna")}
         />
       </Shell>
     );
@@ -1299,7 +1302,15 @@ function DnaScreen({
 /* ════════════════════════════════════════════════════════════════
    SHORTLIST — 127 → 3 reveal + recommendations
    ════════════════════════════════════════════════════════════════ */
-function ShortlistScreen({ recs, onPick }: { recs: Scored[]; onPick: (r: Scored) => void }) {
+function ShortlistScreen({
+  recs,
+  onPick,
+  onChangePreferences,
+}: {
+  recs: Scored[];
+  onPick: (r: Scored) => void;
+  onChangePreferences: () => void;
+}) {
   const [revealed, setRevealed] = useState(false);
   const total = useCountUp(ACTIVE_PROJECT_COUNT, true, 1900);
   useEffect(() => {
@@ -1309,19 +1320,27 @@ function ShortlistScreen({ recs, onPick }: { recs: Scored[]; onPick: (r: Scored)
 
   return (
     <div key="shortlist" className="animate-fade-up">
-      <div className="py-3 text-center md:py-10">
-        <p className="font-serif text-[1.1rem] font-light leading-snug text-[#1a1a1a]/80 md:text-[2rem]">
-          Based on everything you&apos;ve shared, there are
+      <div className="py-3 text-center md:py-5">
+        <p className="font-serif text-[1.05rem] font-light leading-snug text-[#1a1a1a]/70 md:text-[1.35rem]">
+          Based on everything you&apos;ve shared
         </p>
-        <p className="my-3 font-serif text-[3.2rem] font-medium leading-none text-[#1a1a1a] md:my-6 md:text-[6rem]">
-          {total}
-        </p>
-        <p className="font-serif text-[1.1rem] font-light leading-snug text-[#1a1a1a]/80 md:text-[2rem]">
-          active projects. We would investigate
-        </p>
-        <p className="mt-3 font-serif text-[1.9rem] font-medium leading-none text-[#1e6b45] md:mt-5 md:text-[3.4rem]">
-          only 3.
-        </p>
+        <div className="mt-5 flex items-center justify-center gap-6 md:mt-6 md:gap-12">
+          <div>
+            <p className="font-serif text-[3rem] font-medium leading-none text-[#1a1a1a] md:text-[4.2rem]">{total}</p>
+            <p className="mt-2 text-[9px] font-light uppercase tracking-[0.18em] text-[#1a1a1a]/45 md:mt-2.5 md:text-[10px]">
+              Active projects
+            </p>
+          </div>
+          <span className="font-serif text-[1.7rem] font-light text-[#c9a96e] md:text-[2.2rem]" aria-hidden>
+            &rarr;
+          </span>
+          <div>
+            <p className="font-serif text-[3rem] font-medium leading-none text-[#1e6b45] md:text-[4.2rem]">3</p>
+            <p className="mt-2 text-[9px] font-light uppercase tracking-[0.18em] text-[#1a1a1a]/45 md:mt-2.5 md:text-[10px]">
+              Worth investigating
+            </p>
+          </div>
+        </div>
       </div>
 
       <div
@@ -1336,42 +1355,42 @@ function ShortlistScreen({ recs, onPick }: { recs: Scored[]; onPick: (r: Scored)
             <button
               key={r.name}
               onClick={() => onPick(r)}
-              className="group flex flex-col gap-3 border border-[#1a1a1a]/12 bg-white p-5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-[#1a1a1a]/25 hover:shadow-lg hover:shadow-black/[0.04] md:flex-row md:items-center md:gap-5 md:px-6 md:py-5"
+              className="group flex w-full items-stretch gap-4 border border-[#1a1a1a]/12 bg-white p-5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-[#1a1a1a]/25 hover:shadow-lg hover:shadow-black/[0.04] md:gap-6 md:p-6"
             >
-              <span className="hidden font-serif text-[1.3rem] text-[#1a1a1a]/30 md:block">
-                {String(idx + 1).padStart(2, "0")}
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-serif text-[1.2rem] font-medium leading-tight text-[#1a1a1a] md:text-[1.45rem]">
-                      <span className="mr-1.5 text-[#1a1a1a]/30 md:hidden">{String(idx + 1).padStart(2, "0")}</span>
-                      {r.name}
-                    </p>
-                    <p className="mt-1 text-[0.8rem] font-light tracking-[0.04em] text-[#1a1a1a]/45">
-                      {r.developer} · {r.market}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 flex-col items-end md:hidden">
-                    <span className="font-serif text-[1.2rem] font-medium leading-none text-[#1e6b45]">{r.matchPct}%</span>
-                    <span className="mt-1 text-[8px] font-light uppercase tracking-[0.14em] text-[#1a1a1a]/40">Match · {r.truthScore} score</span>
-                  </div>
-                </div>
+              <div className="flex min-w-0 flex-1 flex-col">
+                <p className="font-serif text-[1.2rem] font-medium leading-tight text-[#1a1a1a] md:text-[1.5rem]">
+                  <span className="mr-2 font-light text-[#1a1a1a]/30">{String(idx + 1).padStart(2, "0")}</span>
+                  {r.name}
+                </p>
+                <p className="mt-1 text-[0.8rem] font-light tracking-[0.04em] text-[#1a1a1a]/45">
+                  {r.developer} · {r.market}
+                </p>
                 <p className="mt-2.5 text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/65">{r.reason}</p>
               </div>
-              <div className="hidden flex-col items-end gap-2 text-right md:flex">
-                <Stat label="Truth Match" value={`${r.matchPct}%`} accent />
-                <Stat label="Truth Score" value={`${r.truthScore}`} />
+              <div className="flex shrink-0 flex-col justify-center gap-4 self-stretch border-l border-[#1a1a1a]/10 pl-4 text-right md:pl-6">
+                <div>
+                  <p className="font-serif text-[1.25rem] font-medium leading-none text-[#1e6b45] md:text-[1.5rem]">{r.matchPct}%</p>
+                  <p className="mt-1.5 text-[8px] font-light uppercase tracking-[0.18em] text-[#1a1a1a]/40 md:text-[9px]">Truth Match</p>
+                </div>
+                <div>
+                  <p className="font-serif text-[1.25rem] font-medium leading-none text-[#1a1a1a] md:text-[1.5rem]">{r.truthScore}</p>
+                  <p className="mt-1.5 text-[8px] font-light uppercase tracking-[0.18em] text-[#1a1a1a]/40 md:text-[9px]">Truth Score</p>
+                </div>
               </div>
-              <span className="ml-1 hidden text-[1.1rem] text-[#1a1a1a]/25 transition-all duration-300 group-hover:translate-x-1 group-hover:text-[#c9a96e] md:inline">
-                &rarr;
-              </span>
             </button>
           ))}
         </div>
-        <p className="mt-5 text-center text-[0.75rem] font-light italic text-[#1a1a1a]/35">
-          No pricing yet — and no registration. Just our honest read.
-        </p>
+        <div className="mt-7 flex flex-col items-center gap-4">
+          <button
+            onClick={onChangePreferences}
+            className="inline-flex items-center gap-2 rounded-full border border-[#1a1a1a]/20 px-6 py-2.5 text-[0.82rem] font-light text-[#1a1a1a]/70 transition-colors duration-300 hover:border-[#1a1a1a]/45 hover:text-[#1a1a1a]"
+          >
+            <span aria-hidden>&larr;</span> Change preferences
+          </button>
+          <p className="text-center text-[0.75rem] font-light italic text-[#1a1a1a]/35">
+            No pricing yet — and no registration. Just our honest read.
+          </p>
+        </div>
       </div>
     </div>
   );
