@@ -396,19 +396,19 @@ function IndependentRepresentation() {
               </p>
               <div className="mt-5 flex flex-col gap-3 text-[0.85rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[0.92rem]">
                 <p>
-                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#c9a96e]">Pick</span>
+                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/45">Pick</span>
                   Tower C &middot; higher floors &middot; east-facing
                 </p>
                 <p>
-                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#c9a96e]">Light</span>
+                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/45">Light</span>
                   Open morning sun; no tower planned to the east
                 </p>
                 <p>
-                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#c9a96e]">Vastu</span>
+                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/45">Vastu</span>
                   North-east entry, master suite to the south-west
                 </p>
                 <p>
-                  <span className="mr-3 whitespace-nowrap text-[10px] uppercase tracking-[0.2em] text-[#c9a96e]">Worth knowing</span>
+                  <span className="mr-3 whitespace-nowrap text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/45">Worth knowing</span>
                   A small premium over the west-facing stacks
                 </p>
               </div>
@@ -423,7 +423,7 @@ function IndependentRepresentation() {
             <p className="mt-5 max-w-md font-serif text-[1.05rem] font-light leading-relaxed text-[#1a1a1a]/60 md:text-[1.2rem]">
               Technology builds confidence; human judgement builds conviction. When you choose to go further, a dedicated advisor sits on your side of the table&mdash;and no one else&rsquo;s.
             </p>
-            <div className="mt-8 max-w-sm rounded-xl border border-[#1a1a1a]/12 bg-white p-6">
+            <div className="mt-8 max-w-md rounded-xl border border-[#1a1a1a]/12 bg-white p-6">
               <div className="flex items-center gap-4">
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#c9a96e]/50 bg-[#c9a96e]/10 font-serif text-[1rem] font-medium text-[#1a1a1a]/70">
                   {advisor.initials}
