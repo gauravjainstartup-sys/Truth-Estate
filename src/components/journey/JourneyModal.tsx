@@ -7,7 +7,7 @@ import LocationPicker from "./LocationPicker";
 import ProjectProfile from "../intelligence/ProjectProfile";
 import { projectByName } from "@/lib/projects";
 import { useConsultation } from "../consultation/ConsultationProvider";
-import type { ConsultIntent } from "@/lib/consultation";
+import type { ConsultIntent, ConsultProfileChip } from "@/lib/consultation";
 import {
   ACTIVE_PROJECT_COUNT,
   ADVISORS,
@@ -396,10 +396,20 @@ export default function JourneyModal({
 
   // From any journey, "Request Independent Advice" hands off to the unified
   // consultation flow — preserving the journey context so the advisor
-  // arrives already knowing the visitor's DNA.
+  // arrives already knowing the visitor's DNA. For a Buy journey we pass a
+  // short profile summary, which puts the consultation on its warm
+  // fast-track (skips re-asking what we already know).
+  const consultProfile = (intent: ConsultIntent): ConsultProfileChip[] | undefined => {
+    if (intent !== "buy") return undefined;
+    return [
+      { label: "Budget", value: dna.budgetRange },
+      { label: "Markets", value: dna.markets.length ? dna.markets.slice(0, 3).join(", ") : "Open to guidance" },
+      { label: "Timeline", value: dna.timeline },
+    ];
+  };
   const requestAdvice = (intent: ConsultIntent) => {
     onClose();
-    openConsult({ sourceKind: "journey", intent });
+    openConsult({ sourceKind: "journey", intent, profile: consultProfile(intent) });
   };
 
   useEffect(() => {

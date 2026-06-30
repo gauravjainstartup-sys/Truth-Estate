@@ -22,10 +22,16 @@ export type ConsultSourceKind =
   | "location"
   | "journey";
 
+/* A short, human-readable summary of requirements the visitor has already
+   given us elsewhere (e.g. their Buyer DNA). Its presence is what makes a
+   visitor "warm" — we fast-track them past the reason/situation steps. */
+export type ConsultProfileChip = { label: string; value: string };
+
 export type ConsultContext = {
   source?: string; // human label, e.g. "DLF Arbour"
   sourceKind?: ConsultSourceKind;
   intent?: ConsultIntent; // pre-selected reason, if known
+  profile?: ConsultProfileChip[]; // a built requirements profile → warm fast-track
 };
 
 /* Returns the contextual preparation line, or null for a generic entry. */
