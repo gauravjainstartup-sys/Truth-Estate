@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Logo from "../Logo";
 import BuyersOffice from "./BuyersOffice";
+import LocationPicker from "./LocationPicker";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import type { ConsultIntent } from "@/lib/consultation";
 import {
@@ -399,7 +400,7 @@ export default function JourneyModal({
   const inBuyFlow = buyIndex >= 0;
   const progress = inBuyFlow ? (buyIndex + 1) / BUY_STEPS.length : null;
   const nextBuy = () =>
-    buyIndex < BUY_STEPS.length - 1 ? setStep(BUY_STEPS[buyIndex + 1]) : setStep("processing");
+    buyIndex < BUY_STEPS.length - 1 ? setStep(BUY_STEPS[buyIndex + 1]) : setStep("dna");
   const backBuy = () => (buyIndex <= 0 ? setStep("goal") : setStep(BUY_STEPS[buyIndex - 1]));
 
   const canContinue: Record<BuyStep, boolean> = {
@@ -947,14 +948,10 @@ export default function JourneyModal({
       <Shell onClose={onClose} onBack={backBuy} progress={progress} eyebrow="Buy Property">
         <div key="locations" className="animate-fade-up">
           <ScreenHeading
-            title="Preferred locations"
-            sub="Select any that interest you — or none, and we'll guide you."
+            title="Where are you looking?"
+            sub="Think in areas, sectors or landmarks — we'll map it to the right micro-market."
           />
-          <div className="flex flex-wrap gap-3">
-            {LOCATIONS.map((l) => (
-              <Chip key={l} label={l} selected={buy.locations.includes(l)} onClick={() => toggle("locations", l)} />
-            ))}
-          </div>
+          <LocationPicker value={buy.locations} onChange={(m) => set("locations", m)} />
           <NextBar onNext={nextBuy} />
         </div>
       </Shell>
@@ -1013,20 +1010,20 @@ export default function JourneyModal({
               />
             ))}
           </div>
-          <NextBar onNext={nextBuy} disabled={!canContinue.priorities} label="See my results" />
+          <NextBar onNext={nextBuy} disabled={!canContinue.priorities} label="See my Buyer DNA" />
         </div>
       </Shell>
     );
   }
 
   if (step === "processing") {
-    return frame(<ProcessingScreen onDone={() => setStep("dna")} />);
+    return frame(<ProcessingScreen onDone={() => setStep("shortlist")} />);
   }
 
   if (step === "dna") {
     return frame(
       <Shell onClose={onClose} onBack={() => setStep("priorities")} eyebrow="Your Buyer DNA">
-        <DnaScreen dna={dna} onContinue={() => setStep("shortlist")} />
+        <DnaScreen dna={dna} onContinue={() => setStep("processing")} />
       </Shell>
     );
   }
