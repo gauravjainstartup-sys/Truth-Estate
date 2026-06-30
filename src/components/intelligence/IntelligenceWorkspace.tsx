@@ -125,7 +125,7 @@ export default function IntelligenceWorkspace() {
                 ["Projects", "projects", `${basePath}/intelligence/projects`],
                 ["Developers", "developers", `${basePath}/intelligence/developers`],
                 ["Locations", "locations", `${basePath}/intelligence/markets`],
-                ["Compare", "compare", null],
+                ["Compare", "compare", `${basePath}/intelligence/compare`],
               ] as const
             ).map(([label, key, href]) => {
               const cls = `rounded-sm px-3.5 py-2 text-[0.78rem] font-light tracking-[0.02em] transition-colors duration-300 ${
@@ -365,7 +365,7 @@ function HomeView({ navigate, doSearch }: { navigate: (v: View) => void; doSearc
           <BrowseTile
             title="Compare"
             sub="Compare any projects, developers, or markets."
-            onClick={() => navigate({ type: "compare" })}
+            href={`${basePath}/intelligence/compare`}
           />
         </div>
 
