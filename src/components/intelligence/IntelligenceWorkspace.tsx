@@ -121,24 +121,23 @@ export default function IntelligenceWorkspace() {
           <div className="hidden items-center gap-1 lg:flex">
             {(
               [
-                ["Projects", "projects"],
-                ["Developers", "developers"],
-                ["Locations", "locations"],
-                ["Compare", "compare"],
+                ["Projects", "projects", null],
+                ["Developers", "developers", `${basePath}/intelligence/developers`],
+                ["Locations", "locations", `${basePath}/intelligence/markets`],
+                ["Compare", "compare", null],
               ] as const
-            ).map(([label, key]) => (
-              <button
-                key={key}
-                onClick={() => navigate({ type: key })}
-                className={`rounded-sm px-3.5 py-2 text-[0.78rem] font-light tracking-[0.02em] transition-colors duration-300 ${
-                  view.type === key
-                    ? "text-[#1a1a1a]"
-                    : "text-[#1a1a1a]/40 hover:text-[#1a1a1a]/70"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+            ).map(([label, key, href]) => {
+              const cls = `rounded-sm px-3.5 py-2 text-[0.78rem] font-light tracking-[0.02em] transition-colors duration-300 ${
+                view.type === key
+                  ? "text-[#1a1a1a]"
+                  : "text-[#1a1a1a]/40 hover:text-[#1a1a1a]/70"
+              }`;
+              return href ? (
+                <a key={key} href={href} className={cls}>{label}</a>
+              ) : (
+                <button key={key} onClick={() => navigate({ type: key })} className={cls}>{label}</button>
+              );
+            })}
           </div>
         </div>
         <div className="flex items-center gap-3 md:gap-5">
@@ -355,12 +354,12 @@ function HomeView({ navigate, doSearch }: { navigate: (v: View) => void; doSearc
           <BrowseTile
             title="Developers"
             sub="Delivery history. Financial health. Track record."
-            onClick={() => navigate({ type: "developers" })}
+            href={`${basePath}/intelligence/developers`}
           />
           <BrowseTile
             title="Locations"
             sub="Infrastructure. Supply. Demand. Outlook."
-            onClick={() => navigate({ type: "locations" })}
+            href={`${basePath}/intelligence/markets`}
           />
           <BrowseTile
             title="Compare"
@@ -841,16 +840,20 @@ function PageHero({ kicker, title, sub }: { kicker: string; title: string; sub: 
   );
 }
 
-function BrowseTile({ title, sub, onClick }: { title: string; sub: string; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="group rounded-lg border border-[#1a1a1a]/[0.06] bg-white p-6 text-left transition-all duration-300 hover:border-[#1a1a1a]/12 hover:shadow-lg hover:shadow-black/[0.03]"
-    >
+function BrowseTile({ title, sub, onClick, href }: { title: string; sub: string; onClick?: () => void; href?: string }) {
+  const cls =
+    "group block rounded-lg border border-[#1a1a1a]/[0.06] bg-white p-6 text-left transition-all duration-300 hover:border-[#1a1a1a]/12 hover:shadow-lg hover:shadow-black/[0.03]";
+  const inner = (
+    <>
       <h3 className="font-serif text-[1.3rem] font-medium text-[#1a1a1a] transition-colors group-hover:text-[#1e6b45]">{title}</h3>
       <p className="mt-2 text-[0.82rem] font-light leading-[1.6] text-[#1a1a1a]/45">{sub}</p>
       <span className="mt-4 inline-block text-[#1a1a1a]/20 transition-transform duration-300 group-hover:translate-x-1">→</span>
-    </button>
+    </>
+  );
+  return href ? (
+    <a href={href} className={cls}>{inner}</a>
+  ) : (
+    <button onClick={onClick} className={`${cls} w-full`}>{inner}</button>
   );
 }
 
