@@ -15,6 +15,7 @@ import {
   classifyAndResearch,
   type Project,
 } from "@/lib/journey";
+import { projectSlug } from "@/lib/projects";
 
 /* ════════════════════════════════════════════════════════════════
    VIEW TYPES
@@ -121,7 +122,7 @@ export default function IntelligenceWorkspace() {
           <div className="hidden items-center gap-1 lg:flex">
             {(
               [
-                ["Projects", "projects", null],
+                ["Projects", "projects", `${basePath}/intelligence/projects`],
                 ["Developers", "developers", `${basePath}/intelligence/developers`],
                 ["Locations", "locations", `${basePath}/intelligence/markets`],
                 ["Compare", "compare", null],
@@ -349,7 +350,7 @@ function HomeView({ navigate, doSearch }: { navigate: (v: View) => void; doSearc
           <BrowseTile
             title="Projects"
             sub="Independent intelligence on every residential project."
-            onClick={() => navigate({ type: "projects" })}
+            href={`${basePath}/intelligence/projects`}
           />
           <BrowseTile
             title="Developers"
@@ -387,7 +388,7 @@ function HomeView({ navigate, doSearch }: { navigate: (v: View) => void; doSearc
         <SectionLabel>Latest Intelligence</SectionLabel>
         <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {sorted.slice(0, 6).map((p) => (
-            <ProjectCard key={p.name} project={p} onClick={() => navigate({ type: "project", name: p.name })} />
+            <ProjectCard key={p.name} project={p} href={`${basePath}/intelligence/projects/${projectSlug(p.name)}`} />
           ))}
         </div>
       </div>
@@ -397,9 +398,9 @@ function HomeView({ navigate, doSearch }: { navigate: (v: View) => void; doSearc
         <SectionLabel>Recently Updated</SectionLabel>
         <div className="mt-6 flex flex-col gap-px overflow-hidden rounded-lg border border-[#1a1a1a]/[0.06]">
           {sorted.slice(0, 5).map((p) => (
-            <button
+            <a
               key={p.name}
-              onClick={() => navigate({ type: "project", name: p.name })}
+              href={`${basePath}/intelligence/projects/${projectSlug(p.name)}`}
               className="flex items-center justify-between bg-white px-6 py-4 text-left transition-colors hover:bg-gray-50"
             >
               <div>
@@ -410,7 +411,7 @@ function HomeView({ navigate, doSearch }: { navigate: (v: View) => void; doSearc
                 <span className="font-serif text-[1rem] font-medium text-[#1e6b45]">{p.truthScore}</span>
                 <span className="text-[0.72rem] font-light text-[#1a1a1a]/25">Updated Today</span>
               </div>
-            </button>
+            </a>
           ))}
         </div>
       </div>
@@ -857,12 +858,11 @@ function BrowseTile({ title, sub, onClick, href }: { title: string; sub: string;
   );
 }
 
-function ProjectCard({ project: p, onClick }: { project: Project; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="group rounded-lg border border-[#1a1a1a]/[0.06] bg-white p-5 text-left transition-all duration-300 hover:border-[#1a1a1a]/12 hover:shadow-lg hover:shadow-black/[0.03]"
-    >
+function ProjectCard({ project: p, onClick, href }: { project: Project; onClick?: () => void; href?: string }) {
+  const cls =
+    "group block rounded-lg border border-[#1a1a1a]/[0.06] bg-white p-5 text-left transition-all duration-300 hover:border-[#1a1a1a]/12 hover:shadow-lg hover:shadow-black/[0.03]";
+  const inner = (
+    <>
       <div className="flex items-start justify-between">
         <div>
           <h3 className="font-serif text-[1.1rem] font-medium text-[#1a1a1a]">{p.name}</h3>
@@ -876,7 +876,12 @@ function ProjectCard({ project: p, onClick }: { project: Project; onClick: () =>
       <p className="mt-3 text-[9px] font-medium uppercase tracking-[0.15em] text-[#1a1a1a]/50">{p.recommendation}</p>
       <p className="mt-2 text-[0.8rem] font-light leading-[1.6] text-[#1a1a1a]/45 line-clamp-2">{p.reason}</p>
       <p className="mt-3 text-[0.68rem] font-light text-[#1a1a1a]/22">Updated Today</p>
-    </button>
+    </>
+  );
+  return href ? (
+    <a href={href} className={cls}>{inner}</a>
+  ) : (
+    <button onClick={onClick} className={`${cls} w-full`}>{inner}</button>
   );
 }
 
