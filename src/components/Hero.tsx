@@ -148,7 +148,9 @@ export default function Hero() {
                secondary CTA and the foot quote */
             height: "122%",
             objectPosition: "center center",
-            filter: "brightness(0.58) contrast(1.05) saturate(1.0) blur(0.6px)",
+            /* No full-image blur — keep the photograph crisp like desktop;
+               readability is handled by the scrim, not by dimming the photo */
+            filter: "brightness(0.66) contrast(1.12) saturate(1.05)",
           }}
         />
 
@@ -159,7 +161,7 @@ export default function Hero() {
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to bottom, rgba(4,6,5,0.95) 0%, rgba(4,6,5,0.93) 46%, rgba(4,6,5,0.82) 54%, rgba(4,6,5,0.44) 64%, rgba(4,6,5,0.28) 74%, rgba(4,6,5,0.34) 84%, rgba(4,6,5,0.58) 94%, rgba(4,6,5,0.74) 100%)",
+              "linear-gradient(to bottom, rgba(4,6,5,0.92) 0%, rgba(4,6,5,0.86) 32%, rgba(4,6,5,0.76) 46%, rgba(4,6,5,0.40) 57%, rgba(4,6,5,0.18) 67%, rgba(4,6,5,0.16) 78%, rgba(4,6,5,0.38) 90%, rgba(4,6,5,0.72) 100%)",
           }}
         />
 
@@ -168,7 +170,7 @@ export default function Hero() {
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 85% 80% at 50% 50%, transparent 45%, rgba(4,6,5,0.40) 100%)",
+              "radial-gradient(ellipse 88% 82% at 50% 50%, transparent 52%, rgba(4,6,5,0.30) 100%)",
           }}
         />
 
