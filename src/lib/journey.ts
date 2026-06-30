@@ -32,7 +32,6 @@ export const emptyBuyData: BuyData = {
 export const GOALS = [
   { key: "buy" as Intent, icon: "🏡", label: "Buy Property", live: true },
   { key: "sell" as Intent, icon: "🏷", label: "Sell Property", live: true },
-  { key: "invest" as Intent, icon: "📈", label: "Invest", live: true },
   { key: "research" as Intent, icon: "🔍", label: "Research & Compare", live: true },
 ];
 
