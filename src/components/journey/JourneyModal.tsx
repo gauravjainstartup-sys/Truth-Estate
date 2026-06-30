@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Logo from "../Logo";
 import BuyersOffice from "./BuyersOffice";
 import LocationPicker from "./LocationPicker";
+import ProjectProfile from "../intelligence/ProjectProfile";
+import { projectByName } from "@/lib/projects";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import type { ConsultIntent } from "@/lib/consultation";
 import {
@@ -258,11 +260,33 @@ function Chip({
   );
 }
 
-function Field({ label, value }: { label: string; value: string }) {
+function Field({ label, value, onEdit }: { label: string; value: string; onEdit?: () => void }) {
   return (
-    <div>
-      <dt className="text-[10px] font-light uppercase tracking-[0.22em] text-[#1a1a1a]/40">{label}</dt>
-      <dd className="mt-2 font-serif text-[1.02rem] font-light leading-snug text-[#1a1a1a] md:text-[1.15rem]">
+    <div
+      onClick={onEdit}
+      onKeyDown={
+        onEdit
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onEdit();
+              }
+            }
+          : undefined
+      }
+      role={onEdit ? "button" : undefined}
+      tabIndex={onEdit ? 0 : undefined}
+      className={`group ${onEdit ? "-m-2 cursor-pointer rounded-lg p-2 transition-colors hover:bg-[#1a1a1a]/[0.035]" : ""}`}
+    >
+      <dt className="flex items-center gap-1.5 text-[10px] font-light uppercase tracking-[0.22em] text-[#1a1a1a]/40">
+        {label}
+        {onEdit && (
+          <span className="text-[0.72rem] leading-none text-[#c9a96e] opacity-50 transition-opacity group-hover:opacity-100" aria-hidden>
+            ✎
+          </span>
+        )}
+      </dt>
+      <dd className="mt-2 font-serif text-[1.02rem] font-light leading-snug text-[#1a1a1a] transition-colors group-hover:text-[#1e6b45] md:text-[1.15rem]">
         {value}
       </dd>
     </div>
@@ -362,6 +386,9 @@ export default function JourneyModal({
   const [sell, setSell] = useState<SellData>(emptySellData);
   const [invest, setInvest] = useState<InvestData>(emptyInvestData);
   const [selected, setSelected] = useState<Scored | null>(null);
+  // When editing a single answer from the Buyer DNA screen, the next "Continue"
+  // returns straight to the DNA summary instead of walking forward.
+  const [editReturn, setEditReturn] = useState(false);
   const [booking, setBooking] = useState<Booking>(account?.booking ?? null);
   const { openConsult } = useConsultation();
 
@@ -379,7 +406,8 @@ export default function JourneyModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const recs = useMemo(() => rankProjects(buy).slice(0, 3), [buy]);
+  const allScored = useMemo(() => rankProjects(buy), [buy]);
+  const recs = useMemo(() => allScored.slice(0, 3), [allScored]);
   const dna = useMemo(() => deriveDNA(buy), [buy]);
 
   const set = <K extends keyof BuyData>(k: K, v: BuyData[K]) => setBuy((b) => ({ ...b, [k]: v }));
@@ -399,9 +427,19 @@ export default function JourneyModal({
   const buyIndex = BUY_STEPS.indexOf(step as BuyStep);
   const inBuyFlow = buyIndex >= 0;
   const progress = inBuyFlow ? (buyIndex + 1) / BUY_STEPS.length : null;
-  const nextBuy = () =>
-    buyIndex < BUY_STEPS.length - 1 ? setStep(BUY_STEPS[buyIndex + 1]) : setStep("dna");
-  const backBuy = () => (buyIndex <= 0 ? setStep("goal") : setStep(BUY_STEPS[buyIndex - 1]));
+  const nextBuy = () => {
+    if (editReturn) {
+      setEditReturn(false);
+      setStep("dna");
+      return;
+    }
+    if (buyIndex < BUY_STEPS.length - 1) setStep(BUY_STEPS[buyIndex + 1]);
+    else setStep("dna");
+  };
+  const backBuy = () => {
+    if (editReturn) setEditReturn(false);
+    return buyIndex <= 0 ? setStep("goal") : setStep(BUY_STEPS[buyIndex - 1]);
+  };
 
   const canContinue: Record<BuyStep, boolean> = {
     purchase: buy.purchaseType !== null,
@@ -511,7 +549,7 @@ export default function JourneyModal({
       setStep(live ? INTENT_STEP[g] : "coming-soon");
     };
     return frame(
-      <Shell onClose={onClose} onBack={() => setStep("welcome")} eyebrow="The Truth Estate Journey">
+      <Shell onClose={onClose} eyebrow="The Truth Estate Journey">
         <div key="goal" className="animate-fade-up">
           <ScreenHeading title="What's your goal today?" />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -1021,9 +1059,13 @@ export default function JourneyModal({
   }
 
   if (step === "dna") {
+    const editStep = (s: BuyStep) => {
+      setEditReturn(true);
+      setStep(s);
+    };
     return frame(
       <Shell onClose={onClose} onBack={() => setStep("priorities")} eyebrow="Your Buyer DNA">
-        <DnaScreen dna={dna} onContinue={() => setStep("processing")} />
+        <DnaScreen dna={dna} onContinue={() => setStep("processing")} onEdit={editStep} />
       </Shell>
     );
   }
@@ -1043,15 +1085,29 @@ export default function JourneyModal({
   }
 
   if (step === "preview" && selected) {
+    const intel = projectByName(selected.name);
     return frame(
-      <Shell onClose={onClose} onBack={() => setStep("shortlist")} eyebrow="Project Preview">
-        <ProjectPreview
-          project={selected}
-          onTruthGuide={() => setStep("truthguide")}
-          onIntelligence={() => setStep("intelligence")}
+      intel ? (
+        <ProjectProfile
+          key={intel.slug}
+          p={intel}
+          embedded
+          onClose={onClose}
+          onBack={() => setStep("shortlist")}
           onConsult={() => requestAdvice("buy")}
+          onChallenge={() => setStep("truthguide")}
+          onSelectAlternative={(name) => {
+            const s = allScored.find((x) => x.name === name);
+            if (s) setSelected(s);
+          }}
         />
-      </Shell>
+      ) : (
+        <Shell onClose={onClose} onBack={() => setStep("shortlist")} eyebrow="Project Preview">
+          <div className="animate-fade-up">
+            <ScreenHeading title={selected.name} sub="Full intelligence for this project is being prepared." />
+          </div>
+        </Shell>
+      )
     );
   }
 
@@ -1207,7 +1263,15 @@ function ProcessingScreen({ onDone }: { onDone: () => void }) {
 /* ════════════════════════════════════════════════════════════════
    BUYER DNA (profile)
    ════════════════════════════════════════════════════════════════ */
-function DnaScreen({ dna, onContinue }: { dna: DNA; onContinue: () => void }) {
+function DnaScreen({
+  dna,
+  onContinue,
+  onEdit,
+}: {
+  dna: DNA;
+  onContinue: () => void;
+  onEdit: (step: BuyStep) => void;
+}) {
   return (
     <div key="dna" className="animate-fade-up">
       <ScreenHeading kicker="Buyer DNA" title={<>We&apos;ve understood<br />what you&apos;re looking for.</>} />
@@ -1218,13 +1282,14 @@ function DnaScreen({ dna, onContinue }: { dna: DNA; onContinue: () => void }) {
           <div className="mx-auto mt-5 h-px w-16 bg-[#c9a96e]/50" />
         </div>
         <dl className="grid grid-cols-2 gap-x-8 gap-y-7 md:grid-cols-3">
-          <Field label="Budget" value={dna.budgetRange} />
-          <Field label="Preferred Markets" value={dna.markets.join("  ·  ")} />
-          <Field label="Configuration" value={dna.config} />
-          <Field label="Timeline" value={dna.timeline} />
-          <Field label="Risk Appetite" value={dna.risk} />
-          <Field label="Top Priorities" value={dna.topPriorities.join("  ·  ")} />
+          <Field label="Budget" value={dna.budgetRange} onEdit={() => onEdit("budget")} />
+          <Field label="Preferred Markets" value={dna.markets.join("  ·  ")} onEdit={() => onEdit("locations")} />
+          <Field label="Configuration" value={dna.config} onEdit={() => onEdit("configs")} />
+          <Field label="Timeline" value={dna.timeline} onEdit={() => onEdit("timeline")} />
+          <Field label="Risk Appetite" value={dna.risk} onEdit={() => onEdit("purchase")} />
+          <Field label="Top Priorities" value={dna.topPriorities.join("  ·  ")} onEdit={() => onEdit("priorities")} />
         </dl>
+        <p className="mt-7 text-center text-[0.78rem] font-light text-[#1a1a1a]/40">Tap any detail to change it.</p>
       </div>
       <NextBar onNext={onContinue} label="See what we'd investigate" />
     </div>
@@ -1244,17 +1309,17 @@ function ShortlistScreen({ recs, onPick }: { recs: Scored[]; onPick: (r: Scored)
 
   return (
     <div key="shortlist" className="animate-fade-up">
-      <div className="py-6 text-center md:py-10">
-        <p className="font-serif text-[1.4rem] font-light leading-snug text-[#1a1a1a]/80 md:text-[2rem]">
+      <div className="py-3 text-center md:py-10">
+        <p className="font-serif text-[1.1rem] font-light leading-snug text-[#1a1a1a]/80 md:text-[2rem]">
           Based on everything you&apos;ve shared, there are
         </p>
-        <p className="my-6 font-serif text-[4rem] font-medium leading-none text-[#1a1a1a] md:text-[6rem]">
+        <p className="my-3 font-serif text-[3.2rem] font-medium leading-none text-[#1a1a1a] md:my-6 md:text-[6rem]">
           {total}
         </p>
-        <p className="font-serif text-[1.4rem] font-light leading-snug text-[#1a1a1a]/80 md:text-[2rem]">
+        <p className="font-serif text-[1.1rem] font-light leading-snug text-[#1a1a1a]/80 md:text-[2rem]">
           active projects. We would investigate
         </p>
-        <p className="mt-5 font-serif text-[2.4rem] font-medium leading-none text-[#1e6b45] md:text-[3.4rem]">
+        <p className="mt-3 font-serif text-[1.9rem] font-medium leading-none text-[#1e6b45] md:mt-5 md:text-[3.4rem]">
           only 3.
         </p>
       </div>
@@ -1263,7 +1328,7 @@ function ShortlistScreen({ recs, onPick }: { recs: Scored[]; onPick: (r: Scored)
         className="transition-all duration-1000"
         style={{ opacity: revealed ? 1 : 0, transform: revealed ? "translateY(0)" : "translateY(18px)" }}
       >
-        <p className="mb-7 mt-4 text-center text-[10px] font-light uppercase tracking-[0.4em] text-[#c9a96e]">
+        <p className="mb-5 mt-2 text-center text-[10px] font-light uppercase tracking-[0.4em] text-[#c9a96e] md:mb-7 md:mt-4">
           Tap a project to see why
         </p>
         <div className="flex flex-col gap-4">
@@ -1271,23 +1336,34 @@ function ShortlistScreen({ recs, onPick }: { recs: Scored[]; onPick: (r: Scored)
             <button
               key={r.name}
               onClick={() => onPick(r)}
-              className="group flex items-center gap-5 border border-[#1a1a1a]/12 bg-white px-6 py-5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-[#1a1a1a]/25 hover:bg-white hover:shadow-lg hover:shadow-black/[0.04]"
+              className="group flex flex-col gap-3 border border-[#1a1a1a]/12 bg-white p-5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-[#1a1a1a]/25 hover:shadow-lg hover:shadow-black/[0.04] md:flex-row md:items-center md:gap-5 md:px-6 md:py-5"
             >
-              <span className="font-serif text-[1.1rem] text-[#1a1a1a]/30 md:text-[1.3rem]">
+              <span className="hidden font-serif text-[1.3rem] text-[#1a1a1a]/30 md:block">
                 {String(idx + 1).padStart(2, "0")}
               </span>
-              <div className="flex-1">
-                <p className="font-serif text-[1.2rem] font-medium text-[#1a1a1a] md:text-[1.45rem]">{r.name}</p>
-                <p className="mt-0.5 text-[0.8rem] font-light tracking-[0.04em] text-[#1a1a1a]/45">
-                  {r.developer} · {r.market}
-                </p>
-                <p className="mt-2 text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/65">{r.reason}</p>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-serif text-[1.2rem] font-medium leading-tight text-[#1a1a1a] md:text-[1.45rem]">
+                      <span className="mr-1.5 text-[#1a1a1a]/30 md:hidden">{String(idx + 1).padStart(2, "0")}</span>
+                      {r.name}
+                    </p>
+                    <p className="mt-1 text-[0.8rem] font-light tracking-[0.04em] text-[#1a1a1a]/45">
+                      {r.developer} · {r.market}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end md:hidden">
+                    <span className="font-serif text-[1.2rem] font-medium leading-none text-[#1e6b45]">{r.matchPct}%</span>
+                    <span className="mt-1 text-[8px] font-light uppercase tracking-[0.14em] text-[#1a1a1a]/40">Match · {r.truthScore} score</span>
+                  </div>
+                </div>
+                <p className="mt-2.5 text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/65">{r.reason}</p>
               </div>
-              <div className="flex flex-col items-end gap-2 text-right">
+              <div className="hidden flex-col items-end gap-2 text-right md:flex">
                 <Stat label="Truth Match" value={`${r.matchPct}%`} accent />
                 <Stat label="Truth Score" value={`${r.truthScore}`} />
               </div>
-              <span className="ml-1 text-[1.1rem] text-[#1a1a1a]/25 transition-all duration-300 group-hover:translate-x-1 group-hover:text-[#c9a96e]">
+              <span className="ml-1 hidden text-[1.1rem] text-[#1a1a1a]/25 transition-all duration-300 group-hover:translate-x-1 group-hover:text-[#c9a96e] md:inline">
                 &rarr;
               </span>
             </button>

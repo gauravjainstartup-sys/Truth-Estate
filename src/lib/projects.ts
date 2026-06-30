@@ -126,6 +126,10 @@ export function projectBySlug(slug: string): ProjectIntel | undefined {
   return PROJECT_INTEL.find((p) => p.slug === slug);
 }
 
+export function projectByName(name: string): ProjectIntel | undefined {
+  return PROJECT_INTEL.find((p) => p.name === name);
+}
+
 export function alternativesIn(market: string, excludeName: string): ProjectIntel[] {
   return PROJECT_INTEL.filter((p) => p.market === market && p.name !== excludeName);
 }
