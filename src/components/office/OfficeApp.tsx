@@ -397,6 +397,7 @@ function RequirementsSection({ state, activeId, onPick }: { state: OfficeState; 
 function RecommendationsSection({ thread, onActivate }: { thread: OfficeThread; onActivate: () => void }) {
   const postCall = callDone(thread.stage);
   const paid = isPaid(thread.stage);
+  if (thread.kind === "sell") return <SellPosition thread={thread} />;
   return (
     <div className="animate-fade-up">
       <SectionHead
@@ -529,6 +530,58 @@ function IntelCard({ title, meta, teasers, paid }: { title: string; meta: string
           <span className={`text-[0.82rem] font-light ${paid ? "text-[#1e6b45]" : "text-[#9a7a2e]"}`}>{paid ? "Open report →" : "🔒 in the report"}</span>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* The seller's view of Recommendations — exit position, not project picks. */
+function SellPosition({ thread }: { thread: OfficeThread }) {
+  const property = thread.dna.find((c) => c.label === "Property")?.value ?? "your property";
+  const tiles = [
+    { label: "Indicative value", value: "₹4.6–4.9 Cr", note: "Independent — not an agent's quote" },
+    { label: "Comparable exits · 90 days", value: "7 closed", note: "₹4.7 Cr median, your tower line" },
+    { label: "Active buyer demand", value: "High", note: "3 live buyer mandates match" },
+    { label: "Best window", value: "Now → Q3", note: "Ahead of fresh nearby supply" },
+  ];
+  const prep = [
+    "An independent valuation — with the comparable evidence behind every rupee",
+    "A pricing strategy: list price, your floor, and the room to negotiate",
+    "Qualified buyers from our live mandates — so you're not just waiting on the open market",
+  ];
+  return (
+    <div className="animate-fade-up">
+      <SectionHead
+        kicker="Recommendations"
+        title="Where your exit stands"
+        sub={`We're valuing ${property} independently, benchmarking real exits in your line, and lining up qualified buyers — so you price on evidence and never leave money on the table.`}
+      />
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-[#1a1a1a]/[0.08] bg-[#1a1a1a]/[0.06] md:grid-cols-4">
+        {tiles.map((t) => (
+          <div key={t.label} className="bg-white px-5 py-6">
+            <p className="text-[0.62rem] font-light uppercase tracking-[0.12em] text-[#1a1a1a]/40">{t.label}</p>
+            <p className="mt-2 font-serif text-[1.4rem] font-medium text-[#1a1a1a]">{t.value}</p>
+            <p className="mt-1 text-[0.74rem] font-light leading-snug text-[#1a1a1a]/50">{t.note}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-6 rounded-xl border border-[#1a1a1a]/[0.08] bg-white p-6 md:p-7">
+        <p className="text-[10px] font-light uppercase tracking-[0.28em] text-[#1a1a1a]/40">What we&apos;re preparing for your call</p>
+        <div className="mt-5 flex flex-col gap-3 border-t border-[#1a1a1a]/[0.06] pt-5">
+          {prep.map((s) => (
+            <div key={s} className="flex items-center gap-3 text-[0.9rem] font-light text-[#1a1a1a]/70">
+              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full border border-[#c9a96e] text-[0.7rem] text-[#c9a96e]">•</span>
+              {s}
+            </div>
+          ))}
+        </div>
+        <p className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#c9a96e]/12 px-4 py-2 text-[0.8rem] font-light text-[#9a7a2e]">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#c9a96e]" />
+          {thread.call ? `Firmed up on your call · ${thread.call.day} · ${thread.call.time}` : "Firmed up on your consultation"}
+        </p>
+      </div>
+      <p className="mt-6 text-[0.82rem] font-light italic text-[#1a1a1a]/45">
+        Indicative figures from our market read — every number gets its evidence on your call.
+      </p>
     </div>
   );
 }
