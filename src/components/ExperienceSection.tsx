@@ -347,7 +347,7 @@ function IndependentRepresentation() {
               Representation.
             </h2>
             <p className="mt-7 font-serif text-[1.25rem] font-light italic leading-snug text-[#1a1a1a]/60 md:text-[1.7rem]">
-              From first thought to final signature.
+              From first thought to final signature &mdash; and beyond.
             </p>
             <p className="mt-6 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/50 md:text-[1.05rem]">
               Every great property decision begins with understanding&mdash;not selling.
