@@ -413,11 +413,13 @@ function IndependentRepresentation() {
             </div>
           </Stage>
 
-          <Stage kicker="Consult" heading="Independent Consultation">
+          {/* Represent — human + the commitment */}
+          <Stage
+            kicker="Represent"
+            heading={<>We represent one side. <span className="italic">Yours.</span></>}
+          >
             <p className="mt-5 max-w-md font-serif text-[1.05rem] font-light leading-relaxed text-[#1a1a1a]/60 md:text-[1.2rem]">
-              Technology builds confidence.
-              <br />
-              Human judgement builds conviction.
+              Technology builds confidence; human judgement builds conviction. When you choose to go further, a dedicated advisor sits on your side of the table&mdash;and no one else&rsquo;s.
             </p>
             <div className="mt-8 max-w-sm rounded-xl border border-[#1a1a1a]/12 bg-white p-6">
               <div className="flex items-center gap-4">
@@ -442,18 +444,34 @@ function IndependentRepresentation() {
             </div>
           </Stage>
 
-          {/* Climax */}
-          <Stage
-            kicker="Represent"
-            heading="Independent Representation"
-            headingClass="mt-4 font-serif text-[2.4rem] font-medium leading-[1.04] text-[#1a1a1a] md:text-[3.6rem]"
-          >
-            <p className="mt-6 font-serif text-[1.5rem] font-light leading-[1.4] text-[#1a1a1a]/70 md:text-[2.1rem]">
-              Only if you choose.
-              <br />
-              We represent one side.{" "}
-              <span className="italic text-[#1a1a1a]">Yours.</span>
+          <Stage kicker="Close" heading="The best offer comes to you.">
+            <p className="mt-5 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.05rem]">
+              No calling ten brokers. No haggling. No wondering if you left money on the table. Our trusted network brings you the best terms available&mdash;and we secure them on your side.
             </p>
+          </Stage>
+
+          {/* Climax — the relationship that doesn't end */}
+          <Stage kicker="Stay" heading="Ownership Intelligence">
+            <p className="mt-5 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.05rem]">
+              Closing isn&rsquo;t the end of the relationship&mdash;it&rsquo;s the start of the next chapter. Your private portfolio terminal stays open for as long as you own.
+            </p>
+            <div className="mt-8 max-w-md rounded-xl border border-[#1a1a1a]/12 bg-white p-6">
+              <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]/80">Portfolio Terminal</p>
+              <div className="mt-5 flex flex-col gap-4 text-[0.85rem] font-light leading-relaxed text-[#1a1a1a]/60 md:text-[0.92rem]">
+                <p>
+                  <span className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/45">Documents</span>
+                  Upload your BBA, allotment and developer letters; we flag any anomalies
+                </p>
+                <p>
+                  <span className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/45">Resale value</span>
+                  Track your home&rsquo;s price on the dashboard, live
+                </p>
+                <p>
+                  <span className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/45">Resale, handled</span>
+                  When you choose to sell, our team runs it end to end
+                </p>
+              </div>
+            </div>
           </Stage>
           </div>
           </div>
