@@ -9,6 +9,7 @@ import {
   CONSULT_FORMATS,
 } from "@/lib/consultation";
 import {
+  Curation,
   DealStage,
   OfficeDoc,
   OfficeRec,
@@ -19,6 +20,8 @@ import {
   STAGE_LABEL,
   SECTIONS,
   SectionKey,
+  callDone,
+  isCurated,
   isPaid,
   loadOffice,
   newQuestion,
@@ -358,7 +361,7 @@ function RequirementsSection({ state, activeId, onPick }: { state: OfficeState; 
    RECOMMENDATIONS
    ════════════════════════════════════════════════════════════════ */
 function RecommendationsSection({ thread }: { thread: OfficeThread }) {
-  const postCall = stageIndex(thread.stage) >= stageIndex("call_done");
+  const postCall = callDone(thread.stage);
   const paid = isPaid(thread.stage);
   return (
     <div className="animate-fade-up">
@@ -399,19 +402,91 @@ function RecommendationsSection({ thread }: { thread: OfficeThread }) {
         ))}
       </div>
 
-      {/* Post-call locked intelligence — the paywall teaser */}
-      {postCall && !paid && (
-        <div className="mt-7 rounded-xl border border-[#c9a96e]/30 bg-[#c9a96e]/[0.06] p-7 text-center">
-          <div className="mx-auto mb-3 flex w-fit"><LockBadge label="Unlocks with your mandate" /></div>
-          <p className="font-serif text-[1.3rem] font-medium text-[#1a1a1a]">The full picture is ready</p>
-          <p className="mx-auto mt-2 max-w-[460px] text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/55">
-            Two more projects we ruled out (with reasons), the unit-level shortlist, and the pricing intelligence your advisor prepared — unlock to see everything.
+      {/* Curated intelligence — the curiosity hooks (real numbers visible) */}
+      {isCurated(thread.stage) && thread.curation && !paid && <CuratedIntel curation={thread.curation} />}
+
+      {paid && (
+        <div className="mt-7 rounded-xl border border-[#1e6b45]/25 bg-[#1e6b45]/[0.05] p-6 text-center">
+          <p className="font-serif text-[1.3rem] font-medium text-[#1a1a1a]">Mandate active — everything&apos;s unlocked.</p>
+          <p className="mx-auto mt-2 max-w-[440px] text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/55">
+            Your full report, the unit-level intel and the deal we sourced are open. The premium mandate workspace lands next.
           </p>
-          <Link href="/office/advice" className="mt-5 inline-block rounded-sm bg-[#1e6b45] px-6 py-3 text-[0.8rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
-            Activate your mandate →
-          </Link>
         </div>
       )}
+    </div>
+  );
+}
+
+/* The value-first conversion moment — show real edge, gate the full depth. */
+function CuratedIntel({ curation }: { curation: Curation }) {
+  return (
+    <div className="mt-12">
+      <div className="mb-4 flex items-center gap-3">
+        <span className="font-mono text-[0.8rem] text-[#c9a96e]">★</span>
+        <h2 className="font-serif text-[1.7rem] font-medium tracking-[-0.01em] text-[#1a1a1a] md:text-[2rem]">What our team curated for you</h2>
+      </div>
+      <p className="mb-7 max-w-[620px] text-[0.92rem] font-light leading-relaxed text-[#1a1a1a]/55">
+        Intelligence nobody else in the market puts in front of you. The numbers below are real — your full report, every unit-level view, and the deal we sourced unlock when you activate your mandate.
+      </p>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <IntelCard title="Independent Project Report" meta={`${curation.report.pages}-page report`} teasers={curation.report.teasers} />
+        <IntelCard title="Tower & Unit Intelligence" meta={curation.unit.tags.join(" · ")} teasers={curation.unit.teasers} />
+      </div>
+
+      {curation.deal && (
+        <div className="mt-4 overflow-hidden rounded-xl border border-[#1e6b45]/25 bg-[#1e6b45]/[0.05] p-6 md:p-7">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-[0.24em] text-[#1e6b45]">Best deal we sourced</p>
+              <p className="mt-2 font-serif text-[1.8rem] font-medium leading-none text-[#1a1a1a] md:text-[2.1rem]">{curation.deal.headline}</p>
+              <p className="mt-2 text-[0.9rem] font-light text-[#1a1a1a]/60">{curation.deal.sub}</p>
+            </div>
+            <div className="shrink-0"><LockBadge label="Offer unlocks with mandate" /></div>
+          </div>
+        </div>
+      )}
+
+      <div className="mt-5 flex flex-col items-start gap-4 rounded-xl bg-[#1a1a1a] p-7 text-white sm:flex-row sm:items-center sm:justify-between md:p-8">
+        <div className="max-w-[560px]">
+          <p className="font-serif text-[1.5rem] font-medium leading-tight">Unlock the full intelligence</p>
+          <p className="mt-2 text-[0.88rem] font-light text-white/55">
+            Your complete report, every tower- and unit-level view, and the deal we sourced — and we begin representing you, end to end.
+          </p>
+        </div>
+        <button
+          className="shrink-0 cursor-not-allowed rounded-sm bg-[#1e6b45]/70 px-7 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white/80"
+          title="Payment & invoicing land in the next phase"
+        >
+          Activate your mandate
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function IntelCard({ title, meta, teasers }: { title: string; meta: string; teasers: { label: string; value: string }[] }) {
+  return (
+    <div className="rounded-xl border border-[#1a1a1a]/[0.08] bg-white p-6">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-serif text-[1.2rem] font-medium text-[#1a1a1a]">{title}</p>
+          <p className="mt-1 text-[0.72rem] font-light uppercase tracking-[0.1em] text-[#1a1a1a]/40">{meta}</p>
+        </div>
+        <LockBadge label="Preview" />
+      </div>
+      <div className="mt-5 flex flex-col gap-3 border-t border-[#1a1a1a]/[0.06] pt-5">
+        {teasers.map((t) => (
+          <div key={t.label} className="flex items-baseline justify-between gap-3">
+            <span className="text-[0.8rem] font-light text-[#1a1a1a]/50">{t.label}</span>
+            <span className="font-serif text-[1.05rem] font-medium text-[#1a1a1a]">{t.value}</span>
+          </div>
+        ))}
+        <div className="flex items-baseline justify-between gap-3 border-t border-dashed border-[#1a1a1a]/10 pt-3">
+          <span className="text-[0.8rem] font-light text-[#1a1a1a]/50">Full breakdown</span>
+          <span className="text-[0.82rem] font-light text-[#9a7a2e]">🔒 in the report</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -420,10 +495,9 @@ function RecommendationsSection({ thread }: { thread: OfficeThread }) {
    INDEPENDENT ADVICE — scheduled + reschedule + before-call + past
    ════════════════════════════════════════════════════════════════ */
 function AdviceSection({ thread, onReschedule }: { thread: OfficeThread; onReschedule: (c: NonNullable<OfficeThread["call"]>) => void }) {
-  const past = stageIndex(thread.stage) >= stageIndex("call_done");
+  const past = callDone(thread.stage);
   const upcoming = !past && !!thread.call;
   const done = past;
-  const paid = isPaid(thread.stage);
   const history = thread.pastCalls.length
     ? thread.pastCalls
     : past && thread.call
@@ -460,27 +534,21 @@ function AdviceSection({ thread, onReschedule }: { thread: OfficeThread; onResch
         </div>
       )}
 
-      {/* After-call */}
+      {/* After-call — recording & synopsis are yours, free */}
       {done && (
         <div className="mt-8">
-          <p className="mb-3 text-[10px] font-light uppercase tracking-[0.28em] text-[#1a1a1a]/40">After your call</p>
+          <p className="mb-3 text-[10px] font-light uppercase tracking-[0.28em] text-[#1a1a1a]/40">After your call · yours to keep</p>
           <div className="grid gap-4 md:grid-cols-2">
-            <AfterCallTile title="Call recording" body="Re-watch your consultation any time." locked={!paid} />
-            <AfterCallTile title="Synopsis" body={thread.call?.summary ?? history[0]?.summary ?? "A written summary of what was discussed and decided."} locked={!paid} />
-            <AfterCallTile title="What we're doing now" body="The actions your advisor is running on your behalf this week." locked={!paid} />
-            <AfterCallTile title="Updated recommendations" body="What we found, what we ruled out, and the pricing intelligence." locked={!paid} href="/office/recommendations" />
+            <AfterCallTile title="Call recording" body="Re-watch your consultation any time — no charge, it's yours." action="Watch · 45 min" />
+            <AfterCallTile
+              title="Synopsis"
+              body={thread.call?.summary ?? history[0]?.summary ?? "A written summary of what was discussed and decided."}
+              action="Read"
+            />
           </div>
-          {!paid && (
-            <div className="mt-5 flex flex-col items-start gap-4 rounded-xl bg-[#1a1a1a] p-7 text-white sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="font-serif text-[1.35rem] font-medium">Activate your mandate to unlock everything</p>
-                <p className="mt-1.5 text-[0.85rem] font-light text-white/55">Recording, synopsis, the full recommendation set and every report — and we begin representing you.</p>
-              </div>
-              <button className="shrink-0 cursor-not-allowed rounded-sm bg-[#1e6b45]/70 px-6 py-3 text-[0.8rem] font-medium tracking-[0.04em] text-white/80" title="Coming in the next phase">
-                Activate · invoicing
-              </button>
-            </div>
-          )}
+          <div className="mt-4">
+            <WhatWeDoingNow thread={thread} />
+          </div>
         </div>
       )}
 
@@ -506,17 +574,64 @@ function AdviceSection({ thread, onReschedule }: { thread: OfficeThread; onResch
   );
 }
 
-function AfterCallTile({ title, body, locked, href }: { title: string; body: string; locked: boolean; href?: string }) {
-  const inner = (
-    <div className={`h-full rounded-xl border p-6 ${locked ? "border-[#1a1a1a]/[0.08] bg-[#1a1a1a]/[0.015]" : "border-[#1e6b45]/20 bg-white"}`}>
-      <div className="flex items-center justify-between">
+function AfterCallTile({ title, body, action }: { title: string; body: string; action: string }) {
+  return (
+    <div className="h-full rounded-xl border border-[#1a1a1a]/[0.08] bg-white p-6">
+      <div className="flex items-center justify-between gap-3">
         <p className="font-serif text-[1.15rem] font-medium text-[#1a1a1a]">{title}</p>
-        {locked ? <LockBadge /> : <span className="text-[0.7rem] font-light text-[#1e6b45]">Ready →</span>}
+        <span className="shrink-0 text-[0.74rem] font-light text-[#1e6b45]">{action} →</span>
       </div>
       <p className="mt-2.5 text-[0.85rem] font-light leading-relaxed text-[#1a1a1a]/55">{body}</p>
     </div>
   );
-  return !locked && href ? <Link href={href}>{inner}</Link> : inner;
+}
+
+/* The "team at work" moment — TAT before curation is ready, then the hand-off. */
+function WhatWeDoingNow({ thread }: { thread: OfficeThread }) {
+  const ready = isCurated(thread.stage);
+  return (
+    <div className={`rounded-xl border p-6 md:p-7 ${ready ? "border-[#1e6b45]/25 bg-[#1e6b45]/[0.05]" : "border-[#1a1a1a]/[0.08] bg-white"}`}>
+      <p className="text-[10px] font-light uppercase tracking-[0.28em] text-[#1a1a1a]/40">What we&apos;re doing now</p>
+      {ready ? (
+        <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="max-w-[520px]">
+            <p className="font-serif text-[1.4rem] font-medium text-[#1a1a1a]">Your intelligence is ready.</p>
+            <p className="mt-1.5 text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/55">
+              Our team has curated the full picture on your shortlist — the real numbers, the tower- and unit-level intel, and the deal we sourced.
+            </p>
+          </div>
+          <Link href="/office/recommendations" className="shrink-0 self-start rounded-sm bg-[#1e6b45] px-6 py-3 text-[0.8rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] sm:self-auto">
+            See what we found →
+          </Link>
+        </div>
+      ) : (
+        <div className="mt-3">
+          <p className="font-serif text-[1.4rem] font-medium text-[#1a1a1a]">Our team is building your decision matrix.</p>
+          <p className="mt-1.5 max-w-[560px] text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/55">
+            We&apos;re pulling the independent project report, tower- and unit-level intelligence, and live pricing for everything on your shortlist.
+          </p>
+          <div className="mt-5 flex flex-col gap-3 border-t border-[#1a1a1a]/[0.06] pt-5">
+            {[
+              { t: "Call reviewed · decision matrix scoped", on: true },
+              { t: "Independent project report being compiled", on: false },
+              { t: "Unit-level intel & best deal sourced", on: false },
+            ].map((s) => (
+              <div key={s.t} className="flex items-center gap-3 text-[0.9rem] font-light text-[#1a1a1a]/70">
+                <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[0.7rem] ${s.on ? "bg-[#1e6b45] text-white" : "border border-[#c9a96e] text-[#c9a96e]"}`}>
+                  {s.on ? "✓" : "•"}
+                </span>
+                {s.t}
+              </div>
+            ))}
+          </div>
+          <p className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#c9a96e]/12 px-4 py-2 text-[0.8rem] font-light text-[#9a7a2e]">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#c9a96e]" />
+            {`Ready in ${thread.curation?.tat ?? "about 48 hours"} — we'll notify you`}
+          </p>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function RescheduleCard({
