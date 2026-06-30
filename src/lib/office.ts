@@ -474,10 +474,19 @@ export function nextStep(t: OfficeThread): { title: string; body: string; cta: s
 
 /* Small "micro-win" stats for the Home header. */
 export function wins(t: OfficeThread): { value: string; label: string }[] {
+  const answered = `${t.questions.filter((q) => q.status === "answered").length}`;
+  if (t.kind === "sell") {
+    return [
+      { value: "7", label: "Comparable exits" },
+      { value: t.advisor.initials, label: "Advisor assigned" },
+      { value: answered, label: "Questions answered" },
+      { value: t.dna.length ? "Ready" : "—", label: "Exit brief" },
+    ];
+  }
   return [
     { value: String(t.recs.length || 3), label: "Projects investigated" },
     { value: t.advisor.initials, label: "Advisor assigned" },
-    { value: `${t.questions.filter((q) => q.status === "answered").length}`, label: "Questions answered" },
+    { value: answered, label: "Questions answered" },
     { value: t.dna.length ? "Complete" : "—", label: "Buyer DNA" },
   ];
 }
