@@ -366,18 +366,20 @@ function IndependentRepresentation() {
             <p className="mt-5 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.05rem]">
               Your goals, priorities and timeline are the brief. We translate them into your Buyer DNA&mdash;what genuinely matters to you&mdash;before recommending a single property.
             </p>
-            <p className="mt-9 text-[10px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]/70">Your Buyer DNA</p>
-            <div className="mt-5 max-w-md space-y-3.5">
-              {dna.map(([label, w]) => (
-                <div key={label} className="flex items-center gap-4">
-                  <span className="w-32 shrink-0 text-[10px] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/45">
-                    {label}
-                  </span>
-                  <span className="relative h-px flex-1 bg-[#1a1a1a]/12">
-                    <span className="absolute left-0 top-0 h-px bg-[#c9a96e]" style={{ width: `${w}%` }} />
-                  </span>
-                </div>
-              ))}
+            <div className="mt-8 max-w-md rounded-xl border border-[#1a1a1a]/12 bg-white p-6">
+              <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]/80">Your Buyer DNA</p>
+              <div className="mt-5 space-y-3.5">
+                {dna.map(([label, w]) => (
+                  <div key={label} className="flex items-center gap-4">
+                    <span className="w-32 shrink-0 text-[10px] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/45">
+                      {label}
+                    </span>
+                    <span className="relative h-px flex-1 bg-[#1a1a1a]/12">
+                      <span className="absolute left-0 top-0 h-px bg-[#c9a96e]" style={{ width: `${w}%` }} />
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </Stage>
 
@@ -388,7 +390,7 @@ function IndependentRepresentation() {
             <p className="mt-7 font-serif text-[1.05rem] font-light leading-relaxed text-[#1a1a1a]/60 md:text-[1.2rem]">
               Developer&nbsp;&middot; Location&nbsp;&middot; Project&nbsp;&middot; Tower&nbsp;&middot; Unit&nbsp;&middot; Legal&nbsp;&middot; Pricing
             </p>
-            <div className="mt-8 max-w-md">
+            <div className="mt-8 max-w-md rounded-xl border border-[#1a1a1a]/12 bg-white p-6">
               <p className="font-serif text-[1.2rem] font-light italic leading-snug text-[#1a1a1a]/75 md:text-[1.4rem]">
                 &ldquo;Which unit in DLF Arbour is best for natural light and vastu?&rdquo;
               </p>
