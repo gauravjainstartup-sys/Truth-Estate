@@ -5,6 +5,13 @@ import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import { PRIMARY_CTA } from "@/lib/journey";
+import {
+  CONSULT_FEE,
+  CONSULT_FEE_ORIGINAL,
+  CONSULT_FEE_DISCOUNT_LABEL,
+  CONSULT_FEE_REFUND_NOTE,
+  inr,
+} from "@/lib/consultation";
 
 const basePath = "/Truth-Estate";
 
@@ -378,12 +385,40 @@ export default function Pricing() {
               </p>
             </div>
 
-            <button
-              onClick={() => openConsult({ sourceKind: "homepage" })}
-              className="mt-10 rounded-sm bg-[#1e6b45] px-10 py-3.5 text-[13px] font-medium tracking-[0.06em] text-white shadow-sm transition-all duration-500 hover:bg-[#238c55]"
-            >
-              Request My Consultation
-            </button>
+            {CONSULT_FEE != null && (
+              <div className="mt-10 inline-flex flex-col rounded-sm border border-[#c9a96e]/25 bg-white/60 px-7 py-6">
+                <div className="flex items-baseline gap-3">
+                  {CONSULT_FEE_ORIGINAL != null && CONSULT_FEE_ORIGINAL > CONSULT_FEE && (
+                    <span className="font-serif text-[1.1rem] font-light text-[#1a1a1a]/35 line-through">
+                      {inr(CONSULT_FEE_ORIGINAL)}
+                    </span>
+                  )}
+                  <span className="font-serif text-[2.1rem] font-semibold leading-none text-[#1a1a1a]">
+                    {inr(CONSULT_FEE)}
+                  </span>
+                  {CONSULT_FEE_ORIGINAL != null && CONSULT_FEE_ORIGINAL > CONSULT_FEE && (
+                    <span className="rounded-full bg-[#1e6b45]/[0.08] px-3 py-1 text-[0.68rem] font-medium tracking-[0.02em] text-[#1e6b45]">
+                      {CONSULT_FEE_DISCOUNT_LABEL}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-3 flex items-center gap-1.5 text-[0.82rem] font-light text-[#1a1a1a]/50">
+                  <span className="text-[#1e6b45]">&#10003;</span> {CONSULT_FEE_REFUND_NOTE}
+                </p>
+                <p className="mt-1 text-[0.78rem] font-light text-[#1a1a1a]/35">
+                  45-minute independent consultation · secure Stripe checkout.
+                </p>
+              </div>
+            )}
+
+            <div>
+              <button
+                onClick={() => openConsult({ sourceKind: "homepage" })}
+                className="mt-10 rounded-sm bg-[#1e6b45] px-10 py-3.5 text-[13px] font-medium tracking-[0.06em] text-white shadow-sm transition-all duration-500 hover:bg-[#238c55]"
+              >
+                Request My Consultation
+              </button>
+            </div>
           </div>
         </section>
 

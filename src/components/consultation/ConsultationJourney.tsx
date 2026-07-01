@@ -9,6 +9,10 @@ import {
   CONSULT_DURATION,
   CONSULT_HEADLINE,
   CONSULT_FEE,
+  CONSULT_FEE_ORIGINAL,
+  CONSULT_FEE_DISCOUNT_LABEL,
+  CONSULT_FEE_REFUND_NOTE,
+  inr,
   CONSULT_FIELDS,
   CONSULT_FORMATS,
   CONSULT_OUTCOMES,
@@ -34,6 +38,7 @@ type Step =
   | "prep"
   | "schedule"
   | "account"
+  | "payment"
   | "confirm"
   | "office";
 
@@ -52,9 +57,13 @@ export default function ConsultationJourney({
   // A "warm" visitor already shared a requirements profile (e.g. their Buyer
   // DNA) — we skip the reason/situation steps and go straight to scheduling.
   const warm = !!context.profile?.length;
-  const FLOW: Step[] = warm
-    ? ["intro", "schedule", "account"]
-    : ["intro", "reason", "situation", "prep", "schedule", "account"];
+  const paid = CONSULT_FEE != null;
+  const FLOW: Step[] = [
+    ...(warm
+      ? (["intro", "schedule", "account"] as Step[])
+      : (["intro", "reason", "situation", "prep", "schedule", "account"] as Step[])),
+    ...(paid ? (["payment"] as Step[]) : []),
+  ];
 
   // Close on Escape — consistent with the journey modal.
   useEffect(() => {
@@ -92,15 +101,18 @@ export default function ConsultationJourney({
     </div>
   );
 
-  const back: Partial<Record<Step, Step>> = warm
-    ? { schedule: "intro", account: "schedule" }
-    : {
-        reason: "intro",
-        situation: "reason",
-        prep: "situation",
-        schedule: "prep",
-        account: "schedule",
-      };
+  const back: Partial<Record<Step, Step>> = {
+    ...(warm
+      ? { schedule: "intro", account: "schedule" }
+      : {
+          reason: "intro",
+          situation: "reason",
+          prep: "situation",
+          schedule: "prep",
+          account: "schedule",
+        }),
+    ...(paid ? { payment: "account" as Step } : {}),
+  };
 
   return frame(
     <Shell
@@ -155,8 +167,12 @@ export default function ConsultationJourney({
         <AccountStep
           booking={booking}
           onChange={(patch) => setBooking((b) => ({ ...b, ...patch }))}
-          onReserve={reserve}
+          onReserve={() => (paid ? goTo("payment") : reserve())}
+          ctaLabel={paid ? "Continue to Payment" : "Reserve Consultation"}
         />
+      )}
+      {step === "payment" && (
+        <PaymentStep booking={booking} onPaid={reserve} />
       )}
       {step === "confirm" && (
         <ConfirmStep booking={booking} onOpenOffice={() => { onClose(); router.push("/office"); }} />
@@ -325,11 +341,24 @@ function IntroStep({
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h2 className="font-serif text-[1.4rem] font-medium text-[#1a1a1a] md:text-[1.65rem]">{CONSULT_HEADLINE}</h2>
           {CONSULT_FEE != null && (
-            <span className="rounded-full border border-[#1e6b45]/30 px-4 py-1.5 text-[0.72rem] font-light tracking-[0.04em] text-[#1e6b45]">
-              ₹{CONSULT_FEE.toLocaleString("en-IN")}
-            </span>
+            <div className="flex items-center gap-2.5">
+              {CONSULT_FEE_ORIGINAL != null && CONSULT_FEE_ORIGINAL > CONSULT_FEE && (
+                <span className="text-[0.82rem] font-light text-[#1a1a1a]/35 line-through">{inr(CONSULT_FEE_ORIGINAL)}</span>
+              )}
+              <span className="font-serif text-[1.25rem] font-medium text-[#1a1a1a]">{inr(CONSULT_FEE)}</span>
+              {CONSULT_FEE_ORIGINAL != null && CONSULT_FEE_ORIGINAL > CONSULT_FEE && (
+                <span className="rounded-full bg-[#1e6b45]/[0.08] px-2.5 py-1 text-[0.66rem] font-medium tracking-[0.02em] text-[#1e6b45]">
+                  {CONSULT_FEE_DISCOUNT_LABEL}
+                </span>
+              )}
+            </div>
           )}
         </div>
+        {CONSULT_FEE != null && (
+          <p className="mt-2 flex items-center gap-1.5 text-[0.78rem] font-light text-[#1a1a1a]/45">
+            <span className="text-[#1e6b45]">&#10003;</span> {CONSULT_FEE_REFUND_NOTE}
+          </p>
+        )}
         <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-[0.82rem] font-light text-[#1a1a1a]/55">
           {["45 Minutes", "Video or Phone", "Prepared before the call", "100% Confidential"].map((t) => (
             <span key={t} className="flex items-center gap-2">
@@ -740,10 +769,12 @@ function AccountStep({
   booking,
   onChange,
   onReserve,
+  ctaLabel = "Reserve Consultation",
 }: {
   booking: ConsultBooking;
   onChange: (patch: Partial<ConsultBooking>) => void;
   onReserve: () => void;
+  ctaLabel?: string;
 }) {
   const [dialCode, setDialCode] = useState("+91");
   const [num, setNum] = useState("");
@@ -946,7 +977,7 @@ function AccountStep({
 
       <div className="mt-12">
         <PrimaryButton onClick={onReserve} disabled={!canReserve} full>
-          Reserve Consultation
+          {ctaLabel}
         </PrimaryButton>
       </div>
       <p className="mt-5 text-center text-[0.76rem] font-light italic text-[#1a1a1a]/35">
@@ -962,6 +993,239 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <label className="mb-1 block text-[10px] font-light uppercase tracking-[0.22em] text-[#1a1a1a]/40">{label}</label>
       {children}
     </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   STEP 6.5 — PAYMENT (Stripe gateway mock)
+   A simulated Stripe Checkout. No real card is processed; everything is
+   front-end only, built to swap onto Stripe Checkout / Payment Element.
+   ════════════════════════════════════════════════════════════════ */
+function CardBrands() {
+  return (
+    <div className="flex items-center gap-1.5">
+      {/* Visa */}
+      <span className="flex h-5 w-8 items-center justify-center rounded-[3px] bg-white ring-1 ring-[#1a1a1a]/10">
+        <span className="font-serif text-[9px] font-bold italic tracking-tight text-[#1a3a8f]">VISA</span>
+      </span>
+      {/* Mastercard */}
+      <span className="flex h-5 w-8 items-center justify-center gap-[-3px] rounded-[3px] bg-white ring-1 ring-[#1a1a1a]/10">
+        <span className="h-3 w-3 rounded-full bg-[#eb001b]" />
+        <span className="-ml-1 h-3 w-3 rounded-full bg-[#f79e1b]/90 mix-blend-multiply" />
+      </span>
+      {/* Amex */}
+      <span className="flex h-5 w-8 items-center justify-center rounded-[3px] bg-[#2e77bc]">
+        <span className="text-[7px] font-bold tracking-tight text-white">AMEX</span>
+      </span>
+    </div>
+  );
+}
+
+function StripeFooter() {
+  return (
+    <div className="mt-6 flex flex-col items-center gap-3">
+      <div className="flex items-center gap-1.5 text-[0.72rem] font-light text-[#1a1a1a]/40">
+        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+          <rect x="5" y="11" width="14" height="9" rx="1.5" />
+          <path d="M8 11V8a4 4 0 0 1 8 0v3" strokeLinecap="round" />
+        </svg>
+        <span>Payments are secure and encrypted</span>
+      </div>
+      <div className="flex items-center gap-3 text-[0.72rem] font-light text-[#1a1a1a]/35">
+        <span className="flex items-center gap-1">
+          Powered by{" "}
+          <span className="font-sans text-[0.8rem] font-bold tracking-tight text-[#635bff]">stripe</span>
+        </span>
+        <span className="text-[#1a1a1a]/15">|</span>
+        <button className="underline decoration-[#1a1a1a]/15 underline-offset-2 hover:text-[#1a1a1a]/60">Terms</button>
+        <button className="underline decoration-[#1a1a1a]/15 underline-offset-2 hover:text-[#1a1a1a]/60">Privacy</button>
+      </div>
+    </div>
+  );
+}
+
+const PAY_COUNTRIES = ["India", "United Kingdom", "United States", "Canada", "United Arab Emirates", "Singapore", "Australia", "Saudi Arabia", "Qatar", "Germany", "Hong Kong", "New Zealand"];
+
+function PaymentStep({ booking, onPaid }: { booking: ConsultBooking; onPaid: () => void }) {
+  const [email, setEmail] = useState(booking.email);
+  const [card, setCard] = useState("");
+  const [exp, setExp] = useState("");
+  const [cvc, setCvc] = useState("");
+  const [cardName, setCardName] = useState(booking.name);
+  const [country, setCountry] = useState("India");
+  const [zip, setZip] = useState("");
+  const [processing, setProcessing] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const advisor = advisorFor(booking.reason);
+  const hasDiscount = CONSULT_FEE_ORIGINAL != null && CONSULT_FEE != null && CONSULT_FEE_ORIGINAL > CONSULT_FEE;
+  const fee = CONSULT_FEE ?? 0;
+
+  const onCard = (v: string) => setCard(v.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim());
+  const onExp = (v: string) => {
+    const d = v.replace(/\D/g, "").slice(0, 4);
+    setExp(d.length >= 3 ? `${d.slice(0, 2)} / ${d.slice(2)}` : d);
+  };
+  const onCvc = (v: string) => setCvc(v.replace(/\D/g, "").slice(0, 4));
+  const fillTestCard = () => { setCard("4242 4242 4242 4242"); setExp("12 / 34"); setCvc("123"); if (!zip) setZip("122002"); };
+
+  const emailOk = /\S+@\S+\.\S+/.test(email);
+  const cardOk = card.replace(/\s/g, "").length >= 15;
+  const expOk = exp.replace(/\D/g, "").length === 4;
+  const cvcOk = cvc.length >= 3;
+  const canPay = emailOk && cardOk && expOk && cvcOk && cardName.trim().length > 1 && !processing;
+
+  const pay = () => {
+    if (!canPay) return;
+    setProcessing(true);
+    setTimeout(() => { setDone(true); setTimeout(onPaid, 850); }, 1700);
+  };
+
+  const inputCls =
+    "w-full rounded-lg border border-[#1a1a1a]/15 bg-white px-3.5 py-3 text-[0.95rem] font-light text-[#1a1a1a] outline-none transition-colors placeholder:text-[#1a1a1a]/30 focus:border-[#635bff] focus:ring-1 focus:ring-[#635bff]/30";
+
+  return (
+    <div className="animate-fade-up mx-auto max-w-[440px] px-6 py-10 md:py-14">
+      <Eyebrow>Secure Checkout</Eyebrow>
+      <h1 className="font-serif text-[1.9rem] font-medium leading-[1.12] text-[#1a1a1a] md:text-[2.3rem]">
+        Confirm &amp; pay.
+      </h1>
+
+      {/* ── Order summary ── */}
+      <div className="mt-7 rounded-2xl border border-[#1a1a1a]/[0.08] bg-white p-5 shadow-sm shadow-black/[0.02]">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[0.92rem] font-medium text-[#1a1a1a]">45-Minute Independent Consultation</p>
+            <p className="mt-1 text-[0.8rem] font-light text-[#1a1a1a]/50">
+              With {advisor.name}
+              {booking.day && booking.time ? ` · ${booking.day}, ${booking.time}` : ""}
+              {booking.format ? ` · ${booking.format}` : ""}
+            </p>
+          </div>
+          {hasDiscount && (
+            <span className="shrink-0 rounded-full bg-[#1e6b45]/[0.08] px-2.5 py-1 text-[0.66rem] font-medium tracking-[0.02em] text-[#1e6b45]">
+              {CONSULT_FEE_DISCOUNT_LABEL}
+            </span>
+          )}
+        </div>
+
+        <div className="mt-4 space-y-2 border-t border-[#1a1a1a]/[0.06] pt-4 text-[0.84rem] font-light">
+          {hasDiscount && (
+            <>
+              <div className="flex justify-between text-[#1a1a1a]/50">
+                <span>Consultation fee</span>
+                <span>{inr(CONSULT_FEE_ORIGINAL!)}</span>
+              </div>
+              <div className="flex justify-between text-[#1e6b45]">
+                <span>Inaugural discount (50%)</span>
+                <span>−{inr(CONSULT_FEE_ORIGINAL! - fee)}</span>
+              </div>
+            </>
+          )}
+          <div className="flex items-baseline justify-between border-t border-[#1a1a1a]/[0.06] pt-2.5">
+            <span className="text-[0.8rem] font-medium uppercase tracking-[0.08em] text-[#1a1a1a]/45">Total due today</span>
+            <span className="font-serif text-[1.5rem] font-medium text-[#1a1a1a]">{inr(fee)}</span>
+          </div>
+        </div>
+        <p className="mt-3 flex items-start gap-2 text-[0.76rem] font-light leading-relaxed text-[#1a1a1a]/45">
+          <span className="mt-[0.15em] text-[#1e6b45]">&#10003;</span>
+          {CONSULT_FEE_REFUND_NOTE}
+        </p>
+      </div>
+
+      {/* ── Card form ── */}
+      <div className="mt-6 space-y-4">
+        <div>
+          <label className="mb-1.5 block text-[0.8rem] font-medium text-[#1a1a1a]/70">Email</label>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com" className={inputCls} />
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-[0.8rem] font-medium text-[#1a1a1a]/70">Card information</label>
+          {/* Grouped card block, Stripe Payment Element style */}
+          <div className="overflow-hidden rounded-lg border border-[#1a1a1a]/15 bg-white focus-within:border-[#635bff] focus-within:ring-1 focus-within:ring-[#635bff]/30">
+            <div className="relative flex items-center">
+              <input
+                inputMode="numeric"
+                value={card}
+                onChange={(e) => onCard(e.target.value)}
+                placeholder="1234 1234 1234 1234"
+                className="w-full bg-transparent px-3.5 py-3 text-[0.95rem] font-light text-[#1a1a1a] outline-none placeholder:text-[#1a1a1a]/30"
+              />
+              <div className="absolute right-3.5"><CardBrands /></div>
+            </div>
+            <div className="flex border-t border-[#1a1a1a]/10">
+              <input
+                inputMode="numeric"
+                value={exp}
+                onChange={(e) => onExp(e.target.value)}
+                placeholder="MM / YY"
+                className="w-1/2 border-r border-[#1a1a1a]/10 bg-transparent px-3.5 py-3 text-[0.95rem] font-light text-[#1a1a1a] outline-none placeholder:text-[#1a1a1a]/30"
+              />
+              <input
+                inputMode="numeric"
+                value={cvc}
+                onChange={(e) => onCvc(e.target.value)}
+                placeholder="CVC"
+                className="w-1/2 bg-transparent px-3.5 py-3 text-[0.95rem] font-light text-[#1a1a1a] outline-none placeholder:text-[#1a1a1a]/30"
+              />
+            </div>
+          </div>
+          <button onClick={fillTestCard} className="mt-2 text-[0.72rem] font-light text-[#635bff] transition-opacity hover:opacity-70">
+            Test mode — autofill a demo card
+          </button>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-[0.8rem] font-medium text-[#1a1a1a]/70">Name on card</label>
+          <input type="text" value={cardName} onChange={(e) => setCardName(e.target.value)} placeholder="Full name" className={inputCls} />
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-[0.8rem] font-medium text-[#1a1a1a]/70">Country &amp; PIN / ZIP</label>
+          <div className="overflow-hidden rounded-lg border border-[#1a1a1a]/15 bg-white focus-within:border-[#635bff] focus-within:ring-1 focus-within:ring-[#635bff]/30">
+            <select
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              className="w-full border-b border-[#1a1a1a]/10 bg-transparent px-3 py-3 text-[0.95rem] font-light text-[#1a1a1a] outline-none"
+            >
+              {PAY_COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <input
+              value={zip}
+              onChange={(e) => setZip(e.target.value)}
+              placeholder="PIN / ZIP code"
+              className="w-full bg-transparent px-3.5 py-3 text-[0.95rem] font-light text-[#1a1a1a] outline-none placeholder:text-[#1a1a1a]/30"
+            />
+          </div>
+        </div>
+      </div>
+
+      <button
+        onClick={pay}
+        disabled={!canPay}
+        className="mt-7 flex w-full items-center justify-center gap-2 rounded-lg bg-[#1e6b45] px-7 py-4 text-[0.9rem] font-medium tracking-[0.03em] text-white shadow-sm transition-all duration-300 enabled:hover:bg-[#238c55] disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        {done ? (
+          <><span>&#10003;</span> Payment confirmed</>
+        ) : processing ? (
+          <><Spinner /> Processing…</>
+        ) : (
+          <>Pay {inr(fee)}</>
+        )}
+      </button>
+
+      <StripeFooter />
+    </div>
+  );
+}
+
+function Spinner() {
+  return (
+    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.3" strokeWidth="2.5" />
+      <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
   );
 }
 

@@ -72,11 +72,20 @@ export const CONSULT_PILLARS = [
 ];
 
 /* ── Consultation framing ──
-   Set CONSULT_FEE to a number (in ₹) to switch to paid; null = complimentary.
-   Architected so payment can be inserted before scheduling without redesign. */
-export const CONSULT_FEE: number | null = null;
+   The first consultation is a paid, refundable engagement. We charge for it
+   deliberately — so our only job in that conversation is to tell you the
+   truth — and refund it from our referral when you proceed with us.
+   Set CONSULT_FEE to null to make it complimentary again; the payment step
+   is skipped automatically when there is no fee. */
+export const CONSULT_FEE: number | null = 11000;
+export const CONSULT_FEE_ORIGINAL: number | null = 22000; // list price, struck through
+export const CONSULT_FEE_DISCOUNT_LABEL = "50% inaugural offer";
+export const CONSULT_FEE_REFUND_NOTE = "Refunded in full from our referral when you proceed with us.";
 export const CONSULT_DURATION = "45 Minute Consultation";
 export const CONSULT_HEADLINE = "Your First Consultation";
+
+/* ₹ formatter shared across the consultation experience. */
+export const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
 export const CONSULT_TIMELINE = [
   "Understand your goals",
