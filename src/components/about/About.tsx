@@ -137,6 +137,10 @@ export default function About() {
             We built the buyer&apos;s office
             <br className="hidden md:block" /> the industry never had.
           </p>
+
+          <p className="mt-7 text-[10px] font-medium uppercase tracking-[0.28em] text-[#c9a96e]/80">
+            Built on evidence — with everything on the record
+          </p>
         </div>
 
         <div className="px-6 pb-12 md:px-12">
