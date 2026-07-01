@@ -68,7 +68,7 @@ export const LOCATIONS = [
   "Noida",
 ];
 
-export const CONFIGS = ["2 BHK", "3 BHK", "4 BHK", "5 BHK", "Penthouse", "Duplex", "Flexible"];
+export const CONFIGS = ["1 BHK / Studio", "2 BHK", "3 BHK", "4 BHK", "5 BHK", "Penthouse", "Duplex", "Flexible"];
 
 export const TIMELINES = [
   "Immediately",
