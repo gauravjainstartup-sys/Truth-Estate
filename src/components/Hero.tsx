@@ -79,8 +79,8 @@ export default function Hero() {
               <a href={`${basePath}/intelligence`} className="transition-colors duration-500 hover:text-white/90">
                 Ownership Intelligence
               </a>
-              <a href={`${basePath}/methodology`} className="transition-colors duration-500 hover:text-white/90">
-                Methodology
+              <a href={`${basePath}/nri`} className="transition-colors duration-500 hover:text-white/90">
+                NRI Desk
               </a>
             </div>
           </nav>
@@ -281,10 +281,10 @@ export default function Hero() {
               Ownership Intelligence
             </a>
             <a
-              href={`${basePath}/methodology`}
+              href={`${basePath}/nri`}
               className="font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white"
             >
-              Methodology
+              NRI Desk
             </a>
           </nav>
 
