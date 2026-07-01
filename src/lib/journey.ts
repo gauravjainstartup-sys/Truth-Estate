@@ -749,6 +749,19 @@ export function unlockProject(slug: string): void {
   }
 }
 
+/* ── Tower & Unit Intelligence pricing (freemium wedge) ──
+   Exploring the live 3D and the sample unit is free. The full per-unit
+   verdict is paid: a single project (unlockProject) or the ₹11,000 Buyer
+   Office membership (isMember) that also carries the advisory consultation —
+   the same fee, repackaged. The single-project fee is credited toward it. */
+export const PROJECT_UNLOCK_INR = 1499;
+export const MEMBERSHIP_INR = 11000;
+
+/* Full unit-intelligence access = a paid single-project unlock OR membership. */
+export function hasFullAccess(slug: string): boolean {
+  return isMember() || isUnlocked(slug);
+}
+
 /* Copy for the two off-ramps — single source so both the Buy journey and the
    consultation flow tell the same honest story. */
 export const OFFRAMP_COPY: Record<
