@@ -79,7 +79,10 @@ export default function Hero() {
               <a href={`${basePath}/intelligence`} className="transition-colors duration-500 hover:text-white/90">
                 Ownership Intelligence
               </a>
-              <a href={`${basePath}/nri`} className="transition-colors duration-500 hover:text-white/90">
+              <a
+                href={`${basePath}/nri`}
+                className="rounded-full border border-[#c9a96e]/45 bg-[#c9a96e]/[0.12] px-4 py-1.5 text-[#ecdcb0] transition-all duration-300 hover:border-[#c9a96e]/85 hover:bg-[#c9a96e]/25 hover:text-[#f6ecd0]"
+              >
                 NRI Desk
               </a>
             </div>
@@ -282,9 +285,10 @@ export default function Hero() {
             </a>
             <a
               href={`${basePath}/nri`}
-              className="font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white"
+              className="flex items-center gap-3 font-serif text-[2rem] font-light text-[#e3c98f] transition-colors hover:text-[#f2e2b8]"
             >
               NRI Desk
+              <span className="text-[1.2rem] text-[#c9a96e]">&rarr;</span>
             </a>
           </nav>
 
