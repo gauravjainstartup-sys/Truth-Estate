@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DEVELOPERS, developerBySlug } from "@/lib/developers";
 import DeveloperProfile from "@/components/intelligence/DeveloperProfile";
+import { breadcrumbLd, ldJson } from "@/lib/seo";
 
 export function generateStaticParams() {
   return DEVELOPERS.map((d) => ({ slug: d.slug }));
@@ -23,5 +24,18 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const { slug } = await params;
   const dev = developerBySlug(slug);
   if (!dev) notFound();
-  return <DeveloperProfile dev={dev} />;
+
+  const breadcrumb = breadcrumbLd([
+    { name: "Home", path: "" },
+    { name: "Intelligence", path: "/intelligence" },
+    { name: "Developers", path: "/intelligence/developers" },
+    { name: dev.name, path: `/intelligence/developers/${dev.slug}` },
+  ]);
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(breadcrumb)} />
+      <DeveloperProfile dev={dev} />
+    </>
+  );
 }

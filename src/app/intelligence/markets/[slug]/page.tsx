@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { MARKETS, marketBySlug } from "@/lib/markets";
 import MarketProfile from "@/components/intelligence/MarketProfile";
+import { breadcrumbLd, ldJson } from "@/lib/seo";
 
 export function generateStaticParams() {
   return MARKETS.map((m) => ({ slug: m.slug }));
@@ -23,5 +24,18 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const { slug } = await params;
   const m = marketBySlug(slug);
   if (!m) notFound();
-  return <MarketProfile m={m} />;
+
+  const breadcrumb = breadcrumbLd([
+    { name: "Home", path: "" },
+    { name: "Intelligence", path: "/intelligence" },
+    { name: "Locations", path: "/intelligence/markets" },
+    { name: m.name, path: `/intelligence/markets/${m.slug}` },
+  ]);
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(breadcrumb)} />
+      <MarketProfile m={m} />
+    </>
+  );
 }

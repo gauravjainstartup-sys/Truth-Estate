@@ -44,7 +44,7 @@ const MODELS: {
       "Research Workspace",
       "Documents",
       "Advisor Collaboration",
-      "Complimentary First Consultation",
+      "Refundable First Consultation",
     ],
     cta: PRIMARY_CTA,
     action: "journey",
@@ -73,7 +73,7 @@ const FLOW = [
   { step: "Research", detail: "Explore detailed analysis, Truth Scores, and TruthGuide." },
   { step: "Compare", detail: "Evaluate projects side by side against your priorities." },
   { step: "Create Private Office", detail: "Build your personal decision workspace." },
-  { step: "Complimentary Consultation", detail: "One independent conversation to discuss your goals." },
+  { step: "Independent Consultation", detail: "One honest conversation about your goals — the fee is refunded if you go ahead with us." },
   { step: "Independent Representation", detail: "Dedicated advisory from discovery to decision, if you choose." },
 ];
 
@@ -81,11 +81,11 @@ const FLOW = [
 const FAQS = [
   {
     q: "Can developers influence Truth Estate’s recommendations?",
-    a: "No. Truth Estate operates independently. We are not affiliated with, sponsored by, or compensated by any developer, broker, or financial institution. Our recommendations are based entirely on independent research and evidence.",
+    a: "No. No developer can pay for a higher Truth Score, a recommendation, or placement — our research runs on evidence alone. We earn a referral fee only after you complete a purchase: from the developer on a primary sale, or agreed openly with both sides on a resale. It is always disclosed, and it never changes what we tell you. Our recommendation is not for sale.",
   },
   {
-    q: "How does the complimentary consultation work?",
-    a: "Your first consultation is a focused conversation about your property goals, timeline, and priorities. We’ll review any opportunities you’re considering and share our independent perspective. There is no sales pressure and no obligation to continue.",
+    q: "How does the consultation fee work?",
+    a: "We charge a fee for your first consultation — deliberately. Because you are paying for that hour, our only job in it is to tell you the truth, not to sell you anything. If you decide to proceed with us, the fee is refunded from our referral. There is no sales pressure and no obligation to continue.",
   },
   {
     q: "Do I need a Private Office?",
@@ -109,11 +109,24 @@ const FAQS = [
   },
 ];
 
+/* FAQPage structured data — surfaces these Q&As directly in Google and in
+   AI answer engines. Built from the same FAQS shown on the page, so the
+   markup always matches the visible content. */
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQS.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+};
+
 /* ── Anti-statements ── */
 const NOT_PAYING = [
   "You are not paying for advertisements.",
   "You are not paying for sponsored rankings.",
-  "You are not paying for broker commissions.",
+  "You are not paying for a recommendation someone else bought.",
 ];
 
 export default function Pricing() {
@@ -138,6 +151,7 @@ export default function Pricing() {
 
   return (
     <div>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       {/* ═══ HERO ═══ */}
       <section className="relative flex min-h-svh flex-col bg-[#0a0a0a]">
         <nav className="px-6 pt-10 md:px-12 md:pt-14">
@@ -339,32 +353,36 @@ export default function Pricing() {
           </div>
         </section>
 
-        {/* ── SECTION 4 · COMPLIMENTARY CONSULTATION ── */}
+        {/* ── SECTION 4 · THE CONSULTATION ── */}
         <section className="px-6 pb-[10vh] md:px-12 md:pb-[14vh]">
           <div className="mx-auto max-w-3xl">
             <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]">
-              Our First Conversation Is on Us
+              Where Every Decision Should Start
             </p>
             <h2 className="mt-6 font-serif text-[1.6rem] font-semibold leading-[1.25] text-[#1a1a1a] md:text-[2.2rem]">
               Every important decision deserves
-              <br className="hidden md:block" /> one independent conversation.
+              <br className="hidden md:block" /> one honest conversation.
             </h2>
 
             <div className="mt-8 space-y-5 text-[0.92rem] font-light leading-[1.85] text-[#1a1a1a]/50 md:text-[1rem]">
-              <p>Your first consultation is complimentary.</p>
+              <p>Your first consultation carries a fee — deliberately.</p>
               <p>
                 We&apos;ll understand your goals. Review your shortlisted
                 opportunities. Answer your questions. Help you decide whether
                 additional support would genuinely add value.
               </p>
-              <p>No sales pressure. No obligations.</p>
+              <p>
+                Charging for that hour is what keeps us honest: our only job in
+                it is to tell you the truth. Proceed with us and the fee is
+                refunded from our referral. No sales pressure, no obligation.
+              </p>
             </div>
 
             <button
               onClick={() => openConsult({ sourceKind: "homepage" })}
               className="mt-10 rounded-sm bg-[#1e6b45] px-10 py-3.5 text-[13px] font-medium tracking-[0.06em] text-white shadow-sm transition-all duration-500 hover:bg-[#238c55]"
             >
-              Request My Complimentary Consultation
+              Request My Consultation
             </button>
           </div>
         </section>
@@ -414,7 +432,7 @@ export default function Pricing() {
                     <p className="mt-2 text-[0.85rem] font-light text-[#1a1a1a]/35">
                       A dedicated decision workspace with personal Match
                       Scores, Buyer Briefs, and advisor collaboration.
-                      Includes complimentary first consultation.
+                      Includes a refundable first consultation.
                     </p>
                   </div>
                   <div className="shrink-0 rounded-sm border border-[#c9a96e]/15 bg-[#c9a96e]/5 px-4 py-2 sm:text-right">

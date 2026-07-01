@@ -22,7 +22,7 @@ const playfair = Playfair_Display({
   weight: ["400", "500", "600", "700"],
 });
 
-const OG_IMAGE = `${SITE_URL}/images/hero-desktop.jpg`;
+const OG_IMAGE = `${SITE_URL}/images/og-truth-estate.png`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
