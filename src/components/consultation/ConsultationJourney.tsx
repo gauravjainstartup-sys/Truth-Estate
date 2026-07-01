@@ -312,86 +312,88 @@ function IntroStep({
   const ctaLabel = warm ? "Book your consultation →" : "Request your consultation →";
 
   return (
-    <div className="animate-fade-up mx-auto max-w-[720px] px-6 py-6 md:px-10 md:py-12">
-      <Eyebrow>Request Independent Advice</Eyebrow>
-      <h1 className="font-serif text-[1.8rem] font-medium leading-[1.14] text-[#1a1a1a] md:text-[2.5rem]">
-        {warm ? (
-          <>Your advisor is ready<br className="hidden md:block" /> when you are.</>
-        ) : (
-          <>Every important property decision<br className="hidden md:block" /> deserves independent thinking.</>
-        )}
-      </h1>
-      <p className="mt-4 max-w-[540px] text-[0.95rem] font-light leading-[1.7] text-[#1a1a1a]/55 md:text-[1.02rem]">
-        {warm
-          ? "No sales pressure and no agenda — just one prepared, independent conversation about your decision. Pick a time below."
-          : "One clear recommendation, no agenda — independent advice tailored to your situation, and we'll tell you to walk away if that's the honest call."}
-      </p>
-
-      {/* Warm: a reminder of what we already hold */}
-      {warm && (
-        <div className="mt-6 rounded-xl border border-[#c9a96e]/30 bg-[#c9a96e]/[0.07] p-5">
-          {prepLine && (
-            <div className="flex items-start gap-3">
-              <span className="mt-[2px] text-[#c9a96e]">◆</span>
-              <p className="font-serif text-[0.96rem] font-light italic leading-relaxed text-[#1a1a1a]/70 md:text-[1.02rem]">
-                {prepLine}
-              </p>
-            </div>
-          )}
-          {profile && profile.length > 0 && (
-            <div className={`flex flex-wrap gap-2 ${prepLine ? "mt-4 border-t border-[#c9a96e]/20 pt-4" : ""}`}>
-              {profile.map((c) => (
-                <span
-                  key={c.label}
-                  className="rounded-full border border-[#1a1a1a]/10 bg-white/70 px-3.5 py-1.5 text-[0.78rem] font-light text-[#1a1a1a]/65"
-                >
-                  <span className="text-[#1a1a1a]/40">{c.label}</span> {c.value}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* The offer + primary CTA — deliberately kept within the first view */}
-      <div className="mt-6 rounded-xl border border-[#1a1a1a]/[0.08] bg-white p-6 shadow-sm shadow-black/[0.02] md:p-7">
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 className="font-serif text-[1.4rem] font-medium text-[#1a1a1a] md:text-[1.65rem]">{CONSULT_HEADLINE}</h2>
-          {CONSULT_FEE != null && (
-            <div className="flex items-center gap-2.5">
-              {CONSULT_FEE_ORIGINAL != null && CONSULT_FEE_ORIGINAL > CONSULT_FEE && (
-                <span className="text-[0.82rem] font-light text-[#1a1a1a]/35 line-through">{inr(CONSULT_FEE_ORIGINAL)}</span>
-              )}
-              <span className="font-serif text-[1.25rem] font-medium text-[#1a1a1a]">{inr(CONSULT_FEE)}</span>
-              {CONSULT_FEE_ORIGINAL != null && CONSULT_FEE_ORIGINAL > CONSULT_FEE && (
-                <span className="rounded-full bg-[#1e6b45]/[0.08] px-2.5 py-1 text-[0.66rem] font-medium tracking-[0.02em] text-[#1e6b45]">
-                  {CONSULT_FEE_DISCOUNT_LABEL}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-        {CONSULT_FEE != null && (
-          <p className="mt-2 flex items-center gap-1.5 text-[0.78rem] font-light text-[#1a1a1a]/45">
-            <span className="text-[#1e6b45]">&#10003;</span> {CONSULT_FEE_REFUND_NOTE}
+    <div className="animate-fade-up mx-auto max-w-[1000px] px-6 py-6 md:px-10 md:py-10">
+      {/* ── Two columns: context on the left, the offer + CTA on the right ── */}
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:items-start md:gap-12">
+        {/* LEFT — context */}
+        <div>
+          <Eyebrow>Request Independent Advice</Eyebrow>
+          <h1 className="font-serif text-[1.9rem] font-medium leading-[1.1] text-[#1a1a1a] md:text-[2.6rem]">
+            {warm ? "Your advisor is ready when you are." : "Every important property decision deserves independent thinking."}
+          </h1>
+          <p className="mt-5 text-[0.95rem] font-light leading-[1.75] text-[#1a1a1a]/55 md:text-[1.02rem]">
+            {warm
+              ? "No sales pressure and no agenda — just one prepared, independent conversation about your decision."
+              : "One clear recommendation, no agenda — independent advice tailored to your situation, and we'll tell you to walk away if that's the honest call."}
           </p>
-        )}
-        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-[0.82rem] font-light text-[#1a1a1a]/55">
-          {["45 Minutes", "Video or Phone", "Prepared before the call", "100% Confidential"].map((t) => (
-            <span key={t} className="flex items-center gap-2">
-              <span className="text-[#c9a96e]">&#10003;</span>
-              {t}
-            </span>
-          ))}
+
+          {/* Warm: a reminder of what we already hold */}
+          {warm && (
+            <div className="mt-7 rounded-xl border border-[#c9a96e]/30 bg-[#c9a96e]/[0.07] p-5">
+              {prepLine && (
+                <div className="flex items-start gap-3">
+                  <span className="mt-[2px] text-[#c9a96e]">◆</span>
+                  <p className="font-serif text-[0.96rem] font-light italic leading-relaxed text-[#1a1a1a]/70 md:text-[1.02rem]">
+                    {prepLine}
+                  </p>
+                </div>
+              )}
+              {profile && profile.length > 0 && (
+                <div className={`flex flex-wrap gap-2 ${prepLine ? "mt-4 border-t border-[#c9a96e]/20 pt-4" : ""}`}>
+                  {profile.map((c) => (
+                    <span
+                      key={c.label}
+                      className="rounded-full border border-[#1a1a1a]/10 bg-white/70 px-3.5 py-1.5 text-[0.78rem] font-light text-[#1a1a1a]/65"
+                    >
+                      <span className="text-[#1a1a1a]/40">{c.label}</span> {c.value}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
-        <div className="mt-6">
-          <PrimaryButton onClick={onContinue} full>{ctaLabel}</PrimaryButton>
+
+        {/* RIGHT — the offer + primary CTA, above the fold */}
+        <div className="rounded-2xl border border-[#1a1a1a]/[0.08] bg-white p-6 shadow-sm shadow-black/[0.02] md:sticky md:top-2 md:p-7">
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <h2 className="font-serif text-[1.4rem] font-medium text-[#1a1a1a] md:text-[1.65rem]">{CONSULT_HEADLINE}</h2>
+            {CONSULT_FEE != null && (
+              <div className="flex items-center gap-2.5">
+                {CONSULT_FEE_ORIGINAL != null && CONSULT_FEE_ORIGINAL > CONSULT_FEE && (
+                  <span className="text-[0.82rem] font-light text-[#1a1a1a]/35 line-through">{inr(CONSULT_FEE_ORIGINAL)}</span>
+                )}
+                <span className="font-serif text-[1.25rem] font-medium text-[#1a1a1a]">{inr(CONSULT_FEE)}</span>
+                {CONSULT_FEE_ORIGINAL != null && CONSULT_FEE_ORIGINAL > CONSULT_FEE && (
+                  <span className="rounded-full bg-[#1e6b45]/[0.08] px-2.5 py-1 text-[0.66rem] font-medium tracking-[0.02em] text-[#1e6b45]">
+                    {CONSULT_FEE_DISCOUNT_LABEL}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+          {CONSULT_FEE != null && (
+            <p className="mt-2 flex items-center gap-1.5 text-[0.78rem] font-light text-[#1a1a1a]/45">
+              <span className="text-[#1e6b45]">&#10003;</span> {CONSULT_FEE_REFUND_NOTE}
+            </p>
+          )}
+          <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-2.5 border-t border-[#1a1a1a]/[0.07] pt-5 text-[0.82rem] font-light text-[#1a1a1a]/55">
+            {["45 Minutes", "Video or Phone", "Prepared before the call", "100% Confidential"].map((t) => (
+              <span key={t} className="flex items-center gap-2">
+                <span className="text-[#c9a96e]">&#10003;</span>
+                {t}
+              </span>
+            ))}
+          </div>
+          <div className="mt-6">
+            <PrimaryButton onClick={onContinue} full>{ctaLabel}</PrimaryButton>
+          </div>
+          <p className="mt-4 text-center text-[0.78rem] font-light text-[#1a1a1a]/45">
+            {warm
+              ? "Takes about a minute — your details are already in."
+              : "We'll understand your situation and give you our honest read before we ever discuss working together."}
+          </p>
         </div>
-        <p className="mt-4 text-center text-[0.78rem] font-light text-[#1a1a1a]/45">
-          {warm
-            ? "Takes about a minute — your details are already in."
-            : "We'll understand your situation and give you our honest read before we ever discuss working together."}
-        </p>
       </div>
 
       {/* ── Supporting detail, below the fold ── */}
