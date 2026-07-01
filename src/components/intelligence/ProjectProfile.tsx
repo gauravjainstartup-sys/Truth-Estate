@@ -2,10 +2,27 @@
 
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
-import { RATING_META, type FinRating } from "@/lib/developers";
-import { SCORE_INPUTS, alternativesIn, fmtPsf, type ProjectIntel } from "@/lib/projects";
+import { RATING_META, FIN_METRICS, type FinRating } from "@/lib/developers";
+import {
+  SCORE_INPUTS,
+  alternativesIn,
+  fmtPsf,
+  developerOf,
+  marketOf,
+  roiModel,
+  riskMatrix,
+  investorFit,
+  projectFaqs,
+  type ProjectIntel,
+  type RiskLevel,
+} from "@/lib/projects";
 
 const basePath = "/Truth-Estate";
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const monIdx = (s: string) => {
+  const [m, y] = s.split(" ");
+  return parseInt(y, 10) * 12 + Math.max(0, MONTHS.indexOf(m));
+};
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return <p className="text-[11px] font-medium uppercase tracking-[0.34em] text-[#c9a96e]">{children}</p>;
@@ -16,8 +33,14 @@ const recoTone = (r: string) =>
   : r === "Buy" ? "border-[#3e8e62]/30 text-[#3e8e62] bg-[#3e8e62]/8"
   : "border-[#9a7a2e]/30 text-[#9a7a2e] bg-[#c9a96e]/10";
 
-/* A single Truth Score input on the strained→strong spectrum — a signal,
-   not a figure. Same visual language as the developer financial gauges. */
+const riskTone: Record<RiskLevel, string> = {
+  Low: "text-[#1e6b45] border-[#1e6b45]/25 bg-[#1e6b45]/[0.05]",
+  Moderate: "text-[#9a7a2e] border-[#9a7a2e]/25 bg-[#c9a96e]/[0.08]",
+  Elevated: "text-[#b0503e] border-[#b0503e]/25 bg-[#b0503e]/[0.05]",
+};
+
+/* A single input on the strained→strong spectrum — a signal, not a figure.
+   Shared by the Truth Score anatomy and the developer financial audit. */
 function Signal({ rating, label, meaning }: { rating: FinRating; label: string; meaning: string }) {
   const m = RATING_META[rating];
   return (
@@ -48,6 +71,38 @@ function Num({ v, k, accent }: { v: string; k: string; accent?: boolean }) {
   );
 }
 
+/* A labelled key/value cell for the vitals grid. */
+function KV({ k, v, tag }: { k: string; v: string; tag?: string }) {
+  return (
+    <div className="border-l-2 border-[#1a1a1a]/8 pl-4">
+      <p className="text-[0.6rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/35">{k}</p>
+      <p className="mt-1.5 text-[0.98rem] font-medium text-[#1a1a1a]/85">
+        {v}
+        {tag && <span className="ml-2 rounded bg-[#1e6b45]/8 px-1.5 py-0.5 align-middle text-[0.58rem] font-medium uppercase tracking-[0.08em] text-[#1e6b45]">{tag}</span>}
+      </p>
+    </div>
+  );
+}
+
+/* A progress track with a plan marker — actual vs expected. */
+function ProgressBar({ label, value, hint, accent = "#1e6b45" }: { label: string; value: number; hint?: string; accent?: string }) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-between">
+        <span className="text-[0.72rem] font-light uppercase tracking-[0.1em] text-[#1a1a1a]/45">{label}</span>
+        <span className="font-mono text-[0.9rem] text-[#1a1a1a]/80">{value}%{hint && <span className="ml-2 text-[0.68rem] font-light text-[#1a1a1a]/35">{hint}</span>}</span>
+      </div>
+      <div className="mt-2 h-[7px] w-full overflow-hidden rounded-full bg-[#1a1a1a]/8">
+        <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, value)}%`, backgroundColor: accent }} />
+      </div>
+    </div>
+  );
+}
+
+function Source({ children }: { children: React.ReactNode }) {
+  return <p className="mt-6 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">{children}</p>;
+}
+
 export default function ProjectProfile({
   p,
   embedded = false,
@@ -73,10 +128,41 @@ export default function ProjectProfile({
   const devHref = p.devSlug ? `${basePath}/intelligence/developers/${p.devSlug}` : undefined;
   const marketHref = p.marketSlug ? `${basePath}/intelligence/markets/${p.marketSlug}` : undefined;
 
+  const dev = developerOf(p);
+  const market = marketOf(p);
+  const roi = roiModel(p);
+  const risks = riskMatrix(p);
+  const faqs = projectFaqs(p);
+  const ops = p.ops;
+  const usps = ops?.usps ?? [];
+  const topInMarket = alts.every((a) => a.truthScore <= p.truthScore);
+
+  const con = ops?.construction;
+  const aheadMonths = con ? monIdx(con.reraDate) - monIdx(con.predictedDate) : 0;
+
+  const toc = [
+    { id: "vitals", label: "Vitals", show: true },
+    { id: "anatomy", label: "Truth Score anatomy", show: true },
+    { id: "developer", label: "Developer analysis", show: !!dev },
+    { id: "construction", label: "Construction & velocity", show: !!con },
+    { id: "legal", label: "Legal & compliance", show: true },
+    { id: "location", label: "Location intelligence", show: !!market },
+    { id: "roi", label: "Projected ROI", show: !!roi },
+    { id: "usps", label: "Project USPs", show: usps.length > 0 },
+    { id: "strengths", label: "Strengths & watch-outs", show: true },
+    { id: "serves", label: "What this serves", show: p.tags.length > 0 },
+    { id: "faqs", label: "Forensic FAQs", show: faqs.length > 0 },
+  ].filter((t) => t.show);
+
+  /* Sequential section numbers — only counts sections that actually render,
+     so hidden modules never leave a gap in the sequence. */
+  let _n = 0;
+  const num = () => String(++_n).padStart(2, "0");
+
   return (
     <div className={`${embedded ? "h-full overflow-y-auto" : "min-h-svh"} bg-[#F5F0E8] text-[#1a1a1a]`}>
       <header className="sticky top-0 z-40 border-b border-[#1a1a1a]/6 bg-[#F5F0E8]/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-5xl items-center gap-4 px-6 py-4 md:px-10">
+        <div className="mx-auto flex max-w-6xl items-center gap-4 px-6 py-4 md:px-10">
           {embedded ? (
             <>
               <Logo color="#1a1a1a" className="h-7 w-auto opacity-80" />
@@ -100,174 +186,437 @@ export default function ProjectProfile({
         </div>
       </header>
 
-      <div className="mx-auto max-w-5xl px-6 pb-[12vh] pt-[6vh] md:px-10">
-        {/* Breadcrumb / back to shortlist */}
-        {embedded ? (
-          <button onClick={onBack} className="flex items-center gap-2 text-[0.74rem] font-light text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a]/80">
-            <span aria-hidden>&larr;</span> Back to shortlist
-          </button>
-        ) : (
-          <div className="flex items-center gap-2 text-[0.74rem] font-light text-[#1a1a1a]/35">
-            <a href={`${basePath}/intelligence/projects`} className="transition-colors hover:text-[#1a1a1a]/70">Projects</a>
-            <span className="text-[#1a1a1a]/20">/</span>
-            <span className="text-[#1a1a1a]/55">{p.name}</span>
-          </div>
-        )}
+      <div className="mx-auto max-w-6xl px-6 pb-[12vh] pt-[6vh] md:px-10">
+        <div className={embedded ? "" : "xl:grid xl:grid-cols-[180px_minmax(0,1fr)] xl:gap-12"}>
+          {/* Sticky report index — desktop, standalone page only */}
+          {!embedded && (
+            <nav className="hidden self-start xl:sticky xl:top-24 xl:block">
+              <p className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[#1a1a1a]/35">Report index</p>
+              <ul className="mt-4 space-y-2.5 border-l border-[#1a1a1a]/10">
+                {toc.map((t) => (
+                  <li key={t.id}>
+                    <a href={`#${t.id}`} className="-ml-px block border-l border-transparent pl-4 text-[0.78rem] font-light text-[#1a1a1a]/50 transition-colors hover:border-[#c9a96e] hover:text-[#1a1a1a]">
+                      {t.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+              <button onClick={consult} className="mt-7 w-full rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.72rem] font-medium tracking-[0.03em] text-white transition-colors hover:bg-[#238c55]">
+                Get independent advice
+              </button>
+            </nav>
+          )}
 
-        {/* Hero */}
-        <div className="mt-9 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
-          <div className="max-w-2xl">
-            <Eyebrow>Project Intelligence</Eyebrow>
-            <h1 className="mt-5 font-serif text-[2.7rem] font-medium leading-[1.02] tracking-[-0.02em] md:text-[4rem]">{p.name}</h1>
-            <p className="mt-5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[0.92rem] font-light text-[#1a1a1a]/55">
-              {devHref ? <a href={devHref} className="underline decoration-[#c9a96e]/40 underline-offset-2 hover:text-[#1a1a1a]/80">{p.developer}</a> : <span>{p.developer}</span>}
-              <span className="text-[#1a1a1a]/25">·</span>
-              {marketHref ? <a href={marketHref} className="underline decoration-[#c9a96e]/40 underline-offset-2 hover:text-[#1a1a1a]/80">{p.market}</a> : <span>{p.market}</span>}
-              <span className="text-[#1a1a1a]/25">·</span>
-              <span>{p.configs.join(" · ")}</span>
+          <div className="min-w-0">
+            {/* Breadcrumb / back to shortlist */}
+            {embedded ? (
+              <button onClick={onBack} className="flex items-center gap-2 text-[0.74rem] font-light text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a]/80">
+                <span aria-hidden>&larr;</span> Back to shortlist
+              </button>
+            ) : (
+              <div className="flex items-center gap-2 text-[0.74rem] font-light text-[#1a1a1a]/35">
+                <a href={`${basePath}/intelligence/projects`} className="transition-colors hover:text-[#1a1a1a]/70">Projects</a>
+                <span className="text-[#1a1a1a]/20">/</span>
+                <span className="text-[#1a1a1a]/55">{p.name}</span>
+              </div>
+            )}
+
+            {/* Hero */}
+            <div className="mt-9 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+              <div className="max-w-2xl">
+                <Eyebrow>Project Intelligence</Eyebrow>
+                <h1 className="mt-5 font-serif text-[2.7rem] font-medium leading-[1.02] tracking-[-0.02em] md:text-[4rem]">{p.name}</h1>
+                <p className="mt-5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[0.92rem] font-light text-[#1a1a1a]/55">
+                  {devHref ? <a href={devHref} className="underline decoration-[#c9a96e]/40 underline-offset-2 hover:text-[#1a1a1a]/80">{p.developer}</a> : <span>{p.developer}</span>}
+                  <span className="text-[#1a1a1a]/25">·</span>
+                  {marketHref ? <a href={marketHref} className="underline decoration-[#c9a96e]/40 underline-offset-2 hover:text-[#1a1a1a]/80">{p.market}</a> : <span>{p.market}</span>}
+                  <span className="text-[#1a1a1a]/25">·</span>
+                  <span>{p.configs.join(" · ")}</span>
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {topInMarket && <Chip>Top-scored in {p.marketShort}</Chip>}
+                  {market && <Chip>{market.tier} corridor</Chip>}
+                  {ops?.reraNote && <Chip>RERA registered</Chip>}
+                </div>
+              </div>
+              {/* Truth Score */}
+              <div className="flex shrink-0 items-end gap-5">
+                <div className="text-right">
+                  <p className="font-mono text-[3.4rem] font-light leading-none text-[#1e6b45] md:text-[4rem]">{p.truthScore}</p>
+                  <p className="mt-1 text-[0.6rem] font-medium uppercase tracking-[0.2em] text-[#1a1a1a]/40">Truth Score</p>
+                </div>
+                <div className="mb-2 flex flex-col items-start gap-2">
+                  <span className={`rounded-full border px-3 py-1 text-[0.66rem] font-medium ${recoTone(p.recommendation)}`}>{p.recommendation}</span>
+                  <span className="text-[0.66rem] font-light text-[#1a1a1a]/40">{p.confidence} confidence</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Truth Verdict */}
+            <div className="mt-11 rounded-2xl border border-[#c9a96e]/30 bg-white/70 p-8 shadow-[0_16px_50px_rgba(0,0,0,0.04)] md:p-10">
+              <Eyebrow>Truth Verdict</Eyebrow>
+              <p className="mt-5 font-serif text-[1.4rem] font-normal leading-[1.5] md:text-[1.7rem]">{p.reason}</p>
+              <p className="mt-6 border-t border-[#1a1a1a]/8 pt-5 text-[0.86rem] font-light leading-[1.7] text-[#1a1a1a]/55">
+                <span className="font-medium text-[#1a1a1a]/70">Investor fit:</span> {investorFit(p)}
+              </p>
+            </div>
+
+            {/* 01 · Vitals */}
+            <Section id="vitals" n={num()} title="Vitals">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-8 rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-8 md:grid-cols-4 md:p-10">
+                <Num v={`₹${p.budget[0]}–${p.budget[1]} Cr`} k="Ticket size" />
+                <Num v={p.configs.join(" · ")} k="Configurations" />
+                <Num v={p.psf ? fmtPsf(p.psf.avg) : "—"} k="Corridor avg / sq ft" />
+                <Num v={p.sizeBand ?? "—"} k="Indicative size" />
+              </div>
+              {ops && (
+                <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-7 rounded-2xl border border-[#1a1a1a]/8 bg-white/40 p-8 md:grid-cols-4 md:p-10">
+                  {ops.units != null && <KV k="Total units" v={`${ops.units.toLocaleString("en-IN")}`} />}
+                  {ops.towers != null && <KV k="Towers / land" v={`${ops.towers}${ops.landAcres ? ` · ${ops.landAcres} acre` : ""}`} />}
+                  {ops.density != null && <KV k="Density" v={`${ops.density} / acre`} tag={ops.density <= 50 ? "Low-density" : undefined} />}
+                  {ops.openAreaPct != null && <KV k="Open area" v={`${ops.openAreaPct}%`} tag={ops.openAreaPct >= 80 ? "Green" : undefined} />}
+                  {ops.carpetSqft != null && <KV k="Carpet (indicative)" v={`${ops.carpetSqft.toLocaleString("en-IN")} sq ft`} />}
+                  {ops.launch && <KV k="Launched" v={ops.launch} />}
+                  {ops.possession && <KV k="RERA possession" v={ops.possession} />}
+                  {ops.reraId && <KV k="RERA ID" v={ops.reraId} />}
+                </div>
+              )}
+              {ops?.reraNote && <Source>{ops.reraNote}. Sources: Haryana RERA registry & project filings.</Source>}
+            </Section>
+
+            {/* 02 · Truth Score anatomy */}
+            <Section id="anatomy" n={num()} title="Truth Score anatomy">
+              <p className="-mt-2 mb-7 max-w-2xl text-[0.95rem] font-light leading-[1.8] text-[#1a1a1a]/55">
+                No black box. The score is built from six inputs, each assessed independently — never supplied by the developer. Here is where this project sits on every one.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {SCORE_INPUTS.map((s) => (
+                  <Signal key={s.key} rating={p.anatomy[s.key]} label={s.label} meaning={s.meaning} />
+                ))}
+              </div>
+            </Section>
+
+            {/* 03 · Developer analysis */}
+            {dev && (
+              <Section id="developer" n={num()} title="Developer analysis">
+                <div className="rounded-2xl border-l-2 border-[#1e6b45]/40 bg-white/50 p-7 md:p-8">
+                  <Eyebrow>Analyst assessment</Eyebrow>
+                  <p className="mt-3 font-serif text-[1.25rem] leading-[1.4] md:text-[1.4rem]">{dev.verdict}</p>
+                </div>
+
+                {/* Execution track record */}
+                <p className="mt-10 text-[0.7rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/40">Execution track record</p>
+                <div className="mt-4 rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-8">
+                  <div className="flex flex-wrap items-end gap-x-10 gap-y-6">
+                    <Num v={`${dev.performance.launched}`} k="Projects launched" />
+                    <Num v={`${dev.performance.delivered}`} k="Delivered" />
+                    <Num v={`${dev.performance.ongoing}`} k="Ongoing" />
+                    <Num v={`${dev.performance.onTimePct}%`} k="On-time record" accent />
+                    <Num v={`${dev.performance.avgDelayMonths} mo`} k="Avg slippage" />
+                  </div>
+                  <div className="mt-7 flex h-[8px] overflow-hidden rounded-full bg-[#1a1a1a]/8">
+                    <div className="h-full bg-[#1e6b45]" style={{ width: `${(dev.performance.delivered / dev.performance.launched) * 100}%` }} />
+                    <div className="h-full bg-[#c9a96e]" style={{ width: `${(dev.performance.ongoing / dev.performance.launched) * 100}%` }} />
+                  </div>
+                  <div className="mt-3 flex gap-5 text-[0.66rem] font-light text-[#1a1a1a]/45">
+                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#1e6b45]" /> Delivered</span>
+                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#c9a96e]" /> Ongoing</span>
+                  </div>
+                </div>
+
+                {/* Financial audit */}
+                <p className="mt-10 flex items-center gap-3 text-[0.7rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/40">
+                  Financial audit
+                  <span className="rounded border border-[#1a1a1a]/12 px-1.5 py-0.5 text-[0.56rem] tracking-[0.08em] text-[#1a1a1a]/45">{dev.listed ? "Listed company" : "Privately held"}</span>
+                </p>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {FIN_METRICS.map((f) => (
+                    <Signal key={f.key} rating={dev.financials[f.key]} label={f.full} meaning={f.meaning} />
+                  ))}
+                </div>
+                <p className="mt-5 text-[0.86rem] font-light leading-[1.7] text-[#1a1a1a]/55">{dev.finNote}</p>
+                <Source>Sources: Haryana RERA track record · latest annual &amp; financial filings / MCA statements. Independent read — not supplied by the developer.</Source>
+              </Section>
+            )}
+
+            {/* 04 · Construction & sales velocity */}
+            {con && (
+              <Section id="construction" n={num()} title="Construction & sales velocity">
+                <p className="-mt-2 mb-6 max-w-2xl text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/55">
+                  Live tracking of build progress and demand absorption against the promised RERA timeline.
+                </p>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-7">
+                    <p className="text-[0.7rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">Build progress vs plan</p>
+                    <div className="mt-5 space-y-4">
+                      <ProgressBar label="Actual" value={con.actualPct} hint="latest QPR" />
+                      <ProgressBar label="Expected" value={con.expectedPct} accent="#9a7a2e" />
+                    </div>
+                    <p className="mt-5 text-[0.8rem] font-light text-[#1a1a1a]/55">
+                      {con.actualPct >= con.expectedPct
+                        ? `Tracking ${con.actualPct - con.expectedPct} points ahead of schedule.`
+                        : `Tracking ${con.expectedPct - con.actualPct} points behind schedule.`}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-7">
+                    <p className="text-[0.7rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">Sales momentum</p>
+                    <div className="mt-5">
+                      <ProgressBar label="Units absorbed" value={con.absorptionPct} accent="#1e6b45" />
+                    </div>
+                    <p className="mt-5 text-[0.8rem] font-light text-[#1a1a1a]/55">
+                      {con.absorptionPct >= 90 ? "High demand — near or fully sold at current velocity." : "Steady absorption at current velocity."}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 flex flex-col gap-4 rounded-2xl bg-[#0d1a12] p-7 text-white sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-white/45">Execution-adjusted delivery</p>
+                    <p className="mt-2 font-mono text-[1.6rem] font-light">{con.predictedDate}</p>
+                    <p className="mt-1 text-[0.74rem] font-light text-white/45">RERA-committed: {con.reraDate}</p>
+                  </div>
+                  <span className={`inline-flex w-fit items-center rounded-full border px-3.5 py-1.5 text-[0.74rem] font-medium ${aheadMonths >= 0 ? "border-[#3e8e62]/40 bg-[#1e6b45]/20 text-[#7fd6a4]" : "border-[#c9a96e]/40 bg-[#c9a96e]/15 text-[#e3c58a]"}`}>
+                    {aheadMonths >= 0 ? `~${aheadMonths} months ahead of RERA` : `~${Math.abs(aheadMonths)} months behind RERA`}
+                  </span>
+                </div>
+                <Source>Source: latest Quarterly Progress Report ({con.qpr}). Predicted date is our execution-adjusted model, not a developer commitment.</Source>
+              </Section>
+            )}
+
+            {/* 05 · Legal & compliance */}
+            <Section id="legal" n={num()} title="Legal & compliance">
+              <p className="-mt-2 mb-6 max-w-2xl text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/55">
+                A forensic read of title, registration and developer litigation signals — and what each means for you as the buyer.
+              </p>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                {risks.map((r) => (
+                  <div key={r.label} className={`rounded-xl border p-4 ${riskTone[r.level]}`}>
+                    <p className="text-[0.6rem] font-medium uppercase tracking-[0.12em] opacity-70">{r.label}</p>
+                    <p className="mt-2 text-[1.05rem] font-semibold uppercase tracking-[0.02em]">{r.level}</p>
+                    <p className="mt-2 text-[0.66rem] font-light leading-[1.4] text-[#1a1a1a]/45">{r.note}</p>
+                  </div>
+                ))}
+              </div>
+              {dev && (
+                <div className="mt-5 rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-7">
+                  <p className="text-[0.7rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">Developer legal signal</p>
+                  <p className="mt-3 text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/70">{dev.legal}</p>
+                </div>
+              )}
+              <div className="mt-4 rounded-2xl bg-[#1a1a1a] p-7 text-white md:p-8">
+                <p className="text-[0.7rem] font-medium uppercase tracking-[0.16em] text-[#c9a96e]">Buyer due-diligence plan</p>
+                <ol className="mt-4 space-y-3">
+                  {[
+                    `Verify the latest HRERA registration status and quarterly progress report for ${p.name} directly on haryanarera.gov.in.`,
+                    "Have an independent lawyer review the Agreement to Sell clause-by-clause — penalty terms, force-majeure definitions and delay-compensation.",
+                    "Confirm the title chain and that the land is free of encumbrance before any payment milestone.",
+                    "Match your payment schedule to our execution-adjusted delivery estimate, not the marketing timeline.",
+                  ].map((s, i) => (
+                    <li key={i} className="flex gap-3 text-[0.88rem] font-light leading-[1.6] text-white/70">
+                      <span className="mt-0.5 font-mono text-[0.72rem] text-[#c9a96e]">{i + 1}</span>{s}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+              <Source>Sources: E-Courts &amp; RERA litigation repositories. Signals are our independent read — verify project specifics before you sign.</Source>
+            </Section>
+
+            {/* 06 · Location intelligence */}
+            {market && (
+              <Section id="location" n={num()} title="Location intelligence">
+                <div className="rounded-2xl border-l-2 border-[#1e6b45]/40 bg-white/50 p-7 md:p-8">
+                  <Eyebrow>Corridor verdict</Eyebrow>
+                  <p className="mt-3 font-serif text-[1.25rem] leading-[1.4] md:text-[1.4rem]">{market.verdict}</p>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-8 rounded-2xl border border-[#1a1a1a]/8 bg-white/40 p-8 md:grid-cols-4">
+                  <Num v={fmtPsf(market.psf.low) + "–" + market.psf.high.toLocaleString("en-IN")} k="Price band / sq ft" />
+                  <Num v={market.unitBand} k="Typical ticket" />
+                  <Num v={market.appreciation3Y} k="3-yr appreciation" accent />
+                  <Num v={`${market.projectCount}`} k="Projects tracked" />
+                </div>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <InfoCard title="Where it stands" body={market.currentTrend} />
+                  <InfoCard title="Where it's headed" body={market.futureTrend} />
+                  <InfoCard title="Infrastructure" body={market.infra} />
+                  <InfoCard title="Demand" body={market.demand} />
+                </div>
+                <Source>Sources: tracked corridor transactions, GMDA / HSVP infrastructure plans &amp; developer filings.</Source>
+              </Section>
+            )}
+
+            {/* 07 · Projected ROI */}
+            {roi && (
+              <Section id="roi" n={num()} title="Projected ROI">
+                <p className="-mt-2 mb-6 max-w-2xl text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/55">
+                  A {roi.horizonYears}-year outlook on a ₹{roi.ticketCr} Cr entry — anchored to the corridor&apos;s tracked appreciation, then adjusted for this developer&apos;s delivery record. Modelled, not guaranteed.
+                </p>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="rounded-2xl border border-[#1a1a1a]/10 bg-white/50 p-8">
+                    <p className="text-[0.62rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">Corridor benchmark</p>
+                    <p className="mt-4 font-mono text-[2.4rem] font-light leading-none">{roi.benchCagr}%<span className="ml-1.5 text-[0.9rem] text-[#1a1a1a]/40">CAGR</span></p>
+                    <p className="mt-5 text-[0.82rem] font-light text-[#1a1a1a]/55">Projected value in {roi.horizonYears} yrs</p>
+                    <p className="font-mono text-[1.2rem] text-[#1a1a1a]/80">₹{roi.benchValueCr} Cr</p>
+                  </div>
+                  <div className="rounded-2xl border border-[#1e6b45]/25 bg-[#1e6b45]/[0.04] p-8">
+                    <p className="text-[0.62rem] font-medium uppercase tracking-[0.14em] text-[#1e6b45]">Execution-adjusted</p>
+                    <p className="mt-4 font-mono text-[2.4rem] font-light leading-none text-[#1e6b45]">{roi.adjCagr}%<span className="ml-1.5 text-[0.9rem] text-[#1e6b45]/50">CAGR</span></p>
+                    <p className="mt-5 text-[0.82rem] font-light text-[#1a1a1a]/55">Projected value in {roi.horizonYears} yrs</p>
+                    <p className="font-mono text-[1.2rem] text-[#1a1a1a]/80">₹{roi.adjValueCr} Cr {roi.deltaCr !== 0 && <span className={`ml-1.5 text-[0.8rem] ${roi.deltaCr > 0 ? "text-[#1e6b45]" : "text-[#b0503e]"}`}>{roi.deltaCr > 0 ? "+" : ""}₹{roi.deltaCr} Cr</span>}</p>
+                  </div>
+                </div>
+                <Source>Anchored to tracked 3-yr corridor appreciation of {roi.corridor3Y}, annualised and adjusted by the developer&apos;s on-time record. A model, not investment advice.</Source>
+              </Section>
+            )}
+
+            {/* 08 · Project USPs */}
+            {usps.length > 0 && (
+              <Section id="usps" n={num()} title="Project USPs">
+                <p className="-mt-2 mb-6 max-w-2xl text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/55">
+                  Non-obvious advantages that materially affect livability, safety and long-term value.
+                </p>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {usps.map((u) => (
+                    <div key={u.title} className="rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-7">
+                      <p className="font-serif text-[1.15rem] leading-[1.35]">{u.title}</p>
+                      <p className="mt-3 text-[0.88rem] font-light leading-[1.7] text-[#1a1a1a]/60">{u.body}</p>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            )}
+
+            {/* 09 · Strengths & watch-outs */}
+            <Section id="strengths" n={num()} title="Strengths & watch-outs">
+              <div className="grid gap-8 md:grid-cols-2">
+                <div className="rounded-2xl border border-[#1e6b45]/15 bg-[#1e6b45]/[0.04] p-7">
+                  <p className="text-[10px] font-medium uppercase tracking-[0.24em] text-[#1e6b45]">What works</p>
+                  <ul className="mt-4 space-y-3">
+                    {p.strengths.map((s) => (
+                      <li key={s} className="flex gap-3 text-[0.95rem] font-light leading-[1.6] text-[#1a1a1a]/70"><span className="mt-0.5 text-[#1e6b45]">+</span>{s}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="rounded-2xl border border-[#9a7a2e]/20 bg-[#c9a96e]/[0.06] p-7">
+                  <p className="text-[10px] font-medium uppercase tracking-[0.24em] text-[#9a7a2e]">What to watch</p>
+                  <ul className="mt-4 space-y-3">
+                    {p.watchouts.map((w) => (
+                      <li key={w} className="flex gap-3 text-[0.95rem] font-light leading-[1.6] text-[#1a1a1a]/70"><span className="mt-0.5 text-[#9a7a2e]">!</span>{w}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </Section>
+
+            {/* 10 · What this serves */}
+            <Section id="serves" n={num()} title="What this serves">
+              <p className="-mt-2 mb-5 max-w-2xl text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/50">The buyer priorities this project genuinely answers — on the evidence, not the brochure.</p>
+              <div className="flex flex-wrap gap-2.5">
+                {p.tags.map((t) => (
+                  <span key={t} className="rounded-full border border-[#1a1a1a]/12 px-4 py-2 text-[0.82rem] font-light text-[#1a1a1a]/65">{t}</span>
+                ))}
+              </div>
+            </Section>
+
+            {/* Tower & unit intelligence — forward hook to the deep-intel tier */}
+            <div className="mt-14 overflow-hidden rounded-2xl border border-dashed border-[#c9a96e]/40 bg-white/40 p-8 md:p-9">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="max-w-xl">
+                  <p className="flex items-center gap-2 text-[0.66rem] font-medium uppercase tracking-[0.16em] text-[#9a7a2e]">
+                    <span aria-hidden>▦</span> In production · deep intelligence
+                  </p>
+                  <p className="mt-3 font-serif text-[1.3rem] leading-[1.35]">Tower-by-tower &amp; unit-level intelligence</p>
+                  <p className="mt-2 text-[0.86rem] font-light leading-[1.7] text-[#1a1a1a]/55">
+                    3D site plan with tower positioning, per-unit vastu, natural-light &amp; view-corridor scoring, and the best-value stacks — the layer our engineers are building now.
+                  </p>
+                </div>
+                <button onClick={consult} className="shrink-0 rounded-sm border border-[#1a1a1a]/20 px-6 py-3 text-[0.8rem] font-medium tracking-[0.03em] text-[#1a1a1a] transition-colors hover:border-[#1e6b45] hover:text-[#1e6b45]">
+                  Get early access
+                </button>
+              </div>
+            </div>
+
+            {/* Forensic FAQs */}
+            {faqs.length > 0 && (
+              <Section id="faqs" n={num()} title="Forensic FAQs">
+                <p className="-mt-2 mb-6 max-w-2xl text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/55">
+                  Straight answers to the questions that decide the purchase — marrying registry data, live construction and micro-market dynamics.
+                </p>
+                <div className="divide-y divide-[#1a1a1a]/8 overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-white/50">
+                  {faqs.map((f) => (
+                    <details key={f.q} className="group px-6 py-5 md:px-7">
+                      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[0.98rem] font-medium text-[#1a1a1a]/85">
+                        {f.q}
+                        <span className="shrink-0 font-mono text-[1.1rem] text-[#c9a96e] transition-transform group-open:rotate-45">+</span>
+                      </summary>
+                      <p className="mt-3 text-[0.9rem] font-light leading-[1.75] text-[#1a1a1a]/60">{f.a}</p>
+                    </details>
+                  ))}
+                </div>
+              </Section>
+            )}
+
+            {/* Context — developer + market (standalone page only) */}
+            {!embedded && (
+              <Section n={num()} title="Context">
+                <div className="grid gap-5 md:grid-cols-2">
+                  <ContextCard kicker="Developer" title={p.developer} href={devHref} cta="Open developer dossier" />
+                  <ContextCard kicker="Location" title={p.market} href={marketHref} cta={`Open ${p.marketShort} intelligence`} />
+                </div>
+              </Section>
+            )}
+
+            {/* Alternatives */}
+            {alts.length > 0 && (
+              <section className="mt-16 border-t border-[#1a1a1a]/8 pt-12">
+                <div className="flex items-center gap-4">
+                  <span className="font-mono text-[0.8rem] text-[#c9a96e]">→</span>
+                  <h2 className="font-serif text-[1.7rem] font-medium tracking-[-0.01em] md:text-[2.1rem]">Also in {p.marketShort}</h2>
+                </div>
+                <div className="mt-8 divide-y divide-[#1a1a1a]/8 overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-white/50">
+                  {alts.map((a) => {
+                    const cls = "flex w-full items-center gap-4 p-5 text-left transition-colors hover:bg-white/70 md:p-6";
+                    const inner = (
+                      <>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-serif text-[1.15rem] text-[#1a1a1a]">{a.name}</p>
+                          <p className="mt-1 font-mono text-[0.68rem] tracking-[0.04em] text-[#1a1a1a]/40">{a.developer.toUpperCase()} · ₹{a.budget[0]}–{a.budget[1]} CR</p>
+                        </div>
+                        <span className={`hidden rounded-full border px-3 py-1 text-[0.64rem] font-medium sm:inline-block ${recoTone(a.recommendation)}`}>{a.recommendation}</span>
+                        <span className="w-10 text-right font-mono text-[1.3rem] font-light text-[#1e6b45]">{a.truthScore}</span>
+                      </>
+                    );
+                    return embedded ? (
+                      <button key={a.slug} onClick={() => onSelectAlternative?.(a.name)} className={cls}>{inner}</button>
+                    ) : (
+                      <a key={a.slug} href={`${basePath}/intelligence/projects/${a.slug}`} className={cls}>{inner}</a>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* CTA */}
+            <div className="mt-14 flex flex-col items-start gap-5 rounded-2xl bg-[#1a1a1a] p-9 text-white md:flex-row md:items-center md:justify-between md:p-10">
+              <div>
+                <p className="font-serif text-[1.5rem] font-medium leading-[1.2] md:text-[1.8rem]">Considering {p.name}?</p>
+                <p className="mt-2 text-[0.88rem] font-light text-white/55">Get an independent read — the right price, the right stack, the honest risks — before you commit.</p>
+              </div>
+              <div className="flex w-full shrink-0 flex-col gap-3 sm:w-auto sm:flex-row">
+                {embedded && onChallenge && (
+                  <button onClick={onChallenge} className="rounded-sm border border-white/25 px-7 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:border-white/55">
+                    Challenge TruthGuide
+                  </button>
+                )}
+                <button onClick={consult} className="rounded-sm bg-[#1e6b45] px-7 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
+                  Request Independent Advice
+                </button>
+              </div>
+            </div>
+
+            <p className="mt-8 text-[0.72rem] font-light leading-[1.7] text-[#1a1a1a]/35">
+              Independent assessment by Truth Estate. No developer can pay for a higher Truth Score or to appear here. The Truth Score and its inputs are our own evidence-based reads; ticket and price bands, ROI projections and delivery estimates are tracked or modelled figures that vary by tower, floor and stack. Not investment advice — confirm specifics with your advisor.
             </p>
           </div>
-          {/* Truth Score */}
-          <div className="flex shrink-0 items-end gap-5">
-            <div className="text-right">
-              <p className="font-mono text-[3.4rem] font-light leading-none text-[#1e6b45] md:text-[4rem]">{p.truthScore}</p>
-              <p className="mt-1 text-[0.6rem] font-medium uppercase tracking-[0.2em] text-[#1a1a1a]/40">Truth Score</p>
-            </div>
-            <div className="mb-2 flex flex-col items-start gap-2">
-              <span className={`rounded-full border px-3 py-1 text-[0.66rem] font-medium ${recoTone(p.recommendation)}`}>{p.recommendation}</span>
-              <span className="text-[0.66rem] font-light text-[#1a1a1a]/40">{p.confidence} confidence</span>
-            </div>
-          </div>
         </div>
-
-        {/* Truth Verdict */}
-        <div className="mt-11 rounded-2xl border border-[#c9a96e]/30 bg-white/70 p-8 shadow-[0_16px_50px_rgba(0,0,0,0.04)] md:p-10">
-          <Eyebrow>Truth Verdict</Eyebrow>
-          <p className="mt-5 font-serif text-[1.4rem] font-normal leading-[1.5] md:text-[1.7rem]">{p.reason}</p>
-        </div>
-
-        {/* 01 · Truth Score anatomy */}
-        <Section n="01" title="Truth Score anatomy">
-          <p className="-mt-2 mb-7 max-w-2xl text-[0.95rem] font-light leading-[1.8] text-[#1a1a1a]/55">
-            No black box. The score is built from six inputs, each assessed independently — never supplied by the developer. Here is where this project sits on every one.
-          </p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {SCORE_INPUTS.map((s) => (
-              <Signal key={s.key} rating={p.anatomy[s.key]} label={s.label} meaning={s.meaning} />
-            ))}
-          </div>
-        </Section>
-
-        {/* 02 · The numbers */}
-        <Section n="02" title="The numbers">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-8 rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-8 md:grid-cols-4 md:p-10">
-            <Num v={`₹${p.budget[0]}–${p.budget[1]} Cr`} k="Ticket size" />
-            <Num v={p.configs.join(" · ")} k="Configurations" />
-            <Num v={p.psf ? fmtPsf(p.psf.avg) : "—"} k="Corridor avg / sq ft" />
-            <Num v={p.sizeBand ?? "—"} k="Indicative size" />
-          </div>
-          {p.psf && (
-            <div className="mt-3 flex items-center gap-3 text-[0.78rem] font-light text-[#1a1a1a]/45">
-              <span>{p.marketShort} price range</span>
-              <span className="h-px flex-1 bg-[#1a1a1a]/10" />
-              <span className="font-mono text-[#1a1a1a]/70">{fmtPsf(p.psf.low)} <span className="text-[#1a1a1a]/35">low</span> &nbsp;·&nbsp; {fmtPsf(p.psf.high)} <span className="text-[#1a1a1a]/35">high</span></span>
-            </div>
-          )}
-        </Section>
-
-        {/* 03 · Strengths & watch-outs */}
-        <Section n="03" title="Strengths & watch-outs">
-          <div className="grid gap-8 md:grid-cols-2">
-            <div className="rounded-2xl border border-[#1e6b45]/15 bg-[#1e6b45]/[0.04] p-7">
-              <p className="text-[10px] font-medium uppercase tracking-[0.24em] text-[#1e6b45]">What works</p>
-              <ul className="mt-4 space-y-3">
-                {p.strengths.map((s) => (
-                  <li key={s} className="flex gap-3 text-[0.95rem] font-light leading-[1.6] text-[#1a1a1a]/70"><span className="mt-0.5 text-[#1e6b45]">+</span>{s}</li>
-                ))}
-              </ul>
-            </div>
-            <div className="rounded-2xl border border-[#9a7a2e]/20 bg-[#c9a96e]/[0.06] p-7">
-              <p className="text-[10px] font-medium uppercase tracking-[0.24em] text-[#9a7a2e]">What to watch</p>
-              <ul className="mt-4 space-y-3">
-                {p.watchouts.map((w) => (
-                  <li key={w} className="flex gap-3 text-[0.95rem] font-light leading-[1.6] text-[#1a1a1a]/70"><span className="mt-0.5 text-[#9a7a2e]">!</span>{w}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </Section>
-
-        {/* 04 · What this serves */}
-        <Section n="04" title="What this serves">
-          <p className="-mt-2 mb-5 max-w-2xl text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/50">The buyer priorities this project genuinely answers — on the evidence, not the brochure.</p>
-          <div className="flex flex-wrap gap-2.5">
-            {p.tags.map((t) => (
-              <span key={t} className="rounded-full border border-[#1a1a1a]/12 px-4 py-2 text-[0.82rem] font-light text-[#1a1a1a]/65">{t}</span>
-            ))}
-          </div>
-        </Section>
-
-        {/* 05 · Context — developer + market (standalone page only) */}
-        {!embedded && (
-          <Section n="05" title="Context">
-            <div className="grid gap-5 md:grid-cols-2">
-              <ContextCard kicker="Developer" title={p.developer} href={devHref} cta="Open developer dossier" />
-              <ContextCard kicker="Location" title={p.market} href={marketHref} cta={`Open ${p.marketShort} intelligence`} />
-            </div>
-          </Section>
-        )}
-
-        {/* Alternatives */}
-        {alts.length > 0 && (
-          <section className="mt-16 border-t border-[#1a1a1a]/8 pt-12">
-            <div className="flex items-center gap-4">
-              <span className="font-mono text-[0.8rem] text-[#c9a96e]">→</span>
-              <h2 className="font-serif text-[1.7rem] font-medium tracking-[-0.01em] md:text-[2.1rem]">Also in {p.marketShort}</h2>
-            </div>
-            <div className="mt-8 divide-y divide-[#1a1a1a]/8 overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-white/50">
-              {alts.map((a) => {
-                const cls = "flex w-full items-center gap-4 p-5 text-left transition-colors hover:bg-white/70 md:p-6";
-                const inner = (
-                  <>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-serif text-[1.15rem] text-[#1a1a1a]">{a.name}</p>
-                      <p className="mt-1 font-mono text-[0.68rem] tracking-[0.04em] text-[#1a1a1a]/40">{a.developer.toUpperCase()} · ₹{a.budget[0]}–{a.budget[1]} CR</p>
-                    </div>
-                    <span className={`hidden rounded-full border px-3 py-1 text-[0.64rem] font-medium sm:inline-block ${recoTone(a.recommendation)}`}>{a.recommendation}</span>
-                    <span className="w-10 text-right font-mono text-[1.3rem] font-light text-[#1e6b45]">{a.truthScore}</span>
-                  </>
-                );
-                return embedded ? (
-                  <button key={a.slug} onClick={() => onSelectAlternative?.(a.name)} className={cls}>{inner}</button>
-                ) : (
-                  <a key={a.slug} href={`${basePath}/intelligence/projects/${a.slug}`} className={cls}>{inner}</a>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* CTA */}
-        <div className="mt-14 flex flex-col items-start gap-5 rounded-2xl bg-[#1a1a1a] p-9 text-white md:flex-row md:items-center md:justify-between md:p-10">
-          <div>
-            <p className="font-serif text-[1.5rem] font-medium leading-[1.2] md:text-[1.8rem]">Considering {p.name}?</p>
-            <p className="mt-2 text-[0.88rem] font-light text-white/55">Get an independent read — the right price, the right stack, the honest risks — before you commit.</p>
-          </div>
-          <div className="flex w-full shrink-0 flex-col gap-3 sm:w-auto sm:flex-row">
-            {embedded && onChallenge && (
-              <button onClick={onChallenge} className="rounded-sm border border-white/25 px-7 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:border-white/55">
-                Challenge TruthGuide
-              </button>
-            )}
-            <button onClick={consult} className="rounded-sm bg-[#1e6b45] px-7 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
-              Request Independent Advice
-            </button>
-          </div>
-        </div>
-
-        <p className="mt-8 text-[0.72rem] font-light leading-[1.7] text-[#1a1a1a]/35">
-          Independent assessment by Truth Estate. No developer can pay for a higher Truth Score or to appear here. The Truth Score and its inputs are our own evidence-based reads; ticket and price bands are tracked estimates that vary by tower, floor and stack. Not investment advice — confirm specifics with your advisor.
-        </p>
       </div>
 
       {/* Mobile: a persistent CTA so it's never buried at the foot of a long report */}
@@ -280,9 +629,22 @@ export default function ProjectProfile({
   );
 }
 
-function Section({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
+function Chip({ children }: { children: React.ReactNode }) {
+  return <span className="rounded-full border border-[#1a1a1a]/12 bg-white/50 px-3 py-1 text-[0.66rem] font-medium tracking-[0.02em] text-[#1a1a1a]/55">{children}</span>;
+}
+
+function InfoCard({ title, body }: { title: string; body: string }) {
   return (
-    <section className="mt-16 border-t border-[#1a1a1a]/8 pt-12 md:mt-20">
+    <div className="rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-6">
+      <p className="text-[0.62rem] font-medium uppercase tracking-[0.14em] text-[#c9a96e]">{title}</p>
+      <p className="mt-2.5 text-[0.88rem] font-light leading-[1.7] text-[#1a1a1a]/65">{body}</p>
+    </div>
+  );
+}
+
+function Section({ id, n, title, children }: { id?: string; n: string; title: string; children: React.ReactNode }) {
+  return (
+    <section id={id} className="mt-16 scroll-mt-24 border-t border-[#1a1a1a]/8 pt-12 md:mt-20">
       <div className="flex items-center gap-4">
         <span className="font-mono text-[0.8rem] text-[#c9a96e]">{n}</span>
         <h2 className="font-serif text-[1.7rem] font-medium tracking-[-0.01em] text-[#1a1a1a] md:text-[2.1rem]">{title}</h2>
