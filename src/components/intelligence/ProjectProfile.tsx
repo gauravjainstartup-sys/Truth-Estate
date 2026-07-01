@@ -18,7 +18,7 @@ import {
   type RiskLevel,
 } from "@/lib/projects";
 import MatchScore from "./MatchScore";
-import TowerIntel from "./TowerIntel";
+import TowerIntel, { openUnitIntel } from "./TowerIntel";
 
 const basePath = "/Truth-Estate";
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -244,9 +244,9 @@ export default function ProjectProfile({
                   {market && <Chip>{market.tier} corridor</Chip>}
                   {ops?.reraNote && <Chip>RERA registered</Chip>}
                 </div>
-                <a href="#tower-intel" className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#1a1a1a]/15 bg-[#0a0f17] px-4 py-2 text-[0.78rem] font-medium text-white transition-colors hover:border-[#46c2ff]">
+                <button type="button" onClick={openUnitIntel} className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#1a1a1a]/15 bg-[#0a0f17] px-4 py-2 text-[0.78rem] font-medium text-white transition-colors hover:border-[#46c2ff]">
                   <span className="text-[#e0b667]">▦</span> See Unit Intelligence <span aria-hidden className="text-[#46c2ff]">→</span>
-                </a>
+                </button>
               </div>
               {/* Truth Score */}
               <div className="flex shrink-0 items-end gap-5">
@@ -591,22 +591,23 @@ export default function ProjectProfile({
               </section>
             )}
 
-            {/* CTA */}
-            <div className="mt-14 flex flex-col items-start gap-5 rounded-2xl bg-[#1a1a1a] p-9 text-white md:flex-row md:items-center md:justify-between md:p-10">
-              <div>
-                <p className="font-serif text-[1.5rem] font-medium leading-[1.2] md:text-[1.8rem]">Considering {p.name}?</p>
-                <p className="mt-2 text-[0.88rem] font-light text-white/55">Get an independent read — the right price, the right stack, the honest risks — before you commit.</p>
-              </div>
-              <div className="flex w-full shrink-0 flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
-                <button onClick={consult} className="rounded-sm bg-[#1e6b45] px-7 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
-                  Get Independent Advice
-                </button>
-                <a href="#tower-intel" className="rounded-sm border border-white/25 px-7 py-3.5 text-center text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:border-[#46c2ff]">
-                  See Unit Intelligence
-                </a>
-                <button onClick={challenge} className="px-2 py-3 text-[0.82rem] font-light tracking-[0.03em] text-white/55 transition-colors hover:text-white/90">
-                  Challenge TruthGuide →
-                </button>
+            {/* CTA — three actions, weighted */}
+            <div className="relative mt-14 overflow-hidden rounded-2xl bg-[#111112] p-8 text-white md:p-10">
+              <div className="pointer-events-none absolute -left-16 top-1/2 h-64 w-64 -translate-y-1/2 rounded-full" style={{ background: "radial-gradient(circle, rgba(30,107,69,0.35), transparent 70%)", filter: "blur(28px)" }} />
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(201,169,110,0.6), transparent)" }} />
+              <div className="relative">
+                <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+                  <div className="max-w-xl">
+                    <h2 className="font-serif text-[1.7rem] font-medium leading-[1.15] md:text-[2rem]">Considering {p.name}?</h2>
+                    <p className="mt-2 text-[0.88rem] font-light text-white/55">Get an independent read — the right price, the right stack, the honest risks — before you commit.</p>
+                  </div>
+                  <p className="shrink-0 text-[0.72rem] font-light leading-[1.5] text-white/40 md:text-right">We represent only you —<br className="hidden md:block" /> never the developer.</p>
+                </div>
+                <div className="mt-7 grid gap-3 md:grid-cols-3">
+                  <ActionCell tone="primary" icon="●" title="Get Independent Advice" desc="45-min advisor call · fee refundable" onClick={consult} />
+                  <ActionCell tone="secondary" icon="▦" title="See Unit Intelligence" desc="3D sun & unit model · free" onClick={openUnitIntel} />
+                  <ActionCell tone="ghost" icon="◆" title="Challenge TruthGuide" desc="Ask our AI anything about this project" onClick={challenge} />
+                </div>
               </div>
             </div>
 
@@ -630,6 +631,26 @@ export default function ProjectProfile({
 
 function Chip({ children }: { children: React.ReactNode }) {
   return <span className="rounded-full border border-[#1a1a1a]/12 bg-white/50 px-3 py-1 text-[0.66rem] font-medium tracking-[0.02em] text-[#1a1a1a]/55">{children}</span>;
+}
+
+function ActionCell({ tone, icon, title, desc, onClick }: { tone: "primary" | "secondary" | "ghost"; icon: string; title: string; desc: string; onClick: () => void }) {
+  const box =
+    tone === "primary" ? "bg-[#1e6b45] hover:bg-[#238c55]"
+    : tone === "secondary" ? "border border-white/15 bg-white/[0.03] hover:border-[#46c2ff]/60"
+    : "border border-white/10 bg-white/[0.01] hover:border-white/25";
+  const iconColor = tone === "primary" ? "text-white/85" : tone === "secondary" ? "text-[#46c2ff]" : "text-[#c9a96e]";
+  const titleColor = tone === "primary" ? "text-white" : "text-white/90";
+  const descColor = tone === "primary" ? "text-white/70" : "text-white/45";
+  return (
+    <button onClick={onClick} className={`group flex flex-col gap-2 rounded-xl p-5 text-left transition-all duration-200 ${box}`}>
+      <span className="flex items-center gap-2.5">
+        <span className={`text-[0.9rem] ${iconColor}`} aria-hidden>{icon}</span>
+        <span className={`text-[0.92rem] font-medium ${titleColor}`}>{title}</span>
+        <span className={`ml-auto opacity-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100 ${titleColor}`} aria-hidden>→</span>
+      </span>
+      <span className={`text-[0.74rem] font-light leading-[1.4] ${descColor}`}>{desc}</span>
+    </button>
+  );
 }
 
 function InfoCard({ title, body }: { title: string; body: string }) {
