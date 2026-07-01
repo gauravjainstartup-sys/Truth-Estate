@@ -13,7 +13,7 @@ import {
   riskMatrix,
   investorFit,
   projectFaqs,
-  towerIntelFile,
+  towerIntelMeta,
   type ProjectIntel,
   type RiskLevel,
 } from "@/lib/projects";
@@ -127,6 +127,7 @@ export default function ProjectProfile({
 }) {
   const { open } = useJourney();
   const consult = onConsult ?? (() => open());
+  const challenge = onChallenge ?? (() => open("research"));
   const alts = alternativesIn(p.market, p.name);
   const devHref = p.devSlug ? `${basePath}/intelligence/developers/${p.devSlug}` : undefined;
   const marketHref = p.marketSlug ? `${basePath}/intelligence/markets/${p.marketSlug}` : undefined;
@@ -173,7 +174,7 @@ export default function ProjectProfile({
               <Logo color="#1a1a1a" className="h-7 w-auto opacity-80" />
               <div className="ml-auto flex items-center gap-5 md:gap-6">
                 <button onClick={consult} className="hidden rounded-sm bg-[#1e6b45] px-4 py-2 text-[0.72rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] md:inline-block">
-                  Request Independent Advice
+                  Get Independent Advice
                 </button>
                 <button onClick={onClose} aria-label="Close" className="text-[11px] font-light tracking-[0.18em] text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a]">
                   CLOSE
@@ -184,7 +185,7 @@ export default function ProjectProfile({
             <>
               <a href={basePath} aria-label="Home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
               <button onClick={consult} className="ml-auto hidden rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.74rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] md:inline-block md:px-5">
-                Request Independent Advice
+                Get Independent Advice
               </button>
             </>
           )}
@@ -207,7 +208,7 @@ export default function ProjectProfile({
                 ))}
               </ul>
               <button onClick={consult} className="mt-7 w-full rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.72rem] font-medium tracking-[0.03em] text-white transition-colors hover:bg-[#238c55]">
-                Get independent advice
+                Get Independent Advice
               </button>
             </nav>
           )}
@@ -244,7 +245,7 @@ export default function ProjectProfile({
                   {ops?.reraNote && <Chip>RERA registered</Chip>}
                 </div>
                 <a href="#tower-intel" className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#1a1a1a]/15 bg-[#0a0f17] px-4 py-2 text-[0.78rem] font-medium text-white transition-colors hover:border-[#46c2ff]">
-                  <span className="text-[#e0b667]">▦</span> Explore Tower &amp; Unit Intelligence <span aria-hidden className="text-[#46c2ff]">→</span>
+                  <span className="text-[#e0b667]">▦</span> See Unit Intelligence <span aria-hidden className="text-[#46c2ff]">→</span>
                 </a>
               </div>
               {/* Truth Score */}
@@ -273,7 +274,7 @@ export default function ProjectProfile({
             <MatchScore project={p} />
 
             {/* Tower & Unit Intelligence — the gated deep-intel tier, surfaced high */}
-            <TowerIntel project={p} file={towerIntelFile(p)} />
+            <TowerIntel project={p} meta={towerIntelMeta(p)} />
 
             {/* 01 · Vitals */}
             <Section id="vitals" n={num()} title="Vitals">
@@ -596,14 +597,15 @@ export default function ProjectProfile({
                 <p className="font-serif text-[1.5rem] font-medium leading-[1.2] md:text-[1.8rem]">Considering {p.name}?</p>
                 <p className="mt-2 text-[0.88rem] font-light text-white/55">Get an independent read — the right price, the right stack, the honest risks — before you commit.</p>
               </div>
-              <div className="flex w-full shrink-0 flex-col gap-3 sm:w-auto sm:flex-row">
-                {embedded && onChallenge && (
-                  <button onClick={onChallenge} className="rounded-sm border border-white/25 px-7 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:border-white/55">
-                    Challenge TruthGuide
-                  </button>
-                )}
+              <div className="flex w-full shrink-0 flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
                 <button onClick={consult} className="rounded-sm bg-[#1e6b45] px-7 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
-                  Request Independent Advice
+                  Get Independent Advice
+                </button>
+                <a href="#tower-intel" className="rounded-sm border border-white/25 px-7 py-3.5 text-center text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:border-[#46c2ff]">
+                  See Unit Intelligence
+                </a>
+                <button onClick={challenge} className="px-2 py-3 text-[0.82rem] font-light tracking-[0.03em] text-white/55 transition-colors hover:text-white/90">
+                  Challenge TruthGuide →
                 </button>
               </div>
             </div>
@@ -615,14 +617,11 @@ export default function ProjectProfile({
         </div>
       </div>
 
-      {/* Mobile: persistent CTAs so neither the advice nor the deep intel is
-          ever buried at the foot of a long report */}
-      <div className="sticky bottom-0 z-40 flex gap-2 border-t border-[#1a1a1a]/10 bg-[#F5F0E8]/95 px-4 py-3 backdrop-blur md:hidden">
-        <a href="#tower-intel" className="flex shrink-0 items-center gap-1.5 rounded-sm bg-[#0a0f17] px-4 py-3.5 text-[0.8rem] font-medium tracking-[0.02em] text-white">
-          <span className="text-[#e0b667]">▦</span> Tower intel
-        </a>
-        <button onClick={consult} className="flex-1 rounded-sm bg-[#1e6b45] px-4 py-3.5 text-[0.82rem] font-medium tracking-[0.03em] text-white transition-colors hover:bg-[#238c55]">
-          Request Advice
+      {/* Mobile: a single, clean primary CTA. The secondary "See Unit
+          Intelligence" already appears on first scroll in the hero. */}
+      <div className="sticky bottom-0 z-40 border-t border-[#1a1a1a]/10 bg-[#F5F0E8]/95 px-6 py-3 backdrop-blur md:hidden">
+        <button onClick={consult} className="w-full rounded-sm bg-[#1e6b45] px-5 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
+          Get Independent Advice
         </button>
       </div>
     </div>

@@ -217,12 +217,45 @@ export const marketOf = (p: ProjectIntel): MarketIntel | undefined =>
 
 /* Deep tower & unit intelligence artifacts — the gated Tier-2 layer (3D site
    model, sun-path, per-unit scoring). Only the projects our engineers have
-   modelled have one today; the rest show the "in production" hook. Path is
-   relative to /public (the component prefixes basePath). */
-export const TOWER_INTEL: Record<string, string> = {
-  "DLF Arbour": "tower-intel/dlf-arbour.html",
+   modelled have one today; the rest show the "in production" hook. `file` is
+   relative to /public (the component prefixes basePath). `sample` is one real
+   unit shown free — the teaser that sells the subscribe. */
+export type TowerIntelMeta = {
+  file: string;
+  towers: number;
+  unitTypes: number; // total layouts; we reveal one, lock the rest
+  totalUnits: string; // headline count across all floors
+  sample: {
+    ref: string;
+    type: string;
+    vastu: string;
+    vastuNote: string;
+    light: string;
+    ventilation: string;
+    idealFor: string;
+    lightScore: number; // 0–100, for the teaser bar
+  };
 };
-export const towerIntelFile = (p: ProjectIntel): string | undefined => TOWER_INTEL[p.name];
+
+export const TOWER_INTEL: Record<string, TowerIntelMeta> = {
+  "DLF Arbour": {
+    file: "tower-intel/dlf-arbour.html",
+    towers: 5,
+    unitTypes: 20,
+    totalUnits: "800+",
+    sample: {
+      ref: "Sample · Tower A-4, high floor",
+      type: "4 BHK · G+41",
+      vastu: "5 / 5",
+      vastuNote: "North-east corner — the most auspicious placement; the prime Vastu pick.",
+      light: "East + north faces · best morning light",
+      ventilation: "Dual-aspect corner · cross-ventilates",
+      idealFor: "Large & joint families (4–6)",
+      lightScore: 92,
+    },
+  },
+};
+export const towerIntelMeta = (p: ProjectIntel): TowerIntelMeta | undefined => TOWER_INTEL[p.name];
 
 /* Parse an appreciation band like "+18–25%" → its midpoint (%) */
 export function bandMid(s: string): number {

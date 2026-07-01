@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import JourneyModal from "./JourneyModal";
+import TruthGuideBubble from "./TruthGuideBubble";
 import { loadAccount, type Account, type Intent } from "@/lib/journey";
 
 type Ctx = { open: (intent?: Intent) => void; close: () => void; isOpen: boolean };
@@ -40,6 +41,7 @@ export default function JourneyProvider({ children }: { children: React.ReactNod
   return (
     <JourneyContext.Provider value={{ open, close, isOpen }}>
       {children}
+      <TruthGuideBubble />
       {isOpen && <JourneyModal initialIntent={intent} account={account} onClose={close} />}
     </JourneyContext.Provider>
   );

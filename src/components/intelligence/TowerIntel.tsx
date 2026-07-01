@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { isUnlocked, unlockProject, saveLead, loadBuyData } from "@/lib/journey";
-import type { ProjectIntel } from "@/lib/projects";
+import type { ProjectIntel, TowerIntelMeta } from "@/lib/projects";
 
 const basePath = "/Truth-Estate";
 const UNIT_COLORS = ["#e0b98c", "#8fb6cf", "#aac49a", "#cd9fb6"];
@@ -32,7 +32,7 @@ function HeatPreview() {
   );
 }
 
-export default function TowerIntel({ project, file }: { project: ProjectIntel; file?: string }) {
+export default function TowerIntel({ project, meta }: { project: ProjectIntel; meta?: TowerIntelMeta }) {
   const [mounted, setMounted] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const [gate, setGate] = useState(false);
@@ -55,6 +55,7 @@ export default function TowerIntel({ project, file }: { project: ProjectIntel; f
     };
   }, [modal]);
 
+  const file = meta?.file;
   const src = file ? `${basePath}/${file}` : undefined;
   const set = (k: "name" | "email" | "phone") => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -88,7 +89,7 @@ export default function TowerIntel({ project, file }: { project: ProjectIntel; f
   const blurb = "3D site model with tower positioning, sun-path & natural-light scoring per unit, view corridors, and the best-value stacks — the layer most buyers never see until it's too late.";
 
   /* ── No model yet: the honest "in production" hook + waitlist ── */
-  if (!file) {
+  if (!meta) {
     return (
       <section id="tower-intel" className="mt-14 scroll-mt-24 overflow-hidden rounded-2xl border border-dashed border-[#c9a96e]/45 bg-[#0d1a12] p-8 text-white md:p-9">
         <p className="flex items-center gap-2 text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#e0b667]"><span aria-hidden>▦</span> In production · deep intelligence</p>
@@ -132,6 +133,31 @@ export default function TowerIntel({ project, file }: { project: ProjectIntel; f
                 <span key={t} className={`rounded-full border px-3 py-1.5 text-[0.72rem] font-light ${i === 0 && showUnlocked ? "border-[#46c2ff]/40 text-[#9bd8f7]" : "border-white/12 text-white/55"}`}>{t}</span>
               ))}
             </div>
+
+            {/* Free sample unit — the real teaser that sells the subscribe */}
+            {!showUnlocked && (
+              <div className="mt-6 rounded-xl border border-[#46c2ff]/25 bg-white/[0.03] p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-[0.62rem] font-medium uppercase tracking-[0.16em] text-[#46c2ff]">Free sample · 1 of {meta.unitTypes} layouts</p>
+                  <span className="rounded-full border border-[#e0b667]/40 bg-[#e0b667]/10 px-2.5 py-0.5 text-[0.66rem] font-semibold text-[#ffe3a6]">Vastu {meta.sample.vastu}</span>
+                </div>
+                <p className="mt-3 font-mono text-[0.74rem] text-white/45">{meta.sample.ref}</p>
+                <p className="font-serif text-[1.3rem] leading-tight text-white">{meta.sample.type}</p>
+                <div className="mt-4">
+                  <div className="flex justify-between text-[0.66rem] text-white/45"><span>Natural-light score</span><span className="text-[#ffce63]">{meta.sample.lightScore}/100</span></div>
+                  <div className="mt-1.5 h-[6px] overflow-hidden rounded-full bg-white/8"><div className="h-full rounded-full" style={{ width: `${meta.sample.lightScore}%`, background: "linear-gradient(90deg,#b9742a,#ffce63)" }} /></div>
+                </div>
+                <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+                  <Fact k="Vastu" v={meta.sample.vastuNote} />
+                  <Fact k="Light" v={meta.sample.light} />
+                  <Fact k="Ventilation" v={meta.sample.ventilation} />
+                  <Fact k="Ideal for" v={meta.sample.idealFor} />
+                </div>
+                <p className="mt-4 border-t border-white/8 pt-3 text-[0.78rem] font-light leading-[1.6] text-white/50">
+                  That&apos;s one sample. Unlocked, we score <b className="font-medium text-white/80">all {meta.totalUnits} units across {meta.towers} towers</b> — sun-path, Vastu, light, views and value — and surface the best stack for <span className="italic">you</span>.
+                </p>
+              </div>
+            )}
 
             {showUnlocked ? (
               <button onClick={() => setModal(true)} className="mt-8 inline-flex items-center gap-2 rounded-sm bg-[#46c2ff] px-7 py-3.5 text-[0.86rem] font-semibold tracking-[0.02em] text-[#04121c] transition-colors hover:bg-[#6fd0ff]">
@@ -181,6 +207,15 @@ export default function TowerIntel({ project, file }: { project: ProjectIntel; f
         </div>
       )}
     </>
+  );
+}
+
+function Fact({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="rounded-lg border border-white/8 bg-white/[0.02] p-3">
+      <p className="text-[0.58rem] font-medium uppercase tracking-[0.12em] text-white/35">{k}</p>
+      <p className="mt-1 text-[0.78rem] font-light leading-[1.45] text-white/70">{v}</p>
+    </div>
   );
 }
 
