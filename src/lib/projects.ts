@@ -222,36 +222,38 @@ export const marketOf = (p: ProjectIntel): MarketIntel | undefined =>
    unit shown free — the teaser that sells the subscribe. */
 export type TowerIntelMeta = {
   file: string;
+  preview: string; // static hero image of the live 3D advisor
   towers: number;
   unitTypes: number; // total layouts; we reveal one, lock the rest
   totalUnits: string; // headline count across all floors
   sample: {
     ref: string;
     type: string;
-    vastu: string;
-    vastuNote: string;
-    light: string;
+    sun: string; // direct-sun hours/day (the tool's headline metric)
+    sunPct: number; // 0–100, for the teaser bar
     ventilation: string;
+    vastu: string;
     idealFor: string;
-    lightScore: number; // 0–100, for the teaser bar
   };
 };
 
 export const TOWER_INTEL: Record<string, TowerIntelMeta> = {
   "DLF Arbour": {
     file: "tower-intel/dlf-arbour.html",
+    preview: "tower-intel/preview.jpg",
     towers: 5,
     unitTypes: 20,
     totalUnits: "800+",
+    // Mirrors the advisor's own #1-for-winter-sun pick, so the teaser stays
+    // honest against what a buyer sees once unlocked.
     sample: {
-      ref: "Sample · Tower A-4, high floor",
-      type: "4 BHK · G+41",
-      vastu: "5 / 5",
-      vastuNote: "North-east corner — the most auspicious placement; the prime Vastu pick.",
-      light: "East + north faces · best morning light",
+      ref: "Tower A-1 · Unit U1",
+      type: "4 BHK · south-east corner",
+      sun: "10.0 h/day",
+      sunPct: 83,
       ventilation: "Dual-aspect corner · cross-ventilates",
+      vastu: "South-east · fire corner (kitchen zone)",
       idealFor: "Large & joint families (4–6)",
-      lightScore: 92,
     },
   },
 };

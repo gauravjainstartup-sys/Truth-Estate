@@ -5,32 +5,7 @@ import { isUnlocked, unlockProject, saveLead, loadBuyData } from "@/lib/journey"
 import type { ProjectIntel, TowerIntelMeta } from "@/lib/projects";
 
 const basePath = "/Truth-Estate";
-const UNIT_COLORS = ["#e0b98c", "#8fb6cf", "#aac49a", "#cd9fb6"];
-
 const emailOk = (e: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
-
-/* A faux sunlight heatmap — the visual "flavour" of the intelligence behind
-   the lock, echoing the real advisor's palette without loading Three.js. */
-function HeatPreview() {
-  const cols = 12;
-  const rows = 7;
-  return (
-    <div className="pointer-events-none absolute inset-0 opacity-[0.55]">
-      <div className="absolute inset-0" style={{ background: "radial-gradient(120% 90% at 78% 12%, rgba(255,206,99,0.22), transparent 55%)" }} />
-      <div className="absolute bottom-0 left-0 right-0 flex items-end justify-center gap-[3px] px-8 pb-8">
-        {Array.from({ length: cols }).map((_, c) => (
-          <div key={c} className="flex flex-1 flex-col gap-[3px]">
-            {Array.from({ length: rows }).map((_, r) => {
-              const sun = Math.max(0, 1 - Math.abs(c - 8) / 9 - r / 12);
-              const col = UNIT_COLORS[(c + r) % UNIT_COLORS.length];
-              return <div key={r} className="h-[10px] rounded-[2px]" style={{ background: col, opacity: 0.25 + sun * 0.6 }} />;
-            })}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export default function TowerIntel({ project, meta }: { project: ProjectIntel; meta?: TowerIntelMeta }) {
   const [mounted, setMounted] = useState(false);
@@ -86,7 +61,7 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
   }
 
   const heading = "Tower & Unit Intelligence";
-  const blurb = "3D site model with tower positioning, sun-path & natural-light scoring per unit, view corridors, and the best-value stacks — the layer most buyers never see until it's too late.";
+  const blurb = "A 3D site model that grades every unit by direct sun at the site's true latitude — plus Vastu, cross-ventilation, views and the best-value stacks. The layer most buyers never see until it's too late.";
 
   /* ── No model yet: the honest "in production" hook + waitlist ── */
   if (!meta) {
@@ -113,81 +88,87 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
   return (
     <>
       <section id="tower-intel" className="mt-14 scroll-mt-24 overflow-hidden rounded-2xl border border-[#1f3a4d]/40 bg-[#0a0f17] text-white shadow-[0_24px_60px_-30px_rgba(0,0,0,0.6)]">
+        {/* Real preview of the live 3D advisor */}
         <div className="relative">
-          <HeatPreview />
-          <div className="relative z-10 p-8 md:p-10">
-            <div className="flex items-center gap-2">
-              <p className="text-[0.66rem] font-medium uppercase tracking-[0.2em] text-[#e0b667]">Deep intelligence</p>
-              {!showUnlocked && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[0.6rem] font-medium tracking-[0.06em] text-white/60">
-                  <LockIcon /> Locked
-                </span>
-              )}
-            </div>
-            <h2 className="mt-3 font-serif text-[1.9rem] font-medium leading-[1.15] md:text-[2.3rem]">{heading}</h2>
-            <p className="mt-3 max-w-xl text-[0.92rem] font-light leading-[1.75] text-white/65">{blurb}</p>
-
-            {/* Sample sliver — one thing shown, the rest locked */}
-            <div className="mt-6 flex flex-wrap gap-2.5">
-              {["3D site & tower model", "Sun-path per unit", "Natural-light score", "View corridors", "Best-value stacks"].map((t, i) => (
-                <span key={t} className={`rounded-full border px-3 py-1.5 text-[0.72rem] font-light ${i === 0 && showUnlocked ? "border-[#46c2ff]/40 text-[#9bd8f7]" : "border-white/12 text-white/55"}`}>{t}</span>
-              ))}
-            </div>
-
-            {/* Free sample unit — the real teaser that sells the subscribe */}
-            {!showUnlocked && (
-              <div className="mt-6 rounded-xl border border-[#46c2ff]/25 bg-white/[0.03] p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-[0.62rem] font-medium uppercase tracking-[0.16em] text-[#46c2ff]">Free sample · 1 of {meta.unitTypes} layouts</p>
-                  <span className="rounded-full border border-[#e0b667]/40 bg-[#e0b667]/10 px-2.5 py-0.5 text-[0.66rem] font-semibold text-[#ffe3a6]">Vastu {meta.sample.vastu}</span>
-                </div>
-                <p className="mt-3 font-mono text-[0.74rem] text-white/45">{meta.sample.ref}</p>
-                <p className="font-serif text-[1.3rem] leading-tight text-white">{meta.sample.type}</p>
-                <div className="mt-4">
-                  <div className="flex justify-between text-[0.66rem] text-white/45"><span>Natural-light score</span><span className="text-[#ffce63]">{meta.sample.lightScore}/100</span></div>
-                  <div className="mt-1.5 h-[6px] overflow-hidden rounded-full bg-white/8"><div className="h-full rounded-full" style={{ width: `${meta.sample.lightScore}%`, background: "linear-gradient(90deg,#b9742a,#ffce63)" }} /></div>
-                </div>
-                <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-                  <Fact k="Vastu" v={meta.sample.vastuNote} />
-                  <Fact k="Light" v={meta.sample.light} />
-                  <Fact k="Ventilation" v={meta.sample.ventilation} />
-                  <Fact k="Ideal for" v={meta.sample.idealFor} />
-                </div>
-                <p className="mt-4 border-t border-white/8 pt-3 text-[0.78rem] font-light leading-[1.6] text-white/50">
-                  That&apos;s one sample. Unlocked, we score <b className="font-medium text-white/80">all {meta.totalUnits} units across {meta.towers} towers</b> — sun-path, Vastu, light, views and value — and surface the best stack for <span className="italic">you</span>.
-                </p>
-              </div>
-            )}
-
-            {showUnlocked ? (
-              <button onClick={() => setModal(true)} className="mt-8 inline-flex items-center gap-2 rounded-sm bg-[#46c2ff] px-7 py-3.5 text-[0.86rem] font-semibold tracking-[0.02em] text-[#04121c] transition-colors hover:bg-[#6fd0ff]">
-                Open Tower &amp; Unit Intelligence <span aria-hidden>→</span>
-              </button>
-            ) : !gate ? (
-              <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
-                <button onClick={() => setGate(true)} className="inline-flex items-center gap-2 rounded-sm bg-[#e0b667] px-7 py-3.5 text-[0.86rem] font-semibold tracking-[0.02em] text-[#1a1206] transition-colors hover:bg-[#f0cd85]">
-                  <LockIcon dark /> Unlock free — see your best unit
-                </button>
-                <p className="text-[0.76rem] font-light text-white/45">Free with a Buyer Office profile. No payment.</p>
-              </div>
-            ) : (
-              <form onSubmit={submitUnlock} className="mt-8 max-w-md rounded-xl border border-white/12 bg-white/[0.03] p-5">
-                <p className="text-[0.78rem] font-medium text-white/80">Open your Buyer Office file to unlock</p>
-                <p className="mt-1 text-[0.72rem] font-light leading-[1.5] text-white/45">Your report, saved. The full tower &amp; unit intelligence, unlocked. One advisor, on the record.</p>
-                <div className="mt-4 flex flex-col gap-2.5">
-                  <input value={form.name} onChange={set("name")} placeholder="Full name" className="rounded-sm border border-white/15 bg-white/5 px-4 py-2.5 text-[0.86rem] text-white placeholder-white/35 outline-none focus:border-[#e0b667]" />
-                  <input value={form.email} onChange={set("email")} type="email" placeholder="you@email.com" className="rounded-sm border border-white/15 bg-white/5 px-4 py-2.5 text-[0.86rem] text-white placeholder-white/35 outline-none focus:border-[#e0b667]" />
-                  <input value={form.phone} onChange={set("phone")} placeholder="Phone / WhatsApp (optional)" className="rounded-sm border border-white/15 bg-white/5 px-4 py-2.5 text-[0.86rem] text-white placeholder-white/35 outline-none focus:border-[#e0b667]" />
-                </div>
-                {err && <p className="mt-2 text-[0.76rem] text-[#f0a68f]">{err}</p>}
-                <div className="mt-4 flex items-center gap-3">
-                  <button className="rounded-sm bg-[#46c2ff] px-6 py-2.5 text-[0.82rem] font-semibold text-[#04121c] transition-colors hover:bg-[#6fd0ff]">Unlock intelligence</button>
-                  <button type="button" onClick={() => { setGate(false); setErr(""); }} className="text-[0.78rem] font-light text-white/45 hover:text-white/75">Cancel</button>
-                </div>
-                <p className="mt-3 text-[0.68rem] font-light text-white/30">We use this to build your file and reach you — never to spam. Front-end demo.</p>
-              </form>
-            )}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={`${basePath}/${meta.preview}`} alt={`${project.name} — 3D sun & unit advisor`} className="h-52 w-full object-cover object-center md:h-64" />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(10,15,23,0.15) 0%, rgba(10,15,23,0.5) 55%, #0a0f17 100%)" }} />
+          <div className="absolute inset-x-6 top-5 flex items-center justify-between">
+            <p className="flex items-center gap-2 text-[0.66rem] font-medium uppercase tracking-[0.2em] text-[#e0b667]"><span aria-hidden>▦</span> Deep intelligence</p>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/40 px-2.5 py-1 text-[0.6rem] font-medium tracking-[0.06em] text-white/75 backdrop-blur">
+              {showUnlocked ? "Unlocked" : <><LockIcon /> Locked · live preview</>}
+            </span>
           </div>
+          {!showUnlocked && (
+            <button onClick={() => setGate(true)} aria-label="Unlock" className="absolute inset-0 flex items-center justify-center">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full border border-white/25 bg-black/45 backdrop-blur transition-transform hover:scale-105"><LockIcon big /></span>
+            </button>
+          )}
+        </div>
+
+        <div className="p-8 pt-6 md:p-10 md:pt-7">
+          <h2 className="font-serif text-[1.9rem] font-medium leading-[1.15] md:text-[2.3rem]">{heading}</h2>
+          <p className="mt-3 max-w-xl text-[0.92rem] font-light leading-[1.75] text-white/65">{blurb}</p>
+
+          <div className="mt-6 flex flex-wrap gap-2.5">
+            {["3D site & tower model", "Sun-path per unit", "Vastu score", "Cross-ventilation", "Best-value stacks"].map((t) => (
+              <span key={t} className="rounded-full border border-white/12 px-3 py-1.5 text-[0.72rem] font-light text-white/55">{t}</span>
+            ))}
+          </div>
+
+          {/* Free sample unit — mirrors the advisor's own #1-for-sun pick */}
+          {!showUnlocked && (
+            <div className="mt-6 rounded-xl border border-[#46c2ff]/25 bg-white/[0.03] p-5">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[0.62rem] font-medium uppercase tracking-[0.16em] text-[#46c2ff]">Free sample · 1 of {meta.unitTypes} layouts</p>
+                <span className="rounded-full border border-[#ffce63]/40 bg-[#ffce63]/10 px-2.5 py-0.5 text-[0.66rem] font-semibold text-[#ffe3a6]">☀ Best for winter sun</span>
+              </div>
+              <p className="mt-3 font-mono text-[0.74rem] text-white/45">{meta.sample.ref}</p>
+              <p className="font-serif text-[1.3rem] leading-tight text-white">{meta.sample.type}</p>
+              <div className="mt-4">
+                <div className="flex justify-between text-[0.66rem] text-white/45"><span>Direct sun · winter</span><span className="text-[#ffce63]">{meta.sample.sun}</span></div>
+                <div className="mt-1.5 h-[6px] overflow-hidden rounded-full bg-white/8"><div className="h-full rounded-full" style={{ width: `${meta.sample.sunPct}%`, background: "linear-gradient(90deg,#b9742a,#ffce63)" }} /></div>
+              </div>
+              <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+                <Fact k="Ventilation" v={meta.sample.ventilation} />
+                <Fact k="Vastu" v={meta.sample.vastu} />
+                <Fact k="Ideal for" v={meta.sample.idealFor} />
+                <Fact k="Sun rank" v={`Top of ${meta.totalUnits} units`} />
+              </div>
+              <p className="mt-4 border-t border-white/8 pt-3 text-[0.78rem] font-light leading-[1.6] text-white/50">
+                That&apos;s one sample. Unlocked, we score <b className="font-medium text-white/80">all {meta.totalUnits} units across {meta.towers} towers</b> — sun-path, Vastu, light, views and value — and surface the best stack for <span className="italic">you</span>.
+              </p>
+            </div>
+          )}
+
+          {showUnlocked ? (
+            <button onClick={() => setModal(true)} className="mt-8 inline-flex items-center gap-2 rounded-sm bg-[#46c2ff] px-7 py-3.5 text-[0.86rem] font-semibold tracking-[0.02em] text-[#04121c] transition-colors hover:bg-[#6fd0ff]">
+              Open Tower &amp; Unit Intelligence <span aria-hidden>→</span>
+            </button>
+          ) : !gate ? (
+            <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
+              <button onClick={() => setGate(true)} className="inline-flex items-center gap-2 rounded-sm bg-[#e0b667] px-7 py-3.5 text-[0.86rem] font-semibold tracking-[0.02em] text-[#1a1206] transition-colors hover:bg-[#f0cd85]">
+                <LockIcon dark /> Unlock free — see your best unit
+              </button>
+              <p className="text-[0.76rem] font-light text-white/45">Free with a Buyer Office profile. No payment.</p>
+            </div>
+          ) : (
+            <form onSubmit={submitUnlock} className="mt-8 max-w-md rounded-xl border border-white/12 bg-white/[0.03] p-5">
+              <p className="text-[0.78rem] font-medium text-white/80">Open your Buyer Office file to unlock</p>
+              <p className="mt-1 text-[0.72rem] font-light leading-[1.5] text-white/45">Your report, saved. The full tower &amp; unit intelligence, unlocked. One advisor, on the record.</p>
+              <div className="mt-4 flex flex-col gap-2.5">
+                <input value={form.name} onChange={set("name")} placeholder="Full name" className="rounded-sm border border-white/15 bg-white/5 px-4 py-2.5 text-[0.86rem] text-white placeholder-white/35 outline-none focus:border-[#e0b667]" />
+                <input value={form.email} onChange={set("email")} type="email" placeholder="you@email.com" className="rounded-sm border border-white/15 bg-white/5 px-4 py-2.5 text-[0.86rem] text-white placeholder-white/35 outline-none focus:border-[#e0b667]" />
+                <input value={form.phone} onChange={set("phone")} placeholder="Phone / WhatsApp (optional)" className="rounded-sm border border-white/15 bg-white/5 px-4 py-2.5 text-[0.86rem] text-white placeholder-white/35 outline-none focus:border-[#e0b667]" />
+              </div>
+              {err && <p className="mt-2 text-[0.76rem] text-[#f0a68f]">{err}</p>}
+              <div className="mt-4 flex items-center gap-3">
+                <button className="rounded-sm bg-[#46c2ff] px-6 py-2.5 text-[0.82rem] font-semibold text-[#04121c] transition-colors hover:bg-[#6fd0ff]">Unlock intelligence</button>
+                <button type="button" onClick={() => { setGate(false); setErr(""); }} className="text-[0.78rem] font-light text-white/45 hover:text-white/75">Cancel</button>
+              </div>
+              <p className="mt-3 text-[0.68rem] font-light text-white/30">We use this to build your file and reach you — never to spam. Front-end demo.</p>
+            </form>
+          )}
         </div>
       </section>
 
@@ -219,9 +200,10 @@ function Fact({ k, v }: { k: string; v: string }) {
   );
 }
 
-function LockIcon({ dark }: { dark?: boolean }) {
+function LockIcon({ dark, big }: { dark?: boolean; big?: boolean }) {
+  const s = big ? 20 : 11;
   return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden className="inline-block">
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" aria-hidden className="inline-block">
       <rect x="4" y="10" width="16" height="11" rx="2" fill={dark ? "#1a1206" : "currentColor"} opacity={dark ? 1 : 0.85} />
       <path d="M8 10V7a4 4 0 0 1 8 0v3" stroke={dark ? "#1a1206" : "currentColor"} strokeWidth="2" fill="none" />
     </svg>
