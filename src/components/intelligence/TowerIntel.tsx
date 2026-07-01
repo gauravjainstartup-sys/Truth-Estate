@@ -14,21 +14,15 @@ export function openUnitIntel() {
   if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(UNIT_INTEL_EVENT));
 }
 
-const CAPS = [
-  { t: "3D site & tower model", d: "Every tower placed to scale on the real plot." },
-  { t: "Sun-path per unit", d: "Direct-sun hours by unit and floor, at the site's true latitude." },
-  { t: "Vastu score", d: "A corner-by-corner Vastu read — with the reasoning." },
-  { t: "Natural light & views", d: "Which homes get the morning light, and what they look onto." },
-  { t: "Cross-ventilation", d: "The dual-aspect units that actually breathe." },
-  { t: "Best-value stacks", d: "The floors and stacks that price best for what you get." },
-];
-
 export default function TowerIntel({ project, meta }: { project: ProjectIntel; meta?: TowerIntelMeta }) {
   const [member, setMemberState] = useState(false);
   const [modal, setModal] = useState(false); // the 3D advisor (modelled projects)
   const [gate, setGate] = useState(false); // the Buyer Office join
+  const [gateIntro, setGateIntro] = useState(false); // gate opens on the "what's inside" step
   const [joined, setJoined] = useState(false); // "in production" projects: post-join note
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+
+  const openGate = (withIntro: boolean) => { setGateIntro(withIntro); setGate(true); };
 
   useEffect(() => {
     setMemberState(isMember());
@@ -36,7 +30,7 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
 
   // hero pill / final-card CTA
   useEffect(() => {
-    const h = () => (meta?.file ? setModal(true) : setGate(true));
+    const h = () => (meta?.file ? setModal(true) : openGate(true));
     window.addEventListener(UNIT_INTEL_EVENT, h);
     return () => window.removeEventListener(UNIT_INTEL_EVENT, h);
   }, [meta]);
@@ -52,7 +46,7 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
       const d = e.data;
       if (!d || typeof d !== "object") return;
       if (d.type === "te-ready" && isMember()) postMember();
-      if (d.type === "te-join") setGate(true);
+      if (d.type === "te-join") openGate(false);
     };
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
@@ -77,61 +71,41 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
 
   return (
     <>
-      {meta ? (
-        /* ── Modelled project: compact entry → free 3D exploration ── */
-        <section id="tower-intel" className="mt-14 scroll-mt-24 overflow-hidden rounded-2xl border border-[#1f3a4d]/40 bg-[#0a0f17] text-white">
-          <div className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center md:gap-7 md:p-7">
-            <div className="relative h-36 w-full shrink-0 overflow-hidden rounded-xl sm:h-28 sm:w-48">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+      {/* Compact mini teaser — same small footprint for every project */}
+      <section id="tower-intel" className="mt-14 scroll-mt-24 overflow-hidden rounded-2xl border border-[#1f3a4d]/40 bg-[#0a0f17] text-white">
+        <div className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center md:gap-7 md:p-7">
+          <div className="relative h-32 w-full shrink-0 overflow-hidden rounded-xl sm:h-24 sm:w-44">
+            {meta ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img src={`${basePath}/${meta.preview}`} alt={`${project.name} — 3D sun & unit advisor`} className="h-full w-full object-cover" />
-              <div className="absolute inset-0" style={{ background: "linear-gradient(120deg, rgba(10,15,23,0.1), rgba(10,15,23,0.5))" }} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="flex items-center gap-2 text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[#e0b667]"><span aria-hidden>▦</span> Deep intelligence · live 3D</p>
-              <p className="mt-2 font-serif text-[1.5rem] leading-[1.15] md:text-[1.7rem]">Tower &amp; Unit Intelligence</p>
-              <p className="mt-2 text-[0.86rem] font-light leading-[1.6] text-white/55">
-                Explore the 3D site &amp; sun study free — the best tower for sun is <b className="font-medium text-white/80">{meta.sample.ref.replace("Tower ", "Tower ")}</b> at <span className="text-[#ffce63]">{meta.sample.sun}</span> winter sun. Open a tower to unlock unit-level intel for all {meta.totalUnits} homes.
-              </p>
-            </div>
-            <button onClick={() => setModal(true)} className="shrink-0 rounded-sm bg-[#e0b667] px-6 py-3.5 text-[0.84rem] font-semibold tracking-[0.02em] text-[#1a1206] transition-colors hover:bg-[#f0cd85]">
-              See Unit Intelligence →
-            </button>
-          </div>
-        </section>
-      ) : (
-        /* ── In-production project: static "what's inside" → join ── */
-        <section id="tower-intel" className="mt-14 scroll-mt-24 overflow-hidden rounded-2xl border border-[#1f3a4d]/40 bg-[#0a0f17] p-8 text-white md:p-10">
-          <div className="relative">
-            <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full" style={{ background: "radial-gradient(circle, rgba(255,206,99,0.14), transparent 70%)", filter: "blur(24px)" }} />
-            <p className="flex items-center gap-2 text-[0.66rem] font-medium uppercase tracking-[0.2em] text-[#e0b667]"><span aria-hidden>▦</span> Deep intelligence</p>
-            <h2 className="mt-3 max-w-xl font-serif text-[1.9rem] font-medium leading-[1.15] md:text-[2.3rem]">Tower &amp; Unit Intelligence</h2>
-            <p className="mt-3 max-w-xl text-[0.92rem] font-light leading-[1.75] text-white/60">
-              A 3D model of {project.name} that grades every unit the way most buyers never can — by sun, light, Vastu, ventilation, views and value. It&apos;s the layer that decides <span className="italic">which</span> home, not just which project.
-            </p>
-            <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {CAPS.map((c) => (
-                <div key={c.t} className="rounded-xl border border-white/8 bg-white/[0.02] p-4">
-                  <p className="text-[0.86rem] font-medium text-white/85">{c.t}</p>
-                  <p className="mt-1.5 text-[0.76rem] font-light leading-[1.5] text-white/45">{c.d}</p>
-                </div>
-              ))}
-            </div>
-            {joined ? (
-              <div className="mt-7 rounded-xl border border-[#1e6b45]/40 bg-[#1e6b45]/10 p-5">
-                <p className="text-[0.9rem] font-medium text-[#9fd8b6]">You&apos;re in — welcome to the Buyer Office.</p>
-                <p className="mt-1.5 text-[0.84rem] font-light leading-[1.6] text-white/60">We&apos;re building {project.name}&apos;s tower model now. Your advisor will walk you through it unit by unit — and it&apos;ll appear in your file the moment it&apos;s ready.</p>
-              </div>
             ) : (
-              <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
-                <button onClick={() => setGate(true)} className="rounded-sm bg-[#e0b667] px-7 py-3.5 text-[0.86rem] font-semibold tracking-[0.02em] text-[#1a1206] transition-colors hover:bg-[#f0cd85]">
-                  Join the Buyer Office to see {project.name}&apos;s units →
-                </button>
-                <p className="text-[0.76rem] font-light text-white/45">Free · share your requirements. No payment.</p>
+              <div className="relative flex h-full w-full items-center justify-center bg-gradient-to-br from-[#111a29] to-[#0a0f17]">
+                <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(circle at 62% 30%, rgba(224,182,103,0.18), transparent 62%)" }} />
+                <TowerGlyph />
               </div>
             )}
+            <div className="absolute inset-0" style={{ background: "linear-gradient(120deg, rgba(10,15,23,0.05), rgba(10,15,23,0.4))" }} />
           </div>
-        </section>
-      )}
+          <div className="min-w-0 flex-1">
+            <p className="flex items-center gap-2 text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[#e0b667]"><span aria-hidden>▦</span> Deep intelligence{meta ? " · live 3D" : ""}</p>
+            <p className="mt-2 font-serif text-[1.45rem] leading-[1.15] md:text-[1.6rem]">Tower &amp; Unit Intelligence</p>
+            <p className="mt-2 text-[0.85rem] font-light leading-[1.6] text-white/55">
+              {meta ? (
+                <>Explore the 3D site &amp; sun study free — open a tower to unlock unit-level intel for all {meta.totalUnits} homes.</>
+              ) : (
+                <>The 3D layer that decides <span className="italic">which</span> home — graded by sun, Vastu, light, ventilation &amp; value.</>
+              )}
+            </p>
+          </div>
+          {joined && !meta ? (
+            <p className="shrink-0 text-[0.8rem] font-light leading-[1.5] text-[#9fd8b6] sm:max-w-[11rem]">You&apos;re in — we&apos;re building {project.name}&apos;s model. Your advisor will walk you through it.</p>
+          ) : (
+            <button onClick={() => (meta ? setModal(true) : openGate(true))} className="shrink-0 rounded-sm bg-[#e0b667] px-6 py-3.5 text-[0.84rem] font-semibold tracking-[0.02em] text-[#1a1206] transition-colors hover:bg-[#f0cd85]">
+              {meta ? "See the live 3D →" : "See what's inside →"}
+            </button>
+          )}
+        </div>
+      </section>
 
       {/* Full-screen 3D advisor — free to explore; the dive-in is gated */}
       {modal && src && (
@@ -156,7 +130,20 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
         </div>
       )}
 
-      <BuyerOfficeGate open={gate} project={project.name} onClose={() => setGate(false)} onJoined={onJoined} />
+      <BuyerOfficeGate open={gate} project={project.name} intro={gateIntro} onClose={() => setGate(false)} onJoined={onJoined} />
     </>
+  );
+}
+
+function TowerGlyph() {
+  return (
+    <svg width="46" height="46" viewBox="0 0 48 48" fill="none" className="relative" aria-hidden>
+      <g stroke="#e0b667" strokeWidth="1.4" strokeLinejoin="round" opacity="0.9">
+        <path d="M24 5 8 13v22l16 8 16-8V13z" fill="rgba(224,182,103,0.05)" />
+        <path d="M8 13l16 8 16-8M24 21v22" opacity="0.5" />
+        <rect x="18" y="19" width="5" height="14" fill="rgba(224,182,103,0.10)" />
+        <rect x="25" y="17" width="5" height="16" fill="rgba(224,182,103,0.10)" />
+      </g>
+    </svg>
   );
 }
