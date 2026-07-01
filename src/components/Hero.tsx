@@ -89,6 +89,15 @@ export default function Hero() {
           </nav>
 
           <div className="flex max-w-xl flex-col">
+            <p
+              className="animate-fade-up text-[11px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]"
+              style={{ animationDelay: "50ms", textShadow: "0 1px 12px rgba(4,6,5,0.5)" }}
+            >
+              The Independent Buyer&apos;s Office
+            </p>
+
+            <div style={{ height: "22px" }} />
+
             <h1
               className="animate-fade-up font-serif text-[3.2rem] font-bold leading-[1.1] text-white lg:text-[3.9rem]"
               style={{ animationDelay: "100ms" }}
@@ -101,12 +110,10 @@ export default function Hero() {
             <div style={{ height: "40px" }} />
 
             <p
-              className="animate-fade-up text-[16px] leading-[1.8] text-white/45"
-              style={{ animationDelay: "300ms" }}
+              className="animate-fade-up font-serif text-[19px] italic leading-[1.6] text-white/70 lg:text-[22px]"
+              style={{ animationDelay: "300ms", textShadow: "0 1px 14px rgba(4,6,5,0.5)" }}
             >
-              The Independent Buyer&apos;s Office
-              <br />
-              for High-Value Real Estate Decisions.
+              Every promise, on the record.
             </p>
 
             <div style={{ height: "44px" }} />
@@ -193,6 +200,15 @@ export default function Hero() {
           </nav>
 
           <div className="mt-[9vh] flex flex-col">
+            <p
+              className="animate-fade-up text-[10px] font-medium uppercase tracking-[0.28em] text-[#c9a96e]"
+              style={{ animationDelay: "50ms", textShadow: "0 1px 12px rgba(4,6,5,0.6)" }}
+            >
+              The Independent Buyer&apos;s Office
+            </p>
+
+            <div style={{ height: "16px" }} />
+
             <h1
               className="animate-fade-up font-serif text-[2.3rem] font-bold leading-[1.16] text-white"
               style={{ animationDelay: "100ms" }}
@@ -205,12 +221,10 @@ export default function Hero() {
             <div style={{ height: "26px" }} />
 
             <p
-              className="animate-fade-up text-[15px] leading-[1.85] text-white/60"
+              className="animate-fade-up font-serif text-[17px] italic leading-[1.6] text-white/70"
               style={{ animationDelay: "250ms", textShadow: "0 1px 14px rgba(4,6,5,0.6)" }}
             >
-              The Independent Buyer&apos;s Office
-              <br />
-              for High-Value Real Estate Decisions.
+              Every promise, on the record.
             </p>
 
             <div style={{ height: "34px" }} />

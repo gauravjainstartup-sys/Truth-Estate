@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     template: "%s | Truth Estate",
   },
   description:
-    "Independent, evidence-first real estate advisory for NRIs and discerning buyers in India. Forensic due diligence, unbiased Truth Scores, and one advisor who represents only you — from first question to handover.",
+    "Independent, evidence-first real estate advice for NRIs and discerning buyers in India — every project scored on the facts, every developer promise kept on the record. Forensic due diligence and one advisor who represents only you, from first question to handover.",
   applicationName: "Truth Estate",
   keywords: [
     "NRI real estate advisory India",
