@@ -18,6 +18,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // Core pages
   add("/", 1.0, "weekly");
   add("/nri", 0.9, "monthly");
+  add("/the-record", 0.8, "monthly");
   add("/intelligence", 0.9, "weekly");
   add("/pricing", 0.7, "monthly");
   add("/methodology", 0.7, "monthly");

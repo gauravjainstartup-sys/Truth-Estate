@@ -148,6 +148,12 @@ export default function NRIDesk() {
           </a>
           <div className="flex items-center gap-5 md:gap-7">
             <a
+              href={`${basePath}/the-record`}
+              className="hidden text-[0.78rem] font-light text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a]/80 sm:inline"
+            >
+              The Record
+            </a>
+            <a
               href={`${basePath}/intelligence`}
               className="hidden text-[0.78rem] font-light text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a]/80 sm:inline"
             >

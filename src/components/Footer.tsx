@@ -16,7 +16,8 @@ const columns: {
     label: "Start Here",
     links: [
       { t: "Start Your Journey", h: "#", action: "journey" },
-      { t: "TruthGuide", h: "#", action: "research" },
+      { t: "The NRI Desk", h: "/nri" },
+      { t: "The Record", h: "/the-record" },
       { t: "Truth Intelligence", h: "/intelligence" },
       { t: "Request Independent Advice", h: "#", action: "consult" },
       { t: "Pricing", h: "/pricing" },
