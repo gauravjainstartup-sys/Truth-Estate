@@ -688,6 +688,54 @@ function ScheduleStep({
 /* ════════════════════════════════════════════════════════════════
    STEP 6 — ACCOUNT (passwordless)
    ════════════════════════════════════════════════════════════════ */
+/* Dial codes for the audience — India first, then the main NRI hubs. */
+const DIAL_CODES: { iso: string; flag: string; code: string; name: string }[] = [
+  { iso: "IN", flag: "🇮🇳", code: "+91", name: "India" },
+  { iso: "GB", flag: "🇬🇧", code: "+44", name: "United Kingdom" },
+  { iso: "US", flag: "🇺🇸", code: "+1", name: "USA / Canada" },
+  { iso: "AE", flag: "🇦🇪", code: "+971", name: "United Arab Emirates" },
+  { iso: "SG", flag: "🇸🇬", code: "+65", name: "Singapore" },
+  { iso: "AU", flag: "🇦🇺", code: "+61", name: "Australia" },
+  { iso: "SA", flag: "🇸🇦", code: "+966", name: "Saudi Arabia" },
+  { iso: "QA", flag: "🇶🇦", code: "+974", name: "Qatar" },
+  { iso: "OM", flag: "🇴🇲", code: "+968", name: "Oman" },
+  { iso: "DE", flag: "🇩🇪", code: "+49", name: "Germany" },
+  { iso: "HK", flag: "🇭🇰", code: "+852", name: "Hong Kong" },
+  { iso: "NZ", flag: "🇳🇿", code: "+64", name: "New Zealand" },
+];
+
+function WhatsAppIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
+      <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38c1.45.79 3.08 1.21 4.79 1.21 5.46 0 9.91-4.45 9.91-9.91C21.95 6.45 17.5 2 12.04 2m0 18.15c-1.52 0-3.01-.41-4.3-1.18l-.31-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.37c0-4.54 3.7-8.23 8.24-8.23 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.82c0 4.54-3.69 8.23-8.23 8.23m4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.23.25-.87.85-.87 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.11-.22-.17-.47-.29" />
+    </svg>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z" />
+      <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84z" />
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z" />
+    </svg>
+  );
+}
+
+function ChannelPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[0.78rem] font-light transition-all ${
+        active ? "border-[#1e6b45] bg-[#1e6b45]/[0.08] text-[#1e6b45]" : "border-[#1a1a1a]/15 text-[#1a1a1a]/55 hover:border-[#1a1a1a]/35"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
 function AccountStep({
   booking,
   onChange,
@@ -697,21 +745,59 @@ function AccountStep({
   onChange: (patch: Partial<ConsultBooking>) => void;
   onReserve: () => void;
 }) {
+  const [dialCode, setDialCode] = useState("+91");
+  const [num, setNum] = useState("");
+  const [channel, setChannel] = useState<"whatsapp" | "sms">("whatsapp");
+  const [method, setMethod] = useState<"phone" | "email">("phone");
+  const [emailMode, setEmailMode] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
-  const [otp, setOtp] = useState(["", "", "", ""]);
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [googleDone, setGoogleDone] = useState(false);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const mobileValid = booking.mobile.replace(/\D/g, "").length >= 10;
+  const isIndia = dialCode === "+91";
+  const numValid = num.replace(/\D/g, "").length >= (isIndia ? 10 : 6);
+  const emailValid = /\S+@\S+\.\S+/.test(booking.email);
   const otpComplete = otp.every((d) => d !== "");
-  const canReserve = booking.name.trim() && mobileValid && otpSent && otpComplete;
+  const verified = googleDone || (otpSent && otpComplete);
+  const canReserve = booking.name.trim() && verified;
+  const channelName = isIndia ? (channel === "whatsapp" ? "WhatsApp" : "SMS") : "WhatsApp";
 
+  const syncMobile = (dc: string, n: string) => onChange({ mobile: n ? `${dc} ${n}` : "" });
+  const onNum = (v: string) => { const n = v.replace(/[^\d\s]/g, ""); setNum(n); syncMobile(dialCode, n); };
+  const onDial = (v: string) => { setDialCode(v); if (v !== "+91") setChannel("whatsapp"); syncMobile(v, num); };
   const setOtpDigit = (i: number, v: string) => {
     const digit = v.replace(/\D/g, "").slice(-1);
     setOtp((o) => { const n = [...o]; n[i] = digit; return n; });
-    if (digit && i < 3) otpRefs.current[i + 1]?.focus();
+    if (digit && i < otp.length - 1) otpRefs.current[i + 1]?.focus();
   };
 
   const perks = ["Continue conversations", "Review recommendations", "Upload documents", "Track shortlisted properties", "Collaborate with your advisor"];
+
+  const otpBlock = otpSent ? (
+    <div className="animate-fade-up">
+      <label className="mb-3 block text-[10px] font-light uppercase tracking-[0.22em] text-[#1a1a1a]/40">
+        {method === "email" ? "Enter the code sent to your email" : `Enter the code sent on ${channelName}`}
+      </label>
+      <div className="flex gap-2.5">
+        {otp.map((d, i) => (
+          <input
+            key={i}
+            ref={(el) => { otpRefs.current[i] = el; }}
+            value={d}
+            onChange={(e) => setOtpDigit(i, e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Backspace" && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus(); }}
+            inputMode="numeric"
+            maxLength={1}
+            className="h-14 w-11 rounded-lg border border-[#1a1a1a]/15 bg-white text-center font-serif text-[1.5rem] font-light text-[#1a1a1a] outline-none transition-colors focus:border-[#1e6b45]/50"
+          />
+        ))}
+      </div>
+      <p className="mt-3 text-[0.76rem] font-light italic text-[#1a1a1a]/35">
+        Passwordless — no password to remember. Enter any 6 digits to continue this preview.
+      </p>
+    </div>
+  ) : null;
 
   return (
     <div className="animate-fade-up mx-auto max-w-[640px] px-6 py-12 md:px-10 md:py-16">
@@ -743,61 +829,119 @@ function AccountStep({
           />
         </Field>
 
-        <Field label="Mobile">
-          <div className="flex items-center gap-3">
-            <input
-              type="tel"
-              value={booking.mobile}
-              onChange={(e) => onChange({ mobile: e.target.value })}
-              placeholder="+91 98xxx xxxxx"
-              className="flex-1 border-b border-[#1a1a1a]/15 bg-transparent py-3 font-serif text-[1.2rem] font-light text-[#1a1a1a] outline-none transition-colors placeholder:text-[#1a1a1a]/25 focus:border-[#1e6b45]/50"
-            />
-            {!otpSent && (
-              <button
-                onClick={() => mobileValid && setOtpSent(true)}
-                disabled={!mobileValid}
-                className="shrink-0 rounded-full border border-[#1e6b45]/40 px-5 py-2 text-[0.8rem] font-light text-[#1e6b45] transition-all hover:bg-[#1e6b45] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
-              >
-                Send code
-              </button>
-            )}
+        {googleDone ? (
+          <div className="animate-fade-up flex items-center justify-between gap-3 rounded-xl border border-[#1e6b45]/25 bg-[#1e6b45]/[0.05] px-5 py-4">
+            <span className="flex items-center gap-2.5 text-[0.9rem] font-light text-[#1a1a1a]/75">
+              <GoogleIcon /> Signed in with Google — your identity is verified.
+            </span>
+            <button onClick={() => setGoogleDone(false)} className="shrink-0 text-[0.78rem] font-light text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a]">
+              Change
+            </button>
           </div>
-        </Field>
-
-        {otpSent && (
-          <div className="animate-fade-up">
-            <label className="mb-3 block text-[10px] font-light uppercase tracking-[0.22em] text-[#1a1a1a]/40">
-              Enter the code we sent
-            </label>
-            <div className="flex gap-3">
-              {otp.map((d, i) => (
+        ) : (
+          <>
+            {/* Phone — country code + number, verified on WhatsApp (or SMS in India) */}
+            <div>
+              <label className="mb-1 block text-[10px] font-light uppercase tracking-[0.22em] text-[#1a1a1a]/40">Mobile</label>
+              <div className="flex items-center gap-3">
+                <select
+                  value={dialCode}
+                  onChange={(e) => onDial(e.target.value)}
+                  disabled={otpSent && method === "phone"}
+                  aria-label="Country dialling code"
+                  className="shrink-0 border-b border-[#1a1a1a]/15 bg-transparent py-3 font-serif text-[1.05rem] font-light text-[#1a1a1a] outline-none focus:border-[#1e6b45]/50 disabled:opacity-50"
+                >
+                  {DIAL_CODES.map((c) => (
+                    <option key={c.iso} value={c.code}>{c.flag} {c.code}</option>
+                  ))}
+                </select>
                 <input
-                  key={i}
-                  ref={(el) => { otpRefs.current[i] = el; }}
-                  value={d}
-                  onChange={(e) => setOtpDigit(i, e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Backspace" && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus(); }}
-                  inputMode="numeric"
-                  maxLength={1}
-                  className="h-14 w-12 rounded-lg border border-[#1a1a1a]/15 bg-white text-center font-serif text-[1.5rem] font-light text-[#1a1a1a] outline-none transition-colors focus:border-[#1e6b45]/50"
+                  type="tel"
+                  value={num}
+                  onChange={(e) => onNum(e.target.value)}
+                  disabled={otpSent && method === "phone"}
+                  placeholder={isIndia ? "98xxx xxxxx" : "phone number"}
+                  className="min-w-0 flex-1 border-b border-[#1a1a1a]/15 bg-transparent py-3 font-serif text-[1.2rem] font-light text-[#1a1a1a] outline-none transition-colors placeholder:text-[#1a1a1a]/25 focus:border-[#1e6b45]/50 disabled:opacity-50"
                 />
-              ))}
-            </div>
-            <p className="mt-3 text-[0.76rem] font-light italic text-[#1a1a1a]/35">
-              Passwordless — no password to remember. Enter any code to continue this preview.
-            </p>
-          </div>
-        )}
+                {!(otpSent && method === "phone") && (
+                  <button
+                    onClick={() => numValid && (setMethod("phone"), setOtpSent(true))}
+                    disabled={!numValid}
+                    className="shrink-0 rounded-full border border-[#1e6b45]/40 px-5 py-2 text-[0.8rem] font-light text-[#1e6b45] transition-all hover:bg-[#1e6b45] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                  >
+                    Send code
+                  </button>
+                )}
+              </div>
 
-        <Field label="Email (optional)">
-          <input
-            type="email"
-            value={booking.email}
-            onChange={(e) => onChange({ email: e.target.value })}
-            placeholder="you@email.com"
-            className="w-full border-b border-[#1a1a1a]/15 bg-transparent py-3 font-serif text-[1.2rem] font-light text-[#1a1a1a] outline-none transition-colors placeholder:text-[#1a1a1a]/25 focus:border-[#1e6b45]/50"
-          />
-        </Field>
+              {!(otpSent && method === "phone") &&
+                (isIndia ? (
+                  <div className="mt-3.5 flex flex-wrap items-center gap-2">
+                    <ChannelPill active={channel === "whatsapp"} onClick={() => setChannel("whatsapp")}>
+                      <WhatsAppIcon className="h-3.5 w-3.5" /> WhatsApp
+                    </ChannelPill>
+                    <ChannelPill active={channel === "sms"} onClick={() => setChannel("sms")}>SMS</ChannelPill>
+                    <span className="text-[0.74rem] font-light text-[#1a1a1a]/35">— how should we send your code?</span>
+                  </div>
+                ) : (
+                  <p className="mt-3.5 flex items-center gap-2 text-[0.8rem] font-light text-[#1e6b45]">
+                    <WhatsAppIcon className="h-3.5 w-3.5" /> We&apos;ll verify your number on WhatsApp.
+                  </p>
+                ))}
+            </div>
+
+            {method === "phone" && otpBlock}
+
+            <div className="flex items-center gap-4">
+              <span className="h-px flex-1 bg-[#1a1a1a]/10" />
+              <span className="text-[0.72rem] font-light uppercase tracking-[0.18em] text-[#1a1a1a]/35">or continue with</span>
+              <span className="h-px flex-1 bg-[#1a1a1a]/10" />
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button
+                onClick={() => { setGoogleDone(true); setOtpSent(false); }}
+                className="flex flex-1 items-center justify-center gap-2.5 rounded-full border border-[#1a1a1a]/15 bg-white px-5 py-3 text-[0.86rem] font-light text-[#1a1a1a]/80 transition-all hover:border-[#1a1a1a]/35"
+              >
+                <GoogleIcon /> Continue with Google
+              </button>
+              <button
+                onClick={() => setEmailMode((v) => !v)}
+                className={`flex flex-1 items-center justify-center gap-2.5 rounded-full border px-5 py-3 text-[0.86rem] font-light transition-all ${
+                  emailMode ? "border-[#1e6b45]/50 text-[#1e6b45]" : "border-[#1a1a1a]/15 text-[#1a1a1a]/80 hover:border-[#1a1a1a]/35"
+                }`}
+              >
+                <span aria-hidden>&#9993;</span> Continue with Email
+              </button>
+            </div>
+
+            {emailMode && (
+              <div className="animate-fade-up">
+                <label className="mb-1 block text-[10px] font-light uppercase tracking-[0.22em] text-[#1a1a1a]/40">Email</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="email"
+                    value={booking.email}
+                    onChange={(e) => onChange({ email: e.target.value })}
+                    disabled={otpSent && method === "email"}
+                    placeholder="you@email.com"
+                    className="min-w-0 flex-1 border-b border-[#1a1a1a]/15 bg-transparent py-3 font-serif text-[1.2rem] font-light text-[#1a1a1a] outline-none transition-colors placeholder:text-[#1a1a1a]/25 focus:border-[#1e6b45]/50 disabled:opacity-50"
+                  />
+                  {!(otpSent && method === "email") && (
+                    <button
+                      onClick={() => emailValid && (setMethod("email"), setOtpSent(true))}
+                      disabled={!emailValid}
+                      className="shrink-0 rounded-full border border-[#1e6b45]/40 px-5 py-2 text-[0.8rem] font-light text-[#1e6b45] transition-all hover:bg-[#1e6b45] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                    >
+                      Send code
+                    </button>
+                  )}
+                </div>
+                {method === "email" && <div className="mt-6">{otpBlock}</div>}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       <div className="mt-12">
