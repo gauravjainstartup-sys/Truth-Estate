@@ -43,23 +43,31 @@ const riskTone: Record<RiskLevel, string> = {
 };
 
 /* A single input on the strained→strong spectrum — a signal, not a figure.
-   Shared by the Truth Score anatomy and the developer financial audit. */
+   Shared by the Truth Score anatomy and the developer financial audit.
+   A three-stop segmented scale: the project's level is the one lit in its
+   tone; the other two stay faint so the scale reads at a glance. */
+const RATING_INDEX: Record<FinRating, number> = { weak: 0, moderate: 1, strong: 2 };
+const RATING_STOPS = ["Strained", "Moderate", "Strong"];
 function Signal({ rating, label, meaning }: { rating: FinRating; label: string; meaning: string }) {
   const m = RATING_META[rating];
+  const idx = RATING_INDEX[rating];
   return (
     <div className="rounded-xl border border-[#1a1a1a]/8 bg-white/60 p-5">
-      <p className="text-[0.92rem] font-medium text-[#1a1a1a]/85">{label}</p>
-      <p className="mt-1 text-[0.76rem] font-light leading-[1.5] text-[#1a1a1a]/40">{meaning}</p>
-      <div className="relative mt-5 h-[6px] w-full rounded-full" style={{ background: "linear-gradient(90deg, rgba(176,80,62,0.18), rgba(189,139,60,0.18) 50%, rgba(30,107,69,0.18))" }}>
-        <span
-          className="absolute top-1/2 h-[14px] w-[14px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white"
-          style={{ left: `${m.pos}%`, backgroundColor: m.color, boxShadow: `0 0 0 4px ${m.color}22` }}
-        />
-      </div>
-      <div className="mt-3 flex justify-between">
-        <span className="text-[0.58rem] uppercase tracking-[0.12em] text-[#1a1a1a]/20">Strained</span>
-        <span className="text-[0.68rem] font-semibold uppercase tracking-[0.08em]" style={{ color: m.color }}>{m.label}</span>
-        <span className="text-[0.58rem] uppercase tracking-[0.12em] text-[#1a1a1a]/20">Strong</span>
+      <p className="text-[0.9rem] font-medium text-[#1a1a1a]/85">{label}</p>
+      <p className="mt-1 text-[0.75rem] font-light leading-[1.5] text-[#1a1a1a]/40">{meaning}</p>
+      <div className="mt-4 flex gap-1.5" role="img" aria-label={`${label}: ${m.label}`}>
+        {RATING_STOPS.map((stop, i) => {
+          const on = i === idx;
+          return (
+            <div
+              key={stop}
+              className={`flex-1 rounded-[4px] border py-1.5 text-center text-[0.56rem] font-semibold uppercase tracking-[0.06em] ${on ? "" : "border-transparent bg-[#1a1a1a]/[0.03] text-[#1a1a1a]/25"}`}
+              style={on ? { backgroundColor: `${m.color}1a`, color: m.color, borderColor: `${m.color}55` } : undefined}
+            >
+              {stop}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -79,9 +87,9 @@ function KV({ k, v, tag }: { k: string; v: string; tag?: string }) {
   return (
     <div className="border-l-2 border-[#1a1a1a]/8 pl-4">
       <p className="text-[0.6rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/35">{k}</p>
-      <p className="mt-1.5 text-[0.98rem] font-medium text-[#1a1a1a]/85">
+      <p className="mt-1.5 font-mono text-[0.88rem] font-medium leading-snug text-[#1a1a1a]/85 md:text-[0.95rem]">
         {v}
-        {tag && <span className="ml-2 rounded bg-[#1e6b45]/8 px-1.5 py-0.5 align-middle text-[0.58rem] font-medium uppercase tracking-[0.08em] text-[#1e6b45]">{tag}</span>}
+        {tag && <span className="ml-2 rounded bg-[#1e6b45]/8 px-1.5 py-0.5 align-middle font-sans text-[0.58rem] font-medium uppercase tracking-[0.08em] text-[#1e6b45]">{tag}</span>}
       </p>
     </div>
   );
@@ -276,31 +284,29 @@ export default function ProjectProfile({
             {/* Tower & Unit Intelligence — the gated deep-intel tier, surfaced high */}
             <TowerIntel project={p} meta={towerIntelMeta(p)} />
 
-            {/* 01 · Vitals */}
+            {/* 01 · Vitals — one uniform grid, one type language */}
             <Section id="vitals" n={num()} title="Vitals">
-              <div className="grid grid-cols-2 gap-x-6 gap-y-8 rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-8 md:grid-cols-4 md:p-10">
-                <Num v={`₹${p.budget[0]}–${p.budget[1]} Cr`} k="Ticket size" />
-                <Num v={p.configs.join(" · ")} k="Configurations" />
-                <Num v={p.psf ? fmtPsf(p.psf.avg) : "—"} k="Corridor avg / sq ft" />
-                <Num v={p.sizeBand ?? "—"} k="Indicative size" />
+              <div className="grid grid-cols-2 gap-x-6 gap-y-7 rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-8 md:grid-cols-4 md:p-10">
+                <KV k="Ticket size" v={`₹${p.budget[0]}–${p.budget[1]} Cr`} />
+                <KV k="Configurations" v={p.configs.join(" · ")} />
+                <KV k="Corridor avg / sq ft" v={p.psf ? fmtPsf(p.psf.avg) : "—"} />
+                <KV k="Indicative size" v={p.sizeBand ?? "—"} />
+                {ops?.units != null && <KV k="Total units" v={`${ops.units.toLocaleString("en-IN")}`} />}
+                {ops?.towers != null && <KV k="Towers / land" v={`${ops.towers}${ops.landAcres ? ` · ${ops.landAcres} acre` : ""}`} />}
+                {ops?.density != null && <KV k="Density" v={`${ops.density} / acre`} tag={ops.density <= 50 ? "Low-density" : undefined} />}
+                {ops?.openAreaPct != null && <KV k="Open area" v={`${ops.openAreaPct}%`} tag={ops.openAreaPct >= 80 ? "Green" : undefined} />}
+                {ops?.carpetSqft != null && <KV k="Carpet (indicative)" v={`${ops.carpetSqft.toLocaleString("en-IN")} sq ft`} />}
+                {ops?.launch && <KV k="Launched" v={ops.launch} />}
+                {ops?.possession && <KV k="RERA possession" v={ops.possession} />}
+                {ops?.reraId && <KV k="RERA ID" v={ops.reraId} />}
               </div>
-              {ops && (
-                <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-7 rounded-2xl border border-[#1a1a1a]/8 bg-white/40 p-8 md:grid-cols-4 md:p-10">
-                  {ops.units != null && <KV k="Total units" v={`${ops.units.toLocaleString("en-IN")}`} />}
-                  {ops.towers != null && <KV k="Towers / land" v={`${ops.towers}${ops.landAcres ? ` · ${ops.landAcres} acre` : ""}`} />}
-                  {ops.density != null && <KV k="Density" v={`${ops.density} / acre`} tag={ops.density <= 50 ? "Low-density" : undefined} />}
-                  {ops.openAreaPct != null && <KV k="Open area" v={`${ops.openAreaPct}%`} tag={ops.openAreaPct >= 80 ? "Green" : undefined} />}
-                  {ops.carpetSqft != null && <KV k="Carpet (indicative)" v={`${ops.carpetSqft.toLocaleString("en-IN")} sq ft`} />}
-                  {ops.launch && <KV k="Launched" v={ops.launch} />}
-                  {ops.possession && <KV k="RERA possession" v={ops.possession} />}
-                  {ops.reraId && <KV k="RERA ID" v={ops.reraId} />}
-                </div>
-              )}
               {ops?.reraNote && <Source>{ops.reraNote}. Sources: Haryana RERA registry & project filings.</Source>}
             </Section>
 
+            <Chapter n="I" title="Can you trust it?" framing="The score, the builder, the build and the paperwork — each pressure-tested independently, never taken from the developer." />
+
             {/* 02 · Truth Score anatomy */}
-            <Section id="anatomy" n={num()} title="Truth Score anatomy">
+            <Section id="anatomy" n={num()} title="Truth Score anatomy" flush>
               <p className="-mt-2 mb-7 max-w-2xl text-[0.95rem] font-light leading-[1.8] text-[#1a1a1a]/55">
                 No black box. The score is built from six inputs, each assessed independently — never supplied by the developer. Here is where this project sits on every one.
               </p>
@@ -435,9 +441,11 @@ export default function ProjectProfile({
               <Source>Sources: E-Courts &amp; RERA litigation repositories. Signals are our independent read — verify project specifics before you sign.</Source>
             </Section>
 
+            {market && <Chapter n="II" title="The investment case" framing="Where it sits in the corridor, and what the evidence says it could return — modelled, never promised." />}
+
             {/* 06 · Location intelligence */}
             {market && (
-              <Section id="location" n={num()} title="Location intelligence">
+              <Section id="location" n={num()} title="Location intelligence" flush>
                 <div className="rounded-2xl border-l-2 border-[#1e6b45]/40 bg-white/50 p-7 md:p-8">
                   <Eyebrow>Corridor verdict</Eyebrow>
                   <p className="mt-3 font-serif text-[1.25rem] leading-[1.4] md:text-[1.4rem]">{market.verdict}</p>
@@ -482,9 +490,11 @@ export default function ProjectProfile({
               </Section>
             )}
 
+            <Chapter n="III" title="The honest read" framing="What genuinely stands out, what to watch, and the buyer this home is really for." />
+
             {/* 08 · Project USPs */}
             {usps.length > 0 && (
-              <Section id="usps" n={num()} title="Project USPs">
+              <Section id="usps" n={num()} title="Project USPs" flush>
                 <p className="-mt-2 mb-6 max-w-2xl text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/55">
                   Non-obvious advantages that materially affect livability, safety and long-term value.
                 </p>
@@ -531,9 +541,11 @@ export default function ProjectProfile({
               </div>
             </Section>
 
+            {faqs.length > 0 && <Chapter n="IV" title="Your decision" framing="The questions that actually decide it — and the cleanest ways to act on this read." />}
+
             {/* Forensic FAQs */}
             {faqs.length > 0 && (
-              <Section id="faqs" n={num()} title="Forensic FAQs">
+              <Section id="faqs" n={num()} title="Forensic FAQs" flush>
                 <p className="-mt-2 mb-6 max-w-2xl text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/55">
                   Straight answers to the questions that decide the purchase — marrying registry data, live construction and micro-market dynamics.
                 </p>
@@ -663,15 +675,27 @@ function InfoCard({ title, body }: { title: string; body: string }) {
   );
 }
 
-function Section({ id, n, title, children }: { id?: string; n: string; title: string; children: React.ReactNode }) {
+function Section({ id, n, title, children, flush }: { id?: string; n: string; title: string; children: React.ReactNode; flush?: boolean }) {
   return (
-    <section id={id} className="mt-16 scroll-mt-24 border-t border-[#1a1a1a]/8 pt-12 md:mt-20">
+    <section id={id} className={`scroll-mt-24 ${flush ? "mt-9" : "mt-16 border-t border-[#1a1a1a]/8 pt-12 md:mt-20"}`}>
       <div className="flex items-center gap-4">
         <span className="font-mono text-[0.8rem] text-[#c9a96e]">{n}</span>
         <h2 className="font-serif text-[1.7rem] font-medium tracking-[-0.01em] text-[#1a1a1a] md:text-[2.1rem]">{title}</h2>
       </div>
       <div className="mt-8">{children}</div>
     </section>
+  );
+}
+
+/* A narrative divider — chapters the report into a story instead of a stack
+   of data dumps. The section that follows renders flush (no extra rule). */
+function Chapter({ n, title, framing }: { n: string; title: string; framing: string }) {
+  return (
+    <div className="mt-20 border-t border-[#1a1a1a]/10 pt-11 md:mt-28">
+      <span className="font-mono text-[0.66rem] font-medium uppercase tracking-[0.26em] text-[#c9a96e]">Chapter {n}</span>
+      <h2 className="mt-3.5 max-w-2xl font-serif text-[2.1rem] font-medium leading-[1.04] tracking-[-0.015em] md:text-[2.9rem]">{title}</h2>
+      <p className="mt-3 max-w-xl text-[0.95rem] font-light leading-[1.7] text-[#1a1a1a]/50">{framing}</p>
+    </div>
   );
 }
 
