@@ -129,18 +129,24 @@ function ScreenHeading({
   title,
   sub,
   dense,
+  compact,
 }: {
   kicker?: string;
   title: React.ReactNode;
   sub?: string;
   dense?: boolean;
+  compact?: boolean;
 }) {
   return (
     <div className={dense ? "mb-4 md:mb-5" : "mb-10 md:mb-14"}>
       {kicker && (
-        <p className="mb-5 text-[10px] font-light uppercase tracking-[0.4em] text-[#c9a96e]">{kicker}</p>
+        <p className="mb-4 text-[10px] font-light uppercase tracking-[0.4em] text-[#c9a96e]">{kicker}</p>
       )}
-      <h2 className="font-serif text-[2rem] font-medium leading-[1.12] text-[#1a1a1a] md:text-[3rem]">
+      <h2
+        className={`font-serif font-medium leading-[1.12] text-[#1a1a1a] ${
+          compact ? "text-[1.7rem] md:text-[2.3rem]" : "text-[2rem] md:text-[3rem]"
+        }`}
+      >
         {title}
       </h2>
       {sub && (
@@ -1198,7 +1204,7 @@ export default function JourneyModal({
       setStep(s);
     };
     return frame(
-      <Shell onClose={onClose} onBack={() => setStep("priorities")} eyebrow="Your Buyer DNA">
+      <Shell onClose={onClose} onBack={() => setStep("priorities")} eyebrow="Your Buyer DNA" align="top">
         <DnaScreen dna={dna} onContinue={() => setStep("processing")} onEdit={editStep} />
       </Shell>
     );
@@ -1410,17 +1416,17 @@ function DnaScreen({
 }) {
   return (
     <div key="dna" className="animate-fade-up">
-      <ScreenHeading kicker="Buyer DNA" title={<>We&apos;ve understood<br />what you&apos;re looking for.</>} />
-      <div className="border-y border-[#1a1a1a]/15 py-8 md:py-10">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-5 h-px w-16 bg-[#c9a96e]/50" />
-          <p className="font-serif text-[1.9rem] font-medium text-[#1a1a1a] md:text-[2.6rem]">{dna.archetype}</p>
-          <div className="mx-auto mt-5 h-px w-16 bg-[#c9a96e]/50" />
-          <span className="mt-5 inline-block rounded-full border border-[#1e6b45]/25 bg-[#1e6b45]/[0.05] px-4 py-1.5 text-[0.72rem] font-light tracking-[0.04em] text-[#1e6b45]">
-            {dna.possession} focus
+      <ScreenHeading dense compact kicker="Buyer DNA" title={<>We&apos;ve understood<br />what you&apos;re looking for.</>} />
+      <div className="border-y border-[#1a1a1a]/15 py-5 md:py-6">
+        <div className="mb-5 text-center">
+          <div className="mx-auto mb-4 h-px w-16 bg-[#c9a96e]/50" />
+          <p className="font-serif text-[1.7rem] font-medium text-[#1a1a1a] md:text-[2.2rem]">{dna.archetype}</p>
+          <div className="mx-auto mt-4 h-px w-16 bg-[#c9a96e]/50" />
+          <span className="mt-4 inline-block rounded-full border border-[#1e6b45]/25 bg-[#1e6b45]/[0.05] px-4 py-1.5 text-[0.72rem] font-light tracking-[0.04em] text-[#1e6b45]">
+            {dna.possession}
           </span>
         </div>
-        <dl className="grid grid-cols-2 gap-x-8 gap-y-7 md:grid-cols-3">
+        <dl className="grid grid-cols-2 gap-x-8 gap-y-6 md:grid-cols-3">
           <Field label="Budget" value={dna.budgetRange} onEdit={() => onEdit("budget")} />
           <Field label="Preferred Markets" value={dna.markets.join("  ·  ")} onEdit={() => onEdit("locations")} />
           <Field label="Configuration" value={dna.config} onEdit={() => onEdit("configs")} />
@@ -1428,9 +1434,9 @@ function DnaScreen({
           <Field label="Risk Appetite" value={dna.risk} onEdit={() => onEdit("purchase")} />
           <Field label="Top Priorities" value={dna.topPriorities.join("  ·  ")} onEdit={() => onEdit("priorities")} />
         </dl>
-        <p className="mt-7 text-center text-[0.78rem] font-light text-[#1a1a1a]/40">Tap any detail to change it.</p>
+        <p className="mt-5 text-center text-[0.78rem] font-light text-[#1a1a1a]/40">Tap any detail to change it.</p>
       </div>
-      <NextBar onNext={onContinue} label="See what we'd investigate" />
+      <NextBar onNext={onContinue} label="See what we'd investigate" tight />
     </div>
   );
 }

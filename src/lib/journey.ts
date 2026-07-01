@@ -29,6 +29,15 @@ export const POSSESSION_LABEL: Record<Possession, string> = {
   open: "Open to both",
 };
 
+/* How the possession choice reads on the Buyer DNA summary. "Open to both"
+   becomes "Open to guidance" — clearer, and honest that we'll guide them
+   through under-construction (what we do) rather than implying we cover both. */
+export const POSSESSION_DNA_LABEL: Record<Possession, string> = {
+  "under-construction": "Under-construction focus",
+  "ready-to-move": "Ready-to-move focus",
+  open: "Open to guidance",
+};
+
 export type BuyData = {
   possession: Possession | null;
   purchaseType: string | null;
@@ -440,7 +449,7 @@ export function deriveDNA(d: BuyData): DNA {
     config,
     topPriorities: p.length ? p : ["To be discovered together"],
     timeline: d.timeline ?? "Just Exploring",
-    possession: d.possession ? POSSESSION_LABEL[d.possession] : "Under-construction",
+    possession: d.possession ? POSSESSION_DNA_LABEL[d.possession] : "Under-construction focus",
   };
 }
 
