@@ -4,23 +4,20 @@ import { useEffect, useRef, useState } from "react";
 import {
   saveLead, saveBuyData, loadBuyData, emptyBuyData,
   loadMemberCall, saveMemberCall, type MemberCall,
+  PROJECT_UNLOCK_INR, MEMBERSHIP_INR,
 } from "@/lib/journey";
 import { CONSULT_DAYS, CONSULT_DAYPARTS, CONSULT_FORMATS, advisorFor } from "@/lib/consultation";
 
 /* THE BUYER OFFICE — the member surface for a project's unit intelligence.
-   Cold visitors: an icon-led "what's inside" intro → requirements → verified
-   contact (mirrors the consultation auth; front-end simulation) → a success
-   screen. Members re-enter to a home that surfaces their unlocked intel and
-   an advisor-call state (empty → schedule → booked). The call is
-   complimentary — the 3D unlock is never pay-gated. Ships light by default;
-   pass theme="dark" for the dark-luxe variant. */
+   Freemium: the live 3D + a sample unit are free; the full per-unit verdict
+   is paid (₹1,499 for one project, or the ₹11,000 membership — unlimited +
+   advisory, with the single fee credited). Projects without a 3D yet keep a
+   free "register interest" flow. Payment is a front-end simulation. Ships
+   light by default; pass theme="dark" for the dark-luxe variant. */
 
 const BUDGETS = [
-  { label: "Under ₹3 Cr", cr: 2 },
-  { label: "₹3–5 Cr", cr: 4 },
-  { label: "₹5–8 Cr", cr: 6 },
-  { label: "₹8–12 Cr", cr: 10 },
-  { label: "₹12 Cr +", cr: 14 },
+  { label: "Under ₹3 Cr", cr: 2 }, { label: "₹3–5 Cr", cr: 4 }, { label: "₹5–8 Cr", cr: 6 },
+  { label: "₹8–12 Cr", cr: 10 }, { label: "₹12 Cr +", cr: 14 },
 ];
 const CONFIG_CHIPS = ["2 BHK", "3 BHK", "4 BHK", "5 BHK", "Penthouse"];
 const PRIORITY_CHIPS = ["Legal Safety", "On-Time Delivery", "Capital Appreciation", "Value Buying", "Luxury Lifestyle", "Location", "Layouts", "Rental Yield"];
@@ -37,10 +34,12 @@ const CAPS: { icon: IconName; t: string; d: string }[] = [
   { icon: "value", t: "Best-value stacks", d: "The units priced below what their position is really worth." },
 ];
 const emailOk = (e: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
-const advisor = advisorFor("advice"); // complimentary Buyer Office advisor
+const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+const advisor = advisorFor("advice");
 
-type Step = "intro" | "req" | "verify" | "done" | "schedule" | "booked" | "home";
-type StartAt = "intro" | "req" | "home";
+type Plan = "single" | "membership";
+type Step = "intro" | "req" | "verify" | "plans" | "pay" | "done" | "schedule" | "booked" | "home";
+type StartAt = "intro" | "req" | "plans" | "home";
 
 type ThemeName = "light" | "dark";
 type Tokens = {
@@ -53,6 +52,7 @@ type Tokens = {
   primary: string; outline: string; orLine: string; orText: string; google: string; googleG: string;
   back: string; fine: string; err: string; demo: string;
   crest: string; good: string; card: string; dashed: string; callCard: string;
+  planOn: string; planOff: string;
 };
 const THEMES: Record<ThemeName, Tokens> = {
   light: {
@@ -78,6 +78,7 @@ const THEMES: Record<ThemeName, Tokens> = {
     back: "text-black/35 hover:text-black/65", fine: "text-black/35", err: "text-[#b3402a]", demo: "text-black/30",
     crest: "border-[#1e6b45]/30 bg-[#1e6b45]/[0.08] text-[#1e6b45]", good: "text-[#1e6b45]",
     card: "border-black/[0.10] bg-[#faf7f1]", dashed: "border-[#1a1a1a]/20", callCard: "border-[#1e6b45]/25 bg-[#1e6b45]/[0.05]",
+    planOn: "border-[#1e6b45] bg-[#1e6b45]/[0.05] ring-1 ring-[#1e6b45]/30", planOff: "border-black/[0.12] hover:border-black/25",
   },
   dark: {
     sheet: "border-white/10 bg-[#0c0c0e] text-white shadow-[0_-30px_80px_-20px_rgba(0,0,0,0.85)]",
@@ -102,18 +103,21 @@ const THEMES: Record<ThemeName, Tokens> = {
     back: "text-white/35 hover:text-white/65", fine: "text-white/30", err: "text-[#e6a189]", demo: "text-white/25",
     crest: "border-[#2e8b57]/40 bg-[#1e6b45]/[0.14] text-[#7fd0a3]", good: "text-[#7fd0a3]",
     card: "border-white/10 bg-white/[0.03]", dashed: "border-white/20", callCard: "border-[#2e8b57]/30 bg-[#1e6b45]/[0.10]",
+    planOn: "border-[#2e8b57] bg-[#1e6b45]/[0.14] ring-1 ring-[#2e8b57]/40", planOff: "border-white/12 hover:border-white/25",
   },
 };
 
 export default function BuyerOfficeGate({
-  open, project, start = "intro", has3D = false, member = false, theme = "light", onClose, onJoined, onSeeUnitIntel,
+  open, project, slug, start = "intro", has3D = false, access = false, theme = "light",
+  onClose, onJoined, onPaid, onSeeUnitIntel,
 }: {
-  open: boolean; project: string; start?: StartAt; has3D?: boolean; member?: boolean; theme?: ThemeName;
-  onClose: () => void; onJoined: () => void; onSeeUnitIntel: () => void;
+  open: boolean; project: string; slug: string; start?: StartAt; has3D?: boolean; access?: boolean; theme?: ThemeName;
+  onClose: () => void; onJoined: () => void; onPaid: (plan: Plan) => void; onSeeUnitIntel: () => void;
 }) {
   const t = THEMES[theme];
   const [show, setShow] = useState(false);
   const [step, setStep] = useState<Step>(start);
+  const [outcome, setOutcome] = useState<"registered" | "unlocked">("registered");
   const [draft, setDraft] = useState<{ budgetCr: number; configs: string[]; priorities: string[] }>({ budgetCr: 6, configs: [], priorities: [] });
   const [name, setName] = useState("");
   const [method, setMethod] = useState<"phone" | "email">("phone");
@@ -125,6 +129,12 @@ export default function BuyerOfficeGate({
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [err, setErr] = useState("");
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+  // payment
+  const [plan, setPlan] = useState<Plan>("single");
+  const [card, setCard] = useState("");
+  const [exp, setExp] = useState("");
+  const [cvv, setCvv] = useState("");
+  const [paying, setPaying] = useState(false);
   // scheduling
   const [call, setCall] = useState<MemberCall | null>(null);
   const [schedFrom, setSchedFrom] = useState<Step>("home");
@@ -142,10 +152,9 @@ export default function BuyerOfficeGate({
       setCall(loadMemberCall());
       return () => cancelAnimationFrame(id);
     }
-    setSent(false);
-    setOtp(["", "", "", "", "", ""]);
-    setErr("");
+    setSent(false); setOtp(["", "", "", "", "", ""]); setErr("");
     setDay(null); setSlot(null); setFormat(null);
+    setCard(""); setExp(""); setCvv(""); setPaying(false);
   }, [open, start]);
 
   useEffect(() => {
@@ -164,6 +173,9 @@ export default function BuyerOfficeGate({
   const hasIntro = start === "intro";
   const stepTotal = hasIntro ? 3 : 2;
   const stepNo = step === "intro" ? 1 : step === "req" ? (hasIntro ? 2 : 1) : step === "verify" ? (hasIntro ? 3 : 2) : 0;
+  const amount = plan === "single" ? PROJECT_UNLOCK_INR : MEMBERSHIP_INR;
+  const contactValid = name.trim() !== "" && (method === "email" ? emailOk(email) : numValid);
+  const cardValid = card.replace(/\D/g, "").length >= 12 && exp.length >= 4 && cvv.length >= 3;
 
   const toggle = (k: "configs" | "priorities", v: string, max = 99) =>
     setDraft((d) => {
@@ -179,11 +191,17 @@ export default function BuyerOfficeGate({
     if (digit && i < 5) otpRefs.current[i + 1]?.focus();
   };
 
-  function persistAndJoin() {
+  function saveBrief() {
     const buy = { ...emptyBuyData, ...(loadBuyData() ?? {}), budgetCr: draft.budgetCr, configs: draft.configs, priorities: draft.priorities };
     saveBuyData(buy);
+    return buy;
+  }
+
+  function persistAndJoin() {
+    const buy = saveBrief();
     saveLead({ name: name.trim() || "—", email: method === "email" ? email.trim() : "", phone: method === "phone" ? `${dial} ${num}`.trim() : undefined, project, intent: "buyer-office", buy, createdAt: Date.now() });
-    onJoined();       // mark membership in the parent — the gate stays open on the success screen
+    onJoined();
+    setOutcome("registered");
     setStep("done");
   }
 
@@ -201,13 +219,22 @@ export default function BuyerOfficeGate({
     persistAndJoin();
   }
 
+  function doPay(e: React.FormEvent) {
+    e.preventDefault();
+    if (!contactValid) { setErr("Add your name and a valid contact."); return; }
+    if (!cardValid) { setErr("Enter your card details."); return; }
+    setErr(""); setPaying(true);
+    saveBrief();
+    saveLead({ name: name.trim() || "—", email: method === "email" ? email.trim() : "", phone: method === "phone" ? `${dial} ${num}`.trim() : undefined, project, intent: "buyer-office", createdAt: Date.now() });
+    // simulate a short processing beat, then unlock
+    setTimeout(() => { onPaid(plan); setOutcome("unlocked"); setStep("done"); setPaying(false); }, 700);
+  }
+
   const goSchedule = (from: Step) => { setSchedFrom(from); setStep("schedule"); };
   function confirmCall() {
     if (!day || !slot || !format) return;
     const c: MemberCall = { advisor: advisor.name, initials: advisor.initials, focus: advisor.focus, day, time: slot, format, project, createdAt: Date.now() };
-    saveMemberCall(c);
-    setCall(c);
-    setStep("booked");
+    saveMemberCall(c); setCall(c); setStep("booked");
   }
 
   const field = `rounded-md border px-4 py-3 text-[0.9rem] outline-none transition-colors ${t.field}`;
@@ -244,7 +271,7 @@ export default function BuyerOfficeGate({
           {step === "intro" ? (
             <>
               <h2 className={`font-serif text-[1.7rem] font-medium leading-[1.1] ${t.h2}`}>The layer that decides <span className={`italic ${t.accent}`}>which</span> home.</h2>
-              <p className={`mt-3 text-[0.88rem] font-light leading-[1.7] ${t.body}`}>A 3D model of {project} that grades every unit the way most buyers never can — free to open, yours to keep.</p>
+              <p className={`mt-3 text-[0.88rem] font-light leading-[1.7] ${t.body}`}>A 3D model of {project} that grades every unit the way most buyers never can.</p>
               <div className={`mt-6 flex flex-col divide-y ${t.capDivide}`}>
                 {CAPS.map((c) => (
                   <div key={c.t} className="flex items-start gap-4 py-3.5">
@@ -257,6 +284,7 @@ export default function BuyerOfficeGate({
                 ))}
               </div>
               <button onClick={() => setStep("req")} className={`mt-7 ${primaryBtn}`}>Request Unit Intelligence</button>
+              <p className={`mt-3 text-center text-[0.72rem] font-light ${t.fine}`}>{project}&apos;s 3D model is in production — join and we&apos;ll bring it to you first.</p>
             </>
           ) : step === "req" ? (
             <>
@@ -297,7 +325,6 @@ export default function BuyerOfficeGate({
                 {method === "phone" && isIndia && !sent && (
                   <div className="flex gap-2"><Chip t={t} on={channel === "whatsapp"} onClick={() => setChannel("whatsapp")}>WhatsApp</Chip><Chip t={t} on={channel === "sms"} onClick={() => setChannel("sms")}>SMS</Chip></div>
                 )}
-                {method === "phone" && !isIndia && !sent && <p className={`text-[0.74rem] font-light ${t.demo}`}>We&apos;ll verify your number on WhatsApp.</p>}
                 {sent && (
                   <div>
                     <p className={`mb-2.5 text-[0.76rem] font-light ${t.body}`}>Enter the code sent {method === "email" ? "to your email" : `on ${channelName}`} <span className={t.demo}>· demo, any 6 digits</span></p>
@@ -313,49 +340,94 @@ export default function BuyerOfficeGate({
               </div>
               {err && <p className={`mt-2.5 text-[0.78rem] ${t.err}`}>{err}</p>}
               <button className={`mt-5 ${primaryBtn}`}>{!sent ? "Send code" : "Open my Buyer Office"}</button>
-              <div className={`my-3.5 flex items-center gap-3 text-[0.68rem] uppercase tracking-[0.1em] ${t.orText}`}><span className={`h-px flex-1 ${t.orLine}`} />or<span className={`h-px flex-1 ${t.orLine}`} /></div>
-              <button type="button" onClick={() => { if (!name.trim()) { setErr("Please enter your name."); return; } persistAndJoin(); }} className={`flex w-full items-center justify-center gap-2.5 rounded-md border px-6 py-3 text-[0.85rem] font-medium ${t.google}`}>
-                <span className={`font-serif text-[1rem] ${t.googleG}`}>G</span> Continue with Google
-              </button>
               <button type="button" onClick={() => setStep("req")} className={`mt-3.5 ${backLink}`}>← Back</button>
               <p className={`mt-4 text-center text-[0.68rem] font-light leading-[1.5] ${t.fine}`}>Free — no payment. We never share or spam. Front-end demo; OTP is simulated.</p>
+            </form>
+          ) : step === "plans" ? (
+            <>
+              <h2 className={`font-serif text-[1.7rem] font-medium leading-[1.12] ${t.h2}`}>Unlock the full verdict.</h2>
+              <p className={`mt-2.5 text-[0.86rem] font-light leading-[1.6] ${t.body}`}>You&apos;ve seen the model and a sample. Open every unit in {project} — graded on sun, Vastu, light, ventilation and value.</p>
+              <div className="mt-6 flex flex-col gap-3">
+                <PlanCard t={t} on={plan === "single"} onClick={() => setPlan("single")}
+                  title="This project" price={inr(PROJECT_UNLOCK_INR)} unit="one-time"
+                  desc={`Every unit in ${project}, fully graded — yours to keep.`} />
+                <PlanCard t={t} on={plan === "membership"} onClick={() => setPlan("membership")}
+                  title="Buyer Office membership" price={inr(MEMBERSHIP_INR)} unit="all projects" badge="Best value"
+                  desc="Every project, unlimited — plus your 45-min advisory consultation. We credit your ₹1,499 if you start with one." />
+              </div>
+              <button onClick={() => setStep("pay")} className={`mt-6 ${primaryBtn}`}>Continue · {inr(amount)}</button>
+              <button onClick={onSeeUnitIntel} className={`mt-3 ${backLink}`}>← Keep exploring free</button>
+            </>
+          ) : step === "pay" ? (
+            <form onSubmit={doPay}>
+              <h2 className={`font-serif text-[1.7rem] font-medium leading-[1.12] ${t.h2}`}>Checkout.</h2>
+              <div className={`mt-4 flex items-center justify-between rounded-xl border p-4 ${t.card}`}>
+                <div className="min-w-0">
+                  <p className={`text-[0.9rem] font-medium ${t.capTitle}`}>{plan === "single" ? project : "Buyer Office membership"}</p>
+                  <p className={`text-[0.76rem] font-light ${t.capDesc}`}>{plan === "single" ? "Full unit intelligence · one project" : "Unlimited projects + advisory"}</p>
+                </div>
+                <p className={`shrink-0 font-mono text-[1.15rem] font-medium ${t.h2}`}>{inr(amount)}</p>
+              </div>
+              <div className="mt-4 flex flex-col gap-3">
+                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" className={`${field} w-full`} />
+                <div className={`flex gap-1 rounded-md border p-1 ${t.tabWrap}`}>
+                  <Tab t={t} on={method === "phone"} onClick={() => setMethod("phone")}>Mobile</Tab>
+                  <Tab t={t} on={method === "email"} onClick={() => setMethod("email")}>Email</Tab>
+                </div>
+                {method === "phone" ? (
+                  <div className="flex gap-2">
+                    <select value={dial} onChange={(e) => setDial(e.target.value)} className={`${field} w-[96px] shrink-0`}>
+                      {DIAL.map((d) => <option key={d.code} value={d.code} className={t.option}>{d.flag} {d.code}</option>)}
+                    </select>
+                    <input value={num} onChange={(e) => setNum(e.target.value.replace(/[^\d\s]/g, ""))} placeholder="Mobile number" inputMode="tel" className={`${field} min-w-0 flex-1`} />
+                  </div>
+                ) : (
+                  <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="you@email.com" className={`${field} w-full`} />
+                )}
+                <input value={card} onChange={(e) => setCard(e.target.value.replace(/[^\d ]/g, "").slice(0, 19))} placeholder="Card number" inputMode="numeric" className={`${field} w-full`} />
+                <div className="flex gap-2">
+                  <input value={exp} onChange={(e) => setExp(e.target.value.replace(/[^\d/]/g, "").slice(0, 5))} placeholder="MM / YY" inputMode="numeric" className={`${field} min-w-0 flex-1`} />
+                  <input value={cvv} onChange={(e) => setCvv(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="CVV" inputMode="numeric" className={`${field} min-w-0 flex-1`} />
+                </div>
+              </div>
+              {err && <p className={`mt-2.5 text-[0.78rem] ${t.err}`}>{err}</p>}
+              <button disabled={paying} className={`mt-5 ${primaryBtn} disabled:opacity-60`}>{paying ? "Processing…" : `Pay ${inr(amount)}`}</button>
+              <button type="button" onClick={() => setStep("plans")} className={`mt-3.5 ${backLink}`}>← Back to plans</button>
+              <p className={`mt-4 text-center text-[0.68rem] font-light leading-[1.5] ${t.fine}`}>🔒 Front-end demo — no real card is charged. {plan === "single" ? "Fee credited if you upgrade to membership." : "Includes your advisory consultation."}</p>
             </form>
           ) : step === "done" ? (
             <div className="text-center">
               <Crest t={t}><Icon name="check" /></Crest>
-              <p className={`mt-4 font-mono text-[0.62rem] font-medium uppercase tracking-[0.22em] ${t.good}`}>Request registered</p>
-              <h2 className={`mt-2 font-serif text-[1.7rem] font-medium leading-[1.12] ${t.h2}`}>You&apos;re in — we&apos;re on it.</h2>
+              <p className={`mt-4 font-mono text-[0.62rem] font-medium uppercase tracking-[0.22em] ${t.good}`}>{outcome === "unlocked" ? "Unlocked" : "Request registered"}</p>
+              <h2 className={`mt-2 font-serif text-[1.7rem] font-medium leading-[1.12] ${t.h2}`}>{outcome === "unlocked" ? "It's yours." : "You're in — we're on it."}</h2>
               <p className={`mx-auto mt-3 max-w-[360px] text-[0.88rem] font-light leading-[1.65] ${t.body}`}>
-                Your brief is with our advisory desk. We&apos;ll come back with {project}&apos;s unit intelligence and an independent read — our opinion, never a builder&apos;s pitch.
+                {outcome === "unlocked"
+                  ? <>You&apos;ve unlocked {project}&apos;s full unit intelligence — every unit graded, yours to keep. Your advisor can walk you through it whenever you like.</>
+                  : <>Your brief is with our advisory desk. We&apos;ll come back with {project}&apos;s unit intelligence and an independent read — our opinion, never a builder&apos;s pitch.</>}
               </p>
               <div className="mt-7 flex flex-col gap-3 text-left">
-                {has3D && <button onClick={onSeeUnitIntel} className={primaryBtn}>See your unit intelligence →</button>}
-                <button onClick={() => goSchedule("done")} className={has3D ? outlineBtn : primaryBtn}>Schedule a call with your advisor</button>
+                {has3D && outcome === "unlocked" && <button onClick={onSeeUnitIntel} className={primaryBtn}>See your unit intelligence →</button>}
+                <button onClick={() => goSchedule("done")} className={has3D && outcome === "unlocked" ? outlineBtn : primaryBtn}>Schedule a call with your advisor</button>
               </div>
               <button onClick={onClose} className={`mt-4 ${backLink}`}>Back to the report</button>
-              <p className={`mt-4 text-[0.68rem] font-light ${t.fine}`}>Free — no payment, ever, to unlock your intelligence.</p>
             </div>
           ) : step === "home" ? (
             <div>
               <p className={`font-mono text-[0.62rem] font-medium uppercase tracking-[0.22em] ${t.eyebrow}`}>Welcome back</p>
               <h2 className={`mt-2 font-serif text-[1.7rem] font-medium leading-[1.12] ${t.h2}`}>Your Buyer Office.</h2>
               <p className={`mt-2.5 text-[0.86rem] font-light leading-[1.6] ${t.body}`}>Everything we&apos;re holding for you on {project} — your intelligence, and your advisor.</p>
-
-              {/* Unit intelligence */}
               <div className={`mt-6 rounded-xl border p-5 ${t.card}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className={`text-[0.94rem] font-medium ${t.capTitle}`}>Tower &amp; Unit Intelligence</p>
                     <p className={`mt-1 text-[0.8rem] font-light leading-[1.5] ${t.capDesc}`}>
-                      {has3D ? "Your 3D advisor is unlocked — open a tower for unit-level intel." : "In production — your advisor will walk you through it as it comes online."}
+                      {has3D ? "Unlocked — open any tower for unit-level intel." : "In production — your advisor will walk you through it as it comes online."}
                     </p>
                   </div>
-                  <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[0.6rem] font-medium uppercase tracking-[0.1em] ${t.crest}`}>Unlocked</span>
+                  <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[0.6rem] font-medium uppercase tracking-[0.1em] ${t.crest}`}>{access ? "Unlocked" : "Joined"}</span>
                 </div>
                 {has3D && <button onClick={onSeeUnitIntel} className={`mt-4 ${primaryBtn}`}>Open the live 3D →</button>}
               </div>
-
-              {/* Advisor call */}
               <p className={`mt-7 mb-2.5 font-mono text-[0.6rem] font-medium uppercase tracking-[0.16em] ${t.groupLabel}`}>Your advisor call</p>
               {call ? (
                 <>
@@ -408,7 +480,6 @@ export default function BuyerOfficeGate({
               <p className={`mt-3 text-center text-[0.68rem] font-light ${t.fine}`}>Complimentary · 45 minutes · no payment.</p>
             </div>
           ) : (
-            /* booked */
             <div className="text-center">
               <Crest t={t}><Icon name="calendar" /></Crest>
               <p className={`mt-4 font-mono text-[0.62rem] font-medium uppercase tracking-[0.22em] ${t.good}`}>You&apos;re booked</p>
@@ -416,14 +487,33 @@ export default function BuyerOfficeGate({
               <p className={`mx-auto mt-3 max-w-[340px] text-[0.86rem] font-light leading-[1.6] ${t.body}`}>We&apos;ll send a calendar invite and a reminder before it. Your advisor arrives prepared on {project}.</p>
               {call && <div className="mt-6 text-left"><CallCard t={t} call={call} /></div>}
               <div className="mt-6 flex flex-col gap-3 text-left">
-                {has3D && <button onClick={onSeeUnitIntel} className={primaryBtn}>See your unit intelligence →</button>}
-                <button onClick={onClose} className={has3D ? backLink : primaryBtn}>Back to the report</button>
+                {has3D && access && <button onClick={onSeeUnitIntel} className={primaryBtn}>See your unit intelligence →</button>}
+                <button onClick={onClose} className={has3D && access ? backLink : primaryBtn}>Back to the report</button>
               </div>
             </div>
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+function PlanCard({ t, on, onClick, title, price, unit, desc, badge }: { t: Tokens; on: boolean; onClick: () => void; title: string; price: string; unit: string; desc: string; badge?: string }) {
+  return (
+    <button type="button" onClick={onClick} className={`w-full rounded-xl border p-4 text-left transition-all ${on ? t.planOn : t.planOff}`}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className={`grid h-4 w-4 place-items-center rounded-full border ${on ? "border-[#1e6b45] bg-[#1e6b45] text-white" : "border-current opacity-30"}`}>{on && <span className="text-[0.55rem]">✓</span>}</span>
+          <p className={`text-[0.95rem] font-medium ${t.capTitle}`}>{title}</p>
+          {badge && <span className={`rounded-full border px-2 py-0.5 text-[0.54rem] font-semibold uppercase tracking-[0.08em] ${t.crest}`}>{badge}</span>}
+        </div>
+        <div className="shrink-0 text-right">
+          <p className={`font-mono text-[1.05rem] font-medium ${t.h2}`}>{price}</p>
+          <p className={`text-[0.58rem] font-light uppercase tracking-[0.08em] ${t.capDesc}`}>{unit}</p>
+        </div>
+      </div>
+      <p className={`mt-2 pl-6 text-[0.78rem] font-light leading-[1.5] ${t.capDesc}`}>{desc}</p>
+    </button>
   );
 }
 

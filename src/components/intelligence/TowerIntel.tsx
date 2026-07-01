@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { isMember, setMember } from "@/lib/journey";
+import { hasFullAccess, unlockProject, setMember } from "@/lib/journey";
 import BuyerOfficeGate from "./BuyerOfficeGate";
 import type { ProjectIntel, TowerIntelMeta } from "@/lib/projects";
 
@@ -14,10 +14,12 @@ export function openUnitIntel() {
   if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(UNIT_INTEL_EVENT));
 }
 
-type GateStart = "intro" | "req" | "home";
+type GateStart = "intro" | "req" | "plans" | "home";
+type Plan = "single" | "membership";
 
 export default function TowerIntel({ project, meta }: { project: ProjectIntel; meta?: TowerIntelMeta }) {
-  const [member, setMemberState] = useState(false);
+  const slug = project.slug;
+  const [access, setAccess] = useState(false); // paid: single-project unlock or membership
   const [modal, setModal] = useState(false); // the 3D advisor (modelled projects)
   const [gateStart, setGateStart] = useState<GateStart | null>(null); // Buyer Office surface (null = closed)
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -26,36 +28,37 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
   const openGate = (s: GateStart) => setGateStart(s);
 
   useEffect(() => {
-    setMemberState(isMember());
-  }, []);
+    setAccess(hasFullAccess(slug));
+  }, [slug]);
 
   // hero pill / final-card CTA — 3D projects open the live model (free to
-  // explore, dive-in gated); others open the Buyer Office (home for members).
+  // explore + a free sample; the full verdict is paid); others open the
+  // Buyer Office (home once paid, otherwise the free register flow).
   useEffect(() => {
-    const h = () => (has3D ? setModal(true) : openGate(isMember() ? "home" : "intro"));
+    const h = () => (has3D ? setModal(true) : openGate(hasFullAccess(slug) ? "home" : "intro"));
     window.addEventListener(UNIT_INTEL_EVENT, h);
     return () => window.removeEventListener(UNIT_INTEL_EVENT, h);
-  }, [has3D]);
+  }, [has3D, slug]);
 
-  const postMember = () => {
-    try { iframeRef.current?.contentWindow?.postMessage({ type: "te-member" }, "*"); } catch { /* ignore */ }
+  const postPaid = () => {
+    try { iframeRef.current?.contentWindow?.postMessage({ type: "te-paid" }, "*"); } catch { /* ignore */ }
   };
 
-  // messages from the 3D iframe (dive-in gate) — only fires for non-members
+  // messages from the 3D iframe — te-pay fires when a non-paid visitor dives
+  // past the free sample; we open the plans/checkout on top of the model.
   useEffect(() => {
     if (!modal) return;
     const onMsg = (e: MessageEvent) => {
       const d = e.data;
       if (!d || typeof d !== "object") return;
-      if (d.type === "te-ready" && isMember()) postMember();
-      if (d.type === "te-join") openGate("req");
+      if (d.type === "te-ready" && hasFullAccess(slug)) postPaid();
+      if (d.type === "te-pay") openGate("plans");
     };
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
-  }, [modal]);
+  }, [modal, slug]);
 
   // Only the 3D modal locks scroll here; BuyerOfficeGate owns its own lock.
-  // (Double-locking left body overflow stuck on "hidden" → frozen page.)
   useEffect(() => {
     if (!modal) return;
     const prev = document.body.style.overflow;
@@ -63,19 +66,19 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
     return () => { document.body.style.overflow = prev; };
   }, [modal]);
 
-  // Membership achieved in the gate. Keep the gate open on its success screen;
-  // if the 3D is already open (a dive-in), unlock it now so the tapped tower
-  // opens behind the success screen and future dives don't re-gate.
-  function onJoined() {
-    setMember();
-    setMemberState(true);
-    if (has3D && modal) postMember();
+  // Payment succeeded in the gate (simulated). Record the entitlement and, if
+  // the 3D is already open (a dive-in), unlock it so the tapped tower opens.
+  function onPaid(plan: Plan) {
+    if (plan === "membership") setMember();
+    else unlockProject(slug);
+    setAccess(true);
+    if (has3D && modal) postPaid();
   }
 
-  // "See your unit intelligence" from the success/home/booked screens.
+  // "See your unit intelligence" from the success / home / booked screens.
   function onSeeUnitIntel() {
     setGateStart(null);
-    if (has3D && !modal) setModal(true); // fresh open; onLoad posts membership
+    if (has3D && !modal) setModal(true); // fresh open; onLoad posts entitlement
   }
 
   const src = meta?.file ? `${basePath}/${meta.file}` : undefined;
@@ -99,36 +102,36 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
           </div>
           <div className="min-w-0 flex-1">
             <p className="flex items-center gap-2 text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[#e0b667]">
-              <span aria-hidden>▦</span> {member ? "Your Buyer Office" : <>Deep intelligence{meta ? " · live 3D" : ""}</>}
+              <span aria-hidden>▦</span> {access ? "Your Buyer Office" : <>Deep intelligence{meta ? " · live 3D" : ""}</>}
             </p>
             <p className="mt-2 font-serif text-[1.45rem] leading-[1.15] md:text-[1.6rem]">Tower &amp; Unit Intelligence</p>
             <p className="mt-2 text-[0.85rem] font-light leading-[1.6] text-white/55">
-              {member ? (
+              {access ? (
                 meta ? (
-                  <>You&apos;re a member — your 3D advisor is unlocked. Enter to open it, or schedule your advisor call.</>
+                  <>You&apos;re unlocked — open your 3D advisor any time, or schedule your advisor call.</>
                 ) : (
                   <>You&apos;re in. Enter your office to schedule your advisor call and track your intelligence.</>
                 )
               ) : meta ? (
-                <>Explore the 3D site &amp; sun study free — open a tower to unlock unit-level intel for all {meta.totalUnits} homes.</>
+                <>Explore the 3D site &amp; sun study free — open a tower for a free sample, then unlock every unit from ₹1,499.</>
               ) : (
                 <>The 3D layer that decides <span className="italic">which</span> home — graded by sun, Vastu, light, ventilation &amp; value.</>
               )}
             </p>
           </div>
-          {member ? (
+          {access ? (
             <button onClick={() => openGate("home")} className="shrink-0 rounded-sm bg-[#e0b667] px-6 py-3.5 text-[0.84rem] font-semibold tracking-[0.02em] text-[#1a1206] transition-colors hover:bg-[#f0cd85]">
               Enter your Buyer Office →
             </button>
           ) : (
             <button onClick={() => (meta ? setModal(true) : openGate("intro"))} className="shrink-0 rounded-sm bg-[#e0b667] px-6 py-3.5 text-[0.84rem] font-semibold tracking-[0.02em] text-[#1a1206] transition-colors hover:bg-[#f0cd85]">
-              {meta ? "See the live 3D →" : "See what's inside →"}
+              {meta ? "Explore the live 3D →" : "See what's inside →"}
             </button>
           )}
         </div>
       </section>
 
-      {/* Full-screen 3D advisor — free to explore; the dive-in is gated */}
+      {/* Full-screen 3D advisor — free to explore; the full verdict is paid */}
       {modal && src && (
         <div className="fixed inset-0 z-[120] flex flex-col bg-[#0a0f17]">
           <div className="flex items-center gap-4 border-b border-white/10 px-5 py-3">
@@ -137,7 +140,7 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
               <p className="text-[0.9rem] font-medium text-white">{project.name}</p>
             </div>
             <span className="ml-3 hidden rounded-full border border-white/12 px-2.5 py-1 text-[0.62rem] font-light text-white/45 sm:inline">
-              {member ? "Buyer Office · unit intel unlocked" : "Tap a tower for unit-level intel"}
+              {access ? "Full verdict unlocked" : "Free to explore · one sample free"}
             </span>
             <button onClick={() => setModal(false)} className="ml-auto rounded-sm border border-white/15 bg-white/5 px-4 py-2 text-[0.78rem] font-medium tracking-[0.04em] text-white transition-colors hover:border-[#46c2ff]">Close ✕</button>
           </div>
@@ -145,7 +148,7 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
             ref={iframeRef}
             src={src}
             title={`${project.name} — Tower & Unit Intelligence`}
-            onLoad={() => { if (isMember()) postMember(); }}
+            onLoad={() => { if (hasFullAccess(slug)) postPaid(); }}
             className="min-h-0 flex-1 border-0"
           />
         </div>
@@ -154,11 +157,13 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
       <BuyerOfficeGate
         open={gateStart !== null}
         project={project.name}
+        slug={slug}
         start={gateStart ?? "intro"}
         has3D={has3D}
-        member={member}
+        access={access}
         onClose={() => setGateStart(null)}
-        onJoined={onJoined}
+        onJoined={() => { /* free register — lead saved in the gate */ }}
+        onPaid={onPaid}
         onSeeUnitIntel={onSeeUnitIntel}
       />
     </>
