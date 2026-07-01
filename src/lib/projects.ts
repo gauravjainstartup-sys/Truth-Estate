@@ -215,6 +215,15 @@ export const developerOf = (p: ProjectIntel): DeveloperIntel | undefined =>
 export const marketOf = (p: ProjectIntel): MarketIntel | undefined =>
   MARKETS.find((m) => m.name === p.market);
 
+/* Deep tower & unit intelligence artifacts — the gated Tier-2 layer (3D site
+   model, sun-path, per-unit scoring). Only the projects our engineers have
+   modelled have one today; the rest show the "in production" hook. Path is
+   relative to /public (the component prefixes basePath). */
+export const TOWER_INTEL: Record<string, string> = {
+  "DLF Arbour": "tower-intel/dlf-arbour.html",
+};
+export const towerIntelFile = (p: ProjectIntel): string | undefined => TOWER_INTEL[p.name];
+
 /* Parse an appreciation band like "+18–25%" → its midpoint (%) */
 export function bandMid(s: string): number {
   const nums = s.match(/\d+(\.\d+)?/g)?.map(Number) ?? [];

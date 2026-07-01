@@ -13,9 +13,12 @@ import {
   riskMatrix,
   investorFit,
   projectFaqs,
+  towerIntelFile,
   type ProjectIntel,
   type RiskLevel,
 } from "@/lib/projects";
+import MatchScore from "./MatchScore";
+import TowerIntel from "./TowerIntel";
 
 const basePath = "/Truth-Estate";
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -141,6 +144,8 @@ export default function ProjectProfile({
   const aheadMonths = con ? monIdx(con.reraDate) - monIdx(con.predictedDate) : 0;
 
   const toc = [
+    { id: "match", label: "Match score", show: true },
+    { id: "tower-intel", label: "Tower & unit intel", show: true },
     { id: "vitals", label: "Vitals", show: true },
     { id: "anatomy", label: "Truth Score anatomy", show: true },
     { id: "developer", label: "Developer analysis", show: !!dev },
@@ -238,6 +243,9 @@ export default function ProjectProfile({
                   {market && <Chip>{market.tier} corridor</Chip>}
                   {ops?.reraNote && <Chip>RERA registered</Chip>}
                 </div>
+                <a href="#tower-intel" className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#1a1a1a]/15 bg-[#0a0f17] px-4 py-2 text-[0.78rem] font-medium text-white transition-colors hover:border-[#46c2ff]">
+                  <span className="text-[#e0b667]">▦</span> Explore Tower &amp; Unit Intelligence <span aria-hidden className="text-[#46c2ff]">→</span>
+                </a>
               </div>
               {/* Truth Score */}
               <div className="flex shrink-0 items-end gap-5">
@@ -260,6 +268,12 @@ export default function ProjectProfile({
                 <span className="font-medium text-[#1a1a1a]/70">Investor fit:</span> {investorFit(p)}
               </p>
             </div>
+
+            {/* Match Score — personalisation hook (onboards cold visitors) */}
+            <MatchScore project={p} />
+
+            {/* Tower & Unit Intelligence — the gated deep-intel tier, surfaced high */}
+            <TowerIntel project={p} file={towerIntelFile(p)} />
 
             {/* 01 · Vitals */}
             <Section id="vitals" n={num()} title="Vitals">
@@ -516,24 +530,6 @@ export default function ProjectProfile({
               </div>
             </Section>
 
-            {/* Tower & unit intelligence — forward hook to the deep-intel tier */}
-            <div className="mt-14 overflow-hidden rounded-2xl border border-dashed border-[#c9a96e]/40 bg-white/40 p-8 md:p-9">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="max-w-xl">
-                  <p className="flex items-center gap-2 text-[0.66rem] font-medium uppercase tracking-[0.16em] text-[#9a7a2e]">
-                    <span aria-hidden>▦</span> In production · deep intelligence
-                  </p>
-                  <p className="mt-3 font-serif text-[1.3rem] leading-[1.35]">Tower-by-tower &amp; unit-level intelligence</p>
-                  <p className="mt-2 text-[0.86rem] font-light leading-[1.7] text-[#1a1a1a]/55">
-                    3D site plan with tower positioning, per-unit vastu, natural-light &amp; view-corridor scoring, and the best-value stacks — the layer our engineers are building now.
-                  </p>
-                </div>
-                <button onClick={consult} className="shrink-0 rounded-sm border border-[#1a1a1a]/20 px-6 py-3 text-[0.8rem] font-medium tracking-[0.03em] text-[#1a1a1a] transition-colors hover:border-[#1e6b45] hover:text-[#1e6b45]">
-                  Get early access
-                </button>
-              </div>
-            </div>
-
             {/* Forensic FAQs */}
             {faqs.length > 0 && (
               <Section id="faqs" n={num()} title="Forensic FAQs">
@@ -619,10 +615,14 @@ export default function ProjectProfile({
         </div>
       </div>
 
-      {/* Mobile: a persistent CTA so it's never buried at the foot of a long report */}
-      <div className="sticky bottom-0 z-40 border-t border-[#1a1a1a]/10 bg-[#F5F0E8]/95 px-6 py-3 backdrop-blur md:hidden">
-        <button onClick={consult} className="w-full rounded-sm bg-[#1e6b45] px-5 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
-          Request Independent Advice
+      {/* Mobile: persistent CTAs so neither the advice nor the deep intel is
+          ever buried at the foot of a long report */}
+      <div className="sticky bottom-0 z-40 flex gap-2 border-t border-[#1a1a1a]/10 bg-[#F5F0E8]/95 px-4 py-3 backdrop-blur md:hidden">
+        <a href="#tower-intel" className="flex shrink-0 items-center gap-1.5 rounded-sm bg-[#0a0f17] px-4 py-3.5 text-[0.8rem] font-medium tracking-[0.02em] text-white">
+          <span className="text-[#e0b667]">▦</span> Tower intel
+        </a>
+        <button onClick={consult} className="flex-1 rounded-sm bg-[#1e6b45] px-4 py-3.5 text-[0.82rem] font-medium tracking-[0.03em] text-white transition-colors hover:bg-[#238c55]">
+          Request Advice
         </button>
       </div>
     </div>

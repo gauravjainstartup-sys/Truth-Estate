@@ -58,6 +58,7 @@ import {
   rankInvestProjects,
   rankProjects,
   saveAccount,
+  saveBuyData,
 } from "@/lib/journey";
 
 /* ════════════════════════════════════════════════════════════════
@@ -448,6 +449,12 @@ export default function JourneyModal({
   const allScored = useMemo(() => rankProjects(buy), [buy]);
   const recs = useMemo(() => allScored.slice(0, 3), [allScored]);
   const dna = useMemo(() => deriveDNA(buy), [buy]);
+
+  // Persist requirements once the buyer reaches the shortlist, so a project
+  // report opened later reflects their real Match Score.
+  useEffect(() => {
+    if (step === "shortlist") saveBuyData(buy);
+  }, [step, buy]);
 
   const set = <K extends keyof BuyData>(k: K, v: BuyData[K]) => setBuy((b) => ({ ...b, [k]: v }));
   // Priorities are tailored per purchase type — dropping the type prunes any

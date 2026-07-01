@@ -578,6 +578,121 @@ export function saveInterest(i: Interest): void {
   }
 }
 
+/* ════════════════════════════════════════════════════════════════
+   REQUIREMENTS, LEADS & DEEP-INTEL UNLOCKS
+   The report's Match Score reads saved requirements; the Tower & Unit
+   Intelligence unlock captures a lead and records which projects a buyer
+   has opened. All front-end simulation (localStorage) — swaps to a real
+   CRM/entitlement service later.
+   ════════════════════════════════════════════════════════════════ */
+const BUY_KEY = "truthEstate.buy";
+
+export function loadBuyData(): BuyData | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(BUY_KEY);
+    return raw ? (JSON.parse(raw) as BuyData) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveBuyData(d: BuyData): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(BUY_KEY, JSON.stringify(d));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function hasPreferences(d: BuyData): boolean {
+  return d.locations.length > 0 || d.configs.length > 0 || d.priorities.length > 0 || d.purchaseType != null;
+}
+
+/* Absolute single-project fit — an honest 0–100 read of how well a project
+   answers THIS buyer's stated needs (unlike the shortlist's relative rank). */
+export function matchScoreFor(p: Project, d: BuyData): number {
+  let s = 0;
+  // Location (34)
+  if (d.locations.length === 0) s += 22;
+  else s += d.locations.includes(p.market) ? 34 : 6;
+  // Budget (30)
+  const [lo, hi] = p.budget;
+  if (d.budgetCr >= lo - 1 && d.budgetCr <= hi + 2) s += 30;
+  else s += Math.max(0, 22 - Math.abs(d.budgetCr - (lo + hi) / 2) * 3);
+  // Configuration (20)
+  const cfg = d.configs.length === 0 || d.configs.includes("Flexible") || p.configs.some((c) => d.configs.includes(c));
+  s += cfg ? 20 : 5;
+  // Priorities (18)
+  if (d.priorities.length === 0) s += 10;
+  else {
+    const overlap = p.tags.filter((t) => d.priorities.includes(t)).length;
+    s += Math.round((overlap / d.priorities.length) * 18);
+  }
+  return Math.max(8, Math.min(99, Math.round(s)));
+}
+
+export function matchLabel(pct: number): { label: string; tone: "good" | "fair" | "low" } {
+  if (pct >= 82) return { label: "Ideal fit", tone: "good" };
+  if (pct >= 68) return { label: "Strong fit", tone: "good" };
+  if (pct >= 52) return { label: "Fair fit", tone: "fair" };
+  return { label: "Limited fit", tone: "low" };
+}
+
+export type Lead = {
+  name: string;
+  email: string;
+  phone?: string;
+  project?: string;
+  intent: "tower-intel" | "buyer-office";
+  buy?: BuyData;
+  createdAt: number;
+};
+
+const LEAD_KEY = "truthEstate.leads";
+
+export function saveLead(l: Lead): void {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = window.localStorage.getItem(LEAD_KEY);
+    const list: Lead[] = raw ? (JSON.parse(raw) as Lead[]) : [];
+    list.push(l);
+    window.localStorage.setItem(LEAD_KEY, JSON.stringify(list));
+  } catch {
+    /* ignore */
+  }
+}
+
+const UNLOCK_KEY = "truthEstate.unlocked";
+
+export function loadUnlocks(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(UNLOCK_KEY);
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function isUnlocked(slug: string): boolean {
+  return loadUnlocks().includes(slug);
+}
+
+export function unlockProject(slug: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    const list = loadUnlocks();
+    if (!list.includes(slug)) {
+      list.push(slug);
+      window.localStorage.setItem(UNLOCK_KEY, JSON.stringify(list));
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 /* Copy for the two off-ramps — single source so both the Buy journey and the
    consultation flow tell the same honest story. */
 export const OFFRAMP_COPY: Record<
