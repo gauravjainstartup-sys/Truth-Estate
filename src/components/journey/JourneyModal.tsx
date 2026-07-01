@@ -70,6 +70,7 @@ function Shell({
   progress,
   eyebrow,
   align = "center",
+  wide,
   children,
 }: {
   onClose: () => void;
@@ -77,6 +78,7 @@ function Shell({
   progress?: number | null;
   eyebrow?: string;
   align?: "center" | "top";
+  wide?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -107,7 +109,7 @@ function Shell({
       </header>
 
       <div className="flex-1 overflow-y-auto">
-        <div className={`mx-auto flex min-h-full max-w-3xl flex-col px-6 md:px-10 ${align === "top" ? "justify-start py-8 md:py-9" : "justify-center py-10 md:py-14"}`}>
+        <div className={`mx-auto flex min-h-full flex-col px-6 md:px-10 ${wide ? "max-w-5xl" : "max-w-3xl"} ${align === "top" ? "justify-start py-8 md:py-9" : "justify-center py-10 md:py-14"}`}>
           {children}
         </div>
       </div>
@@ -1212,7 +1214,7 @@ export default function JourneyModal({
 
   if (step === "shortlist") {
     return frame(
-      <Shell onClose={onClose} eyebrow="Your Shortlist" align="top">
+      <Shell onClose={onClose} eyebrow="Your Shortlist" align="top" wide>
         <ShortlistScreen
           recs={recs}
           onPick={(r) => {
@@ -1220,6 +1222,7 @@ export default function JourneyModal({
             setStep("preview");
           }}
           onChangePreferences={() => setStep("dna")}
+          onConsult={() => requestAdvice("buy")}
         />
       </Shell>
     );
@@ -1444,92 +1447,159 @@ function DnaScreen({
 /* ════════════════════════════════════════════════════════════════
    SHORTLIST — 127 → 3 reveal + recommendations
    ════════════════════════════════════════════════════════════════ */
+/* An animated circular gauge for the Truth Score (out of 100). */
+function ScoreRing({ score, delay = 0 }: { score: number; delay?: number }) {
+  const R = 27;
+  const C = 2 * Math.PI * R;
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setOn(true), delay);
+    return () => clearTimeout(t);
+  }, [delay]);
+  return (
+    <div className="relative h-[68px] w-[68px] shrink-0">
+      <svg viewBox="0 0 64 64" className="h-full w-full -rotate-90">
+        <circle cx="32" cy="32" r={R} fill="none" stroke="#1a1a1a" strokeOpacity="0.08" strokeWidth="4" />
+        <circle
+          cx="32"
+          cy="32"
+          r={R}
+          fill="none"
+          stroke="#1e6b45"
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeDasharray={C}
+          strokeDashoffset={on ? C * (1 - score / 100) : C}
+          style={{ transition: "stroke-dashoffset 1.1s cubic-bezier(0.22,1,0.36,1)" }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="font-serif text-[1.3rem] font-medium leading-none text-[#1a1a1a]">{score}</span>
+      </div>
+    </div>
+  );
+}
+
+/* Recommendation badge, colour-coded by conviction. */
+function RecoPill({ reco }: { reco: string }) {
+  const cls =
+    reco === "Strong Buy"
+      ? "border-[#1e6b45]/25 bg-[#1e6b45]/[0.09] text-[#1e6b45]"
+      : reco === "Buy"
+      ? "border-[#c9a96e]/40 bg-[#c9a96e]/[0.14] text-[#9a7a2e]"
+      : "border-[#1a1a1a]/15 bg-[#1a1a1a]/[0.04] text-[#1a1a1a]/55";
+  return (
+    <span className={`rounded-full border px-3 py-1 text-[0.66rem] font-medium uppercase tracking-[0.08em] ${cls}`}>
+      {reco}
+    </span>
+  );
+}
+
 function ShortlistScreen({
   recs,
   onPick,
   onChangePreferences,
+  onConsult,
 }: {
   recs: Scored[];
   onPick: (r: Scored) => void;
   onChangePreferences: () => void;
+  onConsult: () => void;
 }) {
   const [revealed, setRevealed] = useState(false);
-  const total = useCountUp(ACTIVE_PROJECT_COUNT, true, 1900);
+  const total = useCountUp(ACTIVE_PROJECT_COUNT, true, 1700);
   useEffect(() => {
-    const t = setTimeout(() => setRevealed(true), 1700);
+    const t = setTimeout(() => setRevealed(true), 1500);
     return () => clearTimeout(t);
   }, []);
 
   return (
     <div key="shortlist" className="animate-fade-up">
-      <div className="py-3 text-center md:py-5">
-        <p className="font-serif text-[1.05rem] font-light leading-snug text-[#1a1a1a]/70 md:text-[1.35rem]">
-          Based on everything you&apos;ve shared
-        </p>
-        <div className="mt-5 flex items-center justify-center gap-6 md:mt-6 md:gap-12">
-          <div>
-            <p className="font-serif text-[3rem] font-medium leading-none text-[#1a1a1a] md:text-[4.2rem]">{total}</p>
-            <p className="mt-2 text-[9px] font-light uppercase tracking-[0.18em] text-[#1a1a1a]/45 md:mt-2.5 md:text-[10px]">
-              Active projects
-            </p>
-          </div>
-          <span className="font-serif text-[1.7rem] font-light text-[#c9a96e] md:text-[2.2rem]" aria-hidden>
-            &rarr;
-          </span>
-          <div>
-            <p className="font-serif text-[3rem] font-medium leading-none text-[#1e6b45] md:text-[4.2rem]">3</p>
-            <p className="mt-2 text-[9px] font-light uppercase tracking-[0.18em] text-[#1a1a1a]/45 md:mt-2.5 md:text-[10px]">
-              Worth investigating
-            </p>
-          </div>
+      {/* ── Compact reveal header ── */}
+      <div className="text-center">
+        <p className="text-[10px] font-light uppercase tracking-[0.4em] text-[#c9a96e]">Your Shortlist</p>
+        <h2 className="mx-auto mt-4 max-w-xl font-serif text-[1.6rem] font-medium leading-tight text-[#1a1a1a] md:text-[2.1rem]">
+          Based on everything you&apos;ve shared.
+        </h2>
+        <div className="mt-5 inline-flex items-center gap-4 rounded-full border border-[#1a1a1a]/10 bg-white/60 px-6 py-2.5 md:gap-5">
+          <span className="font-serif text-[1.7rem] font-medium leading-none text-[#1a1a1a] md:text-[2rem]">{total}</span>
+          <span className="text-[0.68rem] font-light uppercase tracking-[0.16em] text-[#1a1a1a]/45">active projects</span>
+          <span className="text-[#c9a96e]" aria-hidden>&rarr;</span>
+          <span className="font-serif text-[1.7rem] font-medium leading-none text-[#1e6b45] md:text-[2rem]">{recs.length}</span>
+          <span className="text-[0.68rem] font-light uppercase tracking-[0.16em] text-[#1e6b45]/70">worth investigating</span>
         </div>
       </div>
 
+      {/* ── Cards ── */}
       <div
-        className="transition-all duration-1000"
-        style={{ opacity: revealed ? 1 : 0, transform: revealed ? "translateY(0)" : "translateY(18px)" }}
+        className="mt-9 transition-all duration-1000 md:mt-11"
+        style={{ opacity: revealed ? 1 : 0, transform: revealed ? "translateY(0)" : "translateY(20px)" }}
       >
-        <p className="mb-5 mt-2 text-center text-[10px] font-light uppercase tracking-[0.4em] text-[#c9a96e] md:mb-7 md:mt-4">
-          Tap a project to see why
-        </p>
-        <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 md:gap-6">
           {recs.map((r, idx) => (
             <button
               key={r.name}
               onClick={() => onPick(r)}
-              className="group flex w-full items-stretch gap-4 border border-[#1a1a1a]/12 bg-white p-5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-[#1a1a1a]/25 hover:shadow-lg hover:shadow-black/[0.04] md:gap-6 md:p-6"
+              className="group flex flex-col rounded-2xl border border-[#1a1a1a]/10 bg-white p-6 text-left transition-all duration-300 hover:-translate-y-1 hover:border-[#1a1a1a]/20 hover:shadow-xl hover:shadow-black/[0.06]"
             >
-              <div className="flex min-w-0 flex-1 flex-col">
-                <p className="font-serif text-[1.2rem] font-medium leading-tight text-[#1a1a1a] md:text-[1.5rem]">
-                  <span className="mr-2 font-light text-[#1a1a1a]/30">{String(idx + 1).padStart(2, "0")}</span>
-                  {r.name}
-                </p>
-                <p className="mt-1 text-[0.8rem] font-light tracking-[0.04em] text-[#1a1a1a]/45">
-                  {r.developer} · {r.market}
-                </p>
-                <p className="mt-2.5 text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/65">{r.reason}</p>
+              <div className="flex items-center justify-between">
+                <span className="font-serif text-[0.95rem] font-light text-[#1a1a1a]/30">
+                  {String(idx + 1).padStart(2, "0")}
+                </span>
+                <RecoPill reco={r.recommendation} />
               </div>
-              <div className="flex shrink-0 flex-col justify-center gap-4 self-stretch border-l border-[#1a1a1a]/10 pl-4 text-right md:pl-6">
-                <div>
-                  <p className="font-serif text-[1.25rem] font-medium leading-none text-[#1e6b45] md:text-[1.5rem]">{r.matchPct}%</p>
-                  <p className="mt-1.5 text-[8px] font-light uppercase tracking-[0.18em] text-[#1a1a1a]/40 md:text-[9px]">Truth Match</p>
+
+              <h3 className="mt-4 font-serif text-[1.3rem] font-medium leading-tight text-[#1a1a1a]">{r.name}</h3>
+              <p className="mt-1.5 text-[0.78rem] font-light tracking-[0.03em] text-[#1a1a1a]/45">
+                {r.developer} · {r.market}
+              </p>
+
+              <div className="mt-5 flex items-center gap-4">
+                <div className="text-center">
+                  <ScoreRing score={r.truthScore} delay={revealed ? 200 + idx * 120 : 4000} />
+                  <p className="mt-1.5 text-[8px] font-light uppercase tracking-[0.16em] text-[#1a1a1a]/40">Truth Score</p>
                 </div>
+                <div className="h-11 w-px bg-[#1a1a1a]/10" />
                 <div>
-                  <p className="font-serif text-[1.25rem] font-medium leading-none text-[#1a1a1a] md:text-[1.5rem]">{r.truthScore}</p>
-                  <p className="mt-1.5 text-[8px] font-light uppercase tracking-[0.18em] text-[#1a1a1a]/40 md:text-[9px]">Truth Score</p>
+                  <p className="font-serif text-[1.6rem] font-medium leading-none text-[#1e6b45]">{r.matchPct}%</p>
+                  <p className="mt-1.5 text-[8px] font-light uppercase tracking-[0.16em] text-[#1a1a1a]/40">Match to you</p>
                 </div>
               </div>
+
+              <p className="mt-5 flex-1 text-[0.86rem] font-light leading-relaxed text-[#1a1a1a]/60">{r.reason}</p>
+
+              <p className="mt-5 border-t border-[#1a1a1a]/[0.07] pt-4 text-[0.76rem] font-light tracking-[0.02em] text-[#1a1a1a]/50">
+                {r.configs.join(" · ")}
+                <span className="mx-2 text-[#c9a96e]">·</span>
+                ₹{r.budget[0]}–{r.budget[1]} Cr
+              </p>
+
+              <span className="mt-5 inline-flex items-center gap-1.5 text-[0.84rem] font-medium text-[#1e6b45] transition-all duration-300 group-hover:gap-2.5">
+                See the full read <span aria-hidden>&rarr;</span>
+              </span>
             </button>
           ))}
         </div>
-        <div className="mt-7 flex flex-col items-center gap-4">
-          <button
-            onClick={onChangePreferences}
-            className="inline-flex items-center gap-2 rounded-full border border-[#1a1a1a]/20 px-6 py-2.5 text-[0.82rem] font-light text-[#1a1a1a]/70 transition-colors duration-300 hover:border-[#1a1a1a]/45 hover:text-[#1a1a1a]"
-          >
-            <span aria-hidden>&larr;</span> Change preferences
-          </button>
-          <p className="text-center text-[0.75rem] font-light italic text-[#1a1a1a]/35">
+
+        {/* ── CTA band ── */}
+        <div className="mt-9 rounded-2xl border border-[#1a1a1a]/10 bg-white/50 px-7 py-8 text-center md:mt-11">
+          <p className="font-serif text-[1.2rem] font-medium text-[#1a1a1a] md:text-[1.4rem]">
+            Not sure which one is right for you?
+          </p>
+          <p className="mx-auto mt-2.5 max-w-md text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/55">
+            Talk it through with an independent advisor who represents only you — no pressure,
+            just an honest read on your options.
+          </p>
+          <div className="mt-6 flex flex-col items-center justify-center gap-3.5 sm:flex-row">
+            <PrimaryButton onClick={onConsult}>Request Independent Advice</PrimaryButton>
+            <button
+              onClick={onChangePreferences}
+              className="inline-flex items-center gap-2 rounded-sm border border-[#1a1a1a]/20 bg-white px-8 py-4 text-[13px] font-light tracking-[0.05em] text-[#1a1a1a]/75 transition-all duration-300 hover:border-[#1a1a1a]/40"
+            >
+              Refine my preferences
+            </button>
+          </div>
+          <p className="mt-6 text-[0.75rem] font-light italic text-[#1a1a1a]/35">
             No pricing yet — and no registration. Just our honest read.
           </p>
         </div>
