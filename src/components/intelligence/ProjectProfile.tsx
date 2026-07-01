@@ -80,15 +80,19 @@ export default function ProjectProfile({
           {embedded ? (
             <>
               <Logo color="#1a1a1a" className="h-7 w-auto opacity-80" />
-              <span className="ml-auto hidden text-[10px] font-light uppercase tracking-[0.4em] text-[#1a1a1a]/40 md:block">Project Intelligence</span>
-              <button onClick={onClose} aria-label="Close" className="ml-auto text-[11px] font-light tracking-[0.18em] text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a] md:ml-8">
-                CLOSE
-              </button>
+              <div className="ml-auto flex items-center gap-5 md:gap-6">
+                <button onClick={consult} className="hidden rounded-sm bg-[#1e6b45] px-4 py-2 text-[0.72rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] md:inline-block">
+                  Request Independent Advice
+                </button>
+                <button onClick={onClose} aria-label="Close" className="text-[11px] font-light tracking-[0.18em] text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a]">
+                  CLOSE
+                </button>
+              </div>
             </>
           ) : (
             <>
               <a href={basePath} aria-label="Home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
-              <button onClick={consult} className="ml-auto rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.74rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] md:px-5">
+              <button onClick={consult} className="ml-auto hidden rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.74rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] md:inline-block md:px-5">
                 Request Independent Advice
               </button>
             </>
@@ -264,6 +268,13 @@ export default function ProjectProfile({
         <p className="mt-8 text-[0.72rem] font-light leading-[1.7] text-[#1a1a1a]/35">
           Independent assessment by Truth Estate. No developer can pay for a higher Truth Score or to appear here. The Truth Score and its inputs are our own evidence-based reads; ticket and price bands are tracked estimates that vary by tower, floor and stack. Not investment advice — confirm specifics with your advisor.
         </p>
+      </div>
+
+      {/* Mobile: a persistent CTA so it's never buried at the foot of a long report */}
+      <div className="sticky bottom-0 z-40 border-t border-[#1a1a1a]/10 bg-[#F5F0E8]/95 px-6 py-3 backdrop-blur md:hidden">
+        <button onClick={consult} className="w-full rounded-sm bg-[#1e6b45] px-5 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
+          Request Independent Advice
+        </button>
       </div>
     </div>
   );
