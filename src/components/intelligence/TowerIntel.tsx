@@ -52,12 +52,14 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
     return () => window.removeEventListener("message", onMsg);
   }, [modal]);
 
+  // Only the 3D modal locks scroll here; BuyerOfficeGate owns its own lock.
+  // (Double-locking left body overflow stuck on "hidden" → frozen page.)
   useEffect(() => {
-    if (!modal && !gate) return;
+    if (!modal) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
-  }, [modal, gate]);
+  }, [modal]);
 
   function onJoined() {
     setMember();
