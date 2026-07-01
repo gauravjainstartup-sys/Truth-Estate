@@ -262,7 +262,7 @@ export default function ProjectProfile({
         </div>
 
         <p className="mt-8 text-[0.72rem] font-light leading-[1.7] text-[#1a1a1a]/35">
-          Independent assessment by Truth Estate. We take no developer commissions. The Truth Score and its inputs are our own evidence-based reads; ticket and price bands are tracked estimates that vary by tower, floor and stack. Not investment advice — confirm specifics with your advisor.
+          Independent assessment by Truth Estate. No developer can pay for a higher Truth Score or to appear here. The Truth Score and its inputs are our own evidence-based reads; ticket and price bands are tracked estimates that vary by tower, floor and stack. Not investment advice — confirm specifics with your advisor.
         </p>
       </div>
     </div>

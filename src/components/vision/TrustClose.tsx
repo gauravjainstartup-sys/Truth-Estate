@@ -5,7 +5,7 @@ import { useJourney } from "../journey/JourneyProvider";
 import { ADVISORS, PRIMARY_CTA } from "@/lib/journey";
 
 const PILLARS = [
-  { k: "Independent", v: "We take zero developer commissions. Our only incentive is your outcome." },
+  { k: "Independent", v: "Our advice isn't for sale — no developer can buy a recommendation or move a Truth Score, and we'll tell you to walk away when that's right." },
   { k: "Evidence-led", v: "Every view traces to delivery records, pricing data and legal filings — not marketing." },
   { k: "On the record", v: "RERA, title and financials, verified and documented. You keep the proof." },
   { k: "On your side", v: "One dedicated advisor, accountable to you from first question to final signature." },

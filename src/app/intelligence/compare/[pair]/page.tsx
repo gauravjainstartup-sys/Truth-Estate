@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ pair: str
   const title = compareTitle(r);
   return {
     title: `${title} — Compare | Truth Estate`,
-    description: `Independent side-by-side comparison of ${title}: measured on the same evidence — score, signals, delivery, pricing and outlook. No developer commissions.`,
+    description: `Independent side-by-side comparison of ${title}: measured on the same evidence — score, signals, delivery, pricing and outlook. No paid rankings.`,
   };
 }
 

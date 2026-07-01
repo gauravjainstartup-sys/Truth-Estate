@@ -409,7 +409,7 @@ export default function ProjectDecisionSystem({
             </div>
 
             <p className="mt-8 text-center text-[0.72rem] font-light leading-relaxed text-[#1a1a1a]/30">
-              Truth Estate is independent. We hold no developer mandates and earn no sales commission on this project.
+              Truth Estate is independent. No developer can pay for a higher Truth Score, a recommendation, or to appear here.
             </p>
           </section>
         </article>

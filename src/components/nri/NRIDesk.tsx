@@ -29,7 +29,7 @@ const CONCERNS: { fear: string; answer: string }[] = [
   {
     fear: "I can't see it. I'm trusting photos, a cousin, or a broker who earns more when I say yes.",
     answer:
-      "We become your eyes and feet on the ground — accompanied and live-video site visits, honest build-quality checks, and an advocate who earns nothing from the developer.",
+      "We become your eyes and feet on the ground — accompanied and live-video site visits, honest build-quality checks, and an advocate whose recommendation no developer can buy.",
   },
   {
     fear: "Is the title even clean? From here, I can't tell a forged paper from a real one.",
@@ -115,7 +115,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "How does Truth Estate stay independent — and what does it cost me?",
-    a: "We take no commission, referral or incentive from any developer or broker. Our fee is paid only by you, which means our only interest is your outcome — the right asset, the right price, the clean title. You will see a clear, fixed engagement fee before any work begins, fully explained on your first consultation.",
+    a: "Our advice isn't for sale — no developer can buy a recommendation or a better Truth Score, and we will tell you to walk away when that is the right call. We are transparent about how we are compensated: we charge for the consultation itself, so our only job in that conversation is to tell you the truth rather than sell you a deal — and if you go on to close with us, that fee is refunded from the developer's referral on a primary sale, or set openly with both sides on a resale. You are never pushed to transact; you go ahead with us only if you see the value, and you will always know exactly how we are paid, in writing, before anything begins.",
   },
   {
     q: "Is this legal, tax or investment advice?",
@@ -174,8 +174,8 @@ export default function NRIDesk() {
           </h1>
           <p className="mt-7 max-w-[600px] text-[1.05rem] font-light leading-[1.85] text-[#1a1a1a]/60 md:text-[1.2rem]">
             Buying from abroad shouldn&apos;t feel like a leap of faith. Truth Estate becomes your eyes, your advocate
-            and your protection on the ground in India — forensic, independent, and paid only by you. Never by a
-            developer.
+            and your protection on the ground in India — forensic, and independent where it counts: our advice
+            isn&apos;t for sale, and no developer can buy our recommendation.
           </p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -204,7 +204,7 @@ export default function NRIDesk() {
               <span>Australia</span>
             </div>
             <p className="mt-4 text-[0.9rem] font-light text-[#1a1a1a]/50">
-              Independent · No developer commissions · One advocate, and it&apos;s yours.
+              Our advice isn&apos;t for sale · Full fee transparency · You proceed only if you see the value.
             </p>
           </div>
         </div>
@@ -266,8 +266,8 @@ export default function NRIDesk() {
           </div>
 
           <PullQuote>
-            We do not sell property, and no developer pays us. Our fee comes only from you — so the only outcome we are
-            paid to protect is yours.
+            We charge for the consultation so we owe you only the truth — nothing else. Go ahead with us and that fee is
+            refunded. Our recommendation was never for sale to begin with.
           </PullQuote>
         </div>
       </section>
@@ -394,7 +394,7 @@ export default function NRIDesk() {
             </button>
           </div>
           <p className="mt-8 font-mono text-[0.66rem] uppercase tracking-[0.16em] text-white/35">
-            Independent · No developer commissions · Complimentary first consultation
+            Advice that isn&apos;t for sale · Consultation fee refunded if you proceed · No pressure, ever
           </p>
         </div>
       </section>

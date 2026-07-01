@@ -84,7 +84,7 @@ export default function VisionHero() {
           <span className="hidden h-3 w-px bg-white/15 sm:block" />
           <span><span className="font-mono text-white/70">6</span> micro-markets, live</span>
           <span className="hidden h-3 w-px bg-white/15 sm:block" />
-          <span><span className="font-mono text-white/70">Zero</span> developer commissions</span>
+          <span><span className="font-mono text-white/70">Zero</span> paid rankings</span>
         </div>
       </div>
 

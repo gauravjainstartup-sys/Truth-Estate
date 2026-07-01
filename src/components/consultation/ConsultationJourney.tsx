@@ -290,8 +290,8 @@ function IntroStep({
       </h1>
       <p className="mt-4 max-w-[540px] text-[0.95rem] font-light leading-[1.7] text-[#1a1a1a]/55 md:text-[1.02rem]">
         {warm
-          ? "No sales pressure, no developer bias — just one prepared conversation about your decision. Pick a time below."
-          : "One recommendation, no agenda. No sales pressure, no developer bias, no broker incentives — just independent advice tailored to your situation."}
+          ? "No sales pressure and no agenda — just one prepared, independent conversation about your decision. Pick a time below."
+          : "One clear recommendation, no agenda — independent advice tailored to your situation, and we'll tell you to walk away if that's the honest call."}
       </p>
 
       {/* Warm: a reminder of what we already hold */}
@@ -344,7 +344,7 @@ function IntroStep({
         <p className="mt-4 text-center text-[0.78rem] font-light text-[#1a1a1a]/45">
           {warm
             ? "Takes about a minute — your details are already in."
-            : "Completely complimentary. We'll understand your situation before discussing whether we should work together."}
+            : "We'll understand your situation and give you our honest read before we ever discuss working together."}
         </p>
       </div>
 

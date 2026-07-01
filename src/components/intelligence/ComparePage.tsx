@@ -115,7 +115,7 @@ export default function ComparePage({ r }: { r: ResolvedCompare }) {
         </div>
 
         <p className="mt-8 text-[0.72rem] font-light leading-[1.7] text-[#1a1a1a]/35">
-          Independent comparison by Truth Estate. We take no developer commissions. Scores, signals and bands are our own evidence-based reads and vary by tower, floor and stack — not investment advice.
+          Independent comparison by Truth Estate. No developer can pay for a higher score or a better placement. Scores, signals and bands are our own evidence-based reads and vary by tower, floor and stack — not investment advice.
         </p>
       </div>
     </div>

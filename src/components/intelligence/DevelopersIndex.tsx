@@ -26,7 +26,7 @@ export default function DevelopersIndex() {
         </h1>
         <p className="mt-5 max-w-xl text-[1rem] font-light leading-[1.8] text-[#1a1a1a]/50">
           Independent dossiers on the developers shaping Gurugram — track record, delivery
-          performance and financial health. No commissions, no spin.
+          performance and financial health. No paid placements, no spin.
         </p>
 
         <div className="mt-12 grid gap-5 sm:grid-cols-2">

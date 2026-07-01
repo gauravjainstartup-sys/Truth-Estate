@@ -1451,7 +1451,7 @@ function PaymentSheet({ thread, onClose, onPay }: { thread: OfficeThread; onClos
           {processing ? "Processing…" : `Pay ${INR(MANDATE_FEE)} & activate`}
         </button>
         <p className="mt-4 text-center text-[0.76rem] font-light leading-relaxed text-[#1a1a1a]/45">
-          Independent · no developer commissions · refundable if we don&apos;t add value in 30 days.
+          Our advice isn&apos;t for sale · full fee transparency · refundable if we don&apos;t add value in 30 days.
         </p>
       </div>
     </div>

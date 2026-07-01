@@ -76,7 +76,7 @@ export const CONSULT_PILLARS = [
    Architected so payment can be inserted before scheduling without redesign. */
 export const CONSULT_FEE: number | null = null;
 export const CONSULT_DURATION = "45 Minute Consultation";
-export const CONSULT_HEADLINE = "Complimentary First Consultation";
+export const CONSULT_HEADLINE = "Your First Consultation";
 
 export const CONSULT_TIMELINE = [
   "Understand your goals",

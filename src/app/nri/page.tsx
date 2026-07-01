@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "The NRI Desk — Buy Property in India from Abroad",
     description:
-      "Your independent principal on the ground in India. Forensic due diligence, site visits, FEMA and tax navigated — paid only by you, never by a developer.",
+      "Your independent principal on the ground in India. Forensic due diligence, site visits, FEMA and tax navigated. Our advice isn't for sale — no developer can buy our recommendation.",
     type: "website",
   },
 };

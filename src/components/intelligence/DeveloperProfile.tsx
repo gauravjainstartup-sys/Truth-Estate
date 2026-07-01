@@ -171,7 +171,7 @@ export default function DeveloperProfile({ dev }: { dev: DeveloperIntel }) {
         </div>
 
         <p className="mt-8 text-[0.72rem] font-light leading-[1.7] text-[#1a1a1a]/35">
-          Independent assessment by Truth Estate. We take no developer commissions. Performance figures are our own tracked estimates; financial signals are directional reads from public filings and parent-group strength — not a substitute for project-level due diligence.
+          Independent assessment by Truth Estate. No developer can pay for a higher score or a better placement. Performance figures are our own tracked estimates; financial signals are directional reads from public filings and parent-group strength — not a substitute for project-level due diligence.
         </p>
       </div>
     </div>

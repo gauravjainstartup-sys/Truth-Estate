@@ -133,7 +133,7 @@ export default function MarketProfile({ m }: { m: MarketIntel }) {
         </div>
 
         <p className="mt-8 text-[0.72rem] font-light leading-[1.7] text-[#1a1a1a]/35">
-          Independent assessment by Truth Estate. We take no developer commissions. Price bands are our tracked estimates for the corridor and vary by project, tower and floor.
+          Independent assessment by Truth Estate. No developer can pay for a higher score or a better placement. Price bands are our tracked estimates for the corridor and vary by project, tower and floor.
         </p>
       </div>
     </div>
