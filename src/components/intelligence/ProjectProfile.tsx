@@ -590,7 +590,7 @@ export default function ProjectProfile({
                 </div>
                 <div className="mt-7 grid gap-3 md:grid-cols-3">
                   <ActionCell tone="primary" icon="●" title="Get Independent Advice" desc="45-min advisor call · fee refundable" onClick={consult} />
-                  <ActionCell tone="secondary" icon="▦" title="See Unit Intelligence" desc="3D sun & unit model · free" onClick={openUnitIntel} />
+                  <ActionCell tone="secondary" icon="▦" title="See Unit Intelligence" desc="3D sun & unit model — free to explore" onClick={openUnitIntel} />
                   <ActionCell tone="ghost" icon="◆" title="Challenge TruthGuide" desc="Ask our AI anything about this project" onClick={challenge} />
                 </div>
               </div>
