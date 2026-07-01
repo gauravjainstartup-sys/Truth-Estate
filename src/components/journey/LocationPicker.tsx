@@ -69,8 +69,8 @@ export default function LocationPicker({
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search an area or landmark — Cyber City, SPR, Sector 65…"
-          className="w-full border-b-2 border-[#1a1a1a]/15 bg-transparent py-4 font-serif text-[1.1rem] font-light text-[#1a1a1a] outline-none transition-colors duration-300 placeholder:text-[#1a1a1a]/30 focus:border-[#1e6b45]/50 md:text-[1.35rem]"
+          placeholder="Search an area or landmark…"
+          className="w-full truncate border-b-2 border-[#1a1a1a]/15 bg-transparent py-4 font-serif text-[1.1rem] font-light text-[#1a1a1a] outline-none transition-colors duration-300 placeholder:text-[#1a1a1a]/30 focus:border-[#1e6b45]/50 md:text-[1.35rem]"
         />
         {query.trim() && (
           <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-[300px] overflow-y-auto rounded-lg border border-[#1a1a1a]/12 bg-[#F5F0E8] shadow-xl shadow-black/[0.06]">

@@ -205,36 +205,49 @@ function recTone(s: OfficeRec["status"]) {
     : "border-[#1a1a1a]/15 bg-[#1a1a1a]/[0.03] text-[#1a1a1a]/55";
 }
 
-/* The journey arc — current stage highlighted. */
+/* The journey arc — dots span the width; labels show on desktop, and a
+   current-step caption stands in on mobile (7 labels don't fit a phone). */
 function StageArc({ stage }: { stage: DealStage }) {
   const cur = stageIndex(stage);
+  let hereIdx = 0;
+  STAGE_ARC.forEach((m, i) => {
+    if (stageIndex(m.stage) <= cur) hereIdx = i;
+  });
+
   return (
-    <div className="flex items-center">
-      {STAGE_ARC.map((m, i) => {
-        const mi = stageIndex(m.stage);
-        const done = mi < cur;
-        const here = mi === cur || (i < STAGE_ARC.length - 1 && cur > mi && cur < stageIndex(STAGE_ARC[i + 1].stage));
-        const reached = mi <= cur;
-        return (
-          <div key={m.stage} className="flex flex-1 items-center last:flex-none">
-            <div className="flex flex-col items-center">
-              <span
-                className={`grid h-[22px] w-[22px] place-items-center rounded-full border text-[0.6rem] ${
-                  reached ? "border-[#1e6b45] bg-[#1e6b45] text-white" : "border-[#1a1a1a]/20 bg-[#F5F0E8] text-[#1a1a1a]/30"
-                }`}
-              >
-                {done ? "✓" : i + 1}
-              </span>
-              <span className={`mt-2 text-[0.62rem] font-light uppercase tracking-[0.1em] ${here ? "text-[#1a1a1a]" : "text-[#1a1a1a]/40"}`}>
-                {m.short}
-              </span>
+    <div>
+      {/* Mobile current-step caption */}
+      <div className="mb-3 flex items-baseline justify-between sm:hidden">
+        <span className="text-[0.82rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]">{STAGE_ARC[hereIdx].short}</span>
+        <span className="text-[0.66rem] font-light uppercase tracking-[0.12em] text-[#1a1a1a]/40">Step {hereIdx + 1} of {STAGE_ARC.length}</span>
+      </div>
+      <div className="flex items-center">
+        {STAGE_ARC.map((m, i) => {
+          const mi = stageIndex(m.stage);
+          const done = mi < cur;
+          const here = mi === cur || (i < STAGE_ARC.length - 1 && cur > mi && cur < stageIndex(STAGE_ARC[i + 1].stage));
+          const reached = mi <= cur;
+          return (
+            <div key={m.stage} className="flex flex-1 items-center last:flex-none">
+              <div className="flex flex-col items-center">
+                <span
+                  className={`grid h-[22px] w-[22px] shrink-0 place-items-center rounded-full border text-[0.6rem] ${
+                    reached ? "border-[#1e6b45] bg-[#1e6b45] text-white" : "border-[#1a1a1a]/20 bg-[#F5F0E8] text-[#1a1a1a]/30"
+                  } ${here ? "ring-2 ring-[#1e6b45]/25 ring-offset-2 ring-offset-white sm:ring-0" : ""}`}
+                >
+                  {done ? "✓" : i + 1}
+                </span>
+                <span className={`mt-2 hidden whitespace-nowrap text-[0.62rem] font-light uppercase tracking-[0.1em] sm:block ${here ? "text-[#1a1a1a]" : "text-[#1a1a1a]/40"}`}>
+                  {m.short}
+                </span>
+              </div>
+              {i < STAGE_ARC.length - 1 && (
+                <span className={`mx-2 mb-0 h-px flex-1 sm:mb-5 ${mi < cur ? "bg-[#1e6b45]/50" : "bg-[#1a1a1a]/12"}`} />
+              )}
             </div>
-            {i < STAGE_ARC.length - 1 && (
-              <span className={`mx-2 mb-5 h-px flex-1 ${mi < cur ? "bg-[#1e6b45]/50" : "bg-[#1a1a1a]/12"}`} />
-            )}
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -243,7 +256,7 @@ function StageArc({ stage }: { stage: DealStage }) {
 function PreviewStage({ value, onChange, onReset }: { value: DealStage; onChange: (s: DealStage) => void; onReset: () => void }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="hidden text-[0.66rem] font-light uppercase tracking-[0.16em] text-[#1a1a1a]/35 sm:inline">Preview</span>
+      <span className="text-[0.66rem] font-light uppercase tracking-[0.16em] text-[#1a1a1a]/35">Preview</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value as DealStage)}
@@ -516,18 +529,18 @@ function IntelCard({ title, meta, teasers, paid }: { title: string; meta: string
           <p className="font-serif text-[1.2rem] font-medium text-[#1a1a1a]">{title}</p>
           <p className="mt-1 text-[0.72rem] font-light uppercase tracking-[0.1em] text-[#1a1a1a]/40">{meta}</p>
         </div>
-        {paid ? <span className="text-[0.72rem] font-medium text-[#1e6b45]">Open →</span> : <LockBadge label="Preview" />}
+        {paid ? <span className="shrink-0 whitespace-nowrap text-[0.72rem] font-medium text-[#1e6b45]">Open →</span> : <LockBadge label="Preview" />}
       </div>
       <div className="mt-5 flex flex-col gap-3 border-t border-[#1a1a1a]/[0.06] pt-5">
         {teasers.map((t) => (
           <div key={t.label} className="flex items-baseline justify-between gap-3">
             <span className="text-[0.8rem] font-light text-[#1a1a1a]/50">{t.label}</span>
-            <span className="font-serif text-[1.05rem] font-medium text-[#1a1a1a]">{t.value}</span>
+            <span className="text-right font-serif text-[1.05rem] font-medium text-[#1a1a1a]">{t.value}</span>
           </div>
         ))}
         <div className="flex items-baseline justify-between gap-3 border-t border-dashed border-[#1a1a1a]/10 pt-3">
           <span className="text-[0.8rem] font-light text-[#1a1a1a]/50">Full breakdown</span>
-          <span className={`text-[0.82rem] font-light ${paid ? "text-[#1e6b45]" : "text-[#9a7a2e]"}`}>{paid ? "Open report →" : "🔒 in the report"}</span>
+          <span className={`shrink-0 whitespace-nowrap text-[0.82rem] font-light ${paid ? "text-[#1e6b45]" : "text-[#9a7a2e]"}`}>{paid ? "Open report →" : "🔒 in the report"}</span>
         </div>
       </div>
     </div>
@@ -830,15 +843,15 @@ function OffersPhase({ thread, onAdvance }: { thread: OfficeThread; onAdvance: (
 function OfferCard({ offer, onChoose }: { offer: DealOffer; onChoose: () => void }) {
   return (
     <div className={`rounded-xl border p-5 md:p-6 ${offer.recommended ? "border-[#1e6b45]/30 bg-[#1e6b45]/[0.04]" : "border-[#1a1a1a]/[0.08] bg-white"}`}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2.5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
             <p className="font-serif text-[1.15rem] font-medium text-[#1a1a1a]">{offer.source}</p>
             {offer.recommended && <span className="rounded-full border border-[#1e6b45]/30 bg-[#1e6b45]/8 px-2.5 py-0.5 text-[0.6rem] font-medium uppercase tracking-[0.08em] text-[#1e6b45]">We recommend</span>}
           </div>
           <p className="mt-1 text-[0.8rem] font-light text-[#1a1a1a]/50">{offer.unit}</p>
         </div>
-        <div className="text-right">
+        <div className="shrink-0 sm:text-right">
           <p className="font-serif text-[1.5rem] font-medium leading-none text-[#1a1a1a]">{INR(offer.price)}</p>
           <p className="mt-1 text-[0.72rem] font-light text-[#1a1a1a]/45">{INR(offer.perSqft)}/sq ft · ₹{offer.vsQuoted}L under quoted</p>
         </div>
@@ -862,7 +875,7 @@ function TermsPhase({ thread, onAdvance }: { thread: OfficeThread; onAdvance: (s
   return (
     <div>
       <div className="overflow-hidden rounded-xl border border-[#1e6b45]/20 bg-white">
-        <div className="flex items-center justify-between border-b border-[#1a1a1a]/[0.06] bg-[#1e6b45]/[0.04] px-5 py-4">
+        <div className="flex flex-col gap-2 border-b border-[#1a1a1a]/[0.06] bg-[#1e6b45]/[0.04] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-[0.62rem] font-light uppercase tracking-[0.16em] text-[#1e6b45]">Your offer</p>
             <p className="mt-1 font-serif text-[1.1rem] font-medium text-[#1a1a1a]">{s.unit}</p>
