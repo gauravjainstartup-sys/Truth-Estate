@@ -316,39 +316,6 @@ function Chip({
   );
 }
 
-function Field({ label, value, onEdit }: { label: string; value: string; onEdit?: () => void }) {
-  return (
-    <div
-      onClick={onEdit}
-      onKeyDown={
-        onEdit
-          ? (e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onEdit();
-              }
-            }
-          : undefined
-      }
-      role={onEdit ? "button" : undefined}
-      tabIndex={onEdit ? 0 : undefined}
-      className={`group ${onEdit ? "-m-2 cursor-pointer rounded-lg p-2 transition-colors hover:bg-[#1a1a1a]/[0.035]" : ""}`}
-    >
-      <dt className="flex items-center gap-1.5 text-[10px] font-light uppercase tracking-[0.22em] text-[#1a1a1a]/40">
-        {label}
-        {onEdit && (
-          <span className="text-[0.72rem] leading-none text-[#c9a96e] opacity-50 transition-opacity group-hover:opacity-100" aria-hidden>
-            ✎
-          </span>
-        )}
-      </dt>
-      <dd className="mt-2 font-serif text-[1.02rem] font-light leading-snug text-[#1a1a1a] transition-colors group-hover:text-[#1e6b45] md:text-[1.15rem]">
-        {value}
-      </dd>
-    </div>
-  );
-}
-
 function Avatar({ initials }: { initials: string }) {
   return (
     <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[#c9a96e]/50 bg-[#c9a96e]/10 font-serif text-[1.1rem] font-medium text-[#1a1a1a]/70">
@@ -1206,7 +1173,7 @@ export default function JourneyModal({
       setStep(s);
     };
     return frame(
-      <Shell onClose={onClose} onBack={() => setStep("priorities")} eyebrow="Your Buyer DNA" align="top">
+      <Shell onClose={onClose} onBack={() => setStep("priorities")} eyebrow="Your Buyer DNA" align="top" wide>
         <DnaScreen dna={dna} onContinue={() => setStep("processing")} onEdit={editStep} />
       </Shell>
     );
@@ -1417,30 +1384,76 @@ function DnaScreen({
   onContinue: () => void;
   onEdit: (step: BuyStep) => void;
 }) {
+  const article = /^[aeiou]/i.test(dna.archetype) ? "an" : "a";
   return (
     <div key="dna" className="animate-fade-up">
-      <ScreenHeading dense compact kicker="Buyer DNA" title={<>We&apos;ve understood<br />what you&apos;re looking for.</>} />
-      <div className="border-y border-[#1a1a1a]/15 py-5 md:py-6">
-        <div className="mb-5 text-center">
-          <div className="mx-auto mb-4 h-px w-16 bg-[#c9a96e]/50" />
-          <p className="font-serif text-[1.7rem] font-medium text-[#1a1a1a] md:text-[2.2rem]">{dna.archetype}</p>
-          <div className="mx-auto mt-4 h-px w-16 bg-[#c9a96e]/50" />
-          <span className="mt-4 inline-block rounded-full border border-[#1e6b45]/25 bg-[#1e6b45]/[0.05] px-4 py-1.5 text-[0.72rem] font-light tracking-[0.04em] text-[#1e6b45]">
-            {dna.possession}
-          </span>
+      <div className="grid grid-cols-1 gap-9 md:grid-cols-2 md:gap-14">
+        {/* ── Identity ── */}
+        <div className="md:pt-6">
+          <p className="text-[10px] font-light uppercase tracking-[0.4em] text-[#c9a96e]">Your Buyer DNA</p>
+          <h2 className="mt-5 font-serif text-[2.1rem] font-medium leading-[1.06] text-[#1a1a1a] md:text-[3rem]">
+            You&apos;re {article} <span className="text-[#1e6b45]">{dna.archetype}</span>.
+          </h2>
+          <p className="mt-5 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/60 md:text-[1.08rem]">
+            {dna.insight}
+          </p>
+          {/* desktop CTA + anticipation */}
+          <div className="mt-9 hidden md:block">
+            <PrimaryButton onClick={onContinue}>See what we&apos;d investigate</PrimaryButton>
+            <p className="mt-4 text-[0.82rem] font-light text-[#1a1a1a]/45">
+              Next: we scan {ACTIVE_PROJECT_COUNT} projects against your brief.
+            </p>
+          </div>
         </div>
-        <dl className="grid grid-cols-2 gap-x-8 gap-y-6 md:grid-cols-3">
-          <Field label="Budget" value={dna.budgetRange} onEdit={() => onEdit("budget")} />
-          <Field label="Preferred Markets" value={dna.markets.join("  ·  ")} onEdit={() => onEdit("locations")} />
-          <Field label="Configuration" value={dna.config} onEdit={() => onEdit("configs")} />
-          <Field label="Timeline" value={dna.timeline} onEdit={() => onEdit("timeline")} />
-          <Field label="Risk Appetite" value={dna.risk} onEdit={() => onEdit("purchase")} />
-          <Field label="Top Priorities" value={dna.topPriorities.join("  ·  ")} onEdit={() => onEdit("priorities")} />
-        </dl>
-        <p className="mt-5 text-center text-[0.78rem] font-light text-[#1a1a1a]/40">Tap any detail to change it.</p>
+
+        {/* ── The brief ── */}
+        <div className="rounded-2xl border border-[#1a1a1a]/10 bg-white/60 p-6 md:p-7">
+          <div className="mb-1.5 flex items-baseline justify-between">
+            <p className="text-[10px] font-light uppercase tracking-[0.3em] text-[#c9a96e]">Your Brief</p>
+            <p className="text-[0.72rem] font-light text-[#1a1a1a]/35">Tap to change</p>
+          </div>
+          <BriefRow label="Budget" value={dna.budgetRange} onEdit={() => onEdit("budget")} />
+          <BriefRow label="Preferred Markets" value={dna.markets.join(" · ")} onEdit={() => onEdit("locations")} />
+          <BriefRow label="Configuration" value={dna.config} onEdit={() => onEdit("configs")} />
+          <BriefRow label="Timeline" value={dna.timeline} onEdit={() => onEdit("timeline")} />
+          <BriefRow label="Focus" value={dna.possession} />
+          <BriefRow label="Risk Appetite" value={dna.risk} onEdit={() => onEdit("purchase")} />
+          <BriefRow label="Top Priorities" value={dna.topPriorities.join(" · ")} onEdit={() => onEdit("priorities")} />
+        </div>
       </div>
-      <NextBar onNext={onContinue} label="See what we'd investigate" tight />
+
+      {/* ── Mobile anticipation + sticky CTA ── */}
+      <p className="mt-8 text-center text-[0.82rem] font-light text-[#1a1a1a]/45 md:hidden">
+        Next: we scan {ACTIVE_PROJECT_COUNT} projects against your brief.
+      </p>
+      <div className="sticky bottom-0 -mx-6 mt-4 border-t border-[#1a1a1a]/10 bg-[#F5F0E8]/95 px-6 py-4 backdrop-blur md:hidden">
+        <PrimaryButton onClick={onContinue} full>
+          See what we&apos;d investigate
+        </PrimaryButton>
+      </div>
     </div>
+  );
+}
+
+/* A single editable line in the Buyer DNA "brief" — label left, value right,
+   tap to jump back and change it. Omit onEdit to render a fixed row. */
+function BriefRow({ label, value, onEdit }: { label: string; value: string; onEdit?: () => void }) {
+  return (
+    <button
+      onClick={onEdit}
+      disabled={!onEdit}
+      className="group flex w-full items-baseline justify-between gap-5 border-b border-[#1a1a1a]/[0.07] py-3.5 text-left last:border-0 disabled:cursor-default"
+    >
+      <span className="shrink-0 text-[10px] font-light uppercase tracking-[0.18em] text-[#1a1a1a]/40">{label}</span>
+      <span className="flex items-center gap-1.5 text-right font-serif text-[1rem] font-light leading-snug text-[#1a1a1a] transition-colors group-enabled:group-hover:text-[#1e6b45] md:text-[1.05rem]">
+        {value}
+        {onEdit && (
+          <span className="text-[0.68rem] text-[#c9a96e] opacity-45 transition-opacity group-hover:opacity-100" aria-hidden>
+            ✎
+          </span>
+        )}
+      </span>
+    </button>
   );
 }
 

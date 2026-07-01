@@ -387,6 +387,7 @@ export function rankProjects(d: BuyData): Scored[] {
 /* ── Buyer DNA ── */
 export type DNA = {
   archetype: string;
+  insight: string;
   risk: string;
   budgetRange: string;
   markets: string[];
@@ -394,6 +395,23 @@ export type DNA = {
   topPriorities: string[];
   timeline: string;
   possession: string;
+};
+
+/* A second-person line that gives each archetype meaning — the "here's what
+   this says about you" moment on the Buyer DNA screen. */
+export const ARCHETYPE_INSIGHT: Record<string, string> = {
+  "Upgrade Buyer":
+    "You already own — this move is about more space, more calm and a better address. We'll weigh low-density living and signature design over the lowest price.",
+  "Lifestyle Connoisseur":
+    "You buy for how a home feels to live in. We'll lead with layouts, light and lifestyle, and treat the spreadsheet as the sanity check, not the goal.",
+  "Growth Investor":
+    "You're deploying capital, not just buying a home. We'll focus on appreciation runway, resale liquidity and the numbers behind every play.",
+  "Value Seeker":
+    "You want the most home for the money, bought right. We'll hunt for genuine entry-price value — not just the lowest sticker.",
+  "First-Home Buyer":
+    "This is a big first step, so certainty matters most. We'll lean on legal safety, delivery track record and payment ease before anything else.",
+  "Considered Buyer":
+    "You take your time and weigh the evidence. We'll hand you the full picture on every option — with no pressure to move before you're ready.",
 };
 
 export function budgetLabel(v: number): string {
@@ -443,6 +461,7 @@ export function deriveDNA(d: BuyData): DNA {
 
   return {
     archetype,
+    insight: ARCHETYPE_INSIGHT[archetype] ?? ARCHETYPE_INSIGHT["Considered Buyer"],
     risk,
     budgetRange: budgetRange(d.budgetCr),
     markets,
