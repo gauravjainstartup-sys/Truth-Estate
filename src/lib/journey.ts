@@ -10,7 +10,27 @@ export const PRIMARY_CTA = "Start Your Journey";
 
 export type Intent = "buy" | "sell" | "invest" | "research";
 
+/* ── Possession status ──
+   A qualifying axis, not a preference. Truth Estate serves under-construction
+   homes today; "open" is treated as served (UC is still on the table);
+   "ready-to-move" routes to an honest off-ramp. Kept as data so we can also
+   learn how much RTM demand we're turning away. */
+export type Possession = "under-construction" | "ready-to-move" | "open";
+
+export const POSSESSION_OPTIONS: { key: Possession; label: string; sub: string; served: boolean }[] = [
+  { key: "under-construction", label: "Under construction", sub: "A new launch or an under-build project.", served: true },
+  { key: "open", label: "Open to both / still deciding", sub: "Show me what fits — we'll weigh it together.", served: true },
+  { key: "ready-to-move", label: "Ready to move", sub: "I want a completed, move-in-ready home.", served: false },
+];
+
+export const POSSESSION_LABEL: Record<Possession, string> = {
+  "under-construction": "Under-construction",
+  "ready-to-move": "Ready-to-move",
+  open: "Open to both",
+};
+
 export type BuyData = {
+  possession: Possession | null;
   purchaseType: string | null;
   budgetCr: number; // 1..21  (21 == "20 Cr+")
   locations: string[];
@@ -20,6 +40,7 @@ export type BuyData = {
 };
 
 export const emptyBuyData: BuyData = {
+  possession: null,
   purchaseType: null,
   budgetCr: 6,
   locations: [],
@@ -297,6 +318,7 @@ export type DNA = {
   config: string;
   topPriorities: string[];
   timeline: string;
+  possession: string;
 };
 
 export function budgetLabel(v: number): string {
@@ -352,6 +374,7 @@ export function deriveDNA(d: BuyData): DNA {
     config,
     topPriorities: p.length ? p : ["To be discovered together"],
     timeline: d.timeline ?? "Just Exploring",
+    possession: d.possession ? POSSESSION_LABEL[d.possession] : "Under-construction",
   };
 }
 
@@ -430,6 +453,62 @@ export function clearAccount(): void {
     /* ignore */
   }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   OFF-RAMP INTEREST CAPTURE
+   When someone wants what we don't serve yet (ready-to-move / commercial),
+   we don't dead-end them — we capture it. This doubles as a waitlist and a
+   demand log ("how much RTM are we turning away?") that tells us which
+   market to open next. Front-end simulation; swaps to a real CRM later.
+   ════════════════════════════════════════════════════════════════ */
+export type InterestKind = "ready-to-move" | "commercial";
+
+export type Interest = {
+  kind: InterestKind;
+  email: string;
+  locations?: string[];
+  createdAt: number;
+};
+
+const INTEREST_KEY = "truthEstate.interests";
+
+export function saveInterest(i: Interest): void {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = window.localStorage.getItem(INTEREST_KEY);
+    const list: Interest[] = raw ? (JSON.parse(raw) as Interest[]) : [];
+    list.push(i);
+    window.localStorage.setItem(INTEREST_KEY, JSON.stringify(list));
+  } catch {
+    /* ignore */
+  }
+}
+
+/* Copy for the two off-ramps — single source so both the Buy journey and the
+   consultation flow tell the same honest story. */
+export const OFFRAMP_COPY: Record<
+  InterestKind,
+  { kicker: string; title: string; body: string; cta: string; placeholder: string; done: string; reassure: string }
+> = {
+  "ready-to-move": {
+    kicker: "An honest answer",
+    title: "Ready-to-move isn't our focus — yet.",
+    body: "We've chosen to go deep on under-construction rather than wide across everything. It's why our read is sharper than a generalist's — and why, for a move-in-ready home today, we'd rather point you straight than pretend.",
+    cta: "Tell me when you cover ready-to-move",
+    placeholder: "you@email.com",
+    done: "Done. We'll be in touch the moment we cover ready-to-move.",
+    reassure: "No spam. One message, when it's live.",
+  },
+  commercial: {
+    kicker: "An honest answer",
+    title: "We focus on homes, not commercial — for now.",
+    body: "Our diligence is built for residential buyers. If commercial is what you need, leave your details and we'll reach out the moment we extend there.",
+    cta: "Keep me posted",
+    placeholder: "you@email.com",
+    done: "Noted. We'll reach out when we extend into commercial.",
+    reassure: "No spam. One message, when it's live.",
+  },
+};
 
 /* ════════════════════════════════════════════════════════════════
    SELL PROPERTY JOURNEY

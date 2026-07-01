@@ -6,6 +6,7 @@ import Logo from "../Logo";
 import BuyersOffice from "./BuyersOffice";
 import LocationPicker from "./LocationPicker";
 import ProjectProfile from "../intelligence/ProjectProfile";
+import FocusOffRamp from "../FocusOffRamp";
 import { projectByName } from "@/lib/projects";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import type { ConsultIntent, ConsultProfileChip } from "@/lib/consultation";
@@ -31,6 +32,7 @@ import {
   MAX_INVEST_PRIORITIES,
   MAX_PRIORITIES,
   MAX_SELL_PRIORITIES,
+  POSSESSION_OPTIONS,
   PRIORITIES,
   PURCHASE_TYPES,
   SELL_CONFIGS,
@@ -235,6 +237,45 @@ function OptionRow({
   );
 }
 
+function PossessionRow({
+  label,
+  sub,
+  selected,
+  onClick,
+}: {
+  label: string;
+  sub: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`group flex w-full items-start gap-5 border-b py-5 text-left transition-colors duration-300 ${
+        selected ? "border-[#1e6b45]/40" : "border-[#1a1a1a]/10 hover:border-[#1a1a1a]/25"
+      }`}
+    >
+      <span
+        className={`mt-1.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border transition-colors duration-300 ${
+          selected ? "border-[#1e6b45]" : "border-[#1a1a1a]/30 group-hover:border-[#1a1a1a]/50"
+        }`}
+      >
+        {selected && <span className="h-2 w-2 rounded-full bg-[#1e6b45]" />}
+      </span>
+      <span className="flex flex-col gap-1">
+        <span
+          className={`font-serif text-[1.3rem] font-light leading-tight transition-colors duration-300 md:text-[1.6rem] ${
+            selected ? "text-[#1a1a1a]" : "text-[#1a1a1a]/65"
+          }`}
+        >
+          {label}
+        </span>
+        <span className="text-[0.84rem] font-light text-[#1a1a1a]/40 md:text-[0.9rem]">{sub}</span>
+      </span>
+    </button>
+  );
+}
+
 function Chip({
   label,
   selected,
@@ -327,7 +368,7 @@ function useCountUp(end: number, run: boolean, dur = 1600) {
    STEP MACHINE
    ════════════════════════════════════════════════════════════════ */
 
-const BUY_STEPS = ["purchase", "budget", "locations", "configs", "timeline", "priorities"] as const;
+const BUY_STEPS = ["possession", "purchase", "budget", "locations", "configs", "timeline", "priorities"] as const;
 type BuyStep = (typeof BUY_STEPS)[number];
 
 const SELL_STEPS = ["sell-intro", "sell-project", "sell-config", "sell-details", "sell-timeline", "sell-priorities"] as const;
@@ -341,6 +382,8 @@ type Step =
   | "goal"
   | "coming-soon"
   | BuyStep
+  | "buy-offramp-rtm"
+  | "buy-offramp-commercial"
   | SellStep
   | "sell-processing"
   | "sell-result"
@@ -362,7 +405,7 @@ type Step =
   | "research";
 
 const INTENT_STEP: Record<Intent, Step> = {
-  buy: "purchase",
+  buy: "possession",
   sell: "sell-intro",
   invest: "invest-intro",
   research: "research",
@@ -456,12 +499,24 @@ export default function JourneyModal({
   };
 
   const canContinue: Record<BuyStep, boolean> = {
+    possession: buy.possession !== null,
     purchase: buy.purchaseType !== null,
     budget: true,
     locations: true,
     configs: true,
     timeline: buy.timeline !== null,
     priorities: buy.priorities.length > 0,
+  };
+
+  // Possession is a qualifier: "ready-to-move" diverts to the honest
+  // off-ramp; "under-construction" and "open" continue into the journey.
+  const nextPossession = () => {
+    if (buy.possession === "ready-to-move") setStep("buy-offramp-rtm");
+    else nextBuy();
+  };
+  const exploreMethodology = () => {
+    onClose();
+    router.push("/methodology");
   };
 
   const sellIndex = SELL_STEPS.indexOf(step as SellStep);
@@ -943,6 +998,54 @@ export default function JourneyModal({
 
   /* ─────────────── BUY FLOW ─────────────── */
 
+  if (step === "possession") {
+    return frame(
+      <Shell onClose={onClose} onBack={backBuy} progress={progress} eyebrow="Buy Property">
+        <div key="possession" className="animate-fade-up">
+          <ScreenHeading
+            kicker="Where you're looking"
+            title="Under construction, or ready to move?"
+            sub="Truth Estate specialises in under-construction homes in Gurugram — where delivery risk is real and independent diligence changes the outcome. Knowing this up front means we only ever put you in front of what we can genuinely stand behind."
+          />
+          <div className="flex flex-col">
+            {POSSESSION_OPTIONS.map((o) => (
+              <PossessionRow
+                key={o.key}
+                label={o.label}
+                sub={o.sub}
+                selected={buy.possession === o.key}
+                onClick={() => set("possession", o.key)}
+              />
+            ))}
+          </div>
+          <button
+            onClick={() => setStep("buy-offramp-commercial")}
+            className="mt-7 text-[0.86rem] font-light text-[#1a1a1a]/45 underline decoration-[#1a1a1a]/15 underline-offset-4 transition-colors hover:text-[#1a1a1a]/80"
+          >
+            Looking for commercial space instead?
+          </button>
+          <NextBar onNext={nextPossession} disabled={!canContinue.possession} />
+        </div>
+      </Shell>
+    );
+  }
+
+  if (step === "buy-offramp-rtm") {
+    return frame(
+      <Shell onClose={onClose} onBack={() => setStep("possession")} eyebrow="Buy Property">
+        <FocusOffRamp kind="ready-to-move" locations={buy.locations} onExplore={exploreMethodology} />
+      </Shell>
+    );
+  }
+
+  if (step === "buy-offramp-commercial") {
+    return frame(
+      <Shell onClose={onClose} onBack={() => setStep("possession")} eyebrow="Buy Property">
+        <FocusOffRamp kind="commercial" locations={buy.locations} />
+      </Shell>
+    );
+  }
+
   if (step === "purchase") {
     return frame(
       <Shell onClose={onClose} onBack={backBuy} progress={progress} eyebrow="Buy Property">
@@ -1297,6 +1400,9 @@ function DnaScreen({
           <div className="mx-auto mb-5 h-px w-16 bg-[#c9a96e]/50" />
           <p className="font-serif text-[1.9rem] font-medium text-[#1a1a1a] md:text-[2.6rem]">{dna.archetype}</p>
           <div className="mx-auto mt-5 h-px w-16 bg-[#c9a96e]/50" />
+          <span className="mt-5 inline-block rounded-full border border-[#1e6b45]/25 bg-[#1e6b45]/[0.05] px-4 py-1.5 text-[0.72rem] font-light tracking-[0.04em] text-[#1e6b45]">
+            {dna.possession} focus
+          </span>
         </div>
         <dl className="grid grid-cols-2 gap-x-8 gap-y-7 md:grid-cols-3">
           <Field label="Budget" value={dna.budgetRange} onEdit={() => onEdit("budget")} />

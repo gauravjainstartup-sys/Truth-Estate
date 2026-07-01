@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Logo from "../Logo";
+import FocusOffRamp from "../FocusOffRamp";
+import { POSSESSION_OPTIONS, type InterestKind } from "@/lib/journey";
 import {
   CONSULT_DAYPARTS,
   CONSULT_DAYS,
@@ -40,7 +42,9 @@ type Step =
   | "account"
   | "payment"
   | "confirm"
-  | "office";
+  | "office"
+  | "offramp-rtm"
+  | "offramp-commercial";
 
 export default function ConsultationJourney({
   context = {},
@@ -112,6 +116,8 @@ export default function ConsultationJourney({
           account: "schedule",
         }),
     ...(paid ? { payment: "account" as Step } : {}),
+    "offramp-rtm": "situation",
+    "offramp-commercial": "situation",
   };
 
   return frame(
@@ -143,7 +149,18 @@ export default function ConsultationJourney({
           details={booking.details}
           setField={setField}
           onContinue={() => goTo("prep")}
+          onOfframp={(kind) => goTo(kind === "commercial" ? "offramp-commercial" : "offramp-rtm")}
         />
+      )}
+      {step === "offramp-rtm" && (
+        <div className="animate-fade-up mx-auto max-w-[680px] px-6 py-14 md:px-10 md:py-20">
+          <FocusOffRamp kind="ready-to-move" onExplore={() => { onClose(); router.push("/methodology"); }} />
+        </div>
+      )}
+      {step === "offramp-commercial" && (
+        <div className="animate-fade-up mx-auto max-w-[680px] px-6 py-14 md:px-10 md:py-20">
+          <FocusOffRamp kind="commercial" />
+        </div>
       )}
       {step === "prep" && (
         <PrepStep
@@ -455,13 +472,24 @@ function SituationStep({
   details,
   setField,
   onContinue,
+  onOfframp,
 }: {
   intent: ConsultIntent;
   details: Record<string, string | string[]>;
   setField: (name: string, value: string | string[]) => void;
   onContinue: () => void;
+  onOfframp: (kind: InterestKind) => void;
 }) {
   const fields = CONSULT_FIELDS[intent];
+  const isBuy = intent === "buy";
+  const possession = details["possession"] as string | undefined;
+  const canContinue = !isBuy || !!possession;
+
+  const proceed = () => {
+    if (possession === "ready-to-move") onOfframp("ready-to-move");
+    else onContinue();
+  };
+
   return (
     <div className="animate-fade-up mx-auto max-w-[680px] px-6 py-12 md:px-10 md:py-16">
       <Eyebrow>Your situation</Eyebrow>
@@ -475,13 +503,45 @@ function SituationStep({
       </p>
 
       <div className="mt-10 flex flex-col gap-9">
+        {isBuy && (
+          <div>
+            <label className="mb-3 block text-[10px] font-light uppercase tracking-[0.22em] text-[#1a1a1a]/40">
+              Under construction or ready to move?
+            </label>
+            <div className="flex flex-wrap gap-2.5">
+              {POSSESSION_OPTIONS.map((o) => {
+                const on = possession === o.key;
+                return (
+                  <button
+                    key={o.key}
+                    onClick={() => setField("possession", o.key)}
+                    className={`rounded-full border px-5 py-2.5 text-[0.84rem] font-light transition-all duration-300 ${
+                      on
+                        ? "border-[#1e6b45] bg-[#1e6b45] text-white shadow-md shadow-black/10"
+                        : "border-[#1a1a1a]/15 text-[#1a1a1a]/60 hover:border-[#1a1a1a]/35 hover:text-[#1a1a1a]"
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              onClick={() => onOfframp("commercial")}
+              className="mt-3.5 text-[0.78rem] font-light text-[#1a1a1a]/45 underline decoration-[#1a1a1a]/15 underline-offset-4 transition-colors hover:text-[#1a1a1a]/80"
+            >
+              Looking for commercial space instead?
+            </button>
+          </div>
+        )}
+
         {fields.map((f) => (
           <FieldControl key={f.name} field={f} value={details[f.name]} onChange={(v) => setField(f.name, v)} />
         ))}
       </div>
 
       <div className="mt-12">
-        <PrimaryButton onClick={onContinue}>Continue →</PrimaryButton>
+        <PrimaryButton onClick={proceed} disabled={!canContinue}>Continue →</PrimaryButton>
       </div>
     </div>
   );
