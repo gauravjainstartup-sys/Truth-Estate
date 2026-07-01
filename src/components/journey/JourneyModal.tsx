@@ -128,13 +128,15 @@ function ScreenHeading({
   kicker,
   title,
   sub,
+  dense,
 }: {
   kicker?: string;
   title: React.ReactNode;
   sub?: string;
+  dense?: boolean;
 }) {
   return (
-    <div className="mb-10 md:mb-14">
+    <div className={dense ? "mb-4 md:mb-5" : "mb-10 md:mb-14"}>
       {kicker && (
         <p className="mb-5 text-[10px] font-light uppercase tracking-[0.4em] text-[#c9a96e]">{kicker}</p>
       )}
@@ -189,13 +191,15 @@ function NextBar({
   onNext,
   disabled,
   label = "Continue",
+  tight,
 }: {
   onNext: () => void;
   disabled?: boolean;
   label?: string;
+  tight?: boolean;
 }) {
   return (
-    <div className="mt-12 flex justify-end md:mt-16">
+    <div className={`flex justify-end ${tight ? "mt-6" : "mt-12 md:mt-16"}`}>
       <PrimaryButton onClick={onNext} disabled={disabled}>
         {label}
       </PrimaryButton>
@@ -251,7 +255,7 @@ function PossessionRow({
   return (
     <button
       onClick={onClick}
-      className={`group flex w-full items-start gap-5 border-b py-5 text-left transition-colors duration-300 ${
+      className={`group flex w-full items-start gap-5 border-b py-4 text-left transition-colors duration-300 ${
         selected ? "border-[#1e6b45]/40" : "border-[#1a1a1a]/10 hover:border-[#1a1a1a]/25"
       }`}
     >
@@ -1000,12 +1004,13 @@ export default function JourneyModal({
 
   if (step === "possession") {
     return frame(
-      <Shell onClose={onClose} onBack={backBuy} progress={progress} eyebrow="Buy Property">
+      <Shell onClose={onClose} onBack={backBuy} progress={progress} eyebrow="Buy Property" align="top">
         <div key="possession" className="animate-fade-up">
           <ScreenHeading
+            dense
             kicker="Where you're looking"
             title="Under construction, or ready to move?"
-            sub="Truth Estate specialises in under-construction homes in Gurugram — where delivery risk is real and independent diligence changes the outcome. Knowing this up front means we only ever put you in front of what we can genuinely stand behind."
+            sub="Truth Estate specialises in under-construction homes in Gurugram — where delivery risk is real and independent diligence changes the outcome."
           />
           <div className="flex flex-col">
             {POSSESSION_OPTIONS.map((o) => (
@@ -1020,11 +1025,11 @@ export default function JourneyModal({
           </div>
           <button
             onClick={() => setStep("buy-offramp-commercial")}
-            className="mt-7 text-[0.86rem] font-light text-[#1a1a1a]/45 underline decoration-[#1a1a1a]/15 underline-offset-4 transition-colors hover:text-[#1a1a1a]/80"
+            className="mt-4 text-[0.86rem] font-light text-[#1a1a1a]/45 underline decoration-[#1a1a1a]/15 underline-offset-4 transition-colors hover:text-[#1a1a1a]/80"
           >
             Looking for commercial space instead?
           </button>
-          <NextBar onNext={nextPossession} disabled={!canContinue.possession} />
+          <NextBar onNext={nextPossession} disabled={!canContinue.possession} tight />
         </div>
       </Shell>
     );
