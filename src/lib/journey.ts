@@ -664,6 +664,28 @@ export function saveLead(l: Lead): void {
   }
 }
 
+/* Buyer Office membership — global (join once, unit intelligence unlocks
+   everywhere). Separate from per-project unlocks. */
+const MEMBER_KEY = "truthEstate.member";
+
+export function isMember(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(MEMBER_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function setMember(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(MEMBER_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
 const UNLOCK_KEY = "truthEstate.unlocked";
 
 export function loadUnlocks(): string[] {
