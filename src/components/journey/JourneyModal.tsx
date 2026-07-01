@@ -33,7 +33,7 @@ import {
   MAX_PRIORITIES,
   MAX_SELL_PRIORITIES,
   POSSESSION_OPTIONS,
-  PRIORITIES,
+  prioritiesFor,
   PURCHASE_TYPES,
   SELL_CONFIGS,
   SELL_PRIORITIES,
@@ -454,6 +454,9 @@ export default function JourneyModal({
       { label: "Budget", value: dna.budgetRange },
       { label: "Markets", value: dna.markets.length ? dna.markets.slice(0, 3).join(", ") : "Open to guidance" },
       { label: "Timeline", value: dna.timeline },
+      // Carries the chosen priorities — including deal-structure ones like a
+      // flexible payment plan — into the advisor's brief.
+      ...(buy.priorities.length ? [{ label: "Priorities", value: buy.priorities.join(", ") }] : []),
     ];
   };
   const requestAdvice = (intent: ConsultIntent) => {
@@ -472,6 +475,13 @@ export default function JourneyModal({
   const dna = useMemo(() => deriveDNA(buy), [buy]);
 
   const set = <K extends keyof BuyData>(k: K, v: BuyData[K]) => setBuy((b) => ({ ...b, [k]: v }));
+  // Priorities are tailored per purchase type — dropping the type prunes any
+  // selections that no longer belong to the new profile's pool.
+  const setPurchaseType = (t: string) =>
+    setBuy((b) => {
+      const pool = prioritiesFor(t);
+      return { ...b, purchaseType: t, priorities: b.priorities.filter((p) => pool.includes(p)) };
+    });
   const toggle = (k: "locations" | "configs", value: string) =>
     setBuy((b) => {
       const has = b[k].includes(value);
@@ -1062,7 +1072,7 @@ export default function JourneyModal({
                 key={t}
                 label={t}
                 selected={buy.purchaseType === t}
-                onClick={() => set("purchaseType", t)}
+                onClick={() => setPurchaseType(t)}
               />
             ))}
           </div>
@@ -1153,6 +1163,7 @@ export default function JourneyModal({
 
   if (step === "priorities") {
     const full = buy.priorities.length >= MAX_PRIORITIES;
+    const pool = prioritiesFor(buy.purchaseType);
     return frame(
       <Shell onClose={onClose} onBack={backBuy} progress={progress} eyebrow="Buy Property">
         <div key="priorities" className="animate-fade-up">
@@ -1161,7 +1172,7 @@ export default function JourneyModal({
             sub={`Select up to three. ${buy.priorities.length}/${MAX_PRIORITIES} chosen.`}
           />
           <div className="flex flex-wrap gap-3">
-            {PRIORITIES.map((p) => (
+            {pool.map((p) => (
               <Chip
                 key={p}
                 label={p}

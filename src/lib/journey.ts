@@ -78,19 +78,85 @@ export const TIMELINES = [
   "Just Exploring",
 ];
 
+/* Priorities are tailored to the buyer's purchase type, so each list stays
+   focused (max 10) instead of one generic wall of chips. A shared core —
+   Location, On-Time Delivery, Legal Safety, Developer Reputation — appears
+   for everyone; the rest is profile-specific.
+
+   Selecting a priority is a soft signal. The property-attribute ones
+   (On-Time Delivery, Legal Safety, Amenities…) are matched against project
+   tags and move the shortlist; the deal-structure ones (Flexible Payment
+   Plan, No EMI Till Possession) and services (Hands-Off Ownership) are
+   carried into the advisor consultation instead — they're negotiation
+   levers, not project filters. */
+export const PRIORITIES_BY_TYPE: Record<string, string[]> = {
+  "First Home": [
+    "Value Buying",
+    "Legal Safety",
+    "On-Time Delivery",
+    "Flexible Payment Plan",
+    "No EMI Till Possession",
+    "Location",
+    "Construction Quality",
+    "Layouts",
+    "Developer Reputation",
+    "Amenities & Wellness",
+  ],
+  Upgrade: [
+    "Luxury Lifestyle",
+    "Layouts",
+    "Location",
+    "Low-Density / Green",
+    "Construction Quality",
+    "On-Time Delivery",
+    "Developer Reputation",
+    "Amenities & Wellness",
+    "Legal Safety",
+    "Vaastu-Compliant",
+  ],
+  Investment: [
+    "Capital Appreciation",
+    "Rental Yield",
+    "Early-Entry Pricing",
+    "Liquidity",
+    "Flexible Payment Plan",
+    "On-Time Delivery",
+    "Developer Reputation",
+    "Legal Safety",
+    "Location",
+    "Hands-Off Ownership",
+  ],
+  "Holiday Home": [
+    "Luxury Lifestyle",
+    "Low-Density / Green",
+    "Location",
+    "Amenities & Wellness",
+    "Hands-Off Ownership",
+    "Capital Appreciation",
+    "On-Time Delivery",
+    "Legal Safety",
+    "Developer Reputation",
+    "Vaastu-Compliant",
+  ],
+};
+
+/* Fallback pool if priorities is ever reached without a purchase type. */
 export const PRIORITIES = [
-  "Capital Appreciation",
-  "Low Risk",
-  "Construction Progress",
-  "Developer Reputation",
-  "Luxury Lifestyle",
-  "Layouts",
   "Location",
-  "Liquidity",
-  "Rental Yield",
+  "On-Time Delivery",
+  "Legal Safety",
+  "Developer Reputation",
+  "Capital Appreciation",
   "Value Buying",
+  "Rental Yield",
+  "Luxury Lifestyle",
   "Construction Quality",
+  "Liquidity",
 ];
+
+export function prioritiesFor(purchaseType: string | null): string[] {
+  return (purchaseType && PRIORITIES_BY_TYPE[purchaseType]) || PRIORITIES;
+}
 
 export const MAX_PRIORITIES = 3;
 
@@ -123,7 +189,7 @@ export const PROJECTS: Project[] = [
     truthScore: 94,
     recommendation: "Strong Buy",
     confidence: "High",
-    tags: ["Capital Appreciation", "Developer Reputation", "Liquidity", "Location"],
+    tags: ["Capital Appreciation", "Developer Reputation", "Liquidity", "Location", "On-Time Delivery", "Legal Safety"],
     reason: "Strongest resale liquidity on SPR with a proven delivery record.",
     strengths: [
       "Best resale liquidity in the micro-market",
@@ -141,7 +207,7 @@ export const PROJECTS: Project[] = [
     truthScore: 92,
     recommendation: "Strong Buy",
     confidence: "High",
-    tags: ["Capital Appreciation", "Developer Reputation", "Construction Progress", "Liquidity"],
+    tags: ["Capital Appreciation", "Developer Reputation", "On-Time Delivery", "Liquidity", "Legal Safety"],
     reason: "Priced ~8% below comparable GCE towers with high delivery certainty.",
     strengths: [
       "~8% below comparable GCE towers",
@@ -159,7 +225,7 @@ export const PROJECTS: Project[] = [
     truthScore: 88,
     recommendation: "Buy",
     confidence: "Medium-High",
-    tags: ["Luxury Lifestyle", "Layouts", "Location"],
+    tags: ["Luxury Lifestyle", "Layouts", "Location", "Amenities & Wellness"],
     reason: "Golf-facing layouts that command a durable lifestyle premium.",
     strengths: ["Golf-facing layouts", "Durable lifestyle premium", "Established M3M ecosystem"],
     watchouts: ["Higher maintenance and density", "Thinner near-term price upside"],
@@ -173,7 +239,7 @@ export const PROJECTS: Project[] = [
     truthScore: 90,
     recommendation: "Strong Buy",
     confidence: "High",
-    tags: ["Construction Progress", "Developer Reputation", "Low Risk", "Construction Quality"],
+    tags: ["On-Time Delivery", "Developer Reputation", "Legal Safety", "Construction Quality"],
     reason: "Institutional-grade execution with a low-risk delivery profile.",
     strengths: [
       "Institutional-grade execution",
@@ -191,7 +257,7 @@ export const PROJECTS: Project[] = [
     truthScore: 84,
     recommendation: "Buy",
     confidence: "Medium",
-    tags: ["Capital Appreciation", "Value Buying", "Rental Yield"],
+    tags: ["Capital Appreciation", "Value Buying", "Rental Yield", "Early-Entry Pricing"],
     reason: "Early-corridor pricing with the widest appreciation runway.",
     strengths: ["Early-corridor pricing", "Widest appreciation runway", "Healthy rental demand"],
     watchouts: ["Corridor infrastructure maturing", "Developer record still building"],
@@ -205,7 +271,7 @@ export const PROJECTS: Project[] = [
     truthScore: 82,
     recommendation: "Consider",
     confidence: "Medium",
-    tags: ["Value Buying", "Rental Yield", "Low Risk"],
+    tags: ["Value Buying", "Rental Yield", "Legal Safety", "Early-Entry Pricing"],
     reason: "Best entry value on SPR with healthy rental demand.",
     strengths: ["Best entry value on SPR", "Healthy rental absorption", "Strong value-to-quality ratio"],
     watchouts: ["Mid-tier finishes", "Higher project density"],
@@ -219,7 +285,7 @@ export const PROJECTS: Project[] = [
     truthScore: 80,
     recommendation: "Consider",
     confidence: "Medium",
-    tags: ["Value Buying", "Capital Appreciation", "Layouts"],
+    tags: ["Value Buying", "Capital Appreciation", "Layouts", "Low-Density / Green"],
     reason: "Generous layouts at a value entry point along the Sohna belt.",
     strengths: ["Generous layouts", "Value entry point", "Sohna-belt appreciation potential"],
     watchouts: ["Longer appreciation horizon", "Connectivity still improving"],
@@ -233,7 +299,7 @@ export const PROJECTS: Project[] = [
     truthScore: 89,
     recommendation: "Buy",
     confidence: "Medium-High",
-    tags: ["Luxury Lifestyle", "Developer Reputation", "Construction Quality", "Layouts"],
+    tags: ["Luxury Lifestyle", "Developer Reputation", "Construction Quality", "Layouts", "Low-Density / Green", "Amenities & Wellness"],
     reason: "Low-density luxury with brand-grade build quality.",
     strengths: ["Low-density luxury", "Brand-grade build quality", "Efficient premium layouts"],
     watchouts: ["Premium pricing", "Smaller community scale"],
@@ -247,7 +313,7 @@ export const PROJECTS: Project[] = [
     truthScore: 83,
     recommendation: "Consider",
     confidence: "Medium",
-    tags: ["Luxury Lifestyle", "Location", "Layouts"],
+    tags: ["Luxury Lifestyle", "Location", "Layouts", "Low-Density / Green"],
     reason: "Boutique address with efficient, livable floor plans.",
     strengths: ["Boutique address", "Efficient, livable floor plans", "Strong GCE location"],
     watchouts: ["Boutique developer scale", "Limited amenity footprint"],
@@ -261,7 +327,7 @@ export const PROJECTS: Project[] = [
     truthScore: 81,
     recommendation: "Buy",
     confidence: "Medium",
-    tags: ["Value Buying", "Rental Yield", "Capital Appreciation"],
+    tags: ["Value Buying", "Rental Yield", "Capital Appreciation", "Early-Entry Pricing"],
     reason: "New Gurgaon value play with steady rental absorption.",
     strengths: ["New Gurgaon value play", "Steady rental absorption", "Emaar delivery credibility"],
     watchouts: ["Longer growth horizon", "Submarket still maturing"],
@@ -355,7 +421,7 @@ export function deriveDNA(d: BuyData): DNA {
   else if (d.purchaseType === "Upgrade") archetype = "Upgrade Buyer";
 
   let risk = "Medium";
-  if (p.includes("Low Risk") || p.includes("Construction Progress")) risk = "Conservative";
+  if (p.includes("Legal Safety") || p.includes("On-Time Delivery")) risk = "Conservative";
   if (d.purchaseType === "Investment" && p.includes("Capital Appreciation")) risk = "Medium–High";
 
   const config =
@@ -800,7 +866,7 @@ export function rankInvestProjects(d: InvestData): InvestRecommendation[] {
   const priorityTagMap: Record<string, string[]> = {
     "Developer Track Record": ["Developer Reputation"],
     "Resale Liquidity": ["Liquidity"],
-    "Construction Progress": ["Construction Progress"],
+    "Construction Progress": ["On-Time Delivery"],
     "Location Premium": ["Location"],
     "Entry Pricing": ["Value Buying"],
     "Rental Yield": ["Rental Yield"],
@@ -823,9 +889,9 @@ export function rankInvestProjects(d: InvestData): InvestRecommendation[] {
 
     if (d.objective === "Capital Appreciation" && p.tags.includes("Capital Appreciation")) s += 12;
     if (d.objective === "Rental Income" && p.tags.includes("Rental Yield")) s += 12;
-    if (d.objective === "Safe Parking" && (p.tags.includes("Low Risk") || p.tags.includes("Developer Reputation"))) s += 10;
+    if (d.objective === "Safe Parking" && (p.tags.includes("Legal Safety") || p.tags.includes("Developer Reputation"))) s += 10;
     if (d.objective === "Legacy Asset" && p.tags.includes("Luxury Lifestyle")) s += 10;
-    if (d.risk === "Conservative" && p.tags.includes("Low Risk")) s += 8;
+    if (d.risk === "Conservative" && p.tags.includes("Legal Safety")) s += 8;
     if (d.risk === "Aggressive" && p.tags.includes("Capital Appreciation")) s += 6;
 
     s += (p.truthScore - 84) * 0.7;
