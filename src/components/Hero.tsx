@@ -113,7 +113,7 @@ export default function Hero() {
               className="animate-fade-up font-serif text-[19px] italic leading-[1.6] text-white/70 lg:text-[22px]"
               style={{ animationDelay: "300ms", textShadow: "0 1px 14px rgba(4,6,5,0.5)" }}
             >
-              Every promise, on the record.
+              Everything we tell you, on the record.
             </p>
 
             <div style={{ height: "44px" }} />
@@ -224,7 +224,7 @@ export default function Hero() {
               className="animate-fade-up font-serif text-[17px] italic leading-[1.6] text-white/70"
               style={{ animationDelay: "250ms", textShadow: "0 1px 14px rgba(4,6,5,0.6)" }}
             >
-              Every promise, on the record.
+              Everything we tell you, on the record.
             </p>
 
             <div style={{ height: "34px" }} />

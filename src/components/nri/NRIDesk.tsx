@@ -181,7 +181,7 @@ export default function NRIDesk() {
           <p className="mt-7 max-w-[620px] text-[1.05rem] font-light leading-[1.85] text-[#1a1a1a]/60 md:text-[1.2rem]">
             Buying from abroad shouldn&apos;t feel like a leap of faith. Truth Estate becomes your eyes, your advocate
             and your protection on the ground in India — forensic, and independent where it counts: our advice
-            isn&apos;t for sale, and no developer can buy our recommendation. And every promise made to you goes{" "}
+            isn&apos;t for sale, and no developer can buy our recommendation. And everything we tell you goes{" "}
             <a href={`${basePath}/the-record`} className="underline decoration-[#c9a96e]/40 underline-offset-2 transition-colors hover:text-[#1a1a1a]/85">
               on the record
             </a>{" "}

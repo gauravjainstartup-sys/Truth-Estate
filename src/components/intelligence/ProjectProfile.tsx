@@ -612,7 +612,8 @@ export default function ProjectProfile({
             </div>
 
             <p className="mt-8 text-[0.72rem] font-light leading-[1.7] text-[#1a1a1a]/35">
-              Independent assessment by Truth Estate. No developer can pay for a higher Truth Score or to appear here. The Truth Score and its inputs are our own evidence-based reads; ticket and price bands, ROI projections and delivery estimates are tracked or modelled figures that vary by tower, floor and stack. Not investment advice — confirm specifics with your advisor.
+              Independent assessment by Truth Estate. No developer can pay for a higher Truth Score or to appear here. The Truth Score, Match Score and any recommendation are our own evidence-based <span className="italic">opinions</span> as of the date shown — not a guarantee of performance, safety, appreciation or returns, and not investment, legal or financial advice. Ticket and price bands, ROI projections and delivery estimates are tracked or modelled figures that vary by tower, floor and stack. The decision, and its risks, are yours; we are not liable for the performance of any project. Verify specifics independently and see our{" "}
+              <a href={`${basePath}/disclaimer`} className="underline decoration-[#1a1a1a]/20 underline-offset-2 transition-colors hover:text-[#1a1a1a]/60">full disclaimer</a>.
             </p>
           </div>
         </div>

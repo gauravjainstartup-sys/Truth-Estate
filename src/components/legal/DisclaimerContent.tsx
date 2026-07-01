@@ -5,6 +5,7 @@ import LegalLayout, { S, Bullet, Todo } from "./LegalLayout";
 const SECTIONS = [
   { id: "introduction", title: "Introduction" },
   { id: "nature", title: "Nature of Information" },
+  { id: "scores", title: "Scores & Recommendations" },
   { id: "research", title: "Independent Research" },
   { id: "no-investment", title: "No Investment Advice" },
   { id: "no-legal", title: "No Legal Advice" },
@@ -63,6 +64,33 @@ export default function DisclaimerContent() {
             to your individual circumstances, and should not be relied upon as
             the sole basis for any property purchase, investment, or financial
             decision.
+          </p>
+        </div>
+      </section>
+
+      {/* Scores & Recommendations */}
+      <section id="scores" className={S.section}>
+        <h2 className={S.h2}>Scores &amp; Recommendations Are Opinions</h2>
+        <div className={S.body}>
+          <p>
+            A Truth Score, a Match Score, an investor-fit note, or any
+            recommendation we express — including labels such as
+            &ldquo;Buy&rdquo; or &ldquo;Strong Buy&rdquo; — is our independent,
+            evidence-based <strong>opinion</strong> as of the date it is
+            published, formed from the public information available to us at
+            that time. It is not a promise, a warranty, or a guarantee of any
+            outcome — including a project&apos;s completion, legal safety, price
+            appreciation, rental yield, or resale value.
+          </p>
+          <p>
+            Property markets, developer circumstances and regulations change,
+            and individual outcomes depend on factors outside our control and
+            specific to you. Two reasonable analysts may read the same evidence
+            differently. Treat our view as one input among several, verify
+            anything material independently, and make your own decision. Truth
+            Estate accepts no liability for the performance of any project, or
+            for the outcome of any decision you make in reliance on our research
+            — see Limitation of Liability below.
           </p>
         </div>
       </section>

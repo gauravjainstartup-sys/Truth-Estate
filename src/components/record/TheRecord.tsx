@@ -298,6 +298,10 @@ export default function TheRecord() {
             Everything recorded · Timestamped · Yours to keep
           </p>
         </div>
+        <p className="mx-auto mt-6 max-w-[640px] text-center text-[0.72rem] font-light leading-[1.7] text-[#1a1a1a]/35">
+          The record documents commitments made to you and the reasoning behind our advice. It is evidence-keeping and general information — not legal advice — and our recommendations are independent opinions, not guarantees of outcome. See our{" "}
+          <a href={`${basePath}/disclaimer`} className="underline decoration-[#1a1a1a]/20 underline-offset-2 transition-colors hover:text-[#1a1a1a]/60">disclaimer</a>.
+        </p>
       </section>
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
