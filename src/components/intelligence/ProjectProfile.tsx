@@ -2,7 +2,8 @@
 
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
-import { RATING_META, FIN_METRICS, type FinRating } from "@/lib/developers";
+import { FIN_METRICS } from "@/lib/developers";
+import RatingMeter from "./RatingMeter";
 import {
   SCORE_INPUTS,
   alternativesIn,
@@ -42,36 +43,8 @@ const riskTone: Record<RiskLevel, string> = {
   Elevated: "text-[#b0503e] border-[#b0503e]/25 bg-[#b0503e]/[0.05]",
 };
 
-/* A single input on the strained→strong spectrum — a signal, not a figure.
-   Shared by the Truth Score anatomy and the developer financial audit.
-   A three-stop segmented scale: the project's level is the one lit in its
-   tone; the other two stay faint so the scale reads at a glance. */
-const RATING_INDEX: Record<FinRating, number> = { weak: 0, moderate: 1, strong: 2 };
-const RATING_STOPS = ["Strained", "Moderate", "Strong"];
-function Signal({ rating, label, meaning }: { rating: FinRating; label: string; meaning: string }) {
-  const m = RATING_META[rating];
-  const idx = RATING_INDEX[rating];
-  return (
-    <div className="rounded-xl border border-[#1a1a1a]/8 bg-white/60 p-5">
-      <p className="text-[0.9rem] font-medium text-[#1a1a1a]/85">{label}</p>
-      <p className="mt-1 text-[0.75rem] font-light leading-[1.5] text-[#1a1a1a]/40">{meaning}</p>
-      <div className="mt-4 flex gap-1.5" role="img" aria-label={`${label}: ${m.label}`}>
-        {RATING_STOPS.map((stop, i) => {
-          const on = i === idx;
-          return (
-            <div
-              key={stop}
-              className={`flex-1 rounded-[4px] border py-1.5 text-center text-[0.56rem] font-semibold uppercase tracking-[0.06em] ${on ? "" : "border-transparent bg-[#1a1a1a]/[0.03] text-[#1a1a1a]/25"}`}
-              style={on ? { backgroundColor: `${m.color}1a`, color: m.color, borderColor: `${m.color}55` } : undefined}
-            >
-              {stop}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+/* The strained→strong rating meter now lives in ./RatingMeter, shared with
+   the developer dossier so the whole product speaks one visual language. */
 
 function Num({ v, k, accent }: { v: string; k: string; accent?: boolean }) {
   return (
@@ -312,7 +285,7 @@ export default function ProjectProfile({
               </p>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {SCORE_INPUTS.map((s) => (
-                  <Signal key={s.key} rating={p.anatomy[s.key]} label={s.label} meaning={s.meaning} />
+                  <RatingMeter key={s.key} rating={p.anatomy[s.key]} label={s.label} meaning={s.meaning} />
                 ))}
               </div>
             </Section>
@@ -352,7 +325,7 @@ export default function ProjectProfile({
                 </p>
                 <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {FIN_METRICS.map((f) => (
-                    <Signal key={f.key} rating={dev.financials[f.key]} label={f.full} meaning={f.meaning} />
+                    <RatingMeter key={f.key} rating={dev.financials[f.key]} label={f.full} meaning={f.meaning} />
                   ))}
                 </div>
                 <p className="mt-5 text-[0.86rem] font-light leading-[1.7] text-[#1a1a1a]/55">{dev.finNote}</p>

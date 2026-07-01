@@ -2,40 +2,13 @@
 
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
-import { FIN_METRICS, RATING_META, type DeveloperIntel, type FinRating } from "@/lib/developers";
+import { FIN_METRICS, type DeveloperIntel } from "@/lib/developers";
+import RatingMeter from "./RatingMeter";
 
 const basePath = "/Truth-Estate";
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return <p className="text-[11px] font-medium uppercase tracking-[0.34em] text-[#c9a96e]">{children}</p>;
-}
-
-/* The signal gauge — where a metric sits on the health spectrum, without
-   ever publishing the raw figure. */
-function Signal({ rating, label, full, meaning }: { rating: FinRating; label: string; full: string; meaning: string }) {
-  const m = RATING_META[rating];
-  return (
-    <div className="rounded-xl border border-[#1a1a1a]/8 bg-white/60 p-6">
-      <div className="flex items-baseline justify-between">
-        <p className="text-[0.95rem] font-medium text-[#1a1a1a]/85">{label}</p>
-        <p className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-[#1a1a1a]/30">{full}</p>
-      </div>
-      <p className="mt-1 text-[0.78rem] font-light leading-[1.5] text-[#1a1a1a]/40">{meaning}</p>
-
-      {/* spectrum */}
-      <div className="relative mt-6 h-[6px] w-full rounded-full" style={{ background: "linear-gradient(90deg, rgba(176,80,62,0.18), rgba(189,139,60,0.18) 50%, rgba(30,107,69,0.18))" }}>
-        <span
-          className="absolute top-1/2 h-[14px] w-[14px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white"
-          style={{ left: `${m.pos}%`, backgroundColor: m.color, boxShadow: `0 0 0 4px ${m.color}22` }}
-        />
-      </div>
-      <div className="mt-3 flex justify-between">
-        <span className="text-[0.6rem] uppercase tracking-[0.12em] text-[#1a1a1a]/20">Strained</span>
-        <span className="text-[0.7rem] font-semibold uppercase tracking-[0.08em]" style={{ color: m.color }}>{m.label}</span>
-        <span className="text-[0.6rem] uppercase tracking-[0.12em] text-[#1a1a1a]/20">Strong</span>
-      </div>
-    </div>
-  );
 }
 
 function Stat({ n, k, suffix }: { n: number; k: string; suffix?: string }) {
@@ -148,7 +121,7 @@ export default function DeveloperProfile({ dev }: { dev: DeveloperIntel }) {
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {FIN_METRICS.map((m) => (
-              <Signal key={m.key} rating={dev.financials[m.key]} label={m.label} full={m.full} meaning={m.meaning} />
+              <RatingMeter key={m.key} rating={dev.financials[m.key]} label={m.label} sub={m.full} meaning={m.meaning} />
             ))}
           </div>
           <p className="mt-6 max-w-2xl text-[0.85rem] font-light leading-[1.7] text-[#1a1a1a]/45">{dev.finNote}</p>
