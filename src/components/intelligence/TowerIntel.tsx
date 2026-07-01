@@ -14,39 +14,41 @@ export function openUnitIntel() {
   if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(UNIT_INTEL_EVENT));
 }
 
+type GateStart = "intro" | "req" | "home";
+
 export default function TowerIntel({ project, meta }: { project: ProjectIntel; meta?: TowerIntelMeta }) {
   const [member, setMemberState] = useState(false);
   const [modal, setModal] = useState(false); // the 3D advisor (modelled projects)
-  const [gate, setGate] = useState(false); // the Buyer Office join
-  const [gateIntro, setGateIntro] = useState(false); // gate opens on the "what's inside" step
-  const [joined, setJoined] = useState(false); // "in production" projects: post-join note
+  const [gateStart, setGateStart] = useState<GateStart | null>(null); // Buyer Office surface (null = closed)
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
-  const openGate = (withIntro: boolean) => { setGateIntro(withIntro); setGate(true); };
+  const has3D = !!meta?.file;
+  const openGate = (s: GateStart) => setGateStart(s);
 
   useEffect(() => {
     setMemberState(isMember());
   }, []);
 
-  // hero pill / final-card CTA
+  // hero pill / final-card CTA — 3D projects open the live model (free to
+  // explore, dive-in gated); others open the Buyer Office (home for members).
   useEffect(() => {
-    const h = () => (meta?.file ? setModal(true) : openGate(true));
+    const h = () => (has3D ? setModal(true) : openGate(isMember() ? "home" : "intro"));
     window.addEventListener(UNIT_INTEL_EVENT, h);
     return () => window.removeEventListener(UNIT_INTEL_EVENT, h);
-  }, [meta]);
+  }, [has3D]);
 
   const postMember = () => {
     try { iframeRef.current?.contentWindow?.postMessage({ type: "te-member" }, "*"); } catch { /* ignore */ }
   };
 
-  // messages from the 3D iframe (dive-in gate)
+  // messages from the 3D iframe (dive-in gate) — only fires for non-members
   useEffect(() => {
     if (!modal) return;
     const onMsg = (e: MessageEvent) => {
       const d = e.data;
       if (!d || typeof d !== "object") return;
       if (d.type === "te-ready" && isMember()) postMember();
-      if (d.type === "te-join") openGate(false);
+      if (d.type === "te-join") openGate("req");
     };
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
@@ -61,12 +63,19 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
     return () => { document.body.style.overflow = prev; };
   }, [modal]);
 
+  // Membership achieved in the gate. Keep the gate open on its success screen;
+  // if the 3D is already open (a dive-in), unlock it now so the tapped tower
+  // opens behind the success screen and future dives don't re-gate.
   function onJoined() {
     setMember();
     setMemberState(true);
-    setGate(false);
-    if (meta?.file) postMember(); // unlock the dive-in in the live 3D
-    else setJoined(true); // in-production: acknowledge
+    if (has3D && modal) postMember();
+  }
+
+  // "See your unit intelligence" from the success/home/booked screens.
+  function onSeeUnitIntel() {
+    setGateStart(null);
+    if (has3D && !modal) setModal(true); // fresh open; onLoad posts membership
   }
 
   const src = meta?.file ? `${basePath}/${meta.file}` : undefined;
@@ -89,20 +98,30 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
             <div className="absolute inset-0" style={{ background: "linear-gradient(120deg, rgba(10,15,23,0.05), rgba(10,15,23,0.4))" }} />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="flex items-center gap-2 text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[#e0b667]"><span aria-hidden>▦</span> Deep intelligence{meta ? " · live 3D" : ""}</p>
+            <p className="flex items-center gap-2 text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[#e0b667]">
+              <span aria-hidden>▦</span> {member ? "Your Buyer Office" : <>Deep intelligence{meta ? " · live 3D" : ""}</>}
+            </p>
             <p className="mt-2 font-serif text-[1.45rem] leading-[1.15] md:text-[1.6rem]">Tower &amp; Unit Intelligence</p>
             <p className="mt-2 text-[0.85rem] font-light leading-[1.6] text-white/55">
-              {meta ? (
+              {member ? (
+                meta ? (
+                  <>You&apos;re a member — your 3D advisor is unlocked. Enter to open it, or schedule your advisor call.</>
+                ) : (
+                  <>You&apos;re in. Enter your office to schedule your advisor call and track your intelligence.</>
+                )
+              ) : meta ? (
                 <>Explore the 3D site &amp; sun study free — open a tower to unlock unit-level intel for all {meta.totalUnits} homes.</>
               ) : (
                 <>The 3D layer that decides <span className="italic">which</span> home — graded by sun, Vastu, light, ventilation &amp; value.</>
               )}
             </p>
           </div>
-          {joined && !meta ? (
-            <p className="shrink-0 text-[0.8rem] font-light leading-[1.5] text-[#9fd8b6] sm:max-w-[11rem]">You&apos;re in — we&apos;re building {project.name}&apos;s model. Your advisor will walk you through it.</p>
+          {member ? (
+            <button onClick={() => openGate("home")} className="shrink-0 rounded-sm bg-[#e0b667] px-6 py-3.5 text-[0.84rem] font-semibold tracking-[0.02em] text-[#1a1206] transition-colors hover:bg-[#f0cd85]">
+              Enter your Buyer Office →
+            </button>
           ) : (
-            <button onClick={() => (meta ? setModal(true) : openGate(true))} className="shrink-0 rounded-sm bg-[#e0b667] px-6 py-3.5 text-[0.84rem] font-semibold tracking-[0.02em] text-[#1a1206] transition-colors hover:bg-[#f0cd85]">
+            <button onClick={() => (meta ? setModal(true) : openGate("intro"))} className="shrink-0 rounded-sm bg-[#e0b667] px-6 py-3.5 text-[0.84rem] font-semibold tracking-[0.02em] text-[#1a1206] transition-colors hover:bg-[#f0cd85]">
               {meta ? "See the live 3D →" : "See what's inside →"}
             </button>
           )}
@@ -132,7 +151,16 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
         </div>
       )}
 
-      <BuyerOfficeGate open={gate} project={project.name} intro={gateIntro} onClose={() => setGate(false)} onJoined={onJoined} />
+      <BuyerOfficeGate
+        open={gateStart !== null}
+        project={project.name}
+        start={gateStart ?? "intro"}
+        has3D={has3D}
+        member={member}
+        onClose={() => setGateStart(null)}
+        onJoined={onJoined}
+        onSeeUnitIntel={onSeeUnitIntel}
+      />
     </>
   );
 }

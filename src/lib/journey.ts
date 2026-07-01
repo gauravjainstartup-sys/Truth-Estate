@@ -686,6 +686,40 @@ export function setMember(): void {
   }
 }
 
+/* A Buyer Office advisor call — complimentary (part of free membership, not
+   the paid formal consultation). One booking per member; front-end only. */
+export type MemberCall = {
+  advisor: string;
+  initials: string;
+  focus: string;
+  day: string;
+  time: string;
+  format: string;
+  project?: string;
+  createdAt: number;
+};
+
+const MEMBER_CALL_KEY = "truthEstate.memberCall";
+
+export function loadMemberCall(): MemberCall | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(MEMBER_CALL_KEY);
+    return raw ? (JSON.parse(raw) as MemberCall) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveMemberCall(c: MemberCall): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(MEMBER_CALL_KEY, JSON.stringify(c));
+  } catch {
+    /* ignore */
+  }
+}
+
 const UNLOCK_KEY = "truthEstate.unlocked";
 
 export function loadUnlocks(): string[] {
