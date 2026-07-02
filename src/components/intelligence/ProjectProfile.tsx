@@ -8,7 +8,6 @@ import type { ConsultProfileChip } from "@/lib/consultation";
 import { FIN_METRICS } from "@/lib/developers";
 import RatingMeter from "./RatingMeter";
 import {
-  SCORE_INPUTS,
   alternativesIn,
   fmtPsf,
   developerOf,
@@ -18,11 +17,13 @@ import {
   investorFit,
   projectFaqs,
   towerIntelMeta,
+  rankContext,
   type ProjectIntel,
   type RiskLevel,
 } from "@/lib/projects";
 import MatchScore from "./MatchScore";
 import TowerIntel, { openUnitIntel } from "./TowerIntel";
+import ReportAnatomy from "./ReportAnatomy";
 
 const basePath = "/Truth-Estate";
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -142,6 +143,13 @@ export default function ProjectProfile({
   const ops = p.ops;
   const usps = ops?.usps ?? [];
   const topInMarket = alts.every((a) => a.truthScore <= p.truthScore);
+  const ctx = rankContext(p);
+  const mapHref = ops?.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${p.name} ${ops.address}`)}` : undefined;
+  const buildStatus = ops?.construction
+    ? `Mid-construction · ${ops.construction.actualPct}% built`
+    : ops?.possession
+    ? `Under construction · handover ${ops.possession}`
+    : undefined;
 
   const con = ops?.construction;
   const aheadMonths = con ? monIdx(con.reraDate) - monIdx(con.predictedDate) : 0;
@@ -230,35 +238,56 @@ export default function ProjectProfile({
             )}
 
             {/* Hero */}
-            <div className="mt-9 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+            <div className="mt-9 flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-2xl">
                 <Eyebrow>Project Intelligence</Eyebrow>
                 <h1 className="mt-5 font-serif text-[2.7rem] font-medium leading-[1.02] tracking-[-0.02em] md:text-[4rem]">{p.name}</h1>
-                <p className="mt-5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[0.92rem] font-light text-[#1a1a1a]/55">
-                  {devHref ? <a href={devHref} className="underline decoration-[#c9a96e]/40 underline-offset-2 hover:text-[#1a1a1a]/80">{p.developer}</a> : <span>{p.developer}</span>}
-                  <span className="text-[#1a1a1a]/25">·</span>
-                  {marketHref ? <a href={marketHref} className="underline decoration-[#c9a96e]/40 underline-offset-2 hover:text-[#1a1a1a]/80">{p.market}</a> : <span>{p.market}</span>}
-                  <span className="text-[#1a1a1a]/25">·</span>
-                  <span>{p.configs.join(" · ")}</span>
+                {ops?.address && (
+                  <p className="mt-4 flex flex-wrap items-center gap-2 text-[0.92rem] font-light text-[#1a1a1a]/55">
+                    <span className="text-[#9a7a2e]" aria-hidden>◉</span>
+                    {mapHref ? (
+                      <a href={mapHref} target="_blank" rel="noopener noreferrer" className="border-b border-[#9a7a2e]/35 hover:text-[#1a1a1a]/80">{ops.address}</a>
+                    ) : ops.address}
+                    {mapHref && <a href={mapHref} target="_blank" rel="noopener noreferrer" className="text-[0.72rem] text-[#9a7a2e]">↗ map</a>}
+                  </p>
+                )}
+                <p className="mt-2 text-[0.86rem] font-light text-[#1a1a1a]/50">
+                  by {devHref ? <a href={devHref} className="font-medium text-[#1a1a1a]/70 underline decoration-[#c9a96e]/40 underline-offset-2 hover:text-[#1a1a1a]">{p.developer}</a> : <span className="font-medium text-[#1a1a1a]/70">{p.developer}</span>}
+                  {" · "}{p.configs.join(" & ")}{" · "}₹{p.budget[0]}–{p.budget[1]} Cr
                 </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {topInMarket && <Chip>Top-scored in {p.marketShort}</Chip>}
-                  {market && <Chip>{market.tier} corridor</Chip>}
-                  {ops?.reraNote && <Chip>RERA registered</Chip>}
+                <div className="mt-5 flex flex-wrap gap-2.5">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#9a7a2e]/40 bg-gradient-to-b from-[#c9a96e]/[0.16] to-[#c9a96e]/[0.06] px-3.5 py-1.5 text-[0.72rem] font-semibold tracking-[0.02em] text-[#7a5f1e]">
+                    ❧ #{ctx.corridorRank} of {ctx.corridorCount} in {p.marketShort}
+                  </span>
+                  {buildStatus && (
+                    <span className="inline-flex items-center gap-2 rounded-full border border-[#1a1a1a]/10 bg-[#FBF8F2] px-3.5 py-1.5 text-[0.72rem] text-[#1a1a1a]/60">
+                      <span className="h-[6px] w-[6px] rounded-full bg-[#c9a96e]" />{buildStatus}
+                    </span>
+                  )}
+                  {marketHref && (
+                    <a href={marketHref} className="inline-flex items-center gap-1.5 rounded-full border border-[#1a1a1a]/10 px-3.5 py-1.5 text-[0.72rem] text-[#1a1a1a]/60 hover:text-[#1a1a1a]">
+                      {p.market} <span className="text-[#9a7a2e]">→</span>
+                    </a>
+                  )}
                 </div>
-                <button type="button" onClick={openUnitIntel} className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#1a1a1a]/15 bg-[#0a0f17] px-4 py-2 text-[0.78rem] font-medium text-white transition-colors hover:border-[#46c2ff]">
-                  <span className="text-[#e0b667]">▦</span> See Unit Intelligence <span aria-hidden className="text-[#46c2ff]">→</span>
-                </button>
               </div>
-              {/* Truth Score */}
-              <div className="flex shrink-0 items-end gap-5">
-                <div className="text-right">
-                  <p className="font-mono text-[3.4rem] font-light leading-none text-[#1e6b45] md:text-[4rem]">{p.truthScore}</p>
-                  <p className="mt-1 text-[0.6rem] font-medium uppercase tracking-[0.2em] text-[#1a1a1a]/40">Truth Score</p>
+              {/* Truth Score seal + context */}
+              <div className="flex shrink-0 items-center gap-6">
+                <div className="relative h-[136px] w-[136px]">
+                  <div className="absolute inset-0 rounded-full" style={{ background: `conic-gradient(#1e6b45 0 ${Math.round((p.truthScore / 100) * 360)}deg, rgba(26,26,26,0.08) ${Math.round((p.truthScore / 100) * 360)}deg 360deg)` }} />
+                  <div className="absolute inset-[7px] rounded-full bg-[#F5F0E8]" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="font-serif text-[3rem] font-normal leading-none text-[#1e6b45]">{p.truthScore}</span>
+                    <span className="mt-1 text-[0.48rem] font-medium uppercase tracking-[0.2em] text-[#1a1a1a]/40">Truth Score</span>
+                  </div>
                 </div>
-                <div className="mb-2 flex flex-col items-start gap-2">
-                  <span className={`rounded-full border px-3 py-1 text-[0.66rem] font-medium ${recoTone(p.recommendation)}`}>{p.recommendation}</span>
-                  <span className="text-[0.66rem] font-light text-[#1a1a1a]/40">{p.confidence} confidence</span>
+                <div>
+                  <span className={`inline-block rounded-full border px-3.5 py-1 text-[0.72rem] font-semibold ${recoTone(p.recommendation)}`}>{p.recommendation}</span>
+                  {ctx.delta > 0 && (
+                    <p className="mt-2.5 flex items-center gap-2 text-[0.8rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]">▲</span><span><b className="font-semibold text-[#1a1a1a]">+{ctx.delta}</b> vs {p.marketShort} average</span></p>
+                  )}
+                  <p className="mt-1.5 flex items-center gap-2 text-[0.8rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]">◆</span><span><b className="font-semibold text-[#1a1a1a]">Top {ctx.topPct}%</b> of tracked projects</span></p>
+                  <p className="mt-1.5 flex items-center gap-2 text-[0.8rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]">✓</span><span><b className="font-semibold text-[#1a1a1a]">{p.confidence}</b> confidence · re-scored quarterly</span></p>
                 </div>
               </div>
             </div>
@@ -297,19 +326,12 @@ export default function ProjectProfile({
               {ops?.reraNote && <Source>{ops.reraNote}. Sources: Haryana RERA registry & project filings.</Source>}
             </Section>
 
-            <Chapter n="I" title="Can you trust it?" framing="The score, the builder, the build and the paperwork — each pressure-tested independently, never taken from the developer." />
+            <Chapter n="I" title="Can we trust it?" framing="Five forces decide whether a project keeps its promise — the developer, the build, the location, the paperwork, and what sets it apart. Here's how it scores on each, and exactly what moves the number." />
 
-            {/* 02 · Truth Score anatomy */}
-            <Section id="anatomy" n={num()} title="Truth Score anatomy" flush>
-              <p className="-mt-2 mb-7 max-w-2xl text-[0.95rem] font-light leading-[1.8] text-[#1a1a1a]/55">
-                No black box. The score is built from six inputs, each assessed independently — never supplied by the developer. Here is where this project sits on every one.
-              </p>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {SCORE_INPUTS.map((s) => (
-                  <RatingMeter key={s.key} rating={p.anatomy[s.key]} label={s.label} meaning={s.meaning} />
-                ))}
-              </div>
-            </Section>
+            {/* Truth Score anatomy — the composition spine */}
+            <div id="anatomy" className="scroll-mt-24">
+              <ReportAnatomy p={p} />
+            </div>
 
             {/* 03 · Developer analysis */}
             {dev && (

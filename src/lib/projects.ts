@@ -113,6 +113,7 @@ function sizeBand(p: Project, avgPsf: number | undefined): string | null {
    site tracking; where we don't actively track a data point we leave it
    out rather than estimate it. */
 export type ProjectOps = {
+  address?: string; // street-level address for the hero + map
   units?: number;
   towers?: number;
   landAcres?: number;
@@ -123,6 +124,9 @@ export type ProjectOps = {
   possession?: string; // RERA-committed handover
   reraId?: string;
   reraNote?: string;
+  /* Price history — the PSF journey since launch (Chapter III). currentLow/High
+     bound today's tracked range; premium & CAGR are derived, not stored. */
+  price?: { launchPsf: number; launchDate: string; currentLow: number; currentHigh: number };
   construction?: {
     actualPct: number; // built vs plan, latest QPR
     expectedPct: number; // schedule expectation at same date
@@ -136,6 +140,7 @@ export type ProjectOps = {
 
 export const OPS: Record<string, ProjectOps> = {
   "DLF Arbour": {
+    address: "Sector 63, Golf Course Extension Road, Gurugram",
     units: 1137,
     towers: 5,
     landAcres: 25.1,
@@ -145,6 +150,7 @@ export const OPS: Record<string, ProjectOps> = {
     launch: "Jan 2023",
     possession: "Mar 2030",
     reraId: "RERA-GRG-1138-2022",
+    price: { launchPsf: 12500, launchDate: "Jan 2023", currentLow: 17000, currentHigh: 19500 },
     reraNote: "Registered · Haryana RERA · active, no project-level complaints on record",
     construction: { actualPct: 57, expectedPct: 47, absorptionPct: 100, reraDate: "Mar 2030", predictedDate: "Nov 2029", qpr: "Q1 2026" },
     usps: [
@@ -366,4 +372,100 @@ export function projectFaqs(p: ProjectIntel): { q: string; a: string }[] {
     }, and we assess this project's pricing & value as ${p.anatomy.pricing === "strong" ? "attractive" : "fair"} for the address.`,
   });
   return faqs;
+}
+
+/* ── Truth Score anatomy → five weighted pillars ────────────────────
+   The six audited inputs, recomposed into the five pillars a buyer
+   actually weighs — each with a graded band, an illustrative /10, a
+   one-line "why" and its weight in the composite. Scores derive from the
+   same ratings that build the Truth Score; the weights are fixed. */
+export type PillarBand = "exceptional" | "strong" | "moderate" | "watch";
+export type Pillar = {
+  key: string; label: string; anchor: string;
+  band: PillarBand; score: number; weight: number; why: string;
+};
+
+const MONTHS3 = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function monthIndex(s?: string): number {
+  if (!s) return 0;
+  const parts = s.trim().split(/\s+/);
+  const y = parseInt(parts[parts.length - 1], 10);
+  const m = Math.max(0, MONTHS3.indexOf(parts[0]));
+  return (isNaN(y) ? 0 : y) * 12 + m;
+}
+const NOW_MONTH = monthIndex("Jul 2026"); // static-export "today"
+
+const bandFromScore = (s: number): PillarBand => (s >= 9 ? "exceptional" : s >= 7.5 ? "strong" : s >= 6 ? "moderate" : "watch");
+const round1 = (n: number) => Math.round(n * 10) / 10;
+const ratingBase = (r: FinRating) => (r === "strong" ? 8.3 : r === "moderate" ? 6.8 : 5.0);
+const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
+
+export const PILLAR_WEIGHTS = { developer: 0.28, construction: 0.22, location: 0.22, legal: 0.18, usps: 0.1 } as const;
+
+export function pillars(p: ProjectIntel): Pillar[] {
+  const dev = developerOf(p);
+  const market = marketOf(p);
+  const con = p.ops?.construction;
+  const a = p.anatomy;
+  const lift = (p.truthScore - 86) / 22; // small per-project nudge
+
+  const devLift = dev ? (dev.performance.onTimePct >= 90 ? 0.7 : dev.performance.onTimePct >= 82 ? 0.25 : -0.3) : 0;
+  const devScore = round1(clamp((ratingBase(a.delivery) + ratingBase(a.financials)) / 2 + devLift + lift, 4, 9.5));
+  const devWhy = dev
+    ? `${dev.performance.launched} RERA projects, ${dev.performance.delivered} delivered, 0 lapsed · ${dev.performance.onTimePct}% on-time.`
+    : "Regional developer — limited public track record.";
+
+  const ahead = con ? monthIndex(con.reraDate) - monthIndex(con.predictedDate) : 0;
+  const conScore = con
+    ? round1(clamp(ratingBase(a.construction) + (con.actualPct - con.expectedPct) / 12 + (con.absorptionPct >= 95 ? 0.4 : 0) + lift, 4, 9.4))
+    : round1(clamp(ratingBase(a.construction) + lift, 4, 9));
+  const conWhy = con
+    ? `${con.actualPct}% built vs ${con.expectedPct}% due${ahead > 0 ? ` · ~${ahead} mo ahead of RERA` : ""} · ${con.absorptionPct}% sold.`
+    : "Construction tracking not yet published for this project.";
+
+  const locScore = round1(clamp((ratingBase(a.liquidity) + ratingBase(a.pricing)) / 2 + (market?.tier === "Established" ? 0.6 : market?.tier === "Growth" ? 0.3 : 0) + lift, 4, 9.5));
+  const locWhy = market
+    ? `${p.marketShort} corridor · ${market.appreciation3Y} tracked 3-yr · ${p.psf ? fmtPsf(p.psf.avg) + "/sqft avg" : "tracked pricing"}.`
+    : "Corridor intelligence in production.";
+
+  const legScore = round1(clamp(ratingBase(a.legal) + lift, 4, 9.3));
+  const legWhy = `Project ${p.ops?.reraId ? "RERA-registered & clean" : "registration tracked"} · developer legal signal: ${a.legal}.`;
+
+  const uspCount = p.ops?.usps?.length ?? 0;
+  const uspScore = round1(clamp(7.2 + Math.min(2, uspCount * 0.5) + lift, 5.5, 9.2));
+  const uspWhy = uspCount ? p.ops!.usps![0].title : "Standard segment specification.";
+
+  return [
+    { key: "developer", label: "Developer DNA", anchor: "developer", band: bandFromScore(devScore), score: devScore, weight: PILLAR_WEIGHTS.developer, why: devWhy },
+    { key: "construction", label: "Construction & Sales", anchor: "construction", band: bandFromScore(conScore), score: conScore, weight: PILLAR_WEIGHTS.construction, why: conWhy },
+    { key: "location", label: "Location Intelligence", anchor: "location", band: bandFromScore(locScore), score: locScore, weight: PILLAR_WEIGHTS.location, why: locWhy },
+    { key: "legal", label: "Legal & Compliance", anchor: "legal", band: bandFromScore(legScore), score: legScore, weight: PILLAR_WEIGHTS.legal, why: legWhy },
+    { key: "usps", label: "Project USPs", anchor: "usps", band: bandFromScore(uspScore), score: uspScore, weight: PILLAR_WEIGHTS.usps, why: uspWhy },
+  ];
+}
+
+/* Where the Truth Score sits vs the tracked set + its corridor —
+   the "TripAdvisor context" for the hero seal. */
+export function rankContext(p: ProjectIntel) {
+  const all = PROJECT_INTEL; // sorted desc by truthScore
+  const rank = all.findIndex((x) => x.slug === p.slug) + 1;
+  const total = all.length;
+  const corridor = all.filter((x) => x.market === p.market);
+  const corridorRank = corridor.findIndex((x) => x.slug === p.slug) + 1;
+  const corridorAvg = corridor.length ? Math.round(corridor.reduce((s, x) => s + x.truthScore, 0) / corridor.length) : p.truthScore;
+  return { rank, total, corridorRank, corridorCount: corridor.length, corridorAvg, delta: p.truthScore - corridorAvg, topPct: Math.max(1, Math.round((rank / total) * 100)) };
+}
+
+/* Price-history read for the PSF journey (Chapter III). */
+export function priceJourney(p: ProjectIntel) {
+  const pr = p.ops?.price;
+  if (!pr) return null;
+  const mid = (pr.currentLow + pr.currentHigh) / 2;
+  const years = Math.max(0.5, (NOW_MONTH - monthIndex(pr.launchDate)) / 12);
+  return {
+    ...pr, mid,
+    premiumPct: Math.round(((mid - pr.launchPsf) / pr.launchPsf) * 100),
+    cagr: round1((Math.pow(mid / pr.launchPsf, 1 / years) - 1) * 100),
+    years: Math.round(years * 10) / 10,
+  };
 }
