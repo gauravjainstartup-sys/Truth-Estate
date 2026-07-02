@@ -327,8 +327,9 @@ function IntroStep({
               : "One clear recommendation, no agenda — independent advice tailored to your situation, and we'll tell you to walk away if that's the honest call."}
           </p>
 
-          {/* Warm: a reminder of what we already hold */}
-          {warm && (
+          {/* Context we already hold — the source we'll prep for (project /
+              developer / corridor) and, when warm, the visitor's brief. */}
+          {(prepLine || (profile && profile.length > 0)) && (
             <div className="mt-7 rounded-xl border border-[#c9a96e]/30 bg-[#c9a96e]/[0.07] p-5">
               {prepLine && (
                 <div className="flex items-start gap-3">

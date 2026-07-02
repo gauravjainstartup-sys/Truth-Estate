@@ -1,7 +1,7 @@
 "use client";
 
 import Logo from "../Logo";
-import { useJourney } from "../journey/JourneyProvider";
+import { useConsultation } from "../consultation/ConsultationProvider";
 import { FIN_METRICS, type DeveloperIntel } from "@/lib/developers";
 import RatingMeter from "./RatingMeter";
 
@@ -23,7 +23,10 @@ function Stat({ n, k, suffix }: { n: number; k: string; suffix?: string }) {
 }
 
 export default function DeveloperProfile({ dev }: { dev: DeveloperIntel }) {
-  const { open } = useJourney();
+  const { openConsult } = useConsultation();
+  // Advice sought from a developer dossier is about that developer — the
+  // consultation opens knowing it ("We'll review DLF's track record…").
+  const open = () => openConsult({ source: dev.name, sourceKind: "developer" });
   const p = dev.performance;
 
   return (

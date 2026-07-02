@@ -2,6 +2,9 @@
 
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
+import { useConsultation } from "../consultation/ConsultationProvider";
+import { loadBuyData, hasPreferences, deriveDNA } from "@/lib/journey";
+import type { ConsultProfileChip } from "@/lib/consultation";
 import { FIN_METRICS } from "@/lib/developers";
 import RatingMeter from "./RatingMeter";
 import {
@@ -107,7 +110,25 @@ export default function ProjectProfile({
   onSelectAlternative?: (name: string) => void;
 }) {
   const { open } = useJourney();
-  const consult = onConsult ?? (() => open());
+  const { openConsult } = useConsultation();
+  // "Get Independent Advice" from a report is about THIS project — open the
+  // consultation with the project as its source (the advisor preps for it),
+  // and if the visitor already shared a brief (Match Score / Buyer Office),
+  // pass it as a warm profile so we never re-ask what we know.
+  const consult = onConsult ?? (() => {
+    const saved = loadBuyData();
+    let profile: ConsultProfileChip[] | undefined;
+    if (saved && hasPreferences(saved)) {
+      const dna = deriveDNA(saved);
+      profile = [
+        { label: "Budget", value: dna.budgetRange },
+        { label: "Markets", value: dna.markets.slice(0, 3).join(", ") },
+        { label: "Timeline", value: dna.timeline },
+        ...(saved.priorities.length ? [{ label: "Priorities", value: saved.priorities.join(", ") }] : []),
+      ];
+    }
+    openConsult({ source: p.name, sourceKind: "project", ...(profile ? { intent: "buy" as const, profile } : {}) });
+  });
   const challenge = onChallenge ?? (() => open("research"));
   const alts = alternativesIn(p.market, p.name);
   const devHref = p.devSlug ? `${basePath}/intelligence/developers/${p.devSlug}` : undefined;

@@ -1,7 +1,7 @@
 "use client";
 
 import Logo from "../Logo";
-import { useJourney } from "../journey/JourneyProvider";
+import { useConsultation } from "../consultation/ConsultationProvider";
 import { fmtPsf, scoredProjectsIn, type MarketIntel } from "@/lib/markets";
 import { projectSlug } from "@/lib/projects";
 
@@ -17,7 +17,10 @@ const verdictTone = (v: string) =>
   : "border-[#9a7a2e]/30 text-[#9a7a2e] bg-[#c9a96e]/10";
 
 export default function MarketProfile({ m }: { m: MarketIntel }) {
-  const { open } = useJourney();
+  const { openConsult } = useConsultation();
+  // Advice sought from a corridor page is about that market — the
+  // consultation opens knowing it ("We'll prepare the SPR market picture…").
+  const open = () => openConsult({ source: m.name, sourceKind: "location" });
   const scored = scoredProjectsIn(m.name);
 
   return (
