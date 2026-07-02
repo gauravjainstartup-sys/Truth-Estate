@@ -166,7 +166,7 @@ export default function ProjectProfile({
   const jumpTo = (id: string) => {
     setActive(id);
     const el = typeof document !== "undefined" ? document.getElementById(id) : null;
-    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 108, behavior: "smooth" });
+    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 132, behavior: "smooth" });
   };
   useEffect(() => {
     if (embedded) return;
@@ -190,7 +190,7 @@ export default function ProjectProfile({
   return (
     <div className={`${embedded ? "h-full overflow-y-auto" : "min-h-svh"} bg-[#F5F0E8] text-[#1a1a1a]`}>
       <header className="sticky top-0 z-40 border-b border-[#1a1a1a]/6 bg-[#F5F0E8]/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-6xl items-center gap-4 px-6 py-4 md:px-10">
+        <div className={`mx-auto flex ${embedded ? "max-w-6xl" : "max-w-7xl"} items-center gap-4 px-6 py-4 md:px-10`}>
           {embedded ? (
             <>
               <Logo color="#1a1a1a" className="h-7 w-auto opacity-80" />
@@ -215,7 +215,7 @@ export default function ProjectProfile({
         {!embedded && (
           <nav aria-label="Report sections" aria-hidden={!showStrip}
             className={`absolute inset-x-0 top-full border-b border-[#1a1a1a]/8 bg-[#F5F0E8]/95 shadow-[0_8px_24px_-18px_rgba(26,26,26,0.35)] backdrop-blur-sm transition-all duration-300 ease-out ${showStrip ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-3 opacity-0"}`}>
-            <div className="relative mx-auto max-w-6xl px-6 md:px-10">
+            <div className="relative mx-auto max-w-7xl px-6 md:px-10">
               <div ref={stripRef} className="flex gap-1 overflow-x-auto py-2.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {toc.map((t) => (
                   <a key={t.id} href={`#${t.id}`} data-chip={t.id} onClick={(e) => { e.preventDefault(); jumpTo(t.id); }}
@@ -235,7 +235,8 @@ export default function ProjectProfile({
         <div className={embedded ? "" : "xl:grid xl:grid-cols-[minmax(0,1fr)_300px] xl:gap-14"}>
           {/* Sticky conversion rail — the report stays left; this rail works the lead */}
           {!embedded && (
-            <aside className="hidden self-start xl:col-start-2 xl:row-start-1 xl:sticky xl:top-24 xl:block">
+            // sticks below header + section strip (~118px of chrome)
+            <aside className="hidden self-start xl:col-start-2 xl:row-start-1 xl:sticky xl:top-[132px] xl:block">
               <div className="rounded-2xl border border-[#1a1a1a]/8 bg-white/70 p-5">
                 <div className="flex items-center gap-3">
                   <div className="relative h-12 w-12 shrink-0">
@@ -279,7 +280,8 @@ export default function ProjectProfile({
             <div className="mt-9 flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-2xl">
                 <Eyebrow>Project Intelligence</Eyebrow>
-                <h1 className="mt-5 font-serif text-[2.7rem] font-medium leading-[1.02] tracking-[-0.02em] md:text-[4rem]">{p.name}</h1>
+                {/* adaptive display type: long names step down a size and wrap balanced */}
+                <h1 className={`mt-5 text-balance font-serif font-medium leading-[1.04] tracking-[-0.02em] ${p.name.length > 24 ? "text-[2.15rem] md:text-[3.1rem]" : "text-[2.7rem] md:text-[4rem]"}`}>{p.name}</h1>
                 {ops?.address && (
                   <p className="mt-5 text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">
                     <IconPin className="mr-2 text-[#9a7a2e]" />
@@ -311,10 +313,13 @@ export default function ProjectProfile({
                 <div className="relative h-[118px] w-[118px] md:h-[136px] md:w-[136px]">
                   <div className="absolute inset-0 rounded-full" style={{ background: `conic-gradient(#1e6b45 0 ${Math.round((p.truthScore / 100) * 360)}deg, rgba(26,26,26,0.08) ${Math.round((p.truthScore / 100) * 360)}deg 360deg)` }} />
                   <div className="absolute inset-[7px] rounded-full bg-[#F5F0E8]" />
-                  <div className="absolute inset-0 flex items-center justify-center">
+                  {/* numeral + caption as one tight group, optically centred:
+                      serif digits sit low in their em-box, so the group carries
+                      a small measured nudge instead of pure box-centering */}
+                  <div className="absolute inset-0 flex -translate-y-[2px] flex-col items-center justify-center" data-seal-group>
                     <span className="font-serif text-[3rem] font-normal leading-none text-[#1e6b45]">{p.truthScore}</span>
+                    <span className="mt-1.5 text-[0.48rem] font-medium uppercase tracking-[0.2em] text-[#1a1a1a]/40">Truth Score</span>
                   </div>
-                  <span className="pointer-events-none absolute inset-x-0 bottom-[16px] text-center text-[0.48rem] font-medium uppercase tracking-[0.2em] text-[#1a1a1a]/40 md:bottom-[21px]" aria-hidden>Truth Score</span>
                 </div>
                 <div>
                   <span className={`inline-block rounded-full border px-3.5 py-1 text-[0.72rem] font-semibold ${recoTone(p.recommendation)}`}>{p.recommendation}</span>
