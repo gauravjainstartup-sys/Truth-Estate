@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import { useConsultation } from "../consultation/ConsultationProvider";
@@ -146,6 +146,9 @@ export default function ProjectProfile({
   const tocKey = toc.map((t) => t.id).join(",");
   const [active, setActive] = useState<string>("");
   const [showStrip, setShowStrip] = useState(false);
+  const [scheduled, setScheduled] = useState(false);
+  const [lead, setLead] = useState({ name: "", phone: "", time: "" });
+  const scheduleCall = (e: FormEvent) => { e.preventDefault(); setScheduled(true); };
   const stripRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (embedded) return;
@@ -233,30 +236,93 @@ export default function ProjectProfile({
         <div className={embedded ? "" : "xl:grid xl:grid-cols-[minmax(0,1fr)_300px] xl:gap-14"}>
           {/* Sticky conversion rail — the report stays left; this rail works the lead */}
           {!embedded && (
-            // sticks below header + section strip (~118px of chrome)
-            <aside className="hidden self-start xl:col-start-2 xl:row-start-1 xl:sticky xl:top-[132px] xl:block">
+            /* Sticky, internally-scrollable conversion rail (docks below header + strip) */
+            <aside className="hidden space-y-3 self-start [scrollbar-width:none] xl:col-start-2 xl:row-start-1 xl:sticky xl:top-[132px] xl:block xl:max-h-[calc(100vh-152px)] xl:overflow-y-auto xl:pb-2 [&::-webkit-scrollbar]:hidden">
+              {/* which project this rail is working */}
+              <div className="flex items-baseline justify-between gap-2 px-1">
+                <p className="truncate font-serif text-[1.02rem] font-medium text-[#1a1a1a]">{p.name}</p>
+                <span className="shrink-0 text-[0.58rem] font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/40">{p.marketShort}</span>
+              </div>
+
+              {/* score + primary CTA */}
               <div className="rounded-2xl border border-[#1a1a1a]/8 bg-white/70 p-5">
-                <div className="flex items-center gap-3">
-                  <div className="relative h-12 w-12 shrink-0">
-                    <div className="absolute inset-0 rounded-full" style={{ background: `conic-gradient(#1e6b45 0 ${Math.round((p.truthScore / 100) * 360)}deg, rgba(26,26,26,0.08) ${Math.round((p.truthScore / 100) * 360)}deg 360deg)` }} />
-                    <div className="absolute inset-[3px] rounded-full bg-white" />
-                    <span className="absolute inset-0 flex items-center justify-center font-serif text-[1.05rem] leading-none text-[#1e6b45]">{p.truthScore}</span>
-                  </div>
-                  <div className="min-w-0">
+                <div>
+                  <div className="flex items-baseline justify-between">
                     <p className="text-[0.56rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">Truth Score</p>
-                    <p className="text-[0.82rem] font-semibold text-[#1a1a1a]">{p.recommendation}<span className="font-light text-[#1a1a1a]/45"> · Top {ctx.topPct}%</span></p>
+                    <span className="text-[0.66rem] font-bold uppercase tracking-[0.06em] text-[#1e6b45]">{scoreGrade(p.truthScore)}</span>
+                  </div>
+                  <p className="mt-0.5 flex items-baseline">
+                    <span className="font-serif text-[2.5rem] font-normal leading-none text-[#1e6b45]">{p.truthScore}</span>
+                    <span className="ml-1 font-mono text-[0.72rem] text-[#1a1a1a]/30">/100</span>
+                    <span className="ml-auto self-end text-[0.66rem] font-light text-[#1a1a1a]/45">{p.recommendation} · Top {ctx.topPct}%</span>
+                  </p>
+                  <div className="mt-2 flex gap-[2px]">
+                    {Array.from({ length: 10 }).map((_, idx) => (
+                      <span key={idx} className={`h-[7px] flex-1 rounded-[2px] ${idx < Math.round(p.truthScore / 10) ? "bg-[#1e6b45]" : "bg-[#1a1a1a]/[0.1]"}`} />
+                    ))}
                   </div>
                 </div>
                 <button onClick={consult} className="mt-4 w-full rounded-lg bg-[#1e6b45] px-4 py-3 text-[0.8rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Get Independent Advice</button>
                 <p className="mt-2 text-center text-[0.62rem] font-light text-[#1a1a1a]/45">Independent — we don&apos;t sell inventory</p>
               </div>
 
-              <a href="#tower-intel" className="mt-3 block rounded-2xl border border-[#9a7a2e]/25 bg-gradient-to-br from-[#9a7a2e]/[0.07] to-transparent p-5 transition-colors hover:border-[#9a7a2e]/45">
-                <p className="flex items-center gap-2 text-[0.6rem] font-bold uppercase tracking-[0.12em] text-[#9a7a2e]"><IconBuilding className="text-[#9a7a2e]" /> Unlock the deep layer</p>
-                <p className="mt-2 text-[0.83rem] font-medium leading-[1.5] text-[#1a1a1a]/85">Walk the live 3D, every unit&apos;s sun &amp; Vastu read, and the full 5-year price projection.</p>
-                <p className="mt-2.5 text-[0.72rem] font-semibold text-[#9a7a2e]">From ₹1,499 · free with membership →</p>
-              </a>
+              {/* match score mini */}
+              <button onClick={() => jumpTo("match")} className="flex w-full items-center gap-3 rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-4 text-left transition-colors hover:border-[#1a1a1a]/25">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#1e6b45]/[0.09] text-[#1e6b45]">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-[1.15rem] w-[1.15rem]" aria-hidden><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" /></svg>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[0.8rem] font-semibold text-[#1a1a1a]">How well does it fit you?</span>
+                  <span className="block text-[0.68rem] font-light text-[#1a1a1a]/50">Score it against your brief · 20 sec</span>
+                </span>
+                <span className="shrink-0 text-[#1e6b45]" aria-hidden>→</span>
+              </button>
 
+              {/* 3D Unit Intelligence — marketing creative */}
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0e1622] to-[#1e2c40] p-5 text-white">
+                <svg className="pointer-events-none absolute -right-3 -top-3 h-24 w-24 text-[#c9a96e] opacity-[0.12]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" aria-hidden><path d="M12 2 21 7v10l-9 5-9-5V7z" /><path d="M3 7l9 5 9-5M12 12v10" /></svg>
+                <p className="flex items-center gap-2 text-[0.56rem] font-bold uppercase tracking-[0.16em] text-[#c9a96e]">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-[1.05rem] w-[1.05rem]" aria-hidden><path d="M12 2 21 7v10l-9 5-9-5V7z" /><path d="M3 7l9 5 9-5M12 12v10" /></svg>
+                  3D Unit Intelligence
+                </p>
+                <p className="mt-2.5 font-serif text-[1.2rem] font-medium leading-[1.15]">Walk the tower before you buy.</p>
+                <ul className="mt-3 space-y-1.5 text-[0.73rem] font-light text-white/70">
+                  <li className="flex gap-2"><span className="text-[#c9a96e]" aria-hidden>▸</span>Live 3D site &amp; every tower</li>
+                  <li className="flex gap-2"><span className="text-[#c9a96e]" aria-hidden>▸</span>Per-unit sun, airflow &amp; Vastu</li>
+                  <li className="flex gap-2"><span className="text-[#c9a96e]" aria-hidden>▸</span>The full 5-year price projection</li>
+                </ul>
+                <button onClick={() => jumpTo("tower-intel")} className="mt-4 w-full rounded-lg bg-[#c9a96e] px-4 py-2.5 text-[0.78rem] font-bold text-[#1a1a1a] transition-colors hover:bg-[#d8bd8a]">Explore the live 3D →</button>
+                <p className="mt-2 text-center text-[0.6rem] font-light text-white/45">From ₹1,499 · free with membership</p>
+              </div>
+
+              {/* schedule a call — inline form */}
+              <div className="rounded-2xl border border-[#1e6b45]/25 bg-[#1e6b45]/[0.04] p-5">
+                <p className="flex items-center gap-2 text-[0.58rem] font-bold uppercase tracking-[0.14em] text-[#1e6b45]"><IconClock className="text-[#1e6b45]" /> Schedule a call</p>
+                {scheduled ? (
+                  <div className="mt-3 rounded-lg bg-[#1e6b45]/10 px-3.5 py-3 text-[0.76rem] font-medium leading-[1.5] text-[#1e6b45]">✓ Thanks{lead.name ? `, ${lead.name.trim().split(" ")[0]}` : ""} — an advisor will call you{lead.time ? ` · ${lead.time}` : ""} about {p.name}.</div>
+                ) : (
+                  <form onSubmit={scheduleCall} className="mt-2.5 space-y-2">
+                    <p className="text-[0.7rem] font-light leading-[1.5] text-[#1a1a1a]/55">Leave your number — an advisor calls you about this project. No obligation.</p>
+                    <input required value={lead.name} onChange={(e) => setLead({ ...lead, name: e.target.value })} placeholder="Your name" className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3 py-2 text-[0.78rem] outline-none transition-colors focus:border-[#1e6b45]" />
+                    <input required type="tel" value={lead.phone} onChange={(e) => setLead({ ...lead, phone: e.target.value })} placeholder="Phone / WhatsApp" className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3 py-2 text-[0.78rem] outline-none transition-colors focus:border-[#1e6b45]" />
+                    <select required value={lead.time} onChange={(e) => setLead({ ...lead, time: e.target.value })} className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3 py-2 text-[0.78rem] text-[#1a1a1a]/80 outline-none transition-colors focus:border-[#1e6b45]">
+                      <option value="" disabled>Preferred time</option>
+                      <option>Today · morning</option>
+                      <option>Today · evening</option>
+                      <option>Tomorrow</option>
+                      <option>This weekend</option>
+                    </select>
+                    <button type="submit" className="w-full rounded-lg bg-[#1e6b45] px-4 py-2.5 text-[0.78rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Request a callback</button>
+                  </form>
+                )}
+              </div>
+
+              {/* join the buyer's office */}
+              <a href={`${basePath}/office`} className="block rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-4 transition-colors hover:border-[#1a1a1a]/25">
+                <p className="flex items-center gap-2 text-[0.58rem] font-bold uppercase tracking-[0.14em] text-[#1a1a1a]/55"><IconShieldCheck className="text-[#9a7a2e]" /> The Buyer&apos;s Office</p>
+                <p className="mt-1.5 text-[0.78rem] font-medium leading-[1.45] text-[#1a1a1a]/85">Your private deal room — shortlist, compare, track &amp; get advisory in one place.</p>
+                <p className="mt-2 text-[0.72rem] font-semibold text-[#1e6b45]">Join free →</p>
+              </a>
             </aside>
           )}
 
@@ -306,26 +372,31 @@ export default function ProjectProfile({
                   )}
                 </div>
               </div>
-              {/* Truth Score seal + context */}
-              <div className="flex shrink-0 items-center gap-6">
-                <div className="relative h-[118px] w-[118px] md:h-[136px] md:w-[136px]">
-                  <div className="absolute inset-0 rounded-full" style={{ background: `conic-gradient(#1e6b45 0 ${Math.round((p.truthScore / 100) * 360)}deg, rgba(26,26,26,0.08) ${Math.round((p.truthScore / 100) * 360)}deg 360deg)` }} />
-                  <div className="absolute inset-[7px] rounded-full bg-[#F5F0E8]" />
-                  {/* numeral optically centred; /100 + caption sit just beneath */}
-                  <div className="absolute inset-0 flex translate-y-[6px] flex-col items-center justify-center" data-seal-group>
-                    <span className="font-serif text-[3rem] font-normal leading-none text-[#1e6b45]">{p.truthScore}</span>
-                    <span className="mt-1 font-mono text-[0.62rem] text-[#1a1a1a]/30">/ 100</span>
-                    <span className="mt-1 text-[0.48rem] font-medium uppercase tracking-[0.2em] text-[#1a1a1a]/40">Truth Score</span>
+              {/* Truth Score — "The Stat": headline number, grade + reco, a 10-segment meter */}
+              <div className="flex shrink-0 flex-wrap items-end gap-x-8 gap-y-4">
+                <div>
+                  <p className="text-[0.5rem] font-medium uppercase tracking-[0.22em] text-[#1a1a1a]/40">Truth Score</p>
+                  <p className="mt-1 flex items-baseline">
+                    <span className="font-serif text-[4rem] font-normal leading-[0.82] text-[#1e6b45] md:text-[4.6rem]">{p.truthScore}</span>
+                    <span className="ml-1.5 font-mono text-[1.05rem] text-[#1a1a1a]/30">/100</span>
+                  </p>
+                  <p className="mt-2.5 flex items-center gap-2">
+                    <span className="text-[0.64rem] font-bold uppercase tracking-[0.14em] text-[#1e6b45]">{scoreGrade(p.truthScore)}</span>
+                    <span className={`rounded-full border px-2.5 py-0.5 text-[0.62rem] font-semibold ${recoTone(p.recommendation)}`}>{p.recommendation}</span>
+                  </p>
+                  <div className="mt-2.5 flex w-[176px] gap-[3px]">
+                    {Array.from({ length: 10 }).map((_, idx) => (
+                      <span key={idx} className={`h-[9px] flex-1 rounded-[2px] ${idx < Math.round(p.truthScore / 10) ? "bg-[#1e6b45]" : "bg-[#1a1a1a]/[0.1]"}`} />
+                    ))}
                   </div>
                 </div>
-                <div>
-                  <span className={`inline-block rounded-full border px-3.5 py-1 text-[0.72rem] font-semibold ${recoTone(p.recommendation)}`}>{p.recommendation}</span>
+                <div className="space-y-1.5 pb-1">
                   {ctx.delta > 0 && (
-                    <p className="mt-2.5 flex items-center gap-2.5 text-[0.8rem] text-[#1a1a1a]/60"><span className="flex w-4 shrink-0 justify-center text-[#9a7a2e]"><IconTrendUp /></span><span><b className="font-semibold text-[#1a1a1a]">+{ctx.delta}</b> vs {p.marketShort} average</span></p>
+                    <p className="flex items-center gap-2.5 text-[0.8rem] text-[#1a1a1a]/60"><span className="flex w-4 shrink-0 justify-center text-[#9a7a2e]"><IconTrendUp /></span><span><b className="font-semibold text-[#1a1a1a]">+{ctx.delta}</b> vs {p.marketShort} average</span></p>
                   )}
-                  <p className="mt-1.5 flex items-center gap-2.5 text-[0.8rem] text-[#1a1a1a]/60"><span className="flex w-4 shrink-0 justify-center text-[#9a7a2e]"><IconTiers /></span><span><b className="font-semibold text-[#1a1a1a]">Top {ctx.topPct}%</b> of tracked projects</span></p>
-                  <p className="mt-1.5 flex items-center gap-2.5 text-[0.8rem] text-[#1a1a1a]/60"><span className="flex w-4 shrink-0 justify-center text-[#9a7a2e]"><IconShieldCheck /></span><span><b className="font-semibold text-[#1a1a1a]">{p.confidence}</b> confidence · re-scored quarterly</span></p>
-                  <p className="mt-2.5 flex items-center gap-2.5 text-[0.66rem] font-light tracking-[0.02em] text-[#1a1a1a]/40"><span className="flex w-4 shrink-0 justify-center text-[#1a1a1a]/40"><IconClock /></span>Data last reviewed {reviewed}</p>
+                  <p className="flex items-center gap-2.5 text-[0.8rem] text-[#1a1a1a]/60"><span className="flex w-4 shrink-0 justify-center text-[#9a7a2e]"><IconTiers /></span><span><b className="font-semibold text-[#1a1a1a]">Top {ctx.topPct}%</b> of tracked projects</span></p>
+                  <p className="flex items-center gap-2.5 text-[0.8rem] text-[#1a1a1a]/60"><span className="flex w-4 shrink-0 justify-center text-[#9a7a2e]"><IconShieldCheck /></span><span><b className="font-semibold text-[#1a1a1a]">{p.confidence}</b> confidence · re-scored quarterly</span></p>
+                  <p className="flex items-center gap-2.5 text-[0.66rem] font-light tracking-[0.02em] text-[#1a1a1a]/40"><span className="flex w-4 shrink-0 justify-center text-[#1a1a1a]/40"><IconClock /></span>Data last reviewed {reviewed}</p>
                 </div>
               </div>
             </div>
@@ -607,6 +678,10 @@ function ContextCard({ kicker, title, href, cta }: { kicker: string; title: stri
   ) : (
     <div className="rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-7">{body}</div>
   );
+}
+
+function scoreGrade(s: number) {
+  return s >= 90 ? "Exceptional" : s >= 80 ? "Strong" : s >= 70 ? "Solid" : s >= 60 ? "Fair" : "Watch";
 }
 
 /* ── one consistent line-icon set for the hero (replaces ad-hoc unicode glyphs) ── */

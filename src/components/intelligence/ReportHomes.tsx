@@ -75,22 +75,22 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
           </p>
         </div>
 
-        {/* ── size slider (only when the BHK has more than one size) ── */}
+        {/* ── size picker (segmented cards — only when the BHK has >1 size) ── */}
         {variants.length > 1 && (
           <div className="border-b border-[#1a1a1a]/8 bg-[#FBF8F2] px-6 py-4">
-            <div className="flex items-center justify-between">
-              <span className="text-[0.6rem] font-semibold uppercase tracking-[0.14em] text-[#1a1a1a]/40">Size · {i + 1} of {variants.length}</span>
-              <span className="font-mono text-[0.78rem] font-semibold text-[#1a1a1a]">{h.superSqft.toLocaleString("en-IN")} <span className="text-[0.62rem] font-light text-[#1a1a1a]/45">sq ft super</span></span>
-            </div>
-            <input type="range" min={0} max={variants.length - 1} step={1} value={i} onChange={(e) => setVIdx(Number(e.target.value))}
-              className="mt-2.5 w-full accent-[#9a7a2e]" aria-label={`Choose ${h.config} size`} />
-            <div className="mt-1 flex justify-between">
-              {variants.map((v, idx) => (
-                <button key={idx} onClick={() => setVIdx(idx)}
-                  className={`text-[0.66rem] transition-colors ${idx === i ? "font-semibold text-[#9a7a2e]" : "font-light text-[#1a1a1a]/40 hover:text-[#1a1a1a]/70"}`}>
-                  {v.variant ?? `${v.superSqft.toLocaleString("en-IN")} sqft`}
-                </button>
-              ))}
+            <p className="mb-2.5 text-[0.6rem] font-semibold uppercase tracking-[0.14em] text-[#1a1a1a]/40">Choose a size · {variants.length} options</p>
+            <div className="flex flex-wrap gap-2">
+              {variants.map((v, idx) => {
+                const on = idx === i;
+                const psf = Math.round((((v.priceCr[0] + v.priceCr[1]) / 2) * 1e7) / v.superSqft / 100) * 100;
+                return (
+                  <button key={idx} onClick={() => setVIdx(idx)}
+                    className={`min-w-[112px] flex-1 rounded-xl border px-4 py-2.5 text-left transition-colors sm:flex-none ${on ? "border-[#9a7a2e] bg-[#9a7a2e]/[0.09] shadow-[0_0_0_1px_#9a7a2e]" : "border-[#1a1a1a]/12 bg-white hover:border-[#1a1a1a]/30"}`}>
+                    <span className={`block text-[0.82rem] font-semibold ${on ? "text-[#7a5f1e]" : "text-[#1a1a1a]/75"}`}>{v.variant ?? `Size ${idx + 1}`}</span>
+                    <span className="mt-0.5 block font-mono text-[0.68rem] text-[#1a1a1a]/50">{v.superSqft.toLocaleString("en-IN")} sq ft · {fmtPsf(psf)}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
