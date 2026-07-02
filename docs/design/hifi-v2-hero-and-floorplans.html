@@ -1,0 +1,239 @@
+<!-- HI-FI v2 MOCK · hero context + duplex floor plans + teaser grades.
+     fp/*.jpeg are dummy third-party placeholders, intentionally NOT committed. -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Hi-fi v2 · hero context + floor plans</title>
+<style>
+  :root{
+    --ivory:#F5F0E8; --paper:#FBF8F2; --ink:#1a1a1a; --mut:#8b8378;
+    --gold:#9a7a2e; --gold2:#c9a96e; --green:#1e6b45; --green2:#238c55;
+    --line:rgba(26,26,26,.10); --dark:#0d1420;
+  }
+  *{box-sizing:border-box; margin:0}
+  body{ background:#d8d3c8; font:14px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif; color:var(--ink); padding:34px }
+  .serif{ font-family:Georgia,"Times New Roman",serif }
+  .mono{ font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums }
+  .wrap{ display:flex; flex-wrap:wrap; gap:40px; align-items:flex-start }
+  .frame{ background:var(--ivory); box-shadow:0 20px 60px rgba(0,0,0,.14); border-radius:14px; overflow:hidden; flex:0 0 auto }
+  .fh{ font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:#a49a8c; padding:9px 14px; background:#efeae0 }
+  #dhero,#dfp{ width:1120px } #mhero,#mfp{ width:390px }
+  .pad{ padding:44px 46px } .m .pad{ padding:26px 18px }
+
+  /* ── HERO ── */
+  .crumb{ font-size:11.5px; color:#a49a8c } .crumb b{ color:#6b6459; font-weight:500 }
+  .eyebrow{ font-size:11px; letter-spacing:.3em; text-transform:uppercase; color:var(--gold); font-weight:600; margin-top:26px; display:block }
+  h1{ font-weight:500; font-size:64px; line-height:.98; letter-spacing:-.02em; margin-top:14px } .m h1{ font-size:38px }
+  .addr{ display:flex; align-items:center; gap:8px; margin-top:16px; font-size:15px; color:#5f594e; font-weight:300 }
+  .addr .pin{ color:var(--gold) } .addr a{ color:#5f594e; text-decoration:none; border-bottom:1px solid rgba(154,122,46,.35) } .addr .ext{ color:var(--gold); font-size:12px }
+  .byline{ font-size:12.5px; color:#a49a8c; margin-top:6px } .byline b{ color:#6b6459; font-weight:500 }
+  /* credential tags — three types, quiet luxury */
+  .creds{ display:flex; flex-wrap:wrap; gap:10px; margin-top:22px }
+  .cred{ display:inline-flex; align-items:center; gap:7px; font-size:11.5px; letter-spacing:.04em; border-radius:99px; padding:7px 14px }
+  .cred.rank{ background:linear-gradient(180deg,rgba(201,169,110,.16),rgba(201,169,110,.07)); border:1px solid rgba(154,122,46,.4); color:#7a5f1e; font-weight:600 }
+  .cred.status{ border:1px solid var(--line); color:#6b6459; background:#faf7f0 }
+  .cred.status .dot{ width:6px; height:6px; border-radius:99px; background:#c9a96e }
+  .cred.corridor{ border:1px solid var(--line); color:#6b6459; background:transparent } .cred.corridor .ar{ color:var(--gold) }
+  /* score block with context */
+  .scorewrap{ display:flex; gap:26px; align-items:center }
+  .seal{ width:150px; height:150px; border-radius:50%; position:relative; flex:0 0 auto; background:
+      conic-gradient(var(--green) 0 331deg, rgba(26,26,26,.08) 331deg 360deg) }
+  .seal:before{ content:""; position:absolute; inset:7px; border-radius:50%; background:var(--ivory) }
+  .seal .in{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center }
+  .seal .n{ font-size:52px; line-height:1; color:var(--green); font-weight:400 }
+  .seal .s{ font-size:8.5px; letter-spacing:.22em; text-transform:uppercase; color:#a49a8c; margin-top:4px }
+  .ctx .reco{ display:inline-block; background:var(--green); color:#fff; font-size:12px; letter-spacing:.04em; border-radius:99px; padding:5px 14px; font-weight:600 }
+  .ctx .line{ display:flex; align-items:center; gap:8px; margin-top:11px; font-size:13px; color:#5f594e }
+  .ctx .line .ic{ color:var(--gold); font-size:12px; width:16px; text-align:center }
+  .ctx .line b{ color:var(--ink); font-weight:600 }
+  .ctx .note{ font-size:10.5px; color:#a49a8c; margin-top:10px }
+  .herogrid{ display:flex; justify-content:space-between; gap:40px; align-items:flex-end } .m .herogrid{ flex-direction:column; align-items:flex-start; gap:26px }
+
+  /* ── FLOOR PLANS (duplex + fixes) ── */
+  .part{ font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--mut) }
+  h2.title{ font-weight:500; font-size:34px; line-height:1.05; letter-spacing:-.01em; margin-top:8px } .m h2.title{ font-size:24px }
+  .tabs{ display:flex; gap:34px; border-bottom:1px solid var(--line); margin-top:26px } .m .tabs{ gap:20px; overflow-x:auto }
+  .tab{ padding:0 0 14px; white-space:nowrap; position:relative; top:1px }
+  .tab .t{ font-size:18px; font-weight:500 } .m .tab .t{ font-size:15px }
+  .tab .s{ font-size:11px; color:var(--mut); margin-top:3px }
+  .tab.on{ border-bottom:2px solid var(--gold) } .tab:not(.on) .t{ color:#a8a094 } .tab:not(.on) .s{ color:#b7afa2 }
+  .grid{ display:grid; grid-template-columns:1.6fr 1fr; gap:38px; margin-top:30px } .m .grid{ grid-template-columns:1fr; gap:24px; margin-top:22px }
+  .plan{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px; box-shadow:0 8px 30px rgba(0,0,0,.05) }
+  .plan img{ width:100%; display:block; border-radius:6px }
+  .duo{ display:grid; grid-template-columns:1fr 1fr; gap:10px } .duo .lbl{ text-align:center; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--mut); padding:8px 0 2px }
+  .flrtog{ display:inline-flex; gap:2px; background:#efeae0; border-radius:9px; padding:3px }
+  .flrtog span{ font-size:11px; padding:5px 14px; border-radius:7px; color:#8b8378 } .flrtog span.on{ background:#fff; color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.08); font-weight:600 }
+  .plancap{ display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding:0 4px } .plancap .l{ font-size:12.5px; color:#6b6459 }
+  .spectitle{ font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--mut) }
+  .dl .r{ display:flex; align-items:baseline; gap:10px; padding:9px 0; border-bottom:1px dotted #cfc7b8 }
+  .dl .r .k{ color:#6b6459; font-size:13px } .dl .r .fill{ flex:1 } .dl .r .v{ font-size:14.5px; font-weight:600 }
+  .read{ margin-top:18px; background:linear-gradient(180deg,rgba(201,169,110,.10),rgba(201,169,110,.03)); border:1px solid rgba(154,122,46,.28); border-radius:12px; padding:15px 17px }
+  .read .h{ display:flex; align-items:center; gap:8px; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--gold); font-weight:600 }
+  .read .grade{ margin-left:auto; font-size:11px; background:var(--green); color:#fff; border-radius:99px; padding:2px 9px }
+  .read p{ font-size:12.5px; line-height:1.6; color:#4b463d; margin-top:8px } .read p b{ color:var(--ink) }
+  /* intel — teaser grades visible (bait) */
+  .intel{ margin-top:32px; background:var(--dark); border-radius:16px; padding:24px 26px; color:#e8e6e2; position:relative; overflow:hidden } .m .intel{ padding:18px }
+  .intel:before{ content:""; position:absolute; inset:0; background:radial-gradient(120% 80% at 80% 0%,rgba(224,182,103,.14),transparent 60%); pointer-events:none }
+  .intel .e{ font-size:10.5px; letter-spacing:.22em; text-transform:uppercase; color:#e0b667; font-weight:600 }
+  .intel h3{ font-weight:500; font-size:21px; margin-top:9px; color:#fff } .m .intel h3{ font-size:17px }
+  .tiles{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:18px; position:relative } .m .tiles{ grid-template-columns:repeat(2,1fr) }
+  .tile{ background:rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.09); border-radius:12px; padding:14px; position:relative }
+  .tile .ic{ color:#e0b667 } .tile .nm{ font-size:12px; font-weight:600; margin-top:9px; color:#f0eee9 }
+  .tile .tease{ font-size:15px; margin-top:4px; color:#fff; font-weight:600 } .tile .tease .u{ font-size:10px; color:#8f897f; font-weight:400 }
+  .tile .depth{ font-size:10.5px; color:#8f897f; margin-top:3px } .tile .depth .lk{ font-size:9.5px }
+  .unlock{ display:flex; align-items:center; gap:16px; margin-top:20px; padding-top:18px; border-top:1px solid rgba(255,255,255,.10); position:relative } .m .unlock{ flex-wrap:wrap }
+  .unlock .txt{ flex:1; min-width:0 } .unlock .a{ font-size:13px; color:#efeae0 } .unlock .b{ font-size:11px; color:#8f897f; margin-top:3px } .unlock .b b{ color:#fff }
+  .btn{ display:inline-flex; align-items:center; gap:8px; border-radius:9px; padding:11px 19px; font-size:13px; font-weight:500; white-space:nowrap }
+  .btn.green{ background:var(--green); color:#fff }
+  .btn.ghost{ border:1px solid rgba(255,255,255,.2); color:#e8e6e2 }
+</style></head><body>
+<div class="wrap">
+
+<!-- ════════ DESKTOP HERO v2 ════════ -->
+<div class="frame" id="dhero"><div class="fh">Hi-fi v2 · desktop hero — address · credential tags · Truth Score with context</div>
+  <div class="pad" style="padding-bottom:52px">
+    <div class="crumb">Projects / <b>DLF The Arbour</b></div>
+    <span class="eyebrow">Project Intelligence</span>
+    <div class="herogrid">
+      <div style="max-width:600px">
+        <h1 class="serif">DLF The Arbour</h1>
+        <div class="addr"><span class="pin">◉</span><a href="#">Sector 63, Golf Course Extension, Gurugram</a><span class="ext">↗ map</span></div>
+        <div class="byline">by <b>DLF</b> · 3.5 &amp; 4.5 BHK · ₹5–7 Cr</div>
+        <div class="creds">
+          <span class="cred rank">❧ &nbsp;#2 of 127 tracked in Gurugram</span>
+          <span class="cred status"><span class="dot"></span> Mid-construction · 61% built</span>
+          <span class="cred corridor">Golf Course Extension <span class="ar">→</span></span>
+        </div>
+      </div>
+      <div class="scorewrap">
+        <div class="seal"><div class="in"><span class="n serif">92</span><span class="s">Truth Score</span></div></div>
+        <div class="ctx">
+          <span class="reco">Strong Buy</span>
+          <div class="line"><span class="ic">▲</span><span><b>+4</b> vs corridor average <span style="color:#a49a8c">(GCE · 88)</span></span></div>
+          <div class="line"><span class="ic">◆</span><span><b>Top 2%</b> of projects we track</span></div>
+          <div class="line"><span class="ic">✓</span><span><b>High</b> confidence · re-scored quarterly</span></div>
+          <div class="note">No developer can pay for a score. <u>How we score →</u></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ MOBILE HERO v2 ════════ -->
+<div class="frame m" id="mhero"><div class="fh">Mobile hero v2</div>
+  <div class="pad">
+    <span class="eyebrow" style="margin-top:4px">Project Intelligence</span>
+    <h1 class="serif">DLF The Arbour</h1>
+    <div class="addr" style="font-size:13.5px"><span class="pin">◉</span><a href="#">Sector 63, Golf Course Ext., Gurugram</a><span class="ext">↗</span></div>
+    <div class="byline">by <b>DLF</b> · 3.5 &amp; 4.5 BHK · ₹5–7 Cr</div>
+    <div class="creds">
+      <span class="cred rank">❧ #2 in Gurugram</span>
+      <span class="cred status"><span class="dot"></span> Mid-construction</span>
+      <span class="cred corridor">GCE →</span>
+    </div>
+    <div class="scorewrap" style="margin-top:24px; gap:18px">
+      <div class="seal" style="width:108px;height:108px"><div class="in"><span class="n serif" style="font-size:36px">92</span><span class="s">Truth Score</span></div></div>
+      <div class="ctx">
+        <span class="reco" style="font-size:11px">Strong Buy</span>
+        <div class="line" style="font-size:12px"><span class="ic">▲</span><span><b>+4</b> vs GCE avg</span></div>
+        <div class="line" style="font-size:12px"><span class="ic">◆</span><span><b>Top 2%</b> tracked</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ DESKTOP FLOOR PLANS · DUPLEX (both floors together) ════════ -->
+<div class="frame" id="dfp"><div class="fh">Hi-fi v2 · desktop — duplex penthouse: both floors side-by-side</div>
+  <div class="pad">
+    <div class="part">Ground Reality · Part III — Configurations &amp; Floor Plans</div>
+    <h2 class="title serif">See the home, not the brochure.</h2>
+    <div class="tabs">
+      <div class="tab"><div class="t serif">3.5 BHK</div><div class="s mono">T-07 &amp; T-08</div></div>
+      <div class="tab"><div class="t serif">4.5 BHK</div><div class="s mono">T-02 · 3,900 sq ft</div></div>
+      <div class="tab on"><div class="t serif">Duplex Penthouse</div><div class="s mono">3 residences · 2 floors</div></div>
+    </div>
+    <div class="grid">
+      <div>
+        <div class="plan">
+          <div class="duo">
+            <div><div class="lbl">Lower level</div><img src="fp/duplex-a.jpeg" alt="Duplex lower"></div>
+            <div><div class="lbl">Upper level</div><img src="fp/duplex-b.jpeg" alt="Duplex upper"></div>
+          </div>
+        </div>
+        <div class="plancap"><span class="l">Duplex Penthouse · 2 levels · private terrace &amp; lift lobby</span><span style="font-size:11px;color:var(--gold)">⤢ View full plans</span></div>
+      </div>
+      <div>
+        <div class="spectitle">The layout, measured</div>
+        <div class="dl">
+          <div class="r"><span class="k">Carpet area</span><span class="fill"></span><span class="v mono">4,120 sq ft</span></div>
+          <div class="r"><span class="k">Built-up area</span><span class="fill"></span><span class="v mono">4,880 sq ft</span></div>
+          <div class="r"><span class="k">Super area</span><span class="fill"></span><span class="v mono">6,050 sq ft</span></div>
+          <div class="r"><span class="k">Balcony + terrace</span><span class="fill"></span><span class="v mono">1,140 sq ft</span></div>
+          <div class="r"><span class="k">Loading</span><span class="fill"></span><span class="v mono">32%</span></div>
+          <div class="r"><span class="k">Carpet efficiency</span><span class="fill"></span><span class="v mono">68%</span></div>
+        </div>
+        <div class="read">
+          <div class="h"><span>◆</span> The efficiency read <span class="grade">Good · 68%</span></div>
+          <p><b>68% usable</b> — strong for a duplex, where stairs and double-height voids usually eat carpet. Terrace rights: confirm they're <b>exclusive-use, in writing</b>.</p>
+        </div>
+      </div>
+    </div>
+    <!-- intel with TEASER GRADES (bait) -->
+    <div class="intel">
+      <span class="e">▦ Deep intelligence · this unit</span>
+      <h3 class="serif">How this exact home lives — graded free. The why is inside.</h3>
+      <div class="tiles">
+        <div class="tile"><span class="ic">◈</span><div class="nm">3D Walkthrough</div><div class="tease">2 floors <span class="u">modelled</span></div><div class="depth">walk every room · <span class="lk">🔒 unlock</span></div></div>
+        <div class="tile"><span class="ic">☀</span><div class="nm">Sunshine</div><div class="tease">10.0 h <span class="u">peak · SE</span></div><div class="depth">hour-by-hour, all year · <span class="lk">🔒</span></div></div>
+        <div class="tile"><span class="ic">≋</span><div class="nm">Air Flow</div><div class="tease">A− <span class="u">cross-vent</span></div><div class="depth">room-by-room map · <span class="lk">🔒</span></div></div>
+        <div class="tile"><span class="ic">◎</span><div class="nm">Vastu</div><div class="tease">8.4<span class="u">/10</span></div><div class="depth">the full reasoning · <span class="lk">🔒</span></div></div>
+      </div>
+      <div class="unlock">
+        <div class="txt"><div class="a">The grades are free. The <b style="color:#e0b667">why</b> — walkthrough, hourly sun, vent map, Vastu reasoning — is members'.</div>
+        <div class="b">₹1,499 this project · or <b>₹11,000</b> all-access + advisory</div></div>
+        <span class="btn ghost">Preview free</span><span class="btn green">Unlock unit intelligence →</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ MOBILE FLOOR PLANS · duplex toggle + FULL specs (balcony fixed) ════════ -->
+<div class="frame m" id="mfp"><div class="fh">Mobile v2 — duplex toggle · full spec list (balcony ✓)</div>
+  <div class="pad">
+    <div class="part">Ground Reality · Part III</div>
+    <h2 class="title serif">See the home, not the brochure.</h2>
+    <div class="tabs">
+      <div class="tab"><div class="t serif">3.5 BHK</div></div>
+      <div class="tab"><div class="t serif">4.5 BHK</div></div>
+      <div class="tab on"><div class="t serif">Duplex PH</div></div>
+    </div>
+    <div style="display:flex; justify-content:center; margin-top:18px"><span class="flrtog"><span class="on">Lower level</span><span>Upper level</span></span></div>
+    <div class="plan" style="margin-top:12px"><img src="fp/duplex-a.jpeg" alt="Duplex lower level"></div>
+    <div class="plancap"><span class="l">Duplex PH · lower level</span></div>
+    <div style="margin-top:20px">
+      <div class="spectitle">The layout, measured</div>
+      <div class="dl">
+        <div class="r"><span class="k">Carpet area</span><span class="fill"></span><span class="v mono">4,120 sq ft</span></div>
+        <div class="r"><span class="k">Built-up area</span><span class="fill"></span><span class="v mono">4,880 sq ft</span></div>
+        <div class="r"><span class="k">Super area</span><span class="fill"></span><span class="v mono">6,050 sq ft</span></div>
+        <div class="r"><span class="k">Balcony + terrace</span><span class="fill"></span><span class="v mono">1,140 sq ft</span></div>
+        <div class="r"><span class="k">Loading</span><span class="fill"></span><span class="v mono">32%</span></div>
+        <div class="r"><span class="k">Carpet efficiency</span><span class="fill"></span><span class="v mono">68%</span></div>
+      </div>
+      <div class="read"><div class="h"><span>◆</span> Efficiency read <span class="grade">Good · 68%</span></div>
+        <p><b>68% usable</b> — strong for a duplex. Confirm terrace rights are exclusive-use, in writing.</p></div>
+    </div>
+    <div class="intel">
+      <span class="e">▦ Deep intelligence</span>
+      <h3 class="serif">Graded free. The why is inside.</h3>
+      <div class="tiles">
+        <div class="tile"><span class="ic">☀</span><div class="nm">Sunshine</div><div class="tease">10.0 h</div><div class="depth">hourly · <span class="lk">🔒</span></div></div>
+        <div class="tile"><span class="ic">◎</span><div class="nm">Vastu</div><div class="tease">8.4<span class="u">/10</span></div><div class="depth">why · <span class="lk">🔒</span></div></div>
+        <div class="tile"><span class="ic">≋</span><div class="nm">Air Flow</div><div class="tease">A−</div><div class="depth">map · <span class="lk">🔒</span></div></div>
+        <div class="tile"><span class="ic">◈</span><div class="nm">3D Walk</div><div class="tease">2 floors</div><div class="depth"><span class="lk">🔒</span></div></div>
+      </div>
+      <div class="unlock"><div class="txt"><div class="a">Grades free — the why is members'.</div><div class="b">₹1,499 · or <b>₹11,000</b> all-access</div></div>
+        <span class="btn green" style="width:100%;justify-content:center">Unlock unit intelligence →</span></div>
+    </div>
+  </div>
+</div>
+
+</div></body></html>
