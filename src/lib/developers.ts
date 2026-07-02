@@ -30,8 +30,13 @@ export type DeveloperIntel = {
   brandValue: string;
   recent: string[];
   pipeline: string[];
-  performance: { launched: number; delivered: number; ongoing: number; onTimePct: number; avgDelayMonths: number };
+  performance: { launched: number; delivered: number; ongoing: number; onTimePct: number; avgDelayMonths: number; lapsed?: number };
   financials: Record<FinKey, FinRating>;
+  /* Headline financial values (from MCA / annual filings) shown on the audit
+     cards; finBand upgrades a metric to "exceptional" where the number is
+     genuinely top-decile. Optional — cards fall back to the rating alone. */
+  finValues?: Partial<Record<FinKey, string>>;
+  finBand?: Partial<Record<FinKey, "exceptional" | "strong" | "moderate" | "watch">>;
   finNote: string;
   legal: string;
   verdict: string;
@@ -51,8 +56,10 @@ export const DEVELOPERS: DeveloperIntel[] = [
     brandValue: "The most trusted name in Gurugram luxury — a DLF address commands a durable resale premium.",
     recent: ["DLF Privana South", "DLF Arbour"],
     pipeline: ["DLF Privana North", "DLF The Camellias II"],
-    performance: { launched: 45, delivered: 38, ongoing: 7, onTimePct: 92, avgDelayMonths: 2 },
+    performance: { launched: 45, delivered: 38, ongoing: 7, onTimePct: 92, avgDelayMonths: 2, lapsed: 0 },
     financials: { leverage: "strong", coverage: "strong", cash: "moderate", margin: "strong", inventory: "strong" },
+    finValues: { leverage: "−0.05×", coverage: "14.71×", cash: "2.07×", margin: "37.5%", inventory: "3.02 yr" },
+    finBand: { leverage: "exceptional", coverage: "exceptional", cash: "exceptional", margin: "strong", inventory: "moderate" },
     finNote: "Consistent debt reduction over the cycle; recurring commercial rental income adds balance-sheet stability.",
     legal: "Clean RERA compliance. No material legal disputes. Strong governance framework.",
     verdict:

@@ -5,8 +5,6 @@ import { useJourney } from "../journey/JourneyProvider";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import { loadBuyData, hasPreferences, deriveDNA } from "@/lib/journey";
 import type { ConsultProfileChip } from "@/lib/consultation";
-import { FIN_METRICS } from "@/lib/developers";
-import RatingMeter from "./RatingMeter";
 import {
   alternativesIn,
   fmtPsf,
@@ -24,6 +22,7 @@ import {
 import MatchScore from "./MatchScore";
 import TowerIntel, { openUnitIntel } from "./TowerIntel";
 import ReportAnatomy from "./ReportAnatomy";
+import ReportDeveloper from "./ReportDeveloper";
 
 const basePath = "/Truth-Estate";
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -333,47 +332,11 @@ export default function ProjectProfile({
               <ReportAnatomy p={p} />
             </div>
 
-            {/* 03 · Developer analysis */}
+            {/* Pillar I · Developer DNA — track record + financial audit */}
             {dev && (
-              <Section id="developer" n={num()} title="Developer analysis">
-                <div className="rounded-2xl border-l-2 border-[#1e6b45]/40 bg-white/50 p-7 md:p-8">
-                  <Eyebrow>Analyst assessment</Eyebrow>
-                  <p className="mt-3 font-serif text-[1.25rem] leading-[1.4] md:text-[1.4rem]">{dev.verdict}</p>
-                </div>
-
-                {/* Execution track record */}
-                <p className="mt-10 text-[0.7rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/40">Execution track record</p>
-                <div className="mt-4 rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-8">
-                  <div className="flex flex-wrap items-end gap-x-10 gap-y-6">
-                    <Num v={`${dev.performance.launched}`} k="Projects launched" />
-                    <Num v={`${dev.performance.delivered}`} k="Delivered" />
-                    <Num v={`${dev.performance.ongoing}`} k="Ongoing" />
-                    <Num v={`${dev.performance.onTimePct}%`} k="On-time record" accent />
-                    <Num v={`${dev.performance.avgDelayMonths} mo`} k="Avg slippage" />
-                  </div>
-                  <div className="mt-7 flex h-[8px] overflow-hidden rounded-full bg-[#1a1a1a]/8">
-                    <div className="h-full bg-[#1e6b45]" style={{ width: `${(dev.performance.delivered / dev.performance.launched) * 100}%` }} />
-                    <div className="h-full bg-[#c9a96e]" style={{ width: `${(dev.performance.ongoing / dev.performance.launched) * 100}%` }} />
-                  </div>
-                  <div className="mt-3 flex gap-5 text-[0.66rem] font-light text-[#1a1a1a]/45">
-                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#1e6b45]" /> Delivered</span>
-                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#c9a96e]" /> Ongoing</span>
-                  </div>
-                </div>
-
-                {/* Financial audit */}
-                <p className="mt-10 flex items-center gap-3 text-[0.7rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/40">
-                  Financial audit
-                  <span className="rounded border border-[#1a1a1a]/12 px-1.5 py-0.5 text-[0.56rem] tracking-[0.08em] text-[#1a1a1a]/45">{dev.listed ? "Listed company" : "Privately held"}</span>
-                </p>
-                <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {FIN_METRICS.map((f) => (
-                    <RatingMeter key={f.key} rating={dev.financials[f.key]} label={f.full} meaning={f.meaning} />
-                  ))}
-                </div>
-                <p className="mt-5 text-[0.86rem] font-light leading-[1.7] text-[#1a1a1a]/55">{dev.finNote}</p>
-                <Source>Sources: Haryana RERA track record · latest annual &amp; financial filings / MCA statements. Independent read — not supplied by the developer.</Source>
-              </Section>
+              <div id="developer" className="mt-16 scroll-mt-24 border-t border-[#1a1a1a]/8 pt-12 md:mt-20">
+                <ReportDeveloper p={p} />
+              </div>
             )}
 
             {/* 04 · Construction & sales velocity */}
