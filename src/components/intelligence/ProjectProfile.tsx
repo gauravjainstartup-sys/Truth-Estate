@@ -25,6 +25,7 @@ import ReportConstruction from "./ReportConstruction";
 import ReportLegal from "./ReportLegal";
 import ReportLocation from "./ReportLocation";
 import ReportUSPs from "./ReportUSPs";
+import ReportPrice from "./ReportPrice";
 
 const basePath = "/Truth-Estate";
 
@@ -124,7 +125,7 @@ export default function ProjectProfile({
     { id: "construction", label: "Construction & velocity", show: !!con },
     { id: "legal", label: "Legal & compliance", show: true },
     { id: "location", label: "Location intelligence", show: !!market },
-    { id: "roi", label: "Projected ROI", show: !!roi },
+    { id: "roi", label: "Price & returns", show: !!roi },
     { id: "usps", label: "Project USPs", show: usps.length > 0 },
     { id: "strengths", label: "Strengths & watch-outs", show: true },
     { id: "serves", label: "What this serves", show: p.tags.length > 0 },
@@ -327,30 +328,13 @@ export default function ProjectProfile({
               </div>
             )}
 
-            <Chapter n="II" title="Will it make money?" framing="What the evidence says it could return — modelled, never promised. The full price journey and an ROI calculator land in this chapter next." />
+            <Chapter n="II" title="Will it make money?" framing="Where this project's price has actually been, why it moved, and where our model says it's headed — then a calculator to plan your own money, cash flow and all." />
 
-            {/* Projected ROI */}
+            {/* Price dynamics + projection + ROI calculator */}
             {roi && (
-              <Section id="roi" n={num()} title="Projected ROI">
-                <p className="-mt-2 mb-6 max-w-2xl text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/55">
-                  A {roi.horizonYears}-year outlook on a ₹{roi.ticketCr} Cr entry — anchored to the corridor&apos;s tracked appreciation, then adjusted for this developer&apos;s delivery record. Modelled, not guaranteed.
-                </p>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="rounded-2xl border border-[#1a1a1a]/10 bg-white/50 p-8">
-                    <p className="text-[0.62rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">Corridor benchmark</p>
-                    <p className="mt-4 font-mono text-[2.4rem] font-light leading-none">{roi.benchCagr}%<span className="ml-1.5 text-[0.9rem] text-[#1a1a1a]/40">CAGR</span></p>
-                    <p className="mt-5 text-[0.82rem] font-light text-[#1a1a1a]/55">Projected value in {roi.horizonYears} yrs</p>
-                    <p className="font-mono text-[1.2rem] text-[#1a1a1a]/80">₹{roi.benchValueCr} Cr</p>
-                  </div>
-                  <div className="rounded-2xl border border-[#1e6b45]/25 bg-[#1e6b45]/[0.04] p-8">
-                    <p className="text-[0.62rem] font-medium uppercase tracking-[0.14em] text-[#1e6b45]">Execution-adjusted</p>
-                    <p className="mt-4 font-mono text-[2.4rem] font-light leading-none text-[#1e6b45]">{roi.adjCagr}%<span className="ml-1.5 text-[0.9rem] text-[#1e6b45]/50">CAGR</span></p>
-                    <p className="mt-5 text-[0.82rem] font-light text-[#1a1a1a]/55">Projected value in {roi.horizonYears} yrs</p>
-                    <p className="font-mono text-[1.2rem] text-[#1a1a1a]/80">₹{roi.adjValueCr} Cr {roi.deltaCr !== 0 && <span className={`ml-1.5 text-[0.8rem] ${roi.deltaCr > 0 ? "text-[#1e6b45]" : "text-[#b0503e]"}`}>{roi.deltaCr > 0 ? "+" : ""}₹{roi.deltaCr} Cr</span>}</p>
-                  </div>
-                </div>
-                <Source>Anchored to tracked 3-yr corridor appreciation of {roi.corridor3Y}, annualised and adjusted by the developer&apos;s on-time record. A model, not investment advice.</Source>
-              </Section>
+              <div id="roi" className="scroll-mt-24">
+                <ReportPrice p={p} />
+              </div>
             )}
 
             {/* Strengths & watch-outs */}
