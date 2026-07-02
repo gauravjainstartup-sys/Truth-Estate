@@ -142,10 +142,27 @@ export default function ProjectProfile({
   let _n = 0;
   const num = () => String(++_n).padStart(2, "0");
 
-  /* Horizontal, swipeable section index with scroll-spy. */
+  /* Horizontal, swipeable section index with scroll-spy. Appears only once
+     the reader scrolls past the hero (Apple local-nav pattern) — an overlay,
+     so showing/hiding never shifts the page. */
   const tocKey = toc.map((t) => t.id).join(",");
   const [active, setActive] = useState<string>("");
+  const [showStrip, setShowStrip] = useState(false);
   const stripRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (embedded) return;
+    const firstId = tocKey.split(",")[0];
+    let raf = 0;
+    const check = () => {
+      raf = 0;
+      const el = document.getElementById(firstId);
+      setShowStrip(el ? el.getBoundingClientRect().top <= 140 : window.scrollY > 480);
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(check); };
+    check();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => { window.removeEventListener("scroll", onScroll); if (raf) cancelAnimationFrame(raf); };
+  }, [embedded, tocKey]);
   const jumpTo = (id: string) => {
     setActive(id);
     const el = typeof document !== "undefined" ? document.getElementById(id) : null;
@@ -196,7 +213,8 @@ export default function ProjectProfile({
           )}
         </div>
         {!embedded && (
-          <nav aria-label="Report sections" className="border-t border-[#1a1a1a]/6">
+          <nav aria-label="Report sections" aria-hidden={!showStrip}
+            className={`absolute inset-x-0 top-full border-b border-[#1a1a1a]/8 bg-[#F5F0E8]/95 shadow-[0_8px_24px_-18px_rgba(26,26,26,0.35)] backdrop-blur-sm transition-all duration-300 ease-out ${showStrip ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-3 opacity-0"}`}>
             <div className="relative mx-auto max-w-6xl px-6 md:px-10">
               <div ref={stripRef} className="flex gap-1 overflow-x-auto py-2.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {toc.map((t) => (
