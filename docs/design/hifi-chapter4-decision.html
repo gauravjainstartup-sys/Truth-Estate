@@ -1,0 +1,219 @@
+<!-- HI-FI · Chapter IV "Decision Time" — profile-tailored verdict, FAQs,
+     forward flows (nearby / same developer), primary+secondary CTAs, rate + feedback.
+     Truth Estate design language. Illustrative data (Arbour-anchored). -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Chapter IV · Decision Time</title>
+<style>
+  :root{
+    --ivory:#F5F0E8; --paper:#FBF8F2; --ink:#1a1a1a; --mut:#8b8378; --mut2:#a49a8c;
+    --gold:#9a7a2e; --gold2:#c9a96e; --green:#1e6b45; --green2:#238c55; --red:#b0503e; --red2:#c56a56; --rink:#8f3a2b;
+    --line:rgba(26,26,26,.10); --line2:rgba(26,26,26,.06);
+  }
+  *{box-sizing:border-box; margin:0}
+  body{ background:#d8d3c8; font:14px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif; color:var(--ink); padding:34px }
+  .serif{ font-family:Georgia,"Times New Roman",serif } .mono{ font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums }
+  .wrap{ display:flex; flex-wrap:wrap; gap:40px; align-items:flex-start }
+  .frame{ background:var(--ivory); box-shadow:0 20px 60px rgba(0,0,0,.14); border-radius:14px; overflow:hidden; flex:0 0 auto }
+  .fh{ font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:#a49a8c; padding:9px 14px; background:#efeae0 }
+  .dk{ width:1120px } .mob{ width:390px }
+  .pad{ padding:46px 48px } .mob .pad{ padding:24px 18px }
+
+  .chead .ch{ font-size:11px; letter-spacing:.28em; text-transform:uppercase; color:var(--gold); font-weight:600 }
+  .chead h2{ font-weight:500; font-size:44px; line-height:1.02; letter-spacing:-.02em; margin-top:12px } .mob .chead h2{ font-size:29px }
+  .chead .lede{ font-size:15.5px; line-height:1.6; color:#5f594e; margin-top:15px; max-width:620px; font-weight:300 } .mob .chead .lede{ font-size:13.5px }
+  .modtag{ display:flex; align-items:center; gap:10px; margin:32px 0 6px } .modtag .t{ font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink); font-weight:700 } .modtag .ln{ flex:1; height:1px; background:var(--line) }
+
+  /* profile selector */
+  .profiles{ display:flex; gap:8px; margin-top:22px; flex-wrap:wrap }
+  .profiles span{ display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line); background:#fff; border-radius:99px; padding:10px 18px; font-size:13px; color:#6b6459; font-weight:500 }
+  .profiles span.on{ background:var(--ink); color:#fff; border-color:var(--ink) }
+  .profiles span .ic{ font-size:14px }
+
+  /* verdict card */
+  .verdict{ margin-top:18px; border:1px solid rgba(30,107,69,.3); border-radius:18px; overflow:hidden; background:linear-gradient(165deg,rgba(30,107,69,.06),rgba(30,107,69,.01)) }
+  .vtop{ display:flex; justify-content:space-between; align-items:flex-start; gap:20px; padding:26px 30px 0 }
+  .vlabel{ font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--green); font-weight:700 }
+  .vhead{ font-size:34px; font-weight:500; letter-spacing:-.01em; margin-top:8px; line-height:1.05 } .mob .vhead{ font-size:24px }
+  .vpill{ flex:0 0 auto; display:flex; gap:8px }
+  .vp{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:9px 13px; text-align:center } .vp .n{ font-size:19px; font-weight:600; line-height:1 } .vp .n.g{ color:var(--green) } .vp .k{ font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut2); margin-top:4px }
+  .vrationale{ padding:14px 30px 0; font-size:14px; color:#4b463d; line-height:1.65; max-width:820px } .vrationale b{ color:var(--ink) }
+  .vsplit{ display:grid; grid-template-columns:1fr 1fr; gap:0; margin:20px 30px 0; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#fff } .mob .vsplit{ grid-template-columns:1fr }
+  .vcol{ padding:16px 20px } .vcol.fit{ border-right:1px solid var(--line) } .mob .vcol.fit{ border-right:none; border-bottom:1px solid var(--line) }
+  .vcol .h{ font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; font-weight:700 } .vcol.fit .h{ color:var(--green) } .vcol.watch .h{ color:var(--gold) }
+  .vcol ul{ margin:10px 0 0; padding:0; list-style:none } .vcol li{ font-size:12.5px; color:#4b463d; padding:5px 0 5px 18px; position:relative; line-height:1.45 }
+  .vcol.fit li:before{ content:"✓"; position:absolute; left:0; color:var(--green) } .vcol.watch li:before{ content:"⚠"; position:absolute; left:0; color:var(--gold) }
+  .vfoot{ display:flex; align-items:center; justify-content:space-between; gap:20px; padding:18px 30px 26px; flex-wrap:wrap }
+  .vmetrics{ display:flex; gap:22px; font-size:12px; color:#6b6459; flex-wrap:wrap } .vmetrics b{ color:var(--ink) } .vmetrics .sep{ color:var(--line) }
+  .btn{ display:inline-flex; align-items:center; gap:9px; border-radius:10px; padding:13px 22px; font-size:13.5px; font-weight:600; white-space:nowrap }
+  .btn.green{ background:var(--green); color:#fff } .btn.ghost{ border:1px solid var(--line); color:#4b463d; background:#fff }
+
+  /* other profiles row */
+  .others{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:16px } .mob .others{ grid-template-columns:1fr 1fr }
+  .op{ background:#fff; border:1px solid var(--line); border-radius:11px; padding:14px 16px } .op.on{ border-color:var(--ink); box-shadow:0 0 0 1px var(--ink) }
+  .op .who{ font-size:12px; color:#6b6459 } .op .call{ font-size:15px; font-weight:600; margin-top:4px }
+  .op .call.buy{ color:var(--green) } .op .call.fit{ color:var(--green2) } .op .call.consider{ color:var(--gold) } .op .call.stretch{ color:var(--red2) }
+
+  /* FAQ */
+  .faq{ margin-top:8px; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:#fff }
+  .fq{ border-bottom:1px solid var(--line) } .fq:last-child{ border-bottom:none }
+  .fq .q{ display:flex; align-items:center; gap:12px; padding:16px 20px; font-size:14.5px; font-weight:600; cursor:pointer }
+  .fq .q .chev{ margin-left:auto; color:var(--mut2); font-size:13px } .fq.open .q .chev{ color:var(--gold); transform:rotate(180deg) }
+  .fq .a{ padding:0 20px 18px 44px; font-size:13px; color:#5f594e; line-height:1.65 } .fq .a b{ color:var(--ink) } .fq .a a{ color:var(--gold); text-decoration:none; border-bottom:1px solid rgba(154,122,46,.35) }
+  .fq:not(.open) .a{ display:none }
+
+  /* forward flows */
+  .flows{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:6px } .mob .flows{ grid-template-columns:1fr }
+  .flowcol .ft{ font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); font-weight:700; margin-bottom:10px }
+  .pj{ display:flex; align-items:center; gap:12px; background:#fff; border:1px solid var(--line); border-radius:11px; padding:11px 14px; margin-bottom:8px }
+  .pj .ts{ flex:0 0 auto; width:40px; height:40px; border-radius:9px; background:rgba(30,107,69,.08); display:flex; flex-direction:column; align-items:center; justify-content:center }
+  .pj .ts .n{ font-size:15px; font-weight:600; color:var(--green); line-height:1 } .pj .ts .l{ font-size:7px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut2) }
+  .pj .nm{ font-size:13.5px; font-weight:600 } .pj .meta{ font-size:11px; color:var(--mut2); margin-top:2px }
+  .pj .go{ margin-left:auto; color:var(--gold); font-size:14px }
+  .flowcol .more{ font-size:12px; color:var(--gold); font-weight:600; margin-top:2px }
+
+  /* CTA band */
+  .ctaband{ margin-top:8px; background:linear-gradient(160deg,#faf7f0,#f1ead9); border:1px solid rgba(154,122,46,.3); border-radius:18px; padding:30px 34px; display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap }
+  .ctaband .lead h3{ font-size:24px; font-weight:500; letter-spacing:-.01em } .mob .ctaband .lead h3{ font-size:19px } .ctaband .lead p{ font-size:13px; color:#6b6459; margin-top:7px; max-width:440px }
+  .ctaband .acts{ display:flex; gap:12px; flex-wrap:wrap }
+
+  /* feedback */
+  .feedback{ margin-top:20px; display:flex; align-items:center; justify-content:space-between; gap:20px; padding:20px 24px; border:1px dashed var(--line); border-radius:14px; flex-wrap:wrap }
+  .feedback .rate{ display:flex; align-items:center; gap:12px } .feedback .rate .lab{ font-size:13px; font-weight:600 } .feedback .stars{ color:var(--gold2); font-size:20px; letter-spacing:3px } .feedback .stars .on{ color:var(--gold) }
+  .feedback .links{ display:flex; gap:18px; font-size:12.5px } .feedback .links a{ color:#6b6459; text-decoration:none; display:inline-flex; align-items:center; gap:6px } .feedback .links a .ic{ color:var(--gold) }
+  .trust{ text-align:center; font-size:11.5px; color:var(--mut2); margin-top:18px; line-height:1.6 } .trust b{ color:#6b6459 }
+</style></head><body>
+<div class="wrap">
+
+<!-- ══════════ FRAME A · VERDICT (profile-tailored) ══════════ -->
+<div class="frame dk"><div class="fh">Chapter IV · Decision Time — the verdict, tuned to who's buying</div>
+  <div class="pad">
+    <div class="chead"><div class="ch">Chapter IV</div><h2 class="serif">Decision time.</h2>
+      <p class="lede">You've seen the trust, the location and the money. Here's the call — and it's not the same call for everyone. Tell us who you are.</p></div>
+
+    <div class="profiles">
+      <span><span class="ic">◔</span> First-time buyer</span>
+      <span><span class="ic">⇧</span> Upgrader</span>
+      <span class="on"><span class="ic">◆</span> Investor</span>
+      <span><span class="ic">⌂</span> End-user / NRI</span>
+    </div>
+
+    <div class="verdict">
+      <div class="vtop">
+        <div><div class="vlabel">The verdict · for an investor</div>
+          <h3 class="vhead serif">Strong buy — with a clock on it.</h3></div>
+        <div class="vpill">
+          <div class="vp"><div class="n g">88</div><div class="k">Truth</div></div>
+          <div class="vp"><div class="n g">16.2%</div><div class="k">Your XIRR</div></div>
+        </div>
+      </div>
+      <p class="vrationale">For a pure investor the maths works: a construction-linked entry gives you a <b>~16% XIRR</b> on a <b>sold-out, ahead-of-schedule</b> tower from a top-3 developer. The catch is timing — a wave of GCE supply lands <b>2029–31</b>, so treat this as buy-and-<b>exit</b>, not buy-and-hold-forever. And read the Legal chapter before you sign: the project's clean, the developer has history.</p>
+      <div class="vsplit">
+        <div class="vcol fit"><div class="h">Why it fits you</div>
+          <ul><li>XIRR beats most GCE comps on a construction-linked plan</li><li>100% sold out — resale exit demand is proven</li><li>88 Truth Score — low execution risk</li></ul></div>
+        <div class="vcol watch"><div class="h">What to watch</div>
+          <ul><li>Plan your exit <b>before</b> the 2029–31 supply wave</li><li>₹20 Cr+ resale liquidity is thin — 4.5 BHK is more liquid</li><li>Have a lawyer vet the Agreement to Sell (DLF clause history)</li></ul></div>
+      </div>
+      <div class="vfoot">
+        <div class="vmetrics"><span><b>XIRR</b> 16.2%</span><span class="sep">·</span><span><b>Exit</b> by 2030</span><span class="sep">·</span><span><b>Match</b> 30% — see why</span><span class="sep">·</span><span><b>Legal</b> read it first</span></div>
+        <span class="btn green">Pressure-test this with an advisor →</span>
+      </div>
+    </div>
+
+    <div class="modtag"><span class="t">How the call changes by buyer</span><span class="ln"></span></div>
+    <div class="others">
+      <div class="op"><div class="who">First-time buyer</div><div class="call stretch">Stretch ↗</div></div>
+      <div class="op"><div class="who">Upgrader</div><div class="call fit">Strong fit</div></div>
+      <div class="op on"><div class="who">Investor</div><div class="call buy">Strong buy</div></div>
+      <div class="op"><div class="who">End-user / NRI</div><div class="call consider">Consider</div></div>
+    </div>
+    <p style="font-size:11.5px;color:var(--mut2);margin-top:12px;line-height:1.55">Same project, four different calls. A ₹4.76 Cr first home that locks capital to 2029 is a <b style="color:var(--red2)">stretch</b> for a first-timer, but a <b style="color:var(--green)">strong fit</b> for an upgrader bridging from a ₹2–3 Cr home. We tell you which one is you — and why.</p>
+  </div>
+</div>
+
+<!-- ══════════ FRAME B · FAQs + FLOWS + CTAs + FEEDBACK ══════════ -->
+<div class="frame dk"><div class="fh">Chapter IV — FAQs · keep exploring · CTAs · rate &amp; feedback</div>
+  <div class="pad">
+    <div class="modtag" style="margin-top:0"><span class="t">Straight answers</span><span class="ln"></span></div>
+    <div class="faq">
+      <div class="fq open"><div class="q">Is DLF The Arbour actually a safe investment? <span class="chev">⌄</span></div>
+        <div class="a">Mostly yes — an <b>88 Truth Score</b>, sold out, and tracking ahead of its RERA schedule. The single thing to watch isn't the project, it's the developer: DLF has a Supreme-Court possession-delay loss and a CCI penalty history. <a href="#">See Chapter II · Legal →</a></div></div>
+      <div class="fq open"><div class="q">What's the realistic possession date? <span class="chev">⌄</span></div>
+        <div class="a">RERA commits to <b>Mar 2030</b>; our model forecasts <b>Nov 2029</b> (4.7 months early) with a 28% chance of any delay. Insist the revised RERA date is written into your builder-buyer agreement.</div></div>
+      <div class="fq"><div class="q">Primary or resale — which is the smarter entry? <span class="chev">⌄</span></div>
+        <div class="a">Often resale (~8–10% cheaper) — but mind the cash-flow trade-off: a construction-linked primary plan can deliver a higher XIRR. <a href="#">See Chapter III →</a></div></div>
+      <div class="fq"><div class="q">What's the all-in cost beyond the ₹4.76 Cr sticker? <span class="chev">⌄</span></div>
+        <div class="a">Budget stamp duty &amp; registration (~7%), GST where applicable, IFMS, parking and club charges — roughly <b>8–10% on top</b> of base.</div></div>
+      <div class="fq"><div class="q">Can I buy as an NRI, and handle handover from abroad? <span class="chev">⌄</span></div>
+        <div class="a">Yes — permitted under FEMA. We manage the paperwork, payments and remote handover so you never need to fly down mid-build.</div></div>
+    </div>
+
+    <div class="modtag"><span class="t">Keep exploring</span><span class="ln"></span></div>
+    <div class="flows">
+      <div class="flowcol"><div class="ft">◉ Nearby in GCE</div>
+        <div class="pj"><div class="ts"><div class="n">84</div><div class="l">Truth</div></div><div><div class="nm">Oberoi 360 North</div><div class="meta">Sector 58 · ₹22 Cr+</div></div><span class="go">→</span></div>
+        <div class="pj"><div class="ts"><div class="n">79</div><div class="l">Truth</div></div><div><div class="nm">M3M Golf Estate</div><div class="meta">Sector 65 · ₹6–9 Cr</div></div><span class="go">→</span></div>
+        <div class="more">See all 7 in this corridor →</div></div>
+      <div class="flowcol"><div class="ft">❦ More from DLF</div>
+        <div class="pj"><div class="ts"><div class="n">91</div><div class="l">Truth</div></div><div><div class="nm">DLF The Camellias</div><div class="meta">Sector 42 · ₹15 Cr+</div></div><span class="go">→</span></div>
+        <div class="pj"><div class="ts"><div class="n">86</div><div class="l">Truth</div></div><div><div class="nm">DLF Privana West</div><div class="meta">Sector 76 · ₹7–10 Cr</div></div><span class="go">→</span></div>
+        <div class="more">All DLF projects we track →</div></div>
+      <div class="flowcol"><div class="ft">◈ Similar budget · ₹4–7 Cr</div>
+        <div class="pj"><div class="ts"><div class="n">82</div><div class="l">Truth</div></div><div><div class="nm">Smartworld One DXP</div><div class="meta">Sector 113 · ₹4–6 Cr</div></div><span class="go">→</span></div>
+        <div class="pj" style="border-style:dashed;background:var(--paper)"><div class="ts" style="background:rgba(154,122,46,.1)"><div class="n" style="color:var(--gold)">＋</div></div><div><div class="nm">Compare The Arbour</div><div class="meta">side-by-side with 2 others</div></div><span class="go">→</span></div>
+        <div class="more">Build a comparison →</div></div>
+    </div>
+
+    <div class="modtag"><span class="t">Your move</span><span class="ln"></span></div>
+    <div class="ctaband">
+      <div class="lead"><h3 class="serif">Don't make a ₹4.76 Cr call alone.</h3>
+        <p>Put this report in front of a Truth Estate advisor — independent, no builder commissions. We pressure-test the numbers and the paperwork with you.</p></div>
+      <div class="acts"><span class="btn green">Get your independent advisory →</span><span class="btn ghost">⤓ Download full report</span></div>
+    </div>
+
+    <div class="feedback">
+      <div class="rate"><span class="lab">Was this report useful?</span><span class="stars"><span class="on">★</span><span class="on">★</span><span class="on">★</span><span class="on">★</span>★</span></div>
+      <div class="links"><a href="#"><span class="ic">⚑</span> Report an error</a><a href="#"><span class="ic">✎</span> Share feedback</a><a href="#"><span class="ic">↗</span> Share this report</a></div>
+    </div>
+    <div class="trust">Every report is re-checked quarterly · <b>no developer pays to appear or to score</b> · spotted something off? Tell us — we fix it fast.</div>
+  </div>
+</div>
+
+<!-- ══════════ MOBILE · verdict ══════════ -->
+<div class="frame mob"><div class="fh">Ch. IV — mobile · verdict</div><div class="pad">
+  <div class="chead"><div class="ch">Chapter IV</div><h2 class="serif">Decision time.</h2>
+    <p class="lede">Not the same call for everyone. Tell us who you are.</p></div>
+  <div class="profiles" style="gap:6px"><span style="padding:8px 12px;font-size:11.5px">First-timer</span><span style="padding:8px 12px;font-size:11.5px">Upgrader</span><span class="on" style="padding:8px 12px;font-size:11.5px">Investor</span></div>
+  <div class="verdict" style="margin-top:14px">
+    <div class="vtop" style="padding:18px 18px 0"><div><div class="vlabel">For an investor</div><h3 class="vhead serif">Strong buy — with a clock on it.</h3></div></div>
+    <p class="vrationale" style="padding:12px 18px 0;font-size:13px">~16% XIRR on a sold-out, ahead-of-schedule tower — but <b>exit before the 2029–31 supply wave</b>, and read the Legal chapter first.</p>
+    <div class="vsplit" style="margin:16px 18px 0">
+      <div class="vcol fit"><div class="h">Fits you</div><ul><li>Strong XIRR vs comps</li><li>Proven resale demand</li></ul></div>
+      <div class="vcol watch"><div class="h">Watch</div><ul><li>Plan your exit by 2030</li><li>Vet the agreement</li></ul></div>
+    </div>
+    <div class="vfoot" style="padding:16px 18px 20px"><span class="btn green" style="width:100%;justify-content:center">Pressure-test with an advisor →</span></div>
+  </div>
+  <div class="others" style="margin-top:14px"><div class="op"><div class="who">First-timer</div><div class="call stretch">Stretch</div></div><div class="op"><div class="who">Upgrader</div><div class="call fit">Strong fit</div></div><div class="op on"><div class="who">Investor</div><div class="call buy">Strong buy</div></div><div class="op"><div class="who">End-user/NRI</div><div class="call consider">Consider</div></div></div>
+</div></div>
+
+<!-- ══════════ MOBILE · closer ══════════ -->
+<div class="frame mob"><div class="fh">Ch. IV — mobile · closer</div><div class="pad">
+  <div class="modtag" style="margin-top:0"><span class="t">Straight answers</span><span class="ln"></span></div>
+  <div class="faq">
+    <div class="fq open"><div class="q" style="font-size:13px">Is it a safe investment? <span class="chev">⌄</span></div><div class="a" style="padding-left:20px;font-size:12.5px">88 Truth Score, sold out, ahead of schedule. Watch the developer's legal history, not the project.</div></div>
+    <div class="fq"><div class="q" style="font-size:13px">Realistic possession? <span class="chev">⌄</span></div></div>
+    <div class="fq"><div class="q" style="font-size:13px">Primary or resale? <span class="chev">⌄</span></div></div>
+  </div>
+  <div class="modtag"><span class="t">Keep exploring</span><span class="ln"></span></div>
+  <div class="flows"><div class="flowcol"><div class="ft">❦ More from DLF</div>
+    <div class="pj"><div class="ts"><div class="n">91</div><div class="l">Truth</div></div><div><div class="nm">DLF The Camellias</div><div class="meta">Sector 42 · ₹15 Cr+</div></div><span class="go">→</span></div></div></div>
+  <div class="ctaband" style="padding:20px;margin-top:14px;flex-direction:column;align-items:stretch">
+    <div class="lead"><h3 class="serif" style="font-size:18px">Don't make a ₹4.76 Cr call alone.</h3><p style="font-size:12px">Independent advisory — no builder commissions.</p></div>
+    <div class="acts" style="margin-top:12px"><span class="btn green" style="width:100%;justify-content:center">Get independent advisory →</span><span class="btn ghost" style="width:100%;justify-content:center">⤓ Download report</span></div>
+  </div>
+  <div class="feedback" style="padding:16px;flex-direction:column;align-items:flex-start;gap:12px">
+    <div class="rate"><span class="lab" style="font-size:12px">Useful?</span><span class="stars"><span class="on">★</span><span class="on">★</span><span class="on">★</span><span class="on">★</span>★</span></div>
+    <div class="links" style="gap:14px;font-size:12px"><a href="#"><span class="ic">⚑</span> Report error</a><a href="#"><span class="ic">↗</span> Share</a></div>
+  </div>
+</div></div>
+
+</div></body></html>
