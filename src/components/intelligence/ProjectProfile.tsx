@@ -11,25 +11,20 @@ import {
   developerOf,
   marketOf,
   roiModel,
-  riskMatrix,
   investorFit,
   projectFaqs,
   towerIntelMeta,
   rankContext,
   type ProjectIntel,
-  type RiskLevel,
 } from "@/lib/projects";
 import MatchScore from "./MatchScore";
 import TowerIntel, { openUnitIntel } from "./TowerIntel";
 import ReportAnatomy from "./ReportAnatomy";
 import ReportDeveloper from "./ReportDeveloper";
+import ReportConstruction from "./ReportConstruction";
+import ReportLegal from "./ReportLegal";
 
 const basePath = "/Truth-Estate";
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const monIdx = (s: string) => {
-  const [m, y] = s.split(" ");
-  return parseInt(y, 10) * 12 + Math.max(0, MONTHS.indexOf(m));
-};
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return <p className="text-[11px] font-medium uppercase tracking-[0.34em] text-[#c9a96e]">{children}</p>;
@@ -39,15 +34,6 @@ const recoTone = (r: string) =>
   r.includes("Strong") ? "border-[#1e6b45]/30 text-[#1e6b45] bg-[#1e6b45]/8"
   : r === "Buy" ? "border-[#3e8e62]/30 text-[#3e8e62] bg-[#3e8e62]/8"
   : "border-[#9a7a2e]/30 text-[#9a7a2e] bg-[#c9a96e]/10";
-
-const riskTone: Record<RiskLevel, string> = {
-  Low: "text-[#1e6b45] border-[#1e6b45]/25 bg-[#1e6b45]/[0.05]",
-  Moderate: "text-[#9a7a2e] border-[#9a7a2e]/25 bg-[#c9a96e]/[0.08]",
-  Elevated: "text-[#b0503e] border-[#b0503e]/25 bg-[#b0503e]/[0.05]",
-};
-
-/* The strained→strong rating meter now lives in ./RatingMeter, shared with
-   the developer dossier so the whole product speaks one visual language. */
 
 function Num({ v, k, accent }: { v: string; k: string; accent?: boolean }) {
   return (
@@ -67,21 +53,6 @@ function KV({ k, v, tag }: { k: string; v: string; tag?: string }) {
         {v}
         {tag && <span className="ml-2 rounded bg-[#1e6b45]/8 px-1.5 py-0.5 align-middle font-sans text-[0.58rem] font-medium uppercase tracking-[0.08em] text-[#1e6b45]">{tag}</span>}
       </p>
-    </div>
-  );
-}
-
-/* A progress track with a plan marker — actual vs expected. */
-function ProgressBar({ label, value, hint, accent = "#1e6b45" }: { label: string; value: number; hint?: string; accent?: string }) {
-  return (
-    <div>
-      <div className="flex items-baseline justify-between">
-        <span className="text-[0.72rem] font-light uppercase tracking-[0.1em] text-[#1a1a1a]/45">{label}</span>
-        <span className="font-mono text-[0.9rem] text-[#1a1a1a]/80">{value}%{hint && <span className="ml-2 text-[0.68rem] font-light text-[#1a1a1a]/35">{hint}</span>}</span>
-      </div>
-      <div className="mt-2 h-[7px] w-full overflow-hidden rounded-full bg-[#1a1a1a]/8">
-        <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, value)}%`, backgroundColor: accent }} />
-      </div>
     </div>
   );
 }
@@ -137,7 +108,6 @@ export default function ProjectProfile({
   const dev = developerOf(p);
   const market = marketOf(p);
   const roi = roiModel(p);
-  const risks = riskMatrix(p);
   const faqs = projectFaqs(p);
   const ops = p.ops;
   const usps = ops?.usps ?? [];
@@ -151,7 +121,6 @@ export default function ProjectProfile({
     : undefined;
 
   const con = ops?.construction;
-  const aheadMonths = con ? monIdx(con.reraDate) - monIdx(con.predictedDate) : 0;
 
   const toc = [
     { id: "match", label: "Match score", show: true },
@@ -339,86 +308,17 @@ export default function ProjectProfile({
               </div>
             )}
 
-            {/* 04 · Construction & sales velocity */}
+            {/* Pillar II · Construction & Sales */}
             {con && (
-              <Section id="construction" n={num()} title="Construction & sales velocity">
-                <p className="-mt-2 mb-6 max-w-2xl text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/55">
-                  Live tracking of build progress and demand absorption against the promised RERA timeline.
-                </p>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-7">
-                    <p className="text-[0.7rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">Build progress vs plan</p>
-                    <div className="mt-5 space-y-4">
-                      <ProgressBar label="Actual" value={con.actualPct} hint="latest QPR" />
-                      <ProgressBar label="Expected" value={con.expectedPct} accent="#9a7a2e" />
-                    </div>
-                    <p className="mt-5 text-[0.8rem] font-light text-[#1a1a1a]/55">
-                      {con.actualPct >= con.expectedPct
-                        ? `Tracking ${con.actualPct - con.expectedPct} points ahead of schedule.`
-                        : `Tracking ${con.expectedPct - con.actualPct} points behind schedule.`}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-7">
-                    <p className="text-[0.7rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">Sales momentum</p>
-                    <div className="mt-5">
-                      <ProgressBar label="Units absorbed" value={con.absorptionPct} accent="#1e6b45" />
-                    </div>
-                    <p className="mt-5 text-[0.8rem] font-light text-[#1a1a1a]/55">
-                      {con.absorptionPct >= 90 ? "High demand — near or fully sold at current velocity." : "Steady absorption at current velocity."}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-4 flex flex-col gap-4 rounded-2xl bg-[#0d1a12] p-7 text-white sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-white/45">Execution-adjusted delivery</p>
-                    <p className="mt-2 font-mono text-[1.6rem] font-light">{con.predictedDate}</p>
-                    <p className="mt-1 text-[0.74rem] font-light text-white/45">RERA-committed: {con.reraDate}</p>
-                  </div>
-                  <span className={`inline-flex w-fit items-center rounded-full border px-3.5 py-1.5 text-[0.74rem] font-medium ${aheadMonths >= 0 ? "border-[#3e8e62]/40 bg-[#1e6b45]/20 text-[#7fd6a4]" : "border-[#c9a96e]/40 bg-[#c9a96e]/15 text-[#e3c58a]"}`}>
-                    {aheadMonths >= 0 ? `~${aheadMonths} months ahead of RERA` : `~${Math.abs(aheadMonths)} months behind RERA`}
-                  </span>
-                </div>
-                <Source>Source: latest Quarterly Progress Report ({con.qpr}). Predicted date is our execution-adjusted model, not a developer commitment.</Source>
-              </Section>
+              <div id="construction" className="mt-16 scroll-mt-24 border-t border-[#1a1a1a]/8 pt-12 md:mt-20">
+                <ReportConstruction p={p} />
+              </div>
             )}
 
-            {/* 05 · Legal & compliance */}
-            <Section id="legal" n={num()} title="Legal & compliance">
-              <p className="-mt-2 mb-6 max-w-2xl text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/55">
-                A forensic read of title, registration and developer litigation signals — and what each means for you as the buyer.
-              </p>
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                {risks.map((r) => (
-                  <div key={r.label} className={`rounded-xl border p-4 ${riskTone[r.level]}`}>
-                    <p className="text-[0.6rem] font-medium uppercase tracking-[0.12em] opacity-70">{r.label}</p>
-                    <p className="mt-2 text-[1.05rem] font-semibold uppercase tracking-[0.02em]">{r.level}</p>
-                    <p className="mt-2 text-[0.66rem] font-light leading-[1.4] text-[#1a1a1a]/45">{r.note}</p>
-                  </div>
-                ))}
-              </div>
-              {dev && (
-                <div className="mt-5 rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-7">
-                  <p className="text-[0.7rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">Developer legal signal</p>
-                  <p className="mt-3 text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/70">{dev.legal}</p>
-                </div>
-              )}
-              <div className="mt-4 rounded-2xl bg-[#1a1a1a] p-7 text-white md:p-8">
-                <p className="text-[0.7rem] font-medium uppercase tracking-[0.16em] text-[#c9a96e]">Buyer due-diligence plan</p>
-                <ol className="mt-4 space-y-3">
-                  {[
-                    `Verify the latest HRERA registration status and quarterly progress report for ${p.name} directly on haryanarera.gov.in.`,
-                    "Have an independent lawyer review the Agreement to Sell clause-by-clause — penalty terms, force-majeure definitions and delay-compensation.",
-                    "Confirm the title chain and that the land is free of encumbrance before any payment milestone.",
-                    "Match your payment schedule to our execution-adjusted delivery estimate, not the marketing timeline.",
-                  ].map((s, i) => (
-                    <li key={i} className="flex gap-3 text-[0.88rem] font-light leading-[1.6] text-white/70">
-                      <span className="mt-0.5 font-mono text-[0.72rem] text-[#c9a96e]">{i + 1}</span>{s}
-                    </li>
-                  ))}
-                </ol>
-              </div>
-              <Source>Sources: E-Courts &amp; RERA litigation repositories. Signals are our independent read — verify project specifics before you sign.</Source>
-            </Section>
+            {/* Pillar IV · Legal & Compliance */}
+            <div id="legal" className="mt-16 scroll-mt-24 border-t border-[#1a1a1a]/8 pt-12 md:mt-20">
+              <ReportLegal p={p} />
+            </div>
 
             {market && <Chapter n="II" title="The investment case" framing="Where it sits in the corridor, and what the evidence says it could return — modelled, never promised." />}
 

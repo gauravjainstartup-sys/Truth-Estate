@@ -456,6 +456,27 @@ export function rankContext(p: ProjectIntel) {
   return { rank, total, corridorRank, corridorCount: corridor.length, corridorAvg, delta: p.truthScore - corridorAvg, topPct: Math.max(1, Math.round((rank / total) * 100)) };
 }
 
+/* Delivery outlook — reads the QPR construction data into an "ahead/behind"
+   position, a delay probability and a confidence label (Chapter II · Construction). */
+export function deliveryOutlook(p: ProjectIntel) {
+  const con = p.ops?.construction;
+  if (!con) return null;
+  const ahead = monthIndex(con.reraDate) - monthIndex(con.predictedDate);
+  const aheadOfPlan = con.actualPct - con.expectedPct;
+  const delayChance = Math.round(clamp(26 - ahead * 3 + Math.max(0, -aheadOfPlan) * 2, 10, 60));
+  const confidence = delayChance <= 20 ? "High confidence" : delayChance <= 35 ? "Moderate confidence" : "Lower confidence";
+  return { ...con, ahead, aheadOfPlan, delayChance, confidence };
+}
+
+/* Project-level legal posture — clean / watch / flagged. Drives whether the
+   Legal section reads "project clean, developer history" or leads with alarm. */
+export function legalStatus(p: ProjectIntel): "clean" | "watch" | "flagged" {
+  const a = p.anatomy.legal;
+  if (a === "weak") return "flagged";
+  if (!p.ops?.reraId) return "watch";
+  return "clean";
+}
+
 /* Price-history read for the PSF journey (Chapter III). */
 export function priceJourney(p: ProjectIntel) {
   const pr = p.ops?.price;

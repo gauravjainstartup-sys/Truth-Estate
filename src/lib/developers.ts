@@ -39,7 +39,22 @@ export type DeveloperIntel = {
   finBand?: Partial<Record<FinKey, "exceptional" | "strong" | "moderate" | "watch">>;
   finNote: string;
   legal: string;
+  /* Developer-level litigation on public record — surfaced in the Legal
+     section as "contextual" signals (the project can be clean while the
+     developer carries history). Cited; not project-level defects. */
+  legalCases?: LegalCase[];
   verdict: string;
+};
+
+export type LegalCase = {
+  title: string;
+  court: string;
+  status: string; // e.g. "Disposed", "Active"
+  relevance: string; // "Contextual" | "Indirect" | "Direct"
+  impact: "High" | "Medium" | "Low";
+  summary: string;
+  buyerImpact: string;
+  ref?: string;
 };
 
 export const DEVELOPERS: DeveloperIntel[] = [
@@ -61,7 +76,29 @@ export const DEVELOPERS: DeveloperIntel[] = [
     finValues: { leverage: "−0.05×", coverage: "14.71×", cash: "2.07×", margin: "37.5%", inventory: "3.02 yr" },
     finBand: { leverage: "exceptional", coverage: "exceptional", cash: "exceptional", margin: "strong", inventory: "moderate" },
     finNote: "Consistent debt reduction over the cycle; recurring commercial rental income adds balance-sheet stability.",
-    legal: "Clean RERA compliance. No material legal disputes. Strong governance framework.",
+    legal: "Clean RERA compliance and strong governance today — but a buyer should read DLF's history: a Supreme-Court possession-delay loss and a CCI penalty for one-sided buyer agreements both sit on the public record.",
+    legalCases: [
+      {
+        title: "DLF v. Capital Greens Flat Buyers Assn.",
+        court: "Supreme Court of India · 14 Dec 2020",
+        status: "Disposed",
+        relevance: "Contextual",
+        impact: "High",
+        summary: "The Supreme Court upheld an NCDRC order directing DLF to pay ~6% p.a. compensation for unjustified possession delay at Capital Greens, Gurugram. DLF's force-majeure defence was rejected and hundreds of buyers were compensated.",
+        buyerImpact: "A confirmed, top-court loss for possession delay — same city, same type of project. Delivery risk here is documented, not hypothetical.",
+        ref: "Civil Appeal Nos. 3864–3889/2020",
+      },
+      {
+        title: "Belaire Owners' Assn. v. DLF — CCI penalty",
+        court: "CCI → Appellate Tribunal → Supreme Court",
+        status: "Disposed",
+        relevance: "Indirect",
+        impact: "High",
+        summary: "The Competition Commission imposed a ₹630 crore penalty on DLF for abusing a dominant position through unfair, one-sided buyer agreements in Belaire & Park Place; the competition finding was upheld through appellate stages.",
+        buyerImpact: "DLF's standard buyer contracts have been judicially found one-sided at the highest levels. Have a lawyer read the Agreement to Sell before you sign.",
+        ref: "CCI order 2011 · SC deposit direction Aug 2014",
+      },
+    ],
     verdict:
       "The most reliable developer in Gurugram for both end-use and investment. Premium pricing is justified by delivery certainty and resale liquidity.",
   },
