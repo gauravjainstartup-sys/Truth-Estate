@@ -1,0 +1,189 @@
+<!-- HI-FI MOCK · Ground Reality › Configs & Floor Plans.
+     Floor-plan images (./fp/*.jpeg) are DUMMY third-party placeholders, intentionally
+     NOT committed. Real plans come from the backend later. See sent screenshots. -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Ground Reality · Floor plans — hi-fi</title>
+<style>
+  :root{
+    --ivory:#F5F0E8; --paper:#FBF8F2; --ink:#1a1a1a; --mut:#8b8378;
+    --gold:#9a7a2e; --gold2:#c9a96e; --green:#1e6b45; --green2:#238c55;
+    --line:rgba(26,26,26,.10); --dark:#0d1420;
+  }
+  *{box-sizing:border-box; margin:0}
+  body{ background:#dcd7cc; font:14px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif; color:var(--ink); padding:34px }
+  .serif{ font-family:"Playfair Display",Georgia,"Times New Roman",serif }
+  .mono{ font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums }
+  .wrap{ display:flex; gap:40px; align-items:flex-start }
+  .cap{ font-size:12px; color:#777; margin-bottom:8px; letter-spacing:.02em }
+  .frame{ background:var(--ivory); box-shadow:0 20px 60px rgba(0,0,0,.14); border-radius:14px; overflow:hidden; flex:0 0 auto }
+  #d{ width:1120px } #mob{ width:390px }
+  .fh{ font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:#a49a8c; padding:9px 14px; background:#efeae0 }
+  .pad{ padding:44px 46px } .mob .pad{ padding:26px 18px }
+  .eyebrow{ font-size:11px; letter-spacing:.28em; text-transform:uppercase; color:var(--gold); font-weight:600 }
+  .part{ font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--mut); margin-top:20px }
+  h2.title{ font-weight:500; font-size:38px; line-height:1.04; letter-spacing:-.01em; margin-top:8px } .mob h2.title{ font-size:26px }
+  .sub{ color:#6b6459; font-weight:300; font-size:15px; max-width:44ch; margin-top:12px; line-height:1.7 }
+  /* config tabs — editorial */
+  .tabs{ display:flex; gap:34px; border-bottom:1px solid var(--line); margin-top:30px } .mob .tabs{ gap:20px; overflow-x:auto }
+  .tab{ padding:0 0 14px; cursor:pointer; white-space:nowrap; position:relative; top:1px }
+  .tab .t{ font-size:19px; font-weight:500 } .mob .tab .t{ font-size:16px }
+  .tab .s{ font-size:11px; color:var(--mut); margin-top:3px; letter-spacing:.02em }
+  .tab.on{ border-bottom:2px solid var(--gold) } .tab.on .t{ color:var(--ink) } .tab:not(.on) .t{ color:#a8a094 } .tab:not(.on) .s{ color:#b7afa2 }
+  /* main grid */
+  .grid{ display:grid; grid-template-columns:1.55fr 1fr; gap:40px; margin-top:34px } .mob .grid{ grid-template-columns:1fr; gap:26px; margin-top:24px }
+  .plan{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px; box-shadow:0 8px 30px rgba(0,0,0,.05) }
+  .plan img{ width:100%; display:block; border-radius:6px }
+  .plancap{ display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding:0 4px }
+  .plancap .l{ font-size:12.5px; color:#6b6459 } .plancap .r{ font-size:11px; color:var(--gold); letter-spacing:.04em; cursor:pointer }
+  .flrtog{ display:inline-flex; gap:2px; background:#efeae0; border-radius:8px; padding:3px; margin-left:10px }
+  .flrtog span{ font-size:10.5px; padding:3px 10px; border-radius:6px; color:#8b8378 } .flrtog span.on{ background:#fff; color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.08) }
+  /* specs */
+  .spectitle{ font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--mut) }
+  .dl{ margin-top:14px } .dl .r{ display:flex; align-items:baseline; gap:10px; padding:9px 0; border-bottom:1px dotted #cfc7b8 }
+  .dl .r .k{ color:#6b6459; font-size:13px } .dl .r .fill{ flex:1 } .dl .r .v{ font-size:14.5px; font-weight:600 }
+  /* forensic read */
+  .read{ margin-top:20px; background:linear-gradient(180deg,rgba(201,169,110,.10),rgba(201,169,110,.03)); border:1px solid rgba(154,122,46,.28); border-radius:12px; padding:16px 18px }
+  .read .h{ display:flex; align-items:center; gap:8px; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--gold); font-weight:600 }
+  .read .grade{ margin-left:auto; font-size:11px; background:var(--green); color:#fff; border-radius:99px; padding:2px 9px; letter-spacing:.02em }
+  .read p{ font-size:13px; line-height:1.65; color:#4b463d; margin-top:9px } .read p b{ color:var(--ink) }
+  /* deep intelligence (locked) */
+  .intel{ margin-top:36px; background:var(--dark); border-radius:16px; padding:26px 28px; color:#e8e6e2; position:relative; overflow:hidden } .mob .intel{ padding:20px }
+  .intel:before{ content:""; position:absolute; inset:0; background:radial-gradient(120% 80% at 80% 0%,rgba(224,182,103,.14),transparent 60%); pointer-events:none }
+  .intel .top{ display:flex; align-items:center; gap:12px; position:relative }
+  .intel .top .e{ font-size:10.5px; letter-spacing:.22em; text-transform:uppercase; color:#e0b667; font-weight:600 }
+  .intel .top .lockpill{ margin-left:auto; display:flex; align-items:center; gap:6px; font-size:11px; color:#b9b3aa; border:1px solid rgba(255,255,255,.16); border-radius:99px; padding:4px 11px }
+  .intel h3{ font-weight:500; font-size:22px; margin-top:10px; color:#fff } .mob .intel h3{ font-size:18px }
+  .intel .desc{ font-size:12.5px; color:#a9a49b; margin-top:6px; max-width:52ch; font-weight:300 }
+  .tiles{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:20px; position:relative } .mob .tiles{ grid-template-columns:repeat(2,1fr) }
+  .tile{ background:rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.09); border-radius:12px; padding:15px 14px; position:relative; overflow:hidden }
+  .tile .ic{ color:#e0b667; opacity:.9 } .tile .nm{ font-size:12.5px; font-weight:600; margin-top:10px; color:#f0eee9 }
+  .tile .vv{ font-size:11px; color:#8f897f; margin-top:2px; filter:blur(3px); user-select:none } .mono.vv{ letter-spacing:.02em }
+  .tile .lk{ position:absolute; top:12px; right:12px; color:#7e786e }
+  .unlock{ display:flex; align-items:center; gap:16px; margin-top:22px; padding-top:20px; border-top:1px solid rgba(255,255,255,.10); position:relative } .mob .unlock{ flex-wrap:wrap }
+  .unlock .txt{ flex:1; min-width:0 } .unlock .txt .a{ font-size:13.5px; color:#efeae0 } .unlock .txt .b{ font-size:11.5px; color:#8f897f; margin-top:3px }
+  .unlock .price b{ color:#fff; font-weight:600 }
+  .btn{ display:inline-flex; align-items:center; gap:8px; border-radius:9px; padding:12px 20px; font-size:13.5px; font-weight:500; cursor:pointer; white-space:nowrap }
+  .btn.green{ background:var(--green); color:#fff } .btn.green:hover{ background:var(--green2) }
+  .btn.ghost{ border:1px solid rgba(255,255,255,.2); color:#e8e6e2; background:transparent }
+  /* cost row */
+  .cost{ display:flex; align-items:center; gap:18px; margin-top:22px; background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:16px 20px } .mob .cost{ flex-wrap:wrap }
+  .cost .n{ flex:1; font-size:12.5px; color:#6b6459 } .cost .n b{ color:var(--ink) }
+</style></head><body>
+
+<div class="wrap">
+
+<!-- ═══════════ DESKTOP ═══════════ -->
+<div class="frame" id="d"><div class="fh">Hi-fi · desktop · Ground Reality › Configurations &amp; Floor Plans</div>
+  <div class="pad">
+    <span class="eyebrow">Ground Reality</span>
+    <div class="part">Part III — Configurations &amp; Floor Plans</div>
+    <h2 class="title serif">See the home, not the brochure.</h2>
+    <p class="sub">Real plans, real dimensions — then the intelligence a show-flat will never give you: how each home actually lives, in sun, air and Vastu.</p>
+
+    <!-- config tabs -->
+    <div class="tabs">
+      <div class="tab"><div class="t serif">3.5 BHK</div><div class="s mono">T-07 &amp; T-08 · from 3,415 sq ft</div></div>
+      <div class="tab on"><div class="t serif">4.5 BHK</div><div class="s mono">Type T-02 · 3,900 sq ft</div></div>
+      <div class="tab"><div class="t serif">Duplex Penthouse</div><div class="s mono">3 residences · on request</div></div>
+    </div>
+
+    <div class="grid">
+      <!-- plan -->
+      <div>
+        <div class="plan"><img src="fp/4-5bhk.jpeg" alt="4.5 BHK floor plan"></div>
+        <div class="plancap"><span class="l">4.5 BHK · Type&nbsp;T-02 · 4 beds · 4T + powder · private lift lobby</span><span class="r">⤢ View full plan</span></div>
+      </div>
+      <!-- specs + read -->
+      <div>
+        <div class="spectitle">The layout, measured</div>
+        <div class="dl">
+          <div class="r"><span class="k">Carpet area</span><span class="fill"></span><span class="v mono">2,680 sq ft</span></div>
+          <div class="r"><span class="k">Built-up area</span><span class="fill"></span><span class="v mono">3,150 sq ft</span></div>
+          <div class="r"><span class="k">Super area</span><span class="fill"></span><span class="v mono">3,900 sq ft</span></div>
+          <div class="r"><span class="k">Balcony</span><span class="fill"></span><span class="v mono">520 sq ft</span></div>
+          <div class="r"><span class="k">Loading</span><span class="fill"></span><span class="v mono">37%</span></div>
+          <div class="r"><span class="k">Carpet efficiency</span><span class="fill"></span><span class="v mono">63%</span></div>
+        </div>
+        <div class="read">
+          <div class="h"><span>◆</span> The efficiency read <span class="grade">Fair · 63%</span></div>
+          <p><b>63% of your super area is usable carpet</b> — mid-pack for GCE super-luxury (58–66%). The <b>37% loading is on the higher side</b>; pin the super-area basis in writing before you sign. <span style="color:#8b8378">Illustrative — final reads on real data.</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEEP UNIT INTELLIGENCE (locked = monetisation) -->
+    <div class="intel">
+      <div class="top">
+        <span class="e">▦ Deep intelligence · this unit</span>
+        <span class="lockpill">🔒 Free to preview · unlock to open</span>
+      </div>
+      <h3 class="serif">How this exact home lives — in 3D, sun, air &amp; Vastu.</h3>
+      <div class="desc">A show-flat shows you one dressed corner. We model your specific unit: walk it in 3D, see its true daylight through the year, how air moves through it, and an honest Vastu read — with reasoning.</div>
+      <div class="tiles">
+        <div class="tile"><span class="lk">🔒</span><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg></span><div class="nm">3D Walkthrough</div><div class="vv">Walk every room</div></div>
+        <div class="tile"><span class="lk">🔒</span><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/></svg></span><div class="nm">Sunshine</div><div class="vv mono">10.0 h peak · SE</div></div>
+        <div class="tile"><span class="lk">🔒</span><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h11a3 3 0 1 0-3-3M3 16h14a3 3 0 1 1-3 3M3 12h9"/></svg></span><div class="nm">Air Flow</div><div class="vv">Cross-ventilated</div></div>
+        <div class="tile"><span class="lk">🔒</span><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg></span><div class="nm">Vastu</div><div class="vv mono">Score 8.4 · why</div></div>
+      </div>
+      <div class="unlock">
+        <div class="txt"><div class="a">Explore the 3D &amp; a sample unit <b style="color:#e0b667;font-weight:600">free</b> — unlock every unit’s full intelligence.</div>
+          <div class="b price">₹1,499 this project · or <b>₹11,000</b> all-access + advisory</div></div>
+        <span class="btn ghost">Preview free</span>
+        <span class="btn green">Unlock unit intelligence →</span>
+      </div>
+    </div>
+
+    <!-- cost -->
+    <div class="cost">
+      <div class="n"><b>Indicative BSP shown.</b> GST, PLC, parking &amp; IFMS are add-ons — we’ll break down the true all-in number with you.</div>
+      <span class="btn green">Get the all-in cost →</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MOBILE ═══════════ -->
+<div class="frame mob" id="mob"><div class="fh">Mobile · 390</div>
+  <div class="pad">
+    <span class="eyebrow">Ground Reality</span>
+    <div class="part">Part III — Configs &amp; Floor Plans</div>
+    <h2 class="title serif">See the home, not the brochure.</h2>
+    <div class="tabs">
+      <div class="tab"><div class="t serif">3.5 BHK</div><div class="s mono">from 3,415</div></div>
+      <div class="tab on"><div class="t serif">4.5 BHK</div><div class="s mono">3,900 sq ft</div></div>
+      <div class="tab"><div class="t serif">Duplex PH</div><div class="s mono">3 units</div></div>
+    </div>
+    <div class="grid">
+      <div>
+        <div class="plan"><img src="fp/4-5bhk.jpeg" alt="4.5 BHK"></div>
+        <div class="plancap"><span class="l">4.5 BHK · T-02 · private lift lobby</span></div>
+      </div>
+      <div>
+        <div class="spectitle">The layout, measured</div>
+        <div class="dl">
+          <div class="r"><span class="k">Carpet</span><span class="fill"></span><span class="v mono">2,680</span></div>
+          <div class="r"><span class="k">Super</span><span class="fill"></span><span class="v mono">3,900</span></div>
+          <div class="r"><span class="k">Loading</span><span class="fill"></span><span class="v mono">37%</span></div>
+          <div class="r"><span class="k">Efficiency</span><span class="fill"></span><span class="v mono">63%</span></div>
+        </div>
+        <div class="read"><div class="h"><span>◆</span> Efficiency read <span class="grade">Fair</span></div>
+          <p>63% usable — mid-pack for GCE luxury. Loading 37% runs high; pin the super-area basis before you sign.</p></div>
+      </div>
+    </div>
+    <div class="intel">
+      <div class="top"><span class="e">▦ Deep intelligence</span><span class="lockpill">🔒</span></div>
+      <h3 class="serif">How this home lives.</h3>
+      <div class="tiles">
+        <div class="tile"><span class="lk">🔒</span><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg></span><div class="nm">3D Walkthrough</div></div>
+        <div class="tile"><span class="lk">🔒</span><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/></svg></span><div class="nm">Sunshine</div><div class="vv mono">10.0 h · SE</div></div>
+        <div class="tile"><span class="lk">🔒</span><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h11a3 3 0 1 0-3-3M3 16h14a3 3 0 1 1-3 3M3 12h9"/></svg></span><div class="nm">Air Flow</div></div>
+        <div class="tile"><span class="lk">🔒</span><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg></span><div class="nm">Vastu</div><div class="vv mono">8.4</div></div>
+      </div>
+      <div class="unlock"><div class="txt"><div class="a">Explore free — unlock full intelligence.</div><div class="b price">₹1,499 · or ₹11,000 all-access</div></div>
+        <span class="btn green" style="width:100%;justify-content:center">Unlock unit intelligence →</span></div>
+    </div>
+    <div class="cost"><div class="n"><b>BSP only.</b> GST/PLC/parking add-ons.</div><span class="btn green" style="width:100%;justify-content:center">Get the all-in cost →</span></div>
+  </div>
+</div>
+
+</div>
+</body></html>
