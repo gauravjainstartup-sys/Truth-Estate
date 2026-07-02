@@ -4,9 +4,14 @@ import { deliveryOutlook, type ProjectIntel } from "@/lib/projects";
    the RERA-due %, absorption, and a delivery forecast (predicted vs RERA,
    delay probability) — in the warm report language, not the old dark card. */
 
+const basePath = "/Truth-Estate";
+
 export default function ReportConstruction({ p }: { p: ProjectIntel }) {
   const o = deliveryOutlook(p);
   if (!o) return null;
+  const render = p.ops?.media?.render;
+  const site = p.ops?.media?.sitePhotos?.[0];
+  const siteAsOf = site ? `◉ ${site.asOf} · on site` : `▦ schematic · ${o.actualPct}% built`;
   const soldOut = o.absorptionPct >= 98;
   const assess =
     o.aheadOfPlan > 0 && o.absorptionPct >= 95 ? "Ahead of schedule, and already sold out."
@@ -27,40 +32,45 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
         <p className="mt-3 text-[0.72rem] font-light italic text-[#1a1a1a]/40">Source: latest Quarterly Progress Report filed with HRERA · {o.qpr}.</p>
       </div>
 
-      {/* The brochure vs the ground — what was sold vs what's verified standing */}
+      {/* Render vs reality — the developer's render beside our latest dated
+          field photo. Real images drop into these slots; until then we render
+          brand-safe schematic stand-ins. */}
       <div className="mt-5">
         <p className="font-serif text-[1.25rem] font-medium md:text-[1.4rem]">What they sold. What&apos;s standing.</p>
+        <p className="mt-1.5 max-w-xl text-[0.82rem] font-light leading-[1.55] text-[#1a1a1a]/50">The marketing render beside the tower as it actually stood on our last field visit — so you buy the building, not the brochure.</p>
         <div className="relative mt-4 grid gap-4 md:grid-cols-2">
           <span className="absolute left-1/2 top-1/2 z-10 hidden h-11 w-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-[#1a1a1a]/10 bg-[#F5F0E8] font-mono text-[0.68rem] uppercase tracking-[0.08em] text-[#1a1a1a]/45 shadow-md md:grid">vs</span>
-          {/* the brochure */}
-          <div className="overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-white/70">
-            <div className="flex items-center justify-between border-b border-[#1a1a1a]/8 px-5 py-3">
-              <span className="flex items-center gap-2.5 text-[0.82rem] font-semibold"><span className="grid h-6 w-6 place-items-center rounded-md bg-[#9a7a2e]/[0.12] text-[0.72rem] text-[#9a7a2e]">❧</span>The brochure</span>
-              <span className="text-[0.6rem] font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/35">The promise</span>
+          {/* the render */}
+          <figure className="overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-white/70">
+            <div className="flex items-center justify-between border-b border-[#1a1a1a]/8 px-5 py-2.5">
+              <span className="flex items-center gap-2.5 text-[0.8rem] font-semibold"><span className="grid h-5 w-5 place-items-center rounded-md bg-[#9a7a2e]/[0.12] text-[0.66rem] text-[#9a7a2e]">❧</span>The render</span>
+              <span className="text-[0.58rem] font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/35">Marketing image</span>
             </div>
-            <div className="px-5 py-4">
-              <BRow k="Possession promised" v={o.reraDate} />
-              {p.ops?.launch && <BRow k="Launched" v={`${p.ops.launch}${p.ops.price ? ` · at ₹${(p.ops.price.launchPsf / 1000).toFixed(1)}k/sqft` : ""}`} />}
-              {p.ops?.openAreaPct != null && <BRow k="Sold on" v={`${p.ops.openAreaPct}% open area · ${p.configs.join(" & ")}`} />}
-              <p className="mt-3.5 text-[0.72rem] font-light leading-[1.55] text-[#1a1a1a]/45">Every brochure looks immaculate. We file the promise — then hold the build against it, quarter by quarter.</p>
+            <div className="aspect-[4/3] w-full">
+              {render ? <img src={`${basePath}/${render}`} alt={`${p.name} developer render`} className="h-full w-full object-cover" /> : <RenderStandin />}
             </div>
-          </div>
-          {/* the ground */}
-          <div className="overflow-hidden rounded-2xl border border-[#1e6b45]/25 bg-white/70">
-            <div className="flex items-center justify-between border-b border-[#1a1a1a]/8 px-5 py-3">
-              <span className="flex items-center gap-2.5 text-[0.82rem] font-semibold"><span className="grid h-6 w-6 place-items-center rounded-md bg-[#1e6b45]/[0.1] text-[0.72rem] text-[#1e6b45]">◉</span>The ground</span>
-              <span className="text-[0.6rem] font-medium uppercase tracking-[0.1em] text-[#1e6b45]/70">Verified today</span>
+            <figcaption className="px-5 py-2.5 text-[0.7rem] font-light text-[#1a1a1a]/50">Developer render{p.ops?.launch ? ` · ${p.ops.launch} launch imagery` : ""}. Artist&apos;s impression.</figcaption>
+          </figure>
+          {/* the site */}
+          <figure className="overflow-hidden rounded-2xl border border-[#1e6b45]/25 bg-white/70">
+            <div className="flex items-center justify-between border-b border-[#1a1a1a]/8 px-5 py-2.5">
+              <span className="flex items-center gap-2.5 text-[0.8rem] font-semibold"><span className="grid h-5 w-5 place-items-center rounded-md bg-[#1e6b45]/[0.1] text-[0.66rem] text-[#1e6b45]">◉</span>The site</span>
+              <span className="text-[0.58rem] font-medium uppercase tracking-[0.1em] text-[#1e6b45]/70">Our field visit</span>
             </div>
-            <div className="px-5 py-4">
-              <BRow k="Actually built" v={`${o.actualPct}% — vs ${o.expectedPct}% due`} strong />
-              <BRow k="Units absorbed" v={`${o.absorptionPct}%`} />
-              <BRow k="Our forecast handover" v={`${o.predictedDate}${o.ahead !== 0 ? ` · ${Math.abs(o.ahead)} mo ${o.ahead > 0 ? "early" : "late"}` : ""}`} strong />
-              <div className="mt-3.5 flex items-center gap-3 rounded-lg border border-dashed border-[#1a1a1a]/15 bg-[#FBF8F2] px-3.5 py-2.5">
-                <span className="text-[0.95rem] text-[#9a7a2e]" aria-hidden>◫</span>
-                <p className="text-[0.7rem] font-light leading-[1.5] text-[#1a1a1a]/50">Dated site photographs from our field visits land here — verified against this QPR ({o.qpr}).</p>
-              </div>
+            <div className="relative aspect-[4/3] w-full">
+              {site ? <img src={`${basePath}/${site.src}`} alt={`${p.name} site, ${site.asOf}`} className="h-full w-full object-cover" /> : <SiteStandin pct={o.actualPct} />}
+              <span className="absolute bottom-2.5 right-2.5 rounded bg-[#141110]/75 px-2 py-1 font-mono text-[0.6rem] tracking-[0.06em] text-white">{siteAsOf}</span>
             </div>
-          </div>
+            <figcaption className="px-5 py-2.5 text-[0.7rem] font-light text-[#1a1a1a]/50">{site?.note ?? `Structure at ${o.actualPct}% — verified against QPR ${o.qpr}.`}</figcaption>
+          </figure>
+        </div>
+        {/* one honest read tying photo to forecast — not the old data dump */}
+        <div className="mt-4 rounded-r-xl border-l-2 border-[#9a7a2e] bg-[#9a7a2e]/[0.06] px-5 py-3.5">
+          <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-[#9a7a2e]">◆ The delivery read</p>
+          <p className="mt-1.5 text-[0.86rem] font-light leading-[1.6] text-[#1a1a1a]/70">
+            Structure is <b className="font-medium text-[#1a1a1a]">{o.actualPct}% up</b> against {o.expectedPct}% due — {o.aheadOfPlan >= 0 ? "ahead of" : "behind"} the RERA plan. Our field read tracks to a <b className="font-medium text-[#1a1a1a]">{o.predictedDate}</b> handover{o.ahead !== 0 ? `, ${Math.abs(o.ahead)} months ${o.ahead > 0 ? "before" : "after"} the RERA date` : ""}.
+            {!site && <span className="text-[#1a1a1a]/45"> Dated photographs from our next visit drop into the slot above.</span>}
+          </p>
         </div>
       </div>
 
@@ -137,11 +147,47 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
   );
 }
 
-function BRow({ k, v, strong }: { k: string; v: string; strong?: boolean }) {
+/* Brand-safe stand-ins until real imagery lands — a glossy render vs a grey,
+   under-construction site (concrete floors, safety netting, a tower crane). */
+function RenderStandin() {
   return (
-    <div className="flex items-baseline gap-3 border-b border-dotted border-[#1a1a1a]/12 py-2 last:border-none">
-      <span className="text-[0.76rem] font-light text-[#1a1a1a]/50">{k}</span>
-      <span className={`ml-auto text-right font-mono text-[0.84rem] ${strong ? "font-semibold text-[#1a1a1a]" : "font-medium text-[#1a1a1a]/70"}`}>{v}</span>
-    </div>
+    <svg viewBox="0 0 400 300" className="h-full w-full" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Indicative render">
+      <defs>
+        <linearGradient id="rc-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#a7c6dd" /><stop offset=".55" stopColor="#d7dccb" /><stop offset="1" stopColor="#efe3cd" /></linearGradient>
+        <linearGradient id="rc-glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#7ba0ba" /><stop offset="1" stopColor="#cfe0e9" /></linearGradient>
+        <pattern id="rc-grid" width="10" height="13" patternUnits="userSpaceOnUse"><path d="M0 0H10M0 0V13" stroke="#5f8299" strokeWidth=".5" opacity=".35" /></pattern>
+      </defs>
+      <rect width="400" height="300" fill="url(#rc-sky)" />
+      <circle cx="312" cy="70" r="88" fill="#fff6e7" opacity=".55" />
+      <g><rect x="132" y="60" width="66" height="176" fill="url(#rc-glass)" /><rect x="132" y="60" width="66" height="176" fill="url(#rc-grid)" /><rect x="132" y="60" width="66" height="176" fill="none" stroke="#6c8fa7" strokeWidth="1" opacity=".5" /></g>
+      <g><rect x="210" y="98" width="58" height="138" fill="url(#rc-glass)" /><rect x="210" y="98" width="58" height="138" fill="url(#rc-grid)" /><rect x="210" y="98" width="58" height="138" fill="none" stroke="#6c8fa7" strokeWidth="1" opacity=".5" /></g>
+      <rect x="112" y="224" width="180" height="24" fill="#e7dfce" />
+      <rect x="0" y="244" width="400" height="56" fill="#ccd2bb" />
+      <g fill="#a6ba86"><circle cx="86" cy="238" r="16" /><circle cx="316" cy="240" r="18" /></g>
+    </svg>
+  );
+}
+function SiteStandin({ pct }: { pct: number }) {
+  return (
+    <svg viewBox="0 0 400 300" className="h-full w-full" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Indicative construction site schematic">
+      <defs>
+        <linearGradient id="sc-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#c4c2b7" /><stop offset="1" stopColor="#d9d3c5" /></linearGradient>
+        <pattern id="sc-slab" width="66" height="14" patternUnits="userSpaceOnUse"><path d="M0 0H66" stroke="#8f897b" strokeWidth="1.4" /></pattern>
+        <pattern id="sc-net" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M0 0H8M0 0V8" stroke="#6f7d5c" strokeWidth=".7" opacity=".5" /></pattern>
+      </defs>
+      <rect width="400" height="300" fill="url(#sc-sky)" />
+      {/* tower A — clad lower, raw upper (build % marks the clad line) */}
+      <rect x="132" y="70" width="66" height="166" fill="#b6b1a4" />
+      <rect x="132" y="70" width="66" height="166" fill="url(#sc-slab)" />
+      <rect x="132" y="70" width="66" height={`${Math.max(20, (100 - pct) * 1.4)}`} fill="#9fb184" opacity=".38" />
+      <rect x="132" y="70" width="66" height={`${Math.max(20, (100 - pct) * 1.4)}`} fill="url(#sc-net)" />
+      {/* tower B */}
+      <rect x="210" y="112" width="58" height="124" fill="#aca69a" /><rect x="210" y="112" width="58" height="124" fill="url(#sc-slab)" />
+      {/* crane */}
+      <g stroke="#c69a3e" strokeWidth="3" fill="none" opacity=".92"><line x1="286" y1="44" x2="286" y2="236" /><line x1="196" y1="56" x2="344" y2="56" /><line x1="286" y1="44" x2="196" y2="56" /><line x1="286" y1="44" x2="344" y2="56" /><line x1="232" y1="56" x2="232" y2="104" /></g>
+      {/* hoarding + dust */}
+      <rect x="0" y="236" width="400" height="64" fill="#c3bba9" /><rect x="0" y="232" width="400" height="10" fill="#b3a98f" />
+      <ellipse cx="200" cy="240" rx="180" ry="14" fill="#cfc7b4" opacity=".55" />
+    </svg>
   );
 }

@@ -14,6 +14,7 @@ import {
   projectFaqs,
   towerIntelMeta,
   rankContext,
+  reviewedOn,
   type ProjectIntel,
 } from "@/lib/projects";
 import MatchScore from "./MatchScore";
@@ -108,6 +109,7 @@ export default function ProjectProfile({
   const ops = p.ops;
   const usps = ops?.usps ?? [];
   const ctx = rankContext(p);
+  const reviewed = reviewedOn(p);
   const mapHref = ops?.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${p.name} ${ops.address}`)}` : undefined;
   const buildStatus = ops?.construction
     ? `Mid-construction · ${ops.construction.actualPct}% built`
@@ -254,6 +256,7 @@ export default function ProjectProfile({
                   )}
                   <p className="mt-1.5 flex items-center gap-2 text-[0.8rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]">◆</span><span><b className="font-semibold text-[#1a1a1a]">Top {ctx.topPct}%</b> of tracked projects</span></p>
                   <p className="mt-1.5 flex items-center gap-2 text-[0.8rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]">✓</span><span><b className="font-semibold text-[#1a1a1a]">{p.confidence}</b> confidence · re-scored quarterly</span></p>
+                  <p className="mt-2.5 text-[0.66rem] font-light tracking-[0.02em] text-[#1a1a1a]/40"><span className="mr-1.5" aria-hidden>◷</span>Data last reviewed {reviewed}</p>
                 </div>
               </div>
             </div>
@@ -266,7 +269,7 @@ export default function ProjectProfile({
               <p className="mt-5 font-serif text-[1.4rem] font-normal leading-[1.5] md:text-[1.7rem]">{p.reason}</p>
               <div className="mt-6 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 border-t border-[#1a1a1a]/8 pt-5">
                 <p className="max-w-xl text-[0.86rem] font-light leading-[1.7] text-[#1a1a1a]/55">
-                  <span className="font-medium text-[#1a1a1a]/70">Best suited for:</span> {investorFit(p)}
+                  <span className="font-medium text-[#1a1a1a]/70">Best suited for:</span> {investorFit(p).replace(/^Best suited for\s+/i, "")}
                 </p>
                 <a href="#verdict" className="shrink-0 text-[0.78rem] font-semibold text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]">
                   Your personalised verdict ↓
@@ -456,7 +459,7 @@ export default function ProjectProfile({
             <ReportFeedback slug={p.slug} name={p.name} />
 
             <p className="mt-8 text-[0.72rem] font-light leading-[1.7] text-[#1a1a1a]/35">
-              Independent assessment by Truth Estate. No developer can pay for a higher Truth Score or to appear here. The Truth Score, Match Score and any recommendation are our own evidence-based <span className="italic">opinions</span> as of the date shown — not a guarantee of performance, safety, appreciation or returns, and not investment, legal or financial advice. Ticket and price bands, ROI projections and delivery estimates are tracked or modelled figures that vary by tower, floor and stack. The decision, and its risks, are yours; we are not liable for the performance of any project. Verify specifics independently and see our{" "}
+              Independent assessment by Truth Estate. No developer can pay for a higher Truth Score or to appear here. The Truth Score, Match Score and any recommendation are our own evidence-based <span className="italic">opinions</span> as of {reviewed} — not a guarantee of performance, safety, appreciation or returns, and not investment, legal or financial advice. Ticket and price bands, ROI projections and delivery estimates are tracked or modelled figures that vary by tower, floor and stack. The decision, and its risks, are yours; we are not liable for the performance of any project. Verify specifics independently and see our{" "}
               <a href={`${basePath}/disclaimer`} className="underline decoration-[#1a1a1a]/20 underline-offset-2 transition-colors hover:text-[#1a1a1a]/60">full disclaimer</a>.
             </p>
           </div>

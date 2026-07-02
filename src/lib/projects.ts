@@ -114,6 +114,7 @@ function sizeBand(p: Project, avgPsf: number | undefined): string | null {
    out rather than estimate it. */
 export type ProjectOps = {
   address?: string; // street-level address for the hero + map
+  reviewed?: string; // when we last re-checked this project's data ("3 Jul 2026")
   units?: number;
   towers?: number;
   landAcres?: number;
@@ -128,8 +129,14 @@ export type ProjectOps = {
      bound today's tracked range; premium & CAGR are derived, not stored. */
   price?: { launchPsf: number; launchDate: string; currentLow: number; currentHigh: number };
   /* Per-configuration homes — carpet/super/balcony areas and the indicative
-     ticket band. Efficiency & loading are derived, never stored. */
-  homes?: { config: string; carpetSqft: number; superSqft: number; balconySqft?: number; priceCr: [number, number] }[];
+     ticket band. Efficiency & loading are derived, never stored. `plan` is an
+     optional licensed 2D floor-plan image (relative to /public); when absent
+     we render an indicative schematic. */
+  homes?: { config: string; carpetSqft: number; superSqft: number; balconySqft?: number; priceCr: [number, number]; plan?: string; beds?: number }[];
+  /* Imagery (relative to /public). `render` is the developer's marketing
+     render; `sitePhotos` are our dated field-visit photographs. Absent →
+     brand-safe schematic stand-ins render in their place. */
+  media?: { render?: string; sitePhotos?: { src: string; asOf: string; note?: string }[] };
   /* Structured location intelligence (Chapter II · Location). */
   location?: {
     pois?: { name: string; sub: string; rating?: number; dist: string; key?: boolean }[];
@@ -150,6 +157,7 @@ export type ProjectOps = {
 export const OPS: Record<string, ProjectOps> = {
   "DLF Arbour": {
     address: "Sector 63, Golf Course Extension Road, Gurugram",
+    reviewed: "3 Jul 2026",
     units: 1137,
     towers: 5,
     landAcres: 25.1,
@@ -194,6 +202,7 @@ export const OPS: Record<string, ProjectOps> = {
   },
   "DLF Privana South": {
     address: "Sector 77, Southern Peripheral Road, Gurugram",
+    reviewed: "1 Jul 2026",
     homes: [
       { config: "3 BHK", carpetSqft: 1755, superSqft: 2500, balconySqft: 300, priceCr: [5.0, 5.9] },
       { config: "4 BHK", carpetSqft: 2150, superSqft: 3080, balconySqft: 390, priceCr: [6.2, 7.9] },
@@ -523,6 +532,11 @@ export function legalStatus(p: ProjectIntel): "clean" | "watch" | "flagged" {
   if (!p.ops?.reraId) return "watch";
   return "clean";
 }
+
+/* When this report's data was last re-checked. Per-project where we track it,
+   else the corridor data vintage. Surfaced in the hero + disclaimer. */
+export const DATA_AS_OF = "Jul 2026";
+export const reviewedOn = (p: ProjectIntel): string => p.ops?.reviewed ?? DATA_AS_OF;
 
 /* Price-history read for the PSF journey (Chapter III). */
 export function priceJourney(p: ProjectIntel) {
