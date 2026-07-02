@@ -3,15 +3,19 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main, claude/exciting-lamport-9x99ik]
+  workflow_dispatch:
 
 permissions:
   contents: read
   pages: write
   id-token: write
 
+# Allow one concurrent deployment; let in-progress production deploys finish
+# (the GitHub Pages environment cancels a deployment if a newer one supersedes
+# it — cancelling in-progress here caused spurious "Deployment cancelled").
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
