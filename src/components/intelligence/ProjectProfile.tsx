@@ -48,10 +48,8 @@ function KV({ k, v, tag }: { k: string; v: string; tag?: string }) {
   return (
     <div className="border-l-2 border-[#1a1a1a]/8 pl-4">
       <p className="text-[0.6rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/35">{k}</p>
-      <p className="mt-1.5 font-mono text-[0.88rem] font-medium leading-snug text-[#1a1a1a]/85 md:text-[0.95rem]">
-        {v}
-        {tag && <span className="ml-2 rounded bg-[#1e6b45]/8 px-1.5 py-0.5 align-middle font-sans text-[0.58rem] font-medium uppercase tracking-[0.08em] text-[#1e6b45]">{tag}</span>}
-      </p>
+      <p className="mt-1.5 font-mono text-[0.88rem] font-medium leading-snug text-[#1a1a1a]/85 md:text-[0.95rem]">{v}</p>
+      {tag && <span className="mt-1.5 inline-block whitespace-nowrap rounded bg-[#1e6b45]/8 px-1.5 py-0.5 font-sans text-[0.58rem] font-medium uppercase tracking-[0.08em] text-[#1e6b45]">{tag}</span>}
     </div>
   );
 }
@@ -313,22 +311,21 @@ export default function ProjectProfile({
                 <div className="relative h-[118px] w-[118px] md:h-[136px] md:w-[136px]">
                   <div className="absolute inset-0 rounded-full" style={{ background: `conic-gradient(#1e6b45 0 ${Math.round((p.truthScore / 100) * 360)}deg, rgba(26,26,26,0.08) ${Math.round((p.truthScore / 100) * 360)}deg 360deg)` }} />
                   <div className="absolute inset-[7px] rounded-full bg-[#F5F0E8]" />
-                  {/* numeral + caption as one tight group, optically centred:
-                      serif digits sit low in their em-box, so the group carries
-                      a small measured nudge instead of pure box-centering */}
-                  <div className="absolute inset-0 flex -translate-y-[2px] flex-col items-center justify-center" data-seal-group>
+                  {/* numeral optically centred; /100 + caption sit just beneath */}
+                  <div className="absolute inset-0 flex translate-y-[6px] flex-col items-center justify-center" data-seal-group>
                     <span className="font-serif text-[3rem] font-normal leading-none text-[#1e6b45]">{p.truthScore}</span>
-                    <span className="mt-1.5 text-[0.48rem] font-medium uppercase tracking-[0.2em] text-[#1a1a1a]/40">Truth Score</span>
+                    <span className="mt-1 font-mono text-[0.62rem] text-[#1a1a1a]/30">/ 100</span>
+                    <span className="mt-1 text-[0.48rem] font-medium uppercase tracking-[0.2em] text-[#1a1a1a]/40">Truth Score</span>
                   </div>
                 </div>
                 <div>
                   <span className={`inline-block rounded-full border px-3.5 py-1 text-[0.72rem] font-semibold ${recoTone(p.recommendation)}`}>{p.recommendation}</span>
                   {ctx.delta > 0 && (
-                    <p className="mt-2.5 flex items-center gap-2 text-[0.8rem] text-[#1a1a1a]/60"><IconTrendUp className="text-[#9a7a2e]" /><span><b className="font-semibold text-[#1a1a1a]">+{ctx.delta}</b> vs {p.marketShort} average</span></p>
+                    <p className="mt-2.5 flex items-center gap-2.5 text-[0.8rem] text-[#1a1a1a]/60"><span className="flex w-4 shrink-0 justify-center text-[#9a7a2e]"><IconTrendUp /></span><span><b className="font-semibold text-[#1a1a1a]">+{ctx.delta}</b> vs {p.marketShort} average</span></p>
                   )}
-                  <p className="mt-1.5 flex items-center gap-2 text-[0.8rem] text-[#1a1a1a]/60"><IconTiers className="text-[#9a7a2e]" /><span><b className="font-semibold text-[#1a1a1a]">Top {ctx.topPct}%</b> of tracked projects</span></p>
-                  <p className="mt-1.5 flex items-center gap-2 text-[0.8rem] text-[#1a1a1a]/60"><IconShieldCheck className="text-[#9a7a2e]" /><span><b className="font-semibold text-[#1a1a1a]">{p.confidence}</b> confidence · re-scored quarterly</span></p>
-                  <p className="mt-2.5 flex items-center gap-1.5 text-[0.66rem] font-light tracking-[0.02em] text-[#1a1a1a]/40"><IconClock className="text-[#1a1a1a]/40" />Data last reviewed {reviewed}</p>
+                  <p className="mt-1.5 flex items-center gap-2.5 text-[0.8rem] text-[#1a1a1a]/60"><span className="flex w-4 shrink-0 justify-center text-[#9a7a2e]"><IconTiers /></span><span><b className="font-semibold text-[#1a1a1a]">Top {ctx.topPct}%</b> of tracked projects</span></p>
+                  <p className="mt-1.5 flex items-center gap-2.5 text-[0.8rem] text-[#1a1a1a]/60"><span className="flex w-4 shrink-0 justify-center text-[#9a7a2e]"><IconShieldCheck /></span><span><b className="font-semibold text-[#1a1a1a]">{p.confidence}</b> confidence · re-scored quarterly</span></p>
+                  <p className="mt-2.5 flex items-center gap-2.5 text-[0.66rem] font-light tracking-[0.02em] text-[#1a1a1a]/40"><span className="flex w-4 shrink-0 justify-center text-[#1a1a1a]/40"><IconClock /></span>Data last reviewed {reviewed}</p>
                 </div>
               </div>
             </div>

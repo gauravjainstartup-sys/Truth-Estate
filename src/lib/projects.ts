@@ -132,7 +132,7 @@ export type ProjectOps = {
      ticket band. Efficiency & loading are derived, never stored. `plan` is an
      optional licensed 2D floor-plan image (relative to /public); when absent
      we render an indicative schematic. */
-  homes?: { config: string; carpetSqft: number; superSqft: number; balconySqft?: number; priceCr: [number, number]; plan?: string; beds?: number }[];
+  homes?: { config: string; variant?: string; carpetSqft: number; superSqft: number; balconySqft?: number; priceCr: [number, number]; plan?: string; beds?: number }[];
   /* Imagery (relative to /public). `render` is the developer's marketing
      render; `sitePhotos` are our dated field-visit photographs. Absent →
      brand-safe schematic stand-ins render in their place. */
@@ -169,8 +169,10 @@ export const OPS: Record<string, ProjectOps> = {
     reraId: "RERA-GRG-1138-2022",
     price: { launchPsf: 12500, launchDate: "Jan 2023", currentLow: 17000, currentHigh: 19500 },
     homes: [
-      { config: "3 BHK", carpetSqft: 1855, superSqft: 2650, balconySqft: 320, priceCr: [5.0, 5.6] },
-      { config: "4 BHK", carpetSqft: 2255, superSqft: 3225, balconySqft: 410, priceCr: [5.8, 6.9] },
+      { config: "3 BHK", variant: "Type A", carpetSqft: 1855, superSqft: 2650, balconySqft: 320, priceCr: [5.0, 5.4] },
+      { config: "3 BHK", variant: "Type B", carpetSqft: 1990, superSqft: 2840, balconySqft: 360, priceCr: [5.4, 5.9] },
+      { config: "4 BHK", variant: "Type A", carpetSqft: 2255, superSqft: 3225, balconySqft: 410, priceCr: [5.8, 6.4] },
+      { config: "4 BHK", variant: "Type B", carpetSqft: 2480, superSqft: 3540, balconySqft: 460, priceCr: [6.4, 6.9] },
     ],
     location: {
       pois: [
@@ -204,8 +206,10 @@ export const OPS: Record<string, ProjectOps> = {
     address: "Sector 77, Southern Peripheral Road, Gurugram",
     reviewed: "1 Jul 2026",
     homes: [
-      { config: "3 BHK", carpetSqft: 1755, superSqft: 2500, balconySqft: 300, priceCr: [5.0, 5.9] },
-      { config: "4 BHK", carpetSqft: 2150, superSqft: 3080, balconySqft: 390, priceCr: [6.2, 7.9] },
+      { config: "3 BHK", variant: "Type A", carpetSqft: 1755, superSqft: 2500, balconySqft: 300, priceCr: [5.0, 5.4] },
+      { config: "3 BHK", variant: "Type B", carpetSqft: 1880, superSqft: 2680, balconySqft: 340, priceCr: [5.4, 5.9] },
+      { config: "4 BHK", variant: "Type A", carpetSqft: 2150, superSqft: 3080, balconySqft: 390, priceCr: [6.2, 7.0] },
+      { config: "4 BHK", variant: "Type B", carpetSqft: 2380, superSqft: 3400, balconySqft: 440, priceCr: [7.0, 7.9] },
     ],
     units: 1113, towers: 7, landAcres: 25, openAreaPct: 78, density: 44,
     launch: "2023", possession: "Dec 2028", reraNote: "Registered · Haryana RERA",

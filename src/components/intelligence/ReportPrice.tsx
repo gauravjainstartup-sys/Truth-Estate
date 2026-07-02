@@ -42,7 +42,7 @@ export default function ReportPrice({ p }: { p: ProjectIntel }) {
      to any number of layouts. */
   const homeList = useMemo(() => {
     const homes = p.ops?.homes;
-    if (homes?.length) return homes.map((h) => ({ label: h.config, sqft: h.superSqft }));
+    if (homes?.length) return homes.map((h) => ({ label: h.variant ? `${h.config} · ${h.variant}` : h.config, sqft: h.superSqft }));
     const loSq = (p.budget[0] * CR) / psfMid, hiSq = (p.budget[1] * CR) / psfMid;
     return p.configs.map((label, i) => {
       const t = p.configs.length <= 1 ? 0.5 : i / (p.configs.length - 1);
