@@ -1,4 +1,4 @@
-import { marketOf, pillars, fmtPsf, type ProjectIntel } from "@/lib/projects";
+import { pillars, type ProjectIntel } from "@/lib/projects";
 
 /* Chapter II · Pillar III — Location Intelligence. A branded schematic map,
    rated nearby POIs, connectivity with travel times, and a funded-&-approved
@@ -6,13 +6,26 @@ import { marketOf, pillars, fmtPsf, type ProjectIntel } from "@/lib/projects";
    isn't tracked yet. */
 
 export default function ReportLocation({ p }: { p: ProjectIntel }) {
-  const market = marketOf(p);
   const loc = p.ops?.location;
   const pillar = pillars(p).find((x) => x.key === "location");
   const bandChip =
     pillar?.band === "exceptional" ? "border-[#1e6b45]/25 bg-[#1e6b45]/[0.1] text-[#155a3a]"
     : pillar?.band === "strong" ? "border-[#238c55]/25 bg-[#238c55]/[0.1] text-[#1c7a4c]"
     : "border-[#9a7a2e]/30 bg-[#9a7a2e]/[0.12] text-[#8a6a1e]";
+
+  // Real markers plotted on the schematic from tracked POIs / transit.
+  const conn = loc?.connectivity ?? [];
+  const arterialName = conn.find((c) => c.direct)?.name;
+  const shortLabel = (s: string) => (s.length > 18 ? s.split(/\s+/).slice(0, 2).join(" ") : s);
+  const slot = [{ x: 378, y: 246 }, { x: 300, y: 120 }, { x: 722, y: 138 }, { x: 828, y: 250 }];
+  const markers: { x: number; y: number; label: string; dist: string; tone: string; anchor: "start" | "end" }[] = [];
+  (loc?.pois ?? []).slice(0, 2).forEach((poi, i) =>
+    markers.push({ ...slot[i], label: shortLabel(poi.name), dist: poi.dist, tone: "#9a7a2e", anchor: slot[i].x > 560 ? "end" : "start" }),
+  );
+  const metro = conn.find((c) => /metro/i.test(c.name));
+  if (metro) markers.push({ ...slot[2], label: shortLabel(metro.name), dist: metro.dist, tone: "#238c55", anchor: "end" });
+  const hub = conn.find((c) => /cyber|business|hub|district|city/i.test(c.name));
+  if (hub && hub !== metro) markers.push({ ...slot[3], label: shortLabel(hub.name), dist: hub.dist, tone: "#5b5346", anchor: "end" });
 
   return (
     <div className="mt-8">
@@ -25,30 +38,47 @@ export default function ReportLocation({ p }: { p: ProjectIntel }) {
         {pillar && <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.06em] ${bandChip}`}>◆ {pillar.band} · {pillar.score.toFixed(1)}</span>}
       </div>
 
-      {/* schematic map */}
-      <div className="relative mt-6 overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-[#edf0e6]">
-        <svg viewBox="0 0 1024 300" className="block w-full" xmlns="http://www.w3.org/2000/svg">
-          <rect width="1024" height="300" fill="#edf0e6" />
-          <path d="M780 0 h244 v300 h-244 q-40 -150 0 -300z" fill="#dfe7d3" />
-          <circle cx="120" cy="250" r="70" fill="#e2e9d6" />
-          <g stroke="#d7cdb6" strokeWidth="10" fill="none" strokeLinecap="round">
-            <path d="M-20 200 Q 400 150 1040 120" /><path d="M320 -20 L 360 320" /><path d="M640 -20 L 600 320" /><path d="M-20 90 L 1040 70" strokeWidth="6" />
+      {/* schematic locality map — higher-contrast, plots real tracked POIs */}
+      <div className="relative mt-6 overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-[#e7eae0]">
+        <svg viewBox="0 0 1024 360" preserveAspectRatio="xMidYMid slice" className="block h-[190px] w-full sm:h-[230px]" xmlns="http://www.w3.org/2000/svg" role="img" aria-label={`Locality schematic — ${p.name}`}>
+          <rect width="1024" height="360" fill="#e7eae0" />
+          {/* green masses + built blocks */}
+          <path d="M792 0 h232 v360 h-232 q-72 -180 0 -360z" fill="#c8d6b0" opacity="0.9" />
+          <circle cx="92" cy="300" r="104" fill="#c8d6b0" opacity="0.9" />
+          <rect x="150" y="26" width="132" height="74" rx="9" fill="#dcdfce" />
+          <rect x="598" y="272" width="150" height="74" rx="9" fill="#dcdfce" />
+          {/* road network — dark enough to read */}
+          <g fill="none" strokeLinecap="round">
+            <path d="M-40 288 Q 430 198 1064 94" stroke="#a99a78" strokeWidth="20" />
+            <path d="M-40 288 Q 430 198 1064 94" stroke="#e7eae0" strokeWidth="3" strokeDasharray="12 14" opacity="0.75" />
+            <path d="M404 -40 L 348 400" stroke="#c0b498" strokeWidth="10" />
+            <path d="M724 -40 L 664 400" stroke="#c0b498" strokeWidth="10" />
+            <path d="M-40 92 L 1064 68" stroke="#cabfa4" strokeWidth="7" />
           </g>
-          <text x="70" y="185" fontSize="11" fill="#a89e88" fontFamily="ui-monospace,monospace" transform="rotate(-4 70 185)">{(market?.name ?? "MAIN ROAD").toUpperCase()}</text>
-          <g fill="none" stroke="#b9ad92" strokeDasharray="3 6" opacity=".7"><circle cx="470" cy="176" r="70" /><circle cx="470" cy="176" r="130" /></g>
-          <g fontFamily="ui-sans-serif" fontSize="10.5" fill="#6b6459">
-            <circle cx="430" cy="120" r="5" fill="#9a7a2e" /><text x="440" y="116">Schools · &lt;1 km</text>
-            <circle cx="640" cy="150" r="5" fill="#238c55" /><text x="652" y="146">Metro (planned)</text>
-          </g>
-          <g transform="translate(470 176)">
-            <circle r="15" fill="#9a7a2e" opacity=".18" />
-            <path d="M0 -12 C 8 -12 12 -6 12 -1 C 12 6 0 16 0 16 C 0 16 -12 6 -12 -1 C -12 -6 -8 -12 0 -12 Z" fill="#9a7a2e" />
-            <circle cy="-1" r="4" fill="#fff" />
+          {/* radius rings */}
+          <g fill="none" stroke="#9a7a2e" strokeDasharray="2 10" opacity="0.42"><circle cx="470" cy="188" r="102" /><circle cx="470" cy="188" r="168" /></g>
+          <text x="470" y="94" textAnchor="middle" fontSize="15" fill="#9a7a2e" opacity="0.8" fontFamily="ui-monospace,monospace" stroke="#e7eae0" strokeWidth="4" paintOrder="stroke">1 km</text>
+          <text x="470" y="28" textAnchor="middle" fontSize="15" fill="#9a7a2e" opacity="0.8" fontFamily="ui-monospace,monospace" stroke="#e7eae0" strokeWidth="4" paintOrder="stroke">2 km</text>
+          {/* arterial label */}
+          {arterialName && <text x="168" y="252" fontSize="18" fontWeight="600" fill="#75694e" fontFamily="ui-sans-serif" transform="rotate(-11 168 252)" stroke="#e7eae0" strokeWidth="4.5" paintOrder="stroke">{arterialName}</text>}
+          {/* real POI + transit markers */}
+          {markers.map((m) => (
+            <g key={m.label}>
+              <circle cx={m.x} cy={m.y} r="8.5" fill={m.tone} stroke="#fff" strokeWidth="3" />
+              <text x={m.anchor === "end" ? m.x - 15 : m.x + 15} y={m.y - 1} textAnchor={m.anchor} fontSize="20" fontWeight="600" fill="#3e3a2f" fontFamily="ui-sans-serif" stroke="#e7eae0" strokeWidth="4.5" paintOrder="stroke">{m.label}</text>
+              <text x={m.anchor === "end" ? m.x - 15 : m.x + 15} y={m.y + 20} textAnchor={m.anchor} fontSize="15" fill="#6b6454" fontFamily="ui-monospace,monospace" stroke="#e7eae0" strokeWidth="3.5" paintOrder="stroke">{m.dist}</text>
+            </g>
+          ))}
+          {/* project pin */}
+          <g transform="translate(470 188)">
+            <circle r="23" fill="#9a7a2e" opacity="0.16" /><circle r="13" fill="#9a7a2e" opacity="0.24" />
+            <path d="M0 -18 C 12 -18 18 -8 18 -1 C 18 10 0 24 0 24 C 0 24 -18 10 -18 -1 C -18 -8 -12 -18 0 -18 Z" fill="#9a7a2e" stroke="#fff" strokeWidth="2.5" />
+            <circle cy="-2" r="6" fill="#fff" />
           </g>
         </svg>
-        <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
-          <span className="rounded-full border border-[#1a1a1a]/10 bg-white/90 px-3 py-1.5 text-[0.68rem] text-[#5f594e] backdrop-blur"><b className="text-[#1a1a1a]">{p.name}</b>{p.ops?.address ? ` · ${p.ops.address.split(",")[0]}` : ""}</span>
-          <span className="rounded-full border border-[#1a1a1a]/10 bg-white/90 px-3 py-1.5 text-[0.68rem] text-[#a89e88] backdrop-blur">Schematic · live map in report</span>
+        <div className="absolute bottom-3.5 left-3.5 flex flex-wrap gap-2">
+          <span className="rounded-full border border-[#1a1a1a]/10 bg-white/90 px-3 py-1.5 text-[0.68rem] text-[#5f594e] shadow-sm backdrop-blur"><b className="text-[#1a1a1a]">{p.name}</b>{p.ops?.address ? ` · ${p.ops.address.split(",")[0]}` : ""}</span>
+          <span className="rounded-full border border-[#1a1a1a]/10 bg-white/90 px-3 py-1.5 text-[0.68rem] text-[#8a8172] shadow-sm backdrop-blur">Schematic · indicative positions</span>
         </div>
       </div>
 
@@ -113,25 +143,7 @@ export default function ReportLocation({ p }: { p: ProjectIntel }) {
         </>
       )}
 
-      {/* corridor snapshot from market */}
-      {market && (
-        <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-6 rounded-2xl border border-[#1a1a1a]/8 bg-white/40 p-6 md:grid-cols-4">
-          <Vital v={fmtPsf(market.psf.low) + "–" + market.psf.high.toLocaleString("en-IN")} k="Price band / sq ft" />
-          <Vital v={market.unitBand} k="Typical ticket" />
-          <Vital v={market.appreciation3Y} k="3-yr appreciation" accent />
-          <Vital v={`${market.projectCount}`} k="Projects tracked" />
-        </div>
-      )}
-      <p className="mt-5 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">Sources: tracked corridor transactions, GMDA / HSVP infrastructure plans &amp; developer filings.</p>
-    </div>
-  );
-}
-
-function Vital({ v, k, accent }: { v: string; k: string; accent?: boolean }) {
-  return (
-    <div>
-      <p className={`font-mono text-[1.4rem] font-light leading-none ${accent ? "text-[#1e6b45]" : "text-[#1a1a1a]"}`}>{v}</p>
-      <p className="mt-2 text-[0.6rem] font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/40">{k}</p>
+      <p className="mt-6 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">Sources: tracked corridor transactions, GMDA / HSVP infrastructure plans &amp; developer filings. Map is schematic — positions indicative, not surveyed.</p>
     </div>
   );
 }

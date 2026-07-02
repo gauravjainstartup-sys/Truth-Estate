@@ -118,8 +118,9 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
             <>Get an <b className="font-medium text-[#1a1a1a]">independent lawyer</b> to read the Agreement to Sell clause-by-clause — penalty terms, force-majeure wording and delay-compensation are where {dev?.name ?? "this developer"} has lost before.</>,
             <>Insist the <b className="font-medium text-[#1a1a1a]">revised RERA possession date</b> is written into the builder-buyer agreement, and hold ~5% against on-time handover.</>,
           ].map((step, i) => (
-            <li key={i} className="flex gap-3.5 border-b border-dotted border-[#1a1a1a]/12 py-3 text-[0.86rem] font-light leading-[1.55] text-[#1a1a1a]/70 last:border-none">
-              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#9a7a2e] font-mono text-[0.72rem] font-bold text-white">{i + 1}</span>{step}
+            <li key={i} className="flex gap-3.5 border-b border-dotted border-[#1a1a1a]/12 py-3 last:border-none">
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#9a7a2e] font-mono text-[0.72rem] font-bold text-white">{i + 1}</span>
+              <span className="min-w-0 flex-1 text-[0.86rem] font-light leading-[1.6] text-[#1a1a1a]/70">{step}</span>
             </li>
           ))}
         </ol>

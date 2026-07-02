@@ -37,20 +37,26 @@ export default function ReportPrice({ p }: { p: ProjectIntel }) {
   const psfMid = journey ? journey.mid : p.psf?.avg ?? 18000;
   const psfLo = Math.round((psfMid * 0.85) / 250) * 250;
   const psfHi = Math.round((psfMid * 1.3) / 250) * 250;
-  const configs = p.configs;
-  const [cfgIdx, setCfgIdx] = useState(Math.min(1, configs.length - 1));
+  /* Configurations — prefer the real homes (label + super area); else derive
+     an indicative area by spreading the ticket band across p.configs. Scales
+     to any number of layouts. */
+  const homeList = useMemo(() => {
+    const homes = p.ops?.homes;
+    if (homes?.length) return homes.map((h) => ({ label: h.config, sqft: h.superSqft }));
+    const loSq = (p.budget[0] * CR) / psfMid, hiSq = (p.budget[1] * CR) / psfMid;
+    return p.configs.map((label, i) => {
+      const t = p.configs.length <= 1 ? 0.5 : i / (p.configs.length - 1);
+      return { label, sqft: Math.round((loSq + (hiSq - loSq) * t) / 25) * 25 };
+    });
+  }, [p.ops?.homes, p.configs, p.budget, psfMid]);
+
+  const [cfgIdx, setCfgIdx] = useState(() => Math.min(1, homeList.length - 1));
   const [psf, setPsf] = useState(Math.round(psfMid / 250) * 250);
   const [years, setYears] = useState(5);
   const [mode, setMode] = useState<"primary" | "resale">("primary");
   const [plan, setPlan] = useState<"clp" | "down">("clp");
-
-  /* indicative super-area per config, spread across the ticket band */
-  const sqft = useMemo(() => {
-    const loSq = (p.budget[0] * CR) / psfMid;
-    const hiSq = (p.budget[1] * CR) / psfMid;
-    const t = configs.length <= 1 ? 0.5 : cfgIdx / (configs.length - 1);
-    return Math.round((loSq + (hiSq - loSq) * t) / 25) * 25;
-  }, [p.budget, psfMid, cfgIdx, configs.length]);
+  const cfg = homeList[Math.min(cfgIdx, homeList.length - 1)];
+  const sqft = cfg?.sqft ?? 0;
 
   const projCagr = roi?.adjCagr ?? 8;
   const outlook: "Low" | "Medium" | "High" = projCagr >= 8.5 ? "High" : projCagr >= 6 ? "Medium" : "Low";
@@ -59,11 +65,20 @@ export default function ReportPrice({ p }: { p: ProjectIntel }) {
     const ticket = psf * sqft;
     const months = years * 12;
     const exit = ticket * Math.pow(1 + projCagr / 100, years);
-    /* months until construction completes (predicted) — payments stop there */
-    const conMonths = Math.min(months, Math.max(6, p.ops?.construction ? 40 : 18));
+    const con = p.ops?.construction;
+    /* months until construction completes (predicted) — CLP payments stop there */
+    const conMonths = Math.min(months, Math.max(6, con ? 40 : 18));
     const cf = new Array<number>(months + 1).fill(0);
+    let drawn = 0; // share of the ticket already paid to the builder at deal day
     if (mode === "resale") {
-      cf[0] -= ticket; // full consideration on deal
+      /* Resale of an under-construction unit: you buy out the existing buyer's
+         paid-up portion now, then continue the remaining construction-linked
+         instalments to the builder. The cash flow doesn't vanish — it front-loads. */
+      drawn = con ? Math.min(0.9, Math.max(0.2, con.actualPct / 100)) : 0.5;
+      const remMon = Math.min(Math.max(1, months - 1), Math.max(3, Math.round((1 - drawn) * 30)));
+      cf[0] -= ticket * drawn; // pay the seller for what's already been paid in (at today's value)
+      const per = (ticket * (1 - drawn)) / remMon;
+      for (let m = 1; m <= remMon; m++) cf[m] -= per; // remaining builder instalments
     } else if (plan === "down") {
       cf[0] -= ticket * 0.95;
       cf[conMonths] -= ticket * 0.05;
@@ -76,7 +91,7 @@ export default function ReportPrice({ p }: { p: ProjectIntel }) {
     cf[months] += exit;
     const premium = exit - ticket;
     return {
-      ticket, exit, premium,
+      ticket, exit, premium, drawn,
       totalRoi: (premium / ticket) * 100,
       simpleAnnual: (premium / ticket / years) * 100,
       xirr: xirrAnnual(cf),
@@ -112,46 +127,48 @@ export default function ReportPrice({ p }: { p: ProjectIntel }) {
             <PStat v={`~${journey.cagr}%`} k={`CAGR · ${journey.years} yrs`} accent />
           </div>
 
-          {/* chart: past line + locked cone */}
-          <div className="relative mt-4 overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-gradient-to-b from-white/80 to-[#fcfaf5] p-5">
-            <svg viewBox="0 0 1000 300" className="block w-full">
-              <defs>
-                <linearGradient id="parea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="rgba(154,122,46,.22)" /><stop offset="1" stopColor="rgba(154,122,46,0)" /></linearGradient>
-                <linearGradient id="pcone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="rgba(30,107,69,.18)" /><stop offset="1" stopColor="rgba(30,107,69,.04)" /></linearGradient>
-              </defs>
-              <g stroke="rgba(26,26,26,.08)" strokeWidth="1"><line x1="40" y1="70" x2="960" y2="70" /><line x1="40" y1="140" x2="960" y2="140" /><line x1="40" y1="210" x2="960" y2="210" /><line x1="40" y1="280" x2="960" y2="280" /></g>
-              <path d="M40,255 L200,238 L310,215 L420,192 L420,280 L40,280 Z" fill="url(#parea)" />
-              <path d="M40,255 L200,238 L310,215 L420,192" fill="none" stroke="#9a7a2e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M420,192 L940,52 L940,150 Z" fill="url(#pcone)" />
-              <path d="M420,192 L940,96" fill="none" stroke="#1e6b45" strokeWidth="2" strokeDasharray="6 5" />
-              <line x1="420" y1="36" x2="420" y2="280" stroke="#9a7a2e" strokeWidth="1" strokeDasharray="3 4" opacity=".6" />
-              <circle cx="40" cy="255" r="4.5" fill="#9a7a2e" /><circle cx="420" cy="192" r="6" fill="#fff" stroke="#9a7a2e" strokeWidth="3" />
-              <g fontSize="12" fill="#6b6459" fontFamily="ui-sans-serif">
-                <text x="44" y="274">Launch {fmtPsf(journey.launchPsf)}</text>
-                <text x="408" y="180" textAnchor="end" fontWeight="600" fill="#1a1a1a">Today {fmtPsf(journey.currentLow)}–{(journey.currentHigh / 1000).toFixed(1)}k</text>
-              </g>
-              <g fontSize="11" fill="#a49a8c" fontFamily="ui-monospace,monospace">
-                <text x="40" y="296">{journey.launchDate.split(" ")[1]}</text><text x="408" y="296">now</text><text x="905" y="296">+5 yrs</text>
-              </g>
-            </svg>
-            {/* projection gate */}
-            <div className="absolute bottom-10 right-5 top-5 flex w-[46%] flex-col items-center justify-center gap-2 rounded-xl border-l border-dashed border-[#9a7a2e]/40 bg-[#FBF8F2]/85 text-center backdrop-blur-[2px]">
+          {/* the record + the projection — stacks on mobile, side-by-side on desktop */}
+          <div className="mt-4 grid gap-4 lg:grid-cols-[1.55fr_1fr]">
+            <div className="overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-gradient-to-b from-white/80 to-[#fcfaf5] p-5">
+              <svg viewBox="0 0 1000 300" className="block w-full" role="img" aria-label="Price per sq ft since launch, with the projected range ahead">
+                <defs>
+                  <linearGradient id="parea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="rgba(154,122,46,.22)" /><stop offset="1" stopColor="rgba(154,122,46,0)" /></linearGradient>
+                  <linearGradient id="pcone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="rgba(30,107,69,.18)" /><stop offset="1" stopColor="rgba(30,107,69,.04)" /></linearGradient>
+                </defs>
+                <g stroke="rgba(26,26,26,.08)" strokeWidth="1"><line x1="40" y1="70" x2="960" y2="70" /><line x1="40" y1="140" x2="960" y2="140" /><line x1="40" y1="210" x2="960" y2="210" /><line x1="40" y1="280" x2="960" y2="280" /></g>
+                <path d="M40,255 L200,238 L310,215 L420,192 L420,280 L40,280 Z" fill="url(#parea)" />
+                <path d="M40,255 L200,238 L310,215 L420,192" fill="none" stroke="#9a7a2e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M420,192 L940,52 L940,150 Z" fill="url(#pcone)" />
+                <path d="M420,192 L940,96" fill="none" stroke="#1e6b45" strokeWidth="2" strokeDasharray="6 5" />
+                <line x1="420" y1="36" x2="420" y2="280" stroke="#9a7a2e" strokeWidth="1" strokeDasharray="3 4" opacity=".6" />
+                <circle cx="40" cy="255" r="4.5" fill="#9a7a2e" /><circle cx="420" cy="192" r="6" fill="#fff" stroke="#9a7a2e" strokeWidth="3" />
+                <g fontSize="13" fill="#6b6459" fontFamily="ui-sans-serif">
+                  <text x="44" y="274">Launch {fmtPsf(journey.launchPsf)}</text>
+                  <text x="412" y="180" textAnchor="end" fontWeight="600" fill="#1a1a1a">Today {fmtPsf(journey.currentLow)}–{(journey.currentHigh / 1000).toFixed(1)}k</text>
+                </g>
+                <g fontSize="12" fill="#a49a8c" fontFamily="ui-monospace,monospace">
+                  <text x="40" y="296">{journey.launchDate.split(" ")[1]}</text><text x="410" y="296">now</text><text x="905" y="296">+5 yrs</text>
+                </g>
+              </svg>
+            </div>
+            {/* projection — qualitative outlook free, exact CAGR gated */}
+            <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-[#9a7a2e]/25 bg-[#FBF8F2] p-6 text-center">
               {unlocked && roi ? (
                 <>
                   <p className="text-[0.6rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/45">5-year projection · unlocked</p>
-                  <p className="font-mono text-[1.9rem] font-medium leading-none text-[#1e6b45]">{roi.adjCagr}%<span className="text-[0.8rem] text-[#1a1a1a]/40"> CAGR</span></p>
-                  <p className="max-w-[240px] text-[0.68rem] font-light leading-[1.5] text-[#1a1a1a]/50">execution-adjusted base case · corridor benchmark {roi.benchCagr}% · min. 5-yr hold</p>
+                  <p className="font-mono text-[2.3rem] font-medium leading-none text-[#1e6b45]">{roi.adjCagr}%<span className="text-[0.85rem] text-[#1a1a1a]/40"> CAGR</span></p>
+                  <p className="text-[0.72rem] font-light leading-[1.5] text-[#1a1a1a]/50">execution-adjusted base case · corridor benchmark {roi.benchCagr}% · min. 5-yr hold</p>
                 </>
               ) : (
                 <>
-                  <span className="text-[1.2rem]" aria-hidden>🔒</span>
+                  <span className="text-[1.3rem]" aria-hidden>🔒</span>
                   <p className="text-[0.6rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/45">5-year growth outlook</p>
                   <span className="inline-flex overflow-hidden rounded-full border border-[#1a1a1a]/10 bg-white">
                     {(["Low", "Medium", "High"] as const).map((o) => (
                       <span key={o} className={`px-3.5 py-1.5 text-[0.72rem] ${o === outlook ? "bg-[#1e6b45] font-bold text-white" : "text-[#1a1a1a]/35"}`}>{o}</span>
                     ))}
                   </span>
-                  <p className="max-w-[230px] text-[0.66rem] font-light leading-[1.5] text-[#1a1a1a]/45">The exact projected CAGR, bull / base / bear scenarios and the ideal exit window are inside.</p>
+                  <p className="text-[0.68rem] font-light leading-[1.5] text-[#1a1a1a]/45">The exact projected CAGR, bull / base / bear scenarios and the ideal exit window are inside.</p>
                   <button onClick={openUnitIntel} className="mt-1 rounded-lg bg-[#1e6b45] px-4 py-2 text-[0.74rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Unlock the 5-year projection →</button>
                   <p className="text-[0.56rem] text-[#1a1a1a]/35">Free with membership · or ₹1,499 this project</p>
                 </>
@@ -167,8 +184,15 @@ export default function ReportPrice({ p }: { p: ProjectIntel }) {
       <div className="mt-4 grid overflow-hidden rounded-2xl border border-[#1a1a1a]/10 lg:grid-cols-[360px_minmax(0,1fr)]">
         {/* inputs */}
         <div className="border-b border-[#1a1a1a]/10 bg-[#FBF8F2] p-6 lg:border-b-0 lg:border-r">
-          <Input label="Configuration" value={`${configs[cfgIdx]} · ~${sqft.toLocaleString("en-IN")} sq ft`}>
-            <Seg options={configs} active={cfgIdx} onPick={setCfgIdx} />
+          <Input label="Configuration" value={`${cfg?.label ?? "—"} · ~${sqft.toLocaleString("en-IN")} sq ft`}>
+            <div className="flex flex-wrap gap-2">
+              {homeList.map((h, i) => (
+                <button key={h.label} onClick={() => setCfgIdx(i)}
+                  className={`rounded-full border px-3.5 py-2 text-[0.74rem] font-medium transition-colors ${i === cfgIdx ? "border-[#1a1a1a] bg-[#1a1a1a] text-white" : "border-[#1a1a1a]/12 bg-white text-[#8b8378] hover:border-[#1a1a1a]/30 hover:text-[#1a1a1a]"}`}>
+                  {h.label}
+                </button>
+              ))}
+            </div>
           </Input>
           <Input label="Buy price" value={`${fmtPsf(psf)}/sqft`}>
             <Seg options={["Primary", "Resale"]} active={mode === "primary" ? 0 : 1} onPick={(i) => setMode(i === 0 ? "primary" : "resale")} />
@@ -212,7 +236,7 @@ export default function ReportPrice({ p }: { p: ProjectIntel }) {
 
           {/* cash-flow strip */}
           <p className="mt-4 text-[0.6rem] font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/40">
-            Your cash flow — {mode === "resale" ? "one big outflow on deal day" : plan === "clp" ? <b className="text-[#9a7a2e]">read from this project&apos;s payment plan</b> : "front-loaded down-payment"}
+            Your cash flow — {mode === "resale" ? <><b className="text-[#9a7a2e]">seller&apos;s paid-up portion now</b>, the rest to the builder as it tops out</> : plan === "clp" ? <b className="text-[#9a7a2e]">read from this project&apos;s payment plan</b> : "front-loaded down-payment"}
           </p>
           <div className="mt-2 flex h-16 items-end gap-1.5">
             {bars.map((h, i) => (
@@ -226,8 +250,10 @@ export default function ReportPrice({ p }: { p: ProjectIntel }) {
           <div className="mt-1 flex justify-between font-mono text-[0.56rem] text-[#1a1a1a]/35"><span>today</span><span>+{years} yrs</span></div>
 
           <div className="mt-4 rounded-r-lg border-l-2 border-[#9a7a2e] bg-[#9a7a2e]/[0.06] px-4 py-3 text-[0.78rem] font-light leading-[1.6] text-[#1a1a1a]/70">
-            {mode === "primary" && plan === "clp" ? (
-              <><b className="font-semibold text-[#1a1a1a]">Why XIRR beats CAGR here:</b> you only pay part of {fmtCr(calc.ticket)} up front — the rest goes out over the build, so your money works harder and your real return ({calc.xirr.toFixed(1)}%) sits above the price CAGR ({projCagr.toFixed(1)}%). <b className="font-semibold text-[#1a1a1a]">It cuts both ways</b> — switch to Resale and watch it fall back.</>
+            {mode === "resale" ? (
+              <><b className="font-semibold text-[#1a1a1a]">A resale still has a cash flow.</b> You buy out the seller&apos;s paid-up portion (~{Math.round(calc.drawn * 100)}% of the ticket) up front, then carry the remaining builder instalments to possession — more front-loaded than a fresh construction-linked plan, so your XIRR ({calc.xirr.toFixed(1)}%) lands between it and a full down-payment. <b className="font-semibold text-[#1a1a1a]">Switch to Primary · construction-linked</b> to see the other side.</>
+            ) : plan === "clp" ? (
+              <><b className="font-semibold text-[#1a1a1a]">Why XIRR beats CAGR here:</b> you only pay part of {fmtCr(calc.ticket)} up front — the rest goes out over the build, so your money works harder and your real return ({calc.xirr.toFixed(1)}%) sits above the price CAGR ({projCagr.toFixed(1)}%). <b className="font-semibold text-[#1a1a1a]">It cuts both ways</b> — switch to Resale and watch it shift.</>
             ) : (
               <><b className="font-semibold text-[#1a1a1a]">Front-loaded cash pulls XIRR back toward CAGR</b> ({calc.xirr.toFixed(1)}% vs {projCagr.toFixed(1)}%) — add stamp duty and it can dip below. Same asset, same exit; the payment structure decides your real return. Switch to a construction-linked primary to see the other side.</>
             )}
