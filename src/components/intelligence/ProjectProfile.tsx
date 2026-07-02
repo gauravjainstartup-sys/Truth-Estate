@@ -6,7 +6,6 @@ import { useConsultation } from "../consultation/ConsultationProvider";
 import { loadBuyData, hasPreferences, deriveDNA } from "@/lib/journey";
 import type { ConsultProfileChip } from "@/lib/consultation";
 import {
-  alternativesIn,
   fmtPsf,
   developerOf,
   marketOf,
@@ -26,6 +25,9 @@ import ReportLegal from "./ReportLegal";
 import ReportLocation from "./ReportLocation";
 import ReportUSPs from "./ReportUSPs";
 import ReportPrice from "./ReportPrice";
+import ReportVerdict from "./ReportVerdict";
+import ReportExplore from "./ReportExplore";
+import ReportFeedback from "./ReportFeedback";
 
 const basePath = "/Truth-Estate";
 
@@ -95,7 +97,6 @@ export default function ProjectProfile({
     openConsult({ source: p.name, sourceKind: "project", ...(profile ? { intent: "buy" as const, profile } : {}) });
   });
   const challenge = onChallenge ?? (() => open("research"));
-  const alts = alternativesIn(p.market, p.name);
   const devHref = p.devSlug ? `${basePath}/intelligence/developers/${p.devSlug}` : undefined;
   const marketHref = p.marketSlug ? `${basePath}/intelligence/markets/${p.marketSlug}` : undefined;
 
@@ -105,7 +106,6 @@ export default function ProjectProfile({
   const faqs = projectFaqs(p);
   const ops = p.ops;
   const usps = ops?.usps ?? [];
-  const topInMarket = alts.every((a) => a.truthScore <= p.truthScore);
   const ctx = rankContext(p);
   const mapHref = ops?.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${p.name} ${ops.address}`)}` : undefined;
   const buildStatus = ops?.construction
@@ -121,15 +121,15 @@ export default function ProjectProfile({
     { id: "tower-intel", label: "Tower & unit intel", show: true },
     { id: "vitals", label: "Vitals", show: true },
     { id: "anatomy", label: "Truth Score anatomy", show: true },
-    { id: "developer", label: "Developer analysis", show: !!dev },
-    { id: "construction", label: "Construction & velocity", show: !!con },
+    { id: "developer", label: "Developer DNA", show: !!dev },
+    { id: "construction", label: "Construction & sales", show: !!con },
     { id: "legal", label: "Legal & compliance", show: true },
     { id: "location", label: "Location intelligence", show: !!market },
-    { id: "roi", label: "Price & returns", show: !!roi },
     { id: "usps", label: "Project USPs", show: usps.length > 0 },
+    { id: "roi", label: "Price & returns", show: !!roi },
+    { id: "verdict", label: "The verdict", show: true },
     { id: "strengths", label: "Strengths & watch-outs", show: true },
-    { id: "serves", label: "What this serves", show: p.tags.length > 0 },
-    { id: "faqs", label: "Forensic FAQs", show: faqs.length > 0 },
+    { id: "faqs", label: "Straight answers", show: faqs.length > 0 },
   ].filter((t) => t.show);
 
   /* Sequential section numbers — only counts sections that actually render,
@@ -337,6 +337,13 @@ export default function ProjectProfile({
               </div>
             )}
 
+            <Chapter n="III" title="Decision time." framing="One project, four different calls — the same evidence lands differently depending on what this purchase has to do for you." />
+
+            {/* The verdict — profile-tailored */}
+            <div id="verdict" className="scroll-mt-24">
+              <ReportVerdict p={p} onConsult={consult} />
+            </div>
+
             {/* Strengths & watch-outs */}
             <Section id="strengths" n={num()} title="Strengths & watch-outs">
               <div className="grid gap-8 md:grid-cols-2">
@@ -369,13 +376,11 @@ export default function ProjectProfile({
               </div>
             </Section>
 
-            {faqs.length > 0 && <Chapter n="IV" title="Your decision" framing="The questions that actually decide it — and the cleanest ways to act on this read." />}
-
-            {/* Forensic FAQs */}
+            {/* Straight answers */}
             {faqs.length > 0 && (
-              <Section id="faqs" n={num()} title="Forensic FAQs" flush>
+              <Section id="faqs" n={num()} title="Straight answers">
                 <p className="-mt-2 mb-6 max-w-2xl text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/55">
-                  Straight answers to the questions that decide the purchase — marrying registry data, live construction and micro-market dynamics.
+                  The questions that actually decide the purchase — answered from registry data, live construction and micro-market dynamics.
                 </p>
                 <div className="divide-y divide-[#1a1a1a]/8 overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-white/50">
                   {faqs.map((f) => (
@@ -401,35 +406,14 @@ export default function ProjectProfile({
               </Section>
             )}
 
-            {/* Alternatives */}
-            {alts.length > 0 && (
-              <section className="mt-16 border-t border-[#1a1a1a]/8 pt-12">
-                <div className="flex items-center gap-4">
-                  <span className="font-mono text-[0.8rem] text-[#c9a96e]">→</span>
-                  <h2 className="font-serif text-[1.7rem] font-medium tracking-[-0.01em] md:text-[2.1rem]">Also in {p.marketShort}</h2>
-                </div>
-                <div className="mt-8 divide-y divide-[#1a1a1a]/8 overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-white/50">
-                  {alts.map((a) => {
-                    const cls = "flex w-full items-center gap-4 p-5 text-left transition-colors hover:bg-white/70 md:p-6";
-                    const inner = (
-                      <>
-                        <div className="min-w-0 flex-1">
-                          <p className="font-serif text-[1.15rem] text-[#1a1a1a]">{a.name}</p>
-                          <p className="mt-1 font-mono text-[0.68rem] tracking-[0.04em] text-[#1a1a1a]/40">{a.developer.toUpperCase()} · ₹{a.budget[0]}–{a.budget[1]} CR</p>
-                        </div>
-                        <span className={`hidden rounded-full border px-3 py-1 text-[0.64rem] font-medium sm:inline-block ${recoTone(a.recommendation)}`}>{a.recommendation}</span>
-                        <span className="w-10 text-right font-mono text-[1.3rem] font-light text-[#1e6b45]">{a.truthScore}</span>
-                      </>
-                    );
-                    return embedded ? (
-                      <button key={a.slug} onClick={() => onSelectAlternative?.(a.name)} className={cls}>{inner}</button>
-                    ) : (
-                      <a key={a.slug} href={`${basePath}/intelligence/projects/${a.slug}`} className={cls}>{inner}</a>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
+            {/* Keep exploring — nearby · same developer · similar budget */}
+            <section className="mt-16 border-t border-[#1a1a1a]/8 pt-12">
+              <div className="flex items-center gap-4">
+                <span className="font-mono text-[0.8rem] text-[#c9a96e]">→</span>
+                <h2 className="font-serif text-[1.7rem] font-medium tracking-[-0.01em] md:text-[2.1rem]">Keep exploring</h2>
+              </div>
+              <ReportExplore p={p} embedded={embedded} onSelect={onSelectAlternative} />
+            </section>
 
             {/* CTA — three actions, weighted */}
             <div className="relative mt-14 overflow-hidden rounded-2xl bg-[#111112] p-8 text-white md:p-10">
@@ -450,6 +434,9 @@ export default function ProjectProfile({
                 </div>
               </div>
             </div>
+
+            {/* Rate · report an error · share */}
+            <ReportFeedback slug={p.slug} name={p.name} />
 
             <p className="mt-8 text-[0.72rem] font-light leading-[1.7] text-[#1a1a1a]/35">
               Independent assessment by Truth Estate. No developer can pay for a higher Truth Score or to appear here. The Truth Score, Match Score and any recommendation are our own evidence-based <span className="italic">opinions</span> as of the date shown — not a guarantee of performance, safety, appreciation or returns, and not investment, legal or financial advice. Ticket and price bands, ROI projections and delivery estimates are tracked or modelled figures that vary by tower, floor and stack. The decision, and its risks, are yours; we are not liable for the performance of any project. Verify specifics independently and see our{" "}
