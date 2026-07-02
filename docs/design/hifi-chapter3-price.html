@@ -1,0 +1,273 @@
+<!-- HI-FI · Chapter III "Will it make money?" — Price Dynamics & Returns.
+     Part 1 price journey (past, free) + Part 2 projection cone (lead-gated) +
+     Part 3 Truth Estate's read + Part 4 ROI calculator (CAGR vs XIRR hero).
+     Truth Estate design language. Numbers illustrative but Arbour-anchored. -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Chapter III · Price Dynamics & Returns</title>
+<style>
+  :root{
+    --ivory:#F5F0E8; --paper:#FBF8F2; --ink:#1a1a1a; --mut:#8b8378; --mut2:#a49a8c;
+    --gold:#9a7a2e; --gold2:#c9a96e; --gold3:#e0b667; --green:#1e6b45; --green2:#238c55; --red:#b0503e; --red2:#c56a56;
+    --line:rgba(26,26,26,.10); --line2:rgba(26,26,26,.06); --dark:#0d1420;
+  }
+  *{box-sizing:border-box; margin:0}
+  body{ background:#d8d3c8; font:14px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif; color:var(--ink); padding:34px }
+  .serif{ font-family:Georgia,"Times New Roman",serif } .mono{ font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums }
+  .wrap{ display:flex; flex-wrap:wrap; gap:40px; align-items:flex-start }
+  .frame{ background:var(--ivory); box-shadow:0 20px 60px rgba(0,0,0,.14); border-radius:14px; overflow:hidden; flex:0 0 auto }
+  .fh{ font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:#a49a8c; padding:9px 14px; background:#efeae0 }
+  .dk{ width:1120px } .mob{ width:390px }
+  .pad{ padding:46px 48px } .mob .pad{ padding:24px 18px }
+
+  .chead .ch{ font-size:11px; letter-spacing:.28em; text-transform:uppercase; color:var(--gold); font-weight:600 }
+  .chead h2{ font-weight:500; font-size:44px; line-height:1.02; letter-spacing:-.02em; margin-top:12px } .mob .chead h2{ font-size:29px }
+  .chead .lede{ font-size:15.5px; line-height:1.6; color:#5f594e; margin-top:15px; max-width:620px; font-weight:300 } .mob .chead .lede{ font-size:13.5px }
+  .phead .pk{ font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--mut) }
+  .phead h3{ font-weight:500; font-size:26px; letter-spacing:-.01em; margin-top:7px } .mob .phead h3{ font-size:21px }
+  .rule{ height:1px; background:var(--line); margin:30px 0 }
+  .modtag{ display:flex; align-items:center; gap:10px; margin:34px 0 6px } .modtag .t{ font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink); font-weight:700 } .modtag .ln{ flex:1; height:1px; background:var(--line) }
+  .band{ display:inline-flex; align-items:center; gap:7px; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; font-weight:600; border-radius:99px; padding:5px 11px }
+  .band.green{ color:#1c7a4c; background:rgba(35,140,85,.10); border:1px solid rgba(35,140,85,.26) } .band.green .dot{ width:7px;height:7px;border-radius:99px;background:var(--green2) }
+
+  /* ── stat row ── */
+  .stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:0; margin-top:22px; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#fff }
+  .stat{ padding:18px 20px; border-right:1px solid var(--line2) } .stat:last-child{ border-right:none }
+  .stat .v{ font-size:26px; font-weight:500; line-height:1 } .stat .v .u{ font-size:13px; color:var(--mut2) } .stat.up .v{ color:var(--green) }
+  .stat .k{ font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin-top:9px }
+
+  /* ── chart ── */
+  .chartwrap{ position:relative; margin-top:22px; background:linear-gradient(180deg,#fff,#fcfaf5); border:1px solid var(--line); border-radius:16px; padding:22px 24px 10px }
+  .chartwrap svg{ display:block; width:100% }
+  .futurelock{ position:absolute; top:22px; bottom:34px; right:24px; width:49%; border-radius:12px;
+      background:linear-gradient(90deg, rgba(251,248,242,.35), rgba(251,248,242,.86) 38%);
+      backdrop-filter:blur(1.5px); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:8px; border-left:1px dashed rgba(154,122,46,.4) }
+  .futurelock .lk{ font-size:22px; color:var(--gold) }
+  .futurelock .teaser{ font-size:24px; font-weight:600; color:var(--ink) } .futurelock .teaser .u{ font-size:13px; color:var(--mut) }
+  .futurelock .sub{ font-size:11.5px; color:var(--mut); max-width:230px; line-height:1.5 }
+  .futurelock .btn{ margin-top:6px; background:var(--green); color:#fff; border-radius:9px; padding:10px 18px; font-size:12.5px; font-weight:600; display:inline-flex; align-items:center; gap:8px }
+  .futurelock .fine{ font-size:10px; color:var(--mut2) }
+
+  /* ── what moved it ── */
+  .moved{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:16px } .mob .moved{ grid-template-columns:1fr }
+  .mv{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 18px } .mv .h{ display:flex; align-items:center; gap:8px; font-size:11px; letter-spacing:.1em; text-transform:uppercase; font-weight:700 }
+  .mv.push .h{ color:var(--green) } .mv.hold .h{ color:var(--gold) } .mv.sink .h{ color:var(--red2) }
+  .mv ul{ margin:10px 0 0; padding:0; list-style:none } .mv li{ font-size:12.5px; color:#4b463d; padding:4px 0 4px 14px; position:relative; line-height:1.45 } .mv li:before{ content:"·"; position:absolute; left:2px; color:var(--mut2) }
+  .newlaunch{ display:flex; gap:12px; align-items:center; margin-top:16px; background:#efeae0; border-radius:10px; padding:13px 18px; font-size:12px; color:#6b6459 } .newlaunch b{ color:var(--ink) } .newlaunch .ic{ color:var(--gold); font-size:16px }
+
+  /* ── advisory read ── */
+  .read{ margin-top:6px; background:linear-gradient(160deg,rgba(154,122,46,.10),rgba(154,122,46,.03)); border:1px solid rgba(154,122,46,.3); border-radius:16px; padding:24px 28px; position:relative }
+  .read .h{ display:flex; align-items:center; gap:9px; font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--gold); font-weight:700 }
+  .read .big{ font-size:23px; font-weight:500; margin-top:11px; letter-spacing:-.01em; line-height:1.3 } .mob .read .big{ font-size:18px } .read .big b{ color:var(--gold) }
+  .read p{ font-size:13px; color:#5f594e; margin-top:10px; line-height:1.6 } .read p b{ color:var(--ink) }
+
+  /* ── ROI calculator ── */
+  .calc{ display:grid; grid-template-columns:400px 1fr; margin-top:20px; border:1px solid var(--line); border-radius:16px; overflow:hidden } .mob .calc{ grid-template-columns:1fr }
+  .inputs{ background:var(--paper); padding:26px 28px; border-right:1px solid var(--line) } .mob .inputs{ border-right:none; border-bottom:1px solid var(--line) }
+  .inputs .it{ margin-bottom:22px } .inputs .it:last-child{ margin-bottom:0 }
+  .il{ display:flex; justify-content:space-between; align-items:baseline; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut); font-weight:600 }
+  .il .cur{ font-size:15px; font-weight:600; color:var(--ink); letter-spacing:0; text-transform:none } .il .cur .u{ font-size:11px; color:var(--mut2) }
+  .seg{ display:flex; background:#efeae0; border-radius:9px; padding:3px; margin-top:9px } .seg span{ flex:1; text-align:center; padding:8px 6px; font-size:12px; border-radius:7px; color:var(--mut); white-space:nowrap } .seg span.on{ background:#fff; color:var(--ink); font-weight:600; box-shadow:0 1px 3px rgba(0,0,0,.08) }
+  .slider{ position:relative; height:6px; background:#e6dfd0; border-radius:3px; margin:16px 0 8px }
+  .slider .fill{ position:absolute; left:0; height:6px; border-radius:3px; background:linear-gradient(90deg,var(--gold2),var(--gold)) }
+  .slider .hd{ position:absolute; top:50%; transform:translate(-50%,-50%); width:18px; height:18px; border-radius:50%; background:#fff; border:2px solid var(--gold); box-shadow:0 2px 6px rgba(0,0,0,.15) }
+  .rng{ display:flex; justify-content:space-between; font-size:10.5px; color:var(--mut2) }
+  .note{ font-size:11px; color:var(--mut2); margin-top:7px; line-height:1.45 }
+
+  .outputs{ padding:26px 28px; background:#fff }
+  .vsbox{ display:grid; grid-template-columns:1fr 1fr; gap:0; border:1px solid var(--line); border-radius:14px; overflow:hidden }
+  .vsc{ padding:18px 20px } .vsc.xirr{ background:linear-gradient(160deg,rgba(30,107,69,.08),rgba(30,107,69,.02)); border-left:1px solid var(--line) }
+  .vsc .k{ font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); display:flex; align-items:center; gap:7px }
+  .vsc .v{ font-size:40px; font-weight:500; line-height:1; margin-top:8px } .vsc.xirr .v{ color:var(--green) } .vsc .v .u{ font-size:16px; color:var(--mut2) }
+  .vsc .cap{ font-size:11px; color:var(--mut); margin-top:7px; line-height:1.4 }
+  .ogrid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:14px }
+  .ostat{ background:var(--paper); border:1px solid var(--line); border-radius:11px; padding:14px 16px } .ostat .k{ font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut) } .ostat .v{ font-size:22px; font-weight:600; margin-top:6px } .ostat .v.g{ color:var(--green) }
+  .teach{ margin-top:14px; background:rgba(154,122,46,.07); border-left:2px solid var(--gold); border-radius:0 10px 10px 0; padding:13px 16px; font-size:12.5px; color:#4b463d; line-height:1.6 } .teach b{ color:var(--ink) }
+  /* cashflow mini */
+  .cf{ margin-top:14px } .cf .cflab{ font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin-bottom:8px }
+  .cf svg{ display:block; width:100% }
+</style></head><body>
+<div class="wrap">
+
+<!-- ══════════ FRAME A · PRICE JOURNEY + PROJECTION (desktop) ══════════ -->
+<div class="frame dk"><div class="fh">Chapter III · Parts 1–2 — Price journey (free) + projection (lead-gated)</div>
+  <div class="pad">
+    <div class="chead"><div class="ch">Chapter III</div><h2 class="serif">Will it make money?</h2>
+      <p class="lede">Where this project's price has actually been, why it moved, and where our model says it's headed — then a calculator to plan your own money, cash flow and all.</p></div>
+    <div class="rule"></div>
+
+    <div class="phead"><div class="pk">Price Dynamics · a — the record</div><h3 class="serif">The price, since launch</h3></div>
+
+    <div class="stats">
+      <div class="stat"><div class="v mono">₹12,500<span class="u">/sqft</span></div><div class="k">Launch price · Jan 2023</div></div>
+      <div class="stat"><div class="v mono">₹17.0–19.5k</div><div class="k">Current range · today</div></div>
+      <div class="stat up"><div class="v mono">+48<span class="u">%</span></div><div class="k">Premium to date</div></div>
+      <div class="stat up"><div class="v mono">~12<span class="u">% CAGR</span></div><div class="k">Growth since launch</div></div>
+    </div>
+
+    <div class="chartwrap">
+      <svg viewBox="0 0 1000 360" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(154,122,46,.22)"/><stop offset="1" stop-color="rgba(154,122,46,0)"/></linearGradient>
+          <linearGradient id="cone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(30,107,69,.20)"/><stop offset="1" stop-color="rgba(30,107,69,.05)"/></linearGradient>
+        </defs>
+        <!-- gridlines + y labels -->
+        <g stroke="var(--line)" stroke-width="1">
+          <line x1="60" y1="90" x2="960" y2="90"/><line x1="60" y1="150" x2="960" y2="150"/><line x1="60" y1="210" x2="960" y2="210"/><line x1="60" y1="270" x2="960" y2="270"/><line x1="60" y1="330" x2="960" y2="330"/>
+        </g>
+        <g font-size="10" fill="#a49a8c" font-family="ui-monospace,monospace">
+          <text x="52" y="93" text-anchor="end">30k</text><text x="52" y="153" text-anchor="end">25k</text><text x="52" y="213" text-anchor="end">20k</text><text x="52" y="273" text-anchor="end">15k</text>
+        </g>
+        <!-- past area + line -->
+        <path d="M60,300 L210,282 L320,260 L440,232 L440,330 L60,330 Z" fill="url(#area)"/>
+        <path d="M60,300 L210,282 L320,260 L440,232" fill="none" stroke="var(--gold)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- projection cone (dim under lock) -->
+        <path d="M440,232 L940,58 L940,164 Z" fill="url(#cone)"/>
+        <path d="M440,232 L940,106" fill="none" stroke="var(--green)" stroke-width="2" stroke-dasharray="6 5"/>
+        <!-- today divider -->
+        <line x1="440" y1="40" x2="440" y2="330" stroke="var(--gold)" stroke-width="1" stroke-dasharray="3 4" opacity=".6"/>
+        <!-- markers -->
+        <circle cx="60" cy="300" r="4.5" fill="var(--gold)"/><circle cx="320" cy="260" r="4" fill="var(--gold)"/>
+        <circle cx="440" cy="232" r="6" fill="#fff" stroke="var(--gold)" stroke-width="3"/>
+        <!-- current range bracket -->
+        <line x1="440" y1="216" x2="440" y2="246" stroke="var(--gold)" stroke-width="6" stroke-linecap="round" opacity=".35"/>
+        <g font-size="11" fill="#6b6459" font-family="ui-sans-serif">
+          <text x="60" y="320">Launch ₹12.5k</text>
+          <text x="300" y="248">Metro + sell-out ▲</text>
+          <text x="452" y="210" font-weight="600" fill="#1a1a1a">Today ₹17–19.5k</text>
+        </g>
+        <g font-size="10" fill="#a49a8c" font-family="ui-monospace,monospace">
+          <text x="60" y="348">2023</text><text x="315" y="348">2025</text><text x="428" y="348">now</text><text x="905" y="348">2031</text>
+        </g>
+      </svg>
+      <!-- future lock overlay -->
+      <div class="futurelock">
+        <div class="lk">🔒</div>
+        <div class="teaser">9–13%<span class="u"> projected CAGR</span></div>
+        <div class="sub">Our 5-year projection — bull / base / bear — built from the Truth Score + corridor comps. Min. 5-yr hold.</div>
+        <span class="btn">Unlock the 5-year projection →</span>
+        <div class="fine">Free with membership · or ₹1,499 this project</div>
+      </div>
+    </div>
+
+    <div class="modtag"><span class="t">What moved the premium</span><span class="ln"></span></div>
+    <div class="moved">
+      <div class="mv push"><div class="h">▲ Pushed it up</div><ul><li>Sector-56 metro + 14 km corridor approved</li><li>100% sell-out — no discounting pressure</li><li>Oberoi 360 set a higher ceiling nearby</li></ul></div>
+      <div class="mv hold"><div class="h">▬ Held it steady</div><ul><li>Broad NCR luxury demand, not a single spike</li><li>Ahead-of-schedule build keeps confidence</li></ul></div>
+      <div class="mv sink"><div class="h">▼ Could cap it</div><ul><li>₹20 Cr+ resale liquidity is thin</li><li>Wave of new GCE supply landing 2029–31</li></ul></div>
+    </div>
+    <div class="newlaunch"><span class="ic">◷</span><span><b>Brand-new launch, no history yet?</b> We don't fake a curve — we show the corridor's trajectory and the last 3 comparable launches, so you still see the pattern you're buying into.</span></div>
+  </div>
+</div>
+
+<!-- ══════════ FRAME B · READ + ROI CALCULATOR (desktop) ══════════ -->
+<div class="frame dk"><div class="fh">Chapter III · Parts 3–4 — Truth Estate's read + ROI calculator (CAGR vs XIRR)</div>
+  <div class="pad">
+    <div class="read">
+      <div class="h">◆ Truth Estate's read</div>
+      <div class="big serif">At today's primary price, most of the near-term premium is <b>already in</b>. A resale unit in an early-sold tower — often <b>8–10% cheaper</b> — is the smarter entry.</div>
+      <p>Primary allotments here now trade close to resale. You're paying developer margin for a unit you could buy from an existing owner for less. <b>We flag live, verified resale deals to members</b> — and tell you when primary is genuinely the better buy (it sometimes is).</p>
+    </div>
+
+    <div class="modtag"><span class="t">Model your money — cash flow and all</span><span class="ln"></span></div>
+    <div class="calc">
+      <!-- INPUTS -->
+      <div class="inputs">
+        <div class="it"><div class="il">Configuration <span class="cur">4.5 BHK <span class="u">· 2,800 sq ft</span></span></div>
+          <div class="seg"><span>3.5 BHK</span><span class="on">4.5 BHK</span><span>Duplex</span></div></div>
+        <div class="it"><div class="il">Buy price <span class="cur">₹17,000<span class="u">/sqft</span></span></div>
+          <div class="seg" style="margin-bottom:2px"><span class="on">Primary</span><span>Resale</span></div>
+          <div class="slider"><div class="fill" style="width:40%"></div><div class="hd" style="left:40%"></div></div>
+          <div class="rng"><span>₹15,000</span><span>₹22,000</span></div></div>
+        <div class="it"><div class="il">Holding period <span class="cur">5 years</span></div>
+          <div class="seg"><span>3 yr</span><span class="on">5 yr</span><span>7 yr</span><span>10 yr</span></div>
+          <div class="note">Entry <b>Jul 2026</b> (today) → Exit <b>Jul 2031</b>. Our model assumes a minimum 5-year hold.</div></div>
+        <div class="it"><div class="il">Payment plan <span class="cur">Construction-linked</span></div>
+          <div class="seg"><span>Down-payment</span><span class="on">Construction-linked</span></div>
+          <div class="note">This is the input everyone ignores — <b>when your cash actually leaves your pocket</b> is what separates CAGR from your real return.</div></div>
+      </div>
+      <!-- OUTPUTS -->
+      <div class="outputs">
+        <div class="vsbox">
+          <div class="vsc"><div class="k">Price CAGR</div><div class="v mono">11.0<span class="u">%</span></div><div class="cap">what the asset appreciates, if you'd paid 100% on day one</div></div>
+          <div class="vsc xirr"><div class="k">◆ Your XIRR</div><div class="v mono">16.2<span class="u">%</span></div><div class="cap">your real, cash-flow-adjusted return on a construction-linked plan</div></div>
+        </div>
+        <div class="ogrid">
+          <div class="ostat"><div class="k">Buying cost</div><div class="v mono">₹4.76 Cr</div></div>
+          <div class="ostat"><div class="k">Estimated premium</div><div class="v mono g">+₹3.26 Cr</div></div>
+          <div class="ostat"><div class="k">Total ROI</div><div class="v mono">68.5%</div></div>
+          <div class="ostat"><div class="k">Simple annual ROI</div><div class="v mono">13.7%</div></div>
+        </div>
+        <div class="cf">
+          <div class="cflab">Your cash flow — outflows now, one inflow at exit</div>
+          <svg viewBox="0 0 620 92" xmlns="http://www.w3.org/2000/svg">
+            <line x1="0" y1="70" x2="620" y2="70" stroke="var(--line)" stroke-width="1"/>
+            <!-- outflow bars (installments) -->
+            <g fill="var(--gold)">
+              <rect x="8" y="40" width="26" height="30" rx="2"/><rect x="70" y="48" width="26" height="22" rx="2"/><rect x="132" y="50" width="26" height="20" rx="2"/>
+              <rect x="194" y="52" width="26" height="18" rx="2"/><rect x="256" y="54" width="26" height="16" rx="2"/><rect x="318" y="55" width="26" height="15" rx="2"/>
+              <rect x="380" y="56" width="26" height="14" rx="2"/><rect x="442" y="57" width="26" height="13" rx="2"/>
+            </g>
+            <!-- inflow at exit -->
+            <rect x="566" y="10" width="30" height="60" rx="2" fill="var(--green2)"/>
+            <text x="581" y="7" text-anchor="middle" font-size="9" fill="var(--green)" font-family="ui-monospace,monospace">sale</text>
+            <text x="20" y="86" font-size="9" fill="#a49a8c" font-family="ui-monospace,monospace">Jul '26</text>
+            <text x="596" y="86" text-anchor="end" font-size="9" fill="#a49a8c" font-family="ui-monospace,monospace">Jul '31</text>
+          </svg>
+        </div>
+        <div class="teach"><b>Why XIRR beats CAGR here:</b> on a construction-linked plan you've only paid part of the ₹4.76 Cr so far — the rest goes out over the build. Your money works harder, so your <b>real return (16.2%)</b> is well above the price CAGR (11%). Pay 100% upfront and the two converge. <b>That's how cash flow changes everything.</b></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MOBILE · chart ══════════ -->
+<div class="frame mob"><div class="fh">Ch. III — mobile · price journey</div><div class="pad">
+  <div class="chead"><div class="ch">Chapter III</div><h2 class="serif">Will it make money?</h2></div>
+  <div class="stats" style="grid-template-columns:1fr 1fr; margin-top:16px">
+    <div class="stat"><div class="v mono" style="font-size:20px">₹12.5k</div><div class="k">Launch · 2023</div></div>
+    <div class="stat"><div class="v mono" style="font-size:20px">₹17–19.5k</div><div class="k">Today</div></div>
+    <div class="stat up" style="border-top:1px solid var(--line2)"><div class="v mono" style="font-size:20px">+48%</div><div class="k">Premium to date</div></div>
+    <div class="stat up" style="border-top:1px solid var(--line2)"><div class="v mono" style="font-size:20px">~12%</div><div class="k">CAGR</div></div>
+  </div>
+  <div class="chartwrap" style="padding:16px 14px 6px">
+    <svg viewBox="0 0 380 220" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="area2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(154,122,46,.22)"/><stop offset="1" stop-color="rgba(154,122,46,0)"/></linearGradient>
+      <linearGradient id="cone2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(30,107,69,.20)"/><stop offset="1" stop-color="rgba(30,107,69,.05)"/></linearGradient></defs>
+      <path d="M20,150 L80,138 L130,120 L170,104 L170,190 L20,190 Z" fill="url(#area2)"/>
+      <path d="M20,150 L80,138 L130,120 L170,104" fill="none" stroke="var(--gold)" stroke-width="3" stroke-linecap="round"/>
+      <path d="M170,104 L360,40 L360,96 Z" fill="url(#cone2)"/><path d="M170,104 L360,66" fill="none" stroke="var(--green)" stroke-width="2" stroke-dasharray="5 4"/>
+      <line x1="170" y1="24" x2="170" y2="190" stroke="var(--gold)" stroke-dasharray="3 4" opacity=".6"/>
+      <circle cx="170" cy="104" r="5" fill="#fff" stroke="var(--gold)" stroke-width="3"/>
+    </svg>
+    <div class="futurelock" style="width:52%; top:16px; bottom:26px; right:14px">
+      <div class="lk">🔒</div><div class="teaser" style="font-size:18px">9–13%<span class="u" style="font-size:10px"> CAGR</span></div>
+      <span class="btn" style="padding:8px 12px; font-size:11px">Unlock projection →</span>
+    </div>
+  </div>
+  <div class="moved" style="margin-top:14px">
+    <div class="mv push"><div class="h">▲ Pushed up</div><ul><li>Metro + corridor approved</li><li>100% sold out</li></ul></div>
+  </div>
+</div></div>
+
+<!-- ══════════ MOBILE · calculator ══════════ -->
+<div class="frame mob"><div class="fh">Ch. III — mobile · ROI calculator</div><div class="pad">
+  <div class="read" style="padding:18px 20px"><div class="h">◆ Truth Estate's read</div>
+    <div class="big serif" style="font-size:16px">Most near-term premium is <b>already in</b>. A resale unit ~<b>8–10% cheaper</b> is the smarter entry.</div></div>
+  <div class="modtag"><span class="t">Model your money</span><span class="ln"></span></div>
+  <div class="calc">
+    <div class="inputs" style="padding:20px">
+      <div class="it"><div class="il">Configuration <span class="cur">4.5 BHK</span></div><div class="seg"><span>3.5</span><span class="on">4.5</span><span>Duplex</span></div></div>
+      <div class="it"><div class="il">Buy price <span class="cur">₹17,000<span class="u">/sqft</span></span></div><div class="slider"><div class="fill" style="width:40%"></div><div class="hd" style="left:40%"></div></div><div class="rng"><span>₹15k</span><span>₹22k</span></div></div>
+      <div class="it"><div class="il">Payment plan <span class="cur">Constr.-linked</span></div><div class="seg"><span>Down-pay</span><span class="on">Constr.-linked</span></div></div>
+    </div>
+    <div class="outputs" style="padding:20px">
+      <div class="vsbox"><div class="vsc"><div class="k">Price CAGR</div><div class="v mono" style="font-size:30px">11.0<span class="u">%</span></div></div>
+        <div class="vsc xirr"><div class="k">◆ XIRR</div><div class="v mono" style="font-size:30px">16.2<span class="u">%</span></div><div class="cap">your real return</div></div></div>
+      <div class="ogrid"><div class="ostat"><div class="k">Buying cost</div><div class="v mono" style="font-size:18px">₹4.76 Cr</div></div>
+        <div class="ostat"><div class="k">Est. premium</div><div class="v mono g" style="font-size:18px">+₹3.26 Cr</div></div></div>
+      <div class="teach" style="font-size:12px"><b>Why XIRR beats CAGR:</b> you haven't paid the full ₹4.76 Cr yet — a construction-linked plan makes your money work harder. That's how cash flow changes your real return.</div>
+    </div>
+  </div>
+</div></div>
+
+</div></body></html>
