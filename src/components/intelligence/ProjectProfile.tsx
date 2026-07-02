@@ -28,6 +28,7 @@ import ReportPrice from "./ReportPrice";
 import ReportVerdict from "./ReportVerdict";
 import ReportExplore from "./ReportExplore";
 import ReportFeedback from "./ReportFeedback";
+import ReportHomes from "./ReportHomes";
 
 const basePath = "/Truth-Estate";
 
@@ -120,6 +121,7 @@ export default function ProjectProfile({
     { id: "match", label: "Match score", show: true },
     { id: "tower-intel", label: "Tower & unit intel", show: true },
     { id: "vitals", label: "Vitals", show: true },
+    { id: "homes", label: "Homes & floor plans", show: (ops?.homes?.length ?? 0) > 0 },
     { id: "anatomy", label: "Truth Score anatomy", show: true },
     { id: "developer", label: "Developer DNA", show: !!dev },
     { id: "construction", label: "Construction & sales", show: !!con },
@@ -205,37 +207,39 @@ export default function ProjectProfile({
                 <Eyebrow>Project Intelligence</Eyebrow>
                 <h1 className="mt-5 font-serif text-[2.7rem] font-medium leading-[1.02] tracking-[-0.02em] md:text-[4rem]">{p.name}</h1>
                 {ops?.address && (
-                  <p className="mt-4 flex flex-wrap items-center gap-2 text-[0.92rem] font-light text-[#1a1a1a]/55">
-                    <span className="text-[#9a7a2e]" aria-hidden>◉</span>
+                  <p className="mt-5 text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">
+                    <span className="mr-2 text-[0.78rem] text-[#9a7a2e]" aria-hidden>◉</span>
                     {mapHref ? (
-                      <a href={mapHref} target="_blank" rel="noopener noreferrer" className="border-b border-[#9a7a2e]/35 hover:text-[#1a1a1a]/80">{ops.address}</a>
+                      <a href={mapHref} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-[#1a1a1a]/85">
+                        {ops.address}&nbsp;<span className="text-[0.72rem] text-[#9a7a2e]" aria-hidden>↗</span>
+                      </a>
                     ) : ops.address}
-                    {mapHref && <a href={mapHref} target="_blank" rel="noopener noreferrer" className="text-[0.72rem] text-[#9a7a2e]">↗ map</a>}
                   </p>
                 )}
-                <p className="mt-2 text-[0.86rem] font-light text-[#1a1a1a]/50">
-                  by {devHref ? <a href={devHref} className="font-medium text-[#1a1a1a]/70 underline decoration-[#c9a96e]/40 underline-offset-2 hover:text-[#1a1a1a]">{p.developer}</a> : <span className="font-medium text-[#1a1a1a]/70">{p.developer}</span>}
-                  {" · "}{p.configs.join(" & ")}{" · "}₹{p.budget[0]}–{p.budget[1]} Cr
+                <p className="mt-2.5 text-[0.86rem] font-light text-[#1a1a1a]/45">
+                  by {devHref ? <a href={devHref} className="font-medium text-[#1a1a1a]/65 transition-colors hover:text-[#1a1a1a]">{p.developer}</a> : <span className="font-medium text-[#1a1a1a]/65">{p.developer}</span>}
+                  <span className="mx-2 text-[#1a1a1a]/20">·</span>{p.configs.join(" & ")}
+                  <span className="mx-2 text-[#1a1a1a]/20">·</span>₹{p.budget[0]}–{p.budget[1]} Cr
                 </p>
-                <div className="mt-5 flex flex-wrap gap-2.5">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#9a7a2e]/40 bg-gradient-to-b from-[#c9a96e]/[0.16] to-[#c9a96e]/[0.06] px-3.5 py-1.5 text-[0.72rem] font-semibold tracking-[0.02em] text-[#7a5f1e]">
-                    ❧ #{ctx.corridorRank} of {ctx.corridorCount} in {p.marketShort}
+                <div className="mt-7 flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#9a7a2e]/25 bg-white/60 px-3.5 py-1.5 text-[0.7rem] font-medium text-[#7a5f1e]">
+                    <span aria-hidden>❧</span> #{ctx.corridorRank} of {ctx.corridorCount} in {p.marketShort}
                   </span>
                   {buildStatus && (
-                    <span className="inline-flex items-center gap-2 rounded-full border border-[#1a1a1a]/10 bg-[#FBF8F2] px-3.5 py-1.5 text-[0.72rem] text-[#1a1a1a]/60">
-                      <span className="h-[6px] w-[6px] rounded-full bg-[#c9a96e]" />{buildStatus}
+                    <span className="inline-flex items-center gap-2 rounded-full border border-[#1a1a1a]/8 bg-white/60 px-3.5 py-1.5 text-[0.7rem] font-light text-[#1a1a1a]/55">
+                      <span className="h-[5px] w-[5px] rounded-full bg-[#c9a96e]" aria-hidden />{buildStatus}
                     </span>
                   )}
                   {marketHref && (
-                    <a href={marketHref} className="inline-flex items-center gap-1.5 rounded-full border border-[#1a1a1a]/10 px-3.5 py-1.5 text-[0.72rem] text-[#1a1a1a]/60 hover:text-[#1a1a1a]">
-                      {p.market} <span className="text-[#9a7a2e]">→</span>
+                    <a href={marketHref} className="inline-flex items-center gap-1.5 rounded-full border border-[#1a1a1a]/8 bg-white/60 px-3.5 py-1.5 text-[0.7rem] font-light text-[#1a1a1a]/55 transition-colors hover:text-[#1a1a1a]">
+                      {p.marketShort} <span className="text-[#9a7a2e]" aria-hidden>→</span>
                     </a>
                   )}
                 </div>
               </div>
               {/* Truth Score seal + context */}
               <div className="flex shrink-0 items-center gap-6">
-                <div className="relative h-[136px] w-[136px]">
+                <div className="relative h-[118px] w-[118px] md:h-[136px] md:w-[136px]">
                   <div className="absolute inset-0 rounded-full" style={{ background: `conic-gradient(#1e6b45 0 ${Math.round((p.truthScore / 100) * 360)}deg, rgba(26,26,26,0.08) ${Math.round((p.truthScore / 100) * 360)}deg 360deg)` }} />
                   <div className="absolute inset-[7px] rounded-full bg-[#F5F0E8]" />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -294,6 +298,12 @@ export default function ProjectProfile({
               </div>
               {ops?.reraNote && <Source>{ops.reraNote}. Sources: Haryana RERA registry & project filings.</Source>}
             </Section>
+
+            {(ops?.homes?.length ?? 0) > 0 && (
+              <Section id="homes" n={num()} title="The homes">
+                <ReportHomes p={p} />
+              </Section>
+            )}
 
             <Chapter n="I" title="Can we trust it?" framing="Five forces decide whether a project keeps its promise — the developer, the build, the location, the paperwork, and what sets it apart. Here's how it scores on each, and exactly what moves the number." />
 

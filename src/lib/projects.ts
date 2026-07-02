@@ -127,6 +127,9 @@ export type ProjectOps = {
   /* Price history — the PSF journey since launch (Chapter III). currentLow/High
      bound today's tracked range; premium & CAGR are derived, not stored. */
   price?: { launchPsf: number; launchDate: string; currentLow: number; currentHigh: number };
+  /* Per-configuration homes — carpet/super/balcony areas and the indicative
+     ticket band. Efficiency & loading are derived, never stored. */
+  homes?: { config: string; carpetSqft: number; superSqft: number; balconySqft?: number; priceCr: [number, number] }[];
   /* Structured location intelligence (Chapter II · Location). */
   location?: {
     pois?: { name: string; sub: string; rating?: number; dist: string; key?: boolean }[];
@@ -157,6 +160,10 @@ export const OPS: Record<string, ProjectOps> = {
     possession: "Mar 2030",
     reraId: "RERA-GRG-1138-2022",
     price: { launchPsf: 12500, launchDate: "Jan 2023", currentLow: 17000, currentHigh: 19500 },
+    homes: [
+      { config: "3 BHK", carpetSqft: 1855, superSqft: 2650, balconySqft: 320, priceCr: [5.0, 5.6] },
+      { config: "4 BHK", carpetSqft: 2255, superSqft: 3225, balconySqft: 410, priceCr: [5.8, 6.9] },
+    ],
     location: {
       pois: [
         { name: "St. Xavier's High School", sub: "Premium co-ed K-12 · CBSE", rating: 4.4, dist: "0.4 km", key: true },
@@ -187,6 +194,10 @@ export const OPS: Record<string, ProjectOps> = {
   },
   "DLF Privana South": {
     address: "Sector 77, Southern Peripheral Road, Gurugram",
+    homes: [
+      { config: "3 BHK", carpetSqft: 1755, superSqft: 2500, balconySqft: 300, priceCr: [5.0, 5.9] },
+      { config: "4 BHK", carpetSqft: 2150, superSqft: 3080, balconySqft: 390, priceCr: [6.2, 7.9] },
+    ],
     units: 1113, towers: 7, landAcres: 25, openAreaPct: 78, density: 44,
     launch: "2023", possession: "Dec 2028", reraNote: "Registered · Haryana RERA",
     construction: { actualPct: 41, expectedPct: 38, absorptionPct: 100, reraDate: "Dec 2028", predictedDate: "Oct 2028", qpr: "Q1 2026" },

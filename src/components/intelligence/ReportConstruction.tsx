@@ -27,6 +27,43 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
         <p className="mt-3 text-[0.72rem] font-light italic text-[#1a1a1a]/40">Source: latest Quarterly Progress Report filed with HRERA · {o.qpr}.</p>
       </div>
 
+      {/* The brochure vs the ground — what was sold vs what's verified standing */}
+      <div className="mt-5">
+        <p className="font-serif text-[1.25rem] font-medium md:text-[1.4rem]">What they sold. What&apos;s standing.</p>
+        <div className="relative mt-4 grid gap-4 md:grid-cols-2">
+          <span className="absolute left-1/2 top-1/2 z-10 hidden h-11 w-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-[#1a1a1a]/10 bg-[#F5F0E8] font-mono text-[0.68rem] uppercase tracking-[0.08em] text-[#1a1a1a]/45 shadow-md md:grid">vs</span>
+          {/* the brochure */}
+          <div className="overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-white/70">
+            <div className="flex items-center justify-between border-b border-[#1a1a1a]/8 px-5 py-3">
+              <span className="flex items-center gap-2.5 text-[0.82rem] font-semibold"><span className="grid h-6 w-6 place-items-center rounded-md bg-[#9a7a2e]/[0.12] text-[0.72rem] text-[#9a7a2e]">❧</span>The brochure</span>
+              <span className="text-[0.6rem] font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/35">The promise</span>
+            </div>
+            <div className="px-5 py-4">
+              <BRow k="Possession promised" v={o.reraDate} />
+              {p.ops?.launch && <BRow k="Launched" v={`${p.ops.launch}${p.ops.price ? ` · at ₹${(p.ops.price.launchPsf / 1000).toFixed(1)}k/sqft` : ""}`} />}
+              {p.ops?.openAreaPct != null && <BRow k="Sold on" v={`${p.ops.openAreaPct}% open area · ${p.configs.join(" & ")}`} />}
+              <p className="mt-3.5 text-[0.72rem] font-light leading-[1.55] text-[#1a1a1a]/45">Every brochure looks immaculate. We file the promise — then hold the build against it, quarter by quarter.</p>
+            </div>
+          </div>
+          {/* the ground */}
+          <div className="overflow-hidden rounded-2xl border border-[#1e6b45]/25 bg-white/70">
+            <div className="flex items-center justify-between border-b border-[#1a1a1a]/8 px-5 py-3">
+              <span className="flex items-center gap-2.5 text-[0.82rem] font-semibold"><span className="grid h-6 w-6 place-items-center rounded-md bg-[#1e6b45]/[0.1] text-[0.72rem] text-[#1e6b45]">◉</span>The ground</span>
+              <span className="text-[0.6rem] font-medium uppercase tracking-[0.1em] text-[#1e6b45]/70">Verified today</span>
+            </div>
+            <div className="px-5 py-4">
+              <BRow k="Actually built" v={`${o.actualPct}% — vs ${o.expectedPct}% due`} strong />
+              <BRow k="Units absorbed" v={`${o.absorptionPct}%`} />
+              <BRow k="Our forecast handover" v={`${o.predictedDate}${o.ahead !== 0 ? ` · ${Math.abs(o.ahead)} mo ${o.ahead > 0 ? "early" : "late"}` : ""}`} strong />
+              <div className="mt-3.5 flex items-center gap-3 rounded-lg border border-dashed border-[#1a1a1a]/15 bg-[#FBF8F2] px-3.5 py-2.5">
+                <span className="text-[0.95rem] text-[#9a7a2e]" aria-hidden>◫</span>
+                <p className="text-[0.7rem] font-light leading-[1.5] text-[#1a1a1a]/50">Dated site photographs from our field visits land here — verified against this QPR ({o.qpr}).</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Construction vs RERA plan */}
       <div className="mt-5 rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-6 md:p-7">
         <div className="flex items-center justify-between">
@@ -96,6 +133,15 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function BRow({ k, v, strong }: { k: string; v: string; strong?: boolean }) {
+  return (
+    <div className="flex items-baseline gap-3 border-b border-dotted border-[#1a1a1a]/12 py-2 last:border-none">
+      <span className="text-[0.76rem] font-light text-[#1a1a1a]/50">{k}</span>
+      <span className={`ml-auto text-right font-mono text-[0.84rem] ${strong ? "font-semibold text-[#1a1a1a]" : "font-medium text-[#1a1a1a]/70"}`}>{v}</span>
     </div>
   );
 }
