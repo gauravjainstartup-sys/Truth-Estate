@@ -254,13 +254,20 @@ export default function ProjectProfile({
               </div>
             </div>
 
-            {/* Truth Verdict */}
+            {/* The short answer — the 10-second executive read. The word
+               "verdict" belongs to exactly one thing: the profile-tailored
+               call at the end of the report. */}
             <div className="mt-11 rounded-2xl border border-[#c9a96e]/30 bg-white/70 p-8 shadow-[0_16px_50px_rgba(0,0,0,0.04)] md:p-10">
-              <Eyebrow>Truth Verdict</Eyebrow>
+              <Eyebrow>The short answer</Eyebrow>
               <p className="mt-5 font-serif text-[1.4rem] font-normal leading-[1.5] md:text-[1.7rem]">{p.reason}</p>
-              <p className="mt-6 border-t border-[#1a1a1a]/8 pt-5 text-[0.86rem] font-light leading-[1.7] text-[#1a1a1a]/55">
-                <span className="font-medium text-[#1a1a1a]/70">Investor fit:</span> {investorFit(p)}
-              </p>
+              <div className="mt-6 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 border-t border-[#1a1a1a]/8 pt-5">
+                <p className="max-w-xl text-[0.86rem] font-light leading-[1.7] text-[#1a1a1a]/55">
+                  <span className="font-medium text-[#1a1a1a]/70">Best suited for:</span> {investorFit(p)}
+                </p>
+                <a href="#verdict" className="shrink-0 text-[0.78rem] font-semibold text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]">
+                  Your personalised verdict ↓
+                </a>
+              </div>
             </div>
 
             {/* Match Score — personalisation hook (onboards cold visitors) */}

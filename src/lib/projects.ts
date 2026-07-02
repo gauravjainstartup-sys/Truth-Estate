@@ -186,25 +186,36 @@ export const OPS: Record<string, ProjectOps> = {
     ],
   },
   "DLF Privana South": {
+    address: "Sector 77, Southern Peripheral Road, Gurugram",
     units: 1113, towers: 7, landAcres: 25, openAreaPct: 78, density: 44,
     launch: "2023", possession: "Dec 2028", reraNote: "Registered · Haryana RERA",
     construction: { actualPct: 41, expectedPct: 38, absorptionPct: 100, reraDate: "Dec 2028", predictedDate: "Oct 2028", qpr: "Q1 2026" },
   },
   "Godrej Aristocrat": {
+    address: "Sector 49, Golf Course Extension Road, Gurugram",
     units: 434, towers: 4, landAcres: 8.4, openAreaPct: 75, density: 52,
     launch: "2024", possession: "Jun 2029", reraNote: "Registered · Haryana RERA",
     construction: { actualPct: 22, expectedPct: 20, absorptionPct: 95, reraDate: "Jun 2029", predictedDate: "Aug 2029", qpr: "Q1 2026" },
   },
   "M3M Golf Estate II": {
+    address: "Sector 65, Golf Course Extension Road, Gurugram",
     units: 624, towers: 6, landAcres: 18, openAreaPct: 70, density: 35,
     launch: "2023", possession: "Dec 2028", reraNote: "Registered · Haryana RERA",
     construction: { actualPct: 38, expectedPct: 40, absorptionPct: 82, reraDate: "Dec 2028", predictedDate: "Jun 2029", qpr: "Q1 2026" },
   },
   "Birla Navya": {
+    address: "Sector 63A, Golf Course Extension Road, Gurugram",
     units: 424, towers: 4, landAcres: 10, openAreaPct: 80, density: 42,
     launch: "2023", possession: "Mar 2029", reraNote: "Registered · Haryana RERA",
     construction: { actualPct: 30, expectedPct: 28, absorptionPct: 88, reraDate: "Mar 2029", predictedDate: "May 2029", qpr: "Q1 2026" },
   },
+  /* Address-only entries — projects we track at corridor depth; deeper ops
+     (QPR, units, price history) land as our coverage expands. */
+  "Smartworld One DXP": { address: "Sector 113, Dwarka Expressway, Gurugram" },
+  "Signature Global Titanium SPR": { address: "Sector 71, Southern Peripheral Road, Gurugram" },
+  "Puri Aravallis": { address: "Sector 61, Golf Course Extension Road, Gurugram" },
+  "Conscient Parq": { address: "Sector 80, NH-48, New Gurugram" },
+  "Emaar Urban Ascent": { address: "Sector 112, Dwarka Expressway, Gurugram" },
 };
 
 export function enrich(p: Project): ProjectIntel {
