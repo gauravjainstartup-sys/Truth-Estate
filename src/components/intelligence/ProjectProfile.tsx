@@ -23,6 +23,8 @@ import ReportAnatomy from "./ReportAnatomy";
 import ReportDeveloper from "./ReportDeveloper";
 import ReportConstruction from "./ReportConstruction";
 import ReportLegal from "./ReportLegal";
+import ReportLocation from "./ReportLocation";
+import ReportUSPs from "./ReportUSPs";
 
 const basePath = "/Truth-Estate";
 
@@ -34,15 +36,6 @@ const recoTone = (r: string) =>
   r.includes("Strong") ? "border-[#1e6b45]/30 text-[#1e6b45] bg-[#1e6b45]/8"
   : r === "Buy" ? "border-[#3e8e62]/30 text-[#3e8e62] bg-[#3e8e62]/8"
   : "border-[#9a7a2e]/30 text-[#9a7a2e] bg-[#c9a96e]/10";
-
-function Num({ v, k, accent }: { v: string; k: string; accent?: boolean }) {
-  return (
-    <div>
-      <p className={`font-mono text-[1.5rem] font-light leading-none md:text-[1.7rem] ${accent ? "text-[#3e8e62]" : "text-[#1a1a1a]"}`}>{v}</p>
-      <p className="mt-2.5 text-[0.66rem] font-light uppercase tracking-[0.12em] text-[#1a1a1a]/40">{k}</p>
-    </div>
-  );
-}
 
 /* A labelled key/value cell for the vitals grid. */
 function KV({ k, v, tag }: { k: string; v: string; tag?: string }) {
@@ -320,32 +313,23 @@ export default function ProjectProfile({
               <ReportLegal p={p} />
             </div>
 
-            {market && <Chapter n="II" title="The investment case" framing="Where it sits in the corridor, and what the evidence says it could return — modelled, never promised." />}
-
-            {/* 06 · Location intelligence */}
+            {/* Pillar III · Location Intelligence */}
             {market && (
-              <Section id="location" n={num()} title="Location intelligence" flush>
-                <div className="rounded-2xl border-l-2 border-[#1e6b45]/40 bg-white/50 p-7 md:p-8">
-                  <Eyebrow>Corridor verdict</Eyebrow>
-                  <p className="mt-3 font-serif text-[1.25rem] leading-[1.4] md:text-[1.4rem]">{market.verdict}</p>
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-8 rounded-2xl border border-[#1a1a1a]/8 bg-white/40 p-8 md:grid-cols-4">
-                  <Num v={fmtPsf(market.psf.low) + "–" + market.psf.high.toLocaleString("en-IN")} k="Price band / sq ft" />
-                  <Num v={market.unitBand} k="Typical ticket" />
-                  <Num v={market.appreciation3Y} k="3-yr appreciation" accent />
-                  <Num v={`${market.projectCount}`} k="Projects tracked" />
-                </div>
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
-                  <InfoCard title="Where it stands" body={market.currentTrend} />
-                  <InfoCard title="Where it's headed" body={market.futureTrend} />
-                  <InfoCard title="Infrastructure" body={market.infra} />
-                  <InfoCard title="Demand" body={market.demand} />
-                </div>
-                <Source>Sources: tracked corridor transactions, GMDA / HSVP infrastructure plans &amp; developer filings.</Source>
-              </Section>
+              <div id="location" className="mt-16 scroll-mt-24 border-t border-[#1a1a1a]/8 pt-12 md:mt-20">
+                <ReportLocation p={p} />
+              </div>
             )}
 
-            {/* 07 · Projected ROI */}
+            {/* Pillar V · Project USPs */}
+            {usps.length > 0 && (
+              <div id="usps" className="mt-16 scroll-mt-24 border-t border-[#1a1a1a]/8 pt-12 md:mt-20">
+                <ReportUSPs p={p} />
+              </div>
+            )}
+
+            <Chapter n="II" title="Will it make money?" framing="What the evidence says it could return — modelled, never promised. The full price journey and an ROI calculator land in this chapter next." />
+
+            {/* Projected ROI */}
             {roi && (
               <Section id="roi" n={num()} title="Projected ROI">
                 <p className="-mt-2 mb-6 max-w-2xl text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/55">
@@ -369,26 +353,7 @@ export default function ProjectProfile({
               </Section>
             )}
 
-            <Chapter n="III" title="The honest read" framing="What genuinely stands out, what to watch, and the buyer this home is really for." />
-
-            {/* 08 · Project USPs */}
-            {usps.length > 0 && (
-              <Section id="usps" n={num()} title="Project USPs" flush>
-                <p className="-mt-2 mb-6 max-w-2xl text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/55">
-                  Non-obvious advantages that materially affect livability, safety and long-term value.
-                </p>
-                <div className="grid gap-4 md:grid-cols-2">
-                  {usps.map((u) => (
-                    <div key={u.title} className="rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-7">
-                      <p className="font-serif text-[1.15rem] leading-[1.35]">{u.title}</p>
-                      <p className="mt-3 text-[0.88rem] font-light leading-[1.7] text-[#1a1a1a]/60">{u.body}</p>
-                    </div>
-                  ))}
-                </div>
-              </Section>
-            )}
-
-            {/* 09 · Strengths & watch-outs */}
+            {/* Strengths & watch-outs */}
             <Section id="strengths" n={num()} title="Strengths & watch-outs">
               <div className="grid gap-8 md:grid-cols-2">
                 <div className="rounded-2xl border border-[#1e6b45]/15 bg-[#1e6b45]/[0.04] p-7">
@@ -542,15 +507,6 @@ function ActionCell({ tone, icon, title, desc, onClick }: { tone: "primary" | "s
       </span>
       <span className={`text-[0.74rem] font-light leading-[1.4] ${descColor}`}>{desc}</span>
     </button>
-  );
-}
-
-function InfoCard({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-6">
-      <p className="text-[0.62rem] font-medium uppercase tracking-[0.14em] text-[#c9a96e]">{title}</p>
-      <p className="mt-2.5 text-[0.88rem] font-light leading-[1.7] text-[#1a1a1a]/65">{body}</p>
-    </div>
   );
 }
 

@@ -127,6 +127,12 @@ export type ProjectOps = {
   /* Price history — the PSF journey since launch (Chapter III). currentLow/High
      bound today's tracked range; premium & CAGR are derived, not stored. */
   price?: { launchPsf: number; launchDate: string; currentLow: number; currentHigh: number };
+  /* Structured location intelligence (Chapter II · Location). */
+  location?: {
+    pois?: { name: string; sub: string; rating?: number; dist: string; key?: boolean }[];
+    connectivity?: { icon: string; name: string; sub: string; dist: string; tag: string; direct?: boolean }[];
+    infra?: { cat: string; status: string; title: string; body: string; impact: "High" | "Medium"; eta: string }[];
+  };
   construction?: {
     actualPct: number; // built vs plan, latest QPR
     expectedPct: number; // schedule expectation at same date
@@ -151,6 +157,25 @@ export const OPS: Record<string, ProjectOps> = {
     possession: "Mar 2030",
     reraId: "RERA-GRG-1138-2022",
     price: { launchPsf: 12500, launchDate: "Jan 2023", currentLow: 17000, currentHigh: 19500 },
+    location: {
+      pois: [
+        { name: "St. Xavier's High School", sub: "Premium co-ed K-12 · CBSE", rating: 4.4, dist: "0.4 km", key: true },
+        { name: "The Heritage Xperiential", sub: "Tier-1 K-12 · IB / CBSE", rating: 4.6, dist: "0.88 km", key: true },
+        { name: "DPS International", sub: "K-12 · CIE International", rating: 4.5, dist: "1.42 km", key: true },
+      ],
+      connectivity: [
+        { icon: "◇", name: "Sector 55–56 Metro", sub: "Rapid Metro line", dist: "3.8 km", tag: "8 min" },
+        { icon: "▤", name: "Golf Course Ext. Road", sub: "arterial frontage", dist: "0.3 km", tag: "Direct", direct: true },
+        { icon: "✈", name: "IGI Airport · T3", sub: "via NH-48", dist: "23 km", tag: "30 min" },
+        { icon: "▦", name: "DLF Cyber City", sub: "business district", dist: "12.5 km", tag: "22 min" },
+      ],
+      infra: [
+        { cat: "Roads", status: "Approved", title: "14 km Elevated Corridor", body: "₹2,900 cr eight-lane, Ghata → NH-48; Phase 1 covers the Extension Road stretch.", impact: "High", eta: "2029" },
+        { cat: "Metro", status: "Approved", title: "Sector 56 → Manesar Metro", body: "36 km double-decker line along GCER; links to RRTS + Manesar hub.", impact: "High", eta: "2030" },
+        { cat: "Roads", status: "Approved", title: "Badshahpur Drain Road", body: "₹370 cr storm-drain concretisation with a load-bearing road on top.", impact: "Medium", eta: "2027" },
+        { cat: "Roads", status: "Under constr.", title: "GMDA Sector 66 Revamp", body: "Service roads, cycle tracks & utility ducts near M3M IFC.", impact: "Medium", eta: "2026 Q4" },
+      ],
+    },
     reraNote: "Registered · Haryana RERA · active, no project-level complaints on record",
     construction: { actualPct: 57, expectedPct: 47, absorptionPct: 100, reraDate: "Mar 2030", predictedDate: "Nov 2029", qpr: "Q1 2026" },
     usps: [
