@@ -168,28 +168,45 @@ export default function ProjectProfile({
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl px-6 pb-[12vh] pt-[6vh] md:px-10">
-        <div className={embedded ? "" : "xl:grid xl:grid-cols-[180px_minmax(0,1fr)] xl:gap-12"}>
-          {/* Sticky report index — desktop, standalone page only */}
+      <div className={`mx-auto ${embedded ? "max-w-6xl" : "max-w-7xl"} px-6 pb-[12vh] pt-[6vh] md:px-10`}>
+        <div className={embedded ? "" : "xl:grid xl:grid-cols-[minmax(0,1fr)_300px] xl:gap-14"}>
+          {/* Sticky conversion rail — the report stays left; this rail works the lead */}
           {!embedded && (
-            <nav className="hidden self-start xl:sticky xl:top-24 xl:block">
-              <p className="text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[#1a1a1a]/35">Report index</p>
-              <ul className="mt-4 space-y-2.5 border-l border-[#1a1a1a]/10">
-                {toc.map((t) => (
-                  <li key={t.id}>
-                    <a href={`#${t.id}`} className="-ml-px block border-l border-transparent pl-4 text-[0.78rem] font-light text-[#1a1a1a]/50 transition-colors hover:border-[#c9a96e] hover:text-[#1a1a1a]">
-                      {t.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-              <button onClick={consult} className="mt-7 w-full rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.72rem] font-medium tracking-[0.03em] text-white transition-colors hover:bg-[#238c55]">
-                Get Independent Advice
-              </button>
-            </nav>
+            <aside className="hidden self-start xl:col-start-2 xl:row-start-1 xl:sticky xl:top-24 xl:block">
+              <div className="rounded-2xl border border-[#1a1a1a]/8 bg-white/70 p-5">
+                <div className="flex items-center gap-3">
+                  <div className="relative h-12 w-12 shrink-0">
+                    <div className="absolute inset-0 rounded-full" style={{ background: `conic-gradient(#1e6b45 0 ${Math.round((p.truthScore / 100) * 360)}deg, rgba(26,26,26,0.08) ${Math.round((p.truthScore / 100) * 360)}deg 360deg)` }} />
+                    <div className="absolute inset-[3px] rounded-full bg-white" />
+                    <span className="absolute inset-0 flex items-center justify-center font-serif text-[1.05rem] leading-none text-[#1e6b45]">{p.truthScore}</span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[0.56rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">Truth Score</p>
+                    <p className="text-[0.82rem] font-semibold text-[#1a1a1a]">{p.recommendation}<span className="font-light text-[#1a1a1a]/45"> · Top {ctx.topPct}%</span></p>
+                  </div>
+                </div>
+                <button onClick={consult} className="mt-4 w-full rounded-lg bg-[#1e6b45] px-4 py-3 text-[0.8rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Get Independent Advice</button>
+                <p className="mt-2 text-center text-[0.62rem] font-light text-[#1a1a1a]/45">Independent — we don&apos;t sell inventory</p>
+              </div>
+
+              <a href="#tower-intel" className="mt-3 block rounded-2xl border border-[#9a7a2e]/25 bg-gradient-to-br from-[#9a7a2e]/[0.07] to-transparent p-5 transition-colors hover:border-[#9a7a2e]/45">
+                <p className="flex items-center gap-2 text-[0.6rem] font-bold uppercase tracking-[0.12em] text-[#9a7a2e]"><IconBuilding className="text-[#9a7a2e]" /> Unlock the deep layer</p>
+                <p className="mt-2 text-[0.83rem] font-medium leading-[1.5] text-[#1a1a1a]/85">Walk the live 3D, every unit&apos;s sun &amp; Vastu read, and the full 5-year price projection.</p>
+                <p className="mt-2.5 text-[0.72rem] font-semibold text-[#9a7a2e]">From ₹1,499 · free with membership →</p>
+              </a>
+
+              <details className="group mt-3 rounded-2xl border border-[#1a1a1a]/8 bg-white/50 px-5 py-3.5">
+                <summary className="flex cursor-pointer list-none items-center justify-between text-[0.6rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/40 [&::-webkit-details-marker]:hidden">Jump to a section <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3 text-[#9a7a2e] transition-transform group-open:rotate-180" aria-hidden><path d="m6 9 6 6 6-6" /></svg></summary>
+                <ul className="mt-3 space-y-2 border-l border-[#1a1a1a]/10">
+                  {toc.map((t) => (
+                    <li key={t.id}><a href={`#${t.id}`} className="-ml-px block border-l border-transparent pl-4 text-[0.76rem] font-light text-[#1a1a1a]/50 transition-colors hover:border-[#c9a96e] hover:text-[#1a1a1a]">{t.label}</a></li>
+                  ))}
+                </ul>
+              </details>
+            </aside>
           )}
 
-          <div className="min-w-0">
+          <div className="min-w-0 xl:col-start-1 xl:row-start-1">
             {/* Breadcrumb / back to shortlist */}
             {embedded ? (
               <button onClick={onBack} className="flex items-center gap-2 text-[0.74rem] font-light text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a]/80">
@@ -203,6 +220,19 @@ export default function ProjectProfile({
               </div>
             )}
 
+            {/* Mobile / tablet section menu — the desktop rail is xl-only */}
+            {!embedded && (
+              <details className="group mt-6 rounded-xl border border-[#1a1a1a]/10 bg-white/60 px-4 py-3 xl:hidden">
+                <summary className="flex cursor-pointer list-none items-center justify-between text-[0.7rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/45 [&::-webkit-details-marker]:hidden">
+                  On this page
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 text-[#9a7a2e] transition-transform group-open:rotate-180" aria-hidden><path d="m6 9 6 6 6-6" /></svg>
+                </summary>
+                <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
+                  {toc.map((t) => (<li key={t.id}><a href={`#${t.id}`} className="block text-[0.78rem] font-light text-[#1a1a1a]/55 transition-colors hover:text-[#1a1a1a]">{t.label}</a></li>))}
+                </ul>
+              </details>
+            )}
+
             {/* Hero */}
             <div className="mt-9 flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-2xl">
@@ -210,10 +240,10 @@ export default function ProjectProfile({
                 <h1 className="mt-5 font-serif text-[2.7rem] font-medium leading-[1.02] tracking-[-0.02em] md:text-[4rem]">{p.name}</h1>
                 {ops?.address && (
                   <p className="mt-5 text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">
-                    <span className="mr-2 text-[0.78rem] text-[#9a7a2e]" aria-hidden>◉</span>
+                    <IconPin className="mr-2 text-[#9a7a2e]" />
                     {mapHref ? (
                       <a href={mapHref} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-[#1a1a1a]/85">
-                        {ops.address}&nbsp;<span className="text-[0.72rem] text-[#9a7a2e]" aria-hidden>↗</span>
+                        {ops.address}<IconArrowUpRight className="ml-1 text-[#9a7a2e]" />
                       </a>
                     ) : ops.address}
                   </p>
@@ -225,17 +255,12 @@ export default function ProjectProfile({
                 </p>
                 <div className="mt-7 flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-[#9a7a2e]/25 bg-white/60 px-3.5 py-1.5 text-[0.7rem] font-medium text-[#7a5f1e]">
-                    <span aria-hidden>❧</span> #{ctx.corridorRank} of {ctx.corridorCount} in {p.marketShort}
+                    <IconAward className="text-[#9a7a2e]" /> #{ctx.corridorRank} of {ctx.corridorCount} in {p.marketShort}
                   </span>
                   {buildStatus && (
-                    <span className="inline-flex items-center gap-2 rounded-full border border-[#1a1a1a]/8 bg-white/60 px-3.5 py-1.5 text-[0.7rem] font-light text-[#1a1a1a]/55">
-                      <span className="h-[5px] w-[5px] rounded-full bg-[#c9a96e]" aria-hidden />{buildStatus}
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#1a1a1a]/8 bg-white/60 px-3.5 py-1.5 text-[0.7rem] font-light text-[#1a1a1a]/55">
+                      <IconBuilding className="text-[#c9a96e]" />{buildStatus}
                     </span>
-                  )}
-                  {marketHref && (
-                    <a href={marketHref} className="inline-flex items-center gap-1.5 rounded-full border border-[#1a1a1a]/8 bg-white/60 px-3.5 py-1.5 text-[0.7rem] font-light text-[#1a1a1a]/55 transition-colors hover:text-[#1a1a1a]">
-                      {p.marketShort} <span className="text-[#9a7a2e]" aria-hidden>→</span>
-                    </a>
                   )}
                 </div>
               </div>
@@ -244,19 +269,19 @@ export default function ProjectProfile({
                 <div className="relative h-[118px] w-[118px] md:h-[136px] md:w-[136px]">
                   <div className="absolute inset-0 rounded-full" style={{ background: `conic-gradient(#1e6b45 0 ${Math.round((p.truthScore / 100) * 360)}deg, rgba(26,26,26,0.08) ${Math.round((p.truthScore / 100) * 360)}deg 360deg)` }} />
                   <div className="absolute inset-[7px] rounded-full bg-[#F5F0E8]" />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className="absolute inset-0 flex items-center justify-center">
                     <span className="font-serif text-[3rem] font-normal leading-none text-[#1e6b45]">{p.truthScore}</span>
-                    <span className="mt-1 text-[0.48rem] font-medium uppercase tracking-[0.2em] text-[#1a1a1a]/40">Truth Score</span>
                   </div>
+                  <span className="pointer-events-none absolute inset-x-0 bottom-[16px] text-center text-[0.48rem] font-medium uppercase tracking-[0.2em] text-[#1a1a1a]/40 md:bottom-[21px]" aria-hidden>Truth Score</span>
                 </div>
                 <div>
                   <span className={`inline-block rounded-full border px-3.5 py-1 text-[0.72rem] font-semibold ${recoTone(p.recommendation)}`}>{p.recommendation}</span>
                   {ctx.delta > 0 && (
-                    <p className="mt-2.5 flex items-center gap-2 text-[0.8rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]">▲</span><span><b className="font-semibold text-[#1a1a1a]">+{ctx.delta}</b> vs {p.marketShort} average</span></p>
+                    <p className="mt-2.5 flex items-center gap-2 text-[0.8rem] text-[#1a1a1a]/60"><IconTrendUp className="text-[#9a7a2e]" /><span><b className="font-semibold text-[#1a1a1a]">+{ctx.delta}</b> vs {p.marketShort} average</span></p>
                   )}
-                  <p className="mt-1.5 flex items-center gap-2 text-[0.8rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]">◆</span><span><b className="font-semibold text-[#1a1a1a]">Top {ctx.topPct}%</b> of tracked projects</span></p>
-                  <p className="mt-1.5 flex items-center gap-2 text-[0.8rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]">✓</span><span><b className="font-semibold text-[#1a1a1a]">{p.confidence}</b> confidence · re-scored quarterly</span></p>
-                  <p className="mt-2.5 text-[0.66rem] font-light tracking-[0.02em] text-[#1a1a1a]/40"><span className="mr-1.5" aria-hidden>◷</span>Data last reviewed {reviewed}</p>
+                  <p className="mt-1.5 flex items-center gap-2 text-[0.8rem] text-[#1a1a1a]/60"><IconTiers className="text-[#9a7a2e]" /><span><b className="font-semibold text-[#1a1a1a]">Top {ctx.topPct}%</b> of tracked projects</span></p>
+                  <p className="mt-1.5 flex items-center gap-2 text-[0.8rem] text-[#1a1a1a]/60"><IconShieldCheck className="text-[#9a7a2e]" /><span><b className="font-semibold text-[#1a1a1a]">{p.confidence}</b> confidence · re-scored quarterly</span></p>
+                  <p className="mt-2.5 flex items-center gap-1.5 text-[0.66rem] font-light tracking-[0.02em] text-[#1a1a1a]/40"><IconClock className="text-[#1a1a1a]/40" />Data last reviewed {reviewed}</p>
                 </div>
               </div>
             </div>
@@ -538,4 +563,31 @@ function ContextCard({ kicker, title, href, cta }: { kicker: string; title: stri
   ) : (
     <div className="rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-7">{body}</div>
   );
+}
+
+/* ── one consistent line-icon set for the hero (replaces ad-hoc unicode glyphs) ── */
+const ICN = "inline-block h-[1.05em] w-[1.05em] shrink-0 align-[-0.15em]";
+function IconPin({ className = "" }: { className?: string }) {
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={`${ICN} ${className}`} aria-hidden><path d="M12 21c4.4-4 7-7.1 7-11a7 7 0 1 0-14 0c0 3.9 2.6 7 7 11Z" /><circle cx="12" cy="10" r="2.3" /></svg>);
+}
+function IconArrowUpRight({ className = "" }: { className?: string }) {
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={`inline-block h-[0.82em] w-[0.82em] shrink-0 align-[-0.02em] ${className}`} aria-hidden><path d="M8 16 16 8M9.5 8H16v6.5" /></svg>);
+}
+function IconAward({ className = "" }: { className?: string }) {
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={`${ICN} ${className}`} aria-hidden><circle cx="12" cy="9" r="5" /><path d="M9.2 13.2 8 21l4-2.2L16 21l-1.2-7.8" /></svg>);
+}
+function IconBuilding({ className = "" }: { className?: string }) {
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={`${ICN} ${className}`} aria-hidden><path d="M4 21V5.5A1.5 1.5 0 0 1 5.5 4h6A1.5 1.5 0 0 1 13 5.5V21" /><path d="M13 10h5.5A1.5 1.5 0 0 1 20 11.5V21" /><path d="M3 21h18M7 8h2M7 12h2M7 16h2M16 14h1M16 17.5h1" /></svg>);
+}
+function IconTrendUp({ className = "" }: { className?: string }) {
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={`${ICN} ${className}`} aria-hidden><path d="M3 16.5 9 10.5l3.5 3.5L21 5.5" /><path d="M15 5.5h6v6" /></svg>);
+}
+function IconTiers({ className = "" }: { className?: string }) {
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={`${ICN} ${className}`} aria-hidden><path d="M4 20h16" /><path d="M7 20v-3.5M12 20v-7M17 20v-10.5" /></svg>);
+}
+function IconShieldCheck({ className = "" }: { className?: string }) {
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={`${ICN} ${className}`} aria-hidden><path d="M12 3 5 5.8v5.5c0 4 3 6.9 7 8.2 4-1.3 7-4.2 7-8.2V5.8L12 3Z" /><path d="M9 11.6 11 13.6 15 9.4" /></svg>);
+}
+function IconClock({ className = "" }: { className?: string }) {
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={`${ICN} ${className}`} aria-hidden><circle cx="12" cy="12" r="8.2" /><path d="M12 7.6V12l3 1.8" /></svg>);
 }
