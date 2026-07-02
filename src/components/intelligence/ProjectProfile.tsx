@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import { useConsultation } from "../consultation/ConsultationProvider";
@@ -141,6 +142,34 @@ export default function ProjectProfile({
   let _n = 0;
   const num = () => String(++_n).padStart(2, "0");
 
+  /* Horizontal, swipeable section index with scroll-spy. */
+  const tocKey = toc.map((t) => t.id).join(",");
+  const [active, setActive] = useState<string>("");
+  const stripRef = useRef<HTMLDivElement | null>(null);
+  const jumpTo = (id: string) => {
+    setActive(id);
+    const el = typeof document !== "undefined" ? document.getElementById(id) : null;
+    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 108, behavior: "smooth" });
+  };
+  useEffect(() => {
+    if (embedded) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const vis = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (vis[0]) setActive((vis[0].target as HTMLElement).id);
+      },
+      { rootMargin: "-25% 0px -65% 0px" },
+    );
+    tocKey.split(",").forEach((id) => { const el = document.getElementById(id); if (el) obs.observe(el); });
+    return () => obs.disconnect();
+  }, [embedded, tocKey]);
+  useEffect(() => {
+    const strip = stripRef.current;
+    if (!active || !strip) return;
+    const chip = strip.querySelector(`[data-chip="${active}"]`) as HTMLElement | null;
+    if (chip) strip.scrollTo({ left: chip.offsetLeft - strip.clientWidth / 2 + chip.clientWidth / 2, behavior: "smooth" });
+  }, [active]);
+
   return (
     <div className={`${embedded ? "h-full overflow-y-auto" : "min-h-svh"} bg-[#F5F0E8] text-[#1a1a1a]`}>
       <header className="sticky top-0 z-40 border-b border-[#1a1a1a]/6 bg-[#F5F0E8]/90 backdrop-blur-sm">
@@ -166,6 +195,22 @@ export default function ProjectProfile({
             </>
           )}
         </div>
+        {!embedded && (
+          <nav aria-label="Report sections" className="border-t border-[#1a1a1a]/6">
+            <div className="relative mx-auto max-w-6xl px-6 md:px-10">
+              <div ref={stripRef} className="flex gap-1 overflow-x-auto py-2.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {toc.map((t) => (
+                  <a key={t.id} href={`#${t.id}`} data-chip={t.id} onClick={(e) => { e.preventDefault(); jumpTo(t.id); }}
+                    className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-[0.75rem] transition-colors ${active === t.id ? "bg-[#1a1a1a] font-medium text-white" : "text-[#1a1a1a]/50 hover:bg-[#1a1a1a]/[0.06] hover:text-[#1a1a1a]"}`}>
+                    {t.label}
+                  </a>
+                ))}
+              </div>
+              <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-[#F5F0E8] to-transparent md:right-10" />
+              <div className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-[#F5F0E8] to-transparent md:left-10" />
+            </div>
+          </nav>
+        )}
       </header>
 
       <div className={`mx-auto ${embedded ? "max-w-6xl" : "max-w-7xl"} px-6 pb-[12vh] pt-[6vh] md:px-10`}>
@@ -195,14 +240,6 @@ export default function ProjectProfile({
                 <p className="mt-2.5 text-[0.72rem] font-semibold text-[#9a7a2e]">From ₹1,499 · free with membership →</p>
               </a>
 
-              <details className="group mt-3 rounded-2xl border border-[#1a1a1a]/8 bg-white/50 px-5 py-3.5">
-                <summary className="flex cursor-pointer list-none items-center justify-between text-[0.6rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/40 [&::-webkit-details-marker]:hidden">Jump to a section <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3 text-[#9a7a2e] transition-transform group-open:rotate-180" aria-hidden><path d="m6 9 6 6 6-6" /></svg></summary>
-                <ul className="mt-3 space-y-2 border-l border-[#1a1a1a]/10">
-                  {toc.map((t) => (
-                    <li key={t.id}><a href={`#${t.id}`} className="-ml-px block border-l border-transparent pl-4 text-[0.76rem] font-light text-[#1a1a1a]/50 transition-colors hover:border-[#c9a96e] hover:text-[#1a1a1a]">{t.label}</a></li>
-                  ))}
-                </ul>
-              </details>
             </aside>
           )}
 
@@ -218,19 +255,6 @@ export default function ProjectProfile({
                 <span className="text-[#1a1a1a]/20">/</span>
                 <span className="text-[#1a1a1a]/55">{p.name}</span>
               </div>
-            )}
-
-            {/* Mobile / tablet section menu — the desktop rail is xl-only */}
-            {!embedded && (
-              <details className="group mt-6 rounded-xl border border-[#1a1a1a]/10 bg-white/60 px-4 py-3 xl:hidden">
-                <summary className="flex cursor-pointer list-none items-center justify-between text-[0.7rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/45 [&::-webkit-details-marker]:hidden">
-                  On this page
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 text-[#9a7a2e] transition-transform group-open:rotate-180" aria-hidden><path d="m6 9 6 6 6-6" /></svg>
-                </summary>
-                <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
-                  {toc.map((t) => (<li key={t.id}><a href={`#${t.id}`} className="block text-[0.78rem] font-light text-[#1a1a1a]/55 transition-colors hover:text-[#1a1a1a]">{t.label}</a></li>))}
-                </ul>
-              </details>
             )}
 
             {/* Hero */}
