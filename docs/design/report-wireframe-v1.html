@@ -1,0 +1,445 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Truth Estate · Report redesign — lo-fi wireframe v1</title>
+<style>
+  :root{ --ink:#333; --mut:#8a8a8a; --line:#d7d7d7; --blk:#efefef; --dark:#3c3c3c; --note:#2f6fed; }
+  *{box-sizing:border-box; margin:0}
+  body{ background:#e7e7e7; font:13px/1.45 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--ink); padding:34px; }
+  .canvas{ display:flex; gap:44px; align-items:flex-start; }
+  .head{ margin-bottom:22px }
+  .head h1{ font:600 19px/1.2 -apple-system,sans-serif }
+  .head p{ color:var(--mut); margin-top:4px }
+  .legend{ display:flex; gap:14px; margin-top:10px; font-size:11px; color:var(--mut); align-items:center; flex-wrap:wrap }
+  .legend .sw{ display:inline-block; width:14px; height:10px; border:1px solid var(--line); vertical-align:-1px; margin-right:4px }
+  .frame{ background:#fff; border:1px solid #c9c9c9; box-shadow:0 8px 30px rgba(0,0,0,.08); flex:0 0 auto; }
+  .frame .fhead{ padding:8px 12px; border-bottom:1px solid var(--line); color:var(--mut); font-size:11px; letter-spacing:.08em; text-transform:uppercase }
+  #board-desktop{ width:1280px } #board-mobile{ width:390px } #board-notes{ width:340px; background:none; border:none; box-shadow:none }
+  .sec{ position:relative; padding:26px 34px; border-bottom:1px solid var(--line) }
+  .m .sec{ padding:20px 16px }
+  .tag{ position:absolute; top:8px; right:10px; background:var(--note); color:#fff; font-size:9.5px; letter-spacing:.02em; padding:2.5px 7px; border-radius:3px; max-width:46%; text-align:right; line-height:1.3; z-index:3 }
+  .dark .tag{ background:#7ea0f2 }
+  .kick{ font-size:9.5px; letter-spacing:.24em; text-transform:uppercase; color:var(--mut); margin-bottom:7px }
+  .serif{ font-family:Georgia,"Times New Roman",serif }
+  .bar{ height:9px; background:var(--blk); border-radius:2px; margin:5px 0 }
+  .bar.w40{width:40%}.bar.w55{width:55%}.bar.w70{width:70%}.bar.w85{width:85%}
+  .img{ position:relative; background:#f4f4f4; border:1px solid var(--line); overflow:hidden }
+  .img:before,.img:after{ content:""; position:absolute; left:-10%; right:-10%; top:50%; border-top:1px solid #cfcfcf }
+  .img:before{ transform:rotate(16deg)} .img:after{ transform:rotate(-16deg)}
+  .img .cap{ position:absolute; left:8px; bottom:6px; font-size:10px; color:#9a9a9a; background:#fff9; padding:1px 5px; z-index:2 }
+  .btn{ display:inline-block; border:1.5px solid #9c9c9c; border-radius:4px; padding:8px 16px; font-size:11.5px; color:#555; background:#fff }
+  .btn.solid{ background:var(--dark); border-color:var(--dark); color:#fff }
+  .btn.ghostD{ border-color:#8b8b8b; color:#ddd; background:transparent }
+  .row{ display:flex; gap:18px; align-items:flex-start } .row.center{align-items:center} .grow{flex:1; min-width:0}
+  .dark{ background:var(--dark); color:#e8e8e8 } .dark .kick{color:#b5b5b5} .dark .bar{background:#585858} .dark .img{background:#4a4a4a;border-color:#666}
+  .seal{ width:112px; height:112px; border-radius:50%; border:3px solid #8f8f8f; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#fff; flex:0 0 auto }
+  .seal .n{ font:300 34px/1 Georgia,serif } .seal .s{ font-size:8.5px; letter-spacing:.14em; color:var(--mut); text-transform:uppercase; margin-top:2px }
+  .seal .r{ font-size:9.5px; border:1px solid #9c9c9c; border-radius:99px; padding:1px 8px; margin-top:4px }
+  .seal.mini{ width:54px; height:54px; border-width:2px } .seal.mini .n{font-size:18px} .seal.mini .s{display:none} .seal.mini .r{display:none}
+  .meter{ display:flex; gap:4px; width:210px; flex:0 0 auto }
+  .meter i{ flex:1; height:20px; border:1px solid var(--line); border-radius:3px; background:#f7f7f7 }
+  .meter i.on{ background:#bfbfbf; border-color:#8f8f8f }
+  .panel{ border:1px solid var(--line); border-radius:8px; background:#fff }
+  .prow{ display:flex; justify-content:space-between; align-items:center; gap:16px; padding:13px 16px; border-bottom:1px solid var(--line) } .prow:last-child{border-bottom:none}
+  .stat .v{ font:300 26px/1 Georgia,serif } .stat .k{ font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--mut); margin-top:4px }
+  .stat.big .v{ font-size:44px }
+  .dot{ display:flex; align-items:baseline; gap:8px; padding:6px 0; font-size:11.5px; color:#666 }
+  .dot .lead{ flex:1; border-bottom:1px dotted #bbb; transform:translateY(-3px) }
+  .chapter{ padding:40px 34px 26px } .m .chapter{ padding:30px 16px 20px }
+  .chapter .rn{ font:300 64px/0.9 Georgia,serif; color:#e3e3e3; float:right; margin-top:-8px }
+  .chapter h2{ font:500 30px/1.05 Georgia,serif; max-width:70% } .m .chapter h2{ font-size:23px; max-width:100% }
+  .chip{ display:inline-block; border:1px solid var(--line); border-radius:99px; padding:4px 11px; font-size:10.5px; color:#777; margin:0 5px 6px 0; background:#fff }
+  .acc{ display:flex; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--line); font-size:12px; color:#555 } .acc:last-child{border:none}
+  .tl{ position:relative; height:64px; margin:16px 6px 4px }
+  .tl .ln{ position:absolute; left:0; right:0; top:30px; border-top:2px solid #c4c4c4 }
+  .tl .pt{ position:absolute; top:24px; width:14px; height:14px; border-radius:50%; background:#8f8f8f }
+  .tl .pt.o{ background:#fff; border:2.5px solid #8f8f8f }
+  .tl .lb{ position:absolute; top:0; font-size:10px; color:#777; white-space:nowrap } .tl .lb.b{ top:44px }
+  .sticky{ border-top:2px solid #bdbdbd; background:#fafafa; padding:10px 14px; display:flex; gap:10px; align-items:center }
+  .note{ background:#fff; border:1px solid #c9c9c9; box-shadow:0 6px 18px rgba(0,0,0,.07); padding:14px 16px; margin-bottom:14px; font-size:12px }
+  .note b{ display:block; margin-bottom:6px; font-size:12.5px }
+  .note ul{ padding-left:16px; color:#666 } .note li{ margin:3px 0 }
+  svg.chart{ display:block; width:100%; height:150px; background:#fafafa; border:1px solid var(--line); border-radius:6px }
+</style></head><body>
+
+<div class="head">
+  <h1>Truth Estate — Project report redesign · lo-fi wireframe v1 (P0 + P1 + P2)</h1>
+  <p>Grayscale = structure only. Blue tags mark what changes vs the live page. Serif/sans placeholders show type roles, not final type.</p>
+  <div class="legend">
+    <span><span class="sw" style="background:#f4f4f4"></span>content block</span>
+    <span><span class="sw" style="background:repeating-linear-gradient(45deg,#eee,#eee 3px,#ddd 3px,#ddd 4px)"></span>image / render</span>
+    <span><span class="sw" style="background:#3c3c3c"></span>dark band (only 2 on page)</span>
+    <span><span class="sw" style="background:#2f6fed"></span>change note</span>
+  </div>
+</div>
+
+<div class="canvas">
+
+<!-- ══════════════ DESKTOP ══════════════ -->
+<div class="frame" id="board-desktop"><div class="fhead">Desktop · 1280</div>
+
+  <div class="sec" style="padding:14px 34px">
+    <div class="row center"><b style="letter-spacing:.1em">TRUTH ESTATE</b><span class="grow"></span><span class="btn solid">Get Independent Advice</span></div>
+    <span class="tag">only green CTA in view — sidebar duplicate removed</span>
+  </div>
+
+  <!-- HERO -->
+  <div class="sec" style="padding:0">
+    <span class="tag">NEW image hero — 3D render full-bleed under ivory scrim · chips → one meta line · black pill removed</span>
+    <div class="img" style="height:360px">
+      <span class="cap">3D render / project key visual · scrim L→R</span>
+      <div style="position:absolute; left:34px; top:52px; z-index:2; max-width:56%">
+        <div class="kick">Project Intelligence · Golf Course Extension</div>
+        <div class="serif" style="font-size:54px; line-height:1">DLF Arbour</div>
+        <div class="bar w70" style="margin-top:14px"></div>
+        <div class="bar w55"></div>
+        <div style="margin-top:14px; font-size:11px; color:#777">DLF · 3 &amp; 4 BHK · ₹5–7 Cr · RERA ✓</div>
+      </div>
+    </div>
+    <div style="position:absolute; right:34px; top:304px; z-index:4; text-align:center">
+      <div class="seal"><span class="n">92</span><span class="s">Truth Score</span><span class="r">Strong Buy</span></div>
+    </div>
+    <div style="padding:36px 34px 18px">
+      <span style="font-size:11.5px; color:#666">▦ See Unit Intelligence →</span>
+      <span style="font-size:11.5px; color:#999; margin-left:18px">◆ Challenge this read</span>
+    </div>
+  </div>
+
+  <!-- VERDICT -->
+  <div class="sec">
+    <span class="tag">card removed → editorial pull-quote</span>
+    <div class="kick">Truth Verdict</div>
+    <div class="serif" style="font-size:27px; line-height:1.35; max-width:88%">“Priced ~8% below comparable GCE towers with high delivery certainty.”</div>
+    <div style="border-top:1px solid var(--line); margin-top:16px; padding-top:10px; max-width:70%">
+      <div class="bar w85"></div><div class="bar w55"></div>
+    </div>
+  </div>
+
+  <!-- MATCH -->
+  <div class="sec">
+    <span class="tag">mini strip (opens sheet) — unchanged pattern</span>
+    <div class="row center">
+      <div style="width:46px;height:46px;border:1.5px solid var(--line);border-radius:8px"></div>
+      <div class="grow"><b class="serif" style="font-size:17px">How well does this fit you?</b><div class="bar w40"></div></div>
+      <span class="btn">Score my fit →</span>
+    </div>
+  </div>
+
+  <!-- TOWER INTEL dark band 1 -->
+  <div class="sec dark">
+    <span class="tag">DARK BAND 1 of 2 · wider render crop</span>
+    <div class="row center">
+      <div class="img" style="width:300px; height:110px"><span class="cap">render crop</span></div>
+      <div class="grow"><div class="kick">Deep intelligence · live 3D</div><b class="serif" style="font-size:19px">Tower &amp; Unit Intelligence</b><div class="bar w70"></div></div>
+      <span class="btn ghostD">Explore the live 3D →</span>
+    </div>
+  </div>
+
+  <!-- CHAPTER I -->
+  <div class="chapter"><span class="rn">I</span><div class="kick">Chapter I</div><h2>Can you trust it?</h2><div class="bar w55"></div></div>
+
+  <!-- VITALS -->
+  <div class="sec">
+    <span class="tag">split: 4 money facts large ↑ / 8 registry facts as dotted-leader list · no card border</span>
+    <div class="row" style="gap:44px; margin-bottom:20px">
+      <div class="stat big"><div class="v">₹5–7 Cr</div><div class="k">Ticket</div></div>
+      <div class="stat big"><div class="v">₹18,000</div><div class="k">Corridor / sq ft</div></div>
+      <div class="stat big"><div class="v">3–4 BHK</div><div class="k">Configs</div></div>
+      <div class="stat big"><div class="v">2,800–3,900</div><div class="k">Sq ft</div></div>
+    </div>
+    <div class="row" style="gap:40px">
+      <div class="grow">
+        <div class="dot"><span>Total units</span><span class="lead"></span><span>1,137</span></div>
+        <div class="dot"><span>Towers / land</span><span class="lead"></span><span>5 · 25.1 acre</span></div>
+        <div class="dot"><span>Density</span><span class="lead"></span><span>45 / acre · low</span></div>
+        <div class="dot"><span>Open area</span><span class="lead"></span><span>89%</span></div>
+      </div>
+      <div class="grow">
+        <div class="dot"><span>Carpet (indicative)</span><span class="lead"></span><span>2,255 sq ft</span></div>
+        <div class="dot"><span>Launched</span><span class="lead"></span><span>Jan 2023</span></div>
+        <div class="dot"><span>RERA possession</span><span class="lead"></span><span>Mar 2030</span></div>
+        <div class="dot"><span>RERA ID</span><span class="lead"></span><span>GRG-1138-2023</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANATOMY -->
+  <div class="sec">
+    <span class="tag">6 cards → ONE panel of rows · “why” behind tap</span>
+    <div class="kick">02 · Truth Score anatomy</div>
+    <div class="panel" style="margin-top:10px">
+      <div class="prow"><div class="grow"><b style="font-size:12.5px">Delivery certainty</b><div class="bar w55" style="height:7px"></div></div><div class="meter"><i></i><i></i><i class="on"></i></div></div>
+      <div class="prow"><div class="grow"><b style="font-size:12.5px">Legal &amp; title</b><div class="bar w55" style="height:7px"></div></div><div class="meter"><i></i><i></i><i class="on"></i></div></div>
+      <div class="prow"><div class="grow"><b style="font-size:12.5px">Developer strength</b><div class="bar w55" style="height:7px"></div></div><div class="meter"><i></i><i></i><i class="on"></i></div></div>
+      <div class="prow"><div class="grow"><b style="font-size:12.5px">Resale liquidity</b><div class="bar w55" style="height:7px"></div></div><div class="meter"><i></i><i></i><i class="on"></i></div></div>
+      <div class="prow"><div class="grow"><b style="font-size:12.5px">Pricing &amp; value</b><div class="bar w55" style="height:7px"></div></div><div class="meter"><i></i><i class="on"></i><i></i></div></div>
+      <div class="prow"><div class="grow"><b style="font-size:12.5px">Construction progress</b><div class="bar w55" style="height:7px"></div></div><div class="meter"><i></i><i></i><i class="on"></i></div></div>
+    </div>
+  </div>
+
+  <!-- DEVELOPER -->
+  <div class="sec">
+    <span class="tag">92% becomes the hero stat · financial audit = same row-panel</span>
+    <div class="kick">03 · Developer analysis</div>
+    <div style="border-left:3px solid #bdbdbd; padding:10px 16px; margin:10px 0 18px"><div class="serif" style="font-size:16px">“Analyst assessment …”</div><div class="bar w70"></div></div>
+    <div class="row center" style="gap:40px">
+      <div class="stat big"><div class="v">92%</div><div class="k">On-time record</div></div>
+      <div class="stat"><div class="v">45</div><div class="k">Launched</div></div>
+      <div class="stat"><div class="v">38</div><div class="k">Delivered</div></div>
+      <div class="stat"><div class="v">7</div><div class="k">Ongoing</div></div>
+      <div class="stat"><div class="v">2 mo</div><div class="k">Avg slippage</div></div>
+    </div>
+    <div style="height:10px; background:#e8e8e8; border-radius:99px; margin:16px 0 6px; overflow:hidden"><div style="width:84%; height:100%; background:#9c9c9c"></div></div>
+    <div class="panel" style="margin-top:16px">
+      <div class="prow"><div class="grow"><b style="font-size:12.5px">Leverage</b></div><div class="meter"><i></i><i></i><i class="on"></i></div></div>
+      <div class="prow"><div class="grow"><b style="font-size:12.5px">Interest coverage</b></div><div class="meter"><i></i><i></i><i class="on"></i></div></div>
+      <div class="prow"><div class="grow"><b style="font-size:12.5px">Cash conversion</b></div><div class="meter"><i></i><i class="on"></i><i></i></div></div>
+    </div>
+  </div>
+
+  <!-- CONSTRUCTION -->
+  <div class="sec">
+    <span class="tag">two progress cards + dark band → ONE “delivery outlook” timeline on ivory</span>
+    <div class="kick">04 · Delivery outlook</div>
+    <div class="tl">
+      <div class="ln"></div>
+      <div class="pt o" style="left:58%"></div><div class="lb" style="left:52%">Our estimate · Jan 2030</div>
+      <div class="pt" style="left:80%"></div><div class="lb b" style="left:74%">RERA committed · Mar 2030</div>
+      <div class="lb" style="left:0; top:44px">Today · 61% built vs 54% plan · 88% sold</div>
+    </div>
+  </div>
+
+  <!-- LEGAL -->
+  <div class="sec">
+    <span class="tag">due-diligence plan: dark box → numbered ivory list</span>
+    <div class="kick">05 · Legal &amp; compliance</div>
+    <div class="row" style="margin:12px 0">
+      <div class="panel grow" style="padding:12px"><b style="font-size:11px">Title</b><div class="bar w40"></div></div>
+      <div class="panel grow" style="padding:12px"><b style="font-size:11px">RERA</b><div class="bar w40"></div></div>
+      <div class="panel grow" style="padding:12px"><b style="font-size:11px">Litigation</b><div class="bar w40"></div></div>
+      <div class="panel grow" style="padding:12px"><b style="font-size:11px">Approvals</b><div class="bar w40"></div></div>
+    </div>
+    <div class="dot"><span>1&nbsp;&nbsp;Verify HRERA registration &amp; latest QPR</span><span class="lead"></span></div>
+    <div class="dot"><span>2&nbsp;&nbsp;Lawyer review of the ATS, clause by clause</span><span class="lead"></span></div>
+    <div class="dot"><span>3&nbsp;&nbsp;Title chain &amp; encumbrance before any payment</span><span class="lead"></span></div>
+    <div class="dot"><span>4&nbsp;&nbsp;Match payment schedule to execution-adjusted date</span><span class="lead"></span></div>
+  </div>
+
+  <!-- CHAPTER II -->
+  <div class="chapter"><span class="rn">II</span><div class="kick">Chapter II</div><h2>The investment case</h2><div class="bar w55"></div></div>
+
+  <!-- LOCATION -->
+  <div class="sec">
+    <span class="tag">open on ivory · corridor verdict as pull-quote</span>
+    <div class="kick">06 · Location intelligence</div>
+    <div class="serif" style="font-size:18px; margin:8px 0">“Corridor verdict …”</div>
+    <div class="row" style="gap:40px; margin:14px 0">
+      <div class="stat"><div class="v">₹14–23k</div><div class="k">Band / sq ft</div></div>
+      <div class="stat"><div class="v">₹4–12 Cr</div><div class="k">Ticket</div></div>
+      <div class="stat"><div class="v">+18–25%</div><div class="k">3-yr appreciation</div></div>
+      <div class="stat"><div class="v">28</div><div class="k">Tracked</div></div>
+    </div>
+    <div class="row"><div class="grow"><div class="bar w85"></div><div class="bar w70"></div></div><div class="grow"><div class="bar w85"></div><div class="bar w70"></div></div></div>
+  </div>
+
+  <!-- ROI -->
+  <div class="sec">
+    <span class="tag">NEW — the page’s only chart: corridor vs execution-adjusted, Δ annotated</span>
+    <div class="kick">07 · Projected ROI</div>
+    <svg class="chart" viewBox="0 0 600 150" preserveAspectRatio="none">
+      <polyline points="20,120 180,104 340,84 560,52" fill="none" stroke="#c2c2c2" stroke-width="2.5" stroke-dasharray="6 5"/>
+      <polyline points="20,120 180,98 340,70 560,30" fill="none" stroke="#7d7d7d" stroke-width="3"/>
+      <circle cx="560" cy="30" r="5" fill="#7d7d7d"/><circle cx="560" cy="52" r="4.5" fill="#c2c2c2"/>
+      <text x="430" y="24" font-size="11" fill="#666">execution-adjusted · ₹9.4 Cr</text>
+      <text x="465" y="72" font-size="11" fill="#9a9a9a">corridor · ₹9.1 Cr</text>
+    </svg>
+  </div>
+
+  <!-- CHAPTER III -->
+  <div class="chapter"><span class="rn">III</span><div class="kick">Chapter III</div><h2>The honest read</h2><div class="bar w55"></div></div>
+
+  <!-- USPS -->
+  <div class="sec">
+    <span class="tag">numbered editorial 2-col (cards removed)</span>
+    <div class="kick">08 · Project USPs</div>
+    <div class="row" style="gap:40px">
+      <div class="grow"><b class="serif">01 — USP title</b><div class="bar w85"></div><div class="bar w70"></div></div>
+      <div class="grow"><b class="serif">02 — USP title</b><div class="bar w85"></div><div class="bar w70"></div></div>
+    </div>
+  </div>
+
+  <!-- STRENGTHS -->
+  <div class="sec">
+    <span class="tag">“What this serves” merged in as tag footer (−1 section)</span>
+    <div class="kick">09 · Strengths &amp; watch-outs</div>
+    <div class="row" style="gap:40px; margin-top:8px">
+      <div class="grow"><b style="font-size:11px; letter-spacing:.1em">+ WHAT WORKS</b><div class="bar w85"></div><div class="bar w70"></div><div class="bar w85"></div></div>
+      <div class="grow"><b style="font-size:11px; letter-spacing:.1em">! WHAT TO WATCH</b><div class="bar w85"></div><div class="bar w70"></div></div>
+    </div>
+    <div style="border-top:1px solid var(--line); margin-top:16px; padding-top:12px">
+      <span class="chip">Capital appreciation</span><span class="chip">Delivery</span><span class="chip">Liquidity</span><span class="chip">Legal safety</span>
+    </div>
+  </div>
+
+  <!-- CHAPTER IV -->
+  <div class="chapter"><span class="rn">IV</span><div class="kick">Chapter IV</div><h2>Your decision</h2><div class="bar w55"></div></div>
+
+  <!-- FAQ -->
+  <div class="sec">
+    <div class="kick">10 · Forensic FAQs</div>
+    <div class="panel" style="margin-top:8px">
+      <div class="acc"><span>Question …</span><span>+</span></div>
+      <div class="acc"><span>Question …</span><span>+</span></div>
+      <div class="acc"><span>Question …</span><span>+</span></div>
+    </div>
+  </div>
+
+  <!-- ALTERNATIVES -->
+  <div class="sec">
+    <span class="tag">rows gain the mini score seal</span>
+    <div class="kick">Also in GCE</div>
+    <div class="panel" style="margin-top:8px">
+      <div class="prow"><div class="grow"><b class="serif" style="font-size:14px">Birla Navya</b><div class="bar w40" style="height:7px"></div></div><span class="chip">Buy</span><div class="seal mini"><span class="n">89</span></div></div>
+      <div class="prow"><div class="grow"><b class="serif" style="font-size:14px">M3M Golf Estate II</b><div class="bar w40" style="height:7px"></div></div><span class="chip">Buy</span><div class="seal mini"><span class="n">88</span></div></div>
+    </div>
+  </div>
+
+  <!-- FINAL CTA dark band 2 -->
+  <div class="sec dark" style="border-bottom:none">
+    <span class="tag">DARK BAND 2 of 2 · unchanged pattern, faint render backdrop</span>
+    <b class="serif" style="font-size:22px">Considering DLF Arbour?</b>
+    <div class="bar w55" style="margin:10px 0 16px"></div>
+    <div class="row">
+      <span class="btn solid grow" style="border-color:#fff; background:#e8e8e8; color:#333; text-align:center">Get Independent Advice</span>
+      <span class="btn ghostD grow" style="text-align:center">See Unit Intelligence</span>
+      <span class="btn ghostD grow" style="text-align:center">Challenge TruthGuide</span>
+    </div>
+  </div>
+  <div class="sec" style="border-bottom:none"><div class="bar w85" style="height:6px"></div><div class="bar w70" style="height:6px"></div></div>
+</div>
+
+<!-- ══════════════ MOBILE ══════════════ -->
+<div class="frame m" id="board-mobile"><div class="fhead">Mobile · 390</div>
+
+  <div class="sec" style="padding:10px 16px"><div class="row center"><b style="letter-spacing:.08em; font-size:12px">TRUTH ESTATE</b><span class="grow"></span><span style="font-size:11px; color:#888">☰</span></div></div>
+
+  <div class="sec" style="padding:0">
+    <span class="tag">image hero · seal overlaps edge</span>
+    <div class="img" style="height:230px"><span class="cap">3D render · bottom scrim</span>
+      <div style="position:absolute; left:16px; bottom:14px; z-index:2">
+        <div class="kick" style="color:#888">Project Intelligence</div>
+        <div class="serif" style="font-size:30px; line-height:1">DLF Arbour</div>
+      </div>
+    </div>
+    <div style="position:absolute; right:12px; top:172px; z-index:4"><div class="seal" style="width:88px;height:88px"><span class="n" style="font-size:26px">92</span><span class="s">Truth Score</span><span class="r">Strong Buy</span></div></div>
+    <div style="padding:34px 16px 14px">
+      <div style="font-size:10.5px; color:#777">DLF · GCE · 3–4 BHK · ₹5–7 Cr · RERA ✓</div>
+      <div style="margin-top:8px; font-size:11px; color:#666">▦ See Unit Intelligence →</div>
+    </div>
+  </div>
+
+  <div class="sec"><span class="tag">pull-quote, no card</span><div class="kick">Truth Verdict</div>
+    <div class="serif" style="font-size:19px; line-height:1.4">“Priced ~8% below comparable GCE towers …”</div>
+    <div class="bar w70" style="margin-top:10px"></div>
+  </div>
+
+  <div class="sec"><div class="row center"><div style="width:38px;height:38px;border:1.5px solid var(--line);border-radius:8px"></div><div class="grow"><b class="serif" style="font-size:14px">How well does this fit you?</b></div></div><span class="btn" style="display:block; text-align:center; margin-top:10px">Score my fit →</span></div>
+
+  <div class="sec dark"><span class="tag">dark band 1</span><div class="img" style="height:84px; margin-bottom:10px"><span class="cap">render crop</span></div><b class="serif" style="font-size:15px">Tower &amp; Unit Intelligence</b><div class="bar w70"></div><span class="btn ghostD" style="display:block; text-align:center; margin-top:8px">Explore the live 3D →</span></div>
+
+  <div class="chapter"><span class="rn" style="font-size:44px">I</span><div class="kick">Chapter I</div><h2>Can you trust it?</h2></div>
+
+  <div class="sec"><span class="tag">money facts 2×2 · registry = dotted list</span>
+    <div class="row" style="flex-wrap:wrap; gap:14px 24px; margin-top:20px">
+      <div class="stat" style="width:44%"><div class="v" style="font-size:21px">₹5–7 Cr</div><div class="k">Ticket</div></div>
+      <div class="stat" style="width:44%"><div class="v" style="font-size:21px">₹18,000</div><div class="k">/ sq ft</div></div>
+      <div class="stat" style="width:44%"><div class="v" style="font-size:21px">3–4 BHK</div><div class="k">Configs</div></div>
+      <div class="stat" style="width:44%"><div class="v" style="font-size:21px">2.8–3.9k</div><div class="k">Sq ft</div></div>
+    </div>
+    <div style="margin-top:12px">
+      <div class="dot"><span>Total units</span><span class="lead"></span><span>1,137</span></div>
+      <div class="dot"><span>Density</span><span class="lead"></span><span>45 / acre</span></div>
+      <div class="dot"><span>RERA possession</span><span class="lead"></span><span>Mar 2030</span></div>
+    </div>
+  </div>
+
+  <div class="sec"><span class="tag">one panel, rows</span><div class="kick">Truth Score anatomy</div>
+    <div class="panel" style="margin-top:8px">
+      <div class="prow" style="flex-wrap:wrap; gap:8px"><b style="font-size:12px; width:100%">Delivery certainty</b><div class="meter" style="width:100%"><i></i><i></i><i class="on"></i></div></div>
+      <div class="prow" style="flex-wrap:wrap; gap:8px"><b style="font-size:12px; width:100%">Legal &amp; title</b><div class="meter" style="width:100%"><i></i><i></i><i class="on"></i></div></div>
+      <div class="prow" style="flex-wrap:wrap; gap:8px"><b style="font-size:12px; width:100%">Pricing &amp; value</b><div class="meter" style="width:100%"><i></i><i class="on"></i><i></i></div></div>
+    </div>
+  </div>
+
+  <div class="sec"><span class="tag">hero stat first</span><div class="kick">Developer analysis</div>
+    <div class="stat big" style="margin:8px 0"><div class="v" style="font-size:38px">92%</div><div class="k">On-time record</div></div>
+    <div class="row" style="gap:20px"><div class="stat"><div class="v" style="font-size:18px">45</div><div class="k">Launched</div></div><div class="stat"><div class="v" style="font-size:18px">38</div><div class="k">Delivered</div></div><div class="stat"><div class="v" style="font-size:18px">2 mo</div><div class="k">Slippage</div></div></div>
+    <div style="height:8px; background:#e8e8e8; border-radius:99px; margin-top:12px; overflow:hidden"><div style="width:84%; height:100%; background:#9c9c9c"></div></div>
+  </div>
+
+  <div class="sec"><span class="tag">timeline replaces 2 cards + dark band</span><div class="kick">Delivery outlook</div>
+    <div class="tl"><div class="ln"></div><div class="pt o" style="left:52%"></div><div class="lb" style="left:30%">Ours · Jan ’30</div><div class="pt" style="left:78%"></div><div class="lb b" style="left:58%">RERA · Mar ’30</div></div>
+  </div>
+
+  <div class="chapter"><span class="rn" style="font-size:44px">II</span><div class="kick">Chapter II</div><h2>The investment case</h2></div>
+
+  <div class="sec"><span class="tag">the one chart</span><div class="kick">Projected ROI</div>
+    <svg class="chart" viewBox="0 0 340 130" preserveAspectRatio="none">
+      <polyline points="14,104 110,92 210,74 326,48" fill="none" stroke="#c2c2c2" stroke-width="2.5" stroke-dasharray="6 5"/>
+      <polyline points="14,104 110,86 210,62 326,28" fill="none" stroke="#7d7d7d" stroke-width="3"/>
+      <text x="212" y="22" font-size="10" fill="#666">adjusted ₹9.4 Cr</text>
+      <text x="236" y="62" font-size="10" fill="#9a9a9a">corridor ₹9.1 Cr</text>
+    </svg>
+  </div>
+
+  <div class="chapter"><span class="rn" style="font-size:44px">III</span><div class="kick">Chapter III</div><h2>The honest read</h2></div>
+
+  <div class="sec"><div class="kick">Strengths &amp; watch-outs</div>
+    <b style="font-size:10.5px; letter-spacing:.1em">+ WHAT WORKS</b><div class="bar w85"></div><div class="bar w70"></div>
+    <b style="font-size:10.5px; letter-spacing:.1em; display:block; margin-top:10px">! WHAT TO WATCH</b><div class="bar w85"></div>
+    <div style="border-top:1px solid var(--line); margin-top:12px; padding-top:10px"><span class="chip">Appreciation</span><span class="chip">Delivery</span><span class="chip">Liquidity</span></div>
+  </div>
+
+  <div class="chapter"><span class="rn" style="font-size:44px">IV</span><div class="kick">Chapter IV</div><h2>Your decision</h2></div>
+
+  <div class="sec"><div class="kick">Forensic FAQs</div><div class="panel" style="margin-top:8px"><div class="acc"><span>Question …</span><span>+</span></div><div class="acc"><span>Question …</span><span>+</span></div></div></div>
+
+  <div class="sec"><span class="tag">mini seals</span><div class="kick">Also in GCE</div>
+    <div class="panel" style="margin-top:8px"><div class="prow"><div class="grow"><b class="serif" style="font-size:13px">Birla Navya</b></div><div class="seal mini"><span class="n">89</span></div></div><div class="prow"><div class="grow"><b class="serif" style="font-size:13px">M3M Golf Estate II</b></div><div class="seal mini"><span class="n">88</span></div></div></div>
+  </div>
+
+  <div class="sec dark"><span class="tag">dark band 2</span><b class="serif" style="font-size:17px">Considering DLF Arbour?</b><div class="bar w70" style="margin:8px 0 12px"></div>
+    <span class="btn solid" style="display:block; text-align:center; background:#e8e8e8; color:#333; border-color:#fff">Get Independent Advice</span>
+    <span class="btn ghostD" style="display:block; text-align:center; margin-top:8px">See Unit Intelligence</span>
+  </div>
+
+  <div class="sticky"><span class="tag" style="position:static; margin-right:4px">sticky</span><span class="btn solid grow" style="text-align:center">Advice on DLF Arbour · 45 min · refundable</span></div>
+</div>
+
+<!-- ══════════════ SYSTEM NOTES ══════════════ -->
+<div id="board-notes">
+  <div class="note"><b>Token system (P0)</b><ul>
+    <li>Type scale: 6 steps only — 11 / 13 / 15 / 19 / 27 / 44+ (serif display)</li>
+    <li>Radii: 12 (cards) · 20 (sheets) — nothing else</li>
+    <li>One border alpha (ink/8) · one soft shadow</li>
+    <li>Accents: gold = editorial marks · green = actions &amp; positive signal · red only in meters. No cyan outside the 3D modal</li>
+  </ul></div>
+  <div class="note"><b>Layout rhythm (P0)</b><ul>
+    <li>Sections sit open on ivory; cards only for tabular content (panels, FAQs, alternatives)</li>
+    <li>Exactly 2 dark bands: Tower Intel + final CTA</li>
+    <li>Chapter dividers carry ghost roman numerals</li>
+  </ul></div>
+  <div class="note"><b>Motion (P1)</b><ul>
+    <li>Sections: rise 12px + fade on entry (once)</li>
+    <li>Score seal: count-up 0→92 on first view</li>
+    <li>Meters: segments light with 150ms stagger</li>
+    <li>No parallax, no bounce</li>
+  </ul></div>
+  <div class="note"><b>Open questions to brainstorm</b><ul>
+    <li>Hero imagery for the 9 projects without a 3D render — typographic variant vs sourced photography?</li>
+    <li>Score seal shape: full ring vs arc vs stamp?</li>
+    <li>TOC → scroll-aware pill nav (P2): keep left rail or move to top?</li>
+    <li>Does the ROI chart show ₹ values or index (100 → 128)?</li>
+  </ul></div>
+</div>
+
+</div>
+</body></html>
