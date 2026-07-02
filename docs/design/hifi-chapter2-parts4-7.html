@@ -1,0 +1,439 @@
+<!-- HI-FI · Chapter II continued — Part 4 Construction & Sales, Part 5 Location,
+     Part 6 Legal (forensic centerpiece), Part 7 Project USPs. Truth Estate language.
+     Georgia/mono are mock fallbacks. Numbers are the REAL Arbour data from the live report. -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Chapter II · Parts 4–7</title>
+<style>
+  :root{
+    --ivory:#F5F0E8; --paper:#FBF8F2; --ink:#1a1a1a; --mut:#8b8378; --mut2:#a49a8c;
+    --gold:#9a7a2e; --gold2:#c9a96e; --green:#1e6b45; --green2:#238c55; --red:#b0503e; --red2:#c56a56;
+    --line:rgba(26,26,26,.10); --line2:rgba(26,26,26,.06);
+  }
+  *{box-sizing:border-box; margin:0}
+  body{ background:#d8d3c8; font:14px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif; color:var(--ink); padding:34px }
+  .serif{ font-family:Georgia,"Times New Roman",serif }
+  .mono{ font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums }
+  .wrap{ display:flex; flex-wrap:wrap; gap:40px; align-items:flex-start }
+  .frame{ background:var(--ivory); box-shadow:0 20px 60px rgba(0,0,0,.14); border-radius:14px; overflow:hidden; flex:0 0 auto }
+  .fh{ font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:#a49a8c; padding:9px 14px; background:#efeae0 }
+  .d{ width:1120px } .mob{ width:390px }
+  .pad{ padding:46px 48px } .mob .pad{ padding:24px 18px }
+
+  .phead .pk{ font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--mut) }
+  .phead h3{ font-weight:500; font-size:30px; letter-spacing:-.01em; margin-top:7px } .mob .phead h3{ font-size:22px }
+  .phead .sub{ font-size:13.5px; color:#6b6459; margin-top:9px; max-width:600px; font-weight:300 }
+
+  .band{ display:inline-flex; align-items:center; gap:7px; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; font-weight:600; border-radius:99px; padding:5px 11px; white-space:nowrap }
+  .band .dot{ width:7px; height:7px; border-radius:99px }
+  .band.exceptional{ color:#155a3a; background:rgba(30,107,69,.12); border:1px solid rgba(30,107,69,.28) } .band.exceptional .dot{ background:var(--green) }
+  .band.strong{ color:#1c7a4c; background:rgba(35,140,85,.10); border:1px solid rgba(35,140,85,.26) } .band.strong .dot{ background:var(--green2) }
+  .band.moderate{ color:#8a6a1e; background:rgba(154,122,46,.12); border:1px solid rgba(154,122,46,.30) } .band.moderate .dot{ background:var(--gold) }
+  .band.watch{ color:#9a4130; background:rgba(176,80,62,.10); border:1px solid rgba(176,80,62,.30) } .band.watch .dot{ background:var(--red) }
+  .band.low{ color:#155a3a; background:rgba(30,107,69,.10) } .band.low .dot{ background:var(--green) }
+
+  .assess{ background:var(--paper); border-left:3px solid var(--green); border-radius:0 12px 12px 0; padding:20px 24px; margin-top:20px }
+  .assess.amber{ border-left-color:var(--gold) }
+  .assess .k{ font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--mut) }
+  .assess .big{ font-size:19px; font-weight:600; margin-top:6px } .assess ul{ margin:12px 0 0; padding:0; list-style:none; display:flex; gap:26px; flex-wrap:wrap }
+  .assess li{ font-size:13px; color:#4b463d; display:flex; gap:8px; align-items:baseline } .assess li:before{ content:"▪"; color:var(--gold2) }
+  .assess .src{ font-size:11px; color:var(--mut2); font-style:italic; margin-top:14px }
+  .card{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:20px 22px }
+  .ck{ font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--mut) }
+  .rule{ height:1px; background:var(--line); margin:34px 0 }
+  .modtag{ display:flex; align-items:center; gap:10px; margin:30px 0 4px }
+  .modtag .t{ font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink); font-weight:700 }
+  .modtag .ln{ flex:1; height:1px; background:var(--line) }
+
+  /* ── PART 4 ── */
+  .vsplan{ margin-top:22px; background:#fff; border:1px solid var(--line); border-radius:14px; padding:24px 26px }
+  .vsplan .hd{ display:flex; justify-content:space-between; align-items:center }
+  .track{ position:relative; height:34px; margin:26px 0 6px; background:#f0ebe1; border-radius:8px; overflow:hidden }
+  .track .exp{ position:absolute; left:0; top:0; bottom:0; width:47.19%; background:repeating-linear-gradient(45deg,#e6ddc9,#e6ddc9 6px,#efe8d8 6px,#efe8d8 12px) }
+  .track .act{ position:absolute; left:0; top:0; bottom:0; width:56.85%; background:linear-gradient(90deg,var(--green),var(--green2)); border-radius:8px 0 0 8px }
+  .track .actlab{ position:absolute; left:56.85%; top:50%; transform:translate(-50%,-50%); color:#fff; font-size:12px; font-weight:600; white-space:nowrap; right:auto; padding-right:12px }
+  .marks{ position:relative; height:34px; font-size:11px; color:var(--mut) }
+  .marks .m{ position:absolute; transform:translateX(-50%); text-align:center } .marks .m .v{ font-weight:600; color:var(--ink) }
+  .marks .exp{ left:47.19% } .marks .act{ left:56.85%; color:var(--green) }
+  .delta{ display:inline-flex; align-items:center; gap:8px; margin-top:12px; background:rgba(30,107,69,.08); border:1px solid rgba(30,107,69,.2); border-radius:99px; padding:6px 14px; font-size:12.5px; color:var(--green); font-weight:600 }
+  .p4grid{ display:grid; grid-template-columns:1fr 1.15fr; gap:18px; margin-top:18px } .mob .p4grid{ grid-template-columns:1fr }
+  .absorb .bar{ height:12px; background:#e9e2d3; border-radius:99px; overflow:hidden; margin-top:14px } .absorb .bar i{ display:block; height:12px; width:100%; background:linear-gradient(90deg,var(--green),var(--green2)) }
+  .absorb .n{ font-size:40px; font-weight:500; color:var(--green); line-height:1 } .absorb .n .u{ font-size:16px; color:var(--mut2) }
+  .forecast{ background:linear-gradient(160deg,#fbf8f2,#f3ecdd); border:1px solid rgba(154,122,46,.28) }
+  .forecast .date{ font-size:38px; font-weight:500; letter-spacing:-.01em; margin-top:6px; color:var(--ink) } .forecast .date .sm{ font-size:13px; color:var(--mut); font-weight:400; display:block; letter-spacing:.02em }
+  .frow{ display:flex; align-items:center; gap:16px; margin-top:16px; flex-wrap:wrap }
+  .fchip{ display:inline-flex; flex-direction:column; border:1px solid var(--line); border-radius:10px; padding:9px 14px; background:#fff }
+  .fchip .l{ font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--mut2) } .fchip .v{ font-size:16px; font-weight:600; margin-top:2px }
+  .gauge{ display:flex; align-items:center; gap:12px }
+  .gring{ width:62px; height:62px; border-radius:50%; position:relative; flex:0 0 auto; background:conic-gradient(var(--gold) 0 100.8deg, rgba(26,26,26,.08) 100.8deg 360deg) }
+  .gring:before{ content:""; position:absolute; inset:6px; border-radius:50%; background:#fff } .gring .in{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700; color:var(--gold) }
+  .evid{ display:flex; align-items:center; gap:14px; margin-top:18px; background:#fff; border:1px dashed rgba(154,122,46,.4); border-radius:12px; padding:14px 18px; font-size:12.5px; color:#5f594e }
+  .evid .ic{ font-size:20px; color:var(--gold) } .evid b{ color:var(--ink) }
+
+  /* ── PART 5 ── */
+  .mapwrap{ position:relative; margin-top:22px; border:1px solid var(--line); border-radius:16px; overflow:hidden; background:#eef1e7 }
+  .mapwrap svg{ display:block; width:100% }
+  .mapchips{ position:absolute; left:18px; bottom:16px; display:flex; gap:8px; flex-wrap:wrap }
+  .mapchip{ background:rgba(255,255,255,.9); border:1px solid var(--line); border-radius:99px; padding:5px 12px; font-size:11px; color:#5f594e; backdrop-filter:blur(3px) } .mapchip b{ color:var(--ink) }
+  .p5grid{ display:grid; grid-template-columns:1.15fr 1fr; gap:18px; margin-top:18px } .mob .p5grid{ grid-template-columns:1fr }
+  .p5grid>*{ min-width:0 }
+  .poi>div:not(.rt){ flex:1; min-width:0 }
+  .conn .r>.cn{ flex:1 1 auto; min-width:0 }
+  .tabs{ display:flex; gap:6px; margin:4px 0 12px; flex-wrap:wrap }
+  .tabs span{ font-size:11px; padding:6px 12px; border-radius:99px; color:#8b8378; border:1px solid transparent } .tabs span.on{ background:#efeae0; color:var(--ink); font-weight:600; border-color:var(--line) }
+  .poi{ display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px dotted #d8cfbd } .poi:last-child{ border-bottom:none }
+  .poi .nm{ font-size:14px; font-weight:600 } .poi .nm .key{ font-size:8.5px; letter-spacing:.08em; color:var(--gold); border:1px solid rgba(154,122,46,.4); border-radius:4px; padding:1px 5px; margin-left:7px; vertical-align:middle }
+  .poi .ty{ font-size:11px; color:var(--mut2); margin-top:2px } .poi .rt{ margin-left:auto; text-align:right; flex:0 0 auto }
+  .poi .star{ font-size:12.5px; font-weight:600; color:var(--gold) } .poi .dist{ font-size:11px; color:var(--mut); margin-top:2px }
+  .conn .r{ display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px dotted #d8cfbd } .conn .r:last-child{ border-bottom:none }
+  .conn .ic{ width:26px; text-align:center; color:var(--gold); flex:0 0 auto } .conn .nm{ font-size:13px; font-weight:600; white-space:nowrap } .conn .sub{ font-size:11px; color:var(--mut2); white-space:nowrap }
+  .conn .meta{ flex:0 0 auto; text-align:right; padding-left:12px } .conn .meta .km{ font-size:13px; font-weight:600 } .conn .tag{ font-size:9px; letter-spacing:.06em; text-transform:uppercase; color:var(--green2); border:1px solid rgba(35,140,85,.3); border-radius:4px; padding:1px 5px }
+  .conn .tag.ind{ color:var(--mut); border-color:var(--line) }
+  .infra{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:14px } .mob .infra{ grid-template-columns:1fr }
+  .icard{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px; position:relative }
+  .icard .cat{ font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:#fff; background:var(--ink); border-radius:4px; padding:2px 6px; display:inline-block }
+  .icard .st{ font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut2); margin-left:6px }
+  .icard h5{ font-size:14.5px; font-weight:600; margin-top:12px; line-height:1.25 } .icard p{ font-size:11.5px; color:#6b6459; margin-top:6px; line-height:1.5 }
+  .icard .ft{ display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:10px; border-top:1px solid var(--line2) }
+  .icard .imp{ font-size:11px; font-weight:600 } .icard .imp.high{ color:var(--green) } .icard .imp.med{ color:var(--gold) }
+  .icard .eta{ font-size:12px; font-weight:600 }
+
+  /* ── PART 6 ── */
+  .rmatrix{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:22px } .mob .rmatrix{ grid-template-columns:repeat(2,1fr) }
+  .rm{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 18px }
+  .rm .k{ font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--mut) } .rm .v{ font-size:19px; font-weight:600; margin-top:8px; display:flex; align-items:center; gap:8px }
+  .rm .v .pip{ width:9px; height:9px; border-radius:99px } .rm.low .v{ color:var(--green) } .rm.low .pip{ background:var(--green) } .rm.mod .v{ color:var(--gold) } .rm.mod .pip{ background:var(--gold) }
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:24px } .mob .split{ grid-template-columns:1fr }
+  .sp{ border-radius:16px; padding:24px 26px; position:relative; overflow:hidden }
+  .sp.clean{ background:linear-gradient(165deg,rgba(30,107,69,.07),rgba(30,107,69,.02)); border:1px solid rgba(30,107,69,.25) }
+  .sp.hist{ background:linear-gradient(165deg,rgba(176,80,62,.07),rgba(176,80,62,.02)); border:1px solid rgba(176,80,62,.28) }
+  .sp .tag{ display:inline-flex; align-items:center; gap:8px; font-size:11px; letter-spacing:.1em; text-transform:uppercase; font-weight:700 }
+  .sp.clean .tag{ color:var(--green) } .sp.hist .tag{ color:var(--red) }
+  .sp h4{ font-size:22px; font-weight:500; margin-top:12px; letter-spacing:-.01em } .sp .txt{ font-size:13px; color:#4b463d; margin-top:10px; line-height:1.6 } .sp .txt b{ color:var(--ink) }
+  .sp .foot{ font-size:12px; margin-top:14px; font-weight:600 } .sp.clean .foot{ color:var(--green) } .sp.hist .foot{ color:var(--red2) }
+  .litcard{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:20px 24px; margin-top:14px }
+  .litcard .top{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px }
+  .litcard h5{ font-size:17px; font-weight:600; letter-spacing:-.01em } .litcard .court{ font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut2); margin-top:4px }
+  .chips{ display:flex; gap:6px; flex-wrap:wrap; flex-shrink:0 } .chip{ font-size:9.5px; letter-spacing:.06em; text-transform:uppercase; font-weight:600; border-radius:5px; padding:3px 8px; border:1px solid var(--line); color:var(--mut) }
+  .chip.hi{ color:var(--red2); border-color:rgba(176,80,62,.4); background:rgba(176,80,62,.05) } .chip.disp{ color:var(--mut) }
+  .litcard p{ font-size:13px; color:#4b463d; margin-top:12px; line-height:1.6 }
+  .litcard .bimp{ margin-top:14px; background:rgba(154,122,46,.07); border-left:2px solid var(--gold); border-radius:0 8px 8px 0; padding:11px 15px; font-size:12.5px }
+  .litcard .bimp .l{ font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--gold); font-weight:700 } .litcard .bimp .t{ color:var(--ink); font-weight:600; margin-top:3px }
+  .litcard .src{ font-size:10.5px; color:var(--mut2); margin-top:12px }
+  .ddp{ margin-top:22px; background:#fbf8f2; border:1px solid rgba(154,122,46,.28); border-radius:14px; padding:22px 26px }
+  .ddp .h{ display:flex; align-items:center; gap:9px; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--gold); font-weight:700 }
+  .ddp ol{ margin:14px 0 0; padding:0; counter-reset:s; list-style:none }
+  .ddp li{ counter-increment:s; display:flex; gap:14px; padding:11px 0; border-bottom:1px dotted #d8cfbd; font-size:13px; color:#4b463d; line-height:1.55 } .ddp li:last-child{ border-bottom:none }
+  .ddp li:before{ content:counter(s); flex:0 0 auto; width:24px; height:24px; border-radius:99px; background:var(--gold); color:#fff; font-size:12px; font-weight:700; display:grid; place-items:center; font-family:ui-monospace,monospace } .ddp li b{ color:var(--ink) }
+
+  /* ── PART 7 ── */
+  .team{ margin-top:22px; background:#fff; border:1px solid var(--line); border-radius:14px; overflow:hidden }
+  .team .r{ display:flex; align-items:center; gap:16px; padding:16px 22px; border-bottom:1px solid var(--line2) } .team .r:last-child{ border-bottom:none }
+  .team .nm{ font-size:16px; font-weight:600 } .team .role{ font-size:11.5px; color:var(--mut2); margin-top:2px }
+  .team .stars{ margin-left:auto; color:var(--gold); font-size:14px; letter-spacing:2px } .team .stars .off{ color:#dcd3c2 }
+  .team .cred{ font-size:11.5px; color:#6b6459; max-width:340px }
+  .factrow{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px } .mob .factrow{ grid-template-columns:1fr }
+  .fact .lab{ display:flex; align-items:center; gap:8px; font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--mut) }
+  .fact .v{ font-size:20px; font-weight:600; margin-top:8px; display:flex; align-items:center; gap:9px } .fact .v .x{ color:var(--red2) } .fact .v .ok{ color:var(--green) }
+  .fact p{ font-size:12px; color:#6b6459; margin-top:8px; line-height:1.55 }
+  .usps{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:16px } .mob .usps{ grid-template-columns:1fr }
+  .usp{ background:linear-gradient(165deg,#fff,#faf6ee); border:1px solid var(--line); border-radius:14px; padding:20px 22px }
+  .usp .ic{ width:42px; height:42px; border-radius:11px; background:rgba(154,122,46,.1); color:var(--gold); display:grid; place-items:center; font-size:20px }
+  .usp h5{ font-size:16px; font-weight:600; margin-top:14px; line-height:1.25 } .usp .claim{ font-size:12.5px; color:#4b463d; margin-top:8px; line-height:1.55 } .usp .claim b{ color:var(--ink) }
+  .usp .why{ font-size:11.5px; color:var(--gold); margin-top:12px; font-weight:600; display:flex; align-items:center; gap:6px }
+  .verdict-line{ font-size:12px; color:var(--mut); margin-top:20px; line-height:1.55 } .verdict-line b{ color:var(--ink) }
+</style></head><body>
+<div class="wrap">
+
+<!-- ═══════════ PART 4 · CONSTRUCTION & SALES (desktop) ═══════════ -->
+<div class="frame d"><div class="fh">Chapter II · Part 4 — Construction &amp; Sales Outlook</div>
+  <div class="pad">
+    <div class="phead"><div class="pk">Pillar II · Construction &amp; Sales</div>
+      <h3 class="serif">Is it actually getting built — and sold?</h3>
+      <p class="sub">We track construction against the exact percentages the builder filed with RERA, quarter by quarter — then forecast the real handover date, not the marketing one.</p></div>
+
+    <div class="assess">
+      <div class="k">Analyst assessment</div>
+      <div class="big serif">Ahead of schedule, and already sold out.</div>
+      <ul><li>56.85% built vs 47.19% due — <b>8.8 months ahead of plan</b></li><li>100% of 1,137 units absorbed</li><li>Forecast handover 4.7 months <b>before</b> RERA</li></ul>
+      <div class="src">Source: latest Quarterly Progress Report (QPR) filed with HRERA, dated 31 Mar 2026</div>
+    </div>
+
+    <div class="vsplan">
+      <div class="hd"><span class="ck">Construction vs the RERA plan</span><span class="band strong"><span class="dot"></span>Ahead of schedule</span></div>
+      <div class="track">
+        <div class="exp"></div><div class="act"></div>
+        <div class="actlab">56.85% built</div>
+      </div>
+      <div class="marks">
+        <div class="m exp"><div class="v">47.19%</div><div>RERA-due today</div></div>
+      </div>
+      <span class="delta">▲ +9.66 points ahead · roughly 8.8 months of runway banked</span>
+    </div>
+
+    <div class="p4grid">
+      <div class="card absorb">
+        <div class="hd" style="display:flex;justify-content:space-between;align-items:center"><span class="ck">Sales absorption</span><span class="band strong"><span class="dot"></span>High demand</span></div>
+        <div style="margin-top:16px"><span class="n mono">100<span class="u">%</span></span> <span style="font-size:13px;color:var(--mut);margin-left:8px">1,137 / 1,137 units sold</span></div>
+        <div class="bar"><i></i></div>
+        <div style="font-size:12px;color:#6b6459;margin-top:12px;line-height:1.5">A full sell-out mid-construction means the developer isn't relying on future sales to fund the build — <b>a quiet but real de-risking signal</b>.</div>
+      </div>
+      <div class="card forecast">
+        <div class="hd" style="display:flex;justify-content:space-between;align-items:center"><span class="ck">Truth Estate delivery forecast</span><span class="band moderate"><span class="dot"></span>Moderate confidence</span></div>
+        <div class="date serif">7 Nov 2029<span class="sm">our predicted handover, from build pace + this developer's history</span></div>
+        <div class="frow">
+          <div class="fchip"><span class="l">RERA promise</span><span class="v mono">31 Mar 2030</span></div>
+          <div class="fchip"><span class="l">vs RERA</span><span class="v" style="color:var(--green)">4.7 mo early</span></div>
+          <div class="gauge"><div class="gring"><div class="in">28%</div></div><div style="font-size:11.5px;color:#6b6459;line-height:1.4">chance of<br><b style="color:var(--ink)">any</b> delay</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="evid"><span class="ic">◫</span><div><b>Seeing is believing.</b> Right below this, the <b>Render vs Reality</b> band shows the developer's render beside our dated site photo — so the “ahead of schedule” number has a picture to stand on.</div></div>
+  </div>
+</div>
+
+<!-- ═══════════ PART 5 · LOCATION (desktop) ═══════════ -->
+<div class="frame d"><div class="fh">Chapter II · Part 5 — Location Intelligence</div>
+  <div class="pad">
+    <div class="phead" style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px">
+      <div><div class="pk">Pillar III · Location Intelligence</div>
+      <h3 class="serif">Will this address still be winning in 2035?</h3>
+      <p class="sub">Not just what's around it today — what's funded and coming, how you actually get in and out, and who your neighbours are.</p></div>
+      <div style="text-align:right;flex:0 0 auto"><span class="band exceptional"><span class="dot"></span>Exceptional · 9.3</span></div>
+    </div>
+
+    <!-- schematic map -->
+    <div class="mapwrap">
+      <svg viewBox="0 0 1024 300" xmlns="http://www.w3.org/2000/svg">
+        <rect width="1024" height="300" fill="#edf0e6"/>
+        <!-- greens -->
+        <path d="M780 0 h244 v300 h-244 q-40 -150 0 -300z" fill="#dfe7d3"/>
+        <circle cx="120" cy="250" r="70" fill="#e2e9d6"/>
+        <!-- roads -->
+        <g stroke="#d7cdb6" stroke-width="10" fill="none" stroke-linecap="round">
+          <path d="M-20 200 Q 400 150 1040 120"/>            <!-- GCE Rd diagonal -->
+          <path d="M320 -20 L 360 320"/>
+          <path d="M640 -20 L 600 320"/>
+          <path d="M-20 90 L 1040 70" stroke-width="6"/>
+        </g>
+        <text x="70" y="185" font-size="11" fill="#a89e88" font-family="ui-monospace,monospace" transform="rotate(-4 70 185)">GOLF COURSE EXT. ROAD</text>
+        <!-- rings -->
+        <g fill="none" stroke="#b9ad92" stroke-dasharray="3 6" opacity=".7"><circle cx="470" cy="176" r="70"/><circle cx="470" cy="176" r="130"/></g>
+        <!-- POI dots -->
+        <g font-family="ui-sans-serif" font-size="10.5" fill="#6b6459">
+          <circle cx="430" cy="120" r="5" fill="#9a7a2e"/><text x="440" y="116">St. Xavier's · 0.4km</text>
+          <circle cx="360" cy="230" r="5" fill="#9a7a2e"/><text x="300" y="252">Heritage School</text>
+          <circle cx="640" cy="150" r="5" fill="#238c55"/><text x="652" y="146">Metro (planned) · 3.8km</text>
+          <circle cx="560" cy="96" r="5" fill="#238c55"/><text x="452" y="86" text-anchor="start">M3M IFC · commercial spine</text>
+        </g>
+        <!-- project pin -->
+        <g transform="translate(470 176)">
+          <circle r="15" fill="#9a7a2e" opacity=".18"/>
+          <path d="M0 -12 C 8 -12 12 -6 12 -1 C 12 6 0 16 0 16 C 0 16 -12 6 -12 -1 C -12 -6 -8 -12 0 -12 Z" fill="#9a7a2e"/>
+          <circle cy="-1" r="4" fill="#fff"/>
+        </g>
+      </svg>
+      <div class="mapchips">
+        <span class="mapchip"><b>DLF The Arbour</b> · Sector 63</span>
+        <span class="mapchip">0.3 km to GCE Rd</span>
+        <span class="mapchip">23 km / 30 min · IGI Airport</span>
+        <span class="mapchip" style="color:#a89e88">Schematic · live map in report</span>
+      </div>
+    </div>
+
+    <div class="p5grid">
+      <!-- social score -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span class="ck">Who &amp; what's around · rated</span><span style="font-size:11px;color:var(--mut)">within 2 km</span></div>
+        <div class="tabs"><span class="on">Schools</span><span>Offices</span><span>Hospitals</span><span>Malls</span></div>
+        <div class="poi"><div><div class="nm">St. Xavier's High School <span class="key">KEY</span></div><div class="ty">Premium co-ed K-12 · CBSE</div></div><div class="rt"><div class="star">★ 4.4</div><div class="dist">0.4 km</div></div></div>
+        <div class="poi"><div><div class="nm">The Heritage Xperiential <span class="key">KEY</span></div><div class="ty">Tier-1 K-12 · IB / CBSE</div></div><div class="rt"><div class="star">★ 4.6</div><div class="dist">0.88 km</div></div></div>
+        <div class="poi"><div><div class="nm">DPS International <span class="key">KEY</span></div><div class="ty">K-12 · CIE International</div></div><div class="rt"><div class="star">★ 4.5</div><div class="dist">1.42 km</div></div></div>
+      </div>
+      <!-- connectivity -->
+      <div class="card conn">
+        <span class="ck">How you get in &amp; out</span>
+        <div class="r"><span class="ic">◇</span><div class="cn"><div class="nm">Sector 55–56 Metro</div><div class="sub">Rapid Metro line</div></div><div class="meta"><div class="km">3.8 km</div><span class="tag">8 min</span></div></div>
+        <div class="r"><span class="ic">▤</span><div class="cn"><div class="nm">Golf Course Ext. Road</div><div class="sub">arterial frontage</div></div><div class="meta"><div class="km">0.3 km</div><span class="tag">Direct</span></div></div>
+        <div class="r"><span class="ic">✈</span><div class="cn"><div class="nm">IGI Airport · T3</div><div class="sub">National Highway 48</div></div><div class="meta"><div class="km">23 km</div><span class="tag ind">30 min</span></div></div>
+        <div class="r"><span class="ic">▦</span><div class="cn"><div class="nm">DLF Cyber City</div><div class="sub">business district</div></div><div class="meta"><div class="km">12.5 km</div><span class="tag ind">22 min</span></div></div>
+      </div>
+    </div>
+
+    <div class="modtag"><span class="t">What's coming — funded &amp; approved</span><span class="ln"></span></div>
+    <div class="infra">
+      <div class="icard"><span class="cat">Roads</span><span class="st">Approved</span><h5>14 km Elevated Corridor</h5><p>₹2,900 cr eight-lane, Ghata → NH-48. Phase 1 covers the Extension Road stretch.</p><div class="ft"><span class="imp high">▲ High impact</span><span class="eta mono">2029</span></div></div>
+      <div class="icard"><span class="cat">Metro</span><span class="st">Approved</span><h5>Sector 56 → Manesar Metro</h5><p>36 km double-decker line along GCER; links to RRTS + Manesar hub.</p><div class="ft"><span class="imp high">▲ High impact</span><span class="eta mono">2030</span></div></div>
+      <div class="icard"><span class="cat">Roads</span><span class="st">Approved</span><h5>Badshahpur Drain Road</h5><p>₹370 cr storm-drain concretisation with a load-bearing road on top.</p><div class="ft"><span class="imp med">◆ Medium</span><span class="eta mono">2027</span></div></div>
+      <div class="icard"><span class="cat">Roads</span><span class="st">Under constr.</span><h5>GMDA Sector 66 Revamp</h5><p>Service roads, cycle tracks &amp; utility ducts near M3M IFC.</p><div class="ft"><span class="imp med">◆ Medium</span><span class="eta mono">2026 Q4</span></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ PART 6 · LEGAL (desktop) ═══════════ -->
+<div class="frame d"><div class="fh">Chapter II · Part 6 — Legal &amp; Compliance (forensic centerpiece)</div>
+  <div class="pad">
+    <div class="phead" style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px">
+      <div><div class="pk">Pillar IV · Legal &amp; Compliance</div>
+      <h3 class="serif">The project is clean. Is the developer?</h3>
+      <p class="sub">A forensic sweep of land title, RERA status, and every court that has ruled on this builder — because the biggest risk here isn't the address.</p></div>
+      <div style="text-align:right;flex:0 0 auto"><span class="band watch"><span class="dot"></span>Watch this · 6.8</span></div>
+    </div>
+
+    <div class="assess amber">
+      <div class="k">Analyst assessment</div>
+      <div class="big serif">Legally clean today — but DLF's history demands vigilance.</div>
+      <ul><li>The Arbour itself: no disputes, RERA current</li><li>DLF: a Supreme-Court possession-delay loss</li><li>DLF: ₹630 cr CCI penalty for one-sided contracts</li></ul>
+      <div class="src">Updated 12 May 2026 · Source: e-Courts + RERA litigation repositories · AI-assisted research, independently verifiable</div>
+    </div>
+
+    <div class="rmatrix">
+      <div class="rm low"><div class="k">Title risk</div><div class="v"><span class="pip"></span>Low</div></div>
+      <div class="rm mod"><div class="k">Developer risk</div><div class="v"><span class="pip"></span>Moderate</div></div>
+      <div class="rm mod"><div class="k">Litigation risk</div><div class="v"><span class="pip"></span>Moderate</div></div>
+      <div class="rm mod"><div class="k">Regulatory risk</div><div class="v"><span class="pip"></span>Moderate</div></div>
+    </div>
+
+    <!-- signature split -->
+    <div class="split">
+      <div class="sp clean">
+        <span class="tag">✓ This project</span>
+        <h4 class="serif">Clean &amp; RERA-current</h4>
+        <div class="txt">Registered under HRERA <b>GGM/671/403/2023/15</b> (Jan 2023). No consumer complaints or regulatory orders against The Arbour in public databases as of May 2026.</div>
+        <div class="foot">Baseline buyer protection is in place.</div>
+      </div>
+      <div class="sp hist">
+        <span class="tag">⚠ This developer</span>
+        <h4 class="serif">Carries real history</h4>
+        <div class="txt">DLF has a <b>Supreme-Court loss for possession delay</b> (Capital Greens) and a <b>₹630 cr CCI penalty</b> for one-sided buyer agreements (Belaire) — same city, same kind of project.</div>
+        <div class="foot">The risk isn't the address — it's the counterparty.</div>
+      </div>
+    </div>
+
+    <div class="modtag"><span class="t">The cases that matter to an Arbour buyer</span><span class="ln"></span></div>
+    <div class="litcard">
+      <div class="top"><div><h5>DLF v. Capital Greens Flat Buyers Assn.</h5><div class="court">Supreme Court of India · 14 Dec 2020</div></div>
+        <div class="chips"><span class="chip disp">Disposed</span><span class="chip">Contextual</span><span class="chip hi">Impact: High</span></div></div>
+      <p>The Supreme Court upheld an NCDRC order directing DLF to pay 6% p.a. compensation for unjustified possession delay in Gurugram. DLF's force-majeure defence was rejected; hundreds of buyers were compensated.</p>
+      <div class="bimp"><div class="l">What it means for you</div><div class="t">A confirmed, top-court loss for possession delay — same city, same type of project. Delivery risk here is documented, not hypothetical.</div></div>
+      <div class="src">SC judgment · Civil Appeal Nos. 3864–3889/2020 · view source ↗</div>
+    </div>
+    <div class="litcard">
+      <div class="top"><div><h5>Belaire Owners' Assn. v. DLF — CCI Penalty</h5><div class="court">CCI → Appellate Tribunal → Supreme Court</div></div>
+        <div class="chips"><span class="chip disp">Disposed</span><span class="chip">Indirect</span><span class="chip hi">Impact: High</span></div></div>
+      <p>CCI imposed a <b>₹630 crore</b> penalty on DLF for abusing a dominant position through unfair, one-sided buyer agreements in Belaire &amp; Park Place. The competition finding was upheld through appellate stages.</p>
+      <div class="bimp"><div class="l">What it means for you</div><div class="t">DLF's standard buyer contracts have been judicially found one-sided at the highest levels. Have a lawyer read The Arbour's Agreement to Sell before you sign.</div></div>
+      <div class="src">CCI order 2011 · SC deposit direction Aug 2014 · view source ↗</div>
+    </div>
+
+    <div class="ddp">
+      <div class="h">⚑ Before you sign — your due-diligence plan</div>
+      <ol>
+        <li><div>Verify HRERA status &amp; latest QPR yourself on <b>haryanarera.gov.in</b> using RERA No. GGM/671/403/2023/15.</div></li>
+        <li><div>Get an <b>independent lawyer</b> to read the Agreement to Sell clause-by-clause — penalty terms, force-majeure wording, and delay-compensation are where DLF has lost before.</div></li>
+        <li><div>Insist the <b>revised RERA possession date</b> is written into the builder-buyer agreement, and hold ~5% against on-time handover.</div></li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ PART 7 · PROJECT USPs (desktop) ═══════════ -->
+<div class="frame d"><div class="fh">Chapter II · Part 7 — Project USPs</div>
+  <div class="pad">
+    <div class="phead"><div class="pk">Pillar V · Project USPs</div>
+      <h3 class="serif">What actually makes it different?</h3>
+      <p class="sub">Not the brochure adjectives — the non-obvious advantages that move livability, safety and resale, each one we can point to a source for.</p></div>
+
+    <div class="modtag" style="margin-top:24px"><span class="t">The team behind it</span><span class="ln"></span></div>
+    <div class="team">
+      <div class="r"><div><div class="nm">Arcop Associates</div><div class="role">Principal Architect</div></div><div class="cred">Master-planner of large integrated Indian campuses.</div><div class="stars">★★★★<span class="off">★</span></div></div>
+      <div class="r"><div><div class="nm">WATG</div><div class="role">Landscape &amp; Interior</div></div><div class="cred">Global hospitality-grade landscape practice — the “resort” feel is engineered.</div><div class="stars">★★★★★</div></div>
+      <div class="r"><div><div class="nm">Thornton Tomasetti</div><div class="role">Structural Engineering</div></div><div class="cred">Résumé includes the Petronas Towers — serious high-rise pedigree.</div><div class="stars">★★★★★</div></div>
+    </div>
+
+    <div class="factrow">
+      <div class="card fact"><div class="lab">◷ Brand structure</div><div class="v"><span class="x">✗</span> Not brand-branded</div><p>No hotel/fashion licensing disclosed. <b>Honest read:</b> no branded-residence premium to pay for — but also no third-party brand guarantee. Priced on its own merits.</p></div>
+      <div class="card fact"><div class="lab">◈ Master plan</div><div class="v"><span class="ok">◉</span> Township / ecosystem</div><p>~25–28 acre core inside a Sector 63 master plan spanning ~204.7 acres of DTP-approved civic/public land. <b>Integrated, not a standalone tower.</b></p></div>
+    </div>
+
+    <div class="modtag"><span class="t">Why it stands apart</span><span class="ln"></span></div>
+    <div class="usps">
+      <div class="usp"><div class="ic">⇅</div><h5>3× high-speed lifts, 3.5 m/s</h5><div class="claim">The <b>only</b> ultra-luxury NCR high-rise offering a dedicated 3-lift ratio at 3.5 m/s per core.</div><div class="why">◆ Less waiting on a 40-storey tower</div></div>
+      <div class="usp"><div class="ic">❦</div><h5>Low density · 45.3 / acre</h5><div class="claim">Just 1,137 homes across 25.1 acres — <b>89.32% open area</b>, a genuine botanical setting.</div><div class="why">◆ Light, air &amp; resale scarcity</div></div>
+      <div class="usp"><div class="ic">⌂</div><h5>Petronas-grade structure</h5><div class="claim">Thornton Tomasetti engineering — the <b>same firm</b> behind the world's landmark supertalls.</div><div class="why">◆ Confidence in the bones</div></div>
+    </div>
+
+    <div class="verdict-line"><b>How we read USPs:</b> we only count a differentiator if it's verifiable and it changes how you live or how the asset holds value. Marketing adjectives don't make this list.</div>
+  </div>
+</div>
+
+<!-- ═══════════ MOBILE COLUMN ═══════════ -->
+<!-- P4 mobile -->
+<div class="frame mob"><div class="fh">Part 4 — mobile</div><div class="pad">
+  <div class="phead"><div class="pk">Pillar II · Construction &amp; Sales</div><h3 class="serif">Getting built — and sold?</h3></div>
+  <div class="assess"><div class="k">Analyst</div><div class="big serif">Ahead of schedule, sold out.</div>
+    <ul style="flex-direction:column;gap:6px"><li>8.8 mo ahead of RERA plan</li><li>100% of 1,137 absorbed</li></ul></div>
+  <div class="vsplan" style="padding:18px">
+    <div class="hd" style="display:flex;justify-content:space-between;align-items:center"><span class="ck">Build vs RERA plan</span><span class="band strong" style="font-size:9px;padding:3px 8px"><span class="dot"></span>Ahead</span></div>
+    <div class="track"><div class="exp"></div><div class="act"></div><div class="actlab">56.85%</div></div>
+    <div class="marks"><div class="m exp"><div class="v">47.19%</div><div>due</div></div></div>
+    <span class="delta" style="font-size:11px">▲ ~8.8 months banked</span>
+  </div>
+  <div class="card forecast" style="margin-top:16px;padding:18px">
+    <span class="ck">Delivery forecast</span>
+    <div class="date serif" style="font-size:28px">7 Nov 2029<span class="sm">our predicted handover</span></div>
+    <div class="frow"><div class="fchip"><span class="l">RERA</span><span class="v mono" style="font-size:13px">31 Mar 2030</span></div><div class="gauge"><div class="gring" style="width:48px;height:48px"><div class="in" style="font-size:13px">28%</div></div><div style="font-size:11px;color:#6b6459">delay<br>chance</div></div></div>
+  </div>
+</div></div>
+
+<!-- P5 mobile -->
+<div class="frame mob"><div class="fh">Part 5 — mobile</div><div class="pad">
+  <div class="phead"><div class="pk">Pillar III · Location</div><h3 class="serif">Winning in 2035?</h3></div>
+  <span class="band exceptional" style="margin-top:14px"><span class="dot"></span>Exceptional · 9.3</span>
+  <div class="mapwrap" style="margin-top:16px"><svg viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg">
+    <rect width="400" height="200" fill="#edf0e6"/><path d="M300 0 h100 v200 h-100z" fill="#dfe7d3"/>
+    <g stroke="#d7cdb6" stroke-width="8" fill="none" stroke-linecap="round"><path d="M-10 140 Q 200 100 410 80"/><path d="M140 -10 L 160 210"/></g>
+    <g fill="none" stroke="#b9ad92" stroke-dasharray="3 6" opacity=".7"><circle cx="185" cy="118" r="48"/></g>
+    <g transform="translate(185 118)"><circle r="12" fill="#9a7a2e" opacity=".18"/><path d="M0 -10 C 7 -10 10 -5 10 -1 C 10 5 0 13 0 13 C 0 13 -10 5 -10 -1 C -10 -5 -7 -10 0 -10 Z" fill="#9a7a2e"/><circle cy="-1" r="3" fill="#fff"/></g>
+  </svg><div class="mapchips"><span class="mapchip"><b>The Arbour</b> · Sec 63</span></div></div>
+  <div class="card" style="margin-top:16px"><span class="ck">Nearby · rated</span>
+    <div class="poi"><div><div class="nm" style="font-size:13px">St. Xavier's <span class="key">KEY</span></div><div class="ty">K-12 · CBSE</div></div><div class="rt"><div class="star">★4.4</div><div class="dist">0.4km</div></div></div>
+    <div class="poi"><div><div class="nm" style="font-size:13px">Heritage Xperiential <span class="key">KEY</span></div><div class="ty">IB / CBSE</div></div><div class="rt"><div class="star">★4.6</div><div class="dist">0.88km</div></div></div>
+  </div>
+  <div class="card conn" style="margin-top:12px"><span class="ck">In &amp; out</span>
+    <div class="r"><span class="ic">◇</span><div class="cn"><div class="nm" style="font-size:12px">Sec 55–56 Metro</div></div><div class="meta"><div class="km" style="font-size:12px">3.8km</div><span class="tag">8min</span></div></div>
+    <div class="r"><span class="ic">✈</span><div class="cn"><div class="nm" style="font-size:12px">IGI · T3</div></div><div class="meta"><div class="km" style="font-size:12px">23km</div><span class="tag ind">30min</span></div></div>
+  </div>
+  <div class="modtag"><span class="t">Coming</span><span class="ln"></span></div>
+  <div class="infra"><div class="icard"><span class="cat">Metro</span><span class="st">Approved</span><h5 style="font-size:13px">Sec 56 → Manesar Metro</h5><div class="ft"><span class="imp high">▲ High</span><span class="eta mono">2030</span></div></div></div>
+</div></div>
+
+<!-- P6 mobile -->
+<div class="frame mob"><div class="fh">Part 6 — mobile</div><div class="pad">
+  <div class="phead"><div class="pk">Pillar IV · Legal</div><h3 class="serif">Project's clean.<br>Is the developer?</h3></div>
+  <span class="band watch" style="margin-top:14px"><span class="dot"></span>Watch this · 6.8</span>
+  <div class="split" style="margin-top:16px">
+    <div class="sp clean" style="padding:18px"><span class="tag">✓ This project</span><h4 class="serif" style="font-size:18px">Clean &amp; RERA-current</h4><div class="txt" style="font-size:12px">HRERA GGM/671/403/2023/15, no disputes.</div><div class="foot">Protection in place.</div></div>
+    <div class="sp hist" style="padding:18px"><span class="tag">⚠ This developer</span><h4 class="serif" style="font-size:18px">Carries history</h4><div class="txt" style="font-size:12px">SC possession-delay loss + ₹630 cr CCI penalty.</div><div class="foot">The risk is the counterparty.</div></div>
+  </div>
+  <div class="litcard" style="padding:16px 18px;margin-top:14px">
+    <h5 style="font-size:15px">DLF v. Capital Greens</h5><div class="court">Supreme Court · 2020</div>
+    <div class="chips" style="margin-top:8px"><span class="chip hi">Impact: High</span></div>
+    <div class="bimp" style="margin-top:12px"><div class="l">For you</div><div class="t" style="font-size:12px">Top-court loss for possession delay — same city, same type.</div></div>
+  </div>
+</div></div>
+
+<!-- P7 mobile -->
+<div class="frame mob"><div class="fh">Part 7 — mobile</div><div class="pad">
+  <div class="phead"><div class="pk">Pillar V · USPs</div><h3 class="serif">What makes it different?</h3></div>
+  <div class="team" style="margin-top:16px">
+    <div class="r" style="padding:13px 16px"><div><div class="nm" style="font-size:14px">WATG</div><div class="role">Landscape &amp; Interior</div></div><div class="stars" style="font-size:12px">★★★★★</div></div>
+    <div class="r" style="padding:13px 16px"><div><div class="nm" style="font-size:14px">Thornton Tomasetti</div><div class="role">Structure · Petronas pedigree</div></div><div class="stars" style="font-size:12px">★★★★★</div></div>
+  </div>
+  <div class="usps" style="margin-top:14px">
+    <div class="usp" style="padding:18px"><div class="ic">⇅</div><h5>3× lifts @ 3.5 m/s</h5><div class="claim">Only ultra-luxury NCR tower with this ratio.</div><div class="why">◆ Less waiting</div></div>
+    <div class="usp" style="padding:18px"><div class="ic">❦</div><h5>Low density · 45/acre</h5><div class="claim">89.32% open area — botanical setting.</div><div class="why">◆ Air &amp; resale scarcity</div></div>
+  </div>
+</div></div>
+
+</div></body></html>
