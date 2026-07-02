@@ -1,0 +1,219 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Project Fundamentals — wireframe v2</title>
+<style>
+  :root{ --ink:#333; --mut:#8a8a8a; --line:#d7d7d7; --blk:#efefef; --dark:#3c3c3c; --note:#2f6fed; }
+  *{box-sizing:border-box; margin:0}
+  body{ background:#e7e7e7; font:13px/1.45 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--ink); padding:34px }
+  .canvas{ display:flex; gap:44px; align-items:flex-start }
+  .head h1{ font:600 19px/1.2 -apple-system,sans-serif } .head p{ color:var(--mut); margin-top:4px } .head{ margin-bottom:22px }
+  .frame{ background:#fff; border:1px solid #c9c9c9; box-shadow:0 8px 30px rgba(0,0,0,.08); flex:0 0 auto }
+  .fhead{ padding:8px 12px; border-bottom:1px solid var(--line); color:var(--mut); font-size:11px; letter-spacing:.08em; text-transform:uppercase }
+  #d{ width:1180px } #m{ width:390px } #n{ width:340px; background:none; border:none; box-shadow:none }
+  .sec{ position:relative; padding:26px 34px; border-bottom:1px solid var(--line) } .m .sec{ padding:20px 16px }
+  .tag{ position:absolute; top:8px; right:10px; background:var(--note); color:#fff; font-size:9.5px; padding:2.5px 7px; border-radius:3px; max-width:52%; text-align:right; line-height:1.3; z-index:3 }
+  .kick{ font-size:9.5px; letter-spacing:.24em; text-transform:uppercase; color:var(--mut); margin-bottom:7px }
+  .serif{ font-family:Georgia,"Times New Roman",serif }
+  .bar{ height:9px; background:var(--blk); border-radius:2px; margin:5px 0 } .bar.w40{width:40%}.bar.w55{width:55%}.bar.w70{width:70%}.bar.w85{width:85%}
+  .img{ position:relative; background:#f4f4f4; border:1px solid var(--line); overflow:hidden }
+  .img:before,.img:after{ content:""; position:absolute; left:-10%; right:-10%; top:50%; border-top:1px solid #cfcfcf } .img:before{ transform:rotate(12deg)} .img:after{ transform:rotate(-12deg)}
+  .img .cap{ position:absolute; left:8px; bottom:6px; font-size:10px; color:#9a9a9a; background:#fff9; padding:1px 5px; z-index:2 }
+  .btn{ display:inline-block; border:1.5px solid #9c9c9c; border-radius:6px; padding:8px 16px; font-size:11.5px; color:#555; background:#fff }
+  .btn.solid{ background:var(--dark); border-color:var(--dark); color:#fff }
+  .row{ display:flex; gap:18px; align-items:flex-start } .grow{ flex:1; min-width:0 }
+  .chapter{ padding:34px 34px 22px; border-bottom:1px solid var(--line) } .m .chapter{ padding:26px 16px 18px }
+  .chapter .rn{ font:300 60px/0.9 Georgia,serif; color:#e3e3e3; float:right } .chapter h2{ font:500 30px/1.05 Georgia,serif } .m .chapter h2{ font-size:23px }
+  .part{ font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#b98a4a; margin-bottom:12px } .part b{ color:#7a5f2e }
+  /* big serif stats */
+  .stat .v{ font:300 30px/1 Georgia,serif } .m .stat .v{ font-size:22px } .stat .k{ font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--mut); margin-top:5px }
+  /* icon fact grid */
+  .ig{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px 26px } .m .ig{ grid-template-columns:repeat(2,1fr); gap:16px }
+  .igc{ display:flex; gap:11px; align-items:flex-start }
+  .ic{ width:26px; height:26px; border:1.5px solid #cdb894; border-radius:6px; background:#f3ead9; flex:0 0 auto; position:relative }
+  .ic:after{ content:""; position:absolute; inset:6px; border:1.4px solid #c2a878; border-radius:2px }
+  .igc .lab{ font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut) } .igc .val{ font-size:13.5px; color:#2c2c2c; margin-top:2px; font-weight:500 }
+  .lk{ color:#b98a4a } /* link accent */
+  /* config + floorplan */
+  .chip{ display:inline-flex; align-items:center; gap:6px; border:1.5px solid var(--line); border-radius:8px; padding:7px 13px; font-size:12px; color:#555; margin:0 8px 8px 0; background:#fff }
+  .chip.on{ border-color:#c07a3e; color:#c07a3e; background:#fdf3ec }
+  .chip .badge{ background:#c07a3e; color:#fff; border-radius:99px; font-size:9px; padding:1px 6px }
+  .chip.sq{ border-radius:8px; min-width:70px; justify-content:center }
+  .panel{ border:1px solid var(--line); border-radius:12px; background:#fff }
+  .urow{ display:flex; justify-content:space-between; padding:11px 14px; border-bottom:1px solid var(--line); font-size:12.5px; color:#555 } .urow:last-child{ border:none } .urow b{ color:#2c2c2c }
+  .ctabar{ display:flex; justify-content:space-between; align-items:center; gap:14px; background:#fdf3ec; border:1px solid #f0d9c6; border-radius:10px; padding:12px 16px; margin-top:14px } .m .ctabar{ flex-wrap:wrap }
+  .tile{ border:1px solid var(--line); border-radius:12px; padding:16px; display:flex; gap:14px; align-items:center } .tile .pdf{ width:46px; height:56px; border:1.5px solid #cdb894; border-radius:5px; background:#f6efe1; flex:0 0 auto }
+  .note{ background:#fff; border:1px solid #c9c9c9; box-shadow:0 6px 18px rgba(0,0,0,.07); padding:14px 16px; margin-bottom:14px; font-size:12px } .note b{ display:block; margin-bottom:6px } .note ul{ padding-left:16px; color:#666 } .note li{ margin:3px 0 } .note .q{ color:#2f6fed }
+</style></head><body>
+
+<div class="head">
+  <h1>Project report · “Project Fundamentals” section — wireframe v2 (from your feedback)</h1>
+  <p>Just this section (old Chapter I). Blue tags = decisions/changes. Icon slots = where relatable icons go (per your Sobha ref).</p>
+</div>
+
+<div class="canvas">
+
+<!-- ═══════ DESKTOP ═══════ -->
+<div class="frame" id="d"><div class="fhead">Desktop · 1180</div>
+
+  <div class="chapter"><span class="rn">I</span><div class="kick">Chapter I · renamed</div><h2>Project Fundamentals</h2>
+    <div class="bar w55" style="margin-top:8px"></div>
+    <span class="tag">was “Can you trust it?” — that moves to Chapter II</span>
+  </div>
+
+  <!-- PART I -->
+  <div class="sec">
+    <div class="part"><b>Part I</b> — Key facts</div>
+    <span class="tag">big serif stats kept · icons added below · same set on mobile</span>
+    <!-- headline money stats (kept) -->
+    <div class="row" style="gap:44px; margin-bottom:24px">
+      <div class="stat"><div class="v">₹5–7 Cr</div><div class="k">Ticket</div></div>
+      <div class="stat"><div class="v">₹18,000</div><div class="k">Current / sq ft</div></div>
+      <div class="stat"><div class="v">3–4 BHK</div><div class="k">Configs</div></div>
+      <div class="stat"><div class="v">2,800–3,900</div><div class="k">Size · sq ft</div></div>
+    </div>
+    <!-- icon fact grid -->
+    <div class="ig">
+      <div class="igc"><div class="ic"></div><div><div class="lab">Land area</div><div class="val">25.1 acres</div></div></div>
+      <div class="igc"><div class="ic"></div><div><div class="lab">Project size</div><div class="val">5 towers · 1,137 units</div></div></div>
+      <div class="igc"><div class="ic"></div><div><div class="lab">Density</div><div class="val">45 / acre · Low</div></div></div>
+      <div class="igc"><div class="ic"></div><div><div class="lab">Total floors</div><div class="val">38–42</div></div></div>
+      <div class="igc"><div class="ic"></div><div><div class="lab">Type</div><div class="val">High Rise <span style="color:#999;font-weight:400">(&gt;10 flrs)</span></div></div></div>
+      <div class="igc"><div class="ic"></div><div><div class="lab">Open area</div><div class="val">89% green</div></div></div>
+      <div class="igc"><div class="ic"></div><div><div class="lab">Launch price</div><div class="val">₹15,500 / sq ft</div></div></div>
+      <div class="igc"><div class="ic"></div><div><div class="lab">RERA received</div><div class="val">Jan 2023</div></div></div>
+      <div class="igc"><div class="ic"></div><div><div class="lab">RERA completion</div><div class="val">Mar 2030</div></div></div>
+      <div class="igc"><div class="ic"></div><div><div class="lab">RERA ID</div><div class="val">GRG-1138-2023 <span class="lk">↗</span></div></div></div>
+    </div>
+    <span style="display:inline-block;margin-top:14px;font-size:10.5px;color:#b06a3a;background:#fdf3ec;border:1px solid #f0d9c6;border-radius:4px;padding:3px 8px">removed: “Carpet (indicative)” · towers &amp; land now separate · added Total floors + Type</span>
+  </div>
+
+  <!-- PART II -->
+  <div class="sec">
+    <div class="part"><b>Part II</b> — Layout · Site map · Masterplan</div>
+    <span class="tag">image(s) + AI 1–2 liner</span>
+    <div class="row">
+      <div class="img grow" style="height:210px"><span class="cap">Masterplan / site plan</span></div>
+      <div style="width:200px; flex:0 0 auto">
+        <div class="img" style="height:98px; margin-bottom:10px"><span class="cap">location map</span></div>
+        <div class="img" style="height:98px"><span class="cap">tower layout</span></div>
+      </div>
+    </div>
+    <div style="border-left:3px solid #cdb894; padding:6px 14px; margin-top:14px"><div class="serif" style="font-size:14px; color:#444; font-style:italic">“A low-density layout — 5 towers set around a central green spine, with…”  <span style="font-style:normal;color:#999;font-size:11px">· AI-generated</span></div></div>
+  </div>
+
+  <!-- PART III -->
+  <div class="sec">
+    <div class="part"><b>Part III</b> — Configurations &amp; Floor plans</div>
+    <span class="tag">interactive, per your Adani ref</span>
+    <div style="margin-bottom:14px"><span class="chip on">4 BHK <span class="badge">7</span></span><span class="chip">3 BHK <span class="badge">4</span></span></div>
+    <div class="row">
+      <div class="img grow" style="height:280px"><span class="cap">floor plan image (selected type)</span></div>
+      <div style="width:330px; flex:0 0 auto">
+        <div class="lab" style="font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin-bottom:8px">Super area</div>
+        <div style="margin-bottom:14px"><span class="chip sq on">3,050</span><span class="chip sq">3,320</span><span class="chip sq">3,610</span><span class="chip sq">3,900</span></div>
+        <div class="panel">
+          <div class="urow"><span>Carpet area</span><b>1,361 sq ft</b></div>
+          <div class="urow"><span>Built-up area</span><b>1,664 sq ft</b></div>
+          <div class="urow"><span>Carpet efficiency</span><b>73%</b></div>
+          <div class="urow"><span>Parking</span><b>2</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="ctabar"><span style="font-size:11.5px;color:#7a5f2e"><b>BSP only.</b> GST, PLC, Parking, IFMS could be add-ons.</span><span class="btn solid" style="background:#c07a3e;border-color:#c07a3e">📞 Get Full Cost Breakup</span></div>
+  </div>
+
+  <!-- PART IV + V -->
+  <div class="sec">
+    <div class="row">
+      <div class="grow">
+        <div class="part"><b>Part IV</b> — Brochure</div>
+        <div class="tile"><div class="pdf"></div><div class="grow"><div class="val" style="font-size:14px;font-weight:600">Project brochure</div><div class="lab" style="font-size:11px;color:var(--mut)">PDF · 24 pages</div><span class="btn" style="margin-top:8px;padding:5px 12px">View / download →</span></div></div>
+      </div>
+      <div class="grow">
+        <div class="part"><b>Part V</b> — Payment plan</div>
+        <div class="tile"><div class="pdf"></div><div class="grow"><div class="val" style="font-size:14px;font-weight:600">Payment plan</div><div class="lab" style="font-size:11px;color:var(--mut)">PDF / images</div><span class="btn" style="margin-top:8px;padding:5px 12px">View / download →</span></div></div>
+      </div>
+    </div>
+    <span class="tag" style="position:static;display:inline-block;margin-top:12px">open Q: gate these behind a lead, or free?</span>
+  </div>
+
+  <div class="sec" style="border:none;background:#fafafa"><div class="kick">Chapter II · next</div><div class="serif" style="font-size:22px;color:#bbb">Can you trust it? <span style="font-size:12px">(anatomy · developer · delivery · legal — moved here)</span></div></div>
+</div>
+
+<!-- ═══════ MOBILE ═══════ -->
+<div class="frame m" id="m"><div class="fhead">Mobile · 390</div>
+  <div class="chapter"><span class="rn" style="font-size:42px">I</span><div class="kick">Chapter I</div><h2>Project Fundamentals</h2></div>
+
+  <div class="sec">
+    <div class="part"><b>Part I</b> — Key facts</div>
+    <span class="tag">same facts as desktop</span>
+    <div class="row" style="flex-wrap:wrap; gap:14px 20px; margin-bottom:18px">
+      <div class="stat" style="width:44%"><div class="v">₹5–7 Cr</div><div class="k">Ticket</div></div>
+      <div class="stat" style="width:44%"><div class="v">₹18,000</div><div class="k">/ sq ft</div></div>
+      <div class="stat" style="width:44%"><div class="v">3–4 BHK</div><div class="k">Configs</div></div>
+      <div class="stat" style="width:44%"><div class="v">2.8–3.9k</div><div class="k">Sq ft</div></div>
+    </div>
+    <div class="ig">
+      <div class="igc"><div class="ic"></div><div><div class="lab">Land area</div><div class="val">25.1 ac</div></div></div>
+      <div class="igc"><div class="ic"></div><div><div class="lab">Project size</div><div class="val">5 tw · 1,137</div></div></div>
+      <div class="igc"><div class="ic"></div><div><div class="lab">Density</div><div class="val">45/ac · Low</div></div></div>
+      <div class="igc"><div class="ic"></div><div><div class="lab">Floors</div><div class="val">38–42</div></div></div>
+      <div class="igc"><div class="ic"></div><div><div class="lab">Type</div><div class="val">High Rise</div></div></div>
+      <div class="igc"><div class="ic"></div><div><div class="lab">Open area</div><div class="val">89%</div></div></div>
+      <div class="igc"><div class="ic"></div><div><div class="lab">Launch price</div><div class="val">₹15,500</div></div></div>
+      <div class="igc"><div class="ic"></div><div><div class="lab">Possession</div><div class="val">Mar 2030</div></div></div>
+      <div class="igc"><div class="ic"></div><div><div class="lab">RERA ID</div><div class="val">GRG-1138 <span class="lk">↗</span></div></div></div>
+    </div>
+  </div>
+
+  <div class="sec"><div class="part"><b>Part II</b> — Masterplan</div>
+    <div class="img" style="height:150px"><span class="cap">masterplan</span></div>
+    <div class="row" style="margin-top:8px"><div class="img grow" style="height:74px"><span class="cap">loc</span></div><div class="img grow" style="height:74px"><span class="cap">layout</span></div></div>
+    <div style="border-left:3px solid #cdb894;padding:6px 12px;margin-top:10px" class="serif"><span style="font-style:italic;font-size:12.5px;color:#555">“Low-density, 5 towers around a green spine…”</span></div>
+  </div>
+
+  <div class="sec"><div class="part"><b>Part III</b> — Configs &amp; floor plans</div>
+    <div style="margin-bottom:12px"><span class="chip on">4 BHK <span class="badge">7</span></span><span class="chip">3 BHK <span class="badge">4</span></span></div>
+    <div class="img" style="height:210px; margin-bottom:12px"><span class="cap">floor plan</span></div>
+    <div class="lab" style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin-bottom:8px">Super area</div>
+    <div style="margin-bottom:12px"><span class="chip sq on">3,050</span><span class="chip sq">3,320</span><span class="chip sq">3,610</span></div>
+    <div class="panel"><div class="urow"><span>Carpet area</span><b>1,361</b></div><div class="urow"><span>Built-up</span><b>1,664</b></div><div class="urow"><span>Parking</span><b>2</b></div></div>
+    <div class="ctabar"><span style="font-size:11px;color:#7a5f2e"><b>BSP only.</b> GST/PLC add-ons.</span><span class="btn solid" style="background:#c07a3e;border-color:#c07a3e;width:100%;text-align:center;margin-top:8px">Get Full Cost Breakup</span></div>
+  </div>
+
+  <div class="sec"><div class="part"><b>Part IV</b> — Brochure</div>
+    <div class="tile"><div class="pdf"></div><div class="grow"><div class="val" style="font-weight:600">Project brochure</div><span class="btn" style="margin-top:6px;padding:5px 12px">View →</span></div></div>
+  </div>
+  <div class="sec"><div class="part"><b>Part V</b> — Payment plan</div>
+    <div class="tile"><div class="pdf"></div><div class="grow"><div class="val" style="font-weight:600">Payment plan</div><span class="btn" style="margin-top:6px;padding:5px 12px">View →</span></div></div>
+  </div>
+  <div class="sec" style="border:none;background:#fafafa"><div class="kick">Chapter II</div><div class="serif" style="font-size:17px;color:#bbb">Can you trust it?</div></div>
+</div>
+
+<!-- ═══════ NOTES ═══════ -->
+<div id="n">
+  <div class="note"><b>Finalized fact set — Part I (point 2)</b>
+    <div style="color:#666">Big serif: <b>Ticket · Price/sqft · Configs · Size</b>. Icon grid: Land area · Project size (towers·units) · Density · Total floors · <b>Type</b> · Open area · Launch price · RERA received · RERA completion · RERA ID↗. <span style="color:#b06a3a">Same on desktop &amp; mobile — reflow only.</span></div>
+  </div>
+  <div class="note"><b>Your point 3 edits — done</b><ul>
+    <li>✂ removed “Carpet (indicative)”</li>
+    <li>Towers &amp; land <b>separated</b> (Project size vs Land area)</li>
+    <li>+ Total floors (range)</li>
+    <li>+ Type: Low (3–4) / Mid (≤10) / High (&gt;10)</li>
+    <li>RERA ID with ↗ link, per ref</li>
+  </ul></div>
+  <div class="note"><b>Chapter reorder (confirm?)</b><ul>
+    <li>I · <b>Project Fundamentals</b> (this)</li>
+    <li>II · Can you trust it? (anatomy, developer, delivery, legal)</li>
+    <li>III · The investment case (location, ROI)</li>
+    <li>IV · The honest read</li>
+    <li>V · Your decision</li>
+  </ul></div>
+  <div class="note"><b>Open questions</b><ul>
+    <li class="q">Name: “Project Fundamentals” or “Overview”?</li>
+    <li class="q">Brochure &amp; Payment plan — free, or lead-gated (like the 3D)?</li>
+    <li class="q">Floor-plan data source — where do plans/areas come from per project?</li>
+    <li class="q">Show Launch→Current as an appreciation delta (e.g. “+16%”)?</li>
+  </ul></div>
+</div>
+
+</div></body></html>
