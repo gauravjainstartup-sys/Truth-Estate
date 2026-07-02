@@ -1,0 +1,197 @@
+<!-- HI-FI · Chapter II · Part 6 Legal — FLAGGED-PROJECT variant.
+     Illustrative/hypothetical project (NOT DLF The Arbour, which is legally clean).
+     Shows how the Legal section adapts when the project itself carries real flaws:
+     inverted split, red risk matrix, active project-level issues, a gated score, and a "hold" call. -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Legal — flagged-project variant</title>
+<style>
+  :root{
+    --ivory:#F5F0E8; --paper:#FBF8F2; --ink:#1a1a1a; --mut:#8b8378; --mut2:#a49a8c;
+    --gold:#9a7a2e; --gold2:#c9a96e; --green:#1e6b45; --green2:#238c55; --red:#b0503e; --red2:#c56a56; --rink:#8f3a2b;
+    --line:rgba(26,26,26,.10); --line2:rgba(26,26,26,.06);
+  }
+  *{box-sizing:border-box; margin:0}
+  body{ background:#d8d3c8; font:14px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif; color:var(--ink); padding:34px }
+  .serif{ font-family:Georgia,"Times New Roman",serif } .mono{ font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums }
+  .wrap{ display:flex; flex-wrap:wrap; gap:40px; align-items:flex-start }
+  .frame{ background:var(--ivory); box-shadow:0 20px 60px rgba(0,0,0,.14); border-radius:14px; overflow:hidden; flex:0 0 auto }
+  .fh{ font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:#a49a8c; padding:9px 14px; background:#efeae0 }
+  .dk{ width:1120px } .mob{ width:390px }
+  .pad{ padding:46px 48px } .mob .pad{ padding:24px 18px }
+
+  .disc{ display:flex; gap:10px; align-items:center; background:#efeae0; border:1px dashed var(--gold2); border-radius:10px; padding:11px 16px; font-size:12px; color:#6b6459; margin-bottom:26px }
+  .disc b{ color:var(--ink) }
+  .phead .pk{ font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--mut) }
+  .phead h3{ font-weight:500; font-size:30px; letter-spacing:-.01em; margin-top:7px } .mob .phead h3{ font-size:22px }
+  .phead .sub{ font-size:13.5px; color:#6b6459; margin-top:9px; max-width:600px; font-weight:300 }
+
+  .band{ display:inline-flex; align-items:center; gap:7px; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; font-weight:600; border-radius:99px; padding:5px 11px; white-space:nowrap }
+  .band .dot{ width:7px; height:7px; border-radius:99px }
+  .band.high{ color:var(--rink); background:rgba(176,80,62,.12); border:1px solid rgba(176,80,62,.4) } .band.high .dot{ background:var(--red) }
+  .band.low{ color:#155a3a; background:rgba(30,107,69,.10); border:1px solid rgba(30,107,69,.26) } .band.low .dot{ background:var(--green) }
+
+  /* red alert hero */
+  .alert{ display:flex; gap:18px; align-items:center; background:linear-gradient(180deg,rgba(176,80,62,.13),rgba(176,80,62,.04)); border:1px solid rgba(176,80,62,.4); border-radius:16px; padding:22px 26px; margin-top:6px }
+  .alert .ic{ width:56px; height:56px; border-radius:14px; background:var(--red); color:#fff; display:grid; place-items:center; font-size:28px; flex:0 0 auto }
+  .alert h4{ font-size:22px; font-weight:600; color:var(--rink) } .alert p{ font-size:13px; color:#7a4a3f; margin-top:4px } .alert p b{ color:var(--rink) }
+  .alert .vb{ margin-left:auto; text-align:right; flex:0 0 auto }
+
+  /* score-impact strip */
+  .simpact{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:16px } .mob .simpact{ grid-template-columns:1fr }
+  .si{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 20px }
+  .si .k{ font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--mut) }
+  .si .flow{ display:flex; align-items:center; gap:12px; margin-top:11px }
+  .si .was{ font-size:24px; font-weight:500; color:var(--mut2); text-decoration:line-through } .si .was .u{ font-size:12px }
+  .si .arr{ color:var(--red2); font-size:16px }
+  .si .now{ font-size:28px; font-weight:600; color:var(--red); line-height:1 } .si .now.sm{ font-size:16px }
+  .si .cap{ font-size:11px; color:var(--rink); margin-top:8px; display:inline-flex; align-items:center; gap:6px; background:rgba(176,80,62,.08); border-radius:6px; padding:3px 8px }
+
+  .rmatrix{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:24px } .mob .rmatrix{ grid-template-columns:repeat(2,1fr) }
+  .rm{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 18px }
+  .rm .k{ font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--mut) } .rm .v{ font-size:19px; font-weight:600; margin-top:8px; display:flex; align-items:center; gap:8px }
+  .rm .v .pip{ width:9px; height:9px; border-radius:99px }
+  .rm.high{ border-color:rgba(176,80,62,.35); background:rgba(176,80,62,.04) } .rm.high .v{ color:var(--red) } .rm.high .pip{ background:var(--red) }
+  .rm.low .v{ color:var(--green) } .rm.low .pip{ background:var(--green) }
+
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:24px } .mob .split{ grid-template-columns:1fr }
+  .sp{ border-radius:16px; padding:24px 26px }
+  .sp.flag{ background:linear-gradient(165deg,rgba(176,80,62,.09),rgba(176,80,62,.02)); border:1px solid rgba(176,80,62,.35) }
+  .sp.clean{ background:linear-gradient(165deg,rgba(30,107,69,.07),rgba(30,107,69,.02)); border:1px solid rgba(30,107,69,.25) }
+  .sp .tag{ display:inline-flex; align-items:center; gap:8px; font-size:11px; letter-spacing:.1em; text-transform:uppercase; font-weight:700 }
+  .sp.flag .tag{ color:var(--red) } .sp.clean .tag{ color:var(--green) }
+  .sp h4{ font-size:22px; font-weight:500; margin-top:12px; letter-spacing:-.01em } .sp .txt{ font-size:13px; color:#4b463d; margin-top:10px; line-height:1.6 } .sp .txt b{ color:var(--ink) }
+  .sp .foot{ font-size:12px; margin-top:14px; font-weight:600 } .sp.flag .foot{ color:var(--red2) } .sp.clean .foot{ color:var(--green) }
+  .sp ul{ margin:12px 0 0; padding:0; list-style:none } .sp li{ font-size:12.5px; color:#4b463d; padding:6px 0 6px 20px; position:relative } .sp li:before{ content:"⚠"; position:absolute; left:0; color:var(--red) }
+
+  .modtag{ display:flex; align-items:center; gap:10px; margin:30px 0 4px } .modtag .t{ font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink); font-weight:700 } .modtag .ln{ flex:1; height:1px; background:var(--line) }
+  .litcard{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:20px 24px; margin-top:14px }
+  .litcard.crit{ border-color:rgba(176,80,62,.35); border-left:3px solid var(--red) }
+  .litcard .top{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px }
+  .litcard h5{ font-size:17px; font-weight:600; letter-spacing:-.01em } .litcard .court{ font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut2); margin-top:4px }
+  .chips{ display:flex; gap:6px; flex-wrap:wrap; flex-shrink:0 } .chip{ font-size:9.5px; letter-spacing:.06em; text-transform:uppercase; font-weight:600; border-radius:5px; padding:3px 8px; border:1px solid var(--line); color:var(--mut) }
+  .chip.active{ color:var(--rink); border-color:rgba(176,80,62,.45); background:rgba(176,80,62,.07) } .chip.hi{ color:var(--red2); border-color:rgba(176,80,62,.4); background:rgba(176,80,62,.05) }
+  .litcard p{ font-size:13px; color:#4b463d; margin-top:12px; line-height:1.6 } .litcard p b{ color:var(--ink) }
+  .litcard .bimp{ margin-top:14px; background:rgba(176,80,62,.06); border-left:2px solid var(--red); border-radius:0 8px 8px 0; padding:11px 15px; font-size:12.5px }
+  .litcard .bimp .l{ font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--red); font-weight:700 } .litcard .bimp .t{ color:var(--rink); font-weight:600; margin-top:3px }
+  .litcard .src{ font-size:10.5px; color:var(--mut2); margin-top:12px }
+
+  /* our call — hold */
+  .ourcall{ margin-top:24px; background:linear-gradient(160deg,rgba(176,80,62,.11),rgba(176,80,62,.03)); border:1.5px solid var(--red); border-radius:16px; padding:24px 28px }
+  .ourcall .h{ display:flex; align-items:center; gap:9px; font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--red); font-weight:700 }
+  .ourcall .verdict{ font-size:24px; font-weight:600; margin-top:11px; color:var(--rink) } .mob .ourcall .verdict{ font-size:19px }
+  .ourcall p{ font-size:13px; color:#5f4038; margin-top:10px; line-height:1.62 } .ourcall p b{ color:var(--rink) }
+  .ourcall .steps{ margin-top:14px; padding-top:14px; border-top:1px solid rgba(176,80,62,.25); display:flex; gap:24px; flex-wrap:wrap }
+  .ourcall .st{ font-size:12.5px; color:#5f4038; display:flex; gap:9px; align-items:baseline } .ourcall .st .n{ color:var(--red); font-weight:700; font-family:ui-monospace,monospace }
+</style></head><body>
+<div class="wrap">
+
+<!-- ══════════ DESKTOP · flagged variant ══════════ -->
+<div class="frame dk"><div class="fh">Chapter II · Part 6 — Legal (FLAGGED-PROJECT variant · illustrative)</div>
+  <div class="pad">
+    <div class="disc">⚠ <span><b>Illustrative variant</b> — a hypothetical flagged project, <b>not</b> DLF The Arbour (which is legally clean). This shows how Part 6 adapts when the project itself carries real flaws.</span></div>
+
+    <div class="phead"><div class="pk">Pillar IV · Legal &amp; Compliance</div>
+      <h3 class="serif">This one has problems of its own.</h3>
+      <p class="sub">Same forensic sweep — but here the flags aren't in the developer's past, they're live on the project you'd be buying.</p></div>
+
+    <!-- RED ALERT hero -->
+    <div class="alert">
+      <div class="ic">⛔</div>
+      <div><h4>3 active legal flags on this project</h4>
+        <p>A contested title, a lapsing RERA registration, and an NGT construction stay — <b>all live right now</b>, all on this specific project.</p></div>
+      <div class="vb"><span class="band high"><span class="dot"></span>High risk · 3.4</span></div>
+    </div>
+
+    <!-- score impact -->
+    <div class="simpact">
+      <div class="si"><div class="k">Legal pillar</div>
+        <div class="flow"><span class="was mono">6.8<span class="u">/10</span></span><span class="arr">→</span><span class="now mono">3.4<span class="u" style="font-size:12px;color:var(--red2)">/10</span></span></div>
+        <span class="cap">⚠ active flags, not developer history</span></div>
+      <div class="si"><div class="k">Recommendation</div>
+        <div class="flow"><span class="was">Strong Buy</span><span class="arr">→</span><span class="now sm">⛔ Hold — clear flags first</span></div>
+        <span class="cap">◆ a legal flag gates the score — no 80+ “buy” while a project is under a live cloud</span></div>
+    </div>
+
+    <div class="rmatrix">
+      <div class="rm high"><div class="k">Title risk</div><div class="v"><span class="pip"></span>High</div></div>
+      <div class="rm high"><div class="k">Regulatory risk</div><div class="v"><span class="pip"></span>High</div></div>
+      <div class="rm high"><div class="k">Litigation risk</div><div class="v"><span class="pip"></span>High</div></div>
+      <div class="rm low"><div class="k">Developer risk</div><div class="v"><span class="pip"></span>Low</div></div>
+    </div>
+
+    <!-- inverted split -->
+    <div class="split">
+      <div class="sp flag">
+        <span class="tag">⚠ This project</span>
+        <h4 class="serif">Carries live flaws</h4>
+        <ul>
+          <li>Land-aggregation title suit — <b>injunction pending</b></li>
+          <li>RERA QPRs unfiled 2 quarters — <b>show-cause issued</b></li>
+          <li>NGT stay on 2 towers — <b>construction frozen</b></li>
+        </ul>
+        <div class="foot">This time, the risk IS the address.</div>
+      </div>
+      <div class="sp clean">
+        <span class="tag">✓ This developer</span>
+        <h4 class="serif">Actually reliable</h4>
+        <div class="txt">Clean RERA history, delivers on time, sound balance sheet. <b>But a good builder can't cure a clouded title or an NGT stay</b> — those sit above the developer.</div>
+        <div class="foot">A strong developer ≠ a safe project.</div>
+      </div>
+    </div>
+
+    <div class="modtag"><span class="t">The flags on this project — in detail</span><span class="ln"></span></div>
+    <div class="litcard crit">
+      <div class="top"><div><h5>Landowners v. Developer — title / aggregation suit</h5><div class="court">District Civil Court · filed 2024 · injunction application pending</div></div>
+        <div class="chips"><span class="chip active">● Active</span><span class="chip">Project-level</span><span class="chip hi">Impact: High</span></div></div>
+      <p>Original landowners contest the land aggregation underlying two towers and have sought an <b>injunction on construction and sale</b>. Until disposed, the title carries a cloud.</p>
+      <div class="bimp"><div class="l">What it means for you</div><div class="t">You could be buying into a plot whose ownership is being litigated. Worst case: construction halts, or your title is challenged after you've paid.</div></div>
+      <div class="src">Cause-list ref · next hearing listed · view source ↗</div>
+    </div>
+    <div class="litcard crit">
+      <div class="top"><div><h5>HRERA — registration in default</h5><div class="court">Haryana RERA · show-cause notice · registration at risk</div></div>
+        <div class="chips"><span class="chip active">● Active</span><span class="chip">Project-level</span><span class="chip hi">Impact: High</span></div></div>
+      <p>Quarterly Progress Reports have not been filed for <b>two consecutive quarters</b>; HRERA has issued a show-cause notice and registration is at risk of suspension.</p>
+      <div class="bimp"><div class="l">What it means for you</div><div class="t">A suspended RERA registration strips your protections — no regulator to enforce timelines, penalties or refunds. You'd be buying largely unprotected.</div></div>
+      <div class="src">HRERA notice ref · view source ↗</div>
+    </div>
+
+    <!-- our call -->
+    <div class="ourcall">
+      <div class="h">⚑ Truth Estate's call</div>
+      <div class="verdict serif">Don't commit capital yet. This is a hold, not a buy.</div>
+      <p>The location and the developer are genuinely good — but <b>none of that matters while the title is contested and the RERA registration is lapsing.</b> A great home on a clouded title is still a bad purchase. Wait for the flags to clear, or walk.</p>
+      <div class="steps">
+        <div class="st"><span class="n">1</span><span>Get written proof the <b>title suit is disposed</b> and the injunction vacated before paying beyond token.</span></div>
+        <div class="st"><span class="n">2</span><span>Confirm <b>HRERA registration is restored</b> and QPRs are current on haryanarera.gov.in.</span></div>
+        <div class="st"><span class="n">3</span><span>Ask for the <b>NGT order</b> and vacation status in writing.</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MOBILE ══════════ -->
+<div class="frame mob"><div class="fh">Flagged variant — mobile</div><div class="pad">
+  <div class="disc" style="margin-bottom:18px">⚠ <span><b>Illustrative</b> — hypothetical flagged project, not the Arbour.</span></div>
+  <div class="phead"><div class="pk">Pillar IV · Legal</div><h3 class="serif">Problems of its own.</h3></div>
+  <div class="alert" style="padding:16px 18px;margin-top:14px;flex-wrap:wrap">
+    <div class="ic" style="width:44px;height:44px;font-size:22px">⛔</div>
+    <div style="flex:1;min-width:0"><h4 style="font-size:17px">3 active legal flags</h4><p style="font-size:12px">Title, RERA &amp; NGT — all live now.</p></div>
+    <div class="vb" style="margin-left:0;margin-top:8px;width:100%"><span class="band high"><span class="dot"></span>High risk · 3.4</span></div>
+  </div>
+  <div class="simpact" style="margin-top:14px">
+    <div class="si"><div class="k">Legal pillar</div><div class="flow"><span class="was mono">6.8</span><span class="arr">→</span><span class="now mono">3.4</span></div></div>
+    <div class="si"><div class="k">Recommendation</div><div class="flow"><span class="was" style="font-size:16px">Strong Buy</span><span class="arr">→</span><span class="now sm" style="font-size:14px">⛔ Hold</span></div><span class="cap" style="font-size:10px">◆ a legal flag gates the score</span></div>
+  </div>
+  <div class="split" style="margin-top:14px">
+    <div class="sp flag" style="padding:18px"><span class="tag">⚠ This project</span><h4 class="serif" style="font-size:18px">Live flaws</h4>
+      <ul><li>Title suit — injunction pending</li><li>RERA show-cause</li><li>NGT construction stay</li></ul><div class="foot">The risk IS the address.</div></div>
+    <div class="sp clean" style="padding:18px"><span class="tag">✓ This developer</span><h4 class="serif" style="font-size:18px">Reliable</h4><div class="txt" style="font-size:12px">Good builder — but can't cure a clouded title.</div><div class="foot">Strong developer ≠ safe project.</div></div>
+  </div>
+  <div class="ourcall" style="padding:18px 20px">
+    <div class="h">⚑ Truth Estate's call</div>
+    <div class="verdict serif">A hold, not a buy.</div>
+    <p style="font-size:12.5px">Great location and developer — but not while the title's contested and RERA is lapsing. Wait for the flags to clear, or walk.</p>
+  </div>
+</div></div>
+
+</div></body></html>
