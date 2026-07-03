@@ -46,9 +46,11 @@ const recoTone = (r: string) =>
 /* Vitals, part 1 — a money fact: the value leads, big and serif; the label
    whispers underneath. (The presentation the wireframe round locked in.) */
 function Money({ v, k }: { v: string; k: string }) {
+  // adaptive display type — long values step down so no fact dominates the row
+  const size = v.length > 24 ? "text-[1.15rem] md:text-[1.35rem]" : v.length > 17 ? "text-[1.35rem] md:text-[1.6rem]" : "text-[1.6rem] md:text-[1.95rem]";
   return (
     <div>
-      <p className="font-serif text-[1.6rem] font-medium leading-[1.1] tracking-[-0.01em] md:text-[1.95rem]">{v}</p>
+      <p className={`font-serif ${size} font-medium leading-[1.18] tracking-[-0.01em] text-balance`}>{v}</p>
       <p className="mt-1.5 text-[0.6rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/35">{k}</p>
     </div>
   );
@@ -185,7 +187,9 @@ export default function ProjectProfile({
   const toc = [
     { id: "match", label: "Match score", show: true },
     { id: "vitals", label: "Vitals", show: true },
+    { id: "masterplan", label: "Masterplan", show: !!ops?.media?.masterplan },
     { id: "homes", label: "Homes & floor plans", show: (ops?.homes?.length ?? 0) > 0 },
+    { id: "documents", label: "Brochure & payment plan", show: !!(ops?.media?.brochure?.length || ops?.media?.paymentPlan) },
     { id: "tower-intel", label: "Tower & unit intel", show: true },
     { id: "anatomy", label: "Truth Score anatomy", show: true },
     { id: "developer", label: "Developer DNA", show: !!dev },
@@ -213,6 +217,16 @@ export default function ProjectProfile({
   const [scheduled, setScheduled] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [lead, setLead] = useState({ name: "", phone: "", time: "" });
+  // document viewer (masterplan / brochure pages / payment plan)
+  const [doc, setDoc] = useState<{ title: string; pages: string[]; idx: number } | null>(null);
+  useEffect(() => {
+    if (!doc) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setDoc(null); };
+    window.addEventListener("keydown", onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); };
+  }, [doc]);
   const scheduleCall = (e: FormEvent) => { e.preventDefault(); setScheduled(true); };
   const stripRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -512,9 +526,74 @@ export default function ProjectProfile({
               {ops?.reraNote && <Source>{ops.reraNote}. Sources: Haryana RERA registry & project filings.</Source>}
             </Section>
 
+            {/* 02 · Masterplan — the plan itself, then one honest read of it */}
+            {ops?.media?.masterplan && (
+              <Section id="masterplan" n={num()} title="Masterplan">
+                <button
+                  onClick={() => setDoc({ title: "Site masterplan", pages: [ops.media!.masterplan!.src], idx: 0 })}
+                  className="group block w-full overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-white/60 text-left"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`${basePath}/${ops.media.masterplan.src}`} alt={`${p.name} — site masterplan (indicative)`} className="w-full transition-transform duration-500 group-hover:scale-[1.01]" />
+                </button>
+                <div className="mt-3 flex items-start justify-between gap-6">
+                  <p className="max-w-2xl text-[0.88rem] font-light leading-[1.65] text-[#1a1a1a]/60">{ops.media.masterplan.read}</p>
+                  <button onClick={() => setDoc({ title: "Site masterplan", pages: [ops.media!.masterplan!.src], idx: 0 })} className="shrink-0 text-[0.74rem] font-semibold text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]">
+                    Open full size ↗
+                  </button>
+                </div>
+                <Source>Indicative layout from project filings — verify the RERA-approved siteplan before signing.</Source>
+              </Section>
+            )}
+
             {(ops?.homes?.length ?? 0) > 0 && (
               <Section id="homes" n={num()} title="The homes">
                 <ReportHomes p={p} />
+              </Section>
+            )}
+
+            {/* 04 · Brochure & payment plan — the developer's documents, on file */}
+            {(ops?.media?.brochure?.length || ops?.media?.paymentPlan) && (
+              <Section id="documents" n={num()} title="Brochure & payment plan">
+                <div className="grid gap-5 sm:grid-cols-2">
+                  {ops?.media?.brochure?.length ? (
+                    <button
+                      onClick={() => setDoc({ title: "Project brochure", pages: ops.media!.brochure!, idx: 0 })}
+                      className="group overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-white/60 text-left transition-colors hover:border-[#9a7a2e]/40"
+                    >
+                      <div className="relative aspect-[16/10] overflow-hidden bg-[#0b1f1a]">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={`${basePath}/${ops.media.brochure[0]}`} alt={`${p.name} brochure cover`} className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]" />
+                      </div>
+                      <div className="flex items-center justify-between gap-4 px-5 py-4">
+                        <div>
+                          <p className="text-[0.92rem] font-semibold">Project brochure</p>
+                          <p className="mt-0.5 text-[0.7rem] font-light text-[#1a1a1a]/45">{ops.media.brochure.length} pages · tap to read</p>
+                        </div>
+                        <span aria-hidden className="text-[#9a7a2e] transition-transform group-hover:translate-x-0.5">→</span>
+                      </div>
+                    </button>
+                  ) : null}
+                  {ops?.media?.paymentPlan && (
+                    <button
+                      onClick={() => setDoc({ title: "Payment plan", pages: [ops.media!.paymentPlan!.src], idx: 0 })}
+                      className="group overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-white/60 text-left transition-colors hover:border-[#9a7a2e]/40"
+                    >
+                      <div className="relative aspect-[16/10] overflow-hidden bg-[#f0ece3]">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={`${basePath}/${ops.media.paymentPlan.src}`} alt={`${p.name} payment plan`} className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]" />
+                      </div>
+                      <div className="flex items-center justify-between gap-4 px-5 py-4">
+                        <div>
+                          <p className="text-[0.92rem] font-semibold">Payment plan</p>
+                          <p className="mt-0.5 text-[0.7rem] font-light text-[#1a1a1a]/45">{ops.media.paymentPlan.read}</p>
+                        </div>
+                        <span aria-hidden className="text-[#9a7a2e] transition-transform group-hover:translate-x-0.5">→</span>
+                      </div>
+                    </button>
+                  )}
+                </div>
+                <Source>Developer documents on file — indicative until countersigned. GST, PLC, IFMS &amp; registration additional as applicable.</Source>
               </Section>
             )}
 
@@ -690,6 +769,36 @@ export default function ProjectProfile({
           Get Independent Advice
         </button>
       </div>
+
+      {/* Document viewer — masterplan / brochure pages / payment plan */}
+      {doc && (
+        <div className="fixed inset-0 z-[140] flex flex-col bg-[#0b1f1a]/90 backdrop-blur-sm" onClick={() => setDoc(null)}>
+          <div className="flex items-center justify-between gap-4 px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
+            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[#B29668]">
+              {doc.title}{doc.pages.length > 1 && <span className="ml-3 font-mono text-white/45 normal-case tracking-normal">{doc.idx + 1} / {doc.pages.length}</span>}
+            </p>
+            <button onClick={() => setDoc(null)} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white">✕</button>
+          </div>
+          <div className="relative flex min-h-0 flex-1 items-center justify-center px-4 pb-6" onClick={(e) => e.stopPropagation()}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`${basePath}/${doc.pages[doc.idx]}`} alt={`${doc.title} — page ${doc.idx + 1}`} className="max-h-full max-w-full rounded-lg shadow-[0_30px_90px_rgba(0,0,0,0.5)]" />
+            {doc.pages.length > 1 && (
+              <>
+                <button
+                  onClick={() => setDoc({ ...doc, idx: (doc.idx - 1 + doc.pages.length) % doc.pages.length })}
+                  aria-label="Previous page"
+                  className="absolute left-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-[1.2rem] text-white/85 backdrop-blur transition-colors hover:bg-white/20"
+                >←</button>
+                <button
+                  onClick={() => setDoc({ ...doc, idx: (doc.idx + 1) % doc.pages.length })}
+                  aria-label="Next page"
+                  className="absolute right-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-[1.2rem] text-white/85 backdrop-blur transition-colors hover:bg-white/20"
+                >→</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
