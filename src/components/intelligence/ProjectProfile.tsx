@@ -349,8 +349,9 @@ export default function ProjectProfile({
                           </span>
                         )}
                       </div>
-                      {/* caption lives in the left column so the score card bottom-aligns to it */}
-                      <p className="mt-6 flex items-center gap-2 text-[0.62rem] font-light text-white/45">
+                      {/* caption in the left column on wide screens only — it's what
+                         the score card bottom-aligns to when the two sit side-by-side */}
+                      <p className="mt-6 hidden items-center gap-2 text-[0.62rem] font-light text-white/45 xl:flex">
                         <IconClock /> {heroImage ? "Satellite view of the site · construction as last observed" : "Independent assessment · re-scored quarterly"} · data reviewed {reviewed}
                       </p>
                     </div>
@@ -384,6 +385,10 @@ export default function ProjectProfile({
                       </div>
                     </div>
                   </div>
+                  {/* on stacked layouts the caption closes the hero, under the score card */}
+                  <p className="mt-5 flex items-center gap-2 text-[0.62rem] font-light text-white/45 xl:hidden">
+                    <IconClock /> {heroImage ? "Satellite view of the site · construction as last observed" : "Independent assessment · re-scored quarterly"} · data reviewed {reviewed}
+                  </p>
                 </div>
               </div>
           </div>
@@ -409,7 +414,7 @@ export default function ProjectProfile({
               </div>
             </div>
 
-            <Chapter n="I" title="Project Fundamentals" framing="Start with the facts of the asset — the towers and units, the vitals, and the homes themselves — before we weigh whether it can be trusted." />
+            <Chapter n="I" title="Project Fundamentals" framing="The facts of the asset — before we weigh trust." />
 
             {/* Match Score now leads the report body as the "Your Fit" band (above) */}
 
@@ -443,7 +448,7 @@ export default function ProjectProfile({
                this decides WHICH exact unit. A product tier, not an asset fact. */}
             <TowerIntel project={p} meta={towerIntelMeta(p)} />
 
-            <Chapter n="II" title="Can we trust it?" framing="Five forces decide whether a project keeps its promise — the developer, the build, the location, the paperwork, and what sets it apart. Here's how it scores on each, and exactly what moves the number." />
+            <Chapter n="II" title="Can we trust it?" framing="Five pillars — developer, build, paperwork, location, edge." />
 
             {/* Truth Score anatomy — the composition spine */}
             <div id="anatomy" className="scroll-mt-24">
@@ -483,7 +488,7 @@ export default function ProjectProfile({
               </div>
             )}
 
-            <Chapter n="III" title="Will it make money?" framing="Where this project's price has actually been, why it moved, and where our model says it's headed — then a calculator to plan your own money, cash flow and all." />
+            <Chapter n="III" title="Will it make money?" framing="The price journey — and where our model says it's headed." />
 
             {/* Price dynamics + projection + ROI calculator */}
             {roi && (
@@ -492,7 +497,7 @@ export default function ProjectProfile({
               </div>
             )}
 
-            <Chapter n="IV" title="Decision time." framing="One project, four different calls — the same evidence lands differently depending on what this purchase has to do for you." />
+            <Chapter n="IV" title="Decision time." framing="The same evidence, read for your situation." />
 
             {/* The verdict — profile-tailored */}
             <div id="verdict" className="scroll-mt-24">
@@ -657,7 +662,8 @@ function Chapter({ n, title, framing }: { n: string; title: string; framing: str
     <div className="mt-20 border-t border-[#1a1a1a]/10 pt-11 md:mt-28">
       <span className="font-mono text-[0.66rem] font-medium uppercase tracking-[0.26em] text-[#c9a96e]">Chapter {n}</span>
       <h2 className="mt-3.5 max-w-2xl font-serif text-[2.1rem] font-medium leading-[1.04] tracking-[-0.015em] md:text-[2.9rem]">{title}</h2>
-      <p className="mt-3 max-w-xl text-[0.95rem] font-light leading-[1.7] text-[#1a1a1a]/50">{framing}</p>
+      {/* one whisper line, not a paragraph — the headline does the talking */}
+      <p className="mt-2.5 text-[0.82rem] font-light tracking-[0.01em] text-[#1a1a1a]/40">{framing}</p>
     </div>
   );
 }
