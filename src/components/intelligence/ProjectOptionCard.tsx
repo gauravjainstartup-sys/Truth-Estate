@@ -38,12 +38,7 @@ export default function ProjectOptionCard({
 }) {
   const inner = (
     <>
-      {/* fixed-height top zone: holds the verdict and the corner score, and
-         guarantees every card's name starts on the same line regardless of
-         name length */}
-      <div className="h-[96px]">
-        <span className={`text-[9.5px] font-semibold uppercase tracking-[0.12em] ${recoText(p.recommendation)}`}>{p.recommendation}</span>
-      </div>
+      <span className={`text-[9.5px] font-semibold uppercase tracking-[0.12em] ${recoText(p.recommendation)}`}>{p.recommendation}</span>
 
       {/* Truth Score — struck in the top-right corner */}
       <div className="absolute right-6 top-5 text-right">
@@ -51,17 +46,21 @@ export default function ProjectOptionCard({
         <span className="mt-1 block font-mono text-[7.5px] uppercase tracking-[0.13em] text-[#1a1a1a]/32">Truth Score</span>
       </div>
 
-      {/* identity — begins at the same height on every tile */}
-      <h3 className="max-w-[92%] font-serif text-[1.5rem] font-medium leading-[1.12] tracking-[-0.01em] text-[#1a1a1a] transition-colors duration-300 group-hover:text-[#1e6b45]">{p.name}</h3>
-      <p className="mt-2 text-[0.75rem] leading-snug text-[#1a1a1a]/50">{streetAddress(p)}</p>
-      <p className="mt-1.5 font-mono text-[0.84rem] text-[#1a1a1a] tabular-nums">₹{p.budget[0]}–{p.budget[1]} Cr</p>
-      {matchPct != null && (
-        <p className="mt-2.5 font-mono text-[0.68rem] font-semibold tracking-[0.02em] text-[#1e6b45] tabular-nums">{matchPct}% fit to you</p>
-      )}
+      {/* identity, anchored at the base. The name reserves two lines so every
+         card's name starts on the same line whether it wraps or not — short
+         names simply carry a line of air beneath them. */}
+      <div className="mt-auto">
+        <h3 className="min-h-[2.24em] max-w-[92%] font-serif text-[1.5rem] font-medium leading-[1.12] tracking-[-0.01em] text-[#1a1a1a] transition-colors duration-300 group-hover:text-[#1e6b45]">{p.name}</h3>
+        <p className="mt-2 text-[0.75rem] leading-snug text-[#1a1a1a]/50">{streetAddress(p)}</p>
+        <p className="mt-1.5 font-mono text-[0.84rem] text-[#1a1a1a] tabular-nums">₹{p.budget[0]}–{p.budget[1]} Cr</p>
+        {matchPct != null && (
+          <p className="mt-2.5 font-mono text-[0.68rem] font-semibold tracking-[0.02em] text-[#1e6b45] tabular-nums">{matchPct}% fit to you</p>
+        )}
+      </div>
     </>
   );
 
-  const cls = "group relative flex min-h-[340px] flex-col overflow-hidden rounded-[12px] border border-[#1a1a1a]/[0.13] bg-[#FBF8F2] p-6 text-left transition-colors duration-300 hover:border-[#1e6b45]/45";
+  const cls = "group relative flex min-h-[380px] flex-col overflow-hidden rounded-[12px] border border-[#1a1a1a]/[0.13] bg-[#FBF8F2] p-6 text-left transition-colors duration-300 hover:border-[#1e6b45]/45";
   return onSelect ? (
     <button onClick={onSelect} className={cls}>{inner}</button>
   ) : (
