@@ -121,12 +121,15 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
               <Row k="Loading" v={`${loading}%`} />
               <Row k="Carpet efficiency" v={`${eff}%`} strong />
             </dl>
-            <div className="mt-4 rounded-xl border px-4 py-3" style={{ borderColor: `${effRead.tone}40`, background: `${effRead.tone}0d` }}>
-              <p className="flex items-center gap-2 text-[0.6rem] font-bold uppercase tracking-[0.12em]" style={{ color: effRead.tone }}>
+            {/* the efficiency read — the same quiet left-rule strip as the report's
+               other analyst reads; the grade rides as a hairline chip and the
+               figure lives once, in the prose */}
+            <div className="mt-4 rounded-r-xl border-l-2 px-5 py-3.5" style={{ borderColor: effRead.tone, background: `${effRead.tone}0f` }}>
+              <p className="flex items-center gap-2.5 text-[0.6rem] font-bold uppercase tracking-[0.12em]" style={{ color: effRead.tone }}>
                 ◆ The efficiency read
-                <span className="ml-auto rounded-full px-2.5 py-0.5 text-[0.6rem] font-bold text-white" style={{ background: effRead.tone }}>{effRead.grade} · {eff}%</span>
+                <span className="rounded-full border px-2.5 py-[3px] text-[0.56rem] font-semibold uppercase tracking-[0.1em]" style={{ borderColor: `${effRead.tone}55`, color: effRead.tone }}>{effRead.grade}</span>
               </p>
-              <p className="mt-1.5 text-[0.78rem] font-light leading-[1.55] text-[#1a1a1a]/65">
+              <p className="mt-1.5 text-[0.82rem] font-light leading-[1.6] text-[#1a1a1a]/70">
                 <b className="font-semibold text-[#1a1a1a]">{eff}% usable</b> — {effRead.note}
               </p>
             </div>
