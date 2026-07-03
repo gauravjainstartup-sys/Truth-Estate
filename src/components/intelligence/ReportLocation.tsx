@@ -1,16 +1,12 @@
 import { type LocationGeo, type ProjectIntel } from "@/lib/projects";
 import LocationMap from "./LocationMap";
 
-/* Chapter II · Pillar III — Location Intelligence. When a project carries rich
+/* Chapter II · Pillar II — Location Intelligence. When a project carries rich
    geo data we lead with a coordinate-accurate interactive map, a connectivity
    readout with real distances & travel times, a category-score breakdown and
    the analyst's strengths/gaps. Projects not yet migrated fall back to the
    legacy branded schematic. */
 
-const CAT_MAX: Record<string, number> = { schools: 20, offices: 20, hospitals: 15, retail: 15, realEstate: 30 };
-const CAT_LABEL: Record<string, string> = { schools: "Schools", offices: "Workspaces", hospitals: "Healthcare", retail: "Retail & dining", realEstate: "Real estate" };
-const CAT_COLOR: Record<string, string> = { schools: "#2f8f5b", offices: "#3f74a6", hospitals: "#c0533e", retail: "#bf942f", realEstate: "#8a6d9c" };
-const CAT_KEYS = ["schools", "offices", "hospitals", "retail", "realEstate"] as const;
 
 export default function ReportLocation({ p }: { p: ProjectIntel }) {
   const loc = p.ops?.location;
@@ -20,7 +16,7 @@ export default function ReportLocation({ p }: { p: ProjectIntel }) {
     <div className="mt-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Pillar III · Location Intelligence</p>
+          <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Pillar II · Location Intelligence</p>
           <h3 className="mt-2 font-serif text-[1.7rem] font-medium leading-tight md:text-[2rem]">Will this address still be winning in 2035?</h3>
           <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">What&apos;s here today, what&apos;s funded and coming, and how you get around.</p>
         </div>
@@ -105,29 +101,6 @@ function GeoLayout({ p, geo }: { p: ProjectIntel; geo: LocationGeo }) {
             {c.lastMile.traffic && <Pill k="Peak traffic" v={c.lastMile.traffic} warn={/med|high/i.test(c.lastMile.traffic)} />}
           </div>
           {c.lastMile.bottlenecks && <p className="mt-3.5 text-[0.8rem] font-light leading-[1.6] text-[#1a1a1a]/55">{c.lastMile.bottlenecks}</p>}
-        </div>
-      )}
-
-      {/* category score breakdown */}
-      {s?.byCat && (
-        <div className="mt-4 rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-6">
-          <div className="flex items-center justify-between">
-            <span className="text-[0.66rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">What builds the location score</span>
-            {s.overall != null && <span className="font-mono text-[0.78rem] font-semibold text-[#1a1a1a]/70">{s.overall}/100</span>}
-          </div>
-          <div className="mt-4 space-y-3">
-            {CAT_KEYS.filter((k) => s.byCat![k] != null).map((k) => {
-              const v = s.byCat![k]!;
-              const max = CAT_MAX[k];
-              return (
-                <div key={k} className="grid grid-cols-[110px_1fr_44px] items-center gap-3">
-                  <span className="flex items-center gap-2 text-[0.76rem] font-medium text-[#1a1a1a]/70"><span className="h-2 w-2 rounded-full" style={{ background: CAT_COLOR[k] }} />{CAT_LABEL[k]}</span>
-                  <span className="h-2 overflow-hidden rounded-full bg-[#1a1a1a]/[0.06]"><span className="block h-full rounded-full" style={{ width: `${(v / max) * 100}%`, background: CAT_COLOR[k] }} /></span>
-                  <span className="text-right font-mono text-[0.72rem] text-[#1a1a1a]/55">{v}<span className="text-[#1a1a1a]/30">/{max}</span></span>
-                </div>
-              );
-            })}
-          </div>
         </div>
       )}
 

@@ -1,7 +1,7 @@
 import { deliveryOutlook, type ProjectIntel } from "@/lib/projects";
 import RenderVsReality from "./RenderVsReality";
 
-/* Chapter II · Pillar II — Construction & Sales. Reads the QPR: build % vs
+/* Chapter II · Pillar III — Construction & Sales. Reads the QPR: build % vs
    the RERA-due %, absorption, and a delivery forecast (predicted vs RERA,
    delay probability) — in the warm report language, not the old dark card. */
 
@@ -38,7 +38,7 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
 
   return (
     <div className="mt-8">
-      <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Pillar II · Construction &amp; Sales</p>
+      <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Pillar III · Construction &amp; Sales</p>
       <h3 className="mt-2 font-serif text-[1.7rem] font-medium leading-tight md:text-[2rem]">Is it actually getting built — and sold?</h3>
       <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">Build progress against the RERA filings — and the Expected OC date.</p>
 
