@@ -885,10 +885,12 @@ export default function ProjectProfile({
         </div>
       </div>
 
-      {/* Mobile: a single, clean primary CTA. The secondary "See Unit
-          Intelligence" already appears on first scroll in the hero. */}
-      <div className="sticky bottom-0 z-40 border-t border-[#1a1a1a]/10 bg-[#F5F0E8]/95 px-6 py-3 backdrop-blur md:hidden">
-        <button onClick={consult} className="w-full rounded-sm bg-[#1e6b45] px-5 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
+      {/* Mobile: a single, clean primary CTA — with the founder's face beside
+          it, so the advice reads as a person, not a form. */}
+      <div className="sticky bottom-0 z-40 flex items-center gap-3 border-t border-[#1a1a1a]/10 bg-[#F5F0E8]/95 px-6 py-3 backdrop-blur md:hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={`${basePath}/images/founder-gaurav.webp`} alt="Gaurav Jain — Founder, Truth Estate" className="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-[#B29668]/50" />
+        <button onClick={consult} className="flex-1 rounded-sm bg-[#1e6b45] px-5 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
           Get Independent Advice
         </button>
       </div>
