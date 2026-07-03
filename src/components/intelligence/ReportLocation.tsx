@@ -30,27 +30,15 @@ export default function ReportLocation({ p }: { p: ProjectIntel }) {
 /* ══════════════════════ map-led geo layout ══════════════════════ */
 function GeoLayout({ p, geo }: { p: ProjectIntel; geo: LocationGeo }) {
   const c = geo.connectivity;
-  const s = geo.scores;
   const ins = geo.insights;
 
   return (
     <>
-      {/* verdict + score strip */}
-      {(ins?.verdict || s) && (
-        <div className="mt-6 grid gap-4 lg:grid-cols-[1.7fr_1fr]">
-          {ins?.verdict && (
-            <div className="rounded-2xl border-l-2 border-[#238c55]/45 bg-white/50 p-6 md:p-7">
-              {ins.marketStage && <p className="text-[0.6rem] font-bold uppercase tracking-[0.14em] text-[#238c55]">{ins.marketStage}</p>}
-              <p className="mt-2.5 font-serif text-[1.14rem] leading-[1.5] text-[#1a1a1a]/85 md:text-[1.28rem]">{ins.verdict}</p>
-            </div>
-          )}
-          {s && (
-            <div className="grid grid-cols-3 overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-white/60 lg:grid-cols-1">
-              {s.overall != null && <ScoreCell v={s.overall} unit="/100" k="Location score" hero />}
-              {s.connectivity != null && <ScoreCell v={s.connectivity} unit="/10" k="Connectivity" />}
-              {s.lastMile != null && <ScoreCell v={s.lastMile} unit="/10" k="Last-mile ease" />}
-            </div>
-          )}
+      {/* the verdict — the numbers live in the pillar score; the prose is the value */}
+      {ins?.verdict && (
+        <div className="mt-6 rounded-2xl border-l-2 border-[#238c55]/45 bg-white/50 p-6 md:p-7">
+          {ins.marketStage && <p className="text-[0.6rem] font-bold uppercase tracking-[0.14em] text-[#238c55]">{ins.marketStage}</p>}
+          <p className="mt-2.5 font-serif text-[1.14rem] leading-[1.5] text-[#1a1a1a]/85 md:text-[1.28rem]">{ins.verdict}</p>
         </div>
       )}
 
@@ -132,15 +120,6 @@ function GeoLayout({ p, geo }: { p: ProjectIntel; geo: LocationGeo }) {
 
       <p className="mt-6 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">Sources: Google Places, GMDA / HSVP corridor data &amp; our field tracking. Pins are placed from surveyed coordinates; distances are straight-line from the project and drive times vary with traffic.</p>
     </>
-  );
-}
-
-function ScoreCell({ v, unit, k, hero }: { v: number; unit: string; k: string; hero?: boolean }) {
-  return (
-    <div className={`border-b border-r border-[#1a1a1a]/[0.06] p-4 lg:border-r-0 ${hero ? "bg-[#1e6b45]/[0.05]" : ""}`}>
-      <p className={`font-mono font-medium leading-none ${hero ? "text-[1.7rem] text-[#1e6b45]" : "text-[1.4rem] text-[#1a1a1a]"}`}>{v}<span className="text-[0.8rem] text-[#1a1a1a]/35">{unit}</span></p>
-      <p className="mt-1.5 text-[0.58rem] font-medium uppercase tracking-[0.08em] text-[#1a1a1a]/40">{k}</p>
-    </div>
   );
 }
 
