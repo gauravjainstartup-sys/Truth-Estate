@@ -43,28 +43,44 @@ const recoTone = (r: string) =>
   : r === "Buy" ? "border-[#3e8e62]/30 text-[#3e8e62] bg-[#3e8e62]/8"
   : "border-[#9a7a2e]/30 text-[#9a7a2e] bg-[#c9a96e]/10";
 
-/* A labelled key/value cell for the vitals grid. `href` renders the value as
-   an external verification link (same affordance as the address → Maps). */
-function KV({ k, v, tag, href, icon }: { k: string; v: string; tag?: string; href?: string; icon?: React.ReactNode }) {
+/* Vitals, part 1 — a money fact: the value leads, big and serif; the label
+   whispers underneath. (The presentation the wireframe round locked in.) */
+function Money({ v, k }: { v: string; k: string }) {
   return (
-    <div className="border-l-2 border-[#1a1a1a]/8 pl-4">
-      <p className="flex items-center gap-1.5 text-[0.6rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/35">
-        {icon && <span aria-hidden className="text-[#9a7a2e]">{icon}</span>}{k}
-      </p>
-      <p className="mt-1.5 break-words font-mono text-[0.88rem] font-medium leading-snug text-[#1a1a1a]/85 md:text-[0.95rem]">
+    <div>
+      <p className="font-serif text-[1.6rem] font-medium leading-[1.1] tracking-[-0.01em] md:text-[1.95rem]">{v}</p>
+      <p className="mt-1.5 text-[0.6rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/35">{k}</p>
+    </div>
+  );
+}
+
+/* Vitals, part 2 — a registry row: label · dotted leader · value. Small icon
+   on the label (the Sobha-style detail list), link affordance on the value. */
+function Reg({ k, v, tag, href, icon }: { k: string; v: string; tag?: string; href?: string; icon?: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline py-[0.72rem]">
+      {icon && <span aria-hidden className="mr-2.5 self-center text-[#9a7a2e]">{icon}</span>}
+      <span className="shrink-0 text-[0.85rem] font-light text-[#1a1a1a]/60">{k}</span>
+      <span aria-hidden className="mx-3 flex-1 -translate-y-[3px] border-b border-dotted border-[#1a1a1a]/25" />
+      <span className="shrink-0 text-right font-mono text-[0.85rem] font-medium text-[#1a1a1a]/85">
         {href ? (
           <a href={href} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-[#1e6b45]">
             {v}<IconArrowUpRight className="ml-1 text-[#9a7a2e]" />
           </a>
         ) : v}
-      </p>
-      {tag && <span className="mt-1.5 inline-block whitespace-nowrap rounded bg-[#1e6b45]/8 px-1.5 py-0.5 font-sans text-[0.58rem] font-medium uppercase tracking-[0.08em] text-[#1e6b45]">{tag}</span>}
+        {tag && <span className="ml-2 rounded bg-[#1e6b45]/8 px-1.5 py-0.5 font-sans text-[0.56rem] font-medium uppercase tracking-[0.08em] text-[#1e6b45]">{tag}</span>}
+      </span>
     </div>
   );
 }
 
 function Source({ children }: { children: React.ReactNode }) {
   return <p className="mt-6 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">{children}</p>;
+}
+
+/* Compact ₹-thousands: 18500 → "18.5", 21000 → "21". */
+function kpsf(n: number): string {
+  return (n / 1000).toFixed(n % 1000 === 0 ? 0 : 1).replace(/\.0$/, "");
 }
 
 /* Low/Mid/High-rise from the top of the floors band ("34–38" → 38). */
@@ -467,27 +483,31 @@ export default function ProjectProfile({
 
             {/* 01 · Vitals — one uniform grid, one type language */}
             <Section id="vitals" n={num()} title="Vitals">
-              <div className="grid grid-cols-2 gap-x-6 gap-y-7 rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-8 md:grid-cols-4 md:p-10">
-                {/* money */}
-                <KV icon={VITAL_ICON.ticket} k="Ticket size" v={`₹${p.budget[0]}–${p.budget[1]} Cr`} />
-                <KV icon={VITAL_ICON.psf} k="Corridor avg / sq ft" v={p.psf ? fmtPsf(p.psf.avg) : "—"} />
-                {ops?.price && <KV icon={VITAL_ICON.tag} k="Launch price / sq ft" v={fmtPsf(ops.price.launchPsf)} />}
-                {/* the product */}
-                <KV icon={VITAL_ICON.configs} k="Configurations" v={configsDisplay(p.configs)} />
-                <KV icon={VITAL_ICON.size} k="Indicative size · super" v={p.sizeBand ?? "—"} />
-                {/* scale */}
-                {ops?.units != null && <KV icon={VITAL_ICON.units} k="Total units" v={`${ops.units.toLocaleString("en-IN")}`} />}
-                {ops?.towers != null && <KV icon={VITAL_ICON.towers} k="Towers" v={`${ops.towers}`} />}
-                {ops?.landAcres != null && <KV icon={VITAL_ICON.land} k="Land" v={`${ops.landAcres} acre`} />}
-                {ops?.floors && <KV icon={VITAL_ICON.floors} k="Floors" v={ops.floors} />}
-                {ops?.floors && riseTypeOf(ops.floors) && <KV icon={VITAL_ICON.rise} k="Type" v={riseTypeOf(ops.floors)!} />}
-                {/* the site */}
-                {ops?.density != null && <KV icon={VITAL_ICON.density} k="Density" v={`${ops.density} / acre`} tag={ops.density <= 50 ? "Low-density" : undefined} />}
-                {ops?.openAreaPct != null && <KV icon={VITAL_ICON.leaf} k="Open area" v={`${ops.openAreaPct}%`} tag={ops.openAreaPct >= 80 ? "Green" : undefined} />}
-                {/* dates & registry */}
-                {ops?.launch && <KV icon={VITAL_ICON.calendar} k="Launched" v={ops.launch} />}
-                {ops?.possession && <KV icon={VITAL_ICON.key} k="RERA possession" v={ops.possession} />}
-                {ops?.reraId && <KV icon={VITAL_ICON.file} k="RERA ID" v={ops.reraId} href="https://haryanarera.gov.in/" />}
+              <div className="rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-8 md:p-10">
+                {/* money facts — value-first, serif, 2×2 on mobile / 4-up on desktop */}
+                <div className="grid grid-cols-2 gap-x-8 gap-y-8 lg:grid-cols-4">
+                  <Money v={`₹${p.budget[0]}–${p.budget[1]} Cr`} k="Ticket" />
+                  {ops?.price
+                    ? <Money v={`₹${kpsf(ops.price.currentLow)}–${kpsf(ops.price.currentHigh)}k`} k="Current / sq ft" />
+                    : <Money v={p.psf ? fmtPsf(p.psf.avg) : "—"} k="Corridor avg / sq ft" />}
+                  <Money v={configsDisplay(p.configs)} k="Configs" />
+                  <Money v={p.sizeBand ?? "—"} k="Super sq ft" />
+                </div>
+                {/* the registry — dotted-leader detail list */}
+                <div className="mt-9 grid border-t border-[#1a1a1a]/8 pt-4 md:grid-cols-2 md:gap-x-12">
+                  {ops?.price && <Reg icon={VITAL_ICON.tag} k="Launch price / sq ft" v={fmtPsf(ops.price.launchPsf)} />}
+                  {ops?.price && p.psf && <Reg icon={VITAL_ICON.psf} k="Corridor avg / sq ft" v={fmtPsf(p.psf.avg)} />}
+                  {ops?.units != null && <Reg icon={VITAL_ICON.units} k="Total units" v={`${ops.units.toLocaleString("en-IN")}`} />}
+                  {ops?.towers != null && <Reg icon={VITAL_ICON.towers} k="Towers" v={`${ops.towers}`} />}
+                  {ops?.landAcres != null && <Reg icon={VITAL_ICON.land} k="Land" v={`${ops.landAcres} acre`} />}
+                  {ops?.floors && <Reg icon={VITAL_ICON.floors} k="Floors" v={ops.floors} />}
+                  {ops?.floors && riseTypeOf(ops.floors) && <Reg icon={VITAL_ICON.rise} k="Type" v={riseTypeOf(ops.floors)!} />}
+                  {ops?.density != null && <Reg icon={VITAL_ICON.density} k="Density" v={`${ops.density} / acre`} tag={ops.density <= 50 ? "Low-density" : undefined} />}
+                  {ops?.openAreaPct != null && <Reg icon={VITAL_ICON.leaf} k="Open area" v={`${ops.openAreaPct}%`} tag={ops.openAreaPct >= 80 ? "Green" : undefined} />}
+                  {ops?.launch && <Reg icon={VITAL_ICON.calendar} k="Launched" v={ops.launch} />}
+                  {ops?.possession && <Reg icon={VITAL_ICON.key} k="RERA possession" v={ops.possession} />}
+                  {ops?.reraId && <Reg icon={VITAL_ICON.file} k="RERA ID" v={ops.reraId} href="https://haryanarera.gov.in/" />}
+                </div>
               </div>
               {ops?.reraNote && <Source>{ops.reraNote}. Sources: Haryana RERA registry & project filings.</Source>}
             </Section>
