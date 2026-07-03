@@ -241,8 +241,8 @@ export default function ProjectProfile({
     { id: "vitals", label: "Vitals", show: true },
     { id: "masterplan", label: "Masterplan", show: !!ops?.media?.masterplan },
     { id: "homes", label: "Homes & floor plans", show: (ops?.homes?.length ?? 0) > 0 },
-    { id: "documents", label: "Brochure & payment plan", show: true },
     { id: "tower-intel", label: "Tower & unit intel", show: true },
+    { id: "documents", label: "Brochure & payment plan", show: true },
     { id: "anatomy", label: "Truth Score anatomy", show: true },
     { id: "developer", label: "Developer DNA", show: !!dev },
     { id: "construction", label: "Construction & sales", show: !!con },
@@ -605,6 +605,11 @@ export default function ProjectProfile({
               </Section>
             )}
 
+            {/* Tower & Unit Intelligence — the deep layer of Part 3. You've seen
+               the homes and their floor plans; this is where you pick WHICH exact
+               unit, in 3D. A product tier that belongs with the homes. */}
+            <TowerIntel project={p} meta={towerIntelMeta(p)} />
+
             {/* 04 · Brochure & payment plan — documents on file render as cards;
                whatever is missing becomes an honest request tile (lead capture). */}
             <Section id="documents" n={num()} title="Brochure & payment plan">
@@ -699,11 +704,6 @@ export default function ProjectProfile({
                 </div>
                 <Source>{ops?.media?.brochure || ops?.media?.paymentPlan || ops?.media?.costSheet ? "Developer documents on file — indicative until countersigned." : "Documents arrive as the desk sources them — indicative until countersigned."} GST, PLC, IFMS &amp; registration additional as applicable.</Source>
               </Section>
-
-            {/* Tower & Unit Intelligence — the gated deep layer. Sits after the
-               homes as the bridge out of the facts: you've seen the floor plans;
-               this decides WHICH exact unit. A product tier, not an asset fact. */}
-            <TowerIntel project={p} meta={towerIntelMeta(p)} />
 
             <Chapter n="II" title="Can we trust it?" framing="Five pillars — developer, build, paperwork, location, edge." />
 
