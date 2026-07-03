@@ -59,9 +59,6 @@ export default function ReportDeveloper({ p }: { p: ProjectIntel }) {
         <Stat v={`${lapsed}`} k="Lapsed" tone={lapsed > 0 ? "red" : "clean"} />
         <Stat v={`${perf.avgDelayMonths}`} unit="mo" k="Avg slippage" />
       </div>
-      <p className="mt-3 text-[0.72rem] font-light leading-[1.5] text-[#1a1a1a]/40">
-        <span className="text-[#9a4130]">&ldquo;Lapsed&rdquo;</span> turns alarming red the moment it&apos;s above zero — a lapsed RERA registration means buyers lost the regulator&apos;s safety net.{lapsed === 0 && " Here it's clean."}
-      </p>
 
       {/* reliability + slippage */}
       <div className="mt-5 grid gap-4 md:grid-cols-2">

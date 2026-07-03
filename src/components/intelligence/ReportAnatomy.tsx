@@ -109,8 +109,8 @@ function pillarIcon(k: string, tone: string) {
   switch (k) {
     case "developer": // developer / company track record — building
       return <svg {...common} style={{ color: tone }} aria-hidden><path d="M4 21V5.5A1.5 1.5 0 0 1 5.5 4h6A1.5 1.5 0 0 1 13 5.5V21" /><path d="M13 10h5.5A1.5 1.5 0 0 1 20 11.5V21" /><path d="M3 21h18M7 8h2M7 12h2M7 16h2M16 14h1M16 17.5h1" /></svg>;
-    case "construction": // construction & sales — hard hat
-      return <svg {...common} style={{ color: tone }} aria-hidden><path d="M3 18.5h18" /><path d="M5.5 18.5a6.5 6.5 0 0 1 13 0" /><path d="M12 6v3.4M9.4 9.6 8.7 6.6M14.6 9.6l.7-3" /></svg>;
+    case "construction": // construction & sales — tower crane with load
+      return <svg {...common} style={{ color: tone }} aria-hidden><path d="M3 21h18" /><path d="M7 21V5" /><path d="M3.5 5H21" /><path d="M7 2.5 3.5 5M7 2.5l4 2.5" /><path d="M17.5 5v3.5" /><path d="M15.9 8.5h3.2v3.2h-3.2z" /></svg>;
     case "location": // location intelligence — pin
       return <svg {...common} style={{ color: tone }} aria-hidden><path d="M12 21c4.4-4 7-7.1 7-11a7 7 0 1 0-14 0c0 3.9 2.6 7 7 11Z" /><circle cx="12" cy="10" r="2.3" /></svg>;
     case "legal": // legal & compliance — scales
