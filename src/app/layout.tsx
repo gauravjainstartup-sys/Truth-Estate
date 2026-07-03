@@ -133,6 +133,17 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
     >
       <head>
+        {/* Treat every hard refresh as a brand-new visitor: on a genuine page
+           reload we wipe all locally-stored demo state (persona, unlocks,
+           brief, leads) so nothing carries over. Ordinary link / router
+           navigation (type "navigate") is left untouched, so moving between
+           reports keeps the persona built during the session. Runs before
+           React hydrates so no stale state is ever read. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var r=false;var e=(performance.getEntriesByType&&performance.getEntriesByType('navigation')[0]);if(e){r=e.type==='reload';}else if(performance.navigation){r=performance.navigation.type===1;}if(r){for(var i=localStorage.length-1;i>=0;i--){var k=localStorage.key(i);if(k&&k.indexOf('truthEstate')===0){localStorage.removeItem(k);}}}}catch(_){}})();`,
+          }}
+        />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteLd) }} />
       </head>

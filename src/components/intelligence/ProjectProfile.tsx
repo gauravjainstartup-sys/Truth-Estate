@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import { useConsultation } from "../consultation/ConsultationProvider";
@@ -196,6 +197,7 @@ export default function ProjectProfile({
 }) {
   const { open } = useJourney();
   const { openConsult } = useConsultation();
+  const router = useRouter();
   // "Get Independent Advice" from a report is about THIS project — open the
   // consultation with the project as its source (the advisor preps for it),
   // and if the visitor already shared a brief (Match Score / Buyer Office),
@@ -338,6 +340,12 @@ export default function ProjectProfile({
               <a href={basePath} aria-label="Home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
               <button onClick={consult} className="ml-auto hidden rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.74rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] md:inline-block md:px-5">
                 Get Independent Advice
+              </button>
+              {/* Mobile: a BACK affordance mirroring the embedded CLOSE — same
+                 quiet treatment, right-aligned. Returns to wherever the reader
+                 came from (journey, shortlist, another report, or the site). */}
+              <button onClick={() => router.back()} aria-label="Back" className="ml-auto inline-flex items-center gap-1.5 text-[11px] font-light tracking-[0.18em] text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a] md:hidden">
+                <span aria-hidden="true" className="text-[13px] leading-none">←</span> BACK
               </button>
             </>
           )}
