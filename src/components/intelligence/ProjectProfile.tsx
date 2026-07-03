@@ -150,26 +150,15 @@ export default function ProjectProfile({
   const [formOpen, setFormOpen] = useState(false);
   const [lead, setLead] = useState({ name: "", phone: "", time: "" });
   const scheduleCall = (e: FormEvent) => { e.preventDefault(); setScheduled(true); };
-  /* The rail rides the reader's journey: orienting → sell the deep layer ·
-     weighing evidence → offer the analyst · deciding → capture the callback.
-     Driven by reading position (monotonic), not momentary intersections. */
-  const [railStage, setRailStage] = useState<"fundamentals" | "evidence" | "decision">("fundamentals");
   const stripRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (embedded) return;
     const firstId = tocKey.split(",")[0];
     let raf = 0;
-    const top = (id: string) => {
-      const el = document.getElementById(id);
-      return el ? el.getBoundingClientRect().top : Infinity;
-    };
     const check = () => {
       raf = 0;
       const el = document.getElementById(firstId);
       setShowStrip(el ? el.getBoundingClientRect().top <= 140 : window.scrollY > 480);
-      // dock stage: past the money chapter → decision; past the trust chapter → evidence
-      const decisionTop = Math.min(top("roi"), top("verdict"));
-      setRailStage(decisionTop <= 340 ? "decision" : top("anatomy") <= 340 ? "evidence" : "fundamentals");
     };
     const onScroll = () => { if (!raf) raf = requestAnimationFrame(check); };
     check();
@@ -246,93 +235,53 @@ export default function ProjectProfile({
 
       <div className={`mx-auto ${embedded ? "max-w-6xl" : "max-w-7xl"} px-6 pb-[12vh] pt-[6vh] md:px-10`}>
         <div className={embedded ? "" : "xl:grid xl:grid-cols-[minmax(0,1fr)_300px] xl:gap-14"}>
-          {/* The Advisor Dock — one card, one ask, tuned to where the reader is.
-              Fundamentals → sell the deep layer · Evidence → offer the analyst ·
-              Decision → capture the callback. No pile, no internal scrolling. */}
+          {/* The Independent Desk — a calm, constant companion, not a sales column.
+              The report does the persuading; this holds one human way to get help.
+              Advice is the product; the deep layer is one quiet line, not a billboard. */}
           {!embedded && (
             <aside className="hidden self-start xl:col-start-2 xl:row-start-1 xl:sticky xl:top-[132px] xl:block">
-              {/* constant identity strip */}
-              <div className="flex items-center gap-2.5 px-1">
-                <span className="inline-flex shrink-0 items-baseline gap-1 rounded-lg bg-[#1e6b45] px-2 py-1.5 font-serif text-[0.95rem] leading-none text-white">{p.truthScore}<span className="font-mono text-[0.5rem] text-white/60">/100</span></span>
-                <span className="min-w-0 flex-1 truncate text-[0.8rem] font-medium text-[#1a1a1a]/85">{p.name}</span>
-                <span className="shrink-0 text-[0.54rem] font-bold uppercase tracking-[0.12em] text-[#1e6b45]">{scoreGrade(p.truthScore)}</span>
+              <div className="rounded-2xl border border-[#1a1a1a]/10 bg-[#FBF8F2] p-6">
+                <div className="flex items-center gap-2.5">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#1e6b45]/25 bg-[#1e6b45]/[0.06]">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#1e6b45" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-[1.05rem] w-[1.05rem]" aria-hidden><path d="M12 3 5 5.8v5.5c0 4 3 6.9 7 8.2 4-1.3 7-4.2 7-8.2V5.8L12 3Z" /><path d="M9 11.6 11 13.6 15 9.4" /></svg>
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#9a7a2e]">The Independent Desk</p>
+                    <p className="truncate text-[0.68rem] font-light text-[#1a1a1a]/45">on {p.name}</p>
+                  </div>
+                </div>
+
+                <p className="mt-4 font-serif text-[1.32rem] font-medium leading-[1.24] text-[#1a1a1a]">Talk to someone who has actually read this file.</p>
+
+                {scheduled ? (
+                  <div className="mt-4 rounded-xl border border-[#1e6b45]/20 bg-[#1e6b45]/[0.06] px-4 py-3.5 text-[0.8rem] font-medium leading-[1.55] text-[#1e6b45]">✓ Thanks{lead.name ? `, ${lead.name.trim().split(" ")[0]}` : ""} — an advisor will call you{lead.time ? ` ${lead.time.toLowerCase()}` : " shortly"}. Expect a Gurugram number.</div>
+                ) : formOpen ? (
+                  <form onSubmit={scheduleCall} className="mt-4 space-y-2">
+                    <input required value={lead.name} onChange={(e) => setLead({ ...lead, name: e.target.value })} placeholder="Your name" className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3.5 py-2.5 text-[0.8rem] outline-none transition-colors focus:border-[#1e6b45]" />
+                    <input required type="tel" value={lead.phone} onChange={(e) => setLead({ ...lead, phone: e.target.value })} placeholder="Phone / WhatsApp" className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3.5 py-2.5 text-[0.8rem] outline-none transition-colors focus:border-[#1e6b45]" />
+                    <select required value={lead.time} onChange={(e) => setLead({ ...lead, time: e.target.value })} className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3.5 py-2.5 text-[0.8rem] text-[#1a1a1a]/80 outline-none transition-colors focus:border-[#1e6b45]">
+                      <option value="" disabled>Preferred time</option>
+                      <option>Today · morning</option><option>Today · evening</option><option>Tomorrow</option><option>This weekend</option>
+                    </select>
+                    <button type="submit" className="w-full rounded-lg bg-[#1e6b45] px-4 py-2.5 text-[0.8rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Confirm the callback</button>
+                  </form>
+                ) : (
+                  <div className="mt-5">
+                    <button onClick={() => setFormOpen(true)} className="group flex w-full items-center justify-between rounded-xl bg-[#1e6b45] px-5 py-3.5 text-[0.85rem] font-semibold text-white transition-colors hover:bg-[#238c55]">
+                      Book a 15-minute call <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
+                    </button>
+                    <button onClick={consult} className="mt-2.5 w-full text-center text-[0.72rem] font-medium text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a]/80">or ask a question first</button>
+                  </div>
+                )}
+
+                <p className="mt-5 border-t border-[#1a1a1a]/8 pt-3.5 text-[0.64rem] font-light leading-[1.5] text-[#1a1a1a]/40">Independent advisory — we hold no inventory and take no builder commission.</p>
               </div>
 
-              {/* the dock */}
-              <div className="mt-3">
-                {railStage === "fundamentals" && (
-                  <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0e1622] to-[#1e2c40] p-5 text-white">
-                    <svg className="pointer-events-none absolute -right-3 -top-3 h-24 w-24 text-[#c9a96e] opacity-[0.12]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" aria-hidden><path d="M12 2 21 7v10l-9 5-9-5V7z" /><path d="M3 7l9 5 9-5M12 12v10" /></svg>
-                    <p className="flex items-center gap-2 text-[0.56rem] font-bold uppercase tracking-[0.16em] text-[#c9a96e]">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-[1.05rem] w-[1.05rem]" aria-hidden><path d="M12 2 21 7v10l-9 5-9-5V7z" /><path d="M3 7l9 5 9-5M12 12v10" /></svg>
-                      3D Unit Intelligence
-                    </p>
-                    <p className="mt-2.5 font-serif text-[1.2rem] font-medium leading-[1.15]">Walk the tower before you buy.</p>
-                    <ul className="mt-3 space-y-1.5 text-[0.73rem] font-light text-white/70">
-                      <li className="flex gap-2"><span className="text-[#c9a96e]" aria-hidden>▸</span>Live 3D site &amp; every tower</li>
-                      <li className="flex gap-2"><span className="text-[#c9a96e]" aria-hidden>▸</span>Per-unit sun, airflow &amp; Vastu</li>
-                      <li className="flex gap-2"><span className="text-[#c9a96e]" aria-hidden>▸</span>The full 5-year price projection</li>
-                    </ul>
-                    <button onClick={() => jumpTo("tower-intel")} className="mt-4 w-full rounded-lg bg-[#c9a96e] px-4 py-2.5 text-[0.78rem] font-bold text-[#1a1a1a] transition-colors hover:bg-[#d8bd8a]">Explore the live 3D →</button>
-                    <button onClick={consult} className="mt-2 w-full text-center text-[0.66rem] font-light text-white/50 transition-colors hover:text-white/85">or get independent advice →</button>
-                  </div>
-                )}
-
-                {railStage === "evidence" && (
-                  <div className="rounded-2xl border border-[#1e6b45]/25 bg-white/70 p-5">
-                    <p className="flex items-center gap-2 text-[0.56rem] font-bold uppercase tracking-[0.16em] text-[#1e6b45]"><IconShieldCheck className="text-[#1e6b45]" /> Independent read</p>
-                    <p className="mt-2.5 font-serif text-[1.2rem] font-medium leading-[1.2]">Reading the fine print? Good.</p>
-                    <p className="mt-2 text-[0.75rem] font-light leading-[1.55] text-[#1a1a1a]/60">Our analyst will pressure-test this project against your brief — the delivery record, the legal history, the exit math.</p>
-                    {scheduled ? (
-                      <div className="mt-3 rounded-lg bg-[#1e6b45]/10 px-3.5 py-3 text-[0.74rem] font-medium leading-[1.5] text-[#1e6b45]">✓ Thanks{lead.name ? `, ${lead.name.trim().split(" ")[0]}` : ""} — an advisor will call you{lead.time ? ` · ${lead.time.toLowerCase()}` : ""}.</div>
-                    ) : formOpen ? (
-                      <form onSubmit={scheduleCall} className="mt-3 space-y-2">
-                        <input required value={lead.name} onChange={(e) => setLead({ ...lead, name: e.target.value })} placeholder="Your name" className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3 py-2 text-[0.78rem] outline-none transition-colors focus:border-[#1e6b45]" />
-                        <input required type="tel" value={lead.phone} onChange={(e) => setLead({ ...lead, phone: e.target.value })} placeholder="Phone / WhatsApp" className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3 py-2 text-[0.78rem] outline-none transition-colors focus:border-[#1e6b45]" />
-                        <select required value={lead.time} onChange={(e) => setLead({ ...lead, time: e.target.value })} className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3 py-2 text-[0.78rem] text-[#1a1a1a]/80 outline-none transition-colors focus:border-[#1e6b45]">
-                          <option value="" disabled>Preferred time</option>
-                          <option>Today · morning</option><option>Today · evening</option><option>Tomorrow</option><option>This weekend</option>
-                        </select>
-                        <button type="submit" className="w-full rounded-lg bg-[#1e6b45] px-4 py-2.5 text-[0.78rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Request the callback</button>
-                      </form>
-                    ) : (
-                      <>
-                        <button onClick={consult} className="mt-3.5 w-full rounded-lg bg-[#1e6b45] px-4 py-3 text-[0.8rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Talk to the analyst →</button>
-                        <button onClick={() => setFormOpen(true)} className="mt-2 w-full text-center text-[0.68rem] font-medium text-[#1e6b45]/75 transition-colors hover:text-[#1e6b45]">or request a callback</button>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {railStage === "decision" && (
-                  <div className="rounded-2xl border border-[#9a7a2e]/30 bg-gradient-to-br from-[#9a7a2e]/[0.08] to-transparent p-5">
-                    <p className="flex items-center gap-2 text-[0.56rem] font-bold uppercase tracking-[0.16em] text-[#9a7a2e]"><IconClock className="text-[#9a7a2e]" /> Decision time</p>
-                    <p className="mt-2.5 font-serif text-[1.2rem] font-medium leading-[1.2]">Ready to move on this?</p>
-                    {scheduled ? (
-                      <div className="mt-3 rounded-lg bg-[#1e6b45]/10 px-3.5 py-3 text-[0.74rem] font-medium leading-[1.5] text-[#1e6b45]">✓ Thanks{lead.name ? `, ${lead.name.trim().split(" ")[0]}` : ""} — an advisor will call you{lead.time ? ` · ${lead.time.toLowerCase()}` : ""} about {p.name}.</div>
-                    ) : formOpen ? (
-                      <form onSubmit={scheduleCall} className="mt-3 space-y-2">
-                        <input required value={lead.name} onChange={(e) => setLead({ ...lead, name: e.target.value })} placeholder="Your name" className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3 py-2 text-[0.78rem] outline-none transition-colors focus:border-[#1e6b45]" />
-                        <input required type="tel" value={lead.phone} onChange={(e) => setLead({ ...lead, phone: e.target.value })} placeholder="Phone / WhatsApp" className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3 py-2 text-[0.78rem] outline-none transition-colors focus:border-[#1e6b45]" />
-                        <select required value={lead.time} onChange={(e) => setLead({ ...lead, time: e.target.value })} className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3 py-2 text-[0.78rem] text-[#1a1a1a]/80 outline-none transition-colors focus:border-[#1e6b45]">
-                          <option value="" disabled>Preferred time</option>
-                          <option>Today · morning</option><option>Today · evening</option><option>Tomorrow</option><option>This weekend</option>
-                        </select>
-                        <button type="submit" className="w-full rounded-lg bg-[#1e6b45] px-4 py-2.5 text-[0.78rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Request the callback</button>
-                      </form>
-                    ) : (
-                      <>
-                        <button onClick={() => setFormOpen(true)} className="mt-3.5 w-full rounded-lg bg-[#1e6b45] px-4 py-3 text-[0.8rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Request a callback →</button>
-                        <p className="mt-2 text-center text-[0.62rem] font-light text-[#1a1a1a]/45">An advisor calls at your time · no obligation</p>
-                      </>
-                    )}
-                    <a href={`${basePath}/office`} className="mt-3.5 block border-t border-[#1a1a1a]/8 pt-3 text-[0.72rem] font-semibold text-[#1e6b45] transition-colors hover:text-[#238c55]">Join the Buyer&apos;s Office — free →</a>
-                  </div>
-                )}
-              </div>
-
-              {/* constant trust line */}
-              <p className="mt-3 px-1 text-center text-[0.6rem] font-light text-[#1a1a1a]/40">Independent — we don&apos;t sell inventory. Advice is the product.</p>
+              {/* one quiet way to explore the product first — a line, not a billboard */}
+              <button onClick={() => jumpTo("tower-intel")} className="group mt-4 flex w-full items-center gap-2.5 px-1 text-left text-[0.72rem] font-light text-[#1a1a1a]/50 transition-colors hover:text-[#1a1a1a]/80">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" className="h-4 w-4 shrink-0 text-[#9a7a2e]" aria-hidden><path d="M12 2 21 7v10l-9 5-9-5V7z" /><path d="M3 7l9 5 9-5M12 12v10" /></svg>
+                Rather explore first? <span className="font-medium text-[#1a1a1a]/75 group-hover:text-[#1e6b45]">Walk the live 3D →</span>
+              </button>
             </aside>
           )}
 
