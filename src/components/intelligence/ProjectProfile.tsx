@@ -443,8 +443,10 @@ export default function ProjectProfile({
             )}
 
             {/* Hero canvas — one layout, two backgrounds: the site aerial when we
-                hold one, a designed dark panel when we don't. Same light overlay. */}
-              <div className={`relative ${embedded ? "mt-9" : "mt-0"} overflow-hidden rounded-[24px] bg-[#0b1f1a] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.55)]`}>
+                hold one, a designed dark panel when we don't. Same light overlay.
+                On phones the standalone hero bleeds edge-to-edge (cancelling the
+                page gutters) and keeps only its curved base — the "sheet peel". */}
+              <div className={`relative ${embedded ? "mt-9 rounded-[24px]" : "-mx-6 -mt-4 rounded-b-[26px] sm:mx-0 sm:mt-0 sm:rounded-[24px]"} overflow-hidden bg-[#0b1f1a] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.55)]`}>
                 {heroImage ? (
                   <>
                     <img src={`${basePath}/${heroImage}`} alt={`${p.name} — aerial site view`} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: "center 42%" }} />
