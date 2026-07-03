@@ -523,11 +523,12 @@ export default function ProjectProfile({
                       </div>
                     </div>
                   </div>
-                  {/* on stacked layouts the caption closes the hero, under the score card */}
-                  <p className="mt-5 flex items-center gap-2 text-[0.62rem] font-light text-white/45 xl:hidden">
-                    <IconClock /> {heroImage ? "Satellite view of the site · construction as last observed" : "Independent assessment · re-scored quarterly"} · data reviewed {reviewed}
-                  </p>
                 </div>
+                {/* provenance as a corner badge on stacked layouts — the two-line
+                   caption gave way to the visual; xl keeps its in-column caption */}
+                <span className="absolute right-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/40 px-3 py-1.5 font-mono text-[0.6rem] tracking-[0.05em] text-white/75 backdrop-blur-sm xl:hidden">
+                  {heroImage ? <>◉ Satellite · {reviewed}</> : <>◆ Reviewed {reviewed}</>}
+                </span>
               </div>
           </div>
 
