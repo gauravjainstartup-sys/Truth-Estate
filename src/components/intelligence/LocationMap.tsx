@@ -104,7 +104,7 @@ export default function LocationMap({ geo, projectName }: { geo: LocationGeo; pr
                 <stop offset="100%" stopColor="rgba(178,150,104,0)" />
               </radialGradient>
             </defs>
-            <rect width={S} height={S} fill="url(#land)" />
+            <rect width={S} height={S} fill="url(#land)" onClick={() => setHover(null)} />
             {/* faint locality grid */}
             <g stroke="#1a1a1a" strokeOpacity="0.04" strokeWidth="1">
               {Array.from({ length: 9 }).map((_, i) => (
@@ -134,14 +134,17 @@ export default function LocationMap({ geo, projectName }: { geo: LocationGeo; pr
               <circle cx={C} cy={C} r="3.2" fill="#B29668" />
             </g>
 
-            {/* POI pins */}
+            {/* POI pins — the invisible ring makes each pin a ~28px touch
+                target on phones; tapping toggles the callout, tapping the
+                map's empty ground dismisses it */}
             {visible.map((p) => {
               const hot = hover === p.i;
               const col = CAT[p.poi.cat].color;
               return (
-                <g key={p.i} transform={`translate(${p.x} ${p.y})`} onMouseEnter={() => setHover(p.i)} onMouseLeave={() => setHover(null)} style={{ cursor: "pointer" }}>
-                  {hot && <circle r="12" fill={col} fillOpacity="0.18" />}
-                  <circle r={hot ? 6.5 : 5} fill={col} stroke="#fff" strokeWidth="1.6" />
+                <g key={p.i} transform={`translate(${p.x} ${p.y})`} onMouseEnter={() => setHover(p.i)} onMouseLeave={() => setHover(null)} onClick={() => setHover(hot ? null : p.i)} style={{ cursor: "pointer" }}>
+                  <circle r="17" fill="transparent" />
+                  {hot && <circle r="15" fill={col} fillOpacity="0.18" />}
+                  <circle r={hot ? 9 : 6.5} fill={col} stroke="#fff" strokeWidth="1.8" />
                 </g>
               );
             })}
