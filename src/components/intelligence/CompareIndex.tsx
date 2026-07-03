@@ -4,6 +4,7 @@ import { useState } from "react";
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import { COMPARE_OPTIONS, POPULAR_COMPARISONS, comparePairSlug, type CompareKind } from "@/lib/compare";
+import { projectBySlug } from "@/lib/projects";
 
 const basePath = "/Truth-Estate";
 
@@ -79,16 +80,32 @@ export default function CompareIndex() {
         {/* Popular */}
         <h2 className="mt-16 font-serif text-[1.6rem] font-medium tracking-[-0.01em] md:text-[2rem]">Popular comparisons</h2>
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          {POPULAR_COMPARISONS.map((c) => (
-            <a key={c.pair} href={`${basePath}/intelligence/compare/${c.pair}`}
-              className="group flex items-center justify-between rounded-xl border border-[#1a1a1a]/8 bg-white/55 px-6 py-4 transition-all duration-300 hover:border-[#c9a96e]/40 hover:bg-white/80">
-              <div>
-                <span className="font-serif text-[1.02rem] font-light text-[#1a1a1a]/75">{c.label}</span>
-                <span className="ml-3 font-mono text-[0.58rem] uppercase tracking-[0.12em] text-[#1a1a1a]/30">{KIND_LABEL[c.kind].slice(0, -1)}</span>
-              </div>
-              <span className="text-[#1a1a1a]/20 transition-transform duration-300 group-hover:translate-x-1">→</span>
-            </a>
-          ))}
+          {POPULAR_COMPARISONS.map((c) => {
+            // project pairs carry their scores — the evidence shows before the
+            // click, ordered to match the names in the label
+            const scores = c.kind === "project"
+              ? c.pair.split("-vs-")
+                  .map((s) => projectBySlug(s))
+                  .filter((p): p is NonNullable<typeof p> => p != null)
+                  .sort((x, y) => c.label.indexOf(x.name) - c.label.indexOf(y.name))
+                  .map((p) => p.truthScore)
+              : [];
+            return (
+              <a key={c.pair} href={`${basePath}/intelligence/compare/${c.pair}`}
+                className="group flex items-center justify-between gap-4 rounded-xl border border-[#1a1a1a]/8 bg-white/55 px-6 py-4 transition-all duration-300 hover:border-[#c9a96e]/40 hover:bg-white/80">
+                <div className="min-w-0">
+                  <span className="font-serif text-[1.02rem] font-light text-[#1a1a1a]/75">{c.label}</span>
+                  <span className="ml-3 font-mono text-[0.58rem] uppercase tracking-[0.12em] text-[#1a1a1a]/30">{KIND_LABEL[c.kind].slice(0, -1)}</span>
+                </div>
+                <span className="flex shrink-0 items-center gap-3">
+                  {scores.length === 2 && (
+                    <span className="font-mono text-[0.72rem] tabular-nums text-[#1e6b45]">{scores[0]} · {scores[1]}</span>
+                  )}
+                  <span className="text-[#1a1a1a]/20 transition-transform duration-300 group-hover:translate-x-1">→</span>
+                </span>
+              </a>
+            );
+          })}
         </div>
       </div>
     </div>
