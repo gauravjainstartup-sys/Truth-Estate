@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { developerOf, legalStatus, type ProjectIntel } from "@/lib/projects";
 
 /* Chapter II · Pillar IV — Legal & Compliance. The signature "project clean,
@@ -20,6 +23,15 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
   const hasHistory = cases.length > 0;
   const flagged = status === "flagged";
   const watch = status === "watch";
+
+  const projectCases = cases.filter((c) => c.scope === "project");
+  const devCases = cases.filter((c) => c.scope !== "project");
+  const [caseScope, setCaseScope] = useState<"project" | "developer">(projectCases.length ? "project" : "developer");
+  const [caseLimit, setCaseLimit] = useState(3);
+  const activeCases = caseScope === "project" ? projectCases : devCases;
+  const pickScope = (s: "project" | "developer") => { setCaseScope(s); setCaseLimit(3); };
+
+  const [ddLimit, setDdLimit] = useState(3);
 
   const matrix: { label: string; level: Lvl; note: string }[] = [
     { label: "Title risk", level: flagged ? "High" : status === "watch" ? "Moderate" : "Low", note: "Land title & RERA registration" },
@@ -83,51 +95,97 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
         </div>
       </div>
 
-      {/* Litigation cards */}
+      {/* Litigation cards — filterable by whether a case is filed against this
+         exact project or the developer at large. */}
       {hasHistory && (
         <>
           <div className="mt-8 flex items-center gap-3">
             <span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">The cases that matter to a buyer</span>
             <span className="h-px flex-1 bg-[#1a1a1a]/10" />
           </div>
-          {cases.map((c) => (
-            <div key={c.title} className="mt-4 rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-6 md:p-7">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h5 className="text-[1.05rem] font-semibold leading-tight">{c.title}</h5>
-                  <p className="mt-1 text-[0.64rem] font-medium uppercase tracking-[0.08em] text-[#1a1a1a]/40">{c.court}</p>
-                </div>
-                <div className="flex shrink-0 flex-wrap gap-1.5">
-                  <Chip>{c.status}</Chip><Chip>{c.relevance}</Chip><Chip hi>Impact: {c.impact}</Chip>
-                </div>
-              </div>
-              <p className="mt-3 text-[0.86rem] font-light leading-[1.65] text-[#1a1a1a]/65">{c.summary}</p>
-              <div className="mt-3.5 rounded-r-lg border-l-2 border-[#9a7a2e] bg-[#9a7a2e]/[0.07] px-4 py-3">
-                <p className="text-[0.58rem] font-bold uppercase tracking-[0.1em] text-[#9a7a2e]">What it means for you</p>
-                <p className="mt-1 text-[0.84rem] font-medium leading-[1.55] text-[#1a1a1a]/80">{c.buyerImpact}</p>
-              </div>
-              {c.ref && <p className="mt-3 text-[0.66rem] font-light text-[#1a1a1a]/35">{c.ref} · view source ↗</p>}
+
+          {/* project / developer toggle */}
+          <div className="mt-4 inline-flex rounded-full border border-[#1a1a1a]/12 bg-white/50 p-1 text-[0.72rem] font-medium">
+            {([["project", "This project"], ["developer", "This developer"]] as const).map(([key, label]) => {
+              const n = key === "project" ? projectCases.length : devCases.length;
+              const on = caseScope === key;
+              return (
+                <button key={key} onClick={() => pickScope(key)}
+                  className={`rounded-full px-3.5 py-1.5 transition-colors ${on ? "bg-[#1a1a1a] text-white" : "text-[#1a1a1a]/50 hover:text-[#1a1a1a]"}`}>
+                  {label} <span className={on ? "text-white/60" : "text-[#1a1a1a]/35"}>· {n}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {activeCases.length === 0 ? (
+            <div className="mt-4 rounded-2xl border border-[#1e6b45]/25 bg-[#1e6b45]/[0.05] p-6 text-[0.86rem] font-light leading-[1.6] text-[#1a1a1a]/70">
+              <span className="font-semibold text-[#1e6b45]">✓ No litigation on record against this project.</span> The history that matters here sits with the developer — see <button onClick={() => pickScope("developer")} className="font-medium text-[#1e6b45] underline decoration-[#1e6b45]/30 underline-offset-2">This developer · {devCases.length}</button>.
             </div>
-          ))}
+          ) : (
+            <>
+              {activeCases.slice(0, caseLimit).map((c) => (
+                <div key={c.title} className="mt-4 rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-6 md:p-7">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h5 className="text-[1.05rem] font-semibold leading-tight">{c.title}</h5>
+                      <p className="mt-1 text-[0.64rem] font-medium uppercase tracking-[0.08em] text-[#1a1a1a]/40">{c.court}</p>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap gap-1.5">
+                      <Chip>{c.status}</Chip><Chip>{c.relevance}</Chip><Chip hi>Impact: {c.impact}</Chip>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-[0.86rem] font-light leading-[1.65] text-[#1a1a1a]/65">{c.summary}</p>
+                  <div className="mt-3.5 rounded-r-lg border-l-2 border-[#9a7a2e] bg-[#9a7a2e]/[0.07] px-4 py-3">
+                    <p className="text-[0.58rem] font-bold uppercase tracking-[0.1em] text-[#9a7a2e]">What it means for you</p>
+                    <p className="mt-1 text-[0.84rem] font-medium leading-[1.55] text-[#1a1a1a]/80">{c.buyerImpact}</p>
+                  </div>
+                  {c.ref && <p className="mt-3 text-[0.66rem] font-light text-[#1a1a1a]/35">{c.ref} · view source ↗</p>}
+                </div>
+              ))}
+              {activeCases.length > caseLimit && (
+                <button onClick={() => setCaseLimit(activeCases.length)}
+                  className="mt-4 w-full rounded-2xl border border-dashed border-[#1a1a1a]/20 py-3.5 text-[0.8rem] font-semibold text-[#1a1a1a]/60 transition-colors hover:border-[#1a1a1a]/40 hover:text-[#1a1a1a]/85">
+                  Load {activeCases.length - caseLimit} more {activeCases.length - caseLimit === 1 ? "case" : "cases"} ↓
+                </button>
+              )}
+            </>
+          )}
         </>
       )}
 
       {/* Due-diligence checklist */}
-      <div className="mt-6 rounded-2xl border border-[#9a7a2e]/28 bg-[#FBF8F2] p-6 md:p-7">
-        <p className="flex items-center gap-2 text-[0.66rem] font-bold uppercase tracking-[0.1em] text-[#9a7a2e]">⚑ Before you sign — your due-diligence plan</p>
-        <ol className="mt-4 space-y-0">
-          {[
-            <>Verify HRERA status &amp; the latest QPR yourself on <b className="font-medium text-[#1a1a1a]">haryanarera.gov.in</b>{p.ops?.reraId ? <> using {p.ops.reraId}</> : ""}.</>,
-            <>Get an <b className="font-medium text-[#1a1a1a]">independent lawyer</b> to read the Agreement to Sell clause-by-clause — penalty terms, force-majeure wording and delay-compensation are where {dev?.name ?? "this developer"} has lost before.</>,
-            <>Insist the <b className="font-medium text-[#1a1a1a]">revised RERA possession date</b> is written into the builder-buyer agreement, and hold ~5% against on-time handover.</>,
-          ].map((step, i) => (
-            <li key={i} className="flex gap-3.5 border-b border-dotted border-[#1a1a1a]/12 py-3 last:border-none">
-              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#9a7a2e] font-mono text-[0.72rem] font-bold text-white">{i + 1}</span>
-              <span className="min-w-0 flex-1 text-[0.86rem] font-light leading-[1.6] text-[#1a1a1a]/70">{step}</span>
-            </li>
-          ))}
-        </ol>
-      </div>
+      {(() => {
+        const ddSteps: React.ReactNode[] = [
+          <>Verify HRERA status &amp; the latest QPR yourself on <b className="font-medium text-[#1a1a1a]">haryanarera.gov.in</b>{p.ops?.reraId ? <> using {p.ops.reraId}</> : ""}.</>,
+          <>Get an <b className="font-medium text-[#1a1a1a]">independent lawyer</b> to read the Agreement to Sell clause-by-clause — penalty terms, force-majeure wording and delay-compensation{hasHistory ? <> are where {dev?.name ?? "this developer"} has lost before</> : " are where buyers get caught"}.</>,
+          <>Insist the <b className="font-medium text-[#1a1a1a]">revised RERA possession date</b> is written into the builder-buyer agreement, and hold ~5% against on-time handover.</>,
+          <>Pull the <b className="font-medium text-[#1a1a1a]">encumbrance certificate</b> and confirm the land title is clear and not mortgaged beyond the project&rsquo;s construction finance.</>,
+          <>Match your exact unit — tower, floor and layout — against the <b className="font-medium text-[#1a1a1a]">sanctioned building plan</b>, not the brochure render.</>,
+          <>Confirm a bank or HFC has approved the project for home loans — an <b className="font-medium text-[#1a1a1a]">APF number</b> is a strong third-party check on title and approvals.</>,
+          <>Read the <b className="font-medium text-[#1a1a1a]">maintenance &amp; IFMS terms</b> and who controls the RWA handover timeline after possession.</>,
+        ];
+        const visible = ddSteps.slice(0, ddLimit);
+        return (
+          <div className="mt-6 rounded-2xl border border-[#9a7a2e]/28 bg-[#FBF8F2] p-6 md:p-7">
+            <p className="flex items-center gap-2 text-[0.66rem] font-bold uppercase tracking-[0.1em] text-[#9a7a2e]">⚑ Before you sign — your due-diligence plan</p>
+            <ol className="mt-4 space-y-0">
+              {visible.map((step, i) => (
+                <li key={i} className="flex gap-3.5 border-b border-dotted border-[#1a1a1a]/12 py-3 last:border-none">
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#9a7a2e] font-mono text-[0.72rem] font-bold text-white">{i + 1}</span>
+                  <span className="min-w-0 flex-1 text-[0.86rem] font-light leading-[1.6] text-[#1a1a1a]/70">{step}</span>
+                </li>
+              ))}
+            </ol>
+            {ddSteps.length > ddLimit && (
+              <button onClick={() => setDdLimit(ddSteps.length)}
+                className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#9a7a2e]/30 py-2.5 text-[0.78rem] font-semibold text-[#8a6a1e] transition-colors hover:bg-[#9a7a2e]/[0.06]">
+                Load {ddSteps.length - ddLimit} more {ddSteps.length - ddLimit === 1 ? "step" : "steps"} ↓
+              </button>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }

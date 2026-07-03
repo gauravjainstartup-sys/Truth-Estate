@@ -52,6 +52,7 @@ export type LegalCase = {
   status: string; // e.g. "Disposed", "Active"
   relevance: string; // "Contextual" | "Indirect" | "Direct"
   impact: "High" | "Medium" | "Low";
+  scope?: "project" | "developer"; // filed against this exact project vs the developer at large (default: developer)
   summary: string;
   buyerImpact: string;
   ref?: string;
@@ -84,6 +85,7 @@ export const DEVELOPERS: DeveloperIntel[] = [
         status: "Disposed",
         relevance: "Contextual",
         impact: "High",
+        scope: "developer",
         summary: "The Supreme Court upheld an NCDRC order directing DLF to pay ~6% p.a. compensation for unjustified possession delay at Capital Greens, Gurugram. DLF's force-majeure defence was rejected and hundreds of buyers were compensated.",
         buyerImpact: "A confirmed, top-court loss for possession delay — same city, same type of project. Delivery risk here is documented, not hypothetical.",
         ref: "Civil Appeal Nos. 3864–3889/2020",
@@ -94,6 +96,7 @@ export const DEVELOPERS: DeveloperIntel[] = [
         status: "Disposed",
         relevance: "Indirect",
         impact: "High",
+        scope: "developer",
         summary: "The Competition Commission imposed a ₹630 crore penalty on DLF for abusing a dominant position through unfair, one-sided buyer agreements in Belaire & Park Place; the competition finding was upheld through appellate stages.",
         buyerImpact: "DLF's standard buyer contracts have been judicially found one-sided at the highest levels. Have a lawyer read the Agreement to Sell before you sign.",
         ref: "CCI order 2011 · SC deposit direction Aug 2014",
