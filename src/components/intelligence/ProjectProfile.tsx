@@ -864,7 +864,7 @@ export default function ProjectProfile({
                 </div>
                 <div className="mt-7 grid gap-3 md:grid-cols-2">
                   <ActionCell tone="primary" icon="●" title="Get Independent Advice" desc="45-min advisor call · fee refundable" onClick={consult} />
-                  <ActionCell tone="secondary" icon="▦" title="See Unit Intelligence" desc="3D sun & unit model — free to explore" onClick={openUnitIntel} />
+                  <ActionCell tone="secondary" icon="▦" title="See Unit Intelligence" desc="3D sun & unit model · ₹1,499 a project" onClick={openUnitIntel} />
                 </div>
                 <p className="mt-6 flex items-center gap-2 border-t border-white/10 pt-4 text-[0.72rem] font-light text-white/40">
                   <span className="text-[#B29668]" aria-hidden>◆</span> We represent only you — never the developer.

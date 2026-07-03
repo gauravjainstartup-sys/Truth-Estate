@@ -77,8 +77,8 @@ export const CONSULT_PILLARS = [
    truth — and refund it from our referral when you proceed with us.
    Set CONSULT_FEE to null to make it complimentary again; the payment step
    is skipped automatically when there is no fee. */
-export const CONSULT_FEE: number | null = 11000;
-export const CONSULT_FEE_ORIGINAL: number | null = 22000; // list price, struck through
+export const CONSULT_FEE: number | null = 9999;
+export const CONSULT_FEE_ORIGINAL: number | null = 19999; // list price, struck through
 export const CONSULT_FEE_DISCOUNT_LABEL = "50% inaugural offer";
 export const CONSULT_FEE_REFUND_NOTE = "Refunded in full from our referral when you proceed with us.";
 export const CONSULT_DURATION = "45 Minute Consultation";
