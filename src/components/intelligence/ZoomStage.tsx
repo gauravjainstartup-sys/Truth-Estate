@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from "react";
    · touch: two-finger pinch to zoom, one finger pans while zoomed
    · desktop: trackpad pinch (ctrl/⌘ + wheel) zooms around the pointer
    · magnifier: click zooms 2.5× into the point, click again resets
+   The stage fills the whole viewer, so zoomed content spreads across
+   the entire screen rather than staying inside the image's box.
    Scale is clamped 1–4×; panning is clamped so content never drifts
    out of reach; at 1× everything is exactly as laid out. */
 
@@ -107,17 +109,17 @@ export default function ZoomStage({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="relative max-h-full max-w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
+    <div className="relative h-full max-h-full w-full max-w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
       <div
         ref={stageRef}
-        className="select-none"
+        className="h-full w-full select-none"
         style={{ touchAction: "none", cursor: t.s === 1 ? "zoom-in" : "zoom-out" }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={(e) => { pointers.current.delete(e.pointerId); pinch.current = null; }}
       >
-        <div style={{ transform: `translate(${t.x}px, ${t.y}px) scale(${t.s})`, transformOrigin: "0 0", transition: pointers.current.size ? "none" : "transform 200ms ease-out", willChange: "transform" }}>
+        <div className="flex h-full w-full items-center justify-center" style={{ transform: `translate(${t.x}px, ${t.y}px) scale(${t.s})`, transformOrigin: "0 0", transition: pointers.current.size ? "none" : "transform 200ms ease-out", willChange: "transform" }}>
           {children}
         </div>
       </div>
