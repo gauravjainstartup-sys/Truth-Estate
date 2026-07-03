@@ -33,6 +33,8 @@ import {
   saveConsultation,
 } from "@/lib/consultation";
 
+const basePath = "/Truth-Estate";
+
 type Step =
   | "intro"
   | "reason"
@@ -326,6 +328,17 @@ function IntroStep({
               ? "No sales pressure and no agenda — just one prepared, independent conversation about your decision."
               : "One clear recommendation, no agenda — independent advice tailored to your situation, and we'll tell you to walk away if that's the honest call."}
           </p>
+
+          {/* The founder is the seal — the desk this conversation runs through. */}
+          <div className="mt-6 flex items-center gap-3.5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`${basePath}/images/founder-gaurav.webp`} alt="Gaurav Jain — Founder, Truth Estate" className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-[#c9a96e]/50" />
+            <div className="min-w-0">
+              <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#9a7a2e]">The Independent Desk</p>
+              <p className="mt-0.5 text-[0.92rem] font-semibold leading-tight text-[#1a1a1a]">Gaurav Jain</p>
+              <p className="text-[0.74rem] font-light text-[#1a1a1a]/50">Founder, Truth Estate — every file crosses this desk.</p>
+            </div>
+          </div>
 
           {/* Context we already hold — the source we'll prep for (project /
               developer / corridor) and, when warm, the visitor's brief. */}

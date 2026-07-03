@@ -832,6 +832,26 @@ export default function ProjectProfile({
               <ReportExplore p={p} embedded={embedded} onSelect={onSelectAlternative} />
             </section>
 
+            {/* The Independent Desk on mobile — the desktop rail is hidden below
+               xl, so the founder gets a face here, right before the CTA. */}
+            <div className="mt-12 rounded-2xl border border-[#1a1a1a]/10 bg-[#FBF8F2] p-6 xl:hidden">
+              <div className="flex items-center gap-3.5">
+                {/* the human is the seal — the real founder, not a badge */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`${basePath}/images/founder-gaurav.webp`} alt="Gaurav Jain — Founder, Truth Estate" className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-[#B29668]/50" />
+                <div className="min-w-0">
+                  <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#9a7a2e]">The Independent Desk</p>
+                  <p className="mt-0.5 text-[0.9rem] font-semibold leading-tight text-[#1a1a1a]">Gaurav Jain</p>
+                  <p className="text-[0.7rem] font-light text-[#1a1a1a]/45">Founder, Truth Estate</p>
+                </div>
+              </div>
+              <p className="mt-4 font-serif text-[1.28rem] font-medium leading-[1.26] text-[#1a1a1a]">Talk to someone who has actually read this file.</p>
+              <button onClick={consult} className="group mt-4 flex w-full items-center justify-between rounded-xl bg-[#1e6b45] px-5 py-3.5 text-[0.85rem] font-semibold text-white transition-colors hover:bg-[#238c55]">
+                Book a 15-minute call <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
+              </button>
+              <p className="mt-4 border-t border-[#1a1a1a]/8 pt-3.5 text-[0.64rem] font-light leading-[1.5] text-[#1a1a1a]/40">Every file crosses the founder&apos;s desk before it ships. Independent — no inventory, no builder commission.</p>
+            </div>
+
             {/* CTA — three actions, weighted */}
             <div className="relative mt-14 overflow-hidden rounded-2xl bg-[#111112] p-8 text-white md:p-10">
               <div className="pointer-events-none absolute -left-16 top-1/2 h-64 w-64 -translate-y-1/2 rounded-full" style={{ background: "radial-gradient(circle, rgba(30,107,69,0.35), transparent 70%)", filter: "blur(28px)" }} />
