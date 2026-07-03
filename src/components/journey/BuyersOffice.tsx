@@ -3,8 +3,6 @@
 import { useMemo, useState } from "react";
 import Logo from "../Logo";
 import { Booking, BuyData, deriveDNA, rankProjects } from "@/lib/journey";
-import { projectByName } from "@/lib/projects";
-import ProjectOptionCard from "../intelligence/ProjectOptionCard";
 
 const NAV = ["Home", "TruthGuide", "Projects", "Documents", "Meetings", "Messages", "Tasks"];
 
@@ -102,11 +100,29 @@ export default function BuyersOffice({
 
           {/* Recommendations */}
           <Panel title="Recommendations">
-            <div className="grid gap-4 sm:grid-cols-2">
-              {recs.map((r, i) => {
-                const intel = projectByName(r.name);
-                return intel ? <ProjectOptionCard key={r.name} p={intel} rank={i + 1} matchPct={r.matchPct} /> : null;
-              })}
+            <div className="flex flex-col gap-3">
+              {recs.map((r, i) => (
+                <div
+                  key={r.name}
+                  className="flex items-center gap-5 rounded-lg border border-[#1a1a1a]/10 bg-white px-5 py-4"
+                >
+                  <span className="font-serif text-[1rem] text-[#1a1a1a]/25">{String(i + 1).padStart(2, "0")}</span>
+                  <div className="flex-1">
+                    <p className="font-serif text-[1.1rem] font-medium text-[#1a1a1a] md:text-[1.25rem]">{r.name}</p>
+                    <p className="mt-0.5 text-[0.78rem] font-light tracking-[0.03em] text-[#1a1a1a]/45">
+                      {r.developer} · {r.market}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-serif text-[1.15rem] font-medium leading-none text-[#1e6b45]">{r.matchPct}%</p>
+                    <p className="mt-1 text-[9px] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/40">Match</p>
+                  </div>
+                  <div className="hidden text-right sm:block">
+                    <p className="font-serif text-[1.15rem] font-medium leading-none text-[#1a1a1a]">{r.truthScore}</p>
+                    <p className="mt-1 text-[9px] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/40">Truth</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </Panel>
 

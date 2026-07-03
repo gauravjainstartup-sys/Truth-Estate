@@ -4,9 +4,13 @@ import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import { PROJECT_INTEL } from "@/lib/projects";
 import { ACTIVE_PROJECT_COUNT } from "@/lib/journey";
-import ProjectOptionCard from "./ProjectOptionCard";
 
 const basePath = "/Truth-Estate";
+
+const recoTone = (r: string) =>
+  r.includes("Strong") ? "border-[#1e6b45]/30 text-[#1e6b45] bg-[#1e6b45]/8"
+  : r === "Buy" ? "border-[#3e8e62]/30 text-[#3e8e62] bg-[#3e8e62]/8"
+  : "border-[#9a7a2e]/30 text-[#9a7a2e] bg-[#c9a96e]/10";
 
 export default function ProjectsIndex() {
   const { open } = useJourney();
@@ -41,10 +45,27 @@ export default function ProjectsIndex() {
           <Stat v={`${lo}–${hi}`} k="Truth Score range" />
         </div>
 
-        {/* Grid — the shared project-option card, ranked by Truth Score */}
+        {/* Grid */}
         <div className="mt-12 grid gap-5 sm:grid-cols-2">
-          {PROJECT_INTEL.map((p, i) => (
-            <ProjectOptionCard key={p.slug} p={p} rank={i + 1} />
+          {PROJECT_INTEL.map((p) => (
+            <a key={p.slug} href={`${basePath}/intelligence/projects/${p.slug}`}
+               className="group flex flex-col rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-7 transition-all duration-300 hover:border-[#c9a96e]/40 hover:bg-white/85">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h3 className="font-serif text-[1.5rem] font-medium leading-tight text-[#1a1a1a]">{p.name}</h3>
+                  <p className="mt-1.5 font-mono text-[0.66rem] uppercase tracking-[0.08em] text-[#1a1a1a]/40">{p.developer} · {p.marketShort}</p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="font-mono text-[1.9rem] font-light leading-none text-[#1e6b45]">{p.truthScore}</p>
+                  <p className="mt-1 text-[0.55rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/35">Score</p>
+                </div>
+              </div>
+              <p className="mt-4 flex-1 text-[0.9rem] font-light leading-[1.65] text-[#1a1a1a]/55">{p.reason}</p>
+              <div className="mt-5 flex items-center justify-between border-t border-[#1a1a1a]/8 pt-4">
+                <span className={`rounded-full border px-3 py-1 text-[0.64rem] font-medium ${recoTone(p.recommendation)}`}>{p.recommendation}</span>
+                <span className="font-mono text-[0.78rem] text-[#1a1a1a]/55">₹{p.budget[0]}–{p.budget[1]} Cr</span>
+              </div>
+            </a>
           ))}
         </div>
       </div>
