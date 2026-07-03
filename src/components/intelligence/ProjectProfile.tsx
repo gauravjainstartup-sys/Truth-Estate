@@ -215,8 +215,6 @@ export default function ProjectProfile({
     openConsult({ source: p.name, sourceKind: "project", ...(profile ? { intent: "buy" as const, profile } : {}) });
   });
   const challenge = onChallenge ?? (() => open("research"));
-  const devHref = p.devSlug ? `${basePath}/intelligence/developers/${p.devSlug}` : undefined;
-  const marketHref = p.marketSlug ? `${basePath}/intelligence/markets/${p.marketSlug}` : undefined;
 
   const dev = developerOf(p);
   const market = marketOf(p);
@@ -823,22 +821,16 @@ export default function ProjectProfile({
               </Section>
             )}
 
-            {/* If not this project, then what? — one closing section: the
-               alternatives to weigh, then the wider lens (developer + corridor).
-               Merges the old "Context" and "Keep exploring". */}
+            {/* If not this project, then what? — one closing section. The three
+               explore columns already open the developer dossier and the corridor
+               (column footers), so no separate context cards. */}
             <section id="alternatives" className="mt-16 border-t border-[#1a1a1a]/8 pt-12">
               <div className="flex items-center gap-4">
                 <span className="font-mono text-[0.8rem] text-[#c9a96e]">→</span>
                 <h2 className="font-serif text-[1.7rem] font-medium tracking-[-0.01em] md:text-[2.1rem]">If not {p.name}, then what?</h2>
               </div>
-              <p className="mt-3 max-w-2xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">Comparable projects to weigh side by side — or widen the lens to the developer and the corridor.</p>
+              <p className="mt-3 max-w-2xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">Comparable projects to weigh side by side — nearby, from {p.developer}, or in your budget. Open the full developer or corridor dossier from each column.</p>
               <ReportExplore p={p} embedded={embedded} onSelect={onSelectAlternative} />
-              {!embedded && (
-                <div className="mt-8 grid gap-5 md:grid-cols-2">
-                  <ContextCard kicker="Developer" title={p.developer} href={devHref} cta="Open developer dossier" />
-                  <ContextCard kicker="Location" title={p.market} href={marketHref} cta={`Open ${p.marketShort} intelligence`} />
-                </div>
-              )}
             </section>
 
             {/* The Independent Desk on mobile — the desktop rail is hidden below
@@ -982,21 +974,6 @@ function Chapter({ n, title, framing }: { n: string; title: string; framing: str
       {/* one whisper line, not a paragraph — the headline does the talking */}
       <p className="mt-2.5 text-[0.82rem] font-light tracking-[0.01em] text-[#1a1a1a]/40">{framing}</p>
     </div>
-  );
-}
-
-function ContextCard({ kicker, title, href, cta }: { kicker: string; title: string; href?: string; cta: string }) {
-  const body = (
-    <>
-      <p className="text-[10px] font-medium uppercase tracking-[0.24em] text-[#c9a96e]">{kicker}</p>
-      <p className="mt-3 font-serif text-[1.6rem] font-medium text-[#1a1a1a]">{title}</p>
-      {href && <p className="mt-4 inline-flex items-center gap-1.5 text-[0.8rem] font-medium text-[#1e6b45]">{cta} <span aria-hidden>→</span></p>}
-    </>
-  );
-  return href ? (
-    <a href={href} className="group rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-7 transition-all duration-300 hover:border-[#c9a96e]/40 hover:bg-white/80">{body}</a>
-  ) : (
-    <div className="rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-7">{body}</div>
   );
 }
 
