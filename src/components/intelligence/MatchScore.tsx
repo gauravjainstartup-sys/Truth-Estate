@@ -25,7 +25,7 @@ const PRIORITY_CHIPS = ["Legal Safety", "On-Time Delivery", "Capital Appreciatio
 const toneClass = { good: "text-[#1e6b45]", fair: "text-[#9a7a2e]", low: "text-[#b0503e]" } as const;
 type Draft = { budgetCr: number; configs: string[]; priorities: string[] };
 
-export default function MatchScore({ project, initialBuy }: { project: ProjectIntel; initialBuy?: BuyData | null }) {
+export default function MatchScore({ project, initialBuy, variant = "card" }: { project: ProjectIntel; initialBuy?: BuyData | null; variant?: "card" | "band" }) {
   const [buy, setBuy] = useState<BuyData | null>(initialBuy ?? null);
   const [sheet, setSheet] = useState(false);
 
@@ -39,6 +39,17 @@ export default function MatchScore({ project, initialBuy }: { project: ProjectIn
   const computed = buy && hasPreferences(buy);
   const pct = computed ? matchScoreFor(project, buy!) : null;
   const meta = pct != null ? matchLabel(pct) : null;
+  const bandRead = (() => {
+    if (!computed || !buy) return "";
+    const okB = project.budget[0] - 1 <= buy.budgetCr && buy.budgetCr <= project.budget[1] + 2;
+    const okC = buy.configs.length === 0 || project.configs.some((c) => buy.configs.includes(c));
+    const okP = buy.priorities.length > 0 && buy.priorities.some((t) => project.tags.includes(t));
+    const fits = [okB && "budget", okC && "configuration", okP && "priorities"].filter(Boolean) as string[];
+    const gaps = [!okB && "budget", !okC && "configuration", buy.priorities.length > 0 && !okP && "priorities"].filter(Boolean) as string[];
+    if (gaps.length === 0) return "Fits your budget, configuration and priorities.";
+    if (fits.length === 0) return `Worth a closer look on ${gaps.join(" & ")}.`;
+    return `${fits.join(" & ").replace(/^./, (m) => m.toUpperCase())} fit; ${gaps.join(" & ")} to look at.`;
+  })();
 
   function onSave(next: BuyData) {
     saveBuyData(next);
@@ -49,8 +60,33 @@ export default function MatchScore({ project, initialBuy }: { project: ProjectIn
   const seed: Draft = { budgetCr: buy?.budgetCr ?? 6, configs: buy?.configs ?? [], priorities: buy?.priorities ?? [] };
 
   return (
-    <section id="match" className="mt-6 scroll-mt-24">
-      {computed ? (
+    <section id="match" className={variant === "band" ? "scroll-mt-28" : "mt-6 scroll-mt-24"}>
+      {variant === "band" ? (
+        computed ? (
+          <a onClick={() => setSheet(true)} className="group flex cursor-pointer items-center gap-4 rounded-2xl border border-[#9a7a2e]/25 bg-[#9a7a2e]/[0.05] px-5 py-4 transition-colors hover:bg-[#9a7a2e]/[0.08] sm:gap-5 sm:px-6">
+            <div className="flex shrink-0 items-baseline gap-0.5">
+              <span className={`font-serif text-[2.5rem] font-normal leading-none ${toneClass[meta!.tone]}`}>{pct}</span>
+              <span className="font-mono text-[0.78rem] text-[#1a1a1a]/35">%</span>
+            </div>
+            <div className="h-11 w-px shrink-0 bg-[#9a7a2e]/25" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[0.5rem] font-medium uppercase tracking-[0.22em] text-[#1a1a1a]/40">Your Fit</p>
+              <p className={`text-[0.9rem] font-semibold ${toneClass[meta!.tone]}`}>{meta!.label} for you</p>
+              <p className="mt-0.5 text-[0.78rem] font-light leading-snug text-[#1a1a1a]/55">{bandRead}</p>
+            </div>
+            <span className="hidden shrink-0 text-[0.72rem] font-semibold text-[#9a7a2e] transition-colors group-hover:text-[#7a5f1e] sm:inline">Adjust →</span>
+          </a>
+        ) : (
+          <button onClick={() => setSheet(true)} className="group flex w-full items-center gap-4 rounded-2xl border border-[#1a1a1a]/12 bg-white/60 px-5 py-4 text-left transition-colors hover:border-[#9a7a2e]/40 sm:gap-5 sm:px-6">
+            <div className="min-w-0 flex-1">
+              <p className="text-[0.5rem] font-medium uppercase tracking-[0.22em] text-[#c9a96e]">Your Fit</p>
+              <p className="mt-0.5 font-serif text-[1.05rem] leading-tight text-[#1a1a1a]">How well does this project fit you?</p>
+              <p className="mt-0.5 text-[0.78rem] font-light leading-snug text-[#1a1a1a]/50">20 seconds — we score it against <span className="italic">your</span> brief, not the brochure.</p>
+            </div>
+            <span className="shrink-0 rounded-lg bg-[#1e6b45] px-4 py-2.5 text-[0.78rem] font-semibold text-white transition-colors group-hover:bg-[#238c55]">Score my fit →</span>
+          </button>
+        )
+      ) : computed ? (
         /* Computed — the score, kept compact, with the fit read-out */
         <div className="overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-white/60">
           <div className="grid gap-0 md:grid-cols-[minmax(0,260px)_1fr]">
