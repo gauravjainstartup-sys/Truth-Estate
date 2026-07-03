@@ -147,17 +147,29 @@ export default function ProjectProfile({
   const [active, setActive] = useState<string>("");
   const [showStrip, setShowStrip] = useState(false);
   const [scheduled, setScheduled] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [lead, setLead] = useState({ name: "", phone: "", time: "" });
   const scheduleCall = (e: FormEvent) => { e.preventDefault(); setScheduled(true); };
+  /* The rail rides the reader's journey: orienting → sell the deep layer ·
+     weighing evidence → offer the analyst · deciding → capture the callback.
+     Driven by reading position (monotonic), not momentary intersections. */
+  const [railStage, setRailStage] = useState<"fundamentals" | "evidence" | "decision">("fundamentals");
   const stripRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (embedded) return;
     const firstId = tocKey.split(",")[0];
     let raf = 0;
+    const top = (id: string) => {
+      const el = document.getElementById(id);
+      return el ? el.getBoundingClientRect().top : Infinity;
+    };
     const check = () => {
       raf = 0;
       const el = document.getElementById(firstId);
       setShowStrip(el ? el.getBoundingClientRect().top <= 140 : window.scrollY > 480);
+      // dock stage: past the money chapter → decision; past the trust chapter → evidence
+      const decisionTop = Math.min(top("roi"), top("verdict"));
+      setRailStage(decisionTop <= 340 ? "decision" : top("anatomy") <= 340 ? "evidence" : "fundamentals");
     };
     const onScroll = () => { if (!raf) raf = requestAnimationFrame(check); };
     check();
@@ -234,95 +246,93 @@ export default function ProjectProfile({
 
       <div className={`mx-auto ${embedded ? "max-w-6xl" : "max-w-7xl"} px-6 pb-[12vh] pt-[6vh] md:px-10`}>
         <div className={embedded ? "" : "xl:grid xl:grid-cols-[minmax(0,1fr)_300px] xl:gap-14"}>
-          {/* Sticky conversion rail — the report stays left; this rail works the lead */}
+          {/* The Advisor Dock — one card, one ask, tuned to where the reader is.
+              Fundamentals → sell the deep layer · Evidence → offer the analyst ·
+              Decision → capture the callback. No pile, no internal scrolling. */}
           {!embedded && (
-            /* Sticky, internally-scrollable conversion rail (docks below header + strip) */
-            <aside className="hidden space-y-3 self-start [scrollbar-width:none] xl:col-start-2 xl:row-start-1 xl:sticky xl:top-[132px] xl:block xl:max-h-[calc(100vh-152px)] xl:overflow-y-auto xl:pb-2 [&::-webkit-scrollbar]:hidden">
-              {/* which project this rail is working */}
-              <div className="flex items-baseline justify-between gap-2 px-1">
-                <p className="truncate font-serif text-[1.02rem] font-medium text-[#1a1a1a]">{p.name}</p>
-                <span className="shrink-0 text-[0.58rem] font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/40">{p.marketShort}</span>
+            <aside className="hidden self-start xl:col-start-2 xl:row-start-1 xl:sticky xl:top-[132px] xl:block">
+              {/* constant identity strip */}
+              <div className="flex items-center gap-2.5 px-1">
+                <span className="inline-flex shrink-0 items-baseline gap-1 rounded-lg bg-[#1e6b45] px-2 py-1.5 font-serif text-[0.95rem] leading-none text-white">{p.truthScore}<span className="font-mono text-[0.5rem] text-white/60">/100</span></span>
+                <span className="min-w-0 flex-1 truncate text-[0.8rem] font-medium text-[#1a1a1a]/85">{p.name}</span>
+                <span className="shrink-0 text-[0.54rem] font-bold uppercase tracking-[0.12em] text-[#1e6b45]">{scoreGrade(p.truthScore)}</span>
               </div>
 
-              {/* score + primary CTA */}
-              <div className="rounded-2xl border border-[#1a1a1a]/8 bg-white/70 p-5">
-                <div>
-                  <div className="flex items-baseline justify-between">
-                    <p className="text-[0.56rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">Truth Score</p>
-                    <span className="text-[0.66rem] font-bold uppercase tracking-[0.06em] text-[#1e6b45]">{scoreGrade(p.truthScore)}</span>
+              {/* the dock */}
+              <div className="mt-3">
+                {railStage === "fundamentals" && (
+                  <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0e1622] to-[#1e2c40] p-5 text-white">
+                    <svg className="pointer-events-none absolute -right-3 -top-3 h-24 w-24 text-[#c9a96e] opacity-[0.12]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" aria-hidden><path d="M12 2 21 7v10l-9 5-9-5V7z" /><path d="M3 7l9 5 9-5M12 12v10" /></svg>
+                    <p className="flex items-center gap-2 text-[0.56rem] font-bold uppercase tracking-[0.16em] text-[#c9a96e]">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-[1.05rem] w-[1.05rem]" aria-hidden><path d="M12 2 21 7v10l-9 5-9-5V7z" /><path d="M3 7l9 5 9-5M12 12v10" /></svg>
+                      3D Unit Intelligence
+                    </p>
+                    <p className="mt-2.5 font-serif text-[1.2rem] font-medium leading-[1.15]">Walk the tower before you buy.</p>
+                    <ul className="mt-3 space-y-1.5 text-[0.73rem] font-light text-white/70">
+                      <li className="flex gap-2"><span className="text-[#c9a96e]" aria-hidden>▸</span>Live 3D site &amp; every tower</li>
+                      <li className="flex gap-2"><span className="text-[#c9a96e]" aria-hidden>▸</span>Per-unit sun, airflow &amp; Vastu</li>
+                      <li className="flex gap-2"><span className="text-[#c9a96e]" aria-hidden>▸</span>The full 5-year price projection</li>
+                    </ul>
+                    <button onClick={() => jumpTo("tower-intel")} className="mt-4 w-full rounded-lg bg-[#c9a96e] px-4 py-2.5 text-[0.78rem] font-bold text-[#1a1a1a] transition-colors hover:bg-[#d8bd8a]">Explore the live 3D →</button>
+                    <button onClick={consult} className="mt-2 w-full text-center text-[0.66rem] font-light text-white/50 transition-colors hover:text-white/85">or get independent advice →</button>
                   </div>
-                  <p className="mt-0.5 flex items-baseline">
-                    <span className="font-serif text-[2.5rem] font-normal leading-none text-[#1e6b45]">{p.truthScore}</span>
-                    <span className="ml-1 font-mono text-[0.72rem] text-[#1a1a1a]/30">/100</span>
-                    <span className="ml-auto self-end text-[0.66rem] font-light text-[#1a1a1a]/45">{p.recommendation} · Top {ctx.topPct}%</span>
-                  </p>
-                  <div className="mt-2 flex gap-[2px]">
-                    {Array.from({ length: 10 }).map((_, idx) => (
-                      <span key={idx} className={`h-[7px] flex-1 rounded-[2px] ${idx < Math.round(p.truthScore / 10) ? "bg-[#1e6b45]" : "bg-[#1a1a1a]/[0.1]"}`} />
-                    ))}
+                )}
+
+                {railStage === "evidence" && (
+                  <div className="rounded-2xl border border-[#1e6b45]/25 bg-white/70 p-5">
+                    <p className="flex items-center gap-2 text-[0.56rem] font-bold uppercase tracking-[0.16em] text-[#1e6b45]"><IconShieldCheck className="text-[#1e6b45]" /> Independent read</p>
+                    <p className="mt-2.5 font-serif text-[1.2rem] font-medium leading-[1.2]">Reading the fine print? Good.</p>
+                    <p className="mt-2 text-[0.75rem] font-light leading-[1.55] text-[#1a1a1a]/60">Our analyst will pressure-test this project against your brief — the delivery record, the legal history, the exit math.</p>
+                    {scheduled ? (
+                      <div className="mt-3 rounded-lg bg-[#1e6b45]/10 px-3.5 py-3 text-[0.74rem] font-medium leading-[1.5] text-[#1e6b45]">✓ Thanks{lead.name ? `, ${lead.name.trim().split(" ")[0]}` : ""} — an advisor will call you{lead.time ? ` · ${lead.time.toLowerCase()}` : ""}.</div>
+                    ) : formOpen ? (
+                      <form onSubmit={scheduleCall} className="mt-3 space-y-2">
+                        <input required value={lead.name} onChange={(e) => setLead({ ...lead, name: e.target.value })} placeholder="Your name" className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3 py-2 text-[0.78rem] outline-none transition-colors focus:border-[#1e6b45]" />
+                        <input required type="tel" value={lead.phone} onChange={(e) => setLead({ ...lead, phone: e.target.value })} placeholder="Phone / WhatsApp" className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3 py-2 text-[0.78rem] outline-none transition-colors focus:border-[#1e6b45]" />
+                        <select required value={lead.time} onChange={(e) => setLead({ ...lead, time: e.target.value })} className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3 py-2 text-[0.78rem] text-[#1a1a1a]/80 outline-none transition-colors focus:border-[#1e6b45]">
+                          <option value="" disabled>Preferred time</option>
+                          <option>Today · morning</option><option>Today · evening</option><option>Tomorrow</option><option>This weekend</option>
+                        </select>
+                        <button type="submit" className="w-full rounded-lg bg-[#1e6b45] px-4 py-2.5 text-[0.78rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Request the callback</button>
+                      </form>
+                    ) : (
+                      <>
+                        <button onClick={consult} className="mt-3.5 w-full rounded-lg bg-[#1e6b45] px-4 py-3 text-[0.8rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Talk to the analyst →</button>
+                        <button onClick={() => setFormOpen(true)} className="mt-2 w-full text-center text-[0.68rem] font-medium text-[#1e6b45]/75 transition-colors hover:text-[#1e6b45]">or request a callback</button>
+                      </>
+                    )}
                   </div>
-                </div>
-                <button onClick={consult} className="mt-4 w-full rounded-lg bg-[#1e6b45] px-4 py-3 text-[0.8rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Get Independent Advice</button>
-                <p className="mt-2 text-center text-[0.62rem] font-light text-[#1a1a1a]/45">Independent — we don&apos;t sell inventory</p>
-              </div>
+                )}
 
-              {/* match score mini */}
-              <button onClick={() => jumpTo("match")} className="flex w-full items-center gap-3 rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-4 text-left transition-colors hover:border-[#1a1a1a]/25">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#1e6b45]/[0.09] text-[#1e6b45]">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-[1.15rem] w-[1.15rem]" aria-hidden><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" /></svg>
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[0.8rem] font-semibold text-[#1a1a1a]">How well does it fit you?</span>
-                  <span className="block text-[0.68rem] font-light text-[#1a1a1a]/50">Score it against your brief · 20 sec</span>
-                </span>
-                <span className="shrink-0 text-[#1e6b45]" aria-hidden>→</span>
-              </button>
-
-              {/* 3D Unit Intelligence — marketing creative */}
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0e1622] to-[#1e2c40] p-5 text-white">
-                <svg className="pointer-events-none absolute -right-3 -top-3 h-24 w-24 text-[#c9a96e] opacity-[0.12]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" aria-hidden><path d="M12 2 21 7v10l-9 5-9-5V7z" /><path d="M3 7l9 5 9-5M12 12v10" /></svg>
-                <p className="flex items-center gap-2 text-[0.56rem] font-bold uppercase tracking-[0.16em] text-[#c9a96e]">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-[1.05rem] w-[1.05rem]" aria-hidden><path d="M12 2 21 7v10l-9 5-9-5V7z" /><path d="M3 7l9 5 9-5M12 12v10" /></svg>
-                  3D Unit Intelligence
-                </p>
-                <p className="mt-2.5 font-serif text-[1.2rem] font-medium leading-[1.15]">Walk the tower before you buy.</p>
-                <ul className="mt-3 space-y-1.5 text-[0.73rem] font-light text-white/70">
-                  <li className="flex gap-2"><span className="text-[#c9a96e]" aria-hidden>▸</span>Live 3D site &amp; every tower</li>
-                  <li className="flex gap-2"><span className="text-[#c9a96e]" aria-hidden>▸</span>Per-unit sun, airflow &amp; Vastu</li>
-                  <li className="flex gap-2"><span className="text-[#c9a96e]" aria-hidden>▸</span>The full 5-year price projection</li>
-                </ul>
-                <button onClick={() => jumpTo("tower-intel")} className="mt-4 w-full rounded-lg bg-[#c9a96e] px-4 py-2.5 text-[0.78rem] font-bold text-[#1a1a1a] transition-colors hover:bg-[#d8bd8a]">Explore the live 3D →</button>
-                <p className="mt-2 text-center text-[0.6rem] font-light text-white/45">From ₹1,499 · free with membership</p>
-              </div>
-
-              {/* schedule a call — inline form */}
-              <div className="rounded-2xl border border-[#1e6b45]/25 bg-[#1e6b45]/[0.04] p-5">
-                <p className="flex items-center gap-2 text-[0.58rem] font-bold uppercase tracking-[0.14em] text-[#1e6b45]"><IconClock className="text-[#1e6b45]" /> Schedule a call</p>
-                {scheduled ? (
-                  <div className="mt-3 rounded-lg bg-[#1e6b45]/10 px-3.5 py-3 text-[0.76rem] font-medium leading-[1.5] text-[#1e6b45]">✓ Thanks{lead.name ? `, ${lead.name.trim().split(" ")[0]}` : ""} — an advisor will call you{lead.time ? ` · ${lead.time}` : ""} about {p.name}.</div>
-                ) : (
-                  <form onSubmit={scheduleCall} className="mt-2.5 space-y-2">
-                    <p className="text-[0.7rem] font-light leading-[1.5] text-[#1a1a1a]/55">Leave your number — an advisor calls you about this project. No obligation.</p>
-                    <input required value={lead.name} onChange={(e) => setLead({ ...lead, name: e.target.value })} placeholder="Your name" className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3 py-2 text-[0.78rem] outline-none transition-colors focus:border-[#1e6b45]" />
-                    <input required type="tel" value={lead.phone} onChange={(e) => setLead({ ...lead, phone: e.target.value })} placeholder="Phone / WhatsApp" className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3 py-2 text-[0.78rem] outline-none transition-colors focus:border-[#1e6b45]" />
-                    <select required value={lead.time} onChange={(e) => setLead({ ...lead, time: e.target.value })} className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3 py-2 text-[0.78rem] text-[#1a1a1a]/80 outline-none transition-colors focus:border-[#1e6b45]">
-                      <option value="" disabled>Preferred time</option>
-                      <option>Today · morning</option>
-                      <option>Today · evening</option>
-                      <option>Tomorrow</option>
-                      <option>This weekend</option>
-                    </select>
-                    <button type="submit" className="w-full rounded-lg bg-[#1e6b45] px-4 py-2.5 text-[0.78rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Request a callback</button>
-                  </form>
+                {railStage === "decision" && (
+                  <div className="rounded-2xl border border-[#9a7a2e]/30 bg-gradient-to-br from-[#9a7a2e]/[0.08] to-transparent p-5">
+                    <p className="flex items-center gap-2 text-[0.56rem] font-bold uppercase tracking-[0.16em] text-[#9a7a2e]"><IconClock className="text-[#9a7a2e]" /> Decision time</p>
+                    <p className="mt-2.5 font-serif text-[1.2rem] font-medium leading-[1.2]">Ready to move on this?</p>
+                    {scheduled ? (
+                      <div className="mt-3 rounded-lg bg-[#1e6b45]/10 px-3.5 py-3 text-[0.74rem] font-medium leading-[1.5] text-[#1e6b45]">✓ Thanks{lead.name ? `, ${lead.name.trim().split(" ")[0]}` : ""} — an advisor will call you{lead.time ? ` · ${lead.time.toLowerCase()}` : ""} about {p.name}.</div>
+                    ) : formOpen ? (
+                      <form onSubmit={scheduleCall} className="mt-3 space-y-2">
+                        <input required value={lead.name} onChange={(e) => setLead({ ...lead, name: e.target.value })} placeholder="Your name" className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3 py-2 text-[0.78rem] outline-none transition-colors focus:border-[#1e6b45]" />
+                        <input required type="tel" value={lead.phone} onChange={(e) => setLead({ ...lead, phone: e.target.value })} placeholder="Phone / WhatsApp" className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3 py-2 text-[0.78rem] outline-none transition-colors focus:border-[#1e6b45]" />
+                        <select required value={lead.time} onChange={(e) => setLead({ ...lead, time: e.target.value })} className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3 py-2 text-[0.78rem] text-[#1a1a1a]/80 outline-none transition-colors focus:border-[#1e6b45]">
+                          <option value="" disabled>Preferred time</option>
+                          <option>Today · morning</option><option>Today · evening</option><option>Tomorrow</option><option>This weekend</option>
+                        </select>
+                        <button type="submit" className="w-full rounded-lg bg-[#1e6b45] px-4 py-2.5 text-[0.78rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Request the callback</button>
+                      </form>
+                    ) : (
+                      <>
+                        <button onClick={() => setFormOpen(true)} className="mt-3.5 w-full rounded-lg bg-[#1e6b45] px-4 py-3 text-[0.8rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Request a callback →</button>
+                        <p className="mt-2 text-center text-[0.62rem] font-light text-[#1a1a1a]/45">An advisor calls at your time · no obligation</p>
+                      </>
+                    )}
+                    <a href={`${basePath}/office`} className="mt-3.5 block border-t border-[#1a1a1a]/8 pt-3 text-[0.72rem] font-semibold text-[#1e6b45] transition-colors hover:text-[#238c55]">Join the Buyer&apos;s Office — free →</a>
+                  </div>
                 )}
               </div>
 
-              {/* join the buyer's office */}
-              <a href={`${basePath}/office`} className="block rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-4 transition-colors hover:border-[#1a1a1a]/25">
-                <p className="flex items-center gap-2 text-[0.58rem] font-bold uppercase tracking-[0.14em] text-[#1a1a1a]/55"><IconShieldCheck className="text-[#9a7a2e]" /> The Buyer&apos;s Office</p>
-                <p className="mt-1.5 text-[0.78rem] font-medium leading-[1.45] text-[#1a1a1a]/85">Your private deal room — shortlist, compare, track &amp; get advisory in one place.</p>
-                <p className="mt-2 text-[0.72rem] font-semibold text-[#1e6b45]">Join free →</p>
-              </a>
+              {/* constant trust line */}
+              <p className="mt-3 px-1 text-center text-[0.6rem] font-light text-[#1a1a1a]/40">Independent — we don&apos;t sell inventory. Advice is the product.</p>
             </aside>
           )}
 
