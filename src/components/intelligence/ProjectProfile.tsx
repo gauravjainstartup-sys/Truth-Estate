@@ -276,6 +276,7 @@ export default function ProjectProfile({
   const tocKey = toc.map((t) => t.id).join(",");
   const [active, setActive] = useState<string>("");
   const [showStrip, setShowStrip] = useState(false);
+  const [hideHdr, setHideHdr] = useState(false);
   const [scheduled, setScheduled] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [lead, setLead] = useState({ name: "", phone: "", time: "" });
@@ -295,10 +296,19 @@ export default function ProjectProfile({
     if (embedded) return;
     const firstId = tocKey.split(",")[0];
     let raf = 0;
+    let lastY = window.scrollY;
     const check = () => {
       raf = 0;
       const el = document.getElementById(firstId);
       setShowStrip(el ? el.getBoundingClientRect().top <= 140 : window.scrollY > 480);
+      // direction-aware chrome: reading down tucks the header away,
+      // any scroll back up (or nearing the top) brings it straight back
+      const y = window.scrollY;
+      const d = y - lastY;
+      if (Math.abs(d) > 4) {
+        setHideHdr(d > 0 && y > 160);
+        lastY = y;
+      }
     };
     const onScroll = () => { if (!raf) raf = requestAnimationFrame(check); };
     check();
@@ -331,7 +341,7 @@ export default function ProjectProfile({
 
   return (
     <div className={`${embedded ? "h-full overflow-y-auto" : "min-h-svh"} bg-[#F5F0E8] text-[#1a1a1a]`}>
-      <header className="sticky top-0 z-40 border-b border-[#1a1a1a]/6 bg-[#F5F0E8]/90 backdrop-blur-sm">
+      <header className={`sticky top-0 z-40 border-b border-[#1a1a1a]/6 bg-[#F5F0E8]/90 backdrop-blur-sm transition-transform duration-300 ease-out ${hideHdr ? "-translate-y-full" : "translate-y-0"}`}>
         <div className={`mx-auto flex ${embedded ? "max-w-6xl" : "max-w-7xl"} items-center gap-4 px-6 py-4 md:px-10`}>
           {embedded ? (
             <>
@@ -483,7 +493,7 @@ export default function ProjectProfile({
                       <p className="hidden text-[11px] font-medium uppercase tracking-[0.34em] text-[#d8b978] md:block">Project Intelligence</p>
                       <h1 className={`mt-4 text-balance font-serif font-medium leading-[1.04] tracking-[-0.02em] text-[#F7F3EA] ${p.name.length > 24 ? "text-[2.15rem] md:text-[3.1rem]" : "text-[2.7rem] md:text-[3.9rem]"}`}>{p.name}</h1>
                       {ops?.address && (
-                        <p className="mt-4 flex items-center text-[0.9rem] font-light text-white/70">
+                        <p className="mt-4 flex items-center text-[0.78rem] font-light text-white/70 sm:text-[0.9rem]">
                           <IconPin className="mr-2 text-[#d8b978]" />
                           {mapHref ? <a href={mapHref} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-white">{ops.address}<IconArrowUpRight className="ml-1 text-[#d8b978]" /></a> : ops.address}
                         </p>
