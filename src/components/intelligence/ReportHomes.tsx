@@ -36,8 +36,7 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
 
   const eff = Math.round((h.carpetSqft / h.superSqft) * 100);
   const loading = 100 - eff;
-  const midCr = (h.priceCr[0] + h.priceCr[1]) / 2;
-  const psfOnSuper = Math.round((midCr * 1e7) / h.superSqft / 100) * 100;
+  const psfOnSuper = Math.round((h.priceCr * 1e7) / h.superSqft / 100) * 100;
   const beds = h.beds ?? (parseInt(h.config, 10) || 3);
   const effRead =
     eff >= 72 ? { grade: "Strong", tone: "#1e6b45", note: "well above the segment norm — you keep more of what you pay for." }
@@ -70,7 +69,7 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
             {h.config}{h.variant && <span className="ml-2 align-middle text-[0.82rem] font-normal text-[#1a1a1a]/45">{h.variant}</span>}
           </p>
           <p className="text-right">
-            <span className="font-mono text-[1.05rem] font-semibold">₹{h.priceCr[0]}–{h.priceCr[1]} Cr</span>
+            <span className="font-mono text-[1.05rem] font-semibold">₹{h.priceCr} Cr</span>
             <span className="ml-2 text-[0.68rem] font-light text-[#1a1a1a]/45">≈ {fmtPsf(psfOnSuper)}/sqft on super</span>
           </p>
         </div>
@@ -82,7 +81,7 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
             <div className="flex flex-wrap gap-2">
               {variants.map((v, idx) => {
                 const on = idx === i;
-                const psf = Math.round((((v.priceCr[0] + v.priceCr[1]) / 2) * 1e7) / v.superSqft / 100) * 100;
+                const psf = Math.round((v.priceCr * 1e7) / v.superSqft / 100) * 100;
                 return (
                   <button key={idx} onClick={() => setVIdx(idx)}
                     className={`min-w-[112px] flex-1 rounded-xl border px-4 py-2.5 text-left transition-colors sm:flex-none ${on ? "border-[#9a7a2e] bg-[#9a7a2e]/[0.09] shadow-[0_0_0_1px_#9a7a2e]" : "border-[#1a1a1a]/12 bg-white hover:border-[#1a1a1a]/30"}`}>
@@ -145,7 +144,7 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
       </div>
 
       <p className="mt-4 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">
-        Areas from RERA filings &amp; project documents; prices are tracked bands, not quotes. Schematics show indicative zoning only — confirm the exact unit&apos;s dimensioned plan and areas in the Agreement to Sell before signing.
+        Areas from RERA filings &amp; project documents; the price shown is indicative for this configuration, before floor-rise and preferential-location charges. Schematics show indicative zoning only — confirm the exact unit&apos;s dimensioned plan and areas in the Agreement to Sell before signing.
       </p>
     </div>
   );
