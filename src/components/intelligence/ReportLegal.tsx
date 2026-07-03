@@ -53,7 +53,7 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
       {dev && (
         <div className="mt-6 rounded-2xl border-l-2 border-[#9a7a2e]/50 bg-white/50 p-6 md:p-7">
           <p className="text-[0.62rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/40">Analyst assessment</p>
-          <p className="mt-2.5 font-serif text-[1.15rem] leading-[1.45] md:text-[1.3rem]">{dev.legal}</p>
+          <p className="mt-2.5 font-serif text-[1.2rem] leading-[1.4] md:text-[1.35rem]">{dev.legal}</p>
           <p className="mt-3 text-[0.72rem] font-light italic text-[#1a1a1a]/40">Updated {`${new Date().getFullYear()}`} · Source: e-Courts + RERA litigation repositories · independently verifiable.</p>
         </div>
       )}

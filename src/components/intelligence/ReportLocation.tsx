@@ -36,9 +36,9 @@ function GeoLayout({ p, geo }: { p: ProjectIntel; geo: LocationGeo }) {
     <>
       {/* the verdict — the numbers live in the pillar score; the prose is the value */}
       {ins?.verdict && (
-        <div className="mt-6 rounded-2xl border-l-2 border-[#238c55]/45 bg-white/50 p-6 md:p-7">
-          {ins.marketStage && <p className="text-[0.6rem] font-bold uppercase tracking-[0.14em] text-[#238c55]">{ins.marketStage}</p>}
-          <p className="mt-2.5 font-serif text-[1.14rem] leading-[1.5] text-[#1a1a1a]/85 md:text-[1.28rem]">{ins.verdict}</p>
+        <div className="mt-6 rounded-2xl border-l-2 border-[#1e6b45]/40 bg-white/50 p-6 md:p-7">
+          {ins.marketStage && <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#238c55]">{ins.marketStage}</p>}
+          <p className="mt-2.5 font-serif text-[1.2rem] leading-[1.4] md:text-[1.35rem]">{ins.verdict}</p>
         </div>
       )}
 

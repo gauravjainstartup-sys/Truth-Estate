@@ -163,7 +163,7 @@ export default function ReportPrice({ p }: { p: ProjectIntel }) {
               {unlocked && roi ? (
                 <>
                   <p className="text-[0.6rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/45">5-year projection · unlocked</p>
-                  <p className="font-mono text-[2.3rem] font-medium leading-none text-[#1e6b45]">{roi.adjCagr}%<span className="text-[0.85rem] text-[#1a1a1a]/40"> CAGR</span></p>
+                  <p className="text-[2.3rem] font-normal leading-none tracking-[-0.02em] tabular-nums text-[#1e6b45]">{roi.adjCagr}%<span className="text-[0.85rem] text-[#1a1a1a]/40"> CAGR</span></p>
                   <p className="text-[0.72rem] font-light leading-[1.5] text-[#1a1a1a]/50">execution-adjusted base case · corridor benchmark {roi.benchCagr}% · min. 5-yr hold</p>
                 </>
               ) : (
@@ -238,12 +238,12 @@ export default function ReportPrice({ p }: { p: ProjectIntel }) {
           <div className="grid overflow-hidden rounded-xl border border-[#1a1a1a]/10 sm:grid-cols-2">
             <div className="p-5">
               <p className="text-[0.62rem] font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/40">Price CAGR</p>
-              <p className="mt-2 font-mono text-[2.2rem] font-medium leading-none">{projCagr.toFixed(1)}<span className="text-[0.9rem] text-[#1a1a1a]/35">%</span></p>
+              <p className="mt-2 text-[2.2rem] font-normal leading-none tracking-[-0.02em] tabular-nums">{projCagr.toFixed(1)}<span className="text-[0.9rem] text-[#1a1a1a]/35">%</span></p>
               <p className="mt-2 text-[0.66rem] font-light leading-[1.4] text-[#1a1a1a]/45">what the asset appreciates, if you paid 100% on day one</p>
             </div>
             <div className="border-t border-[#1a1a1a]/10 bg-gradient-to-br from-[#1e6b45]/[0.08] to-transparent p-5 sm:border-l sm:border-t-0">
               <p className="text-[0.62rem] font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/40">◆ Your XIRR</p>
-              <p className="mt-2 font-mono text-[2.2rem] font-medium leading-none text-[#1e6b45]">{calc.xirr.toFixed(1)}<span className="text-[0.9rem] text-[#1a1a1a]/35">%</span></p>
+              <p className="mt-2 text-[2.2rem] font-normal leading-none tracking-[-0.02em] tabular-nums text-[#1e6b45]">{calc.xirr.toFixed(1)}<span className="text-[0.9rem] text-[#1a1a1a]/35">%</span></p>
               <p className="mt-2 text-[0.66rem] font-light leading-[1.4] text-[#1a1a1a]/45">your real, cash-flow-adjusted return on this {mode === "resale" ? "resale deal" : plan === "clp" ? "construction-linked plan" : "down-payment plan"}</p>
             </div>
           </div>

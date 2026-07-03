@@ -167,9 +167,9 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
             <span className={`h-[6px] w-[6px] rounded-full ${o.absorptionPct >= 90 ? "bg-[#238c55]" : "bg-[#9a7a2e]"}`} />{o.absorptionPct >= 90 ? "High demand" : "Steady"}
           </span>
         </div>
-        <p className="mt-4 font-mono text-[2.4rem] font-medium leading-none text-[#1e6b45]">
+        <p className="mt-4 text-[2.4rem] font-normal leading-none tracking-[-0.02em] tabular-nums text-[#1e6b45]">
           {o.absorptionPct}<span className="text-[0.95rem] text-[#1a1a1a]/35">%</span>
-          <span className="ml-2.5 font-sans text-[0.72rem] font-light tracking-normal text-[#1a1a1a]/45">of launched units sold</span>
+          <span className="ml-2.5 text-[0.72rem] font-light tracking-normal text-[#1a1a1a]/45">of launched units sold</span>
         </p>
         <div className="mt-3.5 h-3 overflow-hidden rounded-full bg-[#e9e2d3]"><div className="h-full rounded-full" style={{ width: `${o.absorptionPct}%`, background: "linear-gradient(90deg,#1e6b45,#238c55)" }} /></div>
         {totalUnits != null && (
