@@ -136,7 +136,7 @@ export type ProjectOps = {
   /* Imagery (relative to /public). `render` is the developer's marketing
      render; `sitePhotos` are our dated field-visit photographs. Absent →
      brand-safe schematic stand-ins render in their place. */
-  media?: { render?: string; sitePhotos?: { src: string; asOf: string; note?: string }[] };
+  media?: { render?: string; heroImage?: string; sitePhotos?: { src: string; asOf: string; note?: string }[] };
   /* Structured location intelligence (Chapter II · Location). */
   location?: {
     pois?: { name: string; sub: string; rating?: number; dist: string; key?: boolean }[];
@@ -158,6 +158,7 @@ export const OPS: Record<string, ProjectOps> = {
   "DLF Arbour": {
     address: "Sector 63, Golf Course Extension Road, Gurugram",
     reviewed: "3 Jul 2026",
+    media: { heroImage: "images/aerial-dlf-arbour.webp" },
     units: 1137,
     towers: 5,
     landAcres: 25.1,
@@ -205,6 +206,7 @@ export const OPS: Record<string, ProjectOps> = {
   "DLF Privana South": {
     address: "Sector 77, Southern Peripheral Road, Gurugram",
     reviewed: "1 Jul 2026",
+    media: { heroImage: "images/aerial-dlf-privana-south.webp" },
     homes: [
       { config: "3 BHK", variant: "Type A", carpetSqft: 1755, superSqft: 2500, balconySqft: 300, priceCr: 5.2 },
       { config: "3 BHK", variant: "Type B", carpetSqft: 1880, superSqft: 2680, balconySqft: 340, priceCr: 5.6 },

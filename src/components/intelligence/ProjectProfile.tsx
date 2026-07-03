@@ -115,6 +115,7 @@ export default function ProjectProfile({
     : ops?.possession
     ? `Under construction · handover ${ops.possession}`
     : undefined;
+  const heroImage = ops?.media?.heroImage;
 
   const con = ops?.construction;
 
@@ -299,7 +300,72 @@ export default function ProjectProfile({
               </div>
             )}
 
-            {/* Hero */}
+            {/* Hero — when we hold a real site aerial, the report opens on the
+                asset itself (scrim + light overlay); otherwise the stat hero. */}
+            {heroImage ? (
+              <div className="relative mt-9 overflow-hidden rounded-[24px] bg-[#0b1017] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.55)]">
+                <img src={`${basePath}/${heroImage}`} alt={`${p.name} — aerial site view`} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: "center 42%" }} />
+                <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(8,12,18,0.95) 0%, rgba(8,12,18,0.74) 26%, rgba(8,12,18,0.32) 56%, rgba(8,12,18,0.46) 100%)" }} />
+                <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(8,12,18,0.55), rgba(8,12,18,0) 58%)" }} />
+                <div className="relative flex min-h-[540px] flex-col justify-end p-7 md:min-h-[600px] md:p-11">
+                  <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-7">
+                    <div className="max-w-2xl">
+                      <p className="text-[11px] font-medium uppercase tracking-[0.34em] text-[#d8b978]">Project Intelligence</p>
+                      <h1 className={`mt-4 text-balance font-serif font-medium leading-[1.04] tracking-[-0.02em] text-[#F7F3EA] ${p.name.length > 24 ? "text-[2.15rem] md:text-[3.1rem]" : "text-[2.7rem] md:text-[3.9rem]"}`}>{p.name}</h1>
+                      {ops?.address && (
+                        <p className="mt-4 flex items-center text-[0.9rem] font-light text-white/70">
+                          <IconPin className="mr-2 text-[#d8b978]" />
+                          {mapHref ? <a href={mapHref} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-white">{ops.address}<IconArrowUpRight className="ml-1 text-[#d8b978]" /></a> : ops.address}
+                        </p>
+                      )}
+                      <p className="mt-2 text-[0.86rem] font-light text-white/45">
+                        by <span className="font-medium text-white/75">{p.developer}</span>
+                        <span className="mx-2 text-white/25">·</span>{p.configs.join(" & ")}
+                        <span className="mx-2 text-white/25">·</span>₹{p.budget[0]}–{p.budget[1]} Cr
+                      </p>
+                      <div className="mt-6 flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[0.7rem] font-medium text-white/85 backdrop-blur-sm">
+                          <IconAward className="text-[#d8b978]" /> #{ctx.corridorRank} of {ctx.corridorCount} in {p.marketShort}
+                        </span>
+                        {buildStatus && (
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-white/10 px-3.5 py-1.5 text-[0.7rem] font-light text-white/70 backdrop-blur-sm">
+                            <IconBuilding className="text-[#d8b978]" />{buildStatus}
+                          </span>
+                        )}
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-[0.64rem] font-light uppercase tracking-[0.1em] text-white/55 backdrop-blur-sm">
+                          <span className="text-[#5fb98a]">◉</span> The actual site
+                        </span>
+                      </div>
+                    </div>
+                    {/* Truth Score — light readout card floated on the canvas */}
+                    <div className="w-full max-w-[290px] rounded-2xl border border-white/20 bg-[#FBF8F2]/95 p-5 shadow-[0_22px_55px_-18px_rgba(0,0,0,0.6)] backdrop-blur-md sm:w-[290px]">
+                      <p className="text-[0.5rem] font-medium uppercase tracking-[0.22em] text-[#1a1a1a]/40">Truth Score</p>
+                      <p className="mt-1 flex items-baseline">
+                        <span className="font-serif text-[3.2rem] font-normal leading-[0.82] text-[#1e6b45]">{p.truthScore}</span>
+                        <span className="ml-1.5 font-mono text-[0.95rem] text-[#1a1a1a]/30">/100</span>
+                      </p>
+                      <p className="mt-2 flex items-center gap-2">
+                        <span className="text-[0.62rem] font-bold uppercase tracking-[0.12em] text-[#1e6b45]">{scoreGrade(p.truthScore)}</span>
+                        <span className={`rounded-full border px-2.5 py-0.5 text-[0.6rem] font-semibold ${recoTone(p.recommendation)}`}>{p.recommendation}</span>
+                      </p>
+                      <div className="mt-2.5 flex w-full gap-[3px]">
+                        {Array.from({ length: 10 }).map((_, idx) => (
+                          <span key={idx} className={`h-[8px] flex-1 rounded-[2px] ${idx < Math.round(p.truthScore / 10) ? "bg-[#1e6b45]" : "bg-[#1a1a1a]/[0.1]"}`} />
+                        ))}
+                      </div>
+                      <div className="mt-3.5 space-y-1.5 border-t border-[#1a1a1a]/8 pt-3">
+                        {ctx.delta > 0 && <p className="flex items-center gap-2 text-[0.72rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]"><IconTrendUp /></span><span><b className="font-semibold text-[#1a1a1a]">+{ctx.delta}</b> vs {p.marketShort} average</span></p>}
+                        <p className="flex items-center gap-2 text-[0.72rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]"><IconTiers /></span><span><b className="font-semibold text-[#1a1a1a]">Top {ctx.topPct}%</b> of tracked projects</span></p>
+                        <p className="flex items-center gap-2 text-[0.72rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]"><IconShieldCheck /></span><span><b className="font-semibold text-[#1a1a1a]">{p.confidence}</b> confidence · re-scored quarterly</span></p>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="mt-5 flex items-center gap-2 text-[0.62rem] font-light text-white/45">
+                    <IconClock /> Satellite view of the site · construction as last observed · data reviewed {reviewed}
+                  </p>
+                </div>
+              </div>
+            ) : (
             <div className="mt-9 flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-2xl">
                 <Eyebrow>Project Intelligence</Eyebrow>
@@ -359,6 +425,7 @@ export default function ProjectProfile({
                 </div>
               </div>
             </div>
+            )}
 
             {/* The short answer — the 10-second executive read. The word
                "verdict" belongs to exactly one thing: the profile-tailored
