@@ -44,14 +44,15 @@ const recoTone = (r: string) =>
   : r === "Buy" ? "border-[#3e8e62]/30 text-[#3e8e62] bg-[#3e8e62]/8"
   : "border-[#9a7a2e]/30 text-[#9a7a2e] bg-[#c9a96e]/10";
 
-/* Vitals, part 1 — a money fact: the value leads, big and serif; the label
-   whispers underneath. (The presentation the wireframe round locked in.) */
+/* Vitals, part 1 — a money fact: the value leads big in the site sans
+   (Geist) so the figures read as clean data, not calligraphy; the label
+   whispers underneath. */
 function Money({ v, k }: { v: string; k: string }) {
   // adaptive display type — long values step down so no fact dominates the row
   const size = v.length > 24 ? "text-[1.15rem] md:text-[1.35rem]" : v.length > 17 ? "text-[1.35rem] md:text-[1.6rem]" : "text-[1.6rem] md:text-[1.95rem]";
   return (
     <div>
-      <p className={`font-serif ${size} font-medium leading-[1.18] tracking-[-0.01em] text-balance`}>{v}</p>
+      <p className={`${size} font-normal leading-[1.18] tracking-[-0.02em] tabular-nums ${v.length <= 10 ? "whitespace-nowrap" : "text-balance"}`}>{v}</p>
       <p className="mt-1.5 text-[0.6rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/35">{k}</p>
     </div>
   );
