@@ -107,6 +107,43 @@ function sizeBand(p: Project, avgPsf: number | undefined): string | null {
   return `${lo.toLocaleString("en-IN")}–${hi.toLocaleString("en-IN")} sq ft`;
 }
 
+/* ── Rich geo intelligence ─────────────────────────────────────────
+   Project + POI coordinates drive a coordinate-accurate interactive map;
+   distances are computed by haversine so pins and labels never disagree.
+   Categories map to the BE `nearby_infra` groups and connectivity JSON. */
+export type GeoCat = "schools" | "offices" | "hospitals" | "retail" | "projects";
+export type GeoPoi = {
+  cat: GeoCat;
+  name: string;
+  sub: string; // sub-category / one-line descriptor
+  lat: number;
+  lng: number;
+  rating?: number; // Google rating
+  importance?: "High" | "Medium" | "Low";
+};
+export type LocationGeo = {
+  center: { lat: number; lng: number };
+  radiusKm?: number; // map extent, default 2
+  nearby: GeoPoi[];
+  connectivity: {
+    metro?: { name: string; line: string; km: number; min: number };
+    roads: { name: string; km: number; type: "Direct" | "Indirect" }[];
+    airport?: { name: string; km: number; min: number };
+    business: { name: string; km: number; min: number }[];
+    lastMile?: {
+      roadWidth?: string; surface?: string; autoCab?: string;
+      bus?: string; walkability?: string; traffic?: string; bottlenecks?: string;
+    };
+  };
+  scores?: {
+    connectivity?: number; // /10
+    lastMile?: number; // /10
+    overall?: number; // /100
+    byCat?: Partial<Record<"schools" | "offices" | "hospitals" | "retail" | "realEstate", number>>;
+  };
+  insights?: { verdict?: string; marketStage?: string; strengths?: string[]; gaps?: string[] };
+};
+
 /* ── Operational specifics ─────────────────────────────────────────
    Ground-truth vitals for the projects we track most closely. Figures
    come from RERA filings, quarterly progress reports (QPRs) and our own
@@ -152,6 +189,9 @@ export type ProjectOps = {
     pois?: { name: string; sub: string; rating?: number; dist: string; key?: boolean }[];
     connectivity?: { icon: string; name: string; sub: string; dist: string; tag: string; direct?: boolean }[];
     infra?: { cat: string; status: string; title: string; body: string; impact: "High" | "Medium"; eta: string }[];
+    /* Rich geo intel — drives the interactive map + connectivity readout.
+       When present, the Location pillar renders the map-led layout. */
+    geo?: LocationGeo;
   };
   construction?: {
     actualPct: number; // built vs plan, latest QPR
@@ -209,6 +249,63 @@ export const OPS: Record<string, ProjectOps> = {
         { cat: "Roads", status: "Approved", title: "Badshahpur Drain Road", body: "₹370 cr storm-drain concretisation with a load-bearing road on top.", impact: "Medium", eta: "2027" },
         { cat: "Roads", status: "Under constr.", title: "GMDA Sector 66 Revamp", body: "Service roads, cycle tracks & utility ducts near M3M IFC.", impact: "Medium", eta: "2026 Q4" },
       ],
+      geo: {
+        center: { lat: 28.4112, lng: 77.0905 },
+        radiusKm: 2,
+        nearby: [
+          { cat: "schools", name: "The Heritage Xperiential", sub: "Tier-1 K-12 · IB / CBSE", lat: 28.4148, lng: 77.0985, rating: 4.6, importance: "High" },
+          { cat: "schools", name: "St. Xavier's High School", sub: "Co-ed K-12 · CBSE", lat: 28.4105, lng: 77.0855, rating: 4.4, importance: "High" },
+          { cat: "schools", name: "DPS International", sub: "K-12 · CIE International", lat: 28.4180, lng: 77.0882, rating: 4.5, importance: "Medium" },
+          { cat: "offices", name: "AIPL Business Club", sub: "Grade-A IGBC-Gold IT park", lat: 28.4128, lng: 77.0948, rating: 4.4, importance: "High" },
+          { cat: "offices", name: "M3M IFC", sub: "Grade-A financial centre", lat: 28.4035, lng: 77.0965, rating: 4.5, importance: "High" },
+          { cat: "offices", name: "Capital Cyberscape", sub: "Grade-A office complex", lat: 28.4060, lng: 77.1020, rating: 4.3, importance: "Medium" },
+          { cat: "hospitals", name: "W Pratiksha Hospital", sub: "Multi-specialty · trauma", lat: 28.4205, lng: 77.1005, rating: 4.3, importance: "High" },
+          { cat: "hospitals", name: "Paras Health", sub: "Multi-specialty", lat: 28.4162, lng: 77.0838, rating: 4.2, importance: "Medium" },
+          { cat: "retail", name: "Grand Hyatt Galleria", sub: "Luxury dining & boutiques", lat: 28.4122, lng: 77.0912, rating: 4.6, importance: "High" },
+          { cat: "retail", name: "M3M 65th Avenue", sub: "High-street mall · PVR", lat: 28.4035, lng: 77.0965, rating: 4.4, importance: "High" },
+          { cat: "retail", name: "AIPL Joy Street", sub: "High-street retail", lat: 28.4145, lng: 77.0958, rating: 4.3, importance: "Medium" },
+          { cat: "projects", name: "Emaar Amaris", sub: "Ultra-luxury high-rise · UC", lat: 28.4135, lng: 77.0995, rating: 4.6, importance: "High" },
+          { cat: "projects", name: "M3M Golf Estate", sub: "Luxury low-density · delivered", lat: 28.4090, lng: 77.0980, rating: 4.5, importance: "Medium" },
+          { cat: "projects", name: "Oberoi 360 North", sub: "Ultra-luxury · UC", lat: 28.4062, lng: 77.0992, rating: 4.7, importance: "High" },
+        ],
+        connectivity: {
+          metro: { name: "Sector 55–56 Metro", line: "Rapid Metro line", km: 3.5, min: 8 },
+          roads: [
+            { name: "Golf Course Extension Rd", km: 0.2, type: "Direct" },
+            { name: "Golf Course Road", km: 1.5, type: "Direct" },
+            { name: "NH-48", km: 8.5, type: "Indirect" },
+          ],
+          airport: { name: "IGI Airport · T3", km: 24, min: 30 },
+          business: [
+            { name: "One Horizon Centre", km: 4.5, min: 10 },
+            { name: "Sohna Road corridor", km: 10, min: 15 },
+            { name: "DLF Cyber City", km: 14, min: 22 },
+          ],
+          lastMile: {
+            roadWidth: "Wide", surface: "Good", autoCab: "High", bus: "Limited",
+            walkability: "Average", traffic: "Medium",
+            bottlenecks: "Peak-hour build-ups at the Golf Course Extension Road service junctions and entry/exit merges during rush hour.",
+          },
+        },
+        scores: {
+          connectivity: 8.7, lastMile: 8.1, overall: 92,
+          byCat: { schools: 18, offices: 19, hospitals: 13, retail: 15, realEstate: 27 },
+        },
+        insights: {
+          marketStage: "Premium corridor · high-growth",
+          verdict: "Sector 63 sits at the join where Golf Course Road's mature luxury strip meets the Extension corridor — sub-kilometre to Grade-A offices and high-street retail, with elite schools inside a 1 km loop. The one gap is rapid rail: the nearest metro is an 8-minute drive, not a walk.",
+          strengths: [
+            "Direct 0.2 km frontage onto Golf Course Extension Road, the corridor's spine.",
+            "Grade-A workspaces (AIPL Business Club, M3M IFC) inside a 1 km radius.",
+            "Tier-1 international schools — Heritage, St. Xavier's — within a 1 km loop.",
+            "Walkable luxury retail & dining at the Grand Hyatt precinct next door.",
+          ],
+          gaps: [
+            "No rapid-metro station within walking range — an 8-minute drive to Sector 55–56.",
+            "Peak-hour congestion at the Extension Road service junctions.",
+          ],
+        },
+      },
     },
     reraNote: "Registered · Haryana RERA · active, no project-level complaints on record",
     construction: { actualPct: 57, expectedPct: 47, absorptionPct: 100, reraDate: "Mar 2030", predictedDate: "Nov 2029", qpr: "Q1 2026" },

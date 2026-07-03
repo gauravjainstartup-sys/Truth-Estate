@@ -1,14 +1,214 @@
-import { type ProjectIntel } from "@/lib/projects";
+import { type LocationGeo, type ProjectIntel } from "@/lib/projects";
+import LocationMap from "./LocationMap";
 
-/* Chapter II · Pillar III — Location Intelligence. A branded schematic map,
-   rated nearby POIs, connectivity with travel times, and a funded-&-approved
-   infrastructure timeline. Falls back gracefully where structured data
-   isn't tracked yet. */
+/* Chapter II · Pillar III — Location Intelligence. When a project carries rich
+   geo data we lead with a coordinate-accurate interactive map, a connectivity
+   readout with real distances & travel times, a category-score breakdown and
+   the analyst's strengths/gaps. Projects not yet migrated fall back to the
+   legacy branded schematic. */
+
+const CAT_MAX: Record<string, number> = { schools: 20, offices: 20, hospitals: 15, retail: 15, realEstate: 30 };
+const CAT_LABEL: Record<string, string> = { schools: "Schools", offices: "Workspaces", hospitals: "Healthcare", retail: "Retail & dining", realEstate: "Real estate" };
+const CAT_COLOR: Record<string, string> = { schools: "#2f8f5b", offices: "#3f74a6", hospitals: "#c0533e", retail: "#bf942f", realEstate: "#8a6d9c" };
+const CAT_KEYS = ["schools", "offices", "hospitals", "retail", "realEstate"] as const;
 
 export default function ReportLocation({ p }: { p: ProjectIntel }) {
   const loc = p.ops?.location;
+  const geo = loc?.geo;
 
-  // Real markers plotted on the schematic from tracked POIs / transit.
+  return (
+    <div className="mt-8">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Pillar III · Location Intelligence</p>
+          <h3 className="mt-2 font-serif text-[1.7rem] font-medium leading-tight md:text-[2rem]">Will this address still be winning in 2035?</h3>
+          <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">What&apos;s here today, what&apos;s funded and coming, and how you get around.</p>
+        </div>
+      </div>
+
+      {geo ? <GeoLayout p={p} geo={geo} /> : <LegacyLayout p={p} loc={loc} />}
+    </div>
+  );
+}
+
+/* ══════════════════════ map-led geo layout ══════════════════════ */
+function GeoLayout({ p, geo }: { p: ProjectIntel; geo: LocationGeo }) {
+  const c = geo.connectivity;
+  const s = geo.scores;
+  const ins = geo.insights;
+
+  return (
+    <>
+      {/* verdict + score strip */}
+      {(ins?.verdict || s) && (
+        <div className="mt-6 grid gap-4 lg:grid-cols-[1.7fr_1fr]">
+          {ins?.verdict && (
+            <div className="rounded-2xl border-l-2 border-[#238c55]/45 bg-white/50 p-6 md:p-7">
+              {ins.marketStage && <p className="text-[0.6rem] font-bold uppercase tracking-[0.14em] text-[#238c55]">{ins.marketStage}</p>}
+              <p className="mt-2.5 font-serif text-[1.14rem] leading-[1.5] text-[#1a1a1a]/85 md:text-[1.28rem]">{ins.verdict}</p>
+            </div>
+          )}
+          {s && (
+            <div className="grid grid-cols-3 overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-white/60 lg:grid-cols-1">
+              {s.overall != null && <ScoreCell v={s.overall} unit="/100" k="Location score" hero />}
+              {s.connectivity != null && <ScoreCell v={s.connectivity} unit="/10" k="Connectivity" />}
+              {s.lastMile != null && <ScoreCell v={s.lastMile} unit="/10" k="Last-mile ease" />}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* the interactive map */}
+      <LocationMap geo={geo} projectName={p.name} />
+
+      {/* connectivity readout */}
+      <div className="mt-8 flex items-center gap-3"><span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">How you get in &amp; out</span><span className="h-px flex-1 bg-[#1a1a1a]/10" /></div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {c.metro && (
+          <ConnCard icon={<IconMetro />} title={c.metro.name} sub={c.metro.line} main={`${c.metro.km} km`} tag={`${c.metro.min} min`} />
+        )}
+        {c.airport && (
+          <ConnCard icon={<IconPlane />} title={c.airport.name} sub="via expressway" main={`${c.airport.km} km`} tag={`${c.airport.min} min`} />
+        )}
+        {c.roads.length > 0 && (
+          <ListCard icon={<IconRoad />} title="Road access">
+            {c.roads.map((r) => (
+              <li key={r.name} className="flex items-start justify-between gap-2 py-1.5 text-[0.76rem]">
+                <span className="min-w-0 leading-tight text-[#1a1a1a]/70">{r.name}</span>
+                <span className="shrink-0 whitespace-nowrap font-mono text-[0.72rem] text-[#1a1a1a]/55">{r.km} km <span className={r.type === "Direct" ? "text-[#238c55]" : "text-[#1a1a1a]/35"}>· {r.type}</span></span>
+              </li>
+            ))}
+          </ListCard>
+        )}
+        {c.business.length > 0 && (
+          <ListCard icon={<IconBriefcase />} title="Business districts">
+            {c.business.map((b) => (
+              <li key={b.name} className="flex items-start justify-between gap-2 py-1.5 text-[0.76rem]">
+                <span className="min-w-0 leading-tight text-[#1a1a1a]/70">{b.name}</span>
+                <span className="shrink-0 whitespace-nowrap font-mono text-[0.72rem] text-[#1a1a1a]/55">{b.km} km · {b.min}m</span>
+              </li>
+            ))}
+          </ListCard>
+        )}
+      </div>
+
+      {/* last-mile read */}
+      {c.lastMile && (
+        <div className="mt-4 rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-6">
+          <span className="text-[0.66rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">The last mile — approach &amp; daily friction</span>
+          <div className="mt-3.5 flex flex-wrap gap-2">
+            {c.lastMile.roadWidth && <Pill k="Road" v={c.lastMile.roadWidth} />}
+            {c.lastMile.surface && <Pill k="Surface" v={c.lastMile.surface} />}
+            {c.lastMile.autoCab && <Pill k="Auto / cab" v={c.lastMile.autoCab} good={/high/i.test(c.lastMile.autoCab)} />}
+            {c.lastMile.bus && <Pill k="Bus" v={c.lastMile.bus} warn={/limited|low/i.test(c.lastMile.bus)} />}
+            {c.lastMile.walkability && <Pill k="Walkability" v={c.lastMile.walkability} warn={/low|average/i.test(c.lastMile.walkability)} />}
+            {c.lastMile.traffic && <Pill k="Peak traffic" v={c.lastMile.traffic} warn={/med|high/i.test(c.lastMile.traffic)} />}
+          </div>
+          {c.lastMile.bottlenecks && <p className="mt-3.5 text-[0.8rem] font-light leading-[1.6] text-[#1a1a1a]/55">{c.lastMile.bottlenecks}</p>}
+        </div>
+      )}
+
+      {/* category score breakdown */}
+      {s?.byCat && (
+        <div className="mt-4 rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-6">
+          <div className="flex items-center justify-between">
+            <span className="text-[0.66rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">What builds the location score</span>
+            {s.overall != null && <span className="font-mono text-[0.78rem] font-semibold text-[#1a1a1a]/70">{s.overall}/100</span>}
+          </div>
+          <div className="mt-4 space-y-3">
+            {CAT_KEYS.filter((k) => s.byCat![k] != null).map((k) => {
+              const v = s.byCat![k]!;
+              const max = CAT_MAX[k];
+              return (
+                <div key={k} className="grid grid-cols-[110px_1fr_44px] items-center gap-3">
+                  <span className="flex items-center gap-2 text-[0.76rem] font-medium text-[#1a1a1a]/70"><span className="h-2 w-2 rounded-full" style={{ background: CAT_COLOR[k] }} />{CAT_LABEL[k]}</span>
+                  <span className="h-2 overflow-hidden rounded-full bg-[#1a1a1a]/[0.06]"><span className="block h-full rounded-full" style={{ width: `${(v / max) * 100}%`, background: CAT_COLOR[k] }} /></span>
+                  <span className="text-right font-mono text-[0.72rem] text-[#1a1a1a]/55">{v}<span className="text-[#1a1a1a]/30">/{max}</span></span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* strengths & gaps */}
+      {(ins?.strengths?.length || ins?.gaps?.length) && (
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          {ins?.strengths?.length ? (
+            <div className="rounded-2xl border border-[#1e6b45]/20 bg-[#1e6b45]/[0.04] p-6">
+              <p className="text-[0.62rem] font-bold uppercase tracking-[0.12em] text-[#1e6b45]">✓ What the location gives you</p>
+              <ul className="mt-3 space-y-2.5">
+                {ins.strengths.map((t) => (
+                  <li key={t} className="flex gap-2.5 text-[0.82rem] font-light leading-[1.55] text-[#1a1a1a]/70"><span className="mt-[3px] shrink-0 text-[#1e6b45]">▸</span>{t}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {ins?.gaps?.length ? (
+            <div className="rounded-2xl border border-[#9a7a2e]/25 bg-[#9a7a2e]/[0.05] p-6">
+              <p className="text-[0.62rem] font-bold uppercase tracking-[0.12em] text-[#9a7a2e]">△ Where to weigh trade-offs</p>
+              <ul className="mt-3 space-y-2.5">
+                {ins.gaps.map((t) => (
+                  <li key={t} className="flex gap-2.5 text-[0.82rem] font-light leading-[1.55] text-[#1a1a1a]/70"><span className="mt-[3px] shrink-0 text-[#9a7a2e]">▸</span>{t}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      )}
+
+      <p className="mt-6 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">Sources: Google Places, GMDA / HSVP corridor data &amp; our field tracking. Pins are placed from surveyed coordinates; distances are straight-line from the project and drive times vary with traffic.</p>
+    </>
+  );
+}
+
+function ScoreCell({ v, unit, k, hero }: { v: number; unit: string; k: string; hero?: boolean }) {
+  return (
+    <div className={`border-b border-r border-[#1a1a1a]/[0.06] p-4 lg:border-r-0 ${hero ? "bg-[#1e6b45]/[0.05]" : ""}`}>
+      <p className={`font-mono font-medium leading-none ${hero ? "text-[1.7rem] text-[#1e6b45]" : "text-[1.4rem] text-[#1a1a1a]"}`}>{v}<span className="text-[0.8rem] text-[#1a1a1a]/35">{unit}</span></p>
+      <p className="mt-1.5 text-[0.58rem] font-medium uppercase tracking-[0.08em] text-[#1a1a1a]/40">{k}</p>
+    </div>
+  );
+}
+
+function ConnCard({ icon, title, sub, main, tag }: { icon: React.ReactNode; title: string; sub: string; main: string; tag: string }) {
+  return (
+    <div className="flex flex-col rounded-xl border border-[#1a1a1a]/8 bg-white/60 p-4">
+      <span className="text-[#9a7a2e]">{icon}</span>
+      <p className="mt-2.5 text-[0.86rem] font-semibold leading-tight">{title}</p>
+      <p className="mt-0.5 text-[0.68rem] font-light text-[#1a1a1a]/45">{sub}</p>
+      <p className="mt-auto pt-3 font-mono text-[0.9rem] font-semibold text-[#1a1a1a]">{main} <span className="text-[0.72rem] font-normal text-[#238c55]">· {tag}</span></p>
+    </div>
+  );
+}
+
+function ListCard({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-[#1a1a1a]/8 bg-white/60 p-4">
+      <span className="text-[#9a7a2e]">{icon}</span>
+      <p className="mt-2.5 text-[0.86rem] font-semibold leading-tight">{title}</p>
+      <ul className="mt-1.5 divide-y divide-dotted divide-[#1a1a1a]/10">{children}</ul>
+    </div>
+  );
+}
+
+function Pill({ k, v, good, warn }: { k: string; v: string; good?: boolean; warn?: boolean }) {
+  const tone = good ? "text-[#1c7a4c]" : warn ? "text-[#8a6a1e]" : "text-[#1a1a1a]/70";
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#1a1a1a]/10 bg-white px-3 py-1.5 text-[0.72rem]">
+      <span className="text-[#1a1a1a]/40">{k}</span> <b className={`font-medium ${tone}`}>{v}</b>
+    </span>
+  );
+}
+
+const svg = { fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round", strokeLinejoin: "round", viewBox: "0 0 24 24", className: "h-[1.15rem] w-[1.15rem]" } as const;
+const IconMetro = () => <svg {...svg} aria-hidden><rect x="6" y="4" width="12" height="12" rx="3" /><path d="M6 10h12M9 20l-2 2M15 20l2 2M9.5 16v.01M14.5 16v.01" /></svg>;
+const IconPlane = () => <svg {...svg} aria-hidden><path d="M21 15.5 3 10V7l3 1 3-3 1.5.5-2 3 4 1.5 3-4 1.5.5-1.5 4L21 12z" /></svg>;
+const IconRoad = () => <svg {...svg} aria-hidden><path d="M8 3 5 21M16 3l3 18M12 5v2M12 11v2M12 17v2" /></svg>;
+const IconBriefcase = () => <svg {...svg} aria-hidden><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18" /></svg>;
+
+/* ══════════════════════ legacy schematic (fallback) ══════════════════════ */
+function LegacyLayout({ p, loc }: { p: ProjectIntel; loc: NonNullable<ProjectIntel["ops"]>["location"] }) {
   const conn = loc?.connectivity ?? [];
   const arterialName = conn.find((c) => c.direct)?.name;
   const shortLabel = (s: string) => (s.length > 18 ? s.split(/\s+/).slice(0, 2).join(" ") : s);
@@ -23,25 +223,14 @@ export default function ReportLocation({ p }: { p: ProjectIntel }) {
   if (hub && hub !== metro) markers.push({ ...slot[3], label: shortLabel(hub.name), dist: hub.dist, tone: "#5b5346", anchor: "end" });
 
   return (
-    <div className="mt-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Pillar III · Location Intelligence</p>
-          <h3 className="mt-2 font-serif text-[1.7rem] font-medium leading-tight md:text-[2rem]">Will this address still be winning in 2035?</h3>
-          <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">What&apos;s here today, what&apos;s funded and coming, and how you get around.</p>
-        </div>
-      </div>
-
-      {/* schematic locality map — higher-contrast, plots real tracked POIs */}
+    <>
       <div className="relative mt-6 overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-[#e7eae0]">
         <svg viewBox="0 0 1024 360" preserveAspectRatio="xMidYMid slice" className="block h-[190px] w-full sm:h-[230px]" xmlns="http://www.w3.org/2000/svg" role="img" aria-label={`Locality schematic — ${p.name}`}>
           <rect width="1024" height="360" fill="#e7eae0" />
-          {/* green masses + built blocks */}
           <path d="M792 0 h232 v360 h-232 q-72 -180 0 -360z" fill="#c8d6b0" opacity="0.9" />
           <circle cx="92" cy="300" r="104" fill="#c8d6b0" opacity="0.9" />
           <rect x="150" y="26" width="132" height="74" rx="9" fill="#dcdfce" />
           <rect x="598" y="272" width="150" height="74" rx="9" fill="#dcdfce" />
-          {/* road network — dark enough to read */}
           <g fill="none" strokeLinecap="round">
             <path d="M-40 288 Q 430 198 1064 94" stroke="#a99a78" strokeWidth="20" />
             <path d="M-40 288 Q 430 198 1064 94" stroke="#e7eae0" strokeWidth="3" strokeDasharray="12 14" opacity="0.75" />
@@ -49,13 +238,10 @@ export default function ReportLocation({ p }: { p: ProjectIntel }) {
             <path d="M724 -40 L 664 400" stroke="#c0b498" strokeWidth="10" />
             <path d="M-40 92 L 1064 68" stroke="#cabfa4" strokeWidth="7" />
           </g>
-          {/* radius rings */}
           <g fill="none" stroke="#9a7a2e" strokeDasharray="2 10" opacity="0.42"><circle cx="470" cy="188" r="102" /><circle cx="470" cy="188" r="168" /></g>
           <text x="470" y="94" textAnchor="middle" fontSize="15" fill="#9a7a2e" opacity="0.8" fontFamily="ui-monospace,monospace" stroke="#e7eae0" strokeWidth="4" paintOrder="stroke">1 km</text>
           <text x="470" y="28" textAnchor="middle" fontSize="15" fill="#9a7a2e" opacity="0.8" fontFamily="ui-monospace,monospace" stroke="#e7eae0" strokeWidth="4" paintOrder="stroke">2 km</text>
-          {/* arterial label */}
           {arterialName && <text x="168" y="252" fontSize="18" fontWeight="600" fill="#75694e" fontFamily="ui-sans-serif" transform="rotate(-11 168 252)" stroke="#e7eae0" strokeWidth="4.5" paintOrder="stroke">{arterialName}</text>}
-          {/* real POI + transit markers */}
           {markers.map((m) => (
             <g key={m.label}>
               <circle cx={m.x} cy={m.y} r="8.5" fill={m.tone} stroke="#fff" strokeWidth="3" />
@@ -63,7 +249,6 @@ export default function ReportLocation({ p }: { p: ProjectIntel }) {
               <text x={m.anchor === "end" ? m.x - 15 : m.x + 15} y={m.y + 20} textAnchor={m.anchor} fontSize="15" fill="#6b6454" fontFamily="ui-monospace,monospace" stroke="#e7eae0" strokeWidth="3.5" paintOrder="stroke">{m.dist}</text>
             </g>
           ))}
-          {/* project pin */}
           <g transform="translate(470 188)">
             <circle r="23" fill="#9a7a2e" opacity="0.16" /><circle r="13" fill="#9a7a2e" opacity="0.24" />
             <path d="M0 -18 C 12 -18 18 -8 18 -1 C 18 10 0 24 0 24 C 0 24 -18 10 -18 -1 C -18 -8 -12 -18 0 -18 Z" fill="#9a7a2e" stroke="#fff" strokeWidth="2.5" />
@@ -77,7 +262,6 @@ export default function ReportLocation({ p }: { p: ProjectIntel }) {
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[1.1fr_1fr]">
-        {/* POIs */}
         {loc?.pois && loc.pois.length > 0 && (
           <div className="min-w-0 rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-6">
             <div className="flex items-center justify-between"><span className="text-[0.66rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">Who &amp; what&apos;s around · rated</span><span className="text-[0.66rem] text-[#1a1a1a]/40">within 2 km</span></div>
@@ -97,7 +281,6 @@ export default function ReportLocation({ p }: { p: ProjectIntel }) {
             </div>
           </div>
         )}
-        {/* connectivity */}
         {loc?.connectivity && loc.connectivity.length > 0 && (
           <div className="min-w-0 rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-6">
             <span className="text-[0.66rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">How you get in &amp; out</span>
@@ -117,7 +300,6 @@ export default function ReportLocation({ p }: { p: ProjectIntel }) {
         )}
       </div>
 
-      {/* planned infrastructure */}
       {loc?.infra && loc.infra.length > 0 && (
         <>
           <div className="mt-8 flex items-center gap-3"><span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">What&apos;s coming — funded &amp; approved</span><span className="h-px flex-1 bg-[#1a1a1a]/10" /></div>
@@ -138,6 +320,6 @@ export default function ReportLocation({ p }: { p: ProjectIntel }) {
       )}
 
       <p className="mt-6 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">Sources: tracked corridor transactions, GMDA / HSVP infrastructure plans &amp; developer filings. Map is schematic — positions indicative, not surveyed.</p>
-    </div>
+    </>
   );
 }
