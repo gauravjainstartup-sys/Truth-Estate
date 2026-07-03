@@ -129,26 +129,34 @@ export default function ReportPrice({ p }: { p: ProjectIntel }) {
           {/* the record + the projection — stacks on mobile, side-by-side on desktop */}
           <div className="mt-4 grid gap-4 lg:grid-cols-[1.55fr_1fr]">
             <div className="overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-gradient-to-b from-white to-[#faf4ea] p-5">
-              <svg viewBox="0 0 1000 300" className="block w-full" role="img" aria-label="Price per sq ft since launch, with the projected range ahead">
-                <defs>
-                  <linearGradient id="parea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="rgba(138,106,30,.34)" /><stop offset="1" stopColor="rgba(138,106,30,0)" /></linearGradient>
-                  <linearGradient id="pcone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="rgba(30,107,69,.28)" /><stop offset="1" stopColor="rgba(30,107,69,.05)" /></linearGradient>
-                </defs>
-                <g stroke="rgba(26,26,26,.12)" strokeWidth="1"><line x1="40" y1="70" x2="960" y2="70" /><line x1="40" y1="140" x2="960" y2="140" /><line x1="40" y1="210" x2="960" y2="210" /><line x1="40" y1="280" x2="960" y2="280" /></g>
-                <path d="M40,255 L200,238 L310,215 L420,192 L420,280 L40,280 Z" fill="url(#parea)" />
-                <path d="M420,192 L940,52 L940,150 Z" fill="url(#pcone)" />
-                <path d="M40,255 L200,238 L310,215 L420,192" fill="none" stroke="#8a6a1e" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M420,192 L940,96" fill="none" stroke="#1e6b45" strokeWidth="3" strokeDasharray="8 5" strokeLinecap="round" />
-                <line x1="420" y1="34" x2="420" y2="280" stroke="#8a6a1e" strokeWidth="1.4" strokeDasharray="3 4" opacity=".8" />
-                <circle cx="40" cy="255" r="5.5" fill="#8a6a1e" /><circle cx="420" cy="192" r="7" fill="#fff" stroke="#8a6a1e" strokeWidth="3.5" />
-                <g fontSize="14" fill="#3f3a32" fontFamily="ui-sans-serif">
-                  <text x="46" y="274">Launch {fmtPsf(journey.launchPsf)}</text>
-                  <text x="412" y="176" textAnchor="end" fontWeight="700" fill="#141210">Today {fmtPsf(journey.currentLow)}–{(journey.currentHigh / 1000).toFixed(1)}k</text>
-                </g>
-                <g fontSize="13" fill="rgba(26,26,26,.55)" fontFamily="ui-monospace,monospace">
-                  <text x="40" y="297">{journey.launchDate.split(" ")[1]}</text><text x="408" y="297">now</text><text x="900" y="297">+5 yrs</text>
-                </g>
-              </svg>
+              {/* labels live in HTML, not the SVG, so they render at a real
+                  font size instead of shrinking with the viewBox */}
+              <div className="relative">
+                <svg viewBox="0 0 1000 286" className="block w-full" role="img" aria-label="Price per sq ft since launch, with the projected range ahead">
+                  <defs>
+                    <linearGradient id="parea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="rgba(138,106,30,.34)" /><stop offset="1" stopColor="rgba(138,106,30,0)" /></linearGradient>
+                    <linearGradient id="pcone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="rgba(30,107,69,.28)" /><stop offset="1" stopColor="rgba(30,107,69,.05)" /></linearGradient>
+                  </defs>
+                  <g stroke="rgba(26,26,26,.12)" strokeWidth="1"><line x1="40" y1="70" x2="960" y2="70" /><line x1="40" y1="140" x2="960" y2="140" /><line x1="40" y1="210" x2="960" y2="210" /><line x1="40" y1="280" x2="960" y2="280" /></g>
+                  <path d="M40,255 L200,238 L310,215 L420,192 L420,280 L40,280 Z" fill="url(#parea)" />
+                  <path d="M420,192 L940,52 L940,150 Z" fill="url(#pcone)" />
+                  <path d="M40,255 L200,238 L310,215 L420,192" fill="none" stroke="#8a6a1e" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M420,192 L940,96" fill="none" stroke="#1e6b45" strokeWidth="3" strokeDasharray="8 5" strokeLinecap="round" />
+                  <line x1="420" y1="34" x2="420" y2="280" stroke="#8a6a1e" strokeWidth="1.4" strokeDasharray="3 4" opacity=".8" />
+                  <circle cx="40" cy="255" r="5.5" fill="#8a6a1e" /><circle cx="420" cy="192" r="7" fill="#fff" stroke="#8a6a1e" strokeWidth="3.5" />
+                </svg>
+                <span className="absolute bottom-[13%] left-[6.5%] whitespace-nowrap rounded-full border border-[#8a6a1e]/25 bg-white/85 px-2 py-0.5 text-[0.64rem] font-medium tabular-nums text-[#1a1a1a]/75 backdrop-blur-[2px]">
+                  Launch {fmtPsf(journey.launchPsf)}
+                </span>
+                <span className="absolute bottom-[48%] right-[58.8%] whitespace-nowrap rounded-full border border-[#1a1a1a]/10 bg-white/95 px-2.5 py-1 text-[0.68rem] font-semibold tabular-nums text-[#1a1a1a] shadow-sm backdrop-blur-[2px] sm:bottom-[38%]">
+                  Today {fmtPsf(journey.currentLow)}–{(journey.currentHigh / 1000).toFixed(1)}k
+                </span>
+              </div>
+              <div className="relative mt-2 h-4 font-mono text-[0.62rem] tracking-[0.04em] text-[#1a1a1a]/45">
+                <span className="absolute left-[4%]">{journey.launchDate.split(" ")[1]}</span>
+                <span className="absolute left-[42%] -translate-x-1/2">now</span>
+                <span className="absolute right-[4%]">+5 yrs</span>
+              </div>
             </div>
             {/* projection — qualitative outlook free, exact CAGR gated */}
             <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-[#9a7a2e]/25 bg-[#FBF8F2] p-6 text-center">
@@ -279,10 +287,24 @@ export default function ReportPrice({ p }: { p: ProjectIntel }) {
 }
 
 function PStat({ v, sub, k, accent, className = "" }: { v: string; sub?: string; k: string; accent?: boolean; className?: string }) {
+  if (accent) {
+    /* the payoff line — appreciation since launch gets the hero treatment */
+    return (
+      <div className={`flex items-center gap-4 border-b border-r border-[#1a1a1a]/[0.06] bg-gradient-to-r from-[#1e6b45]/[0.07] to-transparent p-5 ${className}`}>
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1e6b45]/10 text-[#1e6b45]" aria-hidden>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 17l6-6 4 4 8-8" /><path d="M14 7h7v7" /></svg>
+        </span>
+        <div>
+          <p className="text-[1.6rem] font-normal leading-[1.18] tracking-[-0.02em] tabular-nums text-[#1e6b45] md:text-[1.8rem]">{v}</p>
+          <p className="mt-1 text-[0.6rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">{k}</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={`border-b border-r border-[#1a1a1a]/[0.06] p-5 ${className}`}>
-      <p className={`font-mono text-[1.5rem] font-medium leading-none ${accent ? "text-[#1e6b45]" : "text-[#1a1a1a]"}`}>{v}{sub && <span className="text-[0.75rem] text-[#1a1a1a]/35">{sub}</span>}</p>
-      <p className="mt-2 text-[0.6rem] font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/40">{k}</p>
+      <p className="text-[1.45rem] font-normal leading-[1.18] tracking-[-0.02em] tabular-nums text-[#1a1a1a] md:text-[1.6rem]">{v}{sub && <span className="text-[0.8rem] font-light text-[#1a1a1a]/35">{sub}</span>}</p>
+      <p className="mt-2 text-[0.6rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">{k}</p>
     </div>
   );
 }
