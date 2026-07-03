@@ -97,14 +97,6 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
           </figure>
         </div>
         )}
-        {/* one honest read tying photo to forecast — not the old data dump */}
-        <div className="mt-4 rounded-r-xl border-l-2 border-[#9a7a2e] bg-[#9a7a2e]/[0.06] px-5 py-3.5">
-          <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-[#9a7a2e]">◆ The delivery read</p>
-          <p className="mt-1.5 text-[0.86rem] font-light leading-[1.6] text-[#1a1a1a]/70">
-            Structure is <b className="font-medium text-[#1a1a1a]">{o.actualPct}% up</b> against {o.expectedPct}% due — {o.aheadOfPlan >= 0 ? "ahead of" : "behind"} the RERA plan. Our field read tracks to Expected OC by <b className="font-medium text-[#1a1a1a]">{o.predictedDate}</b>{o.ahead !== 0 ? `, ${Math.abs(o.ahead)} months ${o.ahead > 0 ? "before" : "after"} the RERA date` : ""}.
-            {!site && <span className="text-[#1a1a1a]/45"> Dated photographs from our next visit drop into the slot above.</span>}
-          </p>
-        </div>
       </div>
 
       {/* Construction → delivery — one timeline. Progress is read from the RERA
