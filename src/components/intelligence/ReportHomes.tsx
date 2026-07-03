@@ -47,7 +47,7 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
   return (
     <div>
       <p className="-mt-2 mb-6 max-w-2xl text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/55">
-        The home as your agreement will measure it. Pick a configuration, then slide through the sizes offered under it — the plan, the carpet, and what the gap to super area costs you.
+        The home as your agreement will measure it. Pick a configuration, then a size offered under it — the plan, the carpet, and what the gap to super area costs you.
       </p>
 
       {/* ── BHK tabs ── */}
