@@ -417,6 +417,8 @@ export default function ProjectProfile({
               </div>
             </div>
 
+            <Chapter n="I" title="Project Fundamentals" framing="Start with the facts of the asset — how well it fits you, the towers and units, the vitals, and the homes themselves — before we weigh whether it can be trusted." />
+
             {/* Match Score — personalisation hook (onboards cold visitors) */}
             <MatchScore project={p} />
 
@@ -448,7 +450,7 @@ export default function ProjectProfile({
               </Section>
             )}
 
-            <Chapter n="I" title="Can we trust it?" framing="Five forces decide whether a project keeps its promise — the developer, the build, the location, the paperwork, and what sets it apart. Here's how it scores on each, and exactly what moves the number." />
+            <Chapter n="II" title="Can we trust it?" framing="Five forces decide whether a project keeps its promise — the developer, the build, the location, the paperwork, and what sets it apart. Here's how it scores on each, and exactly what moves the number." />
 
             {/* Truth Score anatomy — the composition spine */}
             <div id="anatomy" className="scroll-mt-24">
@@ -488,7 +490,7 @@ export default function ProjectProfile({
               </div>
             )}
 
-            <Chapter n="II" title="Will it make money?" framing="Where this project's price has actually been, why it moved, and where our model says it's headed — then a calculator to plan your own money, cash flow and all." />
+            <Chapter n="III" title="Will it make money?" framing="Where this project's price has actually been, why it moved, and where our model says it's headed — then a calculator to plan your own money, cash flow and all." />
 
             {/* Price dynamics + projection + ROI calculator */}
             {roi && (
@@ -497,7 +499,7 @@ export default function ProjectProfile({
               </div>
             )}
 
-            <Chapter n="III" title="Decision time." framing="One project, four different calls — the same evidence lands differently depending on what this purchase has to do for you." />
+            <Chapter n="IV" title="Decision time." framing="One project, four different calls — the same evidence lands differently depending on what this purchase has to do for you." />
 
             {/* The verdict — profile-tailored */}
             <div id="verdict" className="scroll-mt-24">
