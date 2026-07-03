@@ -475,12 +475,14 @@ export default function ProjectProfile({
                         <span className="mx-2 text-white/25">·</span>{configsDisplay(p.configs)}
                         <span className="mx-2 text-white/25">·</span>₹{p.budget[0]}–{p.budget[1]} Cr
                       </p>
-                      <div className="mt-6 flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[0.7rem] font-medium text-white/85 backdrop-blur-sm">
+                      {/* credential chips — one horizontal-scroll row on mobile so the
+                         satellite canvas stays visible; wraps normally on wider screens */}
+                      <div className="mt-6 flex items-center gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:overflow-visible">
+                        <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[0.7rem] font-medium text-white/85 backdrop-blur-sm">
                           <IconAward className="text-[#d8b978]" /> #{ctx.corridorRank} of {ctx.corridorCount} in {p.marketShort}
                         </span>
                         {buildStatus && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-white/10 px-3.5 py-1.5 text-[0.7rem] font-light text-white/70 backdrop-blur-sm">
+                          <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-white/12 bg-white/10 px-3.5 py-1.5 text-[0.7rem] font-light text-white/70 backdrop-blur-sm">
                             <IconBuilding className="text-[#d8b978]" />{buildStatus}
                           </span>
                         )}
