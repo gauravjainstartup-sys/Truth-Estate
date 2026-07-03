@@ -73,9 +73,9 @@ function GeoLayout({ p, geo }: { p: ProjectIntel; geo: LocationGeo }) {
         {c.roads.length > 0 && (
           <ListCard icon={<IconRoad />} title="Road access">
             {c.roads.map((r) => (
-              <li key={r.name} className="flex items-start justify-between gap-2 py-1.5 text-[0.76rem]">
-                <span className="min-w-0 leading-tight text-[#1a1a1a]/70">{r.name}</span>
-                <span className="shrink-0 whitespace-nowrap font-mono text-[0.72rem] text-[#1a1a1a]/55">{r.km} km <span className={r.type === "Direct" ? "text-[#238c55]" : "text-[#1a1a1a]/35"}>· {r.type}</span></span>
+              <li key={r.name} className="py-2">
+                <p className="leading-snug text-[0.78rem] text-[#1a1a1a]/75">{r.name}</p>
+                <p className="mt-1 font-mono text-[0.68rem] text-[#1a1a1a]/45">{r.km} km <span className={r.type === "Direct" ? "font-semibold text-[#238c55]" : "text-[#1a1a1a]/35"}>· {r.type}</span></p>
               </li>
             ))}
           </ListCard>
@@ -83,9 +83,9 @@ function GeoLayout({ p, geo }: { p: ProjectIntel; geo: LocationGeo }) {
         {c.business.length > 0 && (
           <ListCard icon={<IconBriefcase />} title="Business districts">
             {c.business.map((b) => (
-              <li key={b.name} className="flex items-start justify-between gap-2 py-1.5 text-[0.76rem]">
-                <span className="min-w-0 leading-tight text-[#1a1a1a]/70">{b.name}</span>
-                <span className="shrink-0 whitespace-nowrap font-mono text-[0.72rem] text-[#1a1a1a]/55">{b.km} km · {b.min}m</span>
+              <li key={b.name} className="py-2">
+                <p className="leading-snug text-[0.78rem] text-[#1a1a1a]/75">{b.name}</p>
+                <p className="mt-1 font-mono text-[0.68rem] text-[#1a1a1a]/45">{b.km} km · {b.min} min</p>
               </li>
             ))}
           </ListCard>
