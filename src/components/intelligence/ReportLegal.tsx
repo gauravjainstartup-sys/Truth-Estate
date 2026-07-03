@@ -19,6 +19,7 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
   const cases = dev?.legalCases ?? [];
   const hasHistory = cases.length > 0;
   const flagged = status === "flagged";
+  const watch = status === "watch";
 
   const matrix: { label: string; level: Lvl; note: string }[] = [
     { label: "Title risk", level: flagged ? "High" : status === "watch" ? "Moderate" : "Low", note: "Land title & RERA registration" },
@@ -32,7 +33,7 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Pillar IV · Legal &amp; Compliance</p>
-          <h3 className="mt-2 font-serif text-[1.7rem] font-medium leading-tight md:text-[2rem]">{flagged ? "This one has problems of its own." : "The project is clean. Is the developer?"}</h3>
+          <h3 className="mt-2 font-serif text-[1.7rem] font-medium leading-tight md:text-[2rem]">{flagged ? "This one has problems of its own." : watch ? "The project needs a closer look. And the developer?" : "The project is clean. Is the developer?"}</h3>
           <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">Land title, RERA status, and every court that&apos;s ruled on this builder.</p>
         </div>
       </div>
@@ -58,15 +59,17 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
 
       {/* The signature split */}
       <div className="mt-5 grid gap-4 md:grid-cols-2">
-        <div className={`rounded-2xl border p-6 md:p-7 ${flagged ? "border-[#b0503e]/28 bg-gradient-to-br from-[#b0503e]/[0.07] to-[#b0503e]/[0.02]" : "border-[#1e6b45]/25 bg-gradient-to-br from-[#1e6b45]/[0.07] to-[#1e6b45]/[0.01]"}`}>
-          <p className={`inline-flex items-center gap-2 text-[0.66rem] font-bold uppercase tracking-[0.1em] ${flagged ? "text-[#b0503e]" : "text-[#1e6b45]"}`}>{flagged ? "⚠ This project" : "✓ This project"}</p>
-          <h4 className="mt-3 font-serif text-[1.35rem] font-medium">{flagged ? "Carries live flaws" : "Clean & RERA-current"}</h4>
+        <div className={`rounded-2xl border p-6 md:p-7 ${flagged ? "border-[#b0503e]/28 bg-gradient-to-br from-[#b0503e]/[0.07] to-[#b0503e]/[0.02]" : watch ? "border-[#9a7a2e]/28 bg-gradient-to-br from-[#9a7a2e]/[0.07] to-[#9a7a2e]/[0.02]" : "border-[#1e6b45]/25 bg-gradient-to-br from-[#1e6b45]/[0.07] to-[#1e6b45]/[0.01]"}`}>
+          <p className={`inline-flex items-center gap-2 text-[0.66rem] font-bold uppercase tracking-[0.1em] ${flagged ? "text-[#b0503e]" : watch ? "text-[#9a7a2e]" : "text-[#1e6b45]"}`}>{flagged ? "⚠ This project" : watch ? "◆ This project" : "✓ This project"}</p>
+          <h4 className="mt-3 font-serif text-[1.35rem] font-medium">{flagged ? "Carries live flaws" : watch ? "Not fully cleared yet" : "Clean & RERA-current"}</h4>
           <p className="mt-2.5 text-[0.86rem] font-light leading-[1.65] text-[#1a1a1a]/65">
             {flagged
               ? "This project has active issues on record — read the cases below before committing any capital."
+              : watch
+              ? <>The legal read here isn&apos;t top-tier clean. Confirm the HRERA registration and the latest QPR{p.ops?.reraId ? <> (<b className="font-medium text-[#1a1a1a]">{p.ops.reraId}</b>)</> : ""}, and have the Agreement to Sell reviewed before you commit any capital.</>
               : <>Registered under HRERA{p.ops?.reraId ? <> <b className="font-medium text-[#1a1a1a]">{p.ops.reraId}</b></> : ""} ({p.ops?.launch ?? "on launch"}). No consumer complaints or regulatory orders against {p.name} in public databases as of {new Date().getFullYear()}.</>}
           </p>
-          <p className={`mt-3.5 text-[0.8rem] font-semibold ${flagged ? "text-[#b0503e]" : "text-[#1e6b45]"}`}>{flagged ? "The risk IS the address." : "Baseline buyer protection is in place."}</p>
+          <p className={`mt-3.5 text-[0.8rem] font-semibold ${flagged ? "text-[#b0503e]" : watch ? "text-[#9a7a2e]" : "text-[#1e6b45]"}`}>{flagged ? "The risk IS the address." : watch ? "Verify the paperwork before you sign." : "Baseline buyer protection is in place."}</p>
         </div>
         <div className={`rounded-2xl border p-6 md:p-7 ${hasHistory && !flagged ? "border-[#b0503e]/28 bg-gradient-to-br from-[#b0503e]/[0.07] to-[#b0503e]/[0.02]" : "border-[#1e6b45]/25 bg-gradient-to-br from-[#1e6b45]/[0.07] to-[#1e6b45]/[0.01]"}`}>
           <p className={`inline-flex items-center gap-2 text-[0.66rem] font-bold uppercase tracking-[0.1em] ${hasHistory && !flagged ? "text-[#b0503e]" : "text-[#1e6b45]"}`}>{hasHistory && !flagged ? "⚠ This developer" : "✓ This developer"}</p>

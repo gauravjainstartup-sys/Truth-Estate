@@ -552,12 +552,14 @@ export function deliveryOutlook(p: ProjectIntel) {
   return { ...con, ahead, aheadOfPlan, delayChance, confidence };
 }
 
-/* Project-level legal posture — clean / watch / flagged. Drives whether the
-   Legal section reads "project clean, developer history" or leads with alarm. */
+/* Project-level legal posture — clean / watch / flagged. Driven by the legal
+   quality signal, not whether a RERA id happens to be on file: a strong-legal
+   developer reads clean, a moderate one warrants a closer look, weak leads with
+   alarm. Governs whether the Legal section reassures or cautions. */
 export function legalStatus(p: ProjectIntel): "clean" | "watch" | "flagged" {
   const a = p.anatomy.legal;
   if (a === "weak") return "flagged";
-  if (!p.ops?.reraId) return "watch";
+  if (a === "moderate") return "watch";
   return "clean";
 }
 
