@@ -1,4 +1,4 @@
-import { pillars, type ProjectIntel } from "@/lib/projects";
+import { type ProjectIntel } from "@/lib/projects";
 
 /* Chapter II · Pillar III — Location Intelligence. A branded schematic map,
    rated nearby POIs, connectivity with travel times, and a funded-&-approved
@@ -7,11 +7,6 @@ import { pillars, type ProjectIntel } from "@/lib/projects";
 
 export default function ReportLocation({ p }: { p: ProjectIntel }) {
   const loc = p.ops?.location;
-  const pillar = pillars(p).find((x) => x.key === "location");
-  const bandChip =
-    pillar?.band === "exceptional" ? "border-[#1e6b45]/25 bg-[#1e6b45]/[0.1] text-[#155a3a]"
-    : pillar?.band === "strong" ? "border-[#238c55]/25 bg-[#238c55]/[0.1] text-[#1c7a4c]"
-    : "border-[#9a7a2e]/30 bg-[#9a7a2e]/[0.12] text-[#8a6a1e]";
 
   // Real markers plotted on the schematic from tracked POIs / transit.
   const conn = loc?.connectivity ?? [];
@@ -35,7 +30,6 @@ export default function ReportLocation({ p }: { p: ProjectIntel }) {
           <h3 className="mt-2 font-serif text-[1.7rem] font-medium leading-tight md:text-[2rem]">Will this address still be winning in 2035?</h3>
           <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">What&apos;s here today, what&apos;s funded and coming, and how you get around.</p>
         </div>
-        {pillar && <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.06em] ${bandChip}`}>◆ {pillar.band} · {pillar.score.toFixed(1)}</span>}
       </div>
 
       {/* schematic locality map — higher-contrast, plots real tracked POIs */}
