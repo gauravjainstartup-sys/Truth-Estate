@@ -175,12 +175,10 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
             <span className={`h-[6px] w-[6px] rounded-full ${o.absorptionPct >= 90 ? "bg-[#238c55]" : "bg-[#9a7a2e]"}`} />{o.absorptionPct >= 90 ? "High demand" : "Steady"}
           </span>
         </div>
-        <div className="mt-4 flex flex-wrap items-end gap-x-6 gap-y-3">
-          <p className="font-mono text-[2.4rem] font-medium leading-none text-[#1e6b45]">{o.absorptionPct}<span className="text-[0.95rem] text-[#1a1a1a]/35">%</span></p>
-          <p className="max-w-md flex-1 text-[0.8rem] font-light leading-[1.55] text-[#1a1a1a]/55">
-            {soldOut ? <>A full sell-out mid-construction means the developer isn&apos;t relying on future sales to fund the build — <b className="font-medium text-[#1a1a1a]/75">a quiet but real de-risking signal.</b></> : "Steady absorption at the current velocity."}
-          </p>
-        </div>
+        <p className="mt-4 font-mono text-[2.4rem] font-medium leading-none text-[#1e6b45]">
+          {o.absorptionPct}<span className="text-[0.95rem] text-[#1a1a1a]/35">%</span>
+          <span className="ml-2.5 font-sans text-[0.72rem] font-light tracking-normal text-[#1a1a1a]/45">of launched units sold</span>
+        </p>
         <div className="mt-3.5 h-3 overflow-hidden rounded-full bg-[#e9e2d3]"><div className="h-full rounded-full" style={{ width: `${o.absorptionPct}%`, background: "linear-gradient(90deg,#1e6b45,#238c55)" }} /></div>
         {totalUnits != null && (
           <div className="mt-3 flex items-stretch gap-3">
@@ -194,6 +192,13 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
             </div>
           </div>
         )}
+        {/* the read, in the same voice as "The delivery read" above */}
+        <div className="mt-4 rounded-r-xl border-l-2 border-[#1e6b45] bg-[#1e6b45]/[0.05] px-5 py-3.5">
+          <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-[#1e6b45]">&#9670; The demand read</p>
+          <p className="mt-1.5 text-[0.86rem] font-light leading-[1.6] text-[#1a1a1a]/70">
+            {soldOut ? <>A full sell-out mid-construction means the developer isn&apos;t relying on future sales to fund the build &mdash; <b className="font-medium text-[#1a1a1a]">a quiet but real de-risking signal.</b></> : "Steady absorption at the current velocity."}
+          </p>
+        </div>
       </div>
     </div>
   );
