@@ -450,11 +450,11 @@ export default function ProjectProfile({
                   </>
                 )}
                 <div className="relative flex min-h-[600px] flex-col justify-end p-6 sm:p-7 md:min-h-[600px] md:p-11">
-                  {/* breadcrumb folded into the canvas — visible & crawlable; the
-                     SEO signal is the BreadcrumbList JSON-LD in the head. In flow
-                     (mb-auto pins it top) so tall mobile content can never collide. */}
+                  {/* breadcrumb folded into the canvas — hidden on phones to give the
+                     visual more room; the SEO signal is the BreadcrumbList JSON-LD in
+                     the head either way. In flow (mb-auto pins it top) on sm+. */}
                   {!embedded && (
-                    <nav aria-label="Breadcrumb" className="z-10 mb-auto flex min-w-0 items-center gap-2 pb-6 text-[0.72rem] font-light text-white/40">
+                    <nav aria-label="Breadcrumb" className="z-10 mb-auto hidden min-w-0 items-center gap-2 pb-6 text-[0.72rem] font-light text-white/40 sm:flex">
                       <a href={`${basePath}/intelligence/projects`} className="shrink-0 transition-colors hover:text-white/85">Projects</a>
                       <span aria-hidden className="text-white/20">/</span>
                       <span className="min-w-0 truncate text-white/60">{p.name}</span>
