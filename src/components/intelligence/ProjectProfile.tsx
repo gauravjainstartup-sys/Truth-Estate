@@ -319,13 +319,14 @@ export default function ProjectProfile({
           {!embedded && (
             <aside className="hidden self-start xl:col-start-2 xl:row-start-2 xl:sticky xl:top-[132px] xl:block">
               <div className="rounded-2xl border border-[#1a1a1a]/10 bg-[#FBF8F2] p-6">
-                <div className="flex items-center gap-2.5">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#1e6b45]/25 bg-[#1e6b45]/[0.06]">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#1e6b45" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-[1.05rem] w-[1.05rem]" aria-hidden><path d="M12 3 5 5.8v5.5c0 4 3 6.9 7 8.2 4-1.3 7-4.2 7-8.2V5.8L12 3Z" /><path d="M9 11.6 11 13.6 15 9.4" /></svg>
-                  </span>
+                <div className="flex items-center gap-3">
+                  {/* the human is the seal — the real founder, not a badge */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`${basePath}/images/founder-gaurav.webp`} alt="Gaurav Jain — Founder, Truth Estate" className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-[#B29668]/50" />
                   <div className="min-w-0">
                     <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#9a7a2e]">The Independent Desk</p>
-                    <p className="truncate text-[0.68rem] font-light text-[#1a1a1a]/45">on {p.name}</p>
+                    <p className="mt-0.5 text-[0.82rem] font-semibold leading-tight text-[#1a1a1a]">Gaurav Jain</p>
+                    <p className="truncate text-[0.64rem] font-light text-[#1a1a1a]/45">Founder · on {p.name}</p>
                   </div>
                 </div>
 
@@ -352,7 +353,7 @@ export default function ProjectProfile({
                   </div>
                 )}
 
-                <p className="mt-5 border-t border-[#1a1a1a]/8 pt-3.5 text-[0.64rem] font-light leading-[1.5] text-[#1a1a1a]/40">Independent advisory — we hold no inventory and take no builder commission.</p>
+                <p className="mt-5 border-t border-[#1a1a1a]/8 pt-3.5 text-[0.64rem] font-light leading-[1.5] text-[#1a1a1a]/40">Every file crosses the founder&apos;s desk before it ships. Independent — no inventory, no builder commission.</p>
               </div>
 
               {/* one quiet way to explore the product first — a line, not a billboard */}
