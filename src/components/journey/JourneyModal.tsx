@@ -6,6 +6,7 @@ import Logo from "../Logo";
 import BuyersOffice from "./BuyersOffice";
 import LocationPicker from "./LocationPicker";
 import ProjectProfile from "../intelligence/ProjectProfile";
+import ProjectOptionCard from "../intelligence/ProjectOptionCard";
 import FocusOffRamp from "../FocusOffRamp";
 import { projectByName } from "@/lib/projects";
 import { useConsultation } from "../consultation/ConsultationProvider";
@@ -1476,52 +1477,6 @@ function BriefRow({ label, value, onEdit }: { label: string; value: string; onEd
    SHORTLIST — 127 → 3 reveal + recommendations
    ════════════════════════════════════════════════════════════════ */
 /* An animated circular gauge for the Truth Score (out of 100). */
-function ScoreRing({ score, delay = 0 }: { score: number; delay?: number }) {
-  const R = 27;
-  const C = 2 * Math.PI * R;
-  const [on, setOn] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setOn(true), delay);
-    return () => clearTimeout(t);
-  }, [delay]);
-  return (
-    <div className="relative h-[68px] w-[68px] shrink-0">
-      <svg viewBox="0 0 64 64" className="h-full w-full -rotate-90">
-        <circle cx="32" cy="32" r={R} fill="none" stroke="#1a1a1a" strokeOpacity="0.08" strokeWidth="4" />
-        <circle
-          cx="32"
-          cy="32"
-          r={R}
-          fill="none"
-          stroke="#1e6b45"
-          strokeWidth="4"
-          strokeLinecap="round"
-          strokeDasharray={C}
-          strokeDashoffset={on ? C * (1 - score / 100) : C}
-          style={{ transition: "stroke-dashoffset 1.1s cubic-bezier(0.22,1,0.36,1)" }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="font-serif text-[1.3rem] font-medium leading-none text-[#1a1a1a]">{score}</span>
-      </div>
-    </div>
-  );
-}
-
-/* Recommendation badge, colour-coded by conviction. */
-function RecoPill({ reco }: { reco: string }) {
-  const cls =
-    reco === "Strong Buy"
-      ? "border-[#1e6b45]/25 bg-[#1e6b45]/[0.09] text-[#1e6b45]"
-      : reco === "Buy"
-      ? "border-[#c9a96e]/40 bg-[#c9a96e]/[0.14] text-[#9a7a2e]"
-      : "border-[#1a1a1a]/15 bg-[#1a1a1a]/[0.04] text-[#1a1a1a]/55";
-  return (
-    <span className={`rounded-full border px-3 py-1 text-[0.66rem] font-medium uppercase tracking-[0.08em] ${cls}`}>
-      {reco}
-    </span>
-  );
-}
 
 function ShortlistScreen({
   recs,
@@ -1564,49 +1519,19 @@ function ShortlistScreen({
         style={{ opacity: revealed ? 1 : 0, transform: revealed ? "translateY(0)" : "translateY(20px)" }}
       >
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 md:gap-6">
-          {recs.map((r, idx) => (
-            <button
-              key={r.name}
-              onClick={() => onPick(r)}
-              className="group flex flex-col rounded-2xl border border-[#1a1a1a]/10 bg-white p-6 text-left transition-all duration-300 hover:-translate-y-1 hover:border-[#1a1a1a]/20 hover:shadow-xl hover:shadow-black/[0.06]"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-serif text-[0.95rem] font-light text-[#1a1a1a]/30">
-                  {String(idx + 1).padStart(2, "0")}
-                </span>
-                <RecoPill reco={r.recommendation} />
-              </div>
-
-              <h3 className="mt-4 font-serif text-[1.3rem] font-medium leading-tight text-[#1a1a1a]">{r.name}</h3>
-              <p className="mt-1.5 text-[0.78rem] font-light tracking-[0.03em] text-[#1a1a1a]/45">
-                {r.developer} · {r.market}
-              </p>
-
-              <div className="mt-5 flex items-center gap-4">
-                <div className="text-center">
-                  <ScoreRing score={r.truthScore} delay={revealed ? 200 + idx * 120 : 4000} />
-                  <p className="mt-1.5 text-[8px] font-light uppercase tracking-[0.16em] text-[#1a1a1a]/40">Truth Score</p>
-                </div>
-                <div className="h-11 w-px bg-[#1a1a1a]/10" />
-                <div>
-                  <p className="font-serif text-[1.6rem] font-medium leading-none text-[#1e6b45]">{r.matchPct}%</p>
-                  <p className="mt-1.5 text-[8px] font-light uppercase tracking-[0.16em] text-[#1a1a1a]/40">Match to you</p>
-                </div>
-              </div>
-
-              <p className="mt-5 flex-1 text-[0.86rem] font-light leading-relaxed text-[#1a1a1a]/60">{r.reason}</p>
-
-              <p className="mt-5 border-t border-[#1a1a1a]/[0.07] pt-4 text-[0.76rem] font-light tracking-[0.02em] text-[#1a1a1a]/50">
-                {r.configs.join(" · ")}
-                <span className="mx-2 text-[#c9a96e]">·</span>
-                ₹{r.budget[0]}–{r.budget[1]} Cr
-              </p>
-
-              <span className="mt-5 inline-flex items-center gap-1.5 text-[0.84rem] font-medium text-[#1e6b45] transition-all duration-300 group-hover:gap-2.5">
-                See the full read <span aria-hidden>&rarr;</span>
-              </span>
-            </button>
-          ))}
+          {recs.map((r, idx) => {
+            const intel = projectByName(r.name);
+            if (!intel) return null;
+            return (
+              <ProjectOptionCard
+                key={r.name}
+                p={intel}
+                rank={idx + 1}
+                matchPct={r.matchPct}
+                onSelect={() => onPick(r)}
+              />
+            );
+          })}
         </div>
 
         {/* ── CTA band ── */}
