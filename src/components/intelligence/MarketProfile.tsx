@@ -3,18 +3,10 @@
 import Logo from "../Logo";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import { fmtPsf, scoredProjectsIn, type MarketIntel } from "@/lib/markets";
-import { projectSlug } from "@/lib/projects";
+import { projectByName } from "@/lib/projects";
+import ProjectOptionCard from "./ProjectOptionCard";
 
 const basePath = "/Truth-Estate";
-
-const DEV_SLUG: Record<string, string> = {
-  DLF: "dlf", Godrej: "godrej", M3M: "m3m", "Birla Estates": "birla", Smartworld: "smartworld", Emaar: "emaar",
-};
-
-const verdictTone = (v: string) =>
-  v.includes("Strong") ? "border-[#1e6b45]/30 text-[#1e6b45] bg-[#1e6b45]/8"
-  : v === "Buy" ? "border-[#3e8e62]/30 text-[#3e8e62] bg-[#3e8e62]/8"
-  : "border-[#9a7a2e]/30 text-[#9a7a2e] bg-[#c9a96e]/10";
 
 export default function MarketProfile({ m }: { m: MarketIntel }) {
   const { openConsult } = useConsultation();
@@ -96,22 +88,10 @@ export default function MarketProfile({ m }: { m: MarketIntel }) {
           </div>
 
           {scored.length > 0 && (
-            <div className="mt-8 divide-y divide-[#1a1a1a]/8 overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-white/50">
-              {scored.map((p) => {
-                const ds = DEV_SLUG[p.developer];
-                return (
-                  <div key={p.name} className="flex items-center gap-4 p-5 md:p-6">
-                    <div className="min-w-0 flex-1">
-                      <a href={`${basePath}/intelligence/projects/${projectSlug(p.name)}`} className="font-serif text-[1.15rem] text-[#1a1a1a] transition-colors hover:text-[#1e6b45]">{p.name}</a>
-                      <p className="mt-1 font-mono text-[0.68rem] tracking-[0.04em] text-[#1a1a1a]/40">
-                        {ds ? <a href={`${basePath}/intelligence/developers/${ds}`} className="underline decoration-[#c9a96e]/40 underline-offset-2 hover:text-[#1a1a1a]/70">{p.developer.toUpperCase()}</a> : p.developer.toUpperCase()}
-                        {" "}· ₹{p.budget[0]}–{p.budget[1]} CR
-                      </p>
-                    </div>
-                    <span className={`hidden rounded-full border px-3 py-1 text-[0.64rem] font-medium sm:inline-block ${verdictTone(p.recommendation)}`}>{p.recommendation}</span>
-                    <span className="w-10 text-right font-mono text-[1.3rem] font-light text-[#1e6b45]">{p.truthScore}</span>
-                  </div>
-                );
+            <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {scored.map((p, i) => {
+                const intel = projectByName(p.name);
+                return intel ? <ProjectOptionCard key={p.name} p={intel} rank={i + 1} /> : null;
               })}
             </div>
           )}
