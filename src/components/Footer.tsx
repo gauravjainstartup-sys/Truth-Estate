@@ -3,6 +3,7 @@
 import Logo from "./Logo";
 import { useJourney } from "./journey/JourneyProvider";
 import { useConsultation } from "./consultation/ConsultationProvider";
+import { clearAllDemoData } from "@/lib/journey";
 
 const basePath = "/Truth-Estate";
 
@@ -246,8 +247,15 @@ export default function Footer({
 
           {/* ── Bottom bar ── */}
           <div className="flex flex-col items-center gap-4 pb-[6vh] pt-8 md:flex-row md:justify-between">
-            <p className="text-[0.72rem] font-light tracking-[0.04em] text-[#1a1a1a]/30">
+            <p className="flex items-center gap-3 text-[0.72rem] font-light tracking-[0.04em] text-[#1a1a1a]/30">
               &copy; Truth Estate
+              {/* demo-only: wipe truthEstate.* and start as a first-time visitor */}
+              <button
+                onClick={() => { clearAllDemoData(); window.location.reload(); }}
+                className="underline decoration-[#1a1a1a]/15 underline-offset-2 transition-colors hover:text-[#1a1a1a]/60"
+              >
+                Reset demo
+              </button>
             </p>
             <p className="text-[0.72rem] font-light tracking-[0.04em] text-[#1a1a1a]/30">
               Designed in India. Built for independent property decisions.

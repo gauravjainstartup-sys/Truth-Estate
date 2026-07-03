@@ -762,6 +762,19 @@ export function hasFullAccess(slug: string): boolean {
   return isMember() || isUnlocked(slug);
 }
 
+/* Full demo reset — wipe every truthEstate.* key (account, brief, membership,
+   unlocks, leads, office) so the browser behaves like a first-time visitor. */
+export function clearAllDemoData(): void {
+  if (typeof window === "undefined") return;
+  try {
+    Object.keys(window.localStorage)
+      .filter((k) => k.startsWith("truthEstate"))
+      .forEach((k) => window.localStorage.removeItem(k));
+  } catch {
+    /* ignore */
+  }
+}
+
 /* Copy for the two off-ramps — single source so both the Buy journey and the
    consultation flow tell the same honest story. */
 export const OFFRAMP_COPY: Record<

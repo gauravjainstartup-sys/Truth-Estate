@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import { useConsultation } from "../consultation/ConsultationProvider";
-import { loadBuyData, hasPreferences, deriveDNA } from "@/lib/journey";
+import { loadBuyData, hasPreferences, deriveDNA, clearAllDemoData } from "@/lib/journey";
 import type { ConsultProfileChip } from "@/lib/consultation";
 import {
   fmtPsf,
@@ -121,9 +121,9 @@ export default function ProjectProfile({
 
   const toc = [
     { id: "match", label: "Match score", show: true },
-    { id: "tower-intel", label: "Tower & unit intel", show: true },
     { id: "vitals", label: "Vitals", show: true },
     { id: "homes", label: "Homes & floor plans", show: (ops?.homes?.length ?? 0) > 0 },
+    { id: "tower-intel", label: "Tower & unit intel", show: true },
     { id: "anatomy", label: "Truth Score anatomy", show: true },
     { id: "developer", label: "Developer DNA", show: !!dev },
     { id: "construction", label: "Construction & sales", show: !!con },
@@ -343,6 +343,10 @@ export default function ProjectProfile({
                           </span>
                         )}
                       </div>
+                      {/* caption lives in the left column so the score card bottom-aligns to it */}
+                      <p className="mt-6 flex items-center gap-2 text-[0.62rem] font-light text-white/45">
+                        <IconClock /> {heroImage ? "Satellite view of the site · construction as last observed" : "Independent assessment · re-scored quarterly"} · data reviewed {reviewed}
+                      </p>
                     </div>
                     {/* Truth Score — light readout card floated on the canvas */}
                     <div className="w-full max-w-[300px] rounded-2xl border border-white/20 bg-[#FBF8F2]/95 p-4 shadow-[0_22px_55px_-18px_rgba(0,0,0,0.6)] backdrop-blur-md sm:w-[290px] sm:p-5">
@@ -374,9 +378,6 @@ export default function ProjectProfile({
                       </div>
                     </div>
                   </div>
-                  <p className="mt-5 flex items-center gap-2 text-[0.62rem] font-light text-white/45">
-                    <IconClock /> {heroImage ? "Satellite view of the site · construction as last observed" : "Independent assessment · re-scored quarterly"} · data reviewed {reviewed}
-                  </p>
                 </div>
               </div>
           </div>
@@ -406,9 +407,6 @@ export default function ProjectProfile({
 
             {/* Match Score now leads the report body as the "Your Fit" band (above) */}
 
-            {/* Tower & Unit Intelligence — the gated deep-intel tier, surfaced high */}
-            <TowerIntel project={p} meta={towerIntelMeta(p)} />
-
             {/* 01 · Vitals — one uniform grid, one type language */}
             <Section id="vitals" n={num()} title="Vitals">
               <div className="grid grid-cols-2 gap-x-6 gap-y-7 rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-8 md:grid-cols-4 md:p-10">
@@ -433,6 +431,11 @@ export default function ProjectProfile({
                 <ReportHomes p={p} />
               </Section>
             )}
+
+            {/* Tower & Unit Intelligence — the gated deep layer. Sits after the
+               homes as the bridge out of the facts: you've seen the floor plans;
+               this decides WHICH exact unit. A product tier, not an asset fact. */}
+            <TowerIntel project={p} meta={towerIntelMeta(p)} />
 
             <Chapter n="II" title="Can we trust it?" framing="Five forces decide whether a project keeps its promise — the developer, the build, the location, the paperwork, and what sets it apart. Here's how it scores on each, and exactly what moves the number." />
 
@@ -587,6 +590,8 @@ export default function ProjectProfile({
             <p className="mt-8 text-[0.72rem] font-light leading-[1.7] text-[#1a1a1a]/35">
               Independent assessment by Truth Estate. No developer can pay for a higher Truth Score or to appear here. The Truth Score, Match Score and any recommendation are our own evidence-based <span className="italic">opinions</span> as of {reviewed} — not a guarantee of performance, safety, appreciation or returns, and not investment, legal or financial advice. Ticket and price bands, ROI projections and delivery estimates are tracked or modelled figures that vary by tower, floor and stack. The decision, and its risks, are yours; we are not liable for the performance of any project. Verify specifics independently and see our{" "}
               <a href={`${basePath}/disclaimer`} className="underline decoration-[#1a1a1a]/20 underline-offset-2 transition-colors hover:text-[#1a1a1a]/60">full disclaimer</a>.
+              {/* demo-only: start over as a first-time visitor */}
+              <button onClick={() => { clearAllDemoData(); window.location.reload(); }} className="ml-2 underline decoration-[#1a1a1a]/15 underline-offset-2 transition-colors hover:text-[#1a1a1a]/60">Reset demo</button>
             </p>
           </div>
         </div>
