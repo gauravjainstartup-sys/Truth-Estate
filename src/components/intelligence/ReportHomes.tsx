@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fmtPsf, type ProjectIntel } from "@/lib/projects";
+import ZoomStage from "./ZoomStage";
 
 /* Chapter I — the homes. One plan on screen at a time: BHK tabs pick the
    configuration, a size slider moves through the variants offered under it.
@@ -154,17 +155,26 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
         Areas from RERA filings &amp; project documents; the price shown is indicative for this configuration, before floor-rise and preferential-location charges. Schematics show indicative zoning only — confirm the exact unit&apos;s dimensioned plan and areas in the Agreement to Sell before signing.
       </p>
 
-      {/* floor-plan lightbox — tap outside or Esc to close */}
+      {/* floor-plan viewer — same chrome as the site-plan / document viewer:
+         emerald full-screen backdrop, gold title, round ✕; Esc or tap-out closes */}
       {zoom && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-[#0a0a0a]/70 p-4 backdrop-blur-sm" onClick={() => setZoom(false)} role="dialog" aria-modal="true" aria-label="Floor plan — enlarged">
-          <div className="max-h-full w-full max-w-3xl overflow-auto rounded-2xl bg-[#FBF8F2] p-3 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-2 flex items-center justify-between px-1">
-              <p className="text-[0.78rem] font-medium text-[#1a1a1a]/70">{h.config}{h.variant ? ` · ${h.variant}` : ""} — floor plan</p>
-              <button onClick={() => setZoom(false)} className="text-[11px] font-light tracking-[0.18em] text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a]">CLOSE</button>
-            </div>
-            {h.plan
-              ? <img src={`${basePath}/${h.plan}`} alt={`${h.config} floor plan — ${p.name}`} className="block w-full rounded-lg" />
-              : <FloorPlanSchematic beds={beds} balcony={h.balconySqft != null} />}
+        <div className="fixed inset-0 z-[140] flex flex-col bg-[#0b1f1a]/90 backdrop-blur-sm" onClick={() => setZoom(false)} role="dialog" aria-modal="true" aria-label="Floor plan — enlarged">
+          <div className="flex items-center justify-between gap-4 px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
+            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[#B29668]">
+              {h.config}{h.variant ? ` · ${h.variant}` : ""} — Floor plan
+            </p>
+            <button onClick={() => setZoom(false)} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white">✕</button>
+          </div>
+          <div className="flex min-h-0 flex-1 items-center justify-center px-4 pb-6" onClick={(e) => e.stopPropagation()}>
+            <ZoomStage>
+              {h.plan ? (
+                <img src={`${basePath}/${h.plan}`} alt={`${h.config} floor plan — ${p.name}`} className="max-h-[78vh] max-w-full rounded-lg shadow-[0_30px_90px_rgba(0,0,0,0.5)]" draggable={false} />
+              ) : (
+                <div className="w-[min(42rem,88vw)] overflow-hidden rounded-lg bg-[#FBF8F2] shadow-[0_30px_90px_rgba(0,0,0,0.5)]">
+                  <FloorPlanSchematic beds={beds} balcony={h.balconySqft != null} />
+                </div>
+              )}
+            </ZoomStage>
           </div>
         </div>
       )}
