@@ -43,12 +43,19 @@ const recoTone = (r: string) =>
   : r === "Buy" ? "border-[#3e8e62]/30 text-[#3e8e62] bg-[#3e8e62]/8"
   : "border-[#9a7a2e]/30 text-[#9a7a2e] bg-[#c9a96e]/10";
 
-/* A labelled key/value cell for the vitals grid. */
-function KV({ k, v, tag }: { k: string; v: string; tag?: string }) {
+/* A labelled key/value cell for the vitals grid. `href` renders the value as
+   an external verification link (same affordance as the address → Maps). */
+function KV({ k, v, tag, href }: { k: string; v: string; tag?: string; href?: string }) {
   return (
     <div className="border-l-2 border-[#1a1a1a]/8 pl-4">
       <p className="text-[0.6rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/35">{k}</p>
-      <p className="mt-1.5 font-mono text-[0.88rem] font-medium leading-snug text-[#1a1a1a]/85 md:text-[0.95rem]">{v}</p>
+      <p className="mt-1.5 break-words font-mono text-[0.88rem] font-medium leading-snug text-[#1a1a1a]/85 md:text-[0.95rem]">
+        {href ? (
+          <a href={href} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-[#1e6b45]">
+            {v}<IconArrowUpRight className="ml-1 text-[#9a7a2e]" />
+          </a>
+        ) : v}
+      </p>
       {tag && <span className="mt-1.5 inline-block whitespace-nowrap rounded bg-[#1e6b45]/8 px-1.5 py-0.5 font-sans text-[0.58rem] font-medium uppercase tracking-[0.08em] text-[#1e6b45]">{tag}</span>}
     </div>
   );
@@ -56,6 +63,14 @@ function KV({ k, v, tag }: { k: string; v: string; tag?: string }) {
 
 function Source({ children }: { children: React.ReactNode }) {
   return <p className="mt-6 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">{children}</p>;
+}
+
+/* "3 BHK · 3.5 BHK · 4 BHK · Duplex" → "3 · 3.5 · 4 BHK · Duplex" — say
+   BHK once, keep non-BHK configs verbatim. Long lists stay scannable. */
+function configsDisplay(list: string[]): string {
+  const bhk = list.filter((c) => / BHK$/.test(c)).map((c) => c.replace(/ BHK$/, ""));
+  const rest = list.filter((c) => !/ BHK$/.test(c));
+  return [...(bhk.length ? [`${bhk.join(" · ")} BHK`] : []), ...rest].join(" · ");
 }
 
 export default function ProjectProfile({
@@ -336,7 +351,7 @@ export default function ProjectProfile({
                       )}
                       <p className="mt-2 text-[0.86rem] font-light text-white/45">
                         by <span className="font-medium text-white/75">{p.developer}</span>
-                        <span className="mx-2 text-white/25">·</span>{p.configs.join(" & ")}
+                        <span className="mx-2 text-white/25">·</span>{configsDisplay(p.configs)}
                         <span className="mx-2 text-white/25">·</span>₹{p.budget[0]}–{p.budget[1]} Cr
                       </p>
                       <div className="mt-6 flex flex-wrap items-center gap-2">
@@ -422,17 +437,16 @@ export default function ProjectProfile({
             <Section id="vitals" n={num()} title="Vitals">
               <div className="grid grid-cols-2 gap-x-6 gap-y-7 rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-8 md:grid-cols-4 md:p-10">
                 <KV k="Ticket size" v={`₹${p.budget[0]}–${p.budget[1]} Cr`} />
-                <KV k="Configurations" v={p.configs.join(" · ")} />
+                <KV k="Configurations" v={configsDisplay(p.configs)} />
                 <KV k="Corridor avg / sq ft" v={p.psf ? fmtPsf(p.psf.avg) : "—"} />
-                <KV k="Indicative size" v={p.sizeBand ?? "—"} />
+                <KV k="Indicative size · super" v={p.sizeBand ?? "—"} />
                 {ops?.units != null && <KV k="Total units" v={`${ops.units.toLocaleString("en-IN")}`} />}
                 {ops?.towers != null && <KV k="Towers / land" v={`${ops.towers}${ops.landAcres ? ` · ${ops.landAcres} acre` : ""}`} />}
                 {ops?.density != null && <KV k="Density" v={`${ops.density} / acre`} tag={ops.density <= 50 ? "Low-density" : undefined} />}
                 {ops?.openAreaPct != null && <KV k="Open area" v={`${ops.openAreaPct}%`} tag={ops.openAreaPct >= 80 ? "Green" : undefined} />}
-                {ops?.carpetSqft != null && <KV k="Carpet (indicative)" v={`${ops.carpetSqft.toLocaleString("en-IN")} sq ft`} />}
                 {ops?.launch && <KV k="Launched" v={ops.launch} />}
                 {ops?.possession && <KV k="RERA possession" v={ops.possession} />}
-                {ops?.reraId && <KV k="RERA ID" v={ops.reraId} />}
+                {ops?.reraId && <KV k="RERA ID" v={ops.reraId} href="https://haryanarera.gov.in/" />}
               </div>
               {ops?.reraNote && <Source>{ops.reraNote}. Sources: Haryana RERA registry & project filings.</Source>}
             </Section>
