@@ -1,4 +1,5 @@
 import { deliveryOutlook, type ProjectIntel } from "@/lib/projects";
+import RenderVsReality from "./RenderVsReality";
 
 /* Chapter II · Pillar II — Construction & Sales. Reads the QPR: build % vs
    the RERA-due %, absorption, and a delivery forecast (predicted vs RERA,
@@ -24,6 +25,7 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
   const totalUnits = p.ops?.units;
   const unitsSold = totalUnits != null ? Math.round((totalUnits * o.absorptionPct) / 100) : null;
   const render = p.ops?.media?.render;
+  const heroImg = p.ops?.media?.heroImage;
   const site = p.ops?.media?.sitePhotos?.[0];
   const siteAsOf = site ? `◉ ${site.asOf} · on site` : `▦ schematic · ${o.actualPct}% built`;
   const soldOut = o.absorptionPct >= 98;
@@ -46,12 +48,28 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
         <p className="mt-3 text-[0.72rem] font-light italic text-[#1a1a1a]/40">Source: latest Quarterly Progress Report filed with HRERA · {o.qpr}.</p>
       </div>
 
-      {/* Render vs reality — the developer's render beside our latest dated
-          field photo. Real images drop into these slots; until then we render
-          brand-safe schematic stand-ins. */}
+      {/* Render vs reality — one frame, split by a draggable line: the
+          brochure's promise on the left, the site as it stands on the right.
+          Real brochure art drops into the left slot as coverage lands; until
+          then the brand-safe render stand-in holds it. Projects without a
+          site image keep the two-card layout. */}
       <div className="mt-5">
         <p className="font-serif text-[1.25rem] font-medium md:text-[1.4rem]">What they sold. What&apos;s standing.</p>
-        <p className="mt-1.5 max-w-xl text-[0.82rem] font-light leading-[1.55] text-[#1a1a1a]/50">The marketing render beside the tower as it actually stood on our last field visit — so you buy the building, not the brochure.</p>
+        <p className="mt-1.5 max-w-xl text-[0.82rem] font-light leading-[1.55] text-[#1a1a1a]/50">
+          {heroImg
+            ? <>Hold the line and pull it either way — the brochure&apos;s promise against the plot as it stands.</>
+            : <>The marketing render beside the tower as it actually stood on our last field visit — so you buy the building, not the brochure.</>}
+        </p>
+        {heroImg ? (
+          <div className="mt-4">
+            <RenderVsReality
+              left={render ? <img src={`${basePath}/${render}`} alt={`${p.name} — developer render`} className="h-full w-full object-cover" draggable={false} /> : <RenderStandin />}
+              right={<img src={`${basePath}/${heroImg}`} alt={`${p.name} — site aerial`} className="h-full w-full object-cover" draggable={false} />}
+              leftChip="The brochure · artist's impression"
+              rightChip={`The site · ${site?.asOf ?? p.ops?.reviewed ?? "satellite"}`}
+            />
+          </div>
+        ) : (
         <div className="relative mt-4 grid gap-4 md:grid-cols-2">
           <span className="absolute left-1/2 top-1/2 z-10 hidden h-11 w-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-[#1a1a1a]/10 bg-[#F5F0E8] font-mono text-[0.68rem] uppercase tracking-[0.08em] text-[#1a1a1a]/45 shadow-md md:grid">vs</span>
           {/* the render */}
@@ -78,6 +96,7 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
             <figcaption className="px-5 py-2.5 text-[0.7rem] font-light text-[#1a1a1a]/50">{site?.note ?? `Structure at ${o.actualPct}% — verified against QPR ${o.qpr}.`}</figcaption>
           </figure>
         </div>
+        )}
         {/* one honest read tying photo to forecast — not the old data dump */}
         <div className="mt-4 rounded-r-xl border-l-2 border-[#9a7a2e] bg-[#9a7a2e]/[0.06] px-5 py-3.5">
           <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-[#9a7a2e]">◆ The delivery read</p>
