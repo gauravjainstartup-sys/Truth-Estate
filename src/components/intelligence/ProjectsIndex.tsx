@@ -42,7 +42,7 @@ export default function ProjectsIndex() {
         </div>
 
         {/* Grid — the shared project-option card, ranked by Truth Score */}
-        <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {PROJECT_INTEL.map((p, i) => (
             <ProjectOptionCard key={p.slug} p={p} rank={i + 1} />
           ))}

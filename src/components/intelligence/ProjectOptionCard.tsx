@@ -38,25 +38,30 @@ export default function ProjectOptionCard({
 }) {
   const inner = (
     <>
-      <span className={`text-[9.5px] font-semibold uppercase tracking-[0.12em] ${recoText(p.recommendation)}`}>{p.recommendation}</span>
+      {/* fixed-height top zone: holds the verdict and the corner score, and
+         guarantees every card's name starts on the same line regardless of
+         name length */}
+      <div className="h-[96px]">
+        <span className={`text-[9.5px] font-semibold uppercase tracking-[0.12em] ${recoText(p.recommendation)}`}>{p.recommendation}</span>
+      </div>
 
       {/* Truth Score — struck in the top-right corner */}
-      <div className="absolute right-[17px] top-[15px] text-right">
-        <span className="font-serif text-[2.5rem] font-medium leading-[0.78] tracking-[-0.01em] text-[#1a1a1a] tabular-nums">{p.truthScore}</span>
+      <div className="absolute right-6 top-5 text-right">
+        <span className="font-serif text-[2.65rem] font-medium leading-[0.78] tracking-[-0.01em] text-[#1a1a1a] tabular-nums">{p.truthScore}</span>
         <span className="mt-1 block font-mono text-[7.5px] uppercase tracking-[0.13em] text-[#1a1a1a]/32">Truth Score</span>
       </div>
 
-      {/* identity, gathered at the base */}
-      <h3 className="mt-auto max-w-[88%] font-serif text-[1.4rem] font-medium leading-[1.1] tracking-[-0.01em] text-[#1a1a1a] transition-colors duration-300 group-hover:text-[#1e6b45]">{p.name}</h3>
-      <p className="mt-1.5 text-[0.72rem] leading-snug text-[#1a1a1a]/50">{streetAddress(p)}</p>
-      <p className="mt-1 font-mono text-[0.82rem] text-[#1a1a1a] tabular-nums">₹{p.budget[0]}–{p.budget[1]} Cr</p>
+      {/* identity — begins at the same height on every tile */}
+      <h3 className="max-w-[92%] font-serif text-[1.5rem] font-medium leading-[1.12] tracking-[-0.01em] text-[#1a1a1a] transition-colors duration-300 group-hover:text-[#1e6b45]">{p.name}</h3>
+      <p className="mt-2 text-[0.75rem] leading-snug text-[#1a1a1a]/50">{streetAddress(p)}</p>
+      <p className="mt-1.5 font-mono text-[0.84rem] text-[#1a1a1a] tabular-nums">₹{p.budget[0]}–{p.budget[1]} Cr</p>
       {matchPct != null && (
-        <p className="mt-2 font-mono text-[0.66rem] font-semibold tracking-[0.02em] text-[#1e6b45] tabular-nums">{matchPct}% fit to you</p>
+        <p className="mt-2.5 font-mono text-[0.68rem] font-semibold tracking-[0.02em] text-[#1e6b45] tabular-nums">{matchPct}% fit to you</p>
       )}
     </>
   );
 
-  const cls = "group relative flex aspect-square flex-col overflow-hidden rounded-[10px] border border-[#1a1a1a]/[0.13] bg-[#FBF8F2] p-[18px] text-left transition-colors duration-300 hover:border-[#1e6b45]/45";
+  const cls = "group relative flex min-h-[340px] flex-col overflow-hidden rounded-[12px] border border-[#1a1a1a]/[0.13] bg-[#FBF8F2] p-6 text-left transition-colors duration-300 hover:border-[#1e6b45]/45";
   return onSelect ? (
     <button onClick={onSelect} className={cls}>{inner}</button>
   ) : (

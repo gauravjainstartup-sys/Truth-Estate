@@ -128,25 +128,25 @@ export default function ReportPrice({ p }: { p: ProjectIntel }) {
 
           {/* the record + the projection — stacks on mobile, side-by-side on desktop */}
           <div className="mt-4 grid gap-4 lg:grid-cols-[1.55fr_1fr]">
-            <div className="overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-gradient-to-b from-white/80 to-[#fcfaf5] p-5">
+            <div className="overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-gradient-to-b from-white to-[#faf4ea] p-5">
               <svg viewBox="0 0 1000 300" className="block w-full" role="img" aria-label="Price per sq ft since launch, with the projected range ahead">
                 <defs>
-                  <linearGradient id="parea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="rgba(154,122,46,.22)" /><stop offset="1" stopColor="rgba(154,122,46,0)" /></linearGradient>
-                  <linearGradient id="pcone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="rgba(30,107,69,.18)" /><stop offset="1" stopColor="rgba(30,107,69,.04)" /></linearGradient>
+                  <linearGradient id="parea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="rgba(138,106,30,.34)" /><stop offset="1" stopColor="rgba(138,106,30,0)" /></linearGradient>
+                  <linearGradient id="pcone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="rgba(30,107,69,.28)" /><stop offset="1" stopColor="rgba(30,107,69,.05)" /></linearGradient>
                 </defs>
-                <g stroke="rgba(26,26,26,.08)" strokeWidth="1"><line x1="40" y1="70" x2="960" y2="70" /><line x1="40" y1="140" x2="960" y2="140" /><line x1="40" y1="210" x2="960" y2="210" /><line x1="40" y1="280" x2="960" y2="280" /></g>
+                <g stroke="rgba(26,26,26,.12)" strokeWidth="1"><line x1="40" y1="70" x2="960" y2="70" /><line x1="40" y1="140" x2="960" y2="140" /><line x1="40" y1="210" x2="960" y2="210" /><line x1="40" y1="280" x2="960" y2="280" /></g>
                 <path d="M40,255 L200,238 L310,215 L420,192 L420,280 L40,280 Z" fill="url(#parea)" />
-                <path d="M40,255 L200,238 L310,215 L420,192" fill="none" stroke="#9a7a2e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                 <path d="M420,192 L940,52 L940,150 Z" fill="url(#pcone)" />
-                <path d="M420,192 L940,96" fill="none" stroke="#1e6b45" strokeWidth="2" strokeDasharray="6 5" />
-                <line x1="420" y1="36" x2="420" y2="280" stroke="#9a7a2e" strokeWidth="1" strokeDasharray="3 4" opacity=".6" />
-                <circle cx="40" cy="255" r="4.5" fill="#9a7a2e" /><circle cx="420" cy="192" r="6" fill="#fff" stroke="#9a7a2e" strokeWidth="3" />
-                <g fontSize="13" fill="#6b6459" fontFamily="ui-sans-serif">
-                  <text x="44" y="274">Launch {fmtPsf(journey.launchPsf)}</text>
-                  <text x="412" y="180" textAnchor="end" fontWeight="600" fill="#1a1a1a">Today {fmtPsf(journey.currentLow)}–{(journey.currentHigh / 1000).toFixed(1)}k</text>
+                <path d="M40,255 L200,238 L310,215 L420,192" fill="none" stroke="#8a6a1e" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M420,192 L940,96" fill="none" stroke="#1e6b45" strokeWidth="3" strokeDasharray="8 5" strokeLinecap="round" />
+                <line x1="420" y1="34" x2="420" y2="280" stroke="#8a6a1e" strokeWidth="1.4" strokeDasharray="3 4" opacity=".8" />
+                <circle cx="40" cy="255" r="5.5" fill="#8a6a1e" /><circle cx="420" cy="192" r="7" fill="#fff" stroke="#8a6a1e" strokeWidth="3.5" />
+                <g fontSize="14" fill="#3f3a32" fontFamily="ui-sans-serif">
+                  <text x="46" y="274">Launch {fmtPsf(journey.launchPsf)}</text>
+                  <text x="412" y="176" textAnchor="end" fontWeight="700" fill="#141210">Today {fmtPsf(journey.currentLow)}–{(journey.currentHigh / 1000).toFixed(1)}k</text>
                 </g>
-                <g fontSize="12" fill="#a49a8c" fontFamily="ui-monospace,monospace">
-                  <text x="40" y="296">{journey.launchDate.split(" ")[1]}</text><text x="410" y="296">now</text><text x="905" y="296">+5 yrs</text>
+                <g fontSize="13" fill="rgba(26,26,26,.55)" fontFamily="ui-monospace,monospace">
+                  <text x="40" y="297">{journey.launchDate.split(" ")[1]}</text><text x="408" y="297">now</text><text x="900" y="297">+5 yrs</text>
                 </g>
               </svg>
             </div>
