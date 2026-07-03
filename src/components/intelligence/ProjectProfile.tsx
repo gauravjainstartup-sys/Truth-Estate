@@ -823,23 +823,22 @@ export default function ProjectProfile({
               </Section>
             )}
 
-            {/* Context — developer + market (standalone page only) */}
-            {!embedded && (
-              <Section n={num()} title="Context">
-                <div className="grid gap-5 md:grid-cols-2">
+            {/* If not this project, then what? — one closing section: the
+               alternatives to weigh, then the wider lens (developer + corridor).
+               Merges the old "Context" and "Keep exploring". */}
+            <section id="alternatives" className="mt-16 border-t border-[#1a1a1a]/8 pt-12">
+              <div className="flex items-center gap-4">
+                <span className="font-mono text-[0.8rem] text-[#c9a96e]">→</span>
+                <h2 className="font-serif text-[1.7rem] font-medium tracking-[-0.01em] md:text-[2.1rem]">If not {p.name}, then what?</h2>
+              </div>
+              <p className="mt-3 max-w-2xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">Comparable projects to weigh side by side — or widen the lens to the developer and the corridor.</p>
+              <ReportExplore p={p} embedded={embedded} onSelect={onSelectAlternative} />
+              {!embedded && (
+                <div className="mt-8 grid gap-5 md:grid-cols-2">
                   <ContextCard kicker="Developer" title={p.developer} href={devHref} cta="Open developer dossier" />
                   <ContextCard kicker="Location" title={p.market} href={marketHref} cta={`Open ${p.marketShort} intelligence`} />
                 </div>
-              </Section>
-            )}
-
-            {/* Keep exploring — nearby · same developer · similar budget */}
-            <section className="mt-16 border-t border-[#1a1a1a]/8 pt-12">
-              <div className="flex items-center gap-4">
-                <span className="font-mono text-[0.8rem] text-[#c9a96e]">→</span>
-                <h2 className="font-serif text-[1.7rem] font-medium tracking-[-0.01em] md:text-[2.1rem]">Keep exploring</h2>
-              </div>
-              <ReportExplore p={p} embedded={embedded} onSelect={onSelectAlternative} />
+              )}
             </section>
 
             {/* The Independent Desk on mobile — the desktop rail is hidden below
@@ -867,17 +866,17 @@ export default function ProjectProfile({
               <div className="pointer-events-none absolute -left-16 top-1/2 h-64 w-64 -translate-y-1/2 rounded-full" style={{ background: "radial-gradient(circle, rgba(30,107,69,0.35), transparent 70%)", filter: "blur(28px)" }} />
               <div className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(201,169,110,0.6), transparent)" }} />
               <div className="relative">
-                <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-                  <div className="max-w-xl">
-                    <h2 className="font-serif text-[1.7rem] font-medium leading-[1.15] md:text-[2rem]">Considering {p.name}?</h2>
-                    <p className="mt-2 text-[0.88rem] font-light text-white/55">Get an independent read — the right price, the right stack, the honest risks — before you commit.</p>
-                  </div>
-                  <p className="shrink-0 text-[0.72rem] font-light leading-[1.5] text-white/40 md:text-right">We represent only you —<br className="hidden md:block" /> never the developer.</p>
+                <div className="max-w-xl">
+                  <h2 className="font-serif text-[1.7rem] font-medium leading-[1.15] md:text-[2rem]">Considering {p.name}?</h2>
+                  <p className="mt-2 text-[0.88rem] font-light text-white/55">Get an independent read — the right price, the right stack, the honest risks — before you commit.</p>
                 </div>
                 <div className="mt-7 grid gap-3 md:grid-cols-2">
                   <ActionCell tone="primary" icon="●" title="Get Independent Advice" desc="45-min advisor call · fee refundable" onClick={consult} />
                   <ActionCell tone="secondary" icon="▦" title="See Unit Intelligence" desc="3D sun & unit model — free to explore" onClick={openUnitIntel} />
                 </div>
+                <p className="mt-6 flex items-center gap-2 border-t border-white/10 pt-4 text-[0.72rem] font-light text-white/40">
+                  <span className="text-[#B29668]" aria-hidden>◆</span> We represent only you — never the developer.
+                </p>
               </div>
             </div>
 
