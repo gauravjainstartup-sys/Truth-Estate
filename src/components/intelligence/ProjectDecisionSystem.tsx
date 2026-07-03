@@ -11,6 +11,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import { PROJECTS, MARKET_PROFILES } from "@/lib/journey";
+import { projectByName } from "@/lib/projects";
+import ProjectOptionCard from "./ProjectOptionCard";
 import {
   buildProjectMemo,
   buildAlternatives,
@@ -327,33 +329,13 @@ export default function ProjectDecisionSystem({
             <p className="mt-4 max-w-[560px] text-[0.92rem] font-light leading-relaxed text-[#1a1a1a]/50">
               Three projects worth investigating before you commit.
             </p>
-            <div className="mt-9 grid gap-4 md:grid-cols-3">
-              {alternatives.map((a) => (
-                <div key={a.name} className="flex flex-col rounded-xl border border-[#1a1a1a]/8 bg-white p-6">
-                  <div className="flex items-start justify-between">
-                    <button
-                      onClick={() => goProject(a.name)}
-                      className="text-left font-serif text-[1.12rem] font-medium leading-tight text-[#1a1a1a] hover:text-[#1e6b45]"
-                    >
-                      {a.name}
-                    </button>
-                    <div className="shrink-0 text-right">
-                      <span className="font-serif text-[1.4rem] font-medium leading-none text-[#1e6b45]">{a.truthScore}</span>
-                      <p className="text-[8px] font-light uppercase tracking-[0.15em] text-[#1a1a1a]/30">Score</p>
-                    </div>
-                  </div>
-                  <p className="mt-1 text-[0.72rem] font-light text-[#1a1a1a]/35">
-                    {a.developer} &middot; {a.market}
-                  </p>
-                  <p className="mt-4 flex-1 text-[0.85rem] font-light leading-relaxed text-[#1a1a1a]/55">{a.difference}</p>
-                  <button
-                    onClick={() => doSearch(`${p.name} vs ${a.name}`)}
-                    className="mt-5 self-start rounded-sm border border-[#1a1a1a]/15 px-5 py-2 text-[10px] font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/65 transition-all hover:border-[#1e6b45]/40 hover:text-[#1e6b45]"
-                  >
-                    Compare
-                  </button>
-                </div>
-              ))}
+            <div className="mt-9 grid gap-5 md:grid-cols-3">
+              {alternatives.map((a, i) => {
+                const intel = projectByName(a.name);
+                return intel ? (
+                  <ProjectOptionCard key={a.name} p={intel} rank={i + 1} onSelect={() => goProject(a.name)} />
+                ) : null;
+              })}
             </div>
           </section>
 

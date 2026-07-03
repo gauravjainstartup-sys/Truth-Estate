@@ -15,7 +15,8 @@ import {
   classifyAndResearch,
   type Project,
 } from "@/lib/journey";
-import { projectSlug } from "@/lib/projects";
+import { projectSlug, projectByName } from "@/lib/projects";
+import ProjectOptionCard from "./ProjectOptionCard";
 
 /* ════════════════════════════════════════════════════════════════
    VIEW TYPES
@@ -858,31 +859,13 @@ function BrowseTile({ title, sub, onClick, href }: { title: string; sub: string;
   );
 }
 
+/* Thin wrapper over the shared project-option card so the workspace grids
+   read identically to the report, shortlist and index. Resolves the light
+   Project to its ProjectIntel; keeps the link / click variants. */
 function ProjectCard({ project: p, onClick, href }: { project: Project; onClick?: () => void; href?: string }) {
-  const cls =
-    "group block rounded-lg border border-[#1a1a1a]/[0.06] bg-white p-5 text-left transition-all duration-300 hover:border-[#1a1a1a]/12 hover:shadow-lg hover:shadow-black/[0.03]";
-  const inner = (
-    <>
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="font-serif text-[1.1rem] font-medium text-[#1a1a1a]">{p.name}</h3>
-          <p className="mt-0.5 text-[0.72rem] font-light text-[#1a1a1a]/35">{p.developer} &middot; {p.market}</p>
-        </div>
-        <div className="text-right">
-          <span className="font-serif text-[1.3rem] font-medium text-[#1e6b45]">{p.truthScore}</span>
-          <p className="text-[8px] font-light uppercase tracking-[0.15em] text-[#1a1a1a]/25">Score</p>
-        </div>
-      </div>
-      <p className="mt-3 text-[9px] font-medium uppercase tracking-[0.15em] text-[#1a1a1a]/50">{p.recommendation}</p>
-      <p className="mt-2 text-[0.8rem] font-light leading-[1.6] text-[#1a1a1a]/45 line-clamp-2">{p.reason}</p>
-      <p className="mt-3 text-[0.68rem] font-light text-[#1a1a1a]/22">Updated Today</p>
-    </>
-  );
-  return href ? (
-    <a href={href} className={cls}>{inner}</a>
-  ) : (
-    <button onClick={onClick} className={`${cls} w-full`}>{inner}</button>
-  );
+  const intel = projectByName(p.name);
+  if (!intel) return null;
+  return <ProjectOptionCard p={intel} onSelect={onClick} href={href} />;
 }
 
 function BottomCTA({ context }: { context?: ConsultContext }) {

@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import Logo from "../Logo";
+import { projectByName } from "@/lib/projects";
+import ProjectOptionCard from "../intelligence/ProjectOptionCard";
 import {
   CONSULT_DAYPARTS,
   CONSULT_DAYS,
@@ -423,31 +425,22 @@ function RecommendationsSection({ thread, onActivate }: { thread: OfficeThread; 
         }
       />
 
-      <div className="flex flex-col gap-4">
-        {thread.recs.map((r) => (
-          <div key={r.name} className="flex items-stretch gap-4 rounded-xl border border-[#1a1a1a]/[0.08] bg-white p-5 md:gap-6 md:p-6">
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-3">
-                <p className="font-serif text-[1.2rem] font-medium text-[#1a1a1a] md:text-[1.4rem]">{r.name}</p>
-                <span className={`rounded-full border px-2.5 py-0.5 text-[0.62rem] font-medium uppercase tracking-[0.08em] ${recTone(r.status)}`}>
-                  {r.status === "investigating" ? "Investigating" : r.status}
+      <div className="grid gap-5 sm:grid-cols-2">
+        {thread.recs.map((r) => {
+          const intel = projectByName(r.name);
+          if (!intel) return null;
+          return (
+            <div key={r.name} className="flex flex-col gap-2">
+              <ProjectOptionCard p={intel} matchPct={r.matchPct} />
+              <div className="rounded-xl border border-[#1a1a1a]/8 bg-[#FBF8F2] px-4 py-3">
+                <span className={`inline-block rounded-full border px-2.5 py-0.5 text-[0.62rem] font-medium uppercase tracking-[0.08em] ${recTone(r.status)}`}>
+                  {r.status.charAt(0).toUpperCase() + r.status.slice(1)}
                 </span>
-              </div>
-              <p className="mt-1 text-[0.8rem] font-light tracking-[0.04em] text-[#1a1a1a]/45">{r.developer} · {r.market}</p>
-              {r.note && <p className="mt-2.5 text-[0.84rem] font-light leading-relaxed text-[#1a1a1a]/60">{r.note}</p>}
-            </div>
-            <div className="flex shrink-0 flex-col justify-center gap-3 border-l border-[#1a1a1a]/10 pl-4 text-right md:pl-6">
-              <div>
-                <p className="font-serif text-[1.2rem] font-medium leading-none text-[#1e6b45] md:text-[1.4rem]">{r.matchPct}%</p>
-                <p className="mt-1 text-[8px] font-light uppercase tracking-[0.16em] text-[#1a1a1a]/40">Truth Match</p>
-              </div>
-              <div>
-                <p className="font-serif text-[1.2rem] font-medium leading-none text-[#1a1a1a] md:text-[1.4rem]">{r.truthScore}</p>
-                <p className="mt-1 text-[8px] font-light uppercase tracking-[0.16em] text-[#1a1a1a]/40">Truth Score</p>
+                {r.note && <p className="mt-2 text-[0.82rem] font-light leading-relaxed text-[#1a1a1a]/60">{r.note}</p>}
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Curated intelligence — preview before the mandate, open after */}

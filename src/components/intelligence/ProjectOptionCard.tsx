@@ -29,17 +29,19 @@ export default function ProjectOptionCard({
   rank,
   matchPct,
   onSelect,
+  href,
 }: {
   p: ProjectIntel;
-  rank: number;
+  rank?: number;
   matchPct?: number | null;
   onSelect?: () => void;
+  href?: string;
 }) {
   const filled = Math.round(p.truthScore / 10);
   const inner = (
     <>
       <div className="flex items-center justify-between">
-        <span className="font-serif text-[0.95rem] font-light text-[#1a1a1a]/30">{String(rank).padStart(2, "0")}</span>
+        {rank != null ? <span className="font-serif text-[0.95rem] font-light text-[#1a1a1a]/30">{String(rank).padStart(2, "0")}</span> : <span aria-hidden />}
         <span className={`rounded-full border px-3 py-1 text-[0.6rem] font-medium uppercase tracking-[0.08em] ${recoTone(p.recommendation)}`}>{p.recommendation}</span>
       </div>
 
@@ -87,6 +89,6 @@ export default function ProjectOptionCard({
   return onSelect ? (
     <button onClick={onSelect} className={cls}>{inner}</button>
   ) : (
-    <a href={`${basePath}/intelligence/projects/${p.slug}`} className={cls}>{inner}</a>
+    <a href={href ?? `${basePath}/intelligence/projects/${p.slug}`} className={cls}>{inner}</a>
   );
 }
