@@ -31,10 +31,6 @@ export default function ReportDeveloper({ p }: { p: ProjectIntel }) {
   if (!dev) return null;
   const perf = dev.performance;
   const lapsed = perf.lapsed ?? Math.max(0, perf.launched - perf.delivered - perf.ongoing);
-  const onTime = Math.round((perf.delivered * perf.onTimePct) / 100);
-  const delayed = Math.max(0, perf.delivered - onTime);
-  const relBand: Band = perf.onTimePct >= 90 ? "exceptional" : perf.onTimePct >= 80 ? "strong" : perf.onTimePct >= 70 ? "moderate" : "watch";
-  const slipBand: Band = perf.avgDelayMonths <= 3 ? "strong" : perf.avgDelayMonths <= 7 ? "moderate" : "watch";
 
   return (
     <div className="mt-8">
@@ -60,23 +56,9 @@ export default function ReportDeveloper({ p }: { p: ProjectIntel }) {
         <Stat v={`${perf.avgDelayMonths}`} unit="mo" k="Avg slippage" />
       </div>
 
-      {/* reliability + slippage */}
-      <div className="mt-5 grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-6">
-          <div className="flex items-center justify-between"><span className="text-[0.66rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">Delivery reliability</span><BandChip band={relBand} /></div>
-          <p className="mt-3 font-mono text-[1.9rem] font-medium leading-none">{perf.onTimePct}<span className="text-[0.9rem] text-[#1a1a1a]/35">%</span></p>
-          <Meter band={relBand} />
-          <div className="mt-3.5 flex gap-6">
-            <Split n={perf.launched} l="Launched" /><Split n={onTime} l="On-time" tone="green" /><Split n={delayed} l="Delayed" tone="gold" />
-          </div>
-        </div>
-        <div className="rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-6">
-          <div className="flex items-center justify-between"><span className="text-[0.66rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">Historical slippage</span><BandChip band={slipBand} /></div>
-          <p className="mt-3 font-mono text-[1.9rem] font-medium leading-none">{perf.avgDelayMonths}<span className="ml-1 text-[0.9rem] text-[#1a1a1a]/35">months</span></p>
-          <Meter band={slipBand} />
-          <p className="mt-3.5 text-[0.8rem] font-light leading-[1.55] text-[#1a1a1a]/55">When {dev.name} is late, it&apos;s late by <b className="font-medium text-[#1a1a1a]/75">~{perf.avgDelayMonths} months on average</b> — price a buffer into your plans.</p>
-        </div>
-      </div>
+      {perf.avgDelayMonths > 0 && (
+        <p className="mt-3 text-[0.72rem] font-light leading-[1.5] text-[#1a1a1a]/40">When {dev.name} is late, it&apos;s late by ~{perf.avgDelayMonths} months on average — price that buffer into your plans.</p>
+      )}
 
       {/* definitions */}
       <details className="group mt-5 overflow-hidden rounded-2xl border border-[#1a1a1a]/8">
@@ -143,25 +125,6 @@ function Stat({ v, unit, k, hero, tone }: { v: string; unit?: string; k: string;
       {tone === "clean" && <p className="mt-1.5 text-[0.6rem] font-semibold uppercase tracking-[0.06em] text-[#238c55]">✓ Clean</p>}
       {tone === "red" && <p className="mt-1.5 text-[0.6rem] font-semibold uppercase tracking-[0.06em] text-[#9a4130]">⚠ Red flag</p>}
       <p className="mt-2 text-[0.6rem] font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/40">{k}</p>
-    </div>
-  );
-}
-
-function Meter({ band }: { band: Band }) {
-  const lit = band === "exceptional" || band === "strong" ? 3 : band === "moderate" ? 2 : 1;
-  const color = band === "watch" ? "#b0503e" : band === "moderate" ? "#9a7a2e" : "#1e6b45";
-  return (
-    <div className="mt-3.5 flex gap-1.5">
-      {[0, 1, 2].map((i) => <span key={i} className="h-[7px] flex-1 rounded-full" style={{ background: i < lit ? color : "#e6dfd0" }} />)}
-    </div>
-  );
-}
-
-function Split({ n, l, tone }: { n: number; l: string; tone?: "green" | "gold" }) {
-  return (
-    <div>
-      <p className={`font-mono text-[1.1rem] font-semibold ${tone === "green" ? "text-[#238c55]" : tone === "gold" ? "text-[#9a7a2e]" : "text-[#1a1a1a]"}`}>{n}</p>
-      <p className="text-[0.58rem] font-medium uppercase tracking-[0.08em] text-[#1a1a1a]/40">{l}</p>
     </div>
   );
 }
