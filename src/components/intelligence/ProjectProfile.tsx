@@ -441,6 +441,9 @@ export default function ProjectProfile({
                     <img src={`${basePath}/${heroImage}`} alt={`${p.name} — aerial site view`} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: "center 42%" }} />
                     <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(8,12,18,0.94) 0%, rgba(8,12,18,0.66) 30%, rgba(8,12,18,0.22) 62%, rgba(8,12,18,0.26) 100%)" }} />
                     <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(8,12,18,0.5), rgba(8,12,18,0) 60%)" }} />
+                    {/* stacked layouts carry the identity at the top — darken the
+                       canvas head so name & address stay legible over bright sites */}
+                    <div className="absolute inset-0 xl:hidden" style={{ background: "linear-gradient(to bottom, rgba(8,12,18,0.8) 0%, rgba(8,12,18,0.5) 20%, rgba(8,12,18,0) 44%)" }} />
                   </>
                 ) : (
                   <>
@@ -466,7 +469,7 @@ export default function ProjectProfile({
                      side-by-side bottom-aligned composition. */}
                   <div className="flex flex-1 flex-col xl:flex-row xl:flex-wrap xl:items-end xl:justify-between xl:gap-x-10 xl:gap-y-7">
                     <div className="max-w-2xl">
-                      <p className="text-[9px] font-medium uppercase tracking-[0.34em] text-[#d8b978] md:text-[11px]">Project Intelligence</p>
+                      <p className="hidden text-[11px] font-medium uppercase tracking-[0.34em] text-[#d8b978] md:block">Project Intelligence</p>
                       <h1 className={`mt-4 text-balance font-serif font-medium leading-[1.04] tracking-[-0.02em] text-[#F7F3EA] ${p.name.length > 24 ? "text-[2.15rem] md:text-[3.1rem]" : "text-[2.7rem] md:text-[3.9rem]"}`}>{p.name}</h1>
                       {ops?.address && (
                         <p className="mt-4 flex items-center text-[0.9rem] font-light text-white/70">
@@ -474,9 +477,9 @@ export default function ProjectProfile({
                           {mapHref ? <a href={mapHref} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-white">{ops.address}<IconArrowUpRight className="ml-1 text-[#d8b978]" /></a> : ops.address}
                         </p>
                       )}
+                      {/* the developer brand already leads the project name — no by-line */}
                       <p className="mt-2 text-[0.86rem] font-light text-white/45">
-                        by <span className="font-medium text-white/75">{p.developer}</span>
-                        <span className="mx-2 text-white/25">·</span>{configsDisplay(p.configs)}
+                        {configsDisplay(p.configs)}
                         <span className="mx-2 text-white/25">·</span>₹{p.budget[0]}–{p.budget[1]} Cr
                       </p>
                       {/* credential chips — on xl they stay with the identity column;
