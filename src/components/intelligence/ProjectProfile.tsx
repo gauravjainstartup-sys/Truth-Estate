@@ -80,64 +80,55 @@ function Source({ children }: { children: React.ReactNode }) {
   return <p className="mt-6 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">{children}</p>;
 }
 
-/* Documents fallback — honest "not on file" + request-what-you-need lead
-   capture. Full-width when nothing is on file; a tile beside cards otherwise. */
-function DocsRequest({ project, missing, full }: { project: string; missing: string[]; full: boolean }) {
-  const [want, setWant] = useState<string[]>(missing);
+/* A document slot with nothing on file — same card silhouette as a real
+   document, honest "not on file yet" cover, per-document request CTA that
+   captures a lead (one contact field, doc type implicit). */
+function DocSlot({ project, title, sub }: { project: string; title: string; sub: string }) {
+  const [open, setOpen] = useState(false);
   const [contact, setContact] = useState("");
   const [sent, setSent] = useState(false);
-  const toggle = (c: string) => setWant((w) => (w.includes(c) ? w.filter((x) => x !== c) : [...w, c]));
-  const span = full ? "sm:col-span-2" : "";
-  if (sent) {
-    return (
-      <div className={`flex flex-col justify-center rounded-2xl border border-[#1e6b45]/25 bg-[#1e6b45]/[0.05] p-6 ${span}`}>
-        <p className="text-[0.92rem] font-semibold text-[#1e6b45]">✓ Request received.</p>
-        <p className="mt-1.5 text-[0.8rem] font-light leading-[1.6] text-[#1a1a1a]/60">
-          We&apos;ll send what&apos;s on file right away and source the rest from the developer — usually the same day.
-        </p>
-      </div>
-    );
-  }
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (!want.length) return;
-        saveLead({ name: "", email: contact, project, intent: "documents", docs: want, createdAt: Date.now() });
-        setSent(true);
-      }}
-      className={`rounded-2xl border border-dashed border-[#9a7a2e]/40 bg-white/50 p-6 ${span}`}
-    >
-      <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#9a7a2e]">Not on file yet</p>
-      <p className="mt-2 font-serif text-[1.18rem] font-medium leading-snug">Need the documents? We&apos;ll get them.</p>
-      <p className="mt-1.5 text-[0.78rem] font-light leading-[1.55] text-[#1a1a1a]/55">
-        Pick what you need — the desk sources it from the developer and sends it to you.
-      </p>
-      <div className="mt-3.5 flex flex-wrap gap-1.5">
-        {missing.map((c) => {
-          const on = want.includes(c);
-          return (
-            <button key={c} type="button" onClick={() => toggle(c)}
-              className={`rounded-full border px-3 py-1.5 text-[0.7rem] font-medium transition-colors ${on ? "border-[#1e6b45] bg-[#1e6b45]/10 text-[#1e6b45]" : "border-[#1a1a1a]/15 text-[#1a1a1a]/55 hover:border-[#1a1a1a]/35"}`}>
-              {on ? "✓ " : ""}{c}
-            </button>
-          );
-        })}
+    <div className={`overflow-hidden rounded-2xl border bg-white/50 ${sent ? "border-[#1e6b45]/30" : "border-dashed border-[#9a7a2e]/40"}`}>
+      <div className="relative aspect-[16/10] bg-[#f5f0e5]/70">
+        <div className="absolute inset-0 grid place-items-center">
+          <div className="text-center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#9a7a2e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto h-8 w-8 opacity-70" aria-hidden>
+              <path d="M6 2.5h8L19.5 8v13a1 1 0 0 1-1 1h-12a1 1 0 0 1-1-1v-17a1 1 0 0 1 1-1Z" /><path d="M14 2.5V8h5.5M9 13h6M9 17h6" />
+            </svg>
+            <p className="mt-2.5 text-[0.58rem] font-bold uppercase tracking-[0.18em] text-[#9a7a2e]/80">{sent ? "Requested" : "Not on file yet"}</p>
+          </div>
+        </div>
       </div>
-      <div className={`mt-4 flex flex-col gap-2 ${full ? "sm:max-w-md sm:flex-row" : ""}`}>
-        <input
-          required
-          value={contact}
-          onChange={(e) => setContact(e.target.value)}
-          placeholder="Phone / WhatsApp / email"
-          className="w-full min-w-0 flex-1 rounded-lg border border-[#1a1a1a]/12 bg-white px-3.5 py-2.5 text-[0.8rem] outline-none transition-colors focus:border-[#1e6b45]"
-        />
-        <button type="submit" className="shrink-0 rounded-lg bg-[#1e6b45] px-4 py-2.5 text-[0.78rem] font-semibold text-white transition-colors hover:bg-[#238c55]">
-          Request {want.length > 1 ? "documents" : want[0] ?? "documents"} →
-        </button>
+      <div className="px-5 py-4">
+        {sent ? (
+          <p className="text-[0.8rem] font-medium leading-[1.5] text-[#1e6b45]">✓ Requested — the desk sources it and sends it to you, usually the same day.</p>
+        ) : open ? (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              saveLead({ name: "", email: contact, project, intent: "documents", docs: [title], createdAt: Date.now() });
+              setSent(true);
+            }}
+            className="flex gap-2"
+          >
+            <input
+              required autoFocus value={contact} onChange={(e) => setContact(e.target.value)}
+              placeholder="Phone / WhatsApp / email"
+              className="w-full min-w-0 flex-1 rounded-lg border border-[#1a1a1a]/12 bg-white px-3 py-2.5 text-[0.78rem] outline-none transition-colors focus:border-[#1e6b45]"
+            />
+            <button type="submit" className="shrink-0 rounded-lg bg-[#1e6b45] px-3.5 py-2.5 text-[0.76rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Send →</button>
+          </form>
+        ) : (
+          <button onClick={() => setOpen(true)} className="group flex w-full items-center justify-between gap-4 text-left">
+            <span>
+              <span className="block text-[0.92rem] font-semibold text-[#1a1a1a]/85">{title}</span>
+              <span className="mt-0.5 block text-[0.7rem] font-light text-[#1a1a1a]/45">{sub}</span>
+            </span>
+            <span className="shrink-0 text-[0.78rem] font-semibold text-[#9a7a2e] transition-colors group-hover:text-[#7a5f1e]">Request →</span>
+          </button>
+        )}
       </div>
-      <p className="mt-2.5 text-[0.64rem] font-light text-[#1a1a1a]/35">Free — no spam, no broker calls. The desk replies once, with the files.</p>
-    </form>
+    </div>
   );
 }
 
@@ -635,8 +626,10 @@ export default function ProjectProfile({
                         <span aria-hidden className="text-[#9a7a2e] transition-transform group-hover:translate-x-0.5">→</span>
                       </div>
                     </button>
-                  ) : null}
-                  {ops?.media?.paymentPlan && (
+                  ) : (
+                    <DocSlot project={p.name} title="Project brochure" sub="The developer&rsquo;s full brochure" />
+                  )}
+                  {ops?.media?.paymentPlan ? (
                     <button
                       onClick={() => setDoc({ title: "Payment plan", pages: [ops.media!.paymentPlan!.src], idx: 0 })}
                       className="group overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-white/60 text-left transition-colors hover:border-[#9a7a2e]/40"
@@ -653,21 +646,58 @@ export default function ProjectProfile({
                         <span aria-hidden className="text-[#9a7a2e] transition-transform group-hover:translate-x-0.5">→</span>
                       </div>
                     </button>
+                  ) : (
+                    <DocSlot project={p.name} title="Payment plan" sub="Milestones and due percentages" />
                   )}
+                  {/* Master plan appears here as a slot only when it lacks its own section above */}
+                  {!ops?.media?.masterplan && <DocSlot project={p.name} title="Master plan / site map" sub="The RERA-approved site layout" />}
+                  {/* Floor plans — licensed dimensioned plans (indicative schematics live in The Homes) */}
                   {(() => {
-                    const media = ops?.media;
-                    const missing = [
-                      ...(!media?.brochure?.length ? ["Brochure"] : []),
-                      ...(!media?.masterplan ? ["Master plan / site map"] : []),
-                      ...(!ops?.homes?.some((h) => h.plan) ? ["Floor plans"] : []),
-                      ...(!media?.paymentPlan ? ["Payment plan"] : []),
-                      "Cost sheet",
-                    ];
-                    const full = !media?.brochure?.length && !media?.paymentPlan;
-                    return <DocsRequest project={p.name} missing={missing} full={full} />;
+                    const plans = (ops?.homes ?? []).filter((h) => h.plan).map((h) => h.plan!);
+                    return plans.length ? (
+                      <button
+                        onClick={() => setDoc({ title: "Floor plans", pages: plans, idx: 0 })}
+                        className="group overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-white/60 text-left transition-colors hover:border-[#9a7a2e]/40"
+                      >
+                        <div className="relative aspect-[16/10] overflow-hidden bg-[#f0ece3]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={`${basePath}/${plans[0]}`} alt={`${p.name} floor plan`} className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]" />
+                        </div>
+                        <div className="flex items-center justify-between gap-4 px-5 py-4">
+                          <div>
+                            <p className="text-[0.92rem] font-semibold">Floor plans</p>
+                            <p className="mt-0.5 text-[0.7rem] font-light text-[#1a1a1a]/45">{plans.length} dimensioned plans · tap to view</p>
+                          </div>
+                          <span aria-hidden className="text-[#9a7a2e] transition-transform group-hover:translate-x-0.5">→</span>
+                        </div>
+                      </button>
+                    ) : (
+                      <DocSlot project={p.name} title="Floor plans" sub="Dimensioned plans for every layout" />
+                    );
                   })()}
+                  {/* Cost sheet */}
+                  {ops?.media?.costSheet ? (
+                    <button
+                      onClick={() => setDoc({ title: "Cost sheet", pages: [ops.media!.costSheet!], idx: 0 })}
+                      className="group overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-white/60 text-left transition-colors hover:border-[#9a7a2e]/40"
+                    >
+                      <div className="relative aspect-[16/10] overflow-hidden bg-[#f0ece3]">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={`${basePath}/${ops.media.costSheet}`} alt={`${p.name} cost sheet`} className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]" />
+                      </div>
+                      <div className="flex items-center justify-between gap-4 px-5 py-4">
+                        <div>
+                          <p className="text-[0.92rem] font-semibold">Cost sheet</p>
+                          <p className="mt-0.5 text-[0.7rem] font-light text-[#1a1a1a]/45">All-in pricing · tap to view</p>
+                        </div>
+                        <span aria-hidden className="text-[#9a7a2e] transition-transform group-hover:translate-x-0.5">→</span>
+                      </div>
+                    </button>
+                  ) : (
+                    <DocSlot project={p.name} title="Cost sheet" sub="All-in pricing — GST, PLC, IFMS included" />
+                  )}
                 </div>
-                <Source>Developer documents on file — indicative until countersigned. GST, PLC, IFMS &amp; registration additional as applicable.</Source>
+                <Source>{ops?.media?.brochure || ops?.media?.paymentPlan || ops?.media?.costSheet ? "Developer documents on file — indicative until countersigned." : "Documents arrive as the desk sources them — indicative until countersigned."} GST, PLC, IFMS &amp; registration additional as applicable.</Source>
               </Section>
 
             {/* Tower & Unit Intelligence — the gated deep layer. Sits after the

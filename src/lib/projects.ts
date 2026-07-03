@@ -144,6 +144,7 @@ export type ProjectOps = {
     masterplan?: { src: string; read: string };
     brochure?: string[]; // page images, cover first
     paymentPlan?: { src: string; read: string };
+    costSheet?: string;
     sitePhotos?: { src: string; asOf: string; note?: string }[];
   };
   /* Structured location intelligence (Chapter II · Location). */
