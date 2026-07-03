@@ -17,6 +17,12 @@ function qprEndDate(qpr: string): string {
 export default function ReportConstruction({ p }: { p: ProjectIntel }) {
   const o = deliveryOutlook(p);
   if (!o) return null;
+  // Launch shown as month + year — prefer the precise price-history launch date
+  // where we track it, falling back to the coarser launch field.
+  const launchLabel = p.ops?.price?.launchDate ?? p.ops?.launch ?? "—";
+  // Absorption in absolute terms: units sold of the total launched.
+  const totalUnits = p.ops?.units;
+  const unitsSold = totalUnits != null ? Math.round((totalUnits * o.absorptionPct) / 100) : null;
   const render = p.ops?.media?.render;
   const site = p.ops?.media?.sitePhotos?.[0];
   const siteAsOf = site ? `◉ ${site.asOf} · on site` : `▦ schematic · ${o.actualPct}% built`;
@@ -32,7 +38,7 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
     <div className="mt-8">
       <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Pillar II · Construction &amp; Sales</p>
       <h3 className="mt-2 font-serif text-[1.7rem] font-medium leading-tight md:text-[2rem]">Is it actually getting built — and sold?</h3>
-      <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">Build progress against the RERA filings — and the real handover date.</p>
+      <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">Build progress against the RERA filings — and the Expected OC date.</p>
 
       <div className="mt-6 rounded-2xl border-l-2 border-[#1e6b45]/40 bg-white/50 p-6 md:p-7">
         <p className="text-[0.62rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/40">Analyst assessment</p>
@@ -76,7 +82,7 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
         <div className="mt-4 rounded-r-xl border-l-2 border-[#9a7a2e] bg-[#9a7a2e]/[0.06] px-5 py-3.5">
           <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-[#9a7a2e]">◆ The delivery read</p>
           <p className="mt-1.5 text-[0.86rem] font-light leading-[1.6] text-[#1a1a1a]/70">
-            Structure is <b className="font-medium text-[#1a1a1a]">{o.actualPct}% up</b> against {o.expectedPct}% due — {o.aheadOfPlan >= 0 ? "ahead of" : "behind"} the RERA plan. Our field read tracks to a <b className="font-medium text-[#1a1a1a]">{o.predictedDate}</b> handover{o.ahead !== 0 ? `, ${Math.abs(o.ahead)} months ${o.ahead > 0 ? "before" : "after"} the RERA date` : ""}.
+            Structure is <b className="font-medium text-[#1a1a1a]">{o.actualPct}% up</b> against {o.expectedPct}% due — {o.aheadOfPlan >= 0 ? "ahead of" : "behind"} the RERA plan. Our field read tracks to Expected OC by <b className="font-medium text-[#1a1a1a]">{o.predictedDate}</b>{o.ahead !== 0 ? `, ${Math.abs(o.ahead)} months ${o.ahead > 0 ? "before" : "after"} the RERA date` : ""}.
             {!site && <span className="text-[#1a1a1a]/45"> Dated photographs from our next visit drop into the slot above.</span>}
           </p>
         </div>
@@ -88,16 +94,11 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
       <div className="mt-5 rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-6 md:p-7">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-[0.66rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">Construction &rarr; delivery</span>
-          <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[0.72rem] font-semibold ${o.aheadOfPlan >= 0 ? "border-[#238c55]/25 bg-[#238c55]/[0.1] text-[#1c7a4c]" : "border-[#b0503e]/30 bg-[#b0503e]/[0.08] text-[#9a4130]"}`}>
-            {o.aheadOfPlan === 0
-              ? <>&#9679; On the RERA plan</>
-              : <>{o.aheadOfPlan > 0 ? "▲" : "▼"} {Math.abs(o.aheadOfPlan)} pts {o.aheadOfPlan > 0 ? "ahead" : "behind"}{o.ahead !== 0 && <> &middot; ~{Math.abs(o.ahead)} mo {o.ahead > 0 ? "banked" : "at risk"}</>}</>}
-          </span>
         </div>
         <p className="mt-1.5 text-[0.68rem] font-light leading-[1.5] text-[#1a1a1a]/45">From the latest RERA Quarterly Progress Report ({o.qpr}) — actual build against the % RERA required by the quarter-end.</p>
 
         {/* the progress timeline */}
-        <div className="mt-12 px-1">
+        <div className="mt-[4.5rem] px-1">
           <div className="relative">
             {/* actual-built marker above the track (as per QPR) */}
             <div className="absolute bottom-full mb-2.5 -translate-x-1/2 whitespace-nowrap text-center" style={{ left: `${Math.min(90, Math.max(10, o.actualPct))}%` }}>
@@ -116,9 +117,9 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
             </div>
             {/* milestone labels below */}
             <div className="relative mt-3.5 h-8 text-[0.63rem] leading-tight">
-              <div className="absolute left-0 top-0 text-[#1a1a1a]/45"><span className="block font-semibold text-[#1a1a1a]/75">Launch</span>{p.ops?.launch ?? "—"}</div>
+              <div className="absolute left-0 top-0 text-[#1a1a1a]/45"><span className="block font-semibold text-[#1a1a1a]/75">Launch</span>{launchLabel}</div>
               <div className="absolute top-0 -translate-x-1/2 whitespace-nowrap text-center text-[#1a1a1a]/45" style={{ left: `${Math.min(78, Math.max(22, o.expectedPct))}%` }}><span className="block font-semibold text-[#1a1a1a]/75">{o.expectedPct}% RERA-due</span>by {qprEndDate(o.qpr)}</div>
-              <div className="absolute right-0 top-0 text-right text-[#1a1a1a]/45"><span className="block font-semibold text-[#1a1a1a]/75">Handover</span>{o.reraDate} &middot; RERA</div>
+              <div className="absolute right-0 top-0 text-right text-[#1a1a1a]/45"><span className="block font-semibold text-[#1a1a1a]/75">Expected OC</span>{o.reraDate} &middot; RERA</div>
             </div>
           </div>
         </div>
@@ -128,7 +129,7 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
           <div className="min-w-0">
             <p className="text-[0.56rem] font-bold uppercase tracking-[0.12em] text-[#9a7a2e]">Truth Estate forecast</p>
             <p className="mt-1.5 font-serif text-[1.9rem] font-medium leading-none text-[#1a1a1a]">{o.predictedDate}</p>
-            <p className="mt-1.5 text-[0.72rem] font-light text-[#1a1a1a]/45">our predicted handover &mdash; from build pace + {p.developer}&rsquo;s record</p>
+            <p className="mt-1.5 text-[0.72rem] font-light text-[#1a1a1a]/45">our predicted OC &mdash; from build pace + {p.developer}&rsquo;s record</p>
           </div>
           {o.ahead !== 0 && (
             <div className="rounded-lg border border-[#1a1a1a]/10 bg-white/70 px-3.5 py-2">
@@ -162,6 +163,18 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
           </p>
         </div>
         <div className="mt-3.5 h-3 overflow-hidden rounded-full bg-[#e9e2d3]"><div className="h-full rounded-full" style={{ width: `${o.absorptionPct}%`, background: "linear-gradient(90deg,#1e6b45,#238c55)" }} /></div>
+        {totalUnits != null && (
+          <div className="mt-3 flex items-stretch gap-3">
+            <div className="flex-1 rounded-xl border border-[#1a1a1a]/8 bg-white/60 px-4 py-2.5">
+              <p className="text-[0.56rem] font-semibold uppercase tracking-[0.12em] text-[#1a1a1a]/40">Units sold</p>
+              <p className="mt-0.5 font-mono text-[1.15rem] font-semibold leading-none text-[#1e6b45]">{unitsSold!.toLocaleString("en-IN")}</p>
+            </div>
+            <div className="flex-1 rounded-xl border border-[#1a1a1a]/8 bg-white/60 px-4 py-2.5">
+              <p className="text-[0.56rem] font-semibold uppercase tracking-[0.12em] text-[#1a1a1a]/40">Total units</p>
+              <p className="mt-0.5 font-mono text-[1.15rem] font-semibold leading-none text-[#1a1a1a]/75">{totalUnits.toLocaleString("en-IN")}</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

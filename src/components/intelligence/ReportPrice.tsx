@@ -120,11 +120,10 @@ export default function ReportPrice({ p }: { p: ProjectIntel }) {
           <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Price Dynamics · a — the record</p>
           <h3 className="mt-2 font-serif text-[1.7rem] font-medium leading-tight md:text-[2rem]">The price, since launch</h3>
 
-          <div className="mt-5 grid grid-cols-2 overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-white/60 lg:grid-cols-4">
+          <div className="mt-5 grid grid-cols-2 overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-white/60 lg:grid-cols-3">
             <PStat v={fmtPsf(journey.launchPsf)} sub="/sqft" k={`Launch · ${journey.launchDate}`} />
             <PStat v={`${fmtPsf(journey.currentLow)}–${(journey.currentHigh / 1000).toFixed(1)}k`} k="Current range · today" />
-            <PStat v={`+${journey.premiumPct}%`} k="Premium to date" accent />
-            <PStat v={`~${journey.cagr}%`} k={`CAGR · ${journey.years} yrs`} accent />
+            <PStat v={`+${journey.premiumPct}%`} k="Premium to date" accent className="col-span-2 lg:col-span-1" />
           </div>
 
           {/* the record + the projection — stacks on mobile, side-by-side on desktop */}
@@ -279,9 +278,9 @@ export default function ReportPrice({ p }: { p: ProjectIntel }) {
   );
 }
 
-function PStat({ v, sub, k, accent }: { v: string; sub?: string; k: string; accent?: boolean }) {
+function PStat({ v, sub, k, accent, className = "" }: { v: string; sub?: string; k: string; accent?: boolean; className?: string }) {
   return (
-    <div className="border-b border-r border-[#1a1a1a]/[0.06] p-5">
+    <div className={`border-b border-r border-[#1a1a1a]/[0.06] p-5 ${className}`}>
       <p className={`font-mono text-[1.5rem] font-medium leading-none ${accent ? "text-[#1e6b45]" : "text-[#1a1a1a]"}`}>{v}{sub && <span className="text-[0.75rem] text-[#1a1a1a]/35">{sub}</span>}</p>
       <p className="mt-2 text-[0.6rem] font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/40">{k}</p>
     </div>
