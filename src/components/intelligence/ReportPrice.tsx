@@ -184,14 +184,17 @@ export default function ReportPrice({ p }: { p: ProjectIntel }) {
       <div className="mt-4 grid overflow-hidden rounded-2xl border border-[#1a1a1a]/10 lg:grid-cols-[360px_minmax(0,1fr)]">
         {/* inputs */}
         <div className="border-b border-[#1a1a1a]/10 bg-[#FBF8F2] p-6 lg:border-b-0 lg:border-r">
-          <Input label="Configuration" value={`${cfg?.label ?? "—"} · ~${sqft.toLocaleString("en-IN")} sq ft`}>
-            <div className="flex flex-wrap gap-2">
-              {homeList.map((h, i) => (
-                <button key={h.label} onClick={() => setCfgIdx(i)}
-                  className={`rounded-full border px-3.5 py-2 text-[0.74rem] font-medium transition-colors ${i === cfgIdx ? "border-[#1a1a1a] bg-[#1a1a1a] text-white" : "border-[#1a1a1a]/12 bg-white text-[#8b8378] hover:border-[#1a1a1a]/30 hover:text-[#1a1a1a]"}`}>
-                  {h.label}
-                </button>
-              ))}
+          {/* A dropdown, not pills — a project can carry many layouts
+             (3/3.5/4/4.5 BHK, duplexes, penthouses). */}
+          <Input label="Configuration" value={`~${sqft.toLocaleString("en-IN")} sq ft`}>
+            <div className="relative">
+              <select value={cfgIdx} onChange={(e) => setCfgIdx(Number(e.target.value))} aria-label="Configuration"
+                className="w-full cursor-pointer appearance-none rounded-lg border border-[#1a1a1a]/12 bg-white py-3 pl-3.5 pr-10 text-[0.84rem] font-medium text-[#1a1a1a] outline-none transition-colors hover:border-[#1a1a1a]/30 focus:border-[#1e6b45]">
+                {homeList.map((h, i) => (
+                  <option key={h.label} value={i}>{h.label} · {h.sqft.toLocaleString("en-IN")} sqft</option>
+                ))}
+              </select>
+              <span className="pointer-events-none absolute inset-y-0 right-3.5 flex items-center text-[0.62rem] text-[#9a7a2e]" aria-hidden>▼</span>
             </div>
           </Input>
           <Input label="Buy price" value={`${fmtPsf(psf)}/sqft`}>
