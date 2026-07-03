@@ -45,10 +45,12 @@ const recoTone = (r: string) =>
 
 /* A labelled key/value cell for the vitals grid. `href` renders the value as
    an external verification link (same affordance as the address → Maps). */
-function KV({ k, v, tag, href }: { k: string; v: string; tag?: string; href?: string }) {
+function KV({ k, v, tag, href, icon }: { k: string; v: string; tag?: string; href?: string; icon?: React.ReactNode }) {
   return (
     <div className="border-l-2 border-[#1a1a1a]/8 pl-4">
-      <p className="text-[0.6rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/35">{k}</p>
+      <p className="flex items-center gap-1.5 text-[0.6rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/35">
+        {icon && <span aria-hidden className="text-[#9a7a2e]">{icon}</span>}{k}
+      </p>
       <p className="mt-1.5 break-words font-mono text-[0.88rem] font-medium leading-snug text-[#1a1a1a]/85 md:text-[0.95rem]">
         {href ? (
           <a href={href} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-[#1e6b45]">
@@ -64,6 +66,36 @@ function KV({ k, v, tag, href }: { k: string; v: string; tag?: string; href?: st
 function Source({ children }: { children: React.ReactNode }) {
   return <p className="mt-6 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">{children}</p>;
 }
+
+/* Low/Mid/High-rise from the top of the floors band ("34–38" → 38). */
+function riseTypeOf(floors: string): string | null {
+  const nums = floors.match(/\d+/g);
+  if (!nums?.length) return null;
+  const top = Math.max(...nums.map(Number));
+  return top <= 4 ? "Low-rise" : top <= 10 ? "Mid-rise" : "High-rise";
+}
+
+/* Tiny line icons for the vitals labels — same 24×24 / 1.7-stroke family
+   as the hero set, rendered at label size. */
+const VI = "h-[0.92rem] w-[0.92rem]";
+const vi = { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round", strokeLinejoin: "round" } as const;
+const VITAL_ICON = {
+  ticket: <svg {...vi} className={VI} aria-hidden><rect x="2.5" y="6.5" width="19" height="11" rx="2" /><circle cx="12" cy="12" r="2.6" /><path d="M6 10v4M18 10v4" /></svg>,
+  configs: <svg {...vi} className={VI} aria-hidden><rect x="3.5" y="3.5" width="17" height="17" rx="2" /><path d="M12 3.5V14M3.5 14h17M12 9h8.5" /></svg>,
+  psf: <svg {...vi} className={VI} aria-hidden><path d="M3.5 19.5h17" /><path d="M4.5 15.5 10 10l3.5 3.5 6-6.5" /><path d="M15 6.5h4.5V11" /></svg>,
+  tag: <svg {...vi} className={VI} aria-hidden><path d="M3.5 11.5v-8h8L20.5 12.5 12.5 20.5 3.5 11.5Z" /><circle cx="8" cy="8" r="1.4" /></svg>,
+  size: <svg {...vi} className={VI} aria-hidden><rect x="3.5" y="3.5" width="17" height="17" rx="2" /><path d="M8.5 15.5v-7h7M8.5 8.5 15 15" /></svg>,
+  units: <svg {...vi} className={VI} aria-hidden><rect x="3.5" y="12.5" width="8" height="8" rx="1" /><rect x="12.5" y="12.5" width="8" height="8" rx="1" /><rect x="8" y="3.5" width="8" height="8" rx="1" /></svg>,
+  towers: <svg {...vi} className={VI} aria-hidden><path d="M4 21V6.5A1.5 1.5 0 0 1 5.5 5h4A1.5 1.5 0 0 1 11 6.5V21" /><path d="M13 21V3.5A1.5 1.5 0 0 1 14.5 2h4A1.5 1.5 0 0 1 20 3.5V21M2.5 21h19" /></svg>,
+  land: <svg {...vi} className={VI} aria-hidden><path d="M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2z" /><path d="M9 4.5v13M15 6.5v13" /></svg>,
+  floors: <svg {...vi} className={VI} aria-hidden><path d="M12 3 21 7.5 12 12 3 7.5 12 3Z" /><path d="m3 12 9 4.5 9-4.5M3 16.5 12 21l9-4.5" /></svg>,
+  rise: <svg {...vi} className={VI} aria-hidden><path d="M5 21V11l5-3v13M10 21V13.5l5-3V21M15 21V8.5l4.5-2.5V21M3 21h18" /></svg>,
+  density: <svg {...vi} className={VI} aria-hidden><circle cx="7" cy="7" r="2" /><circle cx="17" cy="7" r="2" /><circle cx="7" cy="17" r="2" /><circle cx="17" cy="17" r="2" /></svg>,
+  leaf: <svg {...vi} className={VI} aria-hidden><path d="M5 19C5 9 12 4.5 20 4c.5 8-4 15-15 15Z" /><path d="M5 19c3-5 7-8.5 11-10.5" /></svg>,
+  calendar: <svg {...vi} className={VI} aria-hidden><rect x="3.5" y="5" width="17" height="15.5" rx="2" /><path d="M3.5 9.5h17M8 2.8V6M16 2.8V6" /></svg>,
+  key: <svg {...vi} className={VI} aria-hidden><circle cx="8" cy="8" r="4.5" /><path d="m11.2 11.2 8.3 8.3M16 16.5l2.3-2.3M18.7 19.2l2-2" /></svg>,
+  file: <svg {...vi} className={VI} aria-hidden><path d="M6 2.5h8L19.5 8v13a1 1 0 0 1-1 1h-12a1 1 0 0 1-1-1v-17a1 1 0 0 1 1-1Z" /><path d="M14 2.5V8h5.5M9 13h6M9 17h6" /></svg>,
+} as const;
 
 /* "3 BHK · 3.5 BHK · 4 BHK · Duplex" → "3 · 3.5 · 4 BHK · Duplex" — say
    BHK once, keep non-BHK configs verbatim. Long lists stay scannable. */
@@ -436,17 +468,26 @@ export default function ProjectProfile({
             {/* 01 · Vitals — one uniform grid, one type language */}
             <Section id="vitals" n={num()} title="Vitals">
               <div className="grid grid-cols-2 gap-x-6 gap-y-7 rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-8 md:grid-cols-4 md:p-10">
-                <KV k="Ticket size" v={`₹${p.budget[0]}–${p.budget[1]} Cr`} />
-                <KV k="Configurations" v={configsDisplay(p.configs)} />
-                <KV k="Corridor avg / sq ft" v={p.psf ? fmtPsf(p.psf.avg) : "—"} />
-                <KV k="Indicative size · super" v={p.sizeBand ?? "—"} />
-                {ops?.units != null && <KV k="Total units" v={`${ops.units.toLocaleString("en-IN")}`} />}
-                {ops?.towers != null && <KV k="Towers / land" v={`${ops.towers}${ops.landAcres ? ` · ${ops.landAcres} acre` : ""}`} />}
-                {ops?.density != null && <KV k="Density" v={`${ops.density} / acre`} tag={ops.density <= 50 ? "Low-density" : undefined} />}
-                {ops?.openAreaPct != null && <KV k="Open area" v={`${ops.openAreaPct}%`} tag={ops.openAreaPct >= 80 ? "Green" : undefined} />}
-                {ops?.launch && <KV k="Launched" v={ops.launch} />}
-                {ops?.possession && <KV k="RERA possession" v={ops.possession} />}
-                {ops?.reraId && <KV k="RERA ID" v={ops.reraId} href="https://haryanarera.gov.in/" />}
+                {/* money */}
+                <KV icon={VITAL_ICON.ticket} k="Ticket size" v={`₹${p.budget[0]}–${p.budget[1]} Cr`} />
+                <KV icon={VITAL_ICON.psf} k="Corridor avg / sq ft" v={p.psf ? fmtPsf(p.psf.avg) : "—"} />
+                {ops?.price && <KV icon={VITAL_ICON.tag} k="Launch price / sq ft" v={fmtPsf(ops.price.launchPsf)} />}
+                {/* the product */}
+                <KV icon={VITAL_ICON.configs} k="Configurations" v={configsDisplay(p.configs)} />
+                <KV icon={VITAL_ICON.size} k="Indicative size · super" v={p.sizeBand ?? "—"} />
+                {/* scale */}
+                {ops?.units != null && <KV icon={VITAL_ICON.units} k="Total units" v={`${ops.units.toLocaleString("en-IN")}`} />}
+                {ops?.towers != null && <KV icon={VITAL_ICON.towers} k="Towers" v={`${ops.towers}`} />}
+                {ops?.landAcres != null && <KV icon={VITAL_ICON.land} k="Land" v={`${ops.landAcres} acre`} />}
+                {ops?.floors && <KV icon={VITAL_ICON.floors} k="Floors" v={ops.floors} />}
+                {ops?.floors && riseTypeOf(ops.floors) && <KV icon={VITAL_ICON.rise} k="Type" v={riseTypeOf(ops.floors)!} />}
+                {/* the site */}
+                {ops?.density != null && <KV icon={VITAL_ICON.density} k="Density" v={`${ops.density} / acre`} tag={ops.density <= 50 ? "Low-density" : undefined} />}
+                {ops?.openAreaPct != null && <KV icon={VITAL_ICON.leaf} k="Open area" v={`${ops.openAreaPct}%`} tag={ops.openAreaPct >= 80 ? "Green" : undefined} />}
+                {/* dates & registry */}
+                {ops?.launch && <KV icon={VITAL_ICON.calendar} k="Launched" v={ops.launch} />}
+                {ops?.possession && <KV icon={VITAL_ICON.key} k="RERA possession" v={ops.possession} />}
+                {ops?.reraId && <KV icon={VITAL_ICON.file} k="RERA ID" v={ops.reraId} href="https://haryanarera.gov.in/" />}
               </div>
               {ops?.reraNote && <Source>{ops.reraNote}. Sources: Haryana RERA registry & project filings.</Source>}
             </Section>

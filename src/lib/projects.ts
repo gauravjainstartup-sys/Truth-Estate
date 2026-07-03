@@ -117,6 +117,7 @@ export type ProjectOps = {
   reviewed?: string; // when we last re-checked this project's data ("3 Jul 2026")
   units?: number;
   towers?: number;
+  floors?: string; // indicative floor count, may be a range ("34–38")
   landAcres?: number;
   openAreaPct?: number;
   density?: number; // units / acre
@@ -161,6 +162,7 @@ export const OPS: Record<string, ProjectOps> = {
     media: { heroImage: "images/aerial-dlf-arbour.webp" },
     units: 1137,
     towers: 5,
+    floors: "34–38",
     landAcres: 25.1,
     openAreaPct: 89,
     density: 45,
@@ -213,8 +215,9 @@ export const OPS: Record<string, ProjectOps> = {
       { config: "4 BHK", variant: "Type A", carpetSqft: 2150, superSqft: 3080, balconySqft: 390, priceCr: 6.6 },
       { config: "4 BHK", variant: "Type B", carpetSqft: 2380, superSqft: 3400, balconySqft: 440, priceCr: 7.4 },
     ],
-    units: 1113, towers: 7, landAcres: 25, openAreaPct: 78, density: 44,
-    launch: "2023", possession: "Dec 2028", reraNote: "Registered · Haryana RERA",
+    units: 1113, towers: 7, floors: "36–40", landAcres: 25, openAreaPct: 78, density: 44,
+    price: { launchPsf: 14500, launchDate: "Jul 2023", currentLow: 18500, currentHigh: 21000 },
+    launch: "2023", possession: "Dec 2028", reraId: "RERA-GRG-905-2023", reraNote: "Registered · Haryana RERA",
     construction: { actualPct: 41, expectedPct: 38, absorptionPct: 100, reraDate: "Dec 2028", predictedDate: "Oct 2028", qpr: "Q1 2026" },
   },
   "Godrej Aristocrat": {
