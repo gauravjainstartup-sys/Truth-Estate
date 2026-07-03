@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Logo from "../Logo";
-import ProjectDecisionSystem from "./ProjectDecisionSystem";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import type { ConsultContext } from "@/lib/consultation";
 import {
@@ -15,22 +14,42 @@ import {
   classifyAndResearch,
   type Project,
 } from "@/lib/journey";
-import { projectSlug, projectByName } from "@/lib/projects";
+import { projectSlug, projectByName, reviewedOn } from "@/lib/projects";
+import { DEVELOPERS } from "@/lib/developers";
+import { MARKETS } from "@/lib/markets";
+import { comparePairSlug } from "@/lib/compare";
 import ProjectOptionCard from "./ProjectOptionCard";
 
 /* ════════════════════════════════════════════════════════════════
-   VIEW TYPES
+   VIEW TYPES — the workspace is the research desk: the home surface
+   and TruthGuide answers. Catalogues and dossiers live on their own
+   routed pages (/projects, /developers, /markets, /compare).
    ════════════════════════════════════════════════════════════════ */
 type View =
   | { type: "home" }
-  | { type: "projects" }
-  | { type: "developers" }
-  | { type: "locations" }
-  | { type: "compare" }
-  | { type: "project"; name: string }
-  | { type: "developer"; name: string }
-  | { type: "location"; name: string }
   | { type: "search-result"; query: string; result: ResearchResult };
+
+/* Resolve an entity name to its real routed page. */
+function entityHref(name: string): { kind: "project" | "developer" | "market"; slug: string; href: string } | null {
+  const n = name.trim().toLowerCase();
+  const p = PROJECTS.find((x) => x.name.toLowerCase() === n);
+  if (p) { const slug = projectSlug(p.name); return { kind: "project", slug, href: `${basePath}/intelligence/projects/${slug}` }; }
+  const d = DEVELOPERS.find((x) => x.name.toLowerCase() === n);
+  if (d) return { kind: "developer", slug: d.slug, href: `${basePath}/intelligence/developers/${d.slug}` };
+  const m = MARKETS.find((x) => x.name.toLowerCase() === n || x.short.toLowerCase() === n);
+  if (m) return { kind: "market", slug: m.slug, href: `${basePath}/intelligence/markets/${m.slug}` };
+  return null;
+}
+
+/* "A vs B" where both sides resolve to the same kind → the real compare page. */
+function compareHref(q: string): string | null {
+  const parts = q.split(/\s+vs\.?\s+/i);
+  if (parts.length !== 2) return null;
+  const a = entityHref(parts[0]);
+  const b = entityHref(parts[1]);
+  if (!a || !b || a.kind !== b.kind || a.slug === b.slug) return null;
+  return `${basePath}/intelligence/compare/${comparePairSlug(a.slug, b.slug)}`;
+}
 
 const basePath = "/Truth-Estate";
 
@@ -55,33 +74,18 @@ export default function IntelligenceWorkspace() {
   const mainRef = useRef<HTMLDivElement>(null);
   const { openConsult } = useConsultation();
 
-  // Consultation context derived from where the visitor is in the workspace,
-  // so the advisor "arrives prepared" for the exact project/developer/market.
-  const consultContext = useMemo<ConsultContext>(() => {
-    switch (view.type) {
-      case "project":
-        return { source: view.name, sourceKind: "project", intent: "buy" };
-      case "developer":
-        return { source: view.name, sourceKind: "developer", intent: "advice" };
-      case "location":
-        return { source: view.name, sourceKind: "location", intent: "invest" };
-      default:
-        return { sourceKind: "intelligence" };
-    }
-  }, [view]);
+  const consultContext = useMemo<ConsultContext>(() => ({ sourceKind: "intelligence" }), []);
 
   const doSearch = (q: string) => {
     if (!q.trim()) return;
+    // "A vs B" between two known things deserves the real comparison page
+    const cmp = compareHref(q);
+    if (cmp) { window.location.href = cmp; return; }
     setSearchOpen(false);
     setSearchQuery("");
     setRecentSearches((h) => [q, ...h.filter((x) => x !== q)].slice(0, 6));
     const r = classifyAndResearch(q);
     setView({ type: "search-result", query: q, result: r });
-    mainRef.current?.scrollTo(0, 0);
-  };
-
-  const navigate = (v: View) => {
-    setView(v);
     mainRef.current?.scrollTo(0, 0);
   };
 
@@ -123,23 +127,17 @@ export default function IntelligenceWorkspace() {
           <div className="hidden items-center gap-1 lg:flex">
             {(
               [
-                ["Projects", "projects", `${basePath}/intelligence/projects`],
-                ["Developers", "developers", `${basePath}/intelligence/developers`],
-                ["Locations", "locations", `${basePath}/intelligence/markets`],
-                ["Compare", "compare", `${basePath}/intelligence/compare`],
+                ["Projects", `${basePath}/intelligence/projects`],
+                ["Developers", `${basePath}/intelligence/developers`],
+                ["Locations", `${basePath}/intelligence/markets`],
+                ["Compare", `${basePath}/intelligence/compare`],
               ] as const
-            ).map(([label, key, href]) => {
-              const cls = `rounded-sm px-3.5 py-2 text-[0.78rem] font-light tracking-[0.02em] transition-colors duration-300 ${
-                view.type === key
-                  ? "text-[#1a1a1a]"
-                  : "text-[#1a1a1a]/40 hover:text-[#1a1a1a]/70"
-              }`;
-              return href ? (
-                <a key={key} href={href} className={cls}>{label}</a>
-              ) : (
-                <button key={key} onClick={() => navigate({ type: key })} className={cls}>{label}</button>
-              );
-            })}
+            ).map(([label, href]) => (
+              <a key={label} href={href}
+                className="rounded-sm px-3.5 py-2 text-[0.78rem] font-light tracking-[0.02em] text-[#1a1a1a]/40 transition-colors duration-300 hover:text-[#1a1a1a]/70">
+                {label}
+              </a>
+            ))}
           </div>
         </div>
         <div className="flex items-center gap-3 md:gap-5">
@@ -188,16 +186,22 @@ export default function IntelligenceWorkspace() {
               </div>
               {searchSuggestions.length > 0 && (
                 <div className="max-h-[400px] overflow-y-auto py-2">
-                  {searchSuggestions.map((s) => (
-                    <button
-                      key={s.label + s.type}
-                      onClick={() => doSearch(s.label)}
-                      className="flex w-full items-center justify-between px-6 py-3 text-left transition-colors hover:bg-[#1a1a1a]/[0.03]"
-                    >
-                      <span className="font-serif text-[0.95rem] font-light text-[#1a1a1a]/70">{s.label}</span>
-                      <span className="text-[10px] font-light uppercase tracking-[0.15em] text-[#1a1a1a]/25">{s.type}</span>
-                    </button>
-                  ))}
+                  {searchSuggestions.map((s) => {
+                    // entity hits go straight to their real pages; questions stay in the desk
+                    const href = s.type === "Project" || s.type === "Developer" || s.type === "Location" ? entityHref(s.label)?.href : null;
+                    const inner = (
+                      <>
+                        <span className="font-serif text-[0.95rem] font-light text-[#1a1a1a]/70">{s.label}</span>
+                        <span className="text-[10px] font-light uppercase tracking-[0.15em] text-[#1a1a1a]/25">{s.type}</span>
+                      </>
+                    );
+                    const cls = "flex w-full items-center justify-between px-6 py-3 text-left transition-colors hover:bg-[#1a1a1a]/[0.03]";
+                    return href ? (
+                      <a key={s.label + s.type} href={href} className={cls}>{inner}</a>
+                    ) : (
+                      <button key={s.label + s.type} onClick={() => doSearch(s.label)} className={cls}>{inner}</button>
+                    );
+                  })}
                 </div>
               )}
               {searchQuery.trim() === "" && (
@@ -221,62 +225,11 @@ export default function IntelligenceWorkspace() {
         </div>
       )}
 
-      {/* ── Main content + sidebar ── */}
-      <div className="flex min-h-0 flex-1">
-        <main ref={mainRef} className="flex-1 overflow-y-auto">
-          {view.type === "home" && <HomeView navigate={navigate} doSearch={doSearch} />}
-          {view.type === "projects" && <ProjectsView navigate={navigate} />}
-          {view.type === "developers" && <DevelopersView navigate={navigate} />}
-          {view.type === "locations" && <LocationsView navigate={navigate} />}
-          {view.type === "compare" && <CompareView doSearch={doSearch} />}
-          {view.type === "project" && (
-            <ProjectDecisionSystem
-              name={view.name}
-              scrollRoot={mainRef}
-              goProjects={() => navigate({ type: "projects" })}
-              goProject={(n) => navigate({ type: "project", name: n })}
-              goDeveloper={(n) => navigate({ type: "developer", name: n })}
-              goLocation={(n) => navigate({ type: "location", name: n })}
-              doSearch={doSearch}
-            />
-          )}
-          {view.type === "developer" && <DeveloperDetail name={view.name} navigate={navigate} doSearch={doSearch} />}
-          {view.type === "location" && <LocationDetail name={view.name} navigate={navigate} doSearch={doSearch} />}
-          {view.type === "search-result" && <SearchResultView result={view.result} doSearch={doSearch} />}
-        </main>
-
-        {/* ── Right sidebar (desktop) — hidden on the project memo, which has its own ── */}
-        <aside className={`${view.type === "project" ? "hidden" : "hidden lg:block"} w-[220px] shrink-0 border-l border-[#1a1a1a]/[0.06] p-6`}>
-          {recentSearches.length > 0 && (
-            <div className="mb-8">
-              <p className="mb-3 text-[9px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/25">Recent Searches</p>
-              <div className="flex flex-col gap-2">
-                {recentSearches.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => doSearch(s)}
-                    className="text-left text-[0.78rem] font-light leading-snug text-[#1a1a1a]/40 transition-colors hover:text-[#1a1a1a]/70"
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          <button
-            onClick={() => openConsult(consultContext)}
-            className="mb-3 w-full rounded-sm bg-[#1e6b45] px-4 py-3 text-[10px] font-medium tracking-[0.1em] text-white transition-all hover:bg-[#238c55]"
-          >
-            Request Independent Advice
-          </button>
-          <button
-            onClick={() => { setSearchOpen(true); setTimeout(() => searchRef.current?.focus(), 100); }}
-            className="w-full rounded-sm border border-[#1a1a1a]/10 px-4 py-3 text-[10px] font-light tracking-[0.1em] text-[#1a1a1a]/50 transition-all hover:border-[#1a1a1a]/20"
-          >
-            TruthGuide
-          </button>
-        </aside>
-      </div>
+      {/* ── Main content — full width; catalogues live on their own routes ── */}
+      <main ref={mainRef} className="min-h-0 flex-1 overflow-y-auto">
+        {view.type === "home" && <HomeView doSearch={doSearch} recentSearches={recentSearches} />}
+        {view.type === "search-result" && <SearchResultView result={view.result} doSearch={doSearch} />}
+      </main>
     </div>
   );
 }
@@ -284,7 +237,7 @@ export default function IntelligenceWorkspace() {
 /* ════════════════════════════════════════════════════════════════
    HOME VIEW
    ════════════════════════════════════════════════════════════════ */
-function HomeView({ navigate, doSearch }: { navigate: (v: View) => void; doSearch: (q: string) => void }) {
+function HomeView({ doSearch, recentSearches }: { doSearch: (q: string) => void; recentSearches: string[] }) {
   const [query, setQuery] = useState("");
   const [phIdx, setPhIdx] = useState(0);
   const [phFade, setPhFade] = useState(true);
@@ -337,11 +290,23 @@ function HomeView({ navigate, doSearch }: { navigate: (v: View) => void; doSearc
           </div>
           <button
             onClick={() => { doSearch(query); setQuery(""); }}
+            aria-label="Search"
             className="group/arrow flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1e6b45] text-white transition-all duration-300 hover:scale-[1.06] md:h-10 md:w-10"
           >
             <svg className="h-3.5 w-3.5 transition-transform duration-300 group-hover/arrow:translate-x-[3px] md:h-4 md:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </button>
         </div>
+        {recentSearches.length > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 px-1">
+            <span className="text-[0.62rem] font-light uppercase tracking-[0.18em] text-[#1a1a1a]/25">Recent</span>
+            {recentSearches.slice(0, 4).map((s) => (
+              <button key={s} onClick={() => doSearch(s)}
+                className="max-w-[16rem] truncate text-[0.76rem] font-light text-[#1a1a1a]/40 transition-colors hover:text-[#1a1a1a]/70">
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Browse Intelligence */}
@@ -398,22 +363,25 @@ function HomeView({ navigate, doSearch }: { navigate: (v: View) => void; doSearc
       <div className="mx-auto mt-16 max-w-[1000px] md:mt-24">
         <SectionLabel>Recently Updated</SectionLabel>
         <div className="mt-6 flex flex-col gap-px overflow-hidden rounded-lg border border-[#1a1a1a]/[0.06]">
-          {sorted.slice(0, 5).map((p) => (
-            <a
-              key={p.name}
-              href={`${basePath}/intelligence/projects/${projectSlug(p.name)}`}
-              className="flex items-center justify-between bg-white px-6 py-4 text-left transition-colors hover:bg-gray-50"
-            >
-              <div>
-                <span className="font-serif text-[1rem] font-medium text-[#1a1a1a]">{p.name}</span>
-                <span className="ml-3 text-[0.78rem] font-light text-[#1a1a1a]/35">{p.developer} &middot; {p.market}</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="font-serif text-[1rem] font-medium text-[#1e6b45]">{p.truthScore}</span>
-                <span className="text-[0.72rem] font-light text-[#1a1a1a]/25">Updated Today</span>
-              </div>
-            </a>
-          ))}
+          {sorted.slice(0, 5).map((p) => {
+            const intel = projectByName(p.name);
+            return (
+              <a
+                key={p.name}
+                href={`${basePath}/intelligence/projects/${projectSlug(p.name)}`}
+                className="flex items-center justify-between gap-4 bg-white px-6 py-4 text-left transition-colors hover:bg-[#1a1a1a]/[0.03]"
+              >
+                <div className="min-w-0">
+                  <span className="font-serif text-[1rem] font-medium text-[#1a1a1a]">{p.name}</span>
+                  <span className="ml-3 hidden text-[0.78rem] font-light text-[#1a1a1a]/35 sm:inline">{p.developer} &middot; {p.market}</span>
+                </div>
+                <div className="flex shrink-0 items-center gap-4">
+                  <span className="font-serif text-[1rem] font-medium text-[#1e6b45]">{p.truthScore}</span>
+                  <span className="text-[0.72rem] font-light text-[#1a1a1a]/25">{intel ? `Reviewed ${reviewedOn(intel)}` : "Reviewed quarterly"}</span>
+                </div>
+              </a>
+            );
+          })}
         </div>
       </div>
 
@@ -440,287 +408,6 @@ function HomeView({ navigate, doSearch }: { navigate: (v: View) => void; doSearc
 }
 
 /* ════════════════════════════════════════════════════════════════
-   PROJECTS VIEW
-   ════════════════════════════════════════════════════════════════ */
-function ProjectsView({ navigate }: { navigate: (v: View) => void }) {
-  const sorted = useMemo(() => [...PROJECTS].sort((a, b) => b.truthScore - a.truthScore), []);
-  return (
-    <div className="px-6 pb-24 md:px-12 lg:px-16">
-      <PageHero kicker="Projects" title="Every project. Independently assessed." sub="Truth Scores, verdicts, and executive summaries based on independent research." />
-      <div className="mx-auto max-w-[1000px]">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {sorted.map((p) => (
-            <ProjectCard key={p.name} project={p} onClick={() => navigate({ type: "project", name: p.name })} />
-          ))}
-        </div>
-      </div>
-      <BottomCTA />
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   DEVELOPERS VIEW
-   ════════════════════════════════════════════════════════════════ */
-function DevelopersView({ navigate }: { navigate: (v: View) => void }) {
-  return (
-    <div className="px-6 pb-24 md:px-12 lg:px-16">
-      <PageHero kicker="Developers" title="Developer intelligence." sub="Delivery history, financial health, and independent track-record analysis." />
-      <div className="mx-auto max-w-[1000px]">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {DEVELOPER_PROFILES.map((d) => (
-            <button
-              key={d.name}
-              onClick={() => navigate({ type: "developer", name: d.name })}
-              className="group rounded-lg border border-[#1a1a1a]/[0.06] bg-white p-6 text-left transition-all duration-300 hover:border-[#1a1a1a]/12 hover:shadow-lg hover:shadow-black/[0.03]"
-            >
-              <p className="mb-1 text-[9px] font-light uppercase tracking-[0.22em] text-[#c9a96e]">Est. {d.est}</p>
-              <h3 className="font-serif text-[1.4rem] font-medium text-[#1a1a1a]">{d.name}</h3>
-              <p className="mt-3 text-[0.82rem] font-light leading-[1.65] text-[#1a1a1a]/50 line-clamp-3">{d.verdict}</p>
-              <div className="mt-4 flex items-center gap-2">
-                <span className="text-[0.72rem] font-light text-[#1a1a1a]/30">
-                  {PROJECTS.filter((p) => p.developer === d.name).length} active projects
-                </span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-      <BottomCTA />
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   LOCATIONS VIEW
-   ════════════════════════════════════════════════════════════════ */
-function LocationsView({ navigate }: { navigate: (v: View) => void }) {
-  return (
-    <div className="px-6 pb-24 md:px-12 lg:px-16">
-      <PageHero kicker="Locations" title="Market intelligence." sub="Infrastructure, supply, demand, and outlook for every micro-market." />
-      <div className="mx-auto max-w-[1000px]">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {MARKET_PROFILES.map((m) => (
-            <button
-              key={m.name}
-              onClick={() => navigate({ type: "location", name: m.name })}
-              className="group rounded-lg border border-[#1a1a1a]/[0.06] bg-white p-6 text-left transition-all duration-300 hover:border-[#1a1a1a]/12 hover:shadow-lg hover:shadow-black/[0.03]"
-            >
-              <p className="mb-1 text-[9px] font-light uppercase tracking-[0.22em] text-[#c9a96e]">{m.short}</p>
-              <h3 className="font-serif text-[1.3rem] font-medium text-[#1a1a1a]">{m.name}</h3>
-              <p className="mt-3 text-[0.82rem] font-light leading-[1.65] text-[#1a1a1a]/50 line-clamp-3">{m.overview}</p>
-              <p className="mt-4 text-[0.72rem] font-light text-[#1a1a1a]/30">{m.projects.length} tracked projects</p>
-            </button>
-          ))}
-        </div>
-      </div>
-      <BottomCTA />
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   COMPARE VIEW
-   ════════════════════════════════════════════════════════════════ */
-function CompareView({ doSearch }: { doSearch: (q: string) => void }) {
-  const [a, setA] = useState("");
-  const [b, setB] = useState("");
-
-  const comparisons = [
-    "DLF Arbour vs Puri Aravallis",
-    "DLF vs Godrej",
-    "Golf Course Extension vs SPR",
-    "Godrej Aristocrat vs DLF Privana South",
-    "M3M Golf Estate II vs Birla Navya",
-    "Dwarka Expressway vs SPR",
-  ];
-
-  return (
-    <div className="px-6 pb-24 md:px-12 lg:px-16">
-      <PageHero kicker="Compare" title="Compare anything." sub="Projects, developers, or locations — side by side." />
-      <div className="mx-auto max-w-[700px]">
-        <div className="flex flex-col gap-4 sm:flex-row">
-          <input
-            value={a}
-            onChange={(e) => setA(e.target.value)}
-            placeholder="First project, developer, or location"
-            className="flex-1 border-b border-[#1a1a1a]/12 bg-transparent py-3 font-serif text-[1.05rem] font-light text-[#1a1a1a] outline-none placeholder:text-[#1a1a1a]/22 focus:border-[#c9a96e]/40"
-          />
-          <span className="hidden self-end pb-3 font-serif text-[1rem] text-[#1a1a1a]/20 sm:block">vs</span>
-          <input
-            value={b}
-            onChange={(e) => setB(e.target.value)}
-            placeholder="Second project, developer, or location"
-            className="flex-1 border-b border-[#1a1a1a]/12 bg-transparent py-3 font-serif text-[1.05rem] font-light text-[#1a1a1a] outline-none placeholder:text-[#1a1a1a]/22 focus:border-[#c9a96e]/40"
-          />
-        </div>
-        <div className="mt-6 flex justify-end">
-          <button
-            onClick={() => { if (a.trim() && b.trim()) doSearch(`${a.trim()} vs ${b.trim()}`); }}
-            disabled={!a.trim() || !b.trim()}
-            className="rounded-sm bg-[#1e6b45] px-8 py-3 text-[11px] font-medium tracking-[0.08em] text-white transition-all hover:bg-[#238c55] disabled:opacity-30"
-          >
-            Compare
-          </button>
-        </div>
-
-        <div className="mt-14">
-          <SectionLabel>Popular Comparisons</SectionLabel>
-          <div className="mt-5 flex flex-col gap-px overflow-hidden rounded-lg border border-[#1a1a1a]/[0.06]">
-            {comparisons.map((c) => (
-              <button
-                key={c}
-                onClick={() => doSearch(c)}
-                className="flex items-center justify-between bg-white px-6 py-4 text-left transition-colors hover:bg-gray-50"
-              >
-                <span className="font-serif text-[0.95rem] font-light text-[#1a1a1a]/65">{c}</span>
-                <svg className="h-4 w-4 text-[#1a1a1a]/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-      <BottomCTA />
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   DEVELOPER DETAIL
-   ════════════════════════════════════════════════════════════════ */
-function DeveloperDetail({ name, navigate, doSearch }: { name: string; navigate: (v: View) => void; doSearch: (q: string) => void }) {
-  const d = DEVELOPER_PROFILES.find((x) => x.name === name);
-  if (!d) return <div className="p-12 text-center font-serif text-[#1a1a1a]/40">Developer not found.</div>;
-
-  const projects = PROJECTS.filter((p) => p.developer === name);
-  const sections: { l: string; v: string }[] = [
-    { l: "Delivery Track Record", v: d.delivery },
-    { l: "Financial Health", v: d.financial },
-    { l: "Completed Projects", v: d.completed },
-    { l: "Currently Building", v: d.building },
-    { l: "Legal & Compliance", v: d.legal },
-  ];
-
-  return (
-    <div className="px-6 pb-24 md:px-12 lg:px-16">
-      <div className="mx-auto max-w-[820px] pt-10 md:pt-16">
-        <div className="mb-8 flex items-center gap-2 text-[0.72rem] font-light text-[#1a1a1a]/30">
-          <button onClick={() => navigate({ type: "developers" })} className="hover:text-[#1a1a1a]/60">Developers</button>
-          <span>/</span>
-          <span className="text-[#1a1a1a]/50">{name}</span>
-        </div>
-
-        <p className="mb-2 text-[9px] font-light uppercase tracking-[0.3em] text-[#c9a96e]">Developer Profile</p>
-        <h1 className="font-serif text-[2rem] font-medium text-[#1a1a1a] md:text-[2.8rem]">{name}</h1>
-        <p className="mt-1 text-[0.88rem] font-light text-[#1a1a1a]/35">Established {d.est}</p>
-
-        <div className="mt-8 rounded-lg border border-[#1a1a1a]/[0.08] bg-white px-6 py-5">
-          <p className="mb-1 text-[9px] font-light uppercase tracking-[0.22em] text-[#c9a96e]">Truth Verdict</p>
-          <p className="font-serif text-[0.95rem] font-light leading-[1.75] text-[#1a1a1a]/65">{d.verdict}</p>
-        </div>
-
-        <div className="mt-10 flex flex-col gap-7">
-          {sections.map((s) => (
-            <div key={s.l}>
-              <p className="mb-2 text-[9px] font-light uppercase tracking-[0.22em] text-[#c9a96e]">{s.l}</p>
-              <p className="font-serif text-[0.92rem] font-light leading-[1.75] text-[#1a1a1a]/60">{s.v}</p>
-            </div>
-          ))}
-        </div>
-
-        {projects.length > 0 && (
-          <div className="mt-10 border-t border-[#1a1a1a]/[0.06] pt-8">
-            <SectionLabel>Active Projects</SectionLabel>
-            <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {projects.map((p) => (
-                <ProjectCard key={p.name} project={p} onClick={() => navigate({ type: "project", name: p.name })} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="mt-10 border-t border-[#1a1a1a]/[0.06] pt-8">
-          <p className="mb-4 text-[9px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/25">Ask TruthGuide</p>
-          <div className="flex flex-wrap gap-2.5">
-            {[`${name} delivery track record`, `Compare ${name} with alternatives`, `${name} financial health`, `Best ${name} project for investment`].map((q) => (
-              <button key={q} onClick={() => doSearch(q)} className="rounded-full border border-[#1a1a1a]/[0.06] px-5 py-2.5 text-[0.8rem] font-light text-[#1a1a1a]/45 transition-all duration-300 hover:-translate-y-[1px] hover:border-[#1a1a1a]/15 hover:text-[#1a1a1a]/70">
-                {q}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-      <BottomCTA context={{ source: name, sourceKind: "developer", intent: "advice" }} />
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   LOCATION DETAIL
-   ════════════════════════════════════════════════════════════════ */
-function LocationDetail({ name, navigate, doSearch }: { name: string; navigate: (v: View) => void; doSearch: (q: string) => void }) {
-  const m = MARKET_PROFILES.find((x) => x.name === name);
-  if (!m) return <div className="p-12 text-center font-serif text-[#1a1a1a]/40">Location not found.</div>;
-
-  const projects = PROJECTS.filter((p) => p.market === name);
-  const sections: { l: string; v: string }[] = [
-    { l: "Market Overview", v: m.overview },
-    { l: "Infrastructure", v: m.infra },
-    { l: "Price Trends", v: m.price },
-    { l: "Supply", v: m.supply },
-    { l: "Demand", v: m.demand },
-    { l: "Outlook", v: m.outlook },
-  ];
-
-  return (
-    <div className="px-6 pb-24 md:px-12 lg:px-16">
-      <div className="mx-auto max-w-[820px] pt-10 md:pt-16">
-        <div className="mb-8 flex items-center gap-2 text-[0.72rem] font-light text-[#1a1a1a]/30">
-          <button onClick={() => navigate({ type: "locations" })} className="hover:text-[#1a1a1a]/60">Locations</button>
-          <span>/</span>
-          <span className="text-[#1a1a1a]/50">{name}</span>
-        </div>
-
-        <p className="mb-2 text-[9px] font-light uppercase tracking-[0.3em] text-[#c9a96e]">Market Intelligence</p>
-        <h1 className="font-serif text-[2rem] font-medium text-[#1a1a1a] md:text-[2.8rem]">{name}</h1>
-
-        <div className="mt-10 flex flex-col gap-7">
-          {sections.map((s) => (
-            <div key={s.l}>
-              <p className="mb-2 text-[9px] font-light uppercase tracking-[0.22em] text-[#c9a96e]">{s.l}</p>
-              <p className="font-serif text-[0.92rem] font-light leading-[1.75] text-[#1a1a1a]/60">{s.v}</p>
-            </div>
-          ))}
-        </div>
-
-        {projects.length > 0 && (
-          <div className="mt-10 border-t border-[#1a1a1a]/[0.06] pt-8">
-            <SectionLabel>Top Projects</SectionLabel>
-            <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {projects.map((p) => (
-                <ProjectCard key={p.name} project={p} onClick={() => navigate({ type: "project", name: p.name })} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="mt-10 border-t border-[#1a1a1a]/[0.06] pt-8">
-          <p className="mb-4 text-[9px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/25">Ask TruthGuide</p>
-          <div className="flex flex-wrap gap-2.5">
-            {[`Best projects in ${name}`, `${name} investment outlook`, `Compare ${name} with alternatives`, `Pricing trends in ${name}`].map((q) => (
-              <button key={q} onClick={() => doSearch(q)} className="rounded-full border border-[#1a1a1a]/[0.06] px-5 py-2.5 text-[0.8rem] font-light text-[#1a1a1a]/45 transition-all duration-300 hover:-translate-y-[1px] hover:border-[#1a1a1a]/15 hover:text-[#1a1a1a]/70">
-                {q}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-      <BottomCTA context={{ source: name, sourceKind: "location", intent: "invest" }} />
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
    SEARCH RESULT VIEW
    ════════════════════════════════════════════════════════════════ */
 function SearchResultView({ result, doSearch }: { result: ResearchResult; doSearch: (q: string) => void }) {
@@ -731,6 +418,19 @@ function SearchResultView({ result, doSearch }: { result: ResearchResult; doSear
     comparison: "Comparative Analysis",
     question: "Research Brief",
   };
+
+  // the brief is the appetiser — the full routed page is the meal
+  const full = useMemo(() => {
+    if (result.type === "project" || result.type === "developer" || result.type === "location") {
+      const e = entityHref(result.title);
+      if (e) return { href: e.href, label: result.type === "project" ? "Open the full project report" : result.type === "developer" ? "Open the developer dossier" : "Open the market profile" };
+    }
+    if (result.type === "comparison") {
+      const href = compareHref(result.title);
+      if (href) return { href, label: "Open the full comparison" };
+    }
+    return null;
+  }, [result]);
 
   return (
     <div className="px-6 pb-24 md:px-12 lg:px-16">
@@ -754,6 +454,13 @@ function SearchResultView({ result, doSearch }: { result: ResearchResult; doSear
               <p className="font-serif text-[0.95rem] font-light leading-[1.7] text-[#1a1a1a]/65">{result.verdict}</p>
             </div>
           </div>
+        )}
+
+        {full && (
+          <a href={full.href}
+            className="mt-6 inline-flex items-center gap-2 rounded-sm bg-[#1e6b45] px-6 py-3 text-[0.78rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
+            {full.label} <span aria-hidden>→</span>
+          </a>
         )}
 
         {result.highlights && result.highlights.length > 0 && (
