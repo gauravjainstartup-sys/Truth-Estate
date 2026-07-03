@@ -582,17 +582,18 @@ export default function ProjectProfile({
               <Section id="masterplan" n={num()} title="Masterplan">
                 <button
                   onClick={() => setDoc({ title: "Site masterplan", pages: [ops.media!.masterplan!.src], idx: 0 })}
-                  className="group block w-full overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-white/60 text-left"
+                  aria-label="Enlarge the site masterplan"
+                  className="group relative block w-full cursor-zoom-in overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-white/60 text-left"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={`${basePath}/${ops.media.masterplan.src}`} alt={`${p.name} — site masterplan (indicative)`} className="w-full transition-transform duration-500 group-hover:scale-[1.01]" />
+                  <img src={`${basePath}/${ops.media.masterplan.src}`} alt={`${p.name} — site masterplan (indicative)`} className="w-full transition-transform duration-500 group-hover:scale-[1.02]" />
+                  {/* persistent enlarge affordance — the image is the click target */}
+                  <span className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-[#0b1f1a]/70 px-3 py-1.5 text-[0.66rem] font-medium text-white backdrop-blur-sm transition-colors group-hover:bg-[#0b1f1a]/90">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
+                    Enlarge
+                  </span>
                 </button>
-                <div className="mt-3 flex items-start justify-between gap-6">
-                  <p className="max-w-2xl text-[0.88rem] font-light leading-[1.65] text-[#1a1a1a]/60">{ops.media.masterplan.read}</p>
-                  <button onClick={() => setDoc({ title: "Site masterplan", pages: [ops.media!.masterplan!.src], idx: 0 })} className="shrink-0 text-[0.74rem] font-semibold text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]">
-                    Open full size ↗
-                  </button>
-                </div>
+                <p className="mt-3.5 max-w-2xl text-[0.88rem] font-light leading-[1.65] text-[#1a1a1a]/60">{ops.media.masterplan.read}</p>
                 <Source>Indicative layout from project filings — verify the RERA-approved siteplan before signing.</Source>
               </Section>
             )}

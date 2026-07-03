@@ -49,12 +49,13 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
         The home as your agreement will measure it. Pick a configuration, then a size offered under it — the plan, the carpet, and what the gap to super area costs you.
       </p>
 
-      {/* ── BHK tabs ── */}
+      {/* ── BHK pills — a single horizontal-scroll row so many BHKs never wrap
+         on mobile; they scroll sideways instead ── */}
       {order.length > 1 && (
-        <div className="mb-4 flex flex-wrap gap-2">
+        <div className="mb-4 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {order.map((cfg) => (
             <button key={cfg} onClick={() => { setTab(cfg); setVIdx(0); }}
-              className={`inline-flex items-baseline gap-1.5 rounded-full border px-4 py-2 text-[0.82rem] font-medium transition-colors ${cfg === activeTab ? "border-[#1a1a1a] bg-[#1a1a1a] text-white" : "border-[#1a1a1a]/12 bg-white/70 text-[#1a1a1a]/55 hover:border-[#1a1a1a]/30 hover:text-[#1a1a1a]"}`}>
+              className={`inline-flex shrink-0 items-baseline gap-1.5 rounded-full border px-4 py-2 text-[0.82rem] font-medium transition-colors ${cfg === activeTab ? "border-[#1a1a1a] bg-[#1a1a1a] text-white" : "border-[#1a1a1a]/12 bg-white/70 text-[#1a1a1a]/55 hover:border-[#1a1a1a]/30 hover:text-[#1a1a1a]"}`}>
               {cfg}
               <span className={`text-[0.62rem] font-normal ${cfg === activeTab ? "text-white/55" : "text-[#1a1a1a]/35"}`}>{groups[cfg].length} {groups[cfg].length > 1 ? "sizes" : "size"}</span>
             </button>
