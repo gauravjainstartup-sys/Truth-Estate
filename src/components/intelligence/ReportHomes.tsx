@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { fmtPsf, type ProjectIntel } from "@/lib/projects";
-import { openUnitIntel } from "./TowerIntel";
 
 /* Chapter I — the homes. One plan on screen at a time: BHK tabs pick the
    configuration, a size slider moves through the variants offered under it.
@@ -26,6 +25,15 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
 
   const [tab, setTab] = useState(order[0] ?? "");
   const [vIdx, setVIdx] = useState(0);
+  const [zoom, setZoom] = useState(false);
+
+  // Esc closes the floor-plan lightbox
+  useEffect(() => {
+    if (!zoom) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setZoom(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [zoom]);
 
   if (!homes.length) return null;
 
@@ -96,19 +104,21 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
         )}
 
         <div className="grid gap-5 p-6 lg:grid-cols-[1.2fr_1fr]">
-          {/* ── the 2D plan ── */}
+          {/* ── the 2D plan — the image is the click target, enlarge affordance
+             in the corner; same pattern as the masterplan ── */}
           <div>
-            <div className="overflow-hidden rounded-xl border border-[#1a1a1a]/10 bg-[#FBF8F2]">
+            <button type="button" onClick={() => setZoom(true)} aria-label="Enlarge the floor plan"
+              className="group relative block w-full cursor-zoom-in overflow-hidden rounded-xl border border-[#1a1a1a]/10 bg-[#FBF8F2] text-left">
               {h.plan ? (
-                <img src={`${basePath}/${h.plan}`} alt={`${h.config} ${h.variant ?? ""} floor plan — ${p.name}`} className="block w-full" />
+                <img src={`${basePath}/${h.plan}`} alt={`${h.config} ${h.variant ?? ""} floor plan — ${p.name}`} className="block w-full transition-transform duration-500 group-hover:scale-[1.02]" />
               ) : (
                 <FloorPlanSchematic beds={beds} balcony={h.balconySqft != null} />
               )}
-            </div>
-            <p className="mt-2 flex items-center justify-between text-[0.66rem] font-light text-[#1a1a1a]/40">
-              <span>{h.plan ? "Developer floor plan · indicative unit" : "Indicative zoning schematic · not to scale"}</span>
-              <button onClick={openUnitIntel} className="font-medium text-[#9a7a2e] hover:text-[#7a5f1e]">Dimensioned plan ↗</button>
-            </p>
+              <span className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-[#0b1f1a]/70 px-3 py-1.5 text-[0.66rem] font-medium text-white backdrop-blur-sm transition-colors group-hover:bg-[#0b1f1a]/90">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
+                Enlarge
+              </span>
+            </button>
           </div>
 
           {/* ── the areas, measured ── */}
@@ -143,6 +153,21 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
       <p className="mt-4 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">
         Areas from RERA filings &amp; project documents; the price shown is indicative for this configuration, before floor-rise and preferential-location charges. Schematics show indicative zoning only — confirm the exact unit&apos;s dimensioned plan and areas in the Agreement to Sell before signing.
       </p>
+
+      {/* floor-plan lightbox — tap outside or Esc to close */}
+      {zoom && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-[#0a0a0a]/70 p-4 backdrop-blur-sm" onClick={() => setZoom(false)} role="dialog" aria-modal="true" aria-label="Floor plan — enlarged">
+          <div className="max-h-full w-full max-w-3xl overflow-auto rounded-2xl bg-[#FBF8F2] p-3 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-2 flex items-center justify-between px-1">
+              <p className="text-[0.78rem] font-medium text-[#1a1a1a]/70">{h.config}{h.variant ? ` · ${h.variant}` : ""} — floor plan</p>
+              <button onClick={() => setZoom(false)} className="text-[11px] font-light tracking-[0.18em] text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a]">CLOSE</button>
+            </div>
+            {h.plan
+              ? <img src={`${basePath}/${h.plan}`} alt={`${h.config} floor plan — ${p.name}`} className="block w-full rounded-lg" />
+              : <FloorPlanSchematic beds={beds} balcony={h.balconySqft != null} />}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
