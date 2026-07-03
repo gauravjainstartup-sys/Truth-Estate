@@ -86,14 +86,14 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
   return (
     <>
       {/* Compact mini teaser — same small footprint for every project */}
-      <section id="tower-intel" className="mt-14 scroll-mt-24 overflow-hidden rounded-2xl border border-[#1f3a4d]/40 bg-[#0a0f17] text-white">
+      <section id="tower-intel" className="mt-14 scroll-mt-24 overflow-hidden rounded-2xl border border-[#B29668]/20 bg-[#0B1F1A] text-white">
         <div className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center md:gap-7 md:p-7">
           <div className="relative h-32 w-full shrink-0 overflow-hidden rounded-xl sm:h-24 sm:w-44">
             {meta ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={`${basePath}/${meta.preview}`} alt={`${project.name} — 3D sun & unit advisor`} className="h-full w-full object-cover" />
             ) : (
-              <div className="relative flex h-full w-full items-center justify-center bg-gradient-to-br from-[#111a29] to-[#0a0f17]">
+              <div className="relative flex h-full w-full items-center justify-center bg-gradient-to-br from-[#123d2e] to-[#0B1F1A]">
                 <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(circle at 62% 30%, rgba(224,182,103,0.18), transparent 62%)" }} />
                 <TowerGlyph />
               </div>
@@ -133,7 +133,7 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
 
       {/* Full-screen 3D advisor — free to explore; the full verdict is paid */}
       {modal && src && (
-        <div className="fixed inset-0 z-[120] flex flex-col bg-[#0a0f17]">
+        <div className="fixed inset-0 z-[120] flex flex-col bg-[#0B1F1A]">
           <div className="flex items-center gap-4 border-b border-white/10 px-5 py-3">
             <div>
               <p className="text-[0.6rem] font-medium uppercase tracking-[0.18em] text-[#e0b667]">Tower &amp; Unit Intelligence</p>
