@@ -645,7 +645,8 @@ export type Lead = {
   email: string;
   phone?: string;
   project?: string;
-  intent: "tower-intel" | "buyer-office";
+  intent: "tower-intel" | "buyer-office" | "documents";
+  docs?: string[]; // requested documents (intent: "documents")
   buy?: BuyData;
   createdAt: number;
 };

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import { useConsultation } from "../consultation/ConsultationProvider";
-import { loadBuyData, hasPreferences, deriveDNA, clearAllDemoData } from "@/lib/journey";
+import { loadBuyData, hasPreferences, deriveDNA, clearAllDemoData, saveLead } from "@/lib/journey";
 import type { ConsultProfileChip } from "@/lib/consultation";
 import {
   fmtPsf,
@@ -78,6 +78,67 @@ function Reg({ k, v, tag, href, icon }: { k: string; v: string; tag?: string; hr
 
 function Source({ children }: { children: React.ReactNode }) {
   return <p className="mt-6 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">{children}</p>;
+}
+
+/* Documents fallback — honest "not on file" + request-what-you-need lead
+   capture. Full-width when nothing is on file; a tile beside cards otherwise. */
+function DocsRequest({ project, missing, full }: { project: string; missing: string[]; full: boolean }) {
+  const [want, setWant] = useState<string[]>(missing);
+  const [contact, setContact] = useState("");
+  const [sent, setSent] = useState(false);
+  const toggle = (c: string) => setWant((w) => (w.includes(c) ? w.filter((x) => x !== c) : [...w, c]));
+  const span = full ? "sm:col-span-2" : "";
+  if (sent) {
+    return (
+      <div className={`flex flex-col justify-center rounded-2xl border border-[#1e6b45]/25 bg-[#1e6b45]/[0.05] p-6 ${span}`}>
+        <p className="text-[0.92rem] font-semibold text-[#1e6b45]">✓ Request received.</p>
+        <p className="mt-1.5 text-[0.8rem] font-light leading-[1.6] text-[#1a1a1a]/60">
+          We&apos;ll send what&apos;s on file right away and source the rest from the developer — usually the same day.
+        </p>
+      </div>
+    );
+  }
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!want.length) return;
+        saveLead({ name: "", email: contact, project, intent: "documents", docs: want, createdAt: Date.now() });
+        setSent(true);
+      }}
+      className={`rounded-2xl border border-dashed border-[#9a7a2e]/40 bg-white/50 p-6 ${span}`}
+    >
+      <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#9a7a2e]">Not on file yet</p>
+      <p className="mt-2 font-serif text-[1.18rem] font-medium leading-snug">Need the documents? We&apos;ll get them.</p>
+      <p className="mt-1.5 text-[0.78rem] font-light leading-[1.55] text-[#1a1a1a]/55">
+        Pick what you need — the desk sources it from the developer and sends it to you.
+      </p>
+      <div className="mt-3.5 flex flex-wrap gap-1.5">
+        {missing.map((c) => {
+          const on = want.includes(c);
+          return (
+            <button key={c} type="button" onClick={() => toggle(c)}
+              className={`rounded-full border px-3 py-1.5 text-[0.7rem] font-medium transition-colors ${on ? "border-[#1e6b45] bg-[#1e6b45]/10 text-[#1e6b45]" : "border-[#1a1a1a]/15 text-[#1a1a1a]/55 hover:border-[#1a1a1a]/35"}`}>
+              {on ? "✓ " : ""}{c}
+            </button>
+          );
+        })}
+      </div>
+      <div className={`mt-4 flex flex-col gap-2 ${full ? "sm:max-w-md sm:flex-row" : ""}`}>
+        <input
+          required
+          value={contact}
+          onChange={(e) => setContact(e.target.value)}
+          placeholder="Phone / WhatsApp / email"
+          className="w-full min-w-0 flex-1 rounded-lg border border-[#1a1a1a]/12 bg-white px-3.5 py-2.5 text-[0.8rem] outline-none transition-colors focus:border-[#1e6b45]"
+        />
+        <button type="submit" className="shrink-0 rounded-lg bg-[#1e6b45] px-4 py-2.5 text-[0.78rem] font-semibold text-white transition-colors hover:bg-[#238c55]">
+          Request {want.length > 1 ? "documents" : want[0] ?? "documents"} →
+        </button>
+      </div>
+      <p className="mt-2.5 text-[0.64rem] font-light text-[#1a1a1a]/35">Free — no spam, no broker calls. The desk replies once, with the files.</p>
+    </form>
+  );
 }
 
 /* Compact ₹-thousands: 18500 → "18.5", 21000 → "21". */
@@ -189,7 +250,7 @@ export default function ProjectProfile({
     { id: "vitals", label: "Vitals", show: true },
     { id: "masterplan", label: "Masterplan", show: !!ops?.media?.masterplan },
     { id: "homes", label: "Homes & floor plans", show: (ops?.homes?.length ?? 0) > 0 },
-    { id: "documents", label: "Brochure & payment plan", show: !!(ops?.media?.brochure?.length || ops?.media?.paymentPlan) },
+    { id: "documents", label: "Brochure & payment plan", show: true },
     { id: "tower-intel", label: "Tower & unit intel", show: true },
     { id: "anatomy", label: "Truth Score anatomy", show: true },
     { id: "developer", label: "Developer DNA", show: !!dev },
@@ -553,9 +614,9 @@ export default function ProjectProfile({
               </Section>
             )}
 
-            {/* 04 · Brochure & payment plan — the developer's documents, on file */}
-            {(ops?.media?.brochure?.length || ops?.media?.paymentPlan) && (
-              <Section id="documents" n={num()} title="Brochure & payment plan">
+            {/* 04 · Brochure & payment plan — documents on file render as cards;
+               whatever is missing becomes an honest request tile (lead capture). */}
+            <Section id="documents" n={num()} title="Brochure & payment plan">
                 <div className="grid gap-5 sm:grid-cols-2">
                   {ops?.media?.brochure?.length ? (
                     <button
@@ -593,10 +654,21 @@ export default function ProjectProfile({
                       </div>
                     </button>
                   )}
+                  {(() => {
+                    const media = ops?.media;
+                    const missing = [
+                      ...(!media?.brochure?.length ? ["Brochure"] : []),
+                      ...(!media?.masterplan ? ["Master plan / site map"] : []),
+                      ...(!ops?.homes?.some((h) => h.plan) ? ["Floor plans"] : []),
+                      ...(!media?.paymentPlan ? ["Payment plan"] : []),
+                      "Cost sheet",
+                    ];
+                    const full = !media?.brochure?.length && !media?.paymentPlan;
+                    return <DocsRequest project={p.name} missing={missing} full={full} />;
+                  })()}
                 </div>
                 <Source>Developer documents on file — indicative until countersigned. GST, PLC, IFMS &amp; registration additional as applicable.</Source>
               </Section>
-            )}
 
             {/* Tower & Unit Intelligence — the gated deep layer. Sits after the
                homes as the bridge out of the facts: you've seen the floor plans;
