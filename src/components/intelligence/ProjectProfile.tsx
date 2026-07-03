@@ -26,6 +26,7 @@ import ReportDeveloper from "./ReportDeveloper";
 import ReportConstruction from "./ReportConstruction";
 import ReportLegal from "./ReportLegal";
 import ReportLocation from "./ReportLocation";
+import ZoomStage from "./ZoomStage";
 import ReportUSPs from "./ReportUSPs";
 import ReportPrice from "./ReportPrice";
 import ReportVerdict from "./ReportVerdict";
@@ -169,6 +170,14 @@ const VITAL_ICON = {
   file: <svg {...vi} className={VI} aria-hidden><path d="M6 2.5h8L19.5 8v13a1 1 0 0 1-1 1h-12a1 1 0 0 1-1-1v-17a1 1 0 0 1 1-1Z" /><path d="M14 2.5V8h5.5M9 13h6M9 17h6" /></svg>,
 } as const;
 
+/* The hero meta wants one token — the top BHK with a "+" when the project
+   offers more configurations: "3 · 4 BHK · Penthouse" → "4 BHK+". */
+function configsCompact(list: string[]): string {
+  const nums = list.map((c) => parseFloat(c)).filter((n) => !Number.isNaN(n));
+  if (!nums.length) return list[0] ?? "";
+  return `${Math.max(...nums)} BHK${list.length > 1 ? "+" : ""}`;
+}
+
 /* "3 BHK · 3.5 BHK · 4 BHK · Duplex" → "3 · 3.5 · 4 BHK · Duplex" — say
    BHK once, keep non-BHK configs verbatim. Long lists stay scannable. */
 function configsDisplay(list: string[]): string {
@@ -246,9 +255,9 @@ export default function ProjectProfile({
     { id: "documents", label: "Brochure & payment plan", show: true },
     { id: "anatomy", label: "Truth Score anatomy", show: true },
     { id: "developer", label: "Developer DNA", show: !!dev },
+    { id: "location", label: "Location intelligence", show: !!market },
     { id: "construction", label: "Construction & sales", show: !!con },
     { id: "legal", label: "Legal & compliance", show: true },
-    { id: "location", label: "Location intelligence", show: !!market },
     { id: "usps", label: "Project USPs", show: usps.length > 0 },
     { id: "roi", label: "Price & returns", show: !!roi },
     { id: "verdict", label: "The verdict", show: true },
@@ -477,10 +486,11 @@ export default function ProjectProfile({
                           {mapHref ? <a href={mapHref} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-white">{ops.address}<IconArrowUpRight className="ml-1 text-[#d8b978]" /></a> : ops.address}
                         </p>
                       )}
-                      {/* the developer brand already leads the project name — no by-line */}
-                      <p className="mt-2 text-[0.86rem] font-light text-white/45">
-                        {configsDisplay(p.configs)}
-                        <span className="mx-2 text-white/25">·</span>₹{p.budget[0]}–{p.budget[1]} Cr
+                      {/* the developer brand already leads the project name — no by-line;
+                         top config + ticket, each with its glyph */}
+                      <p className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-1 text-[0.86rem] font-light text-white/60">
+                        <span className="inline-flex items-center gap-2"><IconBed className="text-[#d8b978]" />{configsCompact(p.configs)}</span>
+                        <span className="inline-flex items-center gap-2"><IconTag className="text-[#d8b978]" />₹{p.budget[0]}–{p.budget[1]} Cr</span>
                       </p>
                       {/* credential chips — on xl they stay with the identity column;
                          on stacked layouts they move down with the score group */}
@@ -749,7 +759,14 @@ export default function ProjectProfile({
               </div>
             )}
 
-            {/* Pillar II · Construction & Sales */}
+            {/* Pillar II · Location Intelligence */}
+            {market && (
+              <div id="location" className="mt-16 scroll-mt-24 border-t border-[#1a1a1a]/8 pt-12 md:mt-20">
+                <ReportLocation p={p} />
+              </div>
+            )}
+
+            {/* Pillar III · Construction & Sales */}
             {con && (
               <div id="construction" className="mt-16 scroll-mt-24 border-t border-[#1a1a1a]/8 pt-12 md:mt-20">
                 <ReportConstruction p={p} />
@@ -760,13 +777,6 @@ export default function ProjectProfile({
             <div id="legal" className="mt-16 scroll-mt-24 border-t border-[#1a1a1a]/8 pt-12 md:mt-20">
               <ReportLegal p={p} />
             </div>
-
-            {/* Pillar III · Location Intelligence */}
-            {market && (
-              <div id="location" className="mt-16 scroll-mt-24 border-t border-[#1a1a1a]/8 pt-12 md:mt-20">
-                <ReportLocation p={p} />
-              </div>
-            )}
 
             {/* Pillar V · Project USPs */}
             {usps.length > 0 && (
@@ -932,8 +942,11 @@ export default function ProjectProfile({
             <button onClick={() => setDoc(null)} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white">✕</button>
           </div>
           <div className="relative flex min-h-0 flex-1 items-center justify-center px-4 pb-6" onClick={(e) => e.stopPropagation()}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`${basePath}/${doc.pages[doc.idx]}`} alt={`${doc.title} — page ${doc.idx + 1}`} className="max-h-full max-w-full rounded-lg shadow-[0_30px_90px_rgba(0,0,0,0.5)]" />
+            {/* key resets the zoom whenever the page turns */}
+            <ZoomStage key={doc.idx}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={`${basePath}/${doc.pages[doc.idx]}`} alt={`${doc.title} — page ${doc.idx + 1}`} className="max-h-[78vh] max-w-full rounded-lg shadow-[0_30px_90px_rgba(0,0,0,0.5)]" draggable={false} />
+            </ZoomStage>
             {doc.pages.length > 1 && (
               <>
                 <button
@@ -1012,6 +1025,12 @@ function scoreGrade(s: number) {
 const ICN = "inline-block h-[1.05em] w-[1.05em] shrink-0 align-[-0.15em]";
 function IconPin({ className = "" }: { className?: string }) {
   return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={`${ICN} ${className}`} aria-hidden><path d="M12 21c4.4-4 7-7.1 7-11a7 7 0 1 0-14 0c0 3.9 2.6 7 7 11Z" /><circle cx="12" cy="10" r="2.3" /></svg>);
+}
+function IconBed({ className = "" }: { className?: string }) {
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={`${ICN} ${className}`} aria-hidden><path d="M3 5v14" /><path d="M3 9h16a2 2 0 0 1 2 2v8" /><path d="M3 16h18" /><path d="M7 9v7" /></svg>);
+}
+function IconTag({ className = "" }: { className?: string }) {
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={`${ICN} ${className}`} aria-hidden><path d="M12.3 2.6 21 11.3a1.4 1.4 0 0 1 0 2L13.3 21a1.4 1.4 0 0 1-2 0L2.6 12.3A2 2 0 0 1 2 10.9V4a2 2 0 0 1 2-2h6.9a2 2 0 0 1 1.4.6Z" /><circle cx="7.5" cy="7.5" r="1.3" /></svg>);
 }
 function IconArrowUpRight({ className = "" }: { className?: string }) {
   return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={`inline-block h-[0.82em] w-[0.82em] shrink-0 align-[-0.02em] ${className}`} aria-hidden><path d="M8 16 16 8M9.5 8H16v6.5" /></svg>);
