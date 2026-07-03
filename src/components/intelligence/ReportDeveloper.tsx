@@ -38,7 +38,7 @@ export default function ReportDeveloper({ p }: { p: ProjectIntel }) {
       <div>
         <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Pillar I · Developer DNA — a</p>
         <h3 className="mt-2 font-serif text-[1.7rem] font-medium leading-tight md:text-[2rem]">Does {dev.name} actually deliver?</h3>
-        <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">Every RERA-registered project this developer has launched — delivered, running, or lapsed. Straight from the registry, never the brochure.</p>
+        <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">Every project this developer filed with RERA — registry, not brochure.</p>
       </div>
 
       <div className="mt-6 rounded-2xl border-l-2 border-[#1e6b45]/40 bg-white/50 p-6 md:p-7">
@@ -90,7 +90,7 @@ export default function ReportDeveloper({ p }: { p: ProjectIntel }) {
           Can the balance sheet finish the building?
           <span className="rounded-full border border-[#1a1a1a]/12 bg-white/60 px-2.5 py-1 align-middle text-[0.58rem] font-sans font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/45">▪ {dev.listed ? "Listed · MCA-filed" : "Privately held"}</span>
         </h3>
-        <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">A builder can have a great record and still run out of money mid-tower. These numbers say whether the finances can carry {p.name} to handover.</p>
+        <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">The numbers behind whether the money actually reaches handover.</p>
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

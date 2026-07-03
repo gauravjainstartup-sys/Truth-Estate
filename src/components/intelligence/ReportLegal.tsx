@@ -33,7 +33,7 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
         <div>
           <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Pillar IV · Legal &amp; Compliance</p>
           <h3 className="mt-2 font-serif text-[1.7rem] font-medium leading-tight md:text-[2rem]">{flagged ? "This one has problems of its own." : "The project is clean. Is the developer?"}</h3>
-          <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">A forensic sweep of land title, RERA status and every court that has ruled on this builder — because the biggest risk here often isn&apos;t the address.</p>
+          <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">Land title, RERA status, and every court that&apos;s ruled on this builder.</p>
         </div>
       </div>
 

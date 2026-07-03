@@ -86,7 +86,7 @@ export default function ReportVerdict({ p, onConsult }: { p: ProjectIntel; onCon
 
   return (
     <div className="mt-8">
-      <p className="max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">You&apos;ve seen the trust and the money. Here&apos;s the call — and it&apos;s not the same call for everyone. Tell us who you are.</p>
+      <p className="max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">You&apos;ve seen the trust and the money. Here&apos;s your call.</p>
 
       {/* profile selector */}
       <div className="mt-5 flex flex-wrap gap-2">

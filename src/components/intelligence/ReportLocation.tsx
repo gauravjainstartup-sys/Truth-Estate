@@ -33,7 +33,7 @@ export default function ReportLocation({ p }: { p: ProjectIntel }) {
         <div>
           <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Pillar III · Location Intelligence</p>
           <h3 className="mt-2 font-serif text-[1.7rem] font-medium leading-tight md:text-[2rem]">Will this address still be winning in 2035?</h3>
-          <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">Not just what&apos;s around it today — what&apos;s funded and coming, how you actually get in and out, and who your neighbours are.</p>
+          <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">What&apos;s here today, what&apos;s funded and coming, and how you get around.</p>
         </div>
         {pillar && <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.06em] ${bandChip}`}>◆ {pillar.band} · {pillar.score.toFixed(1)}</span>}
       </div>

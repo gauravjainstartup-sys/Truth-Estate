@@ -13,7 +13,7 @@ export default function ReportUSPs({ p }: { p: ProjectIntel }) {
     <div className="mt-8">
       <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Pillar V · Project USPs</p>
       <h3 className="mt-2 font-serif text-[1.7rem] font-medium leading-tight md:text-[2rem]">What actually makes it different?</h3>
-      <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">Not the brochure adjectives — the non-obvious advantages that move livability, safety and resale, each one we can point to a source for.</p>
+      <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">Not brochure adjectives — real edges on livability, safety and resale.</p>
 
       <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {usps.map((u, i) => (
