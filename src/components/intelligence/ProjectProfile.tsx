@@ -326,7 +326,7 @@ export default function ProjectProfile({
                   <div className="min-w-0">
                     <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#9a7a2e]">The Independent Desk</p>
                     <p className="mt-0.5 text-[0.82rem] font-semibold leading-tight text-[#1a1a1a]">Gaurav Jain</p>
-                    <p className="truncate text-[0.64rem] font-light text-[#1a1a1a]/45">Founder · on {p.name}</p>
+                    <p className="truncate text-[0.64rem] font-light text-[#1a1a1a]/45">Founder, Truth Estate</p>
                   </div>
                 </div>
 
