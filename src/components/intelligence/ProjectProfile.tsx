@@ -234,7 +234,7 @@ export default function ProjectProfile({
         )}
       </header>
 
-      <div className={`mx-auto ${embedded ? "max-w-6xl" : "max-w-7xl"} px-6 pb-[12vh] pt-[6vh] md:px-10`}>
+      <div className={`mx-auto ${embedded ? "max-w-6xl pt-[6vh]" : "max-w-7xl pt-4 md:pt-7"} px-6 pb-[12vh] md:px-10`}>
         <div className={embedded ? "" : "xl:grid xl:grid-cols-[minmax(0,1fr)_300px] xl:gap-14"}>
           {/* The Independent Desk — a calm, constant companion, not a sales column.
               The report does the persuading; this holds one human way to get help.
@@ -287,22 +287,18 @@ export default function ProjectProfile({
           )}
 
           <div className="min-w-0 xl:col-span-2 xl:col-start-1 xl:row-start-1">
-            {/* Breadcrumb / back to shortlist */}
-            {embedded ? (
+            {/* Back to shortlist (embedded only). The public breadcrumb lives
+               inside the hero canvas — SEO is carried by the BreadcrumbList
+               JSON-LD in the page head, so no standalone band up here. */}
+            {embedded && (
               <button onClick={onBack} className="flex items-center gap-2 text-[0.74rem] font-light text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a]/80">
                 <span aria-hidden>&larr;</span> Back to shortlist
               </button>
-            ) : (
-              <div className="flex items-center gap-2 text-[0.74rem] font-light text-[#1a1a1a]/35">
-                <a href={`${basePath}/intelligence/projects`} className="transition-colors hover:text-[#1a1a1a]/70">Projects</a>
-                <span className="text-[#1a1a1a]/20">/</span>
-                <span className="text-[#1a1a1a]/55">{p.name}</span>
-              </div>
             )}
 
             {/* Hero canvas — one layout, two backgrounds: the site aerial when we
                 hold one, a designed dark panel when we don't. Same light overlay. */}
-              <div className="relative mt-9 overflow-hidden rounded-[24px] bg-[#0b1f1a] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.55)]">
+              <div className={`relative ${embedded ? "mt-9" : "mt-0"} overflow-hidden rounded-[24px] bg-[#0b1f1a] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.55)]`}>
                 {heroImage ? (
                   <>
                     <img src={`${basePath}/${heroImage}`} alt={`${p.name} — aerial site view`} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: "center 42%" }} />
@@ -318,6 +314,16 @@ export default function ProjectProfile({
                   </>
                 )}
                 <div className="relative flex min-h-[600px] flex-col justify-end p-6 sm:p-7 md:min-h-[600px] md:p-11">
+                  {/* breadcrumb folded into the canvas — visible & crawlable; the
+                     SEO signal is the BreadcrumbList JSON-LD in the head. In flow
+                     (mb-auto pins it top) so tall mobile content can never collide. */}
+                  {!embedded && (
+                    <nav aria-label="Breadcrumb" className="z-10 mb-auto flex min-w-0 items-center gap-2 pb-6 text-[0.72rem] font-light text-white/40">
+                      <a href={`${basePath}/intelligence/projects`} className="shrink-0 transition-colors hover:text-white/85">Projects</a>
+                      <span aria-hidden className="text-white/20">/</span>
+                      <span className="min-w-0 truncate text-white/60">{p.name}</span>
+                    </nav>
+                  )}
                   <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5 md:gap-y-7">
                     <div className="max-w-2xl">
                       <p className="text-[11px] font-medium uppercase tracking-[0.34em] text-[#d8b978]">Project Intelligence</p>

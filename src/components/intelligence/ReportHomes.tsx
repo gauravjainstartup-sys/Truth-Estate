@@ -132,15 +132,8 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
           </div>
         </div>
 
-        {/* gated deep layer */}
-        <button onClick={openUnitIntel} className="group flex w-full items-center gap-3.5 border-t border-dashed border-[#9a7a2e]/30 bg-[#FBF8F2] px-6 py-3.5 text-left transition-colors hover:bg-[#f6efe1]">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#9a7a2e]/[0.12] text-[1rem] text-[#9a7a2e]" aria-hidden>▦</span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[0.82rem] font-semibold text-[#1a1a1a]/85">Walk this exact home — 3D model, sun path, airflow &amp; Vastu</span>
-            <span className="block text-[0.7rem] font-light text-[#1a1a1a]/45">the dimensioned floor plan + per-unit intelligence, inside Unit Intelligence</span>
-          </span>
-          <span className="text-[#9a7a2e] transition-transform group-hover:translate-x-0.5" aria-hidden>→</span>
-        </button>
+        {/* the gated per-unit layer is pitched once — by the Tower & Unit
+           Intelligence banner that directly follows this section */}
       </div>
 
       <p className="mt-4 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">
