@@ -440,11 +440,17 @@ function IntroStep({
         </p>
       </div>
 
-      <div className="mt-10">
+      <div className="mt-10 hidden md:block">
         <PrimaryButton onClick={onContinue}>{ctaLabel}</PrimaryButton>
       </div>
 
       <PillarStrip />
+
+      {/* Mobile: the offer card scrolls far below the fold, so keep the primary
+          action pinned to the bottom of the viewport within reach. */}
+      <div className="sticky bottom-0 z-20 -mx-6 -mb-6 mt-8 border-t border-[#1a1a1a]/10 bg-[#F5F0E8]/95 px-6 py-3 backdrop-blur md:hidden">
+        <PrimaryButton onClick={onContinue} full>{ctaLabel}</PrimaryButton>
+      </div>
     </div>
   );
 }
