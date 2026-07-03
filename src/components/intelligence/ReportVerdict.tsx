@@ -78,11 +78,20 @@ function buildCalls(p: ProjectIntel): Record<ProfileKey, Call> {
   return { first, upgrader, investor, enduser };
 }
 
+const SERVE_TIERS = [
+  { key: "built", label: "Built for", chip: "bg-[#1e6b45]/12 text-[#1e6b45]", gloss: "the evidence lines up with what they need from this purchase." },
+  { key: "works", label: "Works for", chip: "bg-[#9a7a2e]/14 text-[#8a6a1e]", gloss: "a fair call — worth a side-by-side with the corridor before committing." },
+  { key: "stretch", label: "A stretch for", chip: "bg-[#c56a56]/14 text-[#c56a56]", gloss: "the commitment outweighs the fit — enter only with the risks priced in." },
+] as const;
+const tierOf = (tone: Call["tone"]) => (tone === "buy" || tone === "fit" ? "built" : tone === "consider" ? "works" : "stretch");
+
 export default function ReportVerdict({ p, onConsult }: { p: ProjectIntel; onConsult: () => void }) {
   const [active, setActive] = useState<ProfileKey>("investor");
   const calls = buildCalls(p);
   const call = calls[active];
-  const roi = roiModel(p);
+
+  const grouped: Record<string, string[]> = { built: [], works: [], stretch: [] };
+  PROFILES.forEach((pr) => grouped[tierOf(calls[pr.key].tone)].push(pr.label));
 
   return (
     <div className="mt-8">
@@ -100,15 +109,9 @@ export default function ReportVerdict({ p, onConsult }: { p: ProjectIntel; onCon
 
       {/* verdict card */}
       <div className="mt-5 rounded-2xl border border-[#1e6b45]/28 bg-gradient-to-br from-[#1e6b45]/[0.05] to-transparent p-7 md:p-8">
-        <div className="flex flex-wrap items-start justify-between gap-5">
-          <div className="max-w-2xl">
-            <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#1e6b45]">The verdict · for {PROFILES.find((x) => x.key === active)!.label.toLowerCase()}</p>
-            <h3 className={`mt-2.5 font-serif text-[1.7rem] font-medium leading-[1.1] md:text-[2rem] ${TONE[call.tone].text}`}>{call.head}</h3>
-          </div>
-          <div className="flex shrink-0 gap-2.5">
-            <MiniStat n={`${p.truthScore}`} k="Truth" green />
-            {roi && <MiniStat n={`${roi.adjCagr}%`} k="Model CAGR" green />}
-          </div>
+        <div className="max-w-2xl">
+          <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#1e6b45]">The verdict · for {PROFILES.find((x) => x.key === active)!.label.toLowerCase()}</p>
+          <h3 className={`mt-2.5 font-serif text-[1.7rem] font-medium leading-[1.1] md:text-[2rem] ${TONE[call.tone].text}`}>{call.head}</h3>
         </div>
         <p className="mt-4 max-w-3xl text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/70">{call.body}</p>
         <div className="mt-5 grid overflow-hidden rounded-xl border border-[#1a1a1a]/10 bg-white md:grid-cols-2">
@@ -127,29 +130,21 @@ export default function ReportVerdict({ p, onConsult }: { p: ProjectIntel; onCon
         </div>
       </div>
 
-      {/* how the call changes */}
-      <div className="mt-4 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-        {PROFILES.map((pr) => {
-          const c = calls[pr.key];
-          return (
-            <button key={pr.key} onClick={() => setActive(pr.key)}
-              className={`rounded-xl border bg-white/70 p-4 text-left transition-all ${active === pr.key ? "border-[#1a1a1a] shadow-[0_0_0_1px_#1a1a1a]" : "border-[#1a1a1a]/10 hover:border-[#1a1a1a]/30"}`}>
-              <p className="text-[0.7rem] font-light text-[#1a1a1a]/50">{pr.label}</p>
-              <p className={`mt-1 text-[0.95rem] font-semibold ${TONE[c.tone].chip}`}>{c.short}</p>
-            </button>
-          );
-        })}
+      {/* What this project serves — the same four calls, synthesised into who
+         the project is genuinely for. Correlation, not a second selector. */}
+      <div className="mt-5 rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-6">
+        <p className="text-[0.62rem] font-bold uppercase tracking-[0.12em] text-[#1a1a1a]/45">What this project serves</p>
+        <div className="mt-3.5 space-y-3">
+          {SERVE_TIERS.map((t) => grouped[t.key].length > 0 && (
+            <div key={t.key} className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <span className={`shrink-0 rounded-full px-2.5 py-1 text-[0.58rem] font-bold uppercase tracking-[0.06em] ${t.chip}`}>{t.label}</span>
+              <span className="text-[0.88rem] font-semibold text-[#1a1a1a]">{grouped[t.key].join(" · ")}</span>
+              <span className="text-[0.84rem] font-light leading-[1.5] text-[#1a1a1a]/55">— {t.gloss}</span>
+            </div>
+          ))}
+        </div>
+        <p className="mt-4 border-t border-[#1a1a1a]/8 pt-3.5 text-[0.72rem] font-light leading-[1.55] text-[#1a1a1a]/45">A ₹{p.budget[0]}–{p.budget[1]} Cr commitment lands differently depending on what it has to do for you. Switch personas above for the full verdict behind each call.</p>
       </div>
-      <p className="mt-3 text-[0.72rem] font-light leading-[1.55] text-[#1a1a1a]/40">Same project, four different calls — a ₹{p.budget[0]}–{p.budget[1]} Cr commitment lands differently depending on what it has to do for you. We tell you which one is you, and why.</p>
-    </div>
-  );
-}
-
-function MiniStat({ n, k, green }: { n: string; k: string; green?: boolean }) {
-  return (
-    <div className="rounded-lg border border-[#1a1a1a]/10 bg-white px-3.5 py-2.5 text-center">
-      <p className={`font-mono text-[1.1rem] font-semibold leading-none ${green ? "text-[#1e6b45]" : "text-[#1a1a1a]"}`}>{n}</p>
-      <p className="mt-1 text-[0.52rem] font-medium uppercase tracking-[0.08em] text-[#1a1a1a]/40">{k}</p>
     </div>
   );
 }
