@@ -302,7 +302,7 @@ export default function ProjectProfile({
 
             {/* Hero canvas — one layout, two backgrounds: the site aerial when we
                 hold one, a designed dark panel when we don't. Same light overlay. */}
-              <div className="relative mt-9 overflow-hidden rounded-[24px] bg-[#0b1017] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.55)]">
+              <div className="relative mt-9 overflow-hidden rounded-[24px] bg-[#0b1f1a] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.55)]">
                 {heroImage ? (
                   <>
                     <img src={`${basePath}/${heroImage}`} alt={`${p.name} — aerial site view`} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: "center 42%" }} />
@@ -311,10 +311,10 @@ export default function ProjectProfile({
                   </>
                 ) : (
                   <>
-                    <div className="absolute inset-0" style={{ background: "radial-gradient(125% 115% at 82% 8%, #26374f 0%, #16202f 45%, #0a0f18 100%)" }} />
-                    <div className="absolute inset-0 opacity-80" style={{ background: "radial-gradient(52% 72% at 6% 108%, rgba(30,107,69,0.22), transparent 72%)" }} />
-                    <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.9) 0.6px, transparent 0.7px)", backgroundSize: "24px 24px" }} />
-                    <div className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(201,169,110,0.45), transparent)" }} />
+                    <div className="absolute inset-0" style={{ background: "radial-gradient(125% 115% at 82% 8%, #123d2e 0%, #0b1f1a 46%, #061510 100%)" }} />
+                    <div className="absolute inset-0 opacity-90" style={{ background: "radial-gradient(54% 74% at 6% 108%, rgba(34,140,85,0.16), transparent 72%)" }} />
+                    <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.85) 0.6px, transparent 0.7px)", backgroundSize: "24px 24px" }} />
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(178,150,104,0.55), transparent)" }} />
                   </>
                 )}
                 <div className="relative flex min-h-[600px] flex-col justify-end p-6 sm:p-7 md:min-h-[600px] md:p-11">
