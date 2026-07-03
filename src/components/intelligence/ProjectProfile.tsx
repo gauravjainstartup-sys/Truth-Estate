@@ -810,6 +810,16 @@ export default function ProjectProfile({
                     </details>
                   ))}
                 </div>
+                {/* Still curious? The AI challenge lives here now, right where the
+                   questions do — not competing with the advisor CTA below. */}
+                <button onClick={challenge} className="group mt-5 flex w-full items-center gap-4 rounded-2xl border border-[#0B1F1A]/12 bg-[#0B1F1A]/[0.04] px-6 py-5 text-left transition-colors hover:border-[#B29668]/50 hover:bg-[#0B1F1A]/[0.06]">
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#0B1F1A] text-[1.05rem] text-[#B29668]" aria-hidden>◆</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[0.95rem] font-semibold text-[#1a1a1a]">Still have a question? Challenge TruthGuide.</span>
+                    <span className="mt-0.5 block text-[0.82rem] font-light leading-[1.5] text-[#1a1a1a]/55">Ask our AI anything about {p.name} — pricing, risks, the fine print.</span>
+                  </span>
+                  <span aria-hidden className="shrink-0 text-[#9a7a2e] transition-transform group-hover:translate-x-0.5">→</span>
+                </button>
               </Section>
             )}
 
@@ -853,7 +863,7 @@ export default function ProjectProfile({
             </div>
 
             {/* CTA — three actions, weighted */}
-            <div className="relative mt-14 overflow-hidden rounded-2xl bg-[#111112] p-8 text-white md:p-10">
+            <div className="relative mt-14 overflow-hidden rounded-2xl bg-[#0B1F1A] p-8 text-white md:p-10">
               <div className="pointer-events-none absolute -left-16 top-1/2 h-64 w-64 -translate-y-1/2 rounded-full" style={{ background: "radial-gradient(circle, rgba(30,107,69,0.35), transparent 70%)", filter: "blur(28px)" }} />
               <div className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(201,169,110,0.6), transparent)" }} />
               <div className="relative">
@@ -864,10 +874,9 @@ export default function ProjectProfile({
                   </div>
                   <p className="shrink-0 text-[0.72rem] font-light leading-[1.5] text-white/40 md:text-right">We represent only you —<br className="hidden md:block" /> never the developer.</p>
                 </div>
-                <div className="mt-7 grid gap-3 md:grid-cols-3">
+                <div className="mt-7 grid gap-3 md:grid-cols-2">
                   <ActionCell tone="primary" icon="●" title="Get Independent Advice" desc="45-min advisor call · fee refundable" onClick={consult} />
                   <ActionCell tone="secondary" icon="▦" title="See Unit Intelligence" desc="3D sun & unit model — free to explore" onClick={openUnitIntel} />
-                  <ActionCell tone="ghost" icon="◆" title="Challenge TruthGuide" desc="Ask our AI anything about this project" onClick={challenge} />
                 </div>
               </div>
             </div>
