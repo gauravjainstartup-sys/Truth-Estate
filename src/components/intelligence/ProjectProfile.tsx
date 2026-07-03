@@ -450,20 +450,23 @@ export default function ProjectProfile({
                     <div className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(178,150,104,0.55), transparent)" }} />
                   </>
                 )}
-                <div className="relative flex min-h-[600px] flex-col justify-end p-6 sm:p-7 md:min-h-[600px] md:p-11">
+                <div className="relative flex min-h-[700px] flex-col p-6 sm:min-h-[600px] sm:p-7 md:p-11">
                   {/* breadcrumb folded into the canvas — hidden on phones to give the
                      visual more room; the SEO signal is the BreadcrumbList JSON-LD in
-                     the head either way. In flow (mb-auto pins it top) on sm+. */}
+                     the head either way. */}
                   {!embedded && (
-                    <nav aria-label="Breadcrumb" className="z-10 mb-auto hidden min-w-0 items-center gap-2 pb-6 text-[0.72rem] font-light text-white/40 sm:flex">
+                    <nav aria-label="Breadcrumb" className="z-10 hidden min-w-0 items-center gap-2 pb-6 text-[0.72rem] font-light text-white/40 sm:flex">
                       <a href={`${basePath}/intelligence/projects`} className="shrink-0 transition-colors hover:text-white/85">Projects</a>
                       <span aria-hidden className="text-white/20">/</span>
                       <span className="min-w-0 truncate text-white/60">{p.name}</span>
                     </nav>
                   )}
-                  <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5 md:gap-y-7">
+                  {/* stacked layouts: identity opens the canvas top, the score group
+                     anchors the base, satellite breathing in between. xl keeps the
+                     side-by-side bottom-aligned composition. */}
+                  <div className="flex flex-1 flex-col xl:flex-row xl:flex-wrap xl:items-end xl:justify-between xl:gap-x-10 xl:gap-y-7">
                     <div className="max-w-2xl">
-                      <p className="text-[11px] font-medium uppercase tracking-[0.34em] text-[#d8b978]">Project Intelligence</p>
+                      <p className="text-[9px] font-medium uppercase tracking-[0.34em] text-[#d8b978] md:text-[11px]">Project Intelligence</p>
                       <h1 className={`mt-4 text-balance font-serif font-medium leading-[1.04] tracking-[-0.02em] text-[#F7F3EA] ${p.name.length > 24 ? "text-[2.15rem] md:text-[3.1rem]" : "text-[2.7rem] md:text-[3.9rem]"}`}>{p.name}</h1>
                       {ops?.address && (
                         <p className="mt-4 flex items-center text-[0.9rem] font-light text-white/70">
@@ -476,9 +479,9 @@ export default function ProjectProfile({
                         <span className="mx-2 text-white/25">·</span>{configsDisplay(p.configs)}
                         <span className="mx-2 text-white/25">·</span>₹{p.budget[0]}–{p.budget[1]} Cr
                       </p>
-                      {/* credential chips — one horizontal-scroll row on mobile so the
-                         satellite canvas stays visible; wraps normally on wider screens */}
-                      <div className="mt-6 flex items-center gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:overflow-visible">
+                      {/* credential chips — on xl they stay with the identity column;
+                         on stacked layouts they move down with the score group */}
+                      <div className="mt-6 hidden items-center gap-2 xl:flex xl:flex-wrap">
                         <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[0.7rem] font-medium text-white/85 backdrop-blur-sm">
                           <IconAward className="text-[#d8b978]" /> #{ctx.corridorRank} of {ctx.corridorCount} in {p.marketShort}
                         </span>
@@ -493,6 +496,19 @@ export default function ProjectProfile({
                       <p className="mt-6 hidden items-center gap-2 text-[0.62rem] font-light text-white/45 xl:flex">
                         <IconClock /> {heroImage ? "Satellite view of the site · construction as last observed" : "Independent assessment · re-scored quarterly"} · data reviewed {reviewed}
                       </p>
+                    </div>
+                    {/* stacked bottom group — the chips, the score card and the
+                       one-line provenance gather at the base of the canvas */}
+                    <div className="mt-auto w-full xl:mt-0 xl:w-auto">
+                    <div className="mb-4 flex items-center gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:hidden">
+                      <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[0.7rem] font-medium text-white/85 backdrop-blur-sm">
+                        <IconAward className="text-[#d8b978]" /> #{ctx.corridorRank} of {ctx.corridorCount} in {p.marketShort}
+                      </span>
+                      {buildStatus && (
+                        <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-white/12 bg-white/10 px-3.5 py-1.5 text-[0.7rem] font-light text-white/70 backdrop-blur-sm">
+                          <IconBuilding className="text-[#d8b978]" />{buildStatus}
+                        </span>
+                      )}
                     </div>
                     {/* Truth Score — light readout card floated on the canvas */}
                     <div className="w-full max-w-[300px] rounded-2xl border border-white/20 bg-[#FBF8F2]/95 p-4 shadow-[0_22px_55px_-18px_rgba(0,0,0,0.6)] backdrop-blur-md sm:w-[290px] sm:p-5">
@@ -523,13 +539,13 @@ export default function ProjectProfile({
                         </div>
                       </div>
                     </div>
+                    {/* one small readable line of provenance closes the stacked hero */}
+                    <p className="mt-3 flex items-center gap-2 text-[0.6rem] font-light text-white/50 xl:hidden">
+                      <IconClock /> <span className="truncate">{heroImage ? "Satellite view of the site" : "Independent assessment"} · data reviewed {reviewed}</span>
+                    </p>
+                    </div>
                   </div>
                 </div>
-                {/* provenance as a corner badge on stacked layouts — the two-line
-                   caption gave way to the visual; xl keeps its in-column caption */}
-                <span className="absolute right-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/40 px-3 py-1.5 font-mono text-[0.6rem] tracking-[0.05em] text-white/75 backdrop-blur-sm xl:hidden">
-                  {heroImage ? <>◉ Satellite · {reviewed}</> : <>◆ Reviewed {reviewed}</>}
-                </span>
               </div>
           </div>
 
