@@ -301,12 +301,13 @@ export default function ProjectProfile({
       raf = 0;
       const el = document.getElementById(firstId);
       setShowStrip(el ? el.getBoundingClientRect().top <= 140 : window.scrollY > 480);
-      // direction-aware chrome: reading down tucks the header away,
-      // any scroll back up (or nearing the top) brings it straight back
+      // direction-aware chrome: the first downward movement tucks the
+      // header away, any scroll back up brings it straight back. The
+      // tiny y-guard only absorbs iOS rubber-band bounce at the top.
       const y = window.scrollY;
       const d = y - lastY;
-      if (Math.abs(d) > 4) {
-        setHideHdr(d > 0 && y > 160);
+      if (Math.abs(d) > 2) {
+        setHideHdr(d > 0 && y > 24);
         lastY = y;
       }
     };
@@ -341,7 +342,7 @@ export default function ProjectProfile({
 
   return (
     <div className={`${embedded ? "h-full overflow-y-auto" : "min-h-svh"} bg-[#F5F0E8] text-[#1a1a1a]`}>
-      <header className={`sticky top-0 z-40 border-b border-[#1a1a1a]/6 bg-[#F5F0E8]/90 backdrop-blur-sm transition-transform duration-300 ease-out ${hideHdr ? "-translate-y-full" : "translate-y-0"}`}>
+      <header className={`sticky top-0 z-40 border-b border-[#1a1a1a]/6 bg-[#F5F0E8]/90 backdrop-blur-sm transition-transform duration-200 ease-out ${hideHdr ? "-translate-y-full" : "translate-y-0"}`}>
         <div className={`mx-auto flex ${embedded ? "max-w-6xl" : "max-w-7xl"} items-center gap-4 px-6 py-4 md:px-10`}>
           {embedded ? (
             <>
