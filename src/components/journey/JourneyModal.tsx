@@ -1192,8 +1192,16 @@ export default function JourneyModal({
         <ShortlistScreen
           recs={recs}
           onPick={(r) => {
-            setSelected(r);
-            setStep("preview");
+            // Open the real report page (proper URL) when one exists; fall back
+            // to the in-journey embedded preview for anything not yet published.
+            const intel = projectByName(r.name);
+            if (intel) {
+              onClose();
+              router.push(`/intelligence/projects/${intel.slug}`);
+            } else {
+              setSelected(r);
+              setStep("preview");
+            }
           }}
           onChangePreferences={() => setStep("dna")}
           onConsult={() => requestAdvice("buy")}

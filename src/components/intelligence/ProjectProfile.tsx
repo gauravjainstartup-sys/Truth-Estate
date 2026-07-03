@@ -821,15 +821,10 @@ export default function ProjectProfile({
               </Section>
             )}
 
-            {/* If not this project, then what? — one closing section. The three
-               explore columns already open the developer dossier and the corridor
-               (column footers), so no separate context cards. */}
-            <section id="alternatives" className="mt-16 border-t border-[#1a1a1a]/8 pt-12">
-              <div className="flex items-center gap-4">
-                <span className="font-mono text-[0.8rem] text-[#c9a96e]">→</span>
-                <h2 className="font-serif text-[1.7rem] font-medium tracking-[-0.01em] md:text-[2.1rem]">If not {p.name}, then what?</h2>
-              </div>
-              <p className="mt-3 max-w-2xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">Comparable projects to weigh side by side — nearby, from {p.developer}, or in your budget. Open the full developer or corridor dossier from each column.</p>
+            {/* Chapter V — the alternatives, as full report cards ranked to the
+               reader's brief when they've set one. */}
+            <Chapter n="V" title={`If not ${p.name}, then what?`} framing="Comparable projects to weigh side by side — ranked to your brief where you've set one." />
+            <section id="alternatives" className="scroll-mt-24">
               <ReportExplore p={p} embedded={embedded} onSelect={onSelectAlternative} />
             </section>
 
