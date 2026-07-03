@@ -1180,7 +1180,7 @@ export default function JourneyModal({
       setStep(s);
     };
     return frame(
-      <Shell onClose={onClose} onBack={() => setStep("priorities")} eyebrow="Your Buyer DNA" align="top" wide>
+      <Shell onClose={onClose} onBack={() => setStep("priorities")} eyebrow="Your Buyer DNA" wide>
         <DnaScreen dna={dna} onContinue={() => setStep("processing")} onEdit={editStep} />
       </Shell>
     );
