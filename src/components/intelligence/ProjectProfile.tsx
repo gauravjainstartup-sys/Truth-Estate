@@ -300,13 +300,23 @@ export default function ProjectProfile({
               </div>
             )}
 
-            {/* Hero — when we hold a real site aerial, the report opens on the
-                asset itself (scrim + light overlay); otherwise the stat hero. */}
-            {heroImage ? (
+            {/* Hero canvas — one layout, two backgrounds: the site aerial when we
+                hold one, a designed dark panel when we don't. Same light overlay. */}
               <div className="relative mt-9 overflow-hidden rounded-[24px] bg-[#0b1017] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.55)]">
-                <img src={`${basePath}/${heroImage}`} alt={`${p.name} — aerial site view`} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: "center 42%" }} />
-                <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(8,12,18,0.94) 0%, rgba(8,12,18,0.66) 30%, rgba(8,12,18,0.22) 62%, rgba(8,12,18,0.26) 100%)" }} />
-                <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(8,12,18,0.5), rgba(8,12,18,0) 60%)" }} />
+                {heroImage ? (
+                  <>
+                    <img src={`${basePath}/${heroImage}`} alt={`${p.name} — aerial site view`} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: "center 42%" }} />
+                    <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(8,12,18,0.94) 0%, rgba(8,12,18,0.66) 30%, rgba(8,12,18,0.22) 62%, rgba(8,12,18,0.26) 100%)" }} />
+                    <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(8,12,18,0.5), rgba(8,12,18,0) 60%)" }} />
+                  </>
+                ) : (
+                  <>
+                    <div className="absolute inset-0" style={{ background: "radial-gradient(125% 115% at 82% 8%, #26374f 0%, #16202f 45%, #0a0f18 100%)" }} />
+                    <div className="absolute inset-0 opacity-80" style={{ background: "radial-gradient(52% 72% at 6% 108%, rgba(30,107,69,0.22), transparent 72%)" }} />
+                    <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.9) 0.6px, transparent 0.7px)", backgroundSize: "24px 24px" }} />
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(201,169,110,0.45), transparent)" }} />
+                  </>
+                )}
                 <div className="relative flex min-h-[600px] flex-col justify-end p-6 sm:p-7 md:min-h-[600px] md:p-11">
                   <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5 md:gap-y-7">
                     <div className="max-w-2xl">
@@ -365,71 +375,10 @@ export default function ProjectProfile({
                     </div>
                   </div>
                   <p className="mt-5 flex items-center gap-2 text-[0.62rem] font-light text-white/45">
-                    <IconClock /> Satellite view of the site · construction as last observed · data reviewed {reviewed}
+                    <IconClock /> {heroImage ? "Satellite view of the site · construction as last observed" : "Independent assessment · re-scored quarterly"} · data reviewed {reviewed}
                   </p>
                 </div>
               </div>
-            ) : (
-            <div className="mt-9 flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
-              <div className="max-w-2xl">
-                <Eyebrow>Project Intelligence</Eyebrow>
-                {/* adaptive display type: long names step down a size and wrap balanced */}
-                <h1 className={`mt-5 text-balance font-serif font-medium leading-[1.04] tracking-[-0.02em] ${p.name.length > 24 ? "text-[2.15rem] md:text-[3.1rem]" : "text-[2.7rem] md:text-[4rem]"}`}>{p.name}</h1>
-                {ops?.address && (
-                  <p className="mt-5 text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">
-                    <IconPin className="mr-2 text-[#9a7a2e]" />
-                    {mapHref ? (
-                      <a href={mapHref} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-[#1a1a1a]/85">
-                        {ops.address}<IconArrowUpRight className="ml-1 text-[#9a7a2e]" />
-                      </a>
-                    ) : ops.address}
-                  </p>
-                )}
-                <p className="mt-2.5 text-[0.86rem] font-light text-[#1a1a1a]/45">
-                  by {devHref ? <a href={devHref} className="font-medium text-[#1a1a1a]/65 transition-colors hover:text-[#1a1a1a]">{p.developer}</a> : <span className="font-medium text-[#1a1a1a]/65">{p.developer}</span>}
-                  <span className="mx-2 text-[#1a1a1a]/20">·</span>{p.configs.join(" & ")}
-                  <span className="mx-2 text-[#1a1a1a]/20">·</span>₹{p.budget[0]}–{p.budget[1]} Cr
-                </p>
-                <div className="mt-7 flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#9a7a2e]/25 bg-white/60 px-3.5 py-1.5 text-[0.7rem] font-medium text-[#7a5f1e]">
-                    <IconAward className="text-[#9a7a2e]" /> #{ctx.corridorRank} of {ctx.corridorCount} in {p.marketShort}
-                  </span>
-                  {buildStatus && (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#1a1a1a]/8 bg-white/60 px-3.5 py-1.5 text-[0.7rem] font-light text-[#1a1a1a]/55">
-                      <IconBuilding className="text-[#c9a96e]" />{buildStatus}
-                    </span>
-                  )}
-                </div>
-              </div>
-              {/* Truth Score — "The Stat": headline number, grade + reco, a 10-segment meter */}
-              <div className="flex shrink-0 flex-wrap items-end gap-x-8 gap-y-4">
-                <div>
-                  <p className="text-[0.5rem] font-medium uppercase tracking-[0.22em] text-[#1a1a1a]/40">Truth Score</p>
-                  <p className="mt-1 flex items-baseline">
-                    <span className="font-serif text-[4rem] font-normal leading-[0.82] text-[#1e6b45] md:text-[4.6rem]">{p.truthScore}</span>
-                    <span className="ml-1.5 font-mono text-[1.05rem] text-[#1a1a1a]/30">/100</span>
-                  </p>
-                  <p className="mt-2.5 flex items-center gap-2">
-                    <span className="text-[0.64rem] font-bold uppercase tracking-[0.14em] text-[#1e6b45]">{scoreGrade(p.truthScore)}</span>
-                    <span className={`rounded-full border px-2.5 py-0.5 text-[0.62rem] font-semibold ${recoTone(p.recommendation)}`}>{p.recommendation}</span>
-                  </p>
-                  <div className="mt-2.5 flex w-[176px] gap-[3px]">
-                    {Array.from({ length: 10 }).map((_, idx) => (
-                      <span key={idx} className={`h-[9px] flex-1 rounded-[2px] ${idx < Math.round(p.truthScore / 10) ? "bg-[#1e6b45]" : "bg-[#1a1a1a]/[0.1]"}`} />
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-1.5 pb-1">
-                  {ctx.delta > 0 && (
-                    <p className="flex items-center gap-2.5 text-[0.8rem] text-[#1a1a1a]/60"><span className="flex w-4 shrink-0 justify-center text-[#9a7a2e]"><IconTrendUp /></span><span><b className="font-semibold text-[#1a1a1a]">+{ctx.delta}</b> vs {p.marketShort} average</span></p>
-                  )}
-                  <p className="flex items-center gap-2.5 text-[0.8rem] text-[#1a1a1a]/60"><span className="flex w-4 shrink-0 justify-center text-[#9a7a2e]"><IconTiers /></span><span><b className="font-semibold text-[#1a1a1a]">Top {ctx.topPct}%</b> of tracked projects</span></p>
-                  <p className="flex items-center gap-2.5 text-[0.8rem] text-[#1a1a1a]/60"><span className="flex w-4 shrink-0 justify-center text-[#9a7a2e]"><IconShieldCheck /></span><span><b className="font-semibold text-[#1a1a1a]">{p.confidence}</b> confidence · re-scored quarterly</span></p>
-                  <p className="flex items-center gap-2.5 text-[0.66rem] font-light tracking-[0.02em] text-[#1a1a1a]/40"><span className="flex w-4 shrink-0 justify-center text-[#1a1a1a]/40"><IconClock /></span>Data last reviewed {reviewed}</p>
-                </div>
-              </div>
-            </div>
-            )}
           </div>
 
           {/* Below the hero — report body (col 1) with the rail beside it (col 2, row 2) */}
