@@ -137,7 +137,15 @@ export type ProjectOps = {
   /* Imagery (relative to /public). `render` is the developer's marketing
      render; `sitePhotos` are our dated field-visit photographs. Absent →
      brand-safe schematic stand-ins render in their place. */
-  media?: { render?: string; heroImage?: string; sitePhotos?: { src: string; asOf: string; note?: string }[] };
+  media?: {
+    render?: string;
+    heroImage?: string;
+    /* Chapter I parts II/IV/V — images for now; PDFs/data later. */
+    masterplan?: { src: string; read: string };
+    brochure?: string[]; // page images, cover first
+    paymentPlan?: { src: string; read: string };
+    sitePhotos?: { src: string; asOf: string; note?: string }[];
+  };
   /* Structured location intelligence (Chapter II · Location). */
   location?: {
     pois?: { name: string; sub: string; rating?: number; dist: string; key?: boolean }[];
@@ -159,7 +167,12 @@ export const OPS: Record<string, ProjectOps> = {
   "DLF Arbour": {
     address: "Sector 63, Golf Course Extension Road, Gurugram",
     reviewed: "3 Jul 2026",
-    media: { heroImage: "images/aerial-dlf-arbour.webp" },
+    media: {
+      heroImage: "images/aerial-dlf-arbour.webp",
+      masterplan: { src: "images/demo/masterplan.webp", read: "Five towers hold the parcel's northern edge, freeing the south for the central green and the club — the low-density promise is visible in the plan itself." },
+      brochure: ["images/demo/brochure-1.webp", "images/demo/brochure-2.webp", "images/demo/brochure-3.webp"],
+      paymentPlan: { src: "images/demo/payment-plan.webp", read: "Construction-linked: ~35% in year one, the balance tracking slabs to possession." },
+    },
     units: 1137,
     towers: 5,
     floors: "34–38",
@@ -208,7 +221,12 @@ export const OPS: Record<string, ProjectOps> = {
   "DLF Privana South": {
     address: "Sector 77, Southern Peripheral Road, Gurugram",
     reviewed: "1 Jul 2026",
-    media: { heroImage: "images/aerial-dlf-privana-south.webp" },
+    media: {
+      heroImage: "images/aerial-dlf-privana-south.webp",
+      masterplan: { src: "images/demo/masterplan.webp", read: "Seven towers ring a single central green with the lake at its heart — most homes look inward at the landscape, not outward at the road." },
+      brochure: ["images/demo/brochure-1.webp", "images/demo/brochure-2.webp", "images/demo/brochure-3.webp"],
+      paymentPlan: { src: "images/demo/payment-plan.webp", read: "Construction-linked: ~35% in year one, the balance tracking slabs to possession." },
+    },
     homes: [
       { config: "3 BHK", variant: "Type A", carpetSqft: 1755, superSqft: 2500, balconySqft: 300, priceCr: 5.2 },
       { config: "3 BHK", variant: "Type B", carpetSqft: 1880, superSqft: 2680, balconySqft: 340, priceCr: 5.6 },
