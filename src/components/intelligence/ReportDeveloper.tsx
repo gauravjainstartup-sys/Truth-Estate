@@ -86,10 +86,10 @@ export default function ReportDeveloper({ p }: { p: ProjectIntel }) {
       {/* ── Part B · financial audit ── */}
       <div className="mt-12">
         <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Pillar I · Developer DNA — b</p>
-        <h3 className="mt-2 flex flex-wrap items-center gap-3 font-serif text-[1.7rem] font-medium leading-tight md:text-[2rem]">
-          Can the balance sheet finish the building?
-          <span className="rounded-full border border-[#1a1a1a]/12 bg-white/60 px-2.5 py-1 align-middle text-[0.58rem] font-sans font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/45">▪ {dev.listed ? "Listed · MCA-filed" : "Privately held"}</span>
-        </h3>
+        <h3 className="mt-2 font-serif text-[1.7rem] font-medium leading-tight md:text-[2rem]">Can the balance sheet finish the building?</h3>
+        <div className="mt-3">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#1a1a1a]/12 bg-white/60 px-2.5 py-1 text-[0.58rem] font-sans font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/45">▪ {dev.listed ? "Listed · from annual reports" : "Private · from MCA filings"}</span>
+        </div>
         <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">The numbers behind whether the money actually reaches handover.</p>
       </div>
 
@@ -112,7 +112,7 @@ export default function ReportDeveloper({ p }: { p: ProjectIntel }) {
         })}
       </div>
       <p className="mt-4 text-[0.8rem] font-light leading-[1.65] text-[#1a1a1a]/55">{dev.finNote}</p>
-      <p className="mt-5 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">Sources: MCA filings + latest annual &amp; quarterly financial reports · Haryana RERA track record. Independent read — not supplied by the developer.</p>
+      <p className="mt-5 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">Sources: {dev.listed ? "audited annual & quarterly financial reports" : "MCA-filed financial statements"} · Haryana RERA track record. Independent read — not supplied by the developer.</p>
     </div>
   );
 }
