@@ -40,6 +40,24 @@ function Chapter({ n, title }: { n: string; title: string }) {
   );
 }
 
+/* a product card: name + one-line what + a drawn miniature + the trust line */
+function ProductCard({ name, what, trust, only, href, className = "", children }: { name: string; what: string; trust: string; only?: boolean; href: string; className?: string; children: React.ReactNode }) {
+  return (
+    <div className={`flex flex-col rounded-xl border border-[#1a1a1a]/[0.08] bg-white/60 p-5 ${className}`}>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1.5">
+        <p className="font-serif text-[1.1rem] font-medium">{name}</p>
+        {only && <span className="rounded-full border border-[#9a7a2e]/40 bg-[#9a7a2e]/[0.07] px-2.5 py-1 font-mono text-[0.5rem] tracking-[0.12em] text-[#9a7a2e]">NOBODY ELSE SHIPS THIS</span>}
+      </div>
+      <p className="mt-1 text-[0.84rem] font-light text-[#1a1a1a]/60">{what}</p>
+      <div className="mt-4">{children}</div>
+      <div className="mt-4 flex items-center justify-between gap-4 border-t border-[#1a1a1a]/[0.07] pt-3">
+        <span className="min-w-0 font-mono text-[0.54rem] leading-[1.6] tracking-[0.1em] text-[#1e6b45]">TRUST BUILT: {trust.toUpperCase()}</span>
+        <a href={href} className="shrink-0 text-[0.74rem] font-medium text-[#1e6b45] hover:underline">Live →</a>
+      </div>
+    </div>
+  );
+}
+
 /* the brochure half of Exhibit 01 — a golden-hour render, drawn in CSS */
 function BrochureStandin() {
   const tower = (left: string, width: string, height: string): React.CSSProperties => ({
@@ -100,7 +118,7 @@ export default function InvestorMemo() {
           We are the buyer&rsquo;s side.
         </h1>
         <p className="mt-7 max-w-[36rem] text-[1rem] font-light leading-[1.75] text-[#1a1a1a]/62">
-          Truth Estate is independent real-estate intelligence and buyer-side advisory for premium Indian residential — forensic project files, a score no developer can buy, and representation that answers only to the buyer.
+          Independent intelligence and buyer-side advisory for premium Indian residential. A score no developer can buy; representation that answers only to the buyer.
         </p>
         <div className="mt-12 flex flex-wrap items-center gap-3">
           <span className="rounded-full border border-[#1e6b45]/35 bg-[#1e6b45]/[0.06] px-3.5 py-1.5 font-mono text-[0.6rem] tracking-[0.14em] text-[#1e6b45]">RAISING · CURRENTLY IN CONVERSATION</span>
@@ -116,7 +134,7 @@ export default function InvestorMemo() {
         <Exhibit
           label="Exhibit 01 · The gap, drawn to scale"
           title="What the buyer is shown — and what is actually standing."
-          sub={<>Drag the line. Left is the brochure. Right is the same plot from orbit, the day we reviewed it. A ₹6-crore decision is routinely made on the left half alone — guided by a broker the developer pays 2–4%.</>}
+          sub={<>Drag the line. Left: the brochure. Right: the same plot from orbit. ₹6-crore decisions are made on the left half alone.</>}
         >
           <div className="mt-6">
             <RenderVsReality
@@ -135,7 +153,7 @@ export default function InvestorMemo() {
         <Exhibit
           label="Exhibit 02 · Gap I — Trust · “Everything on record”"
           title="Who do you trust? Every claim we make carries its source."
-          sub="The market runs on unrecorded promises from intermediaries with no accountability. Our answer is a mantra the interface itself enforces: nothing ships in a Truth Estate file without a source, a date and a review cycle — and every read can be publicly challenged."
+          sub="Nothing ships without a source, a date and a review cycle — and every read can be challenged."
         >
           <div className="mt-6 overflow-x-auto rounded-xl border border-[#1a1a1a]/10">
             <div className="min-w-[640px]">
@@ -167,7 +185,7 @@ export default function InvestorMemo() {
         <Exhibit
           label="Exhibit 03 · Gap II — Representation · The empty chair"
           title="Every seat at the table is paid by the seller. Except one, which sat empty."
-          sub={<>In an Indian primary transaction the developer, the broker, the channel partner and the marketer all monetise the same event: the buyer saying yes. Nobody is compensated for the buyer saying <i>no</i>. That empty chair is the company.</>}
+          sub={<>Four parties monetise the buyer&rsquo;s yes. Nobody is paid for the buyer&rsquo;s <i>no</i>. That empty chair is the company.</>}
         >
           <div className="mt-6 rounded-[14px] border border-[#1a1a1a]/[0.08] bg-gradient-to-b from-[#f7f2e7] to-[#efe8d8] p-6 sm:p-7">
             <div className="flex flex-wrap items-stretch gap-3">
@@ -188,7 +206,7 @@ export default function InvestorMemo() {
               </div>
             </div>
             <p className="mt-4 text-[0.8rem] font-light leading-[1.6] text-[#1a1a1a]/50">
-              The covenant that makes the seat defensible: no developer can pay us — not for a score, not for placement, not for leads. Advisory fees are refundable if we tell you to walk away.
+              The covenant: no developer money, ever. Advisory fees are refundable if our verdict is walk away.
             </p>
           </div>
         </Exhibit>
@@ -196,7 +214,7 @@ export default function InvestorMemo() {
         <Exhibit
           label="Exhibit 04 · Gaps III & IV — From scattered data to a closed decision"
           title="The industry ships options. We ship decisions."
-          sub={<>Every public fact a buyer needs already exists — scattered across RERA filings, court records, registries and satellite imagery. We bring it under one roof, then take the step nobody else does: AI that closes the decision. Match Score reads <i>your</i> brief, the project file renders a verdict, Unit Intelligence picks tower, floor and stack, and TruthGuide answers what remains.</>}
+          sub={<>All the public facts under one roof — then AI that closes the decision instead of listing options.</>}
         >
           <div className="mt-6 grid gap-4 md:grid-cols-[1.15fr_1fr]">
             <div className="relative min-h-[220px] overflow-hidden rounded-[14px] border border-[#1a1a1a]/10 bg-white p-4">
@@ -235,9 +253,9 @@ export default function InvestorMemo() {
         >
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {([
-              ["2017 →", "The evidence went public", "RERA forced quarterly progress reports, approvals and litigation into the open. A decade later, that exhaust is deep enough to score any project — few have industrialised reading it."],
-              ["2021 →", "The buyer went premium", "Post-COVID, premium and NRI demand re-rated Gurugram: bigger tickets, longer horizons, buyers who research the way they invest — and who feel the absence of anyone on their side."],
-              ["2023 →", "The analysis went to zero", "AI collapsed the cost of forensic synthesis. A file that took an analyst a week now takes a day — and improves with every file. The corpus compounds; the cost curve doesn't."],
+              ["2017 →", "The evidence went public", "RERA pushed progress, approvals and litigation into the open — a decade of exhaust few have industrialised."],
+              ["2021 →", "The buyer went premium", "Premium and NRI demand re-rated Gurugram: bigger tickets, research-first buyers, nobody on their side."],
+              ["2023 →", "The analysis went to zero", "AI collapsed the cost of forensic synthesis — a week of analysis now takes a day, and compounds."],
             ] as const).map(([when, t, body]) => (
               <div key={t} className="rounded-xl border border-[#1a1a1a]/[0.08] bg-white/60 p-5">
                 <p className="font-mono text-[0.62rem] tracking-[0.14em] text-[#9a7a2e]">{when}</p>
@@ -249,26 +267,116 @@ export default function InvestorMemo() {
         </Exhibit>
       </div>
 
-      {/* ═══ III · THE PRODUCT & THE ENGINE ═══ */}
-      <Chapter n="III" title="The product, live" />
+      {/* ═══ III · THE PRODUCTS ═══ */}
+      <Chapter n="III" title="The products" />
       <div className="mx-auto max-w-[1060px] px-6">
         <Exhibit
-          label="Exhibit 06 · No screenshots — the real thing"
-          title="Everything in this memo links to the shipping product."
-          sub="Open them in the next tab. The craft is the argument."
+          label="Exhibit 06 · Five surfaces, all shipping"
+          title="Each product manufactures trust a different way."
+          sub="Not mockups — every card links to the live surface."
         >
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-            {([
-              ["A forensic project file", "Truth Score anatomy, satellite-verified build, floor-plan forensics, price journey, ROI with real cash flows.", `${basePath}/intelligence/projects/dlf-arbour`, "Open the DLF Arbour file"],
-              ["A side-by-side comparison", "Two projects on one tape — money, build, homes and the five trust pillars, each row marking its leader.", `${basePath}/intelligence/compare/birla-navya-vs-dlf-arbour`, "Open a live comparison"],
-              ["The research desk", "Universal search over projects, developers and corridors; TruthGuide briefs that end in a real report, not a lead form.", `${basePath}/intelligence`, "Open the intelligence desk"],
-            ] as const).map(([t, body, href, cta]) => (
-              <a key={t} href={href} className="group flex flex-col rounded-xl border border-[#1a1a1a]/[0.08] bg-white/60 p-5 transition-colors hover:border-[#1e6b45]/40">
-                <p className="font-serif text-[1.05rem] font-medium leading-snug">{t}</p>
-                <p className="mt-2 text-[0.8rem] font-light leading-[1.65] text-[#1a1a1a]/55">{body}</p>
-                <span className="mt-4 pt-1 text-[0.78rem] font-medium text-[#1e6b45]">{cta} <span aria-hidden className="inline-block transition-transform group-hover:translate-x-1">→</span></span>
-              </a>
-            ))}
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+
+            {/* Truth Score */}
+            <ProductCard
+              name="Truth Score"
+              what="The score no developer can buy."
+              trust="Published weights · re-scored quarterly · publicly challengeable"
+              only
+              href={`${basePath}/intelligence/projects/dlf-arbour`}
+            >
+              <div className="rounded-xl border border-[#1a1a1a]/10 bg-[#F7F3EA] p-4">
+                <p className="font-mono text-[0.52rem] tracking-[0.26em] text-[#1a1a1a]/40">TRUTH SCORE</p>
+                <p className="mt-1.5 font-serif text-[2.4rem] font-medium leading-none text-[#1e6b45]">92<span className="ml-1.5 font-mono text-[0.7rem] text-[#1a1a1a]/35">/100</span></p>
+                <p className="mt-2 flex items-center gap-2 text-[0.64rem] font-medium tracking-[0.08em] text-[#1e6b45]">EXCEPTIONAL <span className="rounded-full border border-[#1e6b45]/30 bg-[#1e6b45]/[0.08] px-2.5 py-0.5 font-normal">Strong Buy</span></p>
+                <div className="mt-2.5 flex gap-[3px]">
+                  {Array.from({ length: 10 }).map((_, i) => (
+                    <span key={i} className={`h-[7px] flex-1 rounded-[2px] ${i < 9 ? "bg-[#1e6b45]" : "bg-[#1a1a1a]/[0.12]"}`} />
+                  ))}
+                </div>
+              </div>
+            </ProductCard>
+
+            {/* Project files */}
+            <ProductCard
+              name="Project Intelligence"
+              what="8,000-word forensic files — everything on record."
+              trust="Every claim carries its source and its date"
+              only
+              href={`${basePath}/intelligence/projects/dlf-arbour`}
+            >
+              <div className="overflow-hidden rounded-xl border border-[#1a1a1a]/10 bg-white">
+                {([
+                  ["Construction vs RERA-due", "QPR-verified"],
+                  ["Developer litigation record", "e-Courts"],
+                  ["Site, seen from orbit", "Satellite · dated"],
+                  ["Price journey since launch", "Tracked"],
+                ] as const).map(([row, stamp], i) => (
+                  <div key={row} className={`flex items-center justify-between gap-3 px-4 py-2.5 ${i > 0 ? "border-t border-[#1a1a1a]/[0.06]" : ""}`}>
+                    <span className="text-[0.78rem] font-light text-[#1a1a1a]/75"><span className="mr-2 text-[#1e6b45]">✓</span>{row}</span>
+                    <span className="font-mono text-[0.54rem] tracking-[0.1em] text-[#1e6b45]">{stamp.toUpperCase()}</span>
+                  </div>
+                ))}
+              </div>
+            </ProductCard>
+
+            {/* Match Score */}
+            <ProductCard
+              name="Match Score"
+              what="The project, judged against your brief — not the brochure."
+              trust="Same evidence, personalised; never a lead-gen ranking"
+              href={`${basePath}/intelligence/projects/dlf-arbour`}
+            >
+              <div className="flex items-center gap-5 rounded-xl border border-[#1a1a1a]/10 bg-white p-4">
+                <p className="text-[2.4rem] font-normal leading-none tracking-[-0.02em] tabular-nums text-[#1e6b45]">87<span className="text-[1rem] text-[#1a1a1a]/35">%</span></p>
+                <div>
+                  <p className="text-[0.8rem] font-normal">fit to your brief</p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {["₹5–7 Cr", "5-yr hold", "east-facing", "school ≤ 1 km"].map((c) => (
+                      <span key={c} className="rounded-full border border-[#1a1a1a]/12 px-2 py-0.5 font-mono text-[0.54rem] text-[#1a1a1a]/50">{c}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </ProductCard>
+
+            {/* Unit Intelligence */}
+            <ProductCard
+              name="Unit Intelligence"
+              what="The decision, closed to the unit — tower, floor, stack."
+              trust="Sun, air, privacy and price modelled per stack"
+              only
+              href={`${basePath}/intelligence/projects/dlf-arbour`}
+            >
+              <div className="flex items-center gap-5 rounded-xl border border-[#1a1a1a]/10 bg-white p-4">
+                <div className="grid shrink-0 grid-cols-5 gap-[3px]">
+                  {Array.from({ length: 40 }).map((_, i) => (
+                    <span key={i} className={`h-[9px] w-[13px] rounded-[2px] ${i === 22 ? "bg-[#1e6b45] ring-2 ring-[#1e6b45]/30" : "bg-[#1a1a1a]/[0.09]"}`} />
+                  ))}
+                </div>
+                <div>
+                  <p className="text-[0.8rem] font-normal">Tower B · 11th · east</p>
+                  <p className="mt-1 font-mono text-[0.56rem] tracking-[0.1em] text-[#9a7a2e]">WALK-AWAY PRICE INCLUDED</p>
+                </div>
+              </div>
+            </ProductCard>
+
+            {/* TruthGuide — full width */}
+            <ProductCard
+              name="TruthGuide"
+              what="AI you can argue with — every answer carries its source."
+              trust="Grounded in the files, not the internet; challenge any read"
+              href={`${basePath}/intelligence`}
+              className="md:col-span-2"
+            >
+              <div className="flex flex-col gap-2.5 rounded-xl border border-[#1a1a1a]/10 bg-white p-4 sm:flex-row sm:items-center sm:gap-4">
+                <p className="rounded-2xl rounded-bl-sm bg-[#1a1a1a]/[0.05] px-4 py-2.5 text-[0.8rem] font-light text-[#1a1a1a]/70">&ldquo;Is DLF financially sound?&rdquo;</p>
+                <p className="rounded-2xl rounded-br-sm bg-[#0b1f1a] px-4 py-2.5 text-[0.8rem] font-light text-[#F7F3EA]/90">
+                  Net debt-to-equity <b className="font-normal text-[#9fe6bf]">−0.05×</b>, interest cover <b className="font-normal text-[#9fe6bf]">14.7×</b>
+                  <span className="ml-2 rounded-full border border-[#d8b978]/40 px-2 py-0.5 font-mono text-[0.52rem] tracking-[0.1em] text-[#d8b978]">AUDITED FY25 · ON FILE</span>
+                </p>
+              </div>
+            </ProductCard>
           </div>
         </Exhibit>
 
@@ -289,7 +397,7 @@ export default function InvestorMemo() {
             </span>
           </div>
           <p className="mt-5 max-w-[46rem] text-[0.85rem] font-light leading-[1.7] text-[#1a1a1a]/60">
-            The moat is the loop, not any single node: an independence brand developers cannot buy into, a published method that invites challenge, and a data corpus — files, scores, buyer briefs, unit-level demand — that gets harder to replicate with every quarter it compounds.
+            The moat is the loop: an independence brand, a published method, and a corpus that compounds every quarter.
           </p>
         </Exhibit>
       </div>
@@ -324,7 +432,7 @@ export default function InvestorMemo() {
             <div className="rounded-xl border border-[#1a1a1a]/[0.08] bg-white/60 p-5">
               <p className="font-mono text-[0.6rem] tracking-[0.14em] text-[#9a7a2e]">THE EXPANSION PATH</p>
               <p className="mt-3 text-[0.85rem] font-light leading-[1.7] text-[#1a1a1a]/60">
-                The playbook is corridor-shaped, not city-shaped: NCR&rsquo;s remaining corridors next, then the top-7 premium markets — the same public-records spine exists in every RERA state. Seller-paid brokerage alone exceeds <span className="tabular-nums">₹1,500–4,000 Cr/yr</span> in Gurugram; we re-route a fraction of that trust to the buyer&rsquo;s side.
+                Corridor-shaped playbook: NCR next, then the top-7 — the same RERA spine exists in every state. Gurugram&rsquo;s seller-paid brokerage alone runs <span className="tabular-nums">₹1,500–4,000 Cr/yr</span>.
               </p>
             </div>
           </div>
@@ -378,7 +486,7 @@ export default function InvestorMemo() {
             <span className="absolute -translate-x-1/2 whitespace-nowrap rounded-full border border-[#1e6b45]/50 bg-[#1e6b45]/[0.08] px-3.5 py-2 text-[0.68rem] font-medium text-[#1e6b45] sm:text-[0.74rem]" style={{ left: "66%", top: "72%" }}>Truth Estate — alone here</span>
           </div>
           <p className="mt-4 max-w-[46rem] text-[0.85rem] font-light leading-[1.7] text-[#1a1a1a]/60">
-            Portals monetise developer marketing budgets; broker networks monetise closings; reviewers monetise attention. None can move into the buyer-paid-judgement quadrant without burning their existing revenue — the classic incumbent&rsquo;s dilemma, working for us.
+            None of them can enter the buyer-paid quadrant without burning their revenue — the incumbent&rsquo;s dilemma, working for us.
           </p>
         </Exhibit>
       </div>
@@ -407,7 +515,7 @@ export default function InvestorMemo() {
             ))}
           </div>
           <div className="mt-5 rounded-r-xl border-l-2 border-[#1e6b45] bg-[#1e6b45]/[0.05] px-5 py-3.5 text-[0.88rem] font-light leading-[1.65] text-[#1a1a1a]/70">
-            <b className="font-medium text-[#1a1a1a]">The number that matters is the last one.</b> These are 8,000-word forensic documents, and one in two people who start them reach the final section. Attention of that depth, this early, is the leading indicator of willingness to pay for judgement.
+            <b className="font-medium text-[#1a1a1a]">The number that matters is the last one.</b> One in two readers finishes an 8,000-word file — that depth of attention is the leading indicator of willingness to pay.
           </div>
           <p className="mt-4 text-[0.78rem] font-light italic text-[#1a1a1a]/45">Buyer testimonials are being collected verbatim, with permission — available in the data room.</p>
         </Exhibit>
@@ -415,7 +523,7 @@ export default function InvestorMemo() {
         <Exhibit
           label="Exhibit 12 · The ask"
           title="Raising — currently in conversation."
-          sub="Terms are being discussed with early partners; the memo states use of funds and milestones rather than a number."
+          sub="Terms in discussion with early partners — this memo states use of funds and milestones, not a number."
         >
           <div className="mt-6 grid gap-8 lg:grid-cols-[1.1fr_1fr]">
             <div>
@@ -467,7 +575,7 @@ export default function InvestorMemo() {
               <Eyebrow>The Independent Desk</Eyebrow>
               <p className="mt-1 font-serif text-[1.25rem] font-medium">Gaurav Jain · Founder</p>
               <p className="mt-1 max-w-[38rem] text-[0.85rem] font-light leading-[1.65] text-[#1a1a1a]/60">
-                Every file crosses the founder&rsquo;s desk before it ships. Independent — no inventory, no builder commission. The same desk answers to investors: ask anything, challenge any read.
+                Every file crosses the founder&rsquo;s desk before it ships. No inventory, no builder commission. The same desk answers to investors.
               </p>
             </div>
           </div>
