@@ -1,13 +1,16 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useJourney } from "./JourneyProvider";
 
 /* Tertiary CTA — the low-commitment "ask/challenge our read" affordance.
    A persistent, unobtrusive bubble that opens TruthGuide (research mode).
-   Desktop only, so it never competes with the mobile primary sticky CTA. */
+   Desktop only, so it never competes with the mobile primary sticky CTA.
+   Stays off the investor memorandum — that page speaks to a different reader. */
 export default function TruthGuideBubble() {
   const { open, isOpen } = useJourney();
-  if (isOpen) return null;
+  const pathname = usePathname();
+  if (isOpen || pathname?.startsWith("/investors")) return null;
   return (
     <button
       onClick={() => open("research")}
