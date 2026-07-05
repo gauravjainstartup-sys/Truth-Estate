@@ -4,6 +4,7 @@ import Logo from "../Logo";
 import GurugramMap from "./GurugramMap";
 import { useJourney } from "../journey/JourneyProvider";
 import { MARKETS, GURUGRAM_OVERVIEW, fmtPsf } from "@/lib/markets";
+import type { LiveMicroMarket } from "@/lib/supabase";
 
 const basePath = "/Truth-Estate";
 
@@ -14,7 +15,7 @@ const TIER_TONE: Record<string, string> = {
   Emerging: "border-[#1a1a1a]/15 text-[#1a1a1a]/45",
 };
 
-export default function MarketsIndex() {
+export default function MarketsIndex({ live }: { live?: LiveMicroMarket[] | null }) {
   const { open } = useJourney();
   return (
     <div className="min-h-svh bg-[#F5F0E8] text-[#1a1a1a]">
@@ -73,6 +74,25 @@ export default function MarketsIndex() {
             </a>
           ))}
         </div>
+
+        {/* ── Corridors under live pipeline coverage ── */}
+        {live && live.length > 0 && (
+          <div className="mt-16">
+            <div className="flex items-center gap-3">
+              <span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">Under live coverage</span>
+              <span className="rounded-full border border-[#1e6b45]/35 bg-[#1e6b45]/[0.06] px-2.5 py-0.5 font-mono text-[0.54rem] tracking-[0.14em] text-[#1e6b45]">LIVE · FROM THE PIPELINE</span>
+              <span className="h-px flex-1 bg-[#1a1a1a]/10" />
+            </div>
+            <p className="mt-2 text-[0.8rem] font-light leading-[1.6] text-[#1a1a1a]/50">
+              Micro-markets our data pipeline tracks continuously — infrastructure, supply and potential, refreshed with every deploy. Deep profiles above; the rest graduate as coverage completes.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2.5">
+              {live.map((m) => (
+                <span key={m.slug} className="rounded-full border border-[#1a1a1a]/12 bg-white/70 px-4 py-2 text-[0.8rem] font-light text-[#1a1a1a]/65">{m.name}</span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
