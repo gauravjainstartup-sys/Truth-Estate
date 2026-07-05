@@ -4,12 +4,12 @@ import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import { PROJECT_INTEL } from "@/lib/projects";
 import { ACTIVE_PROJECT_COUNT } from "@/lib/journey";
-import type { LiveScoredProject, TrackedStats } from "@/lib/supabase";
+import type { LiveBacklogFull, TrackedStats } from "@/lib/supabase";
 import ProjectOptionCard from "./ProjectOptionCard";
 
 const basePath = "/Truth-Estate";
 
-export default function ProjectsIndex({ live, stats }: { live?: LiveScoredProject[] | null; stats?: TrackedStats | null }) {
+export default function ProjectsIndex({ live, stats }: { live?: LiveBacklogFull[] | null; stats?: TrackedStats | null }) {
   const { open } = useJourney();
   const scores = PROJECT_INTEL.map((p) => p.truthScore);
   const lo = Math.min(...scores), hi = Math.max(...scores);
@@ -65,7 +65,8 @@ export default function ProjectsIndex({ live, stats }: { live?: LiveScoredProjec
             </p>
             <div className="mt-5 overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-white/60">
               {live.map((p, i) => (
-                <div key={`${p.name}-${i}`} className={`flex flex-wrap items-center gap-x-4 gap-y-1.5 px-5 py-3.5 ${i > 0 ? "border-t border-[#1a1a1a]/[0.06]" : ""}`}>
+                <a key={`${p.name}-${i}`} href={`${basePath}/intelligence/projects/${p.slug}`}
+                  className={`flex flex-wrap items-center gap-x-4 gap-y-1.5 px-5 py-3.5 transition-colors hover:bg-[#1e6b45]/[0.04] ${i > 0 ? "border-t border-[#1a1a1a]/[0.06]" : ""}`}>
                   <div className="min-w-0 flex-1 basis-56">
                     <p className="truncate font-serif text-[1.02rem] font-medium leading-tight">{p.name}</p>
                     <p className="mt-0.5 truncate text-[0.72rem] font-light text-[#1a1a1a]/45">
@@ -83,10 +84,10 @@ export default function ProjectsIndex({ live, stats }: { live?: LiveScoredProjec
                     <span className="font-mono text-[0.64rem] text-[#9a4130]">{p.redFlags} red flag{p.redFlags > 1 ? "s" : ""}</span>
                   )}
                   <span className="ml-auto flex items-baseline gap-1.5">
-                    <span className="font-serif text-[1.35rem] font-medium leading-none text-[#1e6b45]">{p.truthScore}</span>
+                    <span className="font-serif text-[1.35rem] font-medium leading-none text-[#1e6b45]">{p.truthScore ?? "—"}</span>
                     <span className="font-mono text-[0.5rem] uppercase tracking-[0.14em] text-[#1a1a1a]/35">/100</span>
                   </span>
-                </div>
+                </a>
               ))}
             </div>
             <p className="mt-3 text-[0.68rem] font-light text-[#1a1a1a]/40">

@@ -176,6 +176,99 @@ export async function fetchDevelopersOverview(): Promise<LiveDeveloper[] | null>
   return out.length ? out : null;
 }
 
+/* ── full backlog rows — feed the auto-generated live report pages ──
+   Flat columns come typed; the module payloads (construction_pace,
+   legal_risks, developer_track_record, …) arrive as unknown JSON and
+   are parsed defensively in the UI — any absent field renders NA. */
+
+export type LiveBacklogFull = {
+  id: string;
+  slug: string;
+  name: string;
+  developer: string | null;
+  location: string | null;
+  microMarket: string | null;
+  truthScore: number | null;
+  delayRisk: string | null;
+  delayDelta: string | null;
+  delayColor: string | null;
+  cagr: string | null;
+  expectedCagrNum: number | null;
+  adjustedRoi: number | null;
+  redFlags: number | null;
+  budget: string | null;
+  minPriceCr: number | null;
+  config: string | null;
+  minBhk: number | null;
+  promised: string | null;
+  predicted: string | null;
+  deliveryYear: string | null;
+  registrationDate: string | null;
+  insight: string | null;
+  constructionPaceNum: number | null;
+  /* module payloads — shapes owned by the pipeline */
+  modConstruction: unknown;
+  modTrackRecord: unknown;
+  modLegal: unknown;
+  modFinancial: unknown;
+  modRuleVerdict: unknown;
+  modRiskIntel: unknown;
+  modRiskVerdict: unknown;
+};
+
+export function liveSlug(name: string): string {
+  return `live-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`;
+}
+
+export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
+  const rows = await sbRows(
+    "backlog_listing_public",
+    'select=*&truthScore=not.is.null&order="truthScore".desc&limit=60',
+  );
+  if (!rows) return null;
+  // one-time shape record: the CI build log tells us the pipeline's true shapes
+  if (rows[0]) console.log("[supabase] backlog sample:", JSON.stringify(rows[0]).slice(0, 2000));
+  const out: LiveBacklogFull[] = [];
+  for (const r of rows) {
+    const name = s(r.name);
+    if (!name) continue;
+    out.push({
+      id: s(r.id) ?? liveSlug(name),
+      slug: liveSlug(name),
+      name,
+      developer: s(r.developer),
+      location: s(r.location),
+      microMarket: s(r.microMarket),
+      truthScore: n(r.truthScore),
+      delayRisk: s(r.delayRisk),
+      delayDelta: s(r.delayDelta),
+      delayColor: s(r.delayColor),
+      cagr: s(r.cagr),
+      expectedCagrNum: n(r.expected_cagr_num),
+      adjustedRoi: n(r.adjusted_roi),
+      redFlags: n(r.redFlags),
+      budget: s(r.budget),
+      minPriceCr: n(r.min_price_cr),
+      config: s(r.config),
+      minBhk: n(r.min_bhk_num),
+      promised: s(r.promised),
+      predicted: s(r.predicted),
+      deliveryYear: s(r.deliveryYear),
+      registrationDate: s(r.registration_date),
+      insight: s(r.insight),
+      constructionPaceNum: n(r.construction_pace),
+      modConstruction: r.construction_pace,
+      modTrackRecord: r.developer_track_record,
+      modLegal: r.legal_risks,
+      modFinancial: r.financial_subscores,
+      modRuleVerdict: r.rule_verdict,
+      modRiskIntel: r.risk_intelligence,
+      modRiskVerdict: r.risk_verdict,
+    });
+  }
+  return out.length ? out : null;
+}
+
 /* ── micro-markets under live coverage ── */
 
 export type LiveMicroMarket = { slug: string; name: string };

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import ProjectsIndex from "@/components/intelligence/ProjectsIndex";
-import { fetchScoredBacklog, fetchTrackedStats } from "@/lib/supabase";
+import { fetchBacklogFull, fetchTrackedStats } from "@/lib/supabase";
 
 export const metadata: Metadata = {
   title: "Project Intelligence — Truth Estate",
@@ -11,6 +11,6 @@ export const metadata: Metadata = {
 /* Live pipeline data is pulled at build time so the page stays fully
    static; when the backend is unreachable the sections simply hide. */
 export default async function Page() {
-  const [live, stats] = await Promise.all([fetchScoredBacklog(), fetchTrackedStats()]);
-  return <ProjectsIndex live={live} stats={stats} />;
+  const [rows, stats] = await Promise.all([fetchBacklogFull(), fetchTrackedStats()]);
+  return <ProjectsIndex live={rows?.slice(0, 12) ?? null} stats={stats} />;
 }
