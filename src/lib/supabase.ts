@@ -94,6 +94,8 @@ export type LiveScoredProject = {
   delayDelta: string | null;
   cagr: string | null;
   redFlags: number | null;
+  matchScore: number | null;
+  delayChancePct: number | null;
   budget: string | null;
   config: string | null;
 };
@@ -101,7 +103,7 @@ export type LiveScoredProject = {
 export async function fetchScoredBacklog(): Promise<LiveScoredProject[] | null> {
   const rows = await sbRows(
     "backlog_listing_public",
-    'select=name,developer,location,"microMarket","truthScore","delayRisk","delayDelta",cagr,"redFlags",budget,config&truthScore=not.is.null&order="truthScore".desc&limit=12',
+    'select=name,developer,location,"microMarket","truthScore","delayRisk","delayDelta",cagr,"redFlags","matchScore",delay_chance_pct,listing_red_flags,budget,config&truthScore=not.is.null&order="truthScore".desc&limit=12',
   );
   if (!rows) return null;
   const out: LiveScoredProject[] = [];
@@ -118,7 +120,9 @@ export async function fetchScoredBacklog(): Promise<LiveScoredProject[] | null> 
       delayRisk: s(r.delayRisk),
       delayDelta: s(r.delayDelta),
       cagr: s(r.cagr),
-      redFlags: n(r.redFlags),
+      redFlags: n(r.redFlags) ?? n(r.listing_red_flags),
+      matchScore: n(r.matchScore),
+      delayChancePct: n(r.delay_chance_pct),
       budget: s(r.budget),
       config: s(r.config),
     });
@@ -196,6 +200,8 @@ export type LiveBacklogFull = {
   expectedCagrNum: number | null;
   adjustedRoi: number | null;
   redFlags: number | null;
+  matchScore: number | null;
+  delayChancePct: number | null;
   budget: string | null;
   minPriceCr: number | null;
   config: string | null;
@@ -246,7 +252,9 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
       cagr: s(r.cagr),
       expectedCagrNum: n(r.expected_cagr_num),
       adjustedRoi: n(r.adjusted_roi),
-      redFlags: n(r.redFlags),
+      redFlags: n(r.redFlags) ?? n(r.listing_red_flags),
+      matchScore: n(r.matchScore),
+      delayChancePct: n(r.delay_chance_pct),
       budget: s(r.budget),
       minPriceCr: n(r.min_price_cr),
       config: s(r.config),
