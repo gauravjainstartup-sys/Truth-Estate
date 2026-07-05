@@ -261,7 +261,7 @@ export default function ProjectProfile({
     { id: "usps", label: "Project USPs", show: usps.length > 0 },
     { id: "roi", label: "Price & returns", show: !!roi },
     { id: "verdict", label: "The verdict", show: true },
-    { id: "strengths", label: "Strengths & watch-outs", show: true },
+    { id: "strengths", label: "Strengths & watch-outs", show: p.strengths.length > 0 || p.watchouts.length > 0 },
     { id: "faqs", label: "Straight answers", show: faqs.length > 0 },
   ].filter((t) => t.show);
 
@@ -503,14 +503,16 @@ export default function ProjectProfile({
                          top config + ticket, each with its glyph */}
                       <p className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-1 text-[0.86rem] font-light text-white/60">
                         <span className="inline-flex items-center gap-2"><IconBed className="text-[#d8b978]" />{configsCompact(p.configs)}</span>
-                        <span className="inline-flex items-center gap-2"><IconTag className="text-[#d8b978]" />₹{p.budget[0]}–{p.budget[1]} Cr</span>
+                        <span className="inline-flex items-center gap-2"><IconTag className="text-[#d8b978]" />{p.budget[0] === p.budget[1] ? (p.budget[0] ? `₹${p.budget[0]} Cr+` : "Price NA") : <>₹{p.budget[0]}–{p.budget[1]} Cr</>}</span>
                       </p>
                       {/* credential chips — on xl they stay with the identity column;
                          on stacked layouts they move down with the score group */}
                       <div className="mt-6 hidden items-center gap-2 xl:flex xl:flex-wrap">
+                        {ctx.corridorRank > 0 && (
                         <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[0.7rem] font-medium text-white/85 backdrop-blur-sm">
                           <IconAward className="text-[#d8b978]" /> #{ctx.corridorRank} of {ctx.corridorCount} in {p.marketShort}
                         </span>
+                        )}
                         {buildStatus && (
                           <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-white/12 bg-white/10 px-3.5 py-1.5 text-[0.7rem] font-light text-white/70 backdrop-blur-sm">
                             <IconBuilding className="text-[#d8b978]" />{buildStatus}
@@ -527,9 +529,11 @@ export default function ProjectProfile({
                        one-line provenance gather at the base of the canvas */}
                     <div className="mt-auto w-full xl:mt-0 xl:w-auto">
                     <div className="mb-4 flex items-center gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:hidden">
+                      {ctx.corridorRank > 0 && (
                       <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[0.7rem] font-medium text-white/85 backdrop-blur-sm">
                         <IconAward className="text-[#d8b978]" /> #{ctx.corridorRank} of {ctx.corridorCount} in {p.marketShort}
                       </span>
+                      )}
                       {buildStatus && (
                         <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-white/12 bg-white/10 px-3.5 py-1.5 text-[0.7rem] font-light text-white/70 backdrop-blur-sm">
                           <IconBuilding className="text-[#d8b978]" />{buildStatus}
@@ -555,12 +559,12 @@ export default function ProjectProfile({
                       <div className="mt-3 border-t border-[#1a1a1a]/8 pt-2.5">
                         <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.7rem] text-[#1a1a1a]/60 sm:hidden">
                           {ctx.delta > 0 && <><span><b className="font-semibold text-[#1a1a1a]">+{ctx.delta}</b> vs {p.marketShort}</span><span className="text-[#1a1a1a]/25">·</span></>}
-                          <span><b className="font-semibold text-[#1a1a1a]">Top {ctx.topPct}%</b> tracked</span><span className="text-[#1a1a1a]/25">·</span>
+                          {ctx.rank > 0 && <><span><b className="font-semibold text-[#1a1a1a]">Top {ctx.topPct}%</b> tracked</span><span className="text-[#1a1a1a]/25">·</span></>}
                           <span><b className="font-semibold text-[#1a1a1a]">{p.confidence}</b> confidence</span>
                         </p>
                         <div className="hidden space-y-1.5 sm:block">
                           {ctx.delta > 0 && <p className="flex items-center gap-2 text-[0.72rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]"><IconTrendUp /></span><span><b className="font-semibold text-[#1a1a1a]">+{ctx.delta}</b> vs {p.marketShort} average</span></p>}
-                          <p className="flex items-center gap-2 text-[0.72rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]"><IconTiers /></span><span><b className="font-semibold text-[#1a1a1a]">Top {ctx.topPct}%</b> of tracked projects</span></p>
+                          {ctx.rank > 0 && <p className="flex items-center gap-2 text-[0.72rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]"><IconTiers /></span><span><b className="font-semibold text-[#1a1a1a]">Top {ctx.topPct}%</b> of tracked projects</span></p>}
                           <p className="flex items-center gap-2 text-[0.72rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]"><IconShieldCheck /></span><span><b className="font-semibold text-[#1a1a1a]">{p.confidence}</b> confidence · re-scored quarterly</span></p>
                         </div>
                       </div>
@@ -605,7 +609,7 @@ export default function ProjectProfile({
               <div className="rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-8 md:p-10">
                 {/* money facts — value-first, serif, 2×2 on mobile / 4-up on desktop */}
                 <div className="grid grid-cols-2 gap-x-8 gap-y-8 lg:grid-cols-4">
-                  <Money v={`₹${p.budget[0]}–${p.budget[1]} Cr`} k="Ticket" />
+                  <Money v={p.budget[0] === p.budget[1] ? (p.budget[0] ? `₹${p.budget[0]} Cr+` : "NA") : `₹${p.budget[0]}–${p.budget[1]} Cr`} k="Ticket" />
                   {ops?.price
                     ? <Money v={`₹${kpsf(ops.price.currentLow)}–${kpsf(ops.price.currentHigh)}k`} k="Current / sq ft" />
                     : <Money v={p.psf ? fmtPsf(p.psf.avg) : "—"} k="Corridor avg / sq ft" />}
@@ -815,8 +819,10 @@ export default function ProjectProfile({
             </div>
 
             {/* Strengths & watch-outs */}
+            {(p.strengths.length > 0 || p.watchouts.length > 0) && (
             <Section id="strengths" n={num()} title="Strengths & watch-outs">
               <div className="grid gap-8 md:grid-cols-2">
+                {p.strengths.length > 0 && (
                 <div className="rounded-2xl border border-[#1e6b45]/15 bg-[#1e6b45]/[0.04] p-7">
                   <p className="text-[10px] font-medium uppercase tracking-[0.24em] text-[#1e6b45]">What works</p>
                   <ul className="mt-4 space-y-3">
@@ -825,6 +831,8 @@ export default function ProjectProfile({
                     ))}
                   </ul>
                 </div>
+                )}
+                {p.watchouts.length > 0 && (
                 <div className="rounded-2xl border border-[#9a7a2e]/20 bg-[#c9a96e]/[0.06] p-7">
                   <p className="text-[10px] font-medium uppercase tracking-[0.24em] text-[#9a7a2e]">What to watch</p>
                   <ul className="mt-4 space-y-3">
@@ -833,10 +841,13 @@ export default function ProjectProfile({
                     ))}
                   </ul>
                 </div>
+                )}
               </div>
             </Section>
+            )}
 
             {/* 10 · What this serves */}
+            {p.tags.length > 0 && (
             <Section id="serves" n={num()} title="What this serves">
               <p className="-mt-2 mb-5 max-w-2xl text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/50">The buyer priorities this project genuinely answers — on the evidence, not the brochure.</p>
               <div className="flex flex-wrap gap-2.5">
@@ -845,6 +856,7 @@ export default function ProjectProfile({
                 ))}
               </div>
             </Section>
+            )}
 
             {/* Straight answers */}
             {faqs.length > 0 && (

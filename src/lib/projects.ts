@@ -512,7 +512,7 @@ export function investorFit(p: ProjectIntel): string {
     : p.tags.includes("Luxury Lifestyle")
     ? "lifestyle-led end-users and upgraders"
     : "safety-focused end-users and long-term investors";
-  return `Best suited for ${audience} who prioritise ${priorities}${market ? ` — ${market.bestFor.toLowerCase()}` : ""}.`;
+  return `Best suited for ${audience}${priorities ? ` who prioritise ${priorities}` : ""}${market ? ` — ${market.bestFor.toLowerCase()}` : ""}.`;
 }
 
 /* Forensic FAQ — composed from the data; also emitted as FAQPage schema. */
@@ -629,8 +629,11 @@ export function pillars(p: ProjectIntel): Pillar[] {
    the "TripAdvisor context" for the hero seal. */
 export function rankContext(p: ProjectIntel) {
   const all = PROJECT_INTEL; // sorted desc by truthScore
-  const rank = all.findIndex((x) => x.slug === p.slug) + 1;
-  const total = all.length;
+  /* Pipeline rows aren't members of the flagship set — rank them by score
+     against it (an honest percentile), never a fabricated #0 / "Top 1%". */
+  const member = all.findIndex((x) => x.slug === p.slug);
+  const rank = member >= 0 ? member + 1 : all.filter((x) => x.truthScore > p.truthScore).length + 1;
+  const total = member >= 0 ? all.length : all.length + 1;
   const corridor = all.filter((x) => x.market === p.market);
   const corridorRank = corridor.findIndex((x) => x.slug === p.slug) + 1;
   const corridorAvg = corridor.length ? Math.round(corridor.reduce((s, x) => s + x.truthScore, 0) / corridor.length) : p.truthScore;

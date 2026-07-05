@@ -75,10 +75,9 @@ export default function ProjectsIndex({ live, stats }: { live?: LiveBacklogFull[
                   </div>
                   {p.config && <span className="hidden font-mono text-[0.68rem] text-[#1a1a1a]/45 md:inline">{p.config}</span>}
                   {p.budget && <span className="hidden font-mono text-[0.68rem] text-[#1a1a1a]/45 sm:inline">{p.budget}</span>}
-                  {p.delayDelta && <span className="hidden font-mono text-[0.68rem] text-[#1a1a1a]/45 lg:inline">{p.delayDelta}</span>}
                   {p.delayRisk && (
                     <span className={`rounded-full border px-2.5 py-1 text-[0.6rem] font-medium ${/low/i.test(p.delayRisk) ? "border-[#238c55]/30 bg-[#238c55]/[0.08] text-[#1c7a4c]" : /high/i.test(p.delayRisk) ? "border-[#9a4130]/30 bg-[#9a4130]/[0.07] text-[#9a4130]" : "border-[#9a7a2e]/35 bg-[#9a7a2e]/[0.08] text-[#8a6a1e]"}`}>
-                      {p.delayRisk}{p.delayChancePct != null ? ` · ${p.delayChancePct}%` : ""}
+                      {p.delayRisk}{p.delayDelta ? ` · ${p.delayDelta}` : ""}
                     </span>
                   )}
                   {p.redFlags != null && p.redFlags > 0 && (

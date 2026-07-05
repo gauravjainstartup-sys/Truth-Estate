@@ -3,14 +3,17 @@ import { notFound } from "next/navigation";
 import { PROJECT_INTEL, projectBySlug, projectFaqs } from "@/lib/projects";
 import { fetchBacklogFull, type LiveBacklogFull } from "@/lib/supabase";
 import ProjectProfile from "@/components/intelligence/ProjectProfile";
-import LiveProjectReport from "@/components/intelligence/LiveProjectReport";
+import { liveProjectIntel } from "@/lib/liveReport";
 import { breadcrumbLd, ldJson } from "@/lib/seo";
 
 /* Two kinds of file share this route: the hand-built flagship dossiers
    (PROJECT_INTEL) and auto-generated pipeline files for every scored
-   backlog project ("live-…" slugs, fetched at build time). The backlog
-   is fetched once per build; a fetch failure simply means only the
-   flagship pages exist in that deploy. */
+   backlog project ("live-…" slugs, fetched at build time). Both render
+   through the SAME original report UI — live rows are adapted onto the
+   ProjectIntel shape and the report's own hide/NA behaviour covers
+   whatever the pipeline hasn't extracted yet. The backlog is fetched
+   once per build; a fetch failure simply means only the flagship pages
+   exist in that deploy. */
 
 let backlogCache: LiveBacklogFull[] | null | undefined;
 async function backlog(): Promise<LiveBacklogFull[] | null> {
@@ -67,7 +70,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     return (
       <>
         <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(liveBreadcrumb)} />
-        <LiveProjectReport p={live} />
+        <ProjectProfile p={liveProjectIntel(live)} />
       </>
     );
   }
