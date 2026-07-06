@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { PROJECT_INTEL, projectBySlug, projectFaqs } from "@/lib/projects";
 import {
   fetchBacklogFull,
+  fetchBacklogNameIds,
   fetchConfigurations,
   fetchExtendedDetails,
   type LiveBacklogFull,
@@ -40,15 +41,41 @@ async function configurations(): Promise<Record<string, LiveConfiguration[]> | n
   if (cfgCache === undefined) cfgCache = await fetchConfigurations();
   return cfgCache;
 }
+let nameIdCache: Record<string, string> | null | undefined;
+async function backlogNameIds(): Promise<Record<string, string> | null> {
+  if (nameIdCache === undefined) nameIdCache = await fetchBacklogNameIds();
+  return nameIdCache;
+}
+
+/* the extended/config tables key on backlog_projects.id; join directly
+   on the view row's id, else bridge through the project name — resolved
+   per table so one table's match never masks the other's */
+function lookupKey<T>(
+  rowId: string,
+  name: string,
+  table: Record<string, T> | null,
+  nameIds: Record<string, string> | null,
+): string | null {
+  if (!table) return null;
+  if (table[rowId] !== undefined) return rowId;
+  const alt = nameIds?.[name];
+  return alt && table[alt] !== undefined ? alt : null;
+}
 
 export async function generateStaticParams() {
   const flagship = PROJECT_INTEL.map((p) => ({ slug: p.slug }));
   const rows = await backlog();
-  // one-line join record in the build log: how many live rows carry media/config data
-  const [ext, cfg] = [await extended(), await configurations()];
+  // join record in the build log: direct id hits vs name-bridged hits
+  const [ext, cfg, nameIds] = [await extended(), await configurations(), await backlogNameIds()];
   if (rows && (ext || cfg)) {
-    const hits = rows.filter((r) => ext?.[r.id] || cfg?.[r.id]).length;
-    console.log(`[supabase] extended/config join → ${hits}/${rows.length} scored projects matched`);
+    let direct = 0, bridged = 0;
+    for (const r of rows) {
+      const eK = lookupKey(r.id, r.name, ext, nameIds);
+      const cK = lookupKey(r.id, r.name, cfg, nameIds);
+      if (eK === r.id || cK === r.id) direct++;
+      else if (eK || cK) bridged++;
+    }
+    console.log(`[supabase] extended/config join → direct ${direct} · name-bridged ${bridged} · unmatched ${rows.length - direct - bridged} (of ${rows.length} scored)`);
   }
   const flagshipSlugs = new Set(flagship.map((f) => f.slug));
   const live = (rows ?? [])
@@ -93,11 +120,13 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       { name: "Projects", path: "/intelligence/projects" },
       { name: live.name, path: `/intelligence/projects/${slug}` },
     ]);
-    const [ext, cfg] = [await extended(), await configurations()];
+    const [ext, cfg, nameIds] = [await extended(), await configurations(), await backlogNameIds()];
+    const extKey = lookupKey(live.id, live.name, ext, nameIds);
+    const cfgKey = lookupKey(live.id, live.name, cfg, nameIds);
     return (
       <>
         <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(liveBreadcrumb)} />
-        <ProjectProfile p={liveProjectIntel(live, ext?.[live.id] ?? null, cfg?.[live.id] ?? null)} />
+        <ProjectProfile p={liveProjectIntel(live, extKey ? ext![extKey] : null, cfgKey ? cfg![cfgKey] : null)} />
       </>
     );
   }

@@ -322,6 +322,22 @@ export async function fetchExtendedDetails(): Promise<Record<string, LiveExtende
   return Object.keys(out).length ? out : null;
 }
 
+/* ── backlog_projects name↔id map — the join bridge ──
+   The extended/config tables reference backlog_projects.id. If the
+   listing view's own id column is a different id, we can still join
+   through the project name. */
+
+export async function fetchBacklogNameIds(): Promise<Record<string, string> | null> {
+  const rows = await sbRows("backlog_projects", "select=id,name&limit=2000");
+  if (!rows) return null;
+  const out: Record<string, string> = {};
+  for (const r of rows) {
+    const id = s(r.id), name = s(r.name);
+    if (id && name && !(name in out)) out[name] = id;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 /* ── per-BHK configurations — 1-to-many via backlog_id ── */
 
 export type LiveConfiguration = {
