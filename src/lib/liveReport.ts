@@ -13,6 +13,11 @@ import type { LiveBacklogFull, LiveConfiguration, LiveExtendedDetails } from "./
 import { MARKETS } from "./markets";
 import type { FinRating } from "./developers";
 import { developerSlugOf, type ProjectIntel, type ProjectOps, type ScoreInputKey } from "./projects";
+import mediaManifest from "./live-media.manifest.json";
+
+/* base64 blobs are decoded to real files before the build
+   (scripts/materialize-media.mjs); the manifest maps them back */
+const MANIFEST = mediaManifest as Record<string, Partial<Record<string, string>>>;
 
 /* tiny defensive readers over the pipeline-owned JSON payloads */
 const obj = (v: unknown): Record<string, unknown> | null =>
@@ -133,9 +138,21 @@ const normBhk = (s: string): string => s.replace(/(\d(?:\.\d)?)\s*BHK/i, "$1 BHK
 
 export function liveProjectIntel(
   row: LiveBacklogFull,
-  ext?: LiveExtendedDetails | null,
+  extRaw?: LiveExtendedDetails | null,
   cfgs?: LiveConfiguration[] | null,
 ): ProjectIntel {
+  /* prefer materialized files over inline blobs */
+  const mm = extRaw ? MANIFEST[extRaw.backlogId] : undefined;
+  const ext: LiveExtendedDetails | null | undefined = extRaw && mm
+    ? {
+        ...extRaw,
+        heroImageUrl: mm.hero_image_url ?? extRaw.heroImageUrl,
+        brochureUrl: mm.brochure_url ?? extRaw.brochureUrl,
+        paymentPlanUrl: mm.payment_plan_url ?? extRaw.paymentPlanUrl,
+        siteMapImageUrl: mm.site_map_image_url ?? extRaw.siteMapImageUrl,
+        renderElevationUrl: mm.render_elevation_url ?? extRaw.renderElevationUrl,
+      }
+    : extRaw;
   const ruleV = row.modRuleVerdict;
   const riskI = row.modRiskIntel;
   const fin = row.modFinancial;

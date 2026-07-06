@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "prebuild": "node scripts/materialize-media.mjs"
   },
   "dependencies": {
     "gsap": "^3.15.0",
