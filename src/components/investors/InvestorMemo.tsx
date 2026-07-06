@@ -491,9 +491,35 @@ const SLIDES: Slide[] = [
   },
 
   {
+    key: "model",
+    node: (
+      <Card label="IV · Business model — Exhibit 08" title="Reports scale like software. Advisory monetises like a fund.">
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:mt-8 lg:grid-cols-4 lg:gap-5">
+          {([
+            ["Project files", "₹999", "per project unlock", "Free in the MVP phase — deliberately: trust before revenue."],
+            ["Buyer's Office", "₹9,999", "per buyer / yr", "Every file, match scoring, the office and TruthGuide."],
+            ["Unit Intelligence", "Paid module", "tower · floor · stack", "The 3D decision layer between research and booking."],
+            ["Buyer-side advisory", "Fee-based", "refundable by design", "The fee returns if our verdict is walk away."],
+          ] as const).map(([t, price, unit, body]) => (
+            <div key={t} className="rounded-xl border border-[#1a1a1a]/[0.08] bg-white/60 p-5 lg:p-6">
+              <p className="text-[0.8rem] font-normal lg:text-[0.95rem]">{t}</p>
+              <p className="mt-2.5 text-[1.35rem] font-normal leading-none tracking-[-0.02em] tabular-nums text-[#1e6b45] lg:mt-4 lg:text-[1.9rem]">{price}</p>
+              <p className="mt-1 font-mono text-[0.58rem] tracking-[0.12em] text-[#1a1a1a]/40 lg:mt-2 lg:text-[0.66rem]">{unit.toUpperCase()}</p>
+              <p className="mt-3 text-[0.74rem] font-light leading-[1.6] text-[#1a1a1a]/55 lg:mt-4 lg:text-[0.88rem]">{body}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 rounded-r-xl border-l-2 border-[#9a7a2e] bg-[#9a7a2e]/[0.06] px-5 py-3 text-[0.86rem] font-light leading-[1.6] text-[#1a1a1a]/70 lg:mt-6 lg:px-6 lg:py-4 lg:text-[1.05rem]">
+          <b className="font-medium text-[#1a1a1a]">The governance covenant:</b>{" "}no developer money, ever. Independence is the asset every revenue line depends on.
+        </div>
+      </Card>
+    ),
+  },
+
+  {
     key: "market",
     node: (
-      <Card label="IV · Market — Exhibit 08 · Supply-side sizing" title="Sized from the supply side: a ₹9,000-crore-a-year fee pool."
+      <Card label="IV · Market — Exhibit 09 · Supply-side sizing" title="Sized from the supply side: a ₹9,000-crore-a-year fee pool."
         sub={<>Bottom-up from launch filings, not analyst decks — the trailing six years of Gurugram launches, 75% premium share, ₹5 Cr average ticket, brokerage at 1%. Challenge any cell; the full sheet lives in the data room.</>}>
         {/* phones: the funnel as tiles + the ramp as a ledger */}
         <div className="mt-6 grid gap-3.5 lg:hidden">
@@ -574,32 +600,6 @@ const SLIDES: Slide[] = [
               ))}
             </div>
           </div>
-        </div>
-      </Card>
-    ),
-  },
-
-  {
-    key: "model",
-    node: (
-      <Card label="IV · Business model — Exhibit 09" title="Reports scale like software. Advisory monetises like a fund.">
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:mt-8 lg:grid-cols-4 lg:gap-5">
-          {([
-            ["Project files", "₹1,499", "per project unlock", "Free in the MVP phase — deliberately: trust before revenue."],
-            ["Buyer's Office", "₹11,000", "per buyer / yr", "Every file, match scoring, the office and TruthGuide."],
-            ["Unit Intelligence", "Paid module", "tower · floor · stack", "The 3D decision layer between research and booking."],
-            ["Buyer-side advisory", "Fee-based", "refundable by design", "The fee returns if our verdict is walk away."],
-          ] as const).map(([t, price, unit, body]) => (
-            <div key={t} className="rounded-xl border border-[#1a1a1a]/[0.08] bg-white/60 p-5 lg:p-6">
-              <p className="text-[0.8rem] font-normal lg:text-[0.95rem]">{t}</p>
-              <p className="mt-2.5 text-[1.35rem] font-normal leading-none tracking-[-0.02em] tabular-nums text-[#1e6b45] lg:mt-4 lg:text-[1.9rem]">{price}</p>
-              <p className="mt-1 font-mono text-[0.58rem] tracking-[0.12em] text-[#1a1a1a]/40 lg:mt-2 lg:text-[0.66rem]">{unit.toUpperCase()}</p>
-              <p className="mt-3 text-[0.74rem] font-light leading-[1.6] text-[#1a1a1a]/55 lg:mt-4 lg:text-[0.88rem]">{body}</p>
-            </div>
-          ))}
-        </div>
-        <div className="mt-4 rounded-r-xl border-l-2 border-[#9a7a2e] bg-[#9a7a2e]/[0.06] px-5 py-3 text-[0.86rem] font-light leading-[1.6] text-[#1a1a1a]/70 lg:mt-6 lg:px-6 lg:py-4 lg:text-[1.05rem]">
-          <b className="font-medium text-[#1a1a1a]">The governance covenant:</b>{" "}no developer money, ever. Independence is the asset every revenue line depends on.
         </div>
       </Card>
     ),
