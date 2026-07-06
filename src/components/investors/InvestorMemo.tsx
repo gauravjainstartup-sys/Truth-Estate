@@ -89,29 +89,6 @@ function Bar({ w, bg, children, h = "h-[34px] lg:h-[52px]" }: { w: number; bg: s
   );
 }
 
-/* ── set-piece: the boardroom table (Exhibit 03, lg+) ── */
-function BoardTable() {
-  const chair = (left: string, top: string, label: string, pay: string, us = false) => (
-    <div key={label} className="absolute flex -translate-x-1/2 flex-col items-center gap-1.5 text-center" style={{ left, top }}>
-      <span className={`h-11 w-11 rounded-full border-2 lg:h-14 lg:w-14 ${us ? "border-[#1e6b45] bg-[#1e6b45]/[0.14]" : "border-[#9a7a2e]/60 bg-[#9a7a2e]/[0.13]"}`} />
-      <span className={`text-[0.66rem] font-normal leading-tight lg:text-[0.8rem] ${us ? "text-[#1e6b45]" : ""}`}>{label}</span>
-      <span className={`max-w-[130px] font-mono text-[0.5rem] leading-snug tracking-[0.08em] lg:text-[0.58rem] ${us ? "text-[#1e6b45]" : "text-[#9a7a2e]"}`}>{pay}</span>
-    </div>
-  );
-  return (
-    <div className="relative mx-auto mt-2 h-[330px] w-full max-w-[880px] lg:h-[400px]">
-      <div className="absolute left-1/2 top-[47%] h-[38%] w-[68%] -translate-x-1/2 -translate-y-1/2 rounded-[50%] border border-[#b9a67d]/50 bg-gradient-to-b from-[#f0e7d3] to-[#e2d5ba] shadow-[inset_0_10px_30px_rgba(26,26,26,0.07)]">
-        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap font-mono text-[0.54rem] tracking-[0.22em] text-[#1a1a1a]/30 lg:text-[0.64rem]">THE PRIMARY TRANSACTION</span>
-      </div>
-      {chair("13%", "4%", "Developer", "SELLS")}
-      {chair("37%", "0%", "Broker", "PAID BY SELLER · 2–4%")}
-      {chair("62%", "0%", "Channel partner", "PAID BY SELLER")}
-      {chair("86%", "4%", "Marketer", "PAID BY SELLER")}
-      {chair("50%", "72%", "Truth Estate", "FEE FROM THE BUYER ONLY — THE SEAT THAT SAT EMPTY", true)}
-    </div>
-  );
-}
-
 /* ── set-piece: why-now timeline (lg+) ── */
 function Timeline() {
   const node = (left: string, year: string, title: string, body: string) => (
@@ -278,35 +255,29 @@ const SLIDES: Slide[] = [
   },
 
   {
-    key: "gap-chair",
+    key: "gap-representation",
     node: (
-      <Card label="I · The four gaps — Exhibit 03 · Representation" title="Every seat at the table is paid by the seller. Except one, which sat empty."
-        sub={<>Four parties monetise the buyer&rsquo;s yes. Nobody is paid for the buyer&rsquo;s <i>no</i>.</>}>
-        {/* phones: the seat tiles · desktop: the table, drawn from above */}
-        <div className="mt-6 lg:hidden">
-          <div className="rounded-[14px] border border-[#1a1a1a]/[0.08] bg-gradient-to-b from-[#f7f2e7] to-[#efe8d8] p-6">
-            <div className="flex flex-wrap items-stretch gap-3">
-              {([
-                ["Developer", "SELLS"],
-                ["Broker", "PAID BY SELLER · 2–4%"],
-                ["Channel partner", "PAID BY SELLER"],
-                ["Marketer", "PAID BY SELLER"],
-              ] as const).map(([who, pay]) => (
-                <div key={who} className="min-w-[128px] flex-1 rounded-xl border border-[#9a7a2e]/35 bg-[#9a7a2e]/[0.09] px-3.5 py-3.5">
-                  <p className="text-[0.82rem] font-normal">{who}</p>
-                  <p className="mt-1.5 font-mono text-[0.56rem] tracking-[0.1em] text-[#9a7a2e]">{pay}</p>
-                </div>
-              ))}
-              <div className="min-w-[128px] flex-1 rounded-xl border border-[#1e6b45]/45 bg-[#1e6b45]/[0.09] px-3.5 py-3.5">
-                <p className="text-[0.82rem] font-normal text-[#1e6b45]">Truth Estate</p>
-                <p className="mt-1.5 font-mono text-[0.56rem] tracking-[0.1em] text-[#1e6b45]">FEE FROM THE BUYER ONLY</p>
-              </div>
-            </div>
-          </div>
+      <Card label="I · The four gaps — Exhibit 03 · Representation" title="Everyone else is paid to make you say yes."
+        sub="Two structural axes: who pays, and whether the output is inventory or judgement. Every incumbent sits on the seller-paid side; the buyer&rsquo;s seat sat empty.">
+        <div className="relative mt-6 h-[300px] rounded-[14px] border border-[#1a1a1a]/10 bg-white/60 sm:h-[330px] lg:mt-8 lg:h-[430px]">
+          <div className="absolute inset-y-2 right-2 w-[48%] rounded-r-[12px] bg-gradient-to-r from-transparent to-[#1e6b45]/[0.05]" />
+          <span className="absolute left-1/2 top-2 bottom-2 w-px -translate-x-1/2 bg-[#1a1a1a]/10" />
+          <span className="absolute top-1/2 left-2 right-2 h-px -translate-y-1/2 bg-[#1a1a1a]/10" />
+          <span className="absolute left-1/2 top-3 -translate-x-1/2 font-mono text-[0.54rem] tracking-[0.14em] text-[#1a1a1a]/35 lg:top-4 lg:text-[0.66rem]">LISTINGS / OPTIONS</span>
+          <span className="absolute left-1/2 bottom-3 -translate-x-1/2 font-mono text-[0.54rem] tracking-[0.14em] text-[#1a1a1a]/35 lg:bottom-4 lg:text-[0.66rem]">INTELLIGENCE / JUDGEMENT</span>
+          <span className="absolute top-1/2 left-3 -translate-y-1/2 -rotate-90 font-mono text-[0.54rem] tracking-[0.14em] text-[#1a1a1a]/35 lg:left-4 lg:text-[0.66rem]">SELLER-PAID</span>
+          <span className="absolute top-1/2 right-3 -translate-y-1/2 rotate-90 font-mono text-[0.54rem] tracking-[0.14em] text-[#9a7a2e] lg:right-4 lg:text-[0.66rem]">BUYER-PAID</span>
+          {([
+            ["Listing portals", "27%", "20%"],
+            ["Broker & CP networks", "25%", "56%"],
+            ["Content & video reviewers", "68%", "26%"],
+          ] as const).map(([n, left, top]) => (
+            <span key={n} className="absolute -translate-x-1/2 whitespace-nowrap rounded-full border border-[#1a1a1a]/15 bg-[#F5F0E8] px-3 py-1.5 text-[0.66rem] font-light text-[#1a1a1a]/55 sm:text-[0.7rem] lg:px-4 lg:py-2 lg:text-[0.88rem]" style={{ left, top }}>{n}</span>
+          ))}
+          <span className="absolute -translate-x-1/2 whitespace-nowrap rounded-full border border-[#1e6b45]/50 bg-[#1e6b45]/[0.08] px-3.5 py-2 text-[0.68rem] font-medium text-[#1e6b45] sm:text-[0.74rem] lg:px-5 lg:py-2.5 lg:text-[0.95rem]" style={{ left: "66%", top: "72%" }}>Truth Estate — alone here</span>
         </div>
-        <div className="hidden lg:block"><BoardTable /></div>
-        <p className="mt-4 text-[0.8rem] font-light leading-[1.6] text-[#1a1a1a]/50 lg:mt-2 lg:text-[0.95rem]">
-          The covenant: no developer money, ever. Advisory fees are refundable if our verdict is walk away.
+        <p className="mt-4 max-w-[52rem] text-[0.85rem] font-light leading-[1.7] text-[#1a1a1a]/60 lg:text-[1rem]">
+          None of them can enter the buyer-paid quadrant without burning their revenue — the incumbent&rsquo;s dilemma, working for us. The covenant: no developer money, ever.
         </p>
       </Card>
     ),
@@ -606,38 +577,9 @@ const SLIDES: Slide[] = [
   },
 
   {
-    key: "competition",
-    node: (
-      <Card label="IV · Competition — Exhibit 10" title="Everyone else is paid to make you say yes."
-        sub="Two structural axes: who pays, and whether the output is inventory or judgement.">
-        <div className="relative mt-6 h-[300px] rounded-[14px] border border-[#1a1a1a]/10 bg-white/60 sm:h-[330px] lg:mt-8 lg:h-[430px]">
-          <div className="absolute inset-y-2 right-2 w-[48%] rounded-r-[12px] bg-gradient-to-r from-transparent to-[#1e6b45]/[0.05]" />
-          <span className="absolute left-1/2 top-2 bottom-2 w-px -translate-x-1/2 bg-[#1a1a1a]/10" />
-          <span className="absolute top-1/2 left-2 right-2 h-px -translate-y-1/2 bg-[#1a1a1a]/10" />
-          <span className="absolute left-1/2 top-3 -translate-x-1/2 font-mono text-[0.54rem] tracking-[0.14em] text-[#1a1a1a]/35 lg:top-4 lg:text-[0.66rem]">LISTINGS / OPTIONS</span>
-          <span className="absolute left-1/2 bottom-3 -translate-x-1/2 font-mono text-[0.54rem] tracking-[0.14em] text-[#1a1a1a]/35 lg:bottom-4 lg:text-[0.66rem]">INTELLIGENCE / JUDGEMENT</span>
-          <span className="absolute top-1/2 left-3 -translate-y-1/2 -rotate-90 font-mono text-[0.54rem] tracking-[0.14em] text-[#1a1a1a]/35 lg:left-4 lg:text-[0.66rem]">SELLER-PAID</span>
-          <span className="absolute top-1/2 right-3 -translate-y-1/2 rotate-90 font-mono text-[0.54rem] tracking-[0.14em] text-[#9a7a2e] lg:right-4 lg:text-[0.66rem]">BUYER-PAID</span>
-          {([
-            ["Listing portals", "27%", "20%"],
-            ["Broker & CP networks", "25%", "56%"],
-            ["Content & video reviewers", "68%", "26%"],
-          ] as const).map(([n, left, top]) => (
-            <span key={n} className="absolute -translate-x-1/2 whitespace-nowrap rounded-full border border-[#1a1a1a]/15 bg-[#F5F0E8] px-3 py-1.5 text-[0.66rem] font-light text-[#1a1a1a]/55 sm:text-[0.7rem] lg:px-4 lg:py-2 lg:text-[0.88rem]" style={{ left, top }}>{n}</span>
-          ))}
-          <span className="absolute -translate-x-1/2 whitespace-nowrap rounded-full border border-[#1e6b45]/50 bg-[#1e6b45]/[0.08] px-3.5 py-2 text-[0.68rem] font-medium text-[#1e6b45] sm:text-[0.74rem] lg:px-5 lg:py-2.5 lg:text-[0.95rem]" style={{ left: "66%", top: "72%" }}>Truth Estate — alone here</span>
-        </div>
-        <p className="mt-4 max-w-[52rem] text-[0.85rem] font-light leading-[1.7] text-[#1a1a1a]/60 lg:text-[1rem]">
-          None of them can enter the buyer-paid quadrant without burning their revenue — the incumbent&rsquo;s dilemma, working for us.
-        </p>
-      </Card>
-    ),
-  },
-
-  {
     key: "traction",
     node: (
-      <Card label="V · Traction — Exhibit 11 · First 40 days" title="Half the people who open a forensic file finish it."
+      <Card label="V · Traction — Exhibit 10 · First 40 days" title="Half the people who open a forensic file finish it."
         sub="Reports free by design — the phase is trust and search presence, not revenue. Zero paid marketing.">
         <div className="mt-6 flex flex-col gap-3.5 lg:mt-8 lg:gap-5">
           {([
@@ -663,7 +605,7 @@ const SLIDES: Slide[] = [
   {
     key: "ask",
     node: (
-      <Card label="V · The ask — Exhibit 12" title="Raising — currently in conversation."
+      <Card label="V · The ask — Exhibit 11" title="Raising — currently in conversation."
         sub="Terms in discussion with early partners — this memo states use of funds and milestones, not a number.">
         <div className="mt-6 grid gap-8 lg:mt-8 lg:grid-cols-[1.1fr_1fr] lg:gap-14">
           <div>
