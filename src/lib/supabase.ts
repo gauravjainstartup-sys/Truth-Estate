@@ -328,14 +328,22 @@ export async function fetchExtendedDetails(): Promise<Record<string, LiveExtende
    through the project name. */
 
 export async function fetchBacklogNameIds(): Promise<Record<string, string> | null> {
-  const rows = await sbRows("backlog_projects", "select=id,name&limit=2000");
-  if (!rows) return null;
-  const out: Record<string, string> = {};
-  for (const r of rows) {
-    const id = s(r.id), name = s(r.name);
-    if (id && name && !(name in out)) out[name] = id;
+  // the project-name column differs between pipeline versions — probe candidates
+  for (const col of ["name", "project_name", '"projectName"', "title"]) {
+    const rows = await sbRows("backlog_projects", `select=id,${col}&limit=2000`);
+    if (!rows) continue; // HTTP 400 = column doesn't exist; try the next one
+    const key = col.replace(/"/g, "");
+    const out: Record<string, string> = {};
+    for (const r of rows) {
+      const id = s(r.id), name = s(r[key]);
+      if (id && name && !(name in out)) out[name] = id;
+    }
+    if (Object.keys(out).length) {
+      console.log(`[supabase] backlog_projects name column → ${key}`);
+      return out;
+    }
   }
-  return Object.keys(out).length ? out : null;
+  return null;
 }
 
 /* ── per-BHK configurations — 1-to-many via backlog_id ── */
