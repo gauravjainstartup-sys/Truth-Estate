@@ -277,6 +277,83 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
   return out.length ? out : null;
 }
 
+/* ── extended details — hero, vitals & document media per project ──
+   1-to-1 with backlog_projects via backlog_id; rows arrive as the
+   founder fills them, so every field is nullable and the page simply
+   keeps its NA/hidden state until data lands. */
+
+export type LiveExtendedDetails = {
+  backlogId: string;
+  heroImageUrl: string | null;
+  heroDate: string | null;
+  priceRangeSqft: string | null;
+  superAreaRange: string | null;
+  launchPrice: number | null;
+  floorsRange: string | null;
+  brochureUrl: string | null;
+  paymentPlanUrl: string | null;
+  renderElevationUrl: string | null;
+  siteMapImageUrl: string | null;
+  siteMap3dHtml: string | null;
+};
+
+export async function fetchExtendedDetails(): Promise<Record<string, LiveExtendedDetails> | null> {
+  const rows = await sbRows("project_extended_details", "select=*&limit=300");
+  if (!rows) return null;
+  const out: Record<string, LiveExtendedDetails> = {};
+  for (const r of rows) {
+    const backlogId = s(r.backlog_id);
+    if (!backlogId) continue;
+    out[backlogId] = {
+      backlogId,
+      heroImageUrl: s(r.hero_image_url),
+      heroDate: s(r.hero_date),
+      priceRangeSqft: s(r.price_range_sqft),
+      superAreaRange: s(r.super_area_range),
+      launchPrice: n(r.launch_price),
+      floorsRange: s(r.floors_range),
+      brochureUrl: s(r.brochure_url),
+      paymentPlanUrl: s(r.payment_plan_url),
+      renderElevationUrl: s(r.render_elevation_url),
+      siteMapImageUrl: s(r.site_map_image_url),
+      siteMap3dHtml: s(r.site_map_3d_html),
+    };
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+/* ── per-BHK configurations — 1-to-many via backlog_id ── */
+
+export type LiveConfiguration = {
+  backlogId: string;
+  bhkType: string | null;
+  areaType: string | null;
+  carpetArea: number | null;
+  balconyArea: number | null;
+  superArea: number | null;
+  config3dHtml: string | null;
+};
+
+export async function fetchConfigurations(): Promise<Record<string, LiveConfiguration[]> | null> {
+  const rows = await sbRows("project_configurations", "select=*&order=super_area.asc.nullslast&limit=1000");
+  if (!rows) return null;
+  const out: Record<string, LiveConfiguration[]> = {};
+  for (const r of rows) {
+    const backlogId = s(r.backlog_id);
+    if (!backlogId) continue;
+    (out[backlogId] ??= []).push({
+      backlogId,
+      bhkType: s(r.bhk_type),
+      areaType: s(r.area_type),
+      carpetArea: n(r.carpet_area),
+      balconyArea: n(r.balcony_area),
+      superArea: n(r.super_area),
+      config3dHtml: s(r.config_3d_html),
+    });
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 /* ── micro-markets under live coverage ── */
 
 export type LiveMicroMarket = { slug: string; name: string };

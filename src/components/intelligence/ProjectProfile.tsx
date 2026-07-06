@@ -36,6 +36,10 @@ import ReportHomes from "./ReportHomes";
 
 const basePath = "/Truth-Estate";
 
+/* media paths are repo-relative for the flagship files; pipeline rows may
+   carry absolute (storage) URLs — pass those through untouched */
+const asset = (s: string) => (/^https?:\/\//i.test(s) ? s : `${basePath}/${s}`);
+
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return <p className="text-[11px] font-medium uppercase tracking-[0.34em] text-[#c9a96e]">{children}</p>;
 }
@@ -460,7 +464,7 @@ export default function ProjectProfile({
               <div className={`relative ${embedded ? "mt-9 rounded-[24px]" : "-mx-6 -mt-4 rounded-b-[26px] sm:mx-0 sm:mt-0 sm:rounded-[24px]"} overflow-hidden bg-[#0b1f1a] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.55)]`}>
                 {heroImage ? (
                   <>
-                    <img src={`${basePath}/${heroImage}`} alt={`${p.name} — aerial site view`} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: "center 42%" }} />
+                    <img src={asset(heroImage)} alt={`${p.name} — aerial site view`} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: "center 42%" }} />
                     <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(8,12,18,0.94) 0%, rgba(8,12,18,0.66) 30%, rgba(8,12,18,0.22) 62%, rgba(8,12,18,0.26) 100%)" }} />
                     <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(8,12,18,0.5), rgba(8,12,18,0) 60%)" }} />
                     {/* stacked layouts carry the identity at the top — darken the
@@ -644,7 +648,7 @@ export default function ProjectProfile({
                   className="group relative block w-full cursor-zoom-in overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-white/60 text-left"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={`${basePath}/${ops.media.masterplan.src}`} alt={`${p.name} — site masterplan (indicative)`} className="w-full transition-transform duration-500 group-hover:scale-[1.02]" />
+                  <img src={asset(ops.media.masterplan.src)} alt={`${p.name} — site masterplan (indicative)`} className="w-full transition-transform duration-500 group-hover:scale-[1.02]" />
                   {/* persistent enlarge affordance — the image is the click target */}
                   <span className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-[#0b1f1a]/70 px-3 py-1.5 text-[0.66rem] font-medium text-white backdrop-blur-sm transition-colors group-hover:bg-[#0b1f1a]/90">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
@@ -678,7 +682,7 @@ export default function ProjectProfile({
                     >
                       <div className="relative aspect-[16/10] overflow-hidden bg-[#0b1f1a]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={`${basePath}/${ops.media.brochure[0]}`} alt={`${p.name} brochure cover`} className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]" />
+                        <img src={asset(ops.media.brochure[0])} alt={`${p.name} brochure cover`} className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]" />
                       </div>
                       <div className="flex items-center justify-between gap-4 px-5 py-4">
                         <div>
@@ -698,7 +702,7 @@ export default function ProjectProfile({
                     >
                       <div className="relative aspect-[16/10] overflow-hidden bg-[#f0ece3]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={`${basePath}/${ops.media.paymentPlan.src}`} alt={`${p.name} payment plan`} className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]" />
+                        <img src={asset(ops.media.paymentPlan.src)} alt={`${p.name} payment plan`} className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]" />
                       </div>
                       <div className="flex items-center justify-between gap-4 px-5 py-4">
                         <div>
@@ -723,7 +727,7 @@ export default function ProjectProfile({
                       >
                         <div className="relative aspect-[16/10] overflow-hidden bg-[#f0ece3]">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={`${basePath}/${plans[0]}`} alt={`${p.name} floor plan`} className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]" />
+                          <img src={asset(plans[0])} alt={`${p.name} floor plan`} className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]" />
                         </div>
                         <div className="flex items-center justify-between gap-4 px-5 py-4">
                           <div>
@@ -745,7 +749,7 @@ export default function ProjectProfile({
                     >
                       <div className="relative aspect-[16/10] overflow-hidden bg-[#f0ece3]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={`${basePath}/${ops.media.costSheet}`} alt={`${p.name} cost sheet`} className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]" />
+                        <img src={asset(ops.media.costSheet)} alt={`${p.name} cost sheet`} className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]" />
                       </div>
                       <div className="flex items-center justify-between gap-4 px-5 py-4">
                         <div>
@@ -970,7 +974,7 @@ export default function ProjectProfile({
             {/* key resets the zoom whenever the page turns */}
             <ZoomStage key={doc.idx}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={`${basePath}/${doc.pages[doc.idx]}`} alt={`${doc.title} — page ${doc.idx + 1}`} className="max-h-[78vh] max-w-full rounded-lg shadow-[0_30px_90px_rgba(0,0,0,0.5)]" draggable={false} />
+              <img src={asset(doc.pages[doc.idx])} alt={`${doc.title} — page ${doc.idx + 1}`} className="max-h-[78vh] max-w-full rounded-lg shadow-[0_30px_90px_rgba(0,0,0,0.5)]" draggable={false} />
             </ZoomStage>
             {doc.pages.length > 1 && (
               <>

@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PROJECT_INTEL, projectBySlug, projectFaqs } from "@/lib/projects";
-import { fetchBacklogFull, type LiveBacklogFull } from "@/lib/supabase";
+import {
+  fetchBacklogFull,
+  fetchConfigurations,
+  fetchExtendedDetails,
+  type LiveBacklogFull,
+  type LiveConfiguration,
+  type LiveExtendedDetails,
+} from "@/lib/supabase";
 import ProjectProfile from "@/components/intelligence/ProjectProfile";
 import { liveProjectIntel } from "@/lib/liveReport";
 import { breadcrumbLd, ldJson } from "@/lib/seo";
@@ -21,9 +28,28 @@ async function backlog(): Promise<LiveBacklogFull[] | null> {
   return backlogCache;
 }
 
+/* extended details + configurations join the backlog rows on
+   backlog_id = backlog row id; fetched once per build, fail-soft */
+let extCache: Record<string, LiveExtendedDetails> | null | undefined;
+async function extended(): Promise<Record<string, LiveExtendedDetails> | null> {
+  if (extCache === undefined) extCache = await fetchExtendedDetails();
+  return extCache;
+}
+let cfgCache: Record<string, LiveConfiguration[]> | null | undefined;
+async function configurations(): Promise<Record<string, LiveConfiguration[]> | null> {
+  if (cfgCache === undefined) cfgCache = await fetchConfigurations();
+  return cfgCache;
+}
+
 export async function generateStaticParams() {
   const flagship = PROJECT_INTEL.map((p) => ({ slug: p.slug }));
   const rows = await backlog();
+  // one-line join record in the build log: how many live rows carry media/config data
+  const [ext, cfg] = [await extended(), await configurations()];
+  if (rows && (ext || cfg)) {
+    const hits = rows.filter((r) => ext?.[r.id] || cfg?.[r.id]).length;
+    console.log(`[supabase] extended/config join → ${hits}/${rows.length} scored projects matched`);
+  }
   const flagshipSlugs = new Set(flagship.map((f) => f.slug));
   const live = (rows ?? [])
     .filter((r) => !flagshipSlugs.has(r.slug))
@@ -67,10 +93,11 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       { name: "Projects", path: "/intelligence/projects" },
       { name: live.name, path: `/intelligence/projects/${slug}` },
     ]);
+    const [ext, cfg] = [await extended(), await configurations()];
     return (
       <>
         <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(liveBreadcrumb)} />
-        <ProjectProfile p={liveProjectIntel(live)} />
+        <ProjectProfile p={liveProjectIntel(live, ext?.[live.id] ?? null, cfg?.[live.id] ?? null)} />
       </>
     );
   }

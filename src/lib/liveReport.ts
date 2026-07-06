@@ -9,7 +9,7 @@
    UI components; the data adapts to the UI, not the other way round.
    ════════════════════════════════════════════════════════════════ */
 
-import type { LiveBacklogFull } from "./supabase";
+import type { LiveBacklogFull, LiveConfiguration, LiveExtendedDetails } from "./supabase";
 import { MARKETS } from "./markets";
 import type { FinRating } from "./developers";
 import { developerSlugOf, type ProjectIntel, type ProjectOps, type ScoreInputKey } from "./projects";
@@ -53,7 +53,38 @@ const riskRating = (r: string | null): FinRating | null =>
 
 const dedupe = (xs: string[]): string[] => [...new Set(xs.map((x) => x.trim()).filter(Boolean))];
 
-export function liveProjectIntel(row: LiveBacklogFull): ProjectIntel {
+/* media URLs must be images for the report's <img> slots — anything else
+   (PDFs, 3D html) keeps the slot in its request/hidden state for now */
+const imageish = (u: string | null): u is string => !!u && /\.(webp|jpe?g|png|avif|gif)(\?.*)?$/i.test(u);
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function heroDateLabel(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+
+/* "₹17,000–19,500" / "17000-19500" / "₹17k–19.5k" → [17000, 19500] */
+function psfRange(s: string | null): [number, number] | null {
+  if (!s) return null;
+  const nums = (s.match(/\d+(?:[.,]\d+)?\s*k?/gi) ?? []).map((t) => {
+    const k = /k\s*$/i.test(t);
+    const v = parseFloat(t.replace(/,/g, "").replace(/k/i, ""));
+    return k || v < 100 ? v * 1000 : v;
+  }).filter((v) => Number.isFinite(v) && v > 0);
+  if (nums.length < 2) return null;
+  const lo = Math.min(nums[0], nums[1]), hi = Math.max(nums[0], nums[1]);
+  return lo > 0 && hi >= lo ? [lo, hi] : null;
+}
+
+const normBhk = (s: string): string => s.replace(/(\d(?:\.\d)?)\s*BHK/i, "$1 BHK").trim();
+
+export function liveProjectIntel(
+  row: LiveBacklogFull,
+  ext?: LiveExtendedDetails | null,
+  cfgs?: LiveConfiguration[] | null,
+): ProjectIntel {
   const ruleV = row.modRuleVerdict;
   const riskI = row.modRiskIntel;
   const fin = row.modFinancial;
@@ -120,9 +151,24 @@ export function liveProjectIntel(row: LiveBacklogFull): ProjectIntel {
   if (bandRating(bands.developer) === "strong") tags.push("Developer Reputation");
   if (bandRating(bands.location) === "strong") tags.push("Location");
 
-  const configs = row.config
-    ? row.config.split(/[,·/]+/).map((s) => s.trim()).filter(Boolean).map((c) => c.replace(/(\d(?:\.\d)?)\s*BHK/i, "$1 BHK"))
-    : ["NA"];
+  /* configurations table (when filled) is richer than the caption string */
+  const homes = (cfgs ?? [])
+    .filter((c) => (c.carpetArea ?? 0) > 0 && (c.superArea ?? 0) > 0)
+    .map((c) => ({
+      config: c.bhkType ? normBhk(c.bhkType) : "NA",
+      ...(c.areaType ? { variant: c.areaType } : {}),
+      carpetSqft: c.carpetArea!,
+      superSqft: c.superArea!,
+      ...((c.balconyArea ?? 0) > 0 ? { balconySqft: c.balconyArea! } : {}),
+      priceCr: 0, // pipeline doesn't publish per-config tickets yet — the UI hides the ticket at 0
+    }));
+  const cfgNames = dedupe(homes.map((h) => h.config)).filter((c) => c !== "NA");
+
+  const configs = cfgNames.length
+    ? cfgNames
+    : row.config
+      ? row.config.split(/[,·/]+/).map((s) => s.trim()).filter(Boolean).map((c) => normBhk(c))
+      : ["NA"];
 
   const priceLo = row.minPriceCr ?? (row.budget ? parseFloat(row.budget.replace(/[^\d.]/g, "")) : NaN);
   const lo = Number.isFinite(priceLo) ? priceLo : 0;
@@ -130,10 +176,37 @@ export function liveProjectIntel(row: LiveBacklogFull): ProjectIntel {
   const marketName = row.microMarket ?? row.location ?? "Gurugram";
   const market = MARKETS.find((m) => m.name === marketName);
 
+  /* price journey — only when the extended row carries a parseable
+     current range AND a launch price; the launch month anchors to the
+     RERA registration date (the filing that starts the clock) */
+  const range = psfRange(ext?.priceRangeSqft ?? null);
+  const launchMonth = row.registrationDate?.match(/([A-Za-z]{3,9})\s+(\d{4})\s*$/);
+  const price =
+    range && (ext?.launchPrice ?? 0) > 0 && launchMonth
+      ? { launchPsf: ext!.launchPrice!, launchDate: `${launchMonth[1].slice(0, 3)} ${launchMonth[2]}`, currentLow: range[0], currentHigh: range[1] }
+      : null;
+
+  const media: NonNullable<ProjectOps["media"]> = {
+    ...(imageish(ext?.heroImageUrl ?? null) ? { heroImage: ext!.heroImageUrl! } : {}),
+    ...(imageish(ext?.renderElevationUrl ?? null) ? { render: ext!.renderElevationUrl! } : {}),
+    ...(imageish(ext?.siteMapImageUrl ?? null)
+      ? { masterplan: { src: ext!.siteMapImageUrl!, read: "The site layout as filed — tap to enlarge. Verify the RERA-approved siteplan before signing." } }
+      : {}),
+    ...(imageish(ext?.brochureUrl ?? null) ? { brochure: [ext!.brochureUrl!] } : {}),
+    ...(imageish(ext?.paymentPlanUrl ?? null)
+      ? { paymentPlan: { src: ext!.paymentPlanUrl!, read: "From the developer's kit — indicative until countersigned." } }
+      : {}),
+  };
+
   const ops: ProjectOps = {
     ...(row.location ? { address: row.location } : {}),
     ...(totalUnits != null ? { units: totalUnits } : {}),
     ...(row.promised ? { possession: row.promised } : {}),
+    ...(ext?.floorsRange ? { floors: ext.floorsRange } : {}),
+    ...(heroDateLabel(ext?.heroDate ?? null) ? { reviewed: heroDateLabel(ext!.heroDate)! } : {}),
+    ...(price ? { price } : {}),
+    ...(homes.length ? { homes } : {}),
+    ...(Object.keys(media).length ? { media } : {}),
   };
 
   return {
@@ -157,7 +230,7 @@ export function liveProjectIntel(row: LiveBacklogFull): ProjectIntel {
     marketSlug: market?.slug,
     marketShort: market?.short ?? marketName,
     psf: market?.psf ?? null,
-    sizeBand: null,
+    sizeBand: ext?.superAreaRange ?? null,
     anatomy,
     ops,
   };

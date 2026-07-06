@@ -12,6 +12,7 @@ import ZoomStage from "./ZoomStage";
    live inside Unit Intelligence — the gated layer. */
 
 const basePath = "/Truth-Estate";
+const asset = (s: string) => (/^https?:\/\//i.test(s) ? s : `${basePath}/${s}`);
 
 export default function ReportHomes({ p }: { p: ProjectIntel }) {
   const homes = p.ops?.homes ?? [];
@@ -78,10 +79,12 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
           <p className="font-serif text-[1.3rem] font-medium">
             {h.config}{h.variant && <span className="ml-2 align-middle text-[0.82rem] font-normal text-[#1a1a1a]/45">{h.variant}</span>}
           </p>
+          {h.priceCr > 0 && (
           <p className="text-right">
             <span className="font-mono text-[1.05rem] font-semibold">₹{h.priceCr} Cr</span>
             <span className="ml-2 text-[0.68rem] font-light text-[#1a1a1a]/45">≈ {fmtPsf(psfOnSuper)}/sqft on super</span>
           </p>
+          )}
         </div>
 
         {/* ── size picker (segmented cards — only when the BHK has >1 size) ── */}
@@ -96,7 +99,7 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
                   <button key={idx} onClick={() => setVIdx(idx)}
                     className={`min-w-[112px] flex-1 rounded-xl border px-4 py-2.5 text-left transition-colors sm:flex-none ${on ? "border-[#9a7a2e] bg-[#9a7a2e]/[0.09] shadow-[0_0_0_1px_#9a7a2e]" : "border-[#1a1a1a]/12 bg-white hover:border-[#1a1a1a]/30"}`}>
                     <span className={`block text-[0.82rem] font-semibold ${on ? "text-[#7a5f1e]" : "text-[#1a1a1a]/75"}`}>{v.variant ?? `Size ${idx + 1}`}</span>
-                    <span className="mt-0.5 block font-mono text-[0.68rem] text-[#1a1a1a]/50">{v.superSqft.toLocaleString("en-IN")} sq ft · {fmtPsf(psf)}</span>
+                    <span className="mt-0.5 block font-mono text-[0.68rem] text-[#1a1a1a]/50">{psf > 0 ? <>{v.superSqft.toLocaleString("en-IN")} sq ft · {fmtPsf(psf)}</> : <>{v.superSqft.toLocaleString("en-IN")} sq ft</>}</span>
                   </button>
                 );
               })}
@@ -111,7 +114,7 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
             <button type="button" onClick={() => setZoom(true)} aria-label="Enlarge the floor plan"
               className="group relative block w-full cursor-zoom-in overflow-hidden rounded-xl border border-[#1a1a1a]/10 bg-[#FBF8F2] text-left">
               {h.plan ? (
-                <img src={`${basePath}/${h.plan}`} alt={`${h.config} ${h.variant ?? ""} floor plan — ${p.name}`} className="block w-full transition-transform duration-500 group-hover:scale-[1.02]" />
+                <img src={asset(h.plan)} alt={`${h.config} ${h.variant ?? ""} floor plan — ${p.name}`} className="block w-full transition-transform duration-500 group-hover:scale-[1.02]" />
               ) : (
                 <FloorPlanSchematic beds={beds} balcony={h.balconySqft != null} />
               )}
@@ -168,7 +171,7 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
           <div className="flex min-h-0 flex-1 items-center justify-center px-4 pb-6" onClick={(e) => e.stopPropagation()}>
             <ZoomStage>
               {h.plan ? (
-                <img src={`${basePath}/${h.plan}`} alt={`${h.config} floor plan — ${p.name}`} className="max-h-[78vh] max-w-full rounded-lg shadow-[0_30px_90px_rgba(0,0,0,0.5)]" draggable={false} />
+                <img src={asset(h.plan)} alt={`${h.config} floor plan — ${p.name}`} className="max-h-[78vh] max-w-full rounded-lg shadow-[0_30px_90px_rgba(0,0,0,0.5)]" draggable={false} />
               ) : (
                 <div className="w-[min(42rem,88vw)] overflow-hidden rounded-lg bg-[#FBF8F2] shadow-[0_30px_90px_rgba(0,0,0,0.5)]">
                   <FloorPlanSchematic beds={beds} balcony={h.balconySqft != null} />
