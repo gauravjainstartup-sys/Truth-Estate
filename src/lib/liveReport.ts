@@ -256,6 +256,17 @@ export function liveProjectIntel(
       : {}),
   };
 
+  // build-log record: how each media column resolved (or why it didn't)
+  if (ext) {
+    const why = (v: string | null | undefined): string =>
+      !v ? "null" : v.length > PDF_INLINE_CAP ? "too-big" : "unrecognised";
+    console.log(
+      `[supabase] media ${row.name} → hero=${heroSrc ? "ok" : why(ext.heroImageUrl)} · brochure=${
+        brochurePages ? `${brochurePages.length} page(s)` : brochurePdf ? "pdf-link" : why(ext.brochureUrl)
+      } · payment=${paymentSrc ? "ok" : why(ext.paymentPlanUrl)} · sitemap=${siteMapSrc ? "ok" : why(ext.siteMapImageUrl)}`,
+    );
+  }
+
   const ops: ProjectOps = {
     ...(row.location ? { address: row.location } : {}),
     ...(totalUnits != null ? { units: totalUnits } : {}),
