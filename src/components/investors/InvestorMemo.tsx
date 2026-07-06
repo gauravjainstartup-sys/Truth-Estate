@@ -175,6 +175,30 @@ const REV_STREAMS: { name: string; tag: string; color: string; fy: number[]; fy3
   { name: "Ownership OS", tag: "post-purchase subscription", color: "#d8b978", fy: [0, 0, 2000000, 22000000, 48400000], fy31: "₹4.84 Cr", share: "4%" },
 ];
 
+/* ── cost estimates — the founder's Cost Breakup, verbatim. Total
+   operating cost per year, the margin it leaves, the FY31 composition
+   (eleven heads rolled into four buckets) and the team it staffs. ── */
+const COST_YEARS = ["FY27", "FY28", "FY29", "FY30", "FY31"] as const;
+const COST_TOTALS = [8250000, 59983333, 122491667, 193647500, 308339583]; // ₹ per year
+const COST_TOTAL_LABELS = ["₹0.83 Cr", "₹6.0 Cr", "₹12.2 Cr", "₹19.4 Cr", "₹30.8 Cr"];
+const COST_GM = ["46.77%", "64.82%", "67.52%", "69.79%", "73.94%"];
+const COST_MAX = 308339583;
+const COST_BUCKETS: { name: string; tag: string; cr: string; w: number; pct: string; color: string }[] = [
+  { name: "People", tag: "salaries + founders", cr: "₹17.40 Cr", w: 56.4, pct: "56%", color: "#1e6b45" },
+  { name: "Acquisition", tag: "performance · content · PR", cr: "₹12.45 Cr", w: 40.4, pct: "40%", color: "#238c55" },
+  { name: "Technology", tag: "AI · cloud · APIs", cr: "₹0.50 Cr", w: 1.6, pct: "2%", color: "#9a7a2e" },
+  { name: "Operations", tag: "office · legal · finance · travel", cr: "₹0.48 Cr", w: 1.6, pct: "2%", color: "#d8b978" },
+];
+const TEAM: { name: string; a: number; b: number; hi?: boolean }[] = [
+  { name: "Buyer Advisors", a: 2, b: 25, hi: true },
+  { name: "AI / Data", a: 0, b: 8 },
+  { name: "Product & Engineering", a: 1, b: 6 },
+  { name: "Marketing", a: 1, b: 6 },
+  { name: "Architect", a: 1, b: 5 },
+  { name: "Finance, HR & Admin", a: 1, b: 4 },
+  { name: "Founders", a: 1, b: 2 },
+];
+
 /* ── slide contents ── */
 
 function SlideCover() {
@@ -655,56 +679,89 @@ const SLIDES: Slide[] = [
   },
 
   {
-    key: "ask",
+    key: "cost",
     node: (
-      <Card label="V · The ask — Exhibit 11" title="Raising — currently in conversation."
-        sub="Terms in discussion with early partners — this memo states use of funds and milestones, not a number.">
-        <div className="mt-6 grid gap-8 lg:mt-8 lg:grid-cols-[1.1fr_1fr] lg:gap-14">
-          <div>
-            <p className="font-mono text-[0.6rem] tracking-[0.16em] text-[#1a1a1a]/45 lg:text-[0.7rem]">USE OF FUNDS</p>
-            <div className="mt-4 flex flex-col gap-3 lg:mt-5 lg:gap-4">
-              {([
-                ["Data & field operations", 35],
-                ["Engineering & AI", 30],
-                ["Advisory bench", 20],
-                ["Brand & distribution", 15],
-              ] as const).map(([l, pct]) => (
-                <div key={l}>
-                  <div className="flex items-baseline justify-between gap-4">
-                    <span className="text-[0.84rem] font-light text-[#1a1a1a]/70 lg:text-[1.02rem]">{l}</span>
-                    <span className="font-mono text-[0.7rem] tabular-nums text-[#1a1a1a]/50 lg:text-[0.82rem]">{pct}%</span>
+      <Card label="V · Operating plan — Exhibit 11 · Cost & team" title="Costs scale with discipline — margin widens from 47% to 74%."
+        sub={<>Total operating cost rises from ₹0.83 Cr to ₹30.8 Cr as revenue compounds faster. A people-and-acquisition business: two-thirds of every rupee goes to the advisory bench and to reaching buyers, staffed to 56 by FY31.</>}>
+        {/* phones: margin + cost trajectory tiles, composition, team */}
+        <div className="mt-6 lg:hidden">
+          <div className="flex items-end justify-between gap-2 rounded-xl border border-[#1e6b45]/25 bg-[#1e6b45]/[0.05] px-4 py-3.5">
+            <div><p className="font-mono text-[0.56rem] tracking-[0.14em] text-[#1a1a1a]/45">FY27 MARGIN</p><p className="text-[1.15rem] font-normal tabular-nums">46.77%</p></div>
+            <span className="mb-1 text-[#9a7a2e]">→</span>
+            <div className="text-right"><p className="font-mono text-[0.56rem] tracking-[0.14em] text-[#1e6b45]">FY31 MARGIN</p><p className="text-[1.35rem] font-normal tabular-nums text-[#1e6b45]">73.94%</p></div>
+          </div>
+          <p className="mt-2 text-[0.74rem] font-light text-[#1a1a1a]/50">Operating cost ₹0.83 Cr → ₹30.8 Cr · team 7 → 56</p>
+          <div className="mt-3 flex flex-col gap-1.5">
+            {COST_BUCKETS.map((b) => (
+              <div key={b.name} className="flex items-baseline gap-2.5">
+                <span className="h-2.5 w-2.5 shrink-0 translate-y-0.5 rounded-[2px]" style={{ background: b.color }} />
+                <span className="text-[0.82rem] font-light text-[#1a1a1a]/75">{b.name}</span>
+                <span className="ml-auto font-mono text-[0.74rem] tabular-nums text-[#1a1a1a]/60">{b.cr}</span>
+                <span className="w-9 text-right font-mono text-[0.64rem] tabular-nums text-[#1a1a1a]/35">{b.pct}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* desktop: cost + margin bars · composition · team */}
+        <div className="mt-7 hidden lg:grid lg:grid-cols-[1.05fr_1fr] lg:gap-12">
+          <div className="flex flex-col">
+            <p className="font-mono text-[0.68rem] tracking-[0.16em] text-[#9a7a2e]">OPERATING COST / YR · MARGIN BELOW</p>
+            <div className="mt-5 flex h-[300px] items-end gap-6">
+              {COST_YEARS.map((y, i) => {
+                const pct = (COST_TOTALS[i] / COST_MAX) * 100;
+                return (
+                  <div key={y} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
+                    <div className="relative w-full flex-1">
+                      <span className="absolute inset-x-0 text-center font-mono text-[0.7rem] tabular-nums text-[#1a1a1a]/70" style={{ bottom: `calc(${pct}% + 6px)` }}>{COST_TOTAL_LABELS[i]}</span>
+                      <div
+                        className="absolute inset-x-0 bottom-0 origin-bottom rounded-t-[6px] transition-transform duration-700 ease-out lg:scale-y-0 lg:group-data-[active=true]:scale-y-100 motion-reduce:scale-y-100 print:scale-y-100"
+                        style={{ height: `max(3px, ${pct}%)`, background: "linear-gradient(180deg,#238c55,#1e6b45)", transitionDelay: `${i * 110}ms` }}
+                      />
+                    </div>
+                    <span className="font-mono text-[0.7rem] tracking-[0.1em] text-[#1a1a1a]/50">{y}</span>
+                    <span className="rounded-full border border-[#1e6b45]/35 bg-[#1e6b45]/[0.07] px-2 py-0.5 font-mono text-[0.6rem] tabular-nums text-[#1e6b45]">{COST_GM[i]}</span>
                   </div>
-                  <div className="mt-1.5 h-[8px] overflow-hidden rounded bg-[#1a1a1a]/[0.06] lg:h-[11px]">
-                    <div className="h-full origin-left rounded transition-transform duration-700 ease-out lg:scale-x-0 lg:group-data-[active=true]:scale-x-100 motion-reduce:scale-x-100 print:scale-x-100" style={{ width: `${pct}%`, background: "linear-gradient(90deg,#1e6b45,#238c55)" }} />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
-          <div>
-            <p className="font-mono text-[0.6rem] tracking-[0.16em] text-[#1a1a1a]/45 lg:text-[0.7rem]">MILESTONES THIS ROUND BUYS</p>
-            <ul className="mt-4 flex flex-col gap-2.5 lg:mt-5 lg:gap-3.5">
-              {[
-                "100+ forensic files across every premium NCR corridor",
-                "A paying advisory cohort with published outcomes",
-                "Unit Intelligence as the category's decision standard",
-                "Quarterly metrics in the data room — the record, kept on ourselves too",
-              ].map((m) => (
-                <li key={m} className="flex gap-3 text-[0.86rem] font-light leading-[1.55] text-[#1a1a1a]/70 lg:text-[1.02rem]">
-                  <span aria-hidden className="mt-0.5 text-[#1e6b45]">+</span>{m}
-                </li>
-              ))}
-            </ul>
+          <div className="flex flex-col justify-center gap-7">
+            <div>
+              <p className="font-mono text-[0.68rem] tracking-[0.16em] text-[#9a7a2e]">FY31 COST COMPOSITION · ₹30.8 Cr</p>
+              <div className="mt-3 flex h-[15px] overflow-hidden rounded-full border border-[#1a1a1a]/10">
+                {COST_BUCKETS.map((b) => (
+                  <div key={b.name} style={{ width: `${b.w}%`, background: b.color }} />
+                ))}
+              </div>
+              <div className="mt-3 flex flex-col gap-1.5">
+                {COST_BUCKETS.map((b) => (
+                  <div key={b.name} className="flex items-baseline gap-2.5">
+                    <span className="h-2.5 w-2.5 shrink-0 translate-y-0.5 rounded-[2px]" style={{ background: b.color }} />
+                    <span className="text-[0.9rem] font-normal">{b.name}</span>
+                    <span className="text-[0.72rem] font-light text-[#1a1a1a]/45">{b.tag}</span>
+                    <span className="ml-auto font-mono text-[0.88rem] tabular-nums text-[#1a1a1a]/70">{b.cr}</span>
+                    <span className="w-8 text-right font-mono text-[0.72rem] tabular-nums text-[#1a1a1a]/40">{b.pct}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="font-mono text-[0.68rem] tracking-[0.16em] text-[#9a7a2e]">TEAM · 7 → 56 BY FY31</p>
+              <div className="mt-3 grid grid-cols-2 gap-x-8 gap-y-1.5">
+                {TEAM.map((t) => (
+                  <div key={t.name} className="flex items-center gap-2.5">
+                    <span className={`min-w-0 flex-1 truncate text-[0.82rem] ${t.hi ? "font-medium text-[#1e6b45]" : "font-light text-[#1a1a1a]/70"}`}>{t.name}</span>
+                    <span className="h-1.5 w-14 overflow-hidden rounded-full bg-[#1a1a1a]/[0.06]">
+                      <span className="block h-full rounded-full" style={{ width: `${(t.b / 25) * 100}%`, background: t.hi ? "#1e6b45" : "#9a7a2e" }} />
+                    </span>
+                    <span className="w-12 text-right font-mono text-[0.68rem] tabular-nums text-[#1a1a1a]/50">{t.a} → {t.b}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
-        <div className="mt-7 flex flex-wrap items-center gap-4 border-t border-[#1a1a1a]/[0.08] pt-5 lg:mt-9 lg:gap-5">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={`${basePath}/images/founder-gaurav.webp`} alt="Gaurav Jain, founder of Truth Estate" className="h-12 w-12 rounded-full border-2 border-[#B29668]/60 object-cover lg:h-16 lg:w-16" />
-          <div className="min-w-0 flex-1">
-            <p className="font-serif text-[1.02rem] font-medium lg:text-[1.25rem]">Gaurav Jain · Founder</p>
-            <p className="text-[0.76rem] font-light text-[#1a1a1a]/55 lg:text-[0.92rem]">Every file crosses the founder&rsquo;s desk before it ships. The same desk answers to investors.</p>
-          </div>
-        </div>
+        <p className="mt-6 font-mono text-[0.58rem] tracking-[0.14em] text-[#1a1a1a]/35">FY27–31 MODELLED · MARGIN = GROSS PLATFORM REVENUE LESS TOTAL OPERATING COST · FULL COST BREAKUP IN THE DATA ROOM</p>
       </Card>
     ),
   },
