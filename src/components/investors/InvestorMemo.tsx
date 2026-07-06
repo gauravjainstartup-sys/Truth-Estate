@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import Logo from "../Logo";
 import RenderVsReality from "../intelligence/RenderVsReality";
 
@@ -8,7 +8,7 @@ import RenderVsReality from "../intelligence/RenderVsReality";
    INVESTOR MEMORANDUM — presented as a deck, sized for the room.
    Sixteen scroll-snap frames. Desktop (lg+) runs the presentation
    scale: bigger frame, ~1.35× type, drawn set-pieces (the boardroom
-   table, the timeline, the flywheel ring, the market rings) and
+   table, the timeline, the flywheel ring, the supply funnel) and
    slide-entry motion. Phones keep the reading scale. Cmd+P still
    yields a page-per-slide PDF.
    ════════════════════════════════════════════════════════════════ */
@@ -175,21 +175,26 @@ function FlywheelRing() {
   );
 }
 
-/* ── set-piece: market rings (lg+) ── */
-function MarketRings() {
-  return (
-    <svg viewBox="0 0 420 420" className="h-full w-full" role="img" aria-label="Concentric markets: Gurugram premium inside NCR inside India's top seven cities">
-      <circle cx="210" cy="210" r="188" fill="rgba(255,255,255,0.35)" stroke="#1a1a1a" strokeOpacity="0.16" strokeWidth="1" strokeDasharray="2 6" />
-      <circle cx="210" cy="210" r="128" fill="rgba(154,122,46,0.06)" stroke="#9a7a2e" strokeOpacity="0.4" strokeWidth="1" />
-      <circle cx="210" cy="210" r="70" fill="rgba(30,107,69,0.12)" stroke="#1e6b45" strokeOpacity="0.6" strokeWidth="1.5" />
-      <text x="210" y="38" textAnchor="middle" fontFamily="var(--font-geist-mono), monospace" fontSize="11" letterSpacing="2" fill="rgba(26,26,26,0.4)">TOP-7 INDIA</text>
-      <text x="210" y="98" textAnchor="middle" fontFamily="var(--font-geist-mono), monospace" fontSize="11" letterSpacing="2" fill="#9a7a2e">NCR</text>
-      <text x="210" y="196" textAnchor="middle" fontFamily="var(--font-geist-mono), monospace" fontSize="10.5" letterSpacing="1.5" fill="#1e6b45">GURUGRAM PREMIUM</text>
-      <text x="210" y="222" textAnchor="middle" fontFamily="inherit" fontSize="21" fontWeight="500" fill="#1e6b45">₹250–1,000 Cr</text>
-      <text x="210" y="242" textAnchor="middle" fontFamily="inherit" fontSize="11" fontWeight="300" fill="rgba(26,26,26,0.5)">revenue pool / yr</text>
-    </svg>
-  );
-}
+/* ── set-piece data: supply-side market sizing — the founder's sheet,
+   rendered verbatim. TAM = 75% premium share of the trailing six years
+   of Gurugram launches; SAM = the 25% eligible to transact; SOM = the
+   capture ramp. Tickets ₹5 Cr avg, brokerage at 1%. ── */
+const LAUNCHES: { fy: string; k: number; est?: boolean }[] = [
+  { fy: "FY22", k: 33 }, { fy: "FY23", k: 42 }, { fy: "FY24", k: 34 }, { fy: "FY25", k: 52 }, { fy: "FY26", k: 36 },
+  { fy: "FY27", k: 43, est: true }, { fy: "FY28", k: 40, est: true }, { fy: "FY29", k: 40, est: true }, { fy: "FY30", k: 40, est: true }, { fy: "FY31", k: 40, est: true },
+];
+const RAMP: { fy: string; pct: string; units: string; cr: number; crLabel: string }[] = [
+  { fy: "FY27", pct: "0.05%", units: "23", cr: 1.125, crLabel: "1.1" },
+  { fy: "FY28", pct: "0.5%", units: "232", cr: 11.578, crLabel: "11.6" },
+  { fy: "FY29", pct: "1%", units: "459", cr: 22.969, crLabel: "23.0" },
+  { fy: "FY30", pct: "2%", units: "941", cr: 47.063, crLabel: "47.1" },
+  { fy: "FY31", pct: "4%", units: "1,793", cr: 89.625, crLabel: "89.6" },
+];
+const FUNNEL = [
+  { tag: "TAM · THE PREMIUM STOCK IN PLAY · FY27", big: "1,80,000", unit: "units", fee: "₹9,000 Cr / yr", note: "75% of the trailing six years of launches · GMV ₹9,00,000 Cr", w: 100, us: false },
+  { tag: "SAM · ELIGIBLE TO TRANSACT · 25%", big: "45,000", unit: "units", fee: "₹2,250 Cr / yr", note: "the slice actually trading in the year · GMV ₹2,25,000 Cr", w: 79, us: false },
+  { tag: "SOM · OUR CAPTURE · FY27 → FY31", big: "23 → 1,793", unit: "keys", fee: "₹1.1 → ₹90 Cr / yr", note: "0.05% → 4% of the eligible units, year by year", w: 58, us: true },
+] as const;
 
 /* ── slide contents ── */
 
@@ -488,32 +493,86 @@ const SLIDES: Slide[] = [
   {
     key: "market",
     node: (
-      <Card label="IV · Market — Exhibit 08" title="One corridor is enough to build the category. India is the prize."
-        sub="Directional model — every assumption is a chip an investor can challenge; the arithmetic lives in the data room.">
-        {/* phones: tiles · desktop: rings + the maths beside them */}
-        <div className="mt-6 grid gap-4 lg:hidden">
+      <Card label="IV · Market — Exhibit 08 · Supply-side sizing" title="Sized from the supply side: a ₹9,000-crore-a-year fee pool."
+        sub={<>Bottom-up from launch filings, not analyst decks — the trailing six years of Gurugram launches, 75% premium share, ₹5 Cr average ticket, brokerage at 1%. Challenge any cell; the full sheet lives in the data room.</>}>
+        {/* phones: the funnel as tiles + the ramp as a ledger */}
+        <div className="mt-6 grid gap-3.5 lg:hidden">
+          {FUNNEL.map((f) => (
+            <div key={f.tag} className={`rounded-xl border p-5 ${f.us ? "border-[#1e6b45]/30 bg-[#1e6b45]/[0.05]" : "border-[#1a1a1a]/[0.08] bg-white/60"}`}>
+              <p className={`font-mono text-[0.6rem] tracking-[0.14em] ${f.us ? "text-[#1e6b45]" : "text-[#9a7a2e]"}`}>{f.tag}</p>
+              <p className={`mt-2.5 text-[1.4rem] font-normal leading-none tracking-[-0.02em] tabular-nums ${f.us ? "text-[#1e6b45]" : ""}`}>
+                {f.big}<span className="text-[0.78rem] font-light text-[#1a1a1a]/40"> {f.unit} · fees {f.fee}</span>
+              </p>
+              <p className="mt-2 text-[0.72rem] font-light leading-[1.5] text-[#1a1a1a]/50">{f.note}</p>
+            </div>
+          ))}
           <div className="rounded-xl border border-[#1a1a1a]/[0.08] bg-white/60 p-5">
-            <p className="font-mono text-[0.6rem] tracking-[0.14em] text-[#9a7a2e]">THE BEACHHEAD · GURUGRAM PREMIUM</p>
-            <p className="mt-3 text-[1.5rem] font-normal leading-none tracking-[-0.02em] tabular-nums">₹50–100k Cr<span className="text-[0.8rem] font-light text-[#1a1a1a]/40"> primary GMV / yr</span></p>
-          </div>
-          <div className="rounded-xl border border-[#1a1a1a]/[0.08] bg-white/60 p-5">
-            <p className="font-mono text-[0.6rem] tracking-[0.14em] text-[#9a7a2e]">THE REVENUE POOL WE ADDRESS</p>
-            <p className="mt-3 text-[1.5rem] font-normal leading-none tracking-[-0.02em] tabular-nums text-[#1e6b45]">₹250–1,000 Cr<span className="text-[0.8rem] font-light text-[#1a1a1a]/40"> / yr, one city</span></p>
-          </div>
-        </div>
-        <div className="mt-2 hidden lg:grid lg:grid-cols-[420px_1fr] lg:items-center lg:gap-12">
-          <div className="h-[420px]"><MarketRings /></div>
-          <div>
-            <p className="font-mono text-[0.68rem] tracking-[0.16em] text-[#9a7a2e]">THE ASSUMPTIONS — CHALLENGE ANY CHIP</p>
-            <div className="mt-4 flex flex-wrap gap-2.5">
-              {["~15–20k premium units absorbed / yr", "₹3.5–5 Cr average ticket", "0.5–1% buyer-side advisory", "files · memberships · unit intel"].map((c) => (
-                <span key={c} className="rounded-full border border-[#1a1a1a]/12 bg-white px-4 py-2 text-[0.88rem] font-light text-[#1a1a1a]/65">{c}</span>
+            <p className="font-mono text-[0.6rem] tracking-[0.14em] text-[#9a7a2e]">THE CAPTURE RAMP · BROKERAGE / YR</p>
+            <div className="mt-3 flex flex-col gap-2">
+              {RAMP.map((r) => (
+                <div key={r.fy} className="flex items-baseline justify-between gap-2 font-mono text-[0.7rem] tabular-nums text-[#1a1a1a]/70">
+                  <span>{r.fy}</span><span className="text-[#1a1a1a]/45">{r.pct}</span><span className="text-[#1a1a1a]/45">{r.units} keys</span><span className="font-medium text-[#1e6b45]">₹{r.crLabel} Cr</span>
+                </div>
               ))}
             </div>
-            <p className="mt-8 text-[2.2rem] font-normal leading-none tracking-[-0.02em] tabular-nums">₹50–100k Cr<span className="text-[1rem] font-light text-[#1a1a1a]/40"> Gurugram primary GMV / yr</span></p>
-            <p className="mt-5 max-w-[34rem] text-[1rem] font-light leading-[1.7] text-[#1a1a1a]/60">
-              Corridor-shaped playbook: NCR next, then the top-7 — the same RERA spine exists in every state. Gurugram&rsquo;s seller-paid brokerage alone runs <span className="tabular-nums">₹1,500–4,000 Cr/yr</span>.
-            </p>
+          </div>
+        </div>
+        {/* desktop: the funnel, the ramp, and the evidence row */}
+        <div className="mt-7 hidden lg:block">
+          <div className="grid grid-cols-[1.12fr_1fr] gap-12">
+            <div className="flex flex-col justify-center gap-3.5">
+              {FUNNEL.map((f) => (
+                <div key={f.tag} className={`rounded-xl border px-6 py-4 ${f.us ? "border-[#1e6b45]/35 bg-[#1e6b45]/[0.06]" : "border-[#1a1a1a]/10 bg-white/60"}`} style={{ width: `${f.w}%` }}>
+                  <p className={`font-mono text-[0.62rem] tracking-[0.16em] ${f.us ? "text-[#1e6b45]" : "text-[#9a7a2e]"}`}>{f.tag}</p>
+                  <p className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <span className={`text-[1.7rem] font-normal leading-none tracking-[-0.02em] tabular-nums ${f.us ? "text-[#1e6b45]" : ""}`}>{f.big}</span>
+                    <span className="text-[0.8rem] font-light text-[#1a1a1a]/40">{f.unit}</span>
+                    <span className={`ml-auto font-mono text-[0.84rem] tabular-nums ${f.us ? "text-[#1e6b45]" : "text-[#1a1a1a]/70"}`}>fees {f.fee}</span>
+                  </p>
+                  <p className="mt-1.5 text-[0.78rem] font-light text-[#1a1a1a]/48">{f.note}</p>
+                </div>
+              ))}
+              <p className="mt-1 font-mono text-[0.58rem] tracking-[0.14em] text-[#1a1a1a]/35">GURUGRAM ONLY — THE SAME RERA SPINE REPEATS ACROSS NCR &amp; THE TOP-7</p>
+            </div>
+            <div className="flex flex-col">
+              <p className="font-mono text-[0.68rem] tracking-[0.16em] text-[#9a7a2e]">THE CAPTURE RAMP · BROKERAGE / YR</p>
+              <div className="mt-5 flex flex-1 items-end gap-5">
+                {RAMP.map((r, i) => (
+                  <div key={r.fy} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
+                    <span className={`font-mono text-[0.78rem] tabular-nums ${i === RAMP.length - 1 ? "font-medium text-[#1e6b45]" : "text-[#1a1a1a]/65"}`}>₹{r.crLabel} Cr</span>
+                    <div className="flex w-full flex-1 items-end">
+                      <div
+                        className={`w-full origin-bottom rounded-t-[7px] transition-transform duration-700 ease-out lg:scale-y-0 lg:group-data-[active=true]:scale-y-100 motion-reduce:scale-y-100 print:scale-y-100 ${i === RAMP.length - 1 ? "bg-[#1e6b45]" : "bg-[#238c55]/50"}`}
+                        style={{ height: `${Math.max(2.5, (r.cr / 89.625) * 100)}%`, transitionDelay: `${i * 110}ms` }}
+                      />
+                    </div>
+                    <span className="font-mono text-[0.68rem] tracking-[0.1em] text-[#1a1a1a]/50">{r.fy}</span>
+                    <span className={`rounded-full border px-2.5 py-0.5 font-mono text-[0.58rem] tabular-nums ${i === RAMP.length - 1 ? "border-[#1e6b45]/40 bg-[#1e6b45]/[0.07] text-[#1e6b45]" : "border-[#9a7a2e]/35 text-[#9a7a2e]"}`}>{r.pct}</span>
+                    <span className="text-[0.66rem] font-light tabular-nums text-[#1a1a1a]/45">{r.units} keys</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="mt-7 rounded-xl border border-[#1a1a1a]/[0.08] bg-white/50 px-6 pb-3.5 pt-4">
+            <div className="flex items-baseline justify-between gap-4">
+              <p className="font-mono text-[0.6rem] tracking-[0.16em] text-[#9a7a2e]">THE EVIDENCE ROW · UNITS LAUNCHED, GURUGRAM · ×1,000</p>
+              <p className="font-mono text-[0.56rem] tracking-[0.14em] text-[#1a1a1a]/35">FY22–26 FROM FILINGS · FY27–31 MODELLED · AVG TICKET ₹5 CR · FEES @1%</p>
+            </div>
+            <div className="mt-3 flex items-end gap-2.5">
+              {LAUNCHES.map((l, i) => (
+                <Fragment key={l.fy}>
+                  {i === 5 && <div aria-hidden className="mx-1 h-[74px] self-end border-l border-dashed border-[#1a1a1a]/25" />}
+                  <div className="flex flex-1 flex-col items-center gap-1">
+                    <span className={`font-mono text-[0.62rem] tabular-nums ${l.est ? "text-[#9a7a2e]" : "text-[#1a1a1a]/60"}`}>{l.k}</span>
+                    <div className="flex h-[56px] w-full items-end">
+                      <div className={`w-full rounded-t-[4px] ${l.est ? "bg-[#9a7a2e]/35" : "bg-[#1a1a1a]/45"}`} style={{ height: `${(l.k / 52) * 100}%` }} />
+                    </div>
+                    <span className="font-mono text-[0.56rem] tracking-[0.08em] text-[#1a1a1a]/40">{l.fy}</span>
+                  </div>
+                </Fragment>
+              ))}
+            </div>
           </div>
         </div>
       </Card>
