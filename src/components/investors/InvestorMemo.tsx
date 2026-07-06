@@ -801,6 +801,28 @@ const SLIDES: Slide[] = [
       </Card>
     ),
   },
+
+  {
+    key: "thanks",
+    backdrop: "emerald",
+    node: (
+      <div className="flex flex-col items-center text-center text-[#F7F3EA]">
+        <div className="flex justify-center" style={{ textAlign: "left" }}>
+          <Logo color="#F7F3EA" className="h-8 w-auto lg:h-11" />
+        </div>
+        <p className="mt-10 font-mono text-[0.6rem] uppercase tracking-[0.26em] text-[#d8b978] lg:mt-14 lg:text-[0.72rem]">Less promises. More proof.</p>
+        <h2 className="mt-5 font-serif text-[3rem] font-medium leading-[1.02] tracking-[-0.01em] lg:text-[5.4rem]">Thank you.</h2>
+        <p className="mt-6 max-w-[38rem] text-[0.98rem] font-light leading-[1.7] text-[#F7F3EA]/65 lg:mt-8 lg:text-[1.2rem]">
+          We&rsquo;d welcome the chance to walk you through the method, the data room, and the files behind every score.
+        </p>
+        <div className="mt-9 flex flex-wrap items-center justify-center gap-x-6 gap-y-2.5 lg:mt-12">
+          <a href={DATA_ROOM} className="font-mono text-[0.82rem] tracking-[0.04em] text-[#9fe6bf] underline decoration-[#7fd6a4]/40 underline-offset-4 transition-colors hover:text-[#bff3d5] lg:text-[0.95rem]">gauravjainstartup@gmail.com</a>
+          <span aria-hidden className="text-[#F7F3EA]/25">·</span>
+          <span className="font-mono text-[0.7rem] uppercase tracking-[0.22em] text-[#F7F3EA]/45 lg:text-[0.8rem]">Gurugram · Delhi NCR</span>
+        </div>
+      </div>
+    ),
+  },
 ];
 
 /* ── the deck shell ── */
