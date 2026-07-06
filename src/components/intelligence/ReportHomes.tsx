@@ -12,7 +12,7 @@ import ZoomStage from "./ZoomStage";
    live inside Unit Intelligence — the gated layer. */
 
 const basePath = "/Truth-Estate";
-const asset = (s: string) => (/^https?:\/\//i.test(s) ? s : `${basePath}/${s}`);
+const asset = (s: string) => (/^(https?:\/\/|data:)/i.test(s) ? s : `${basePath}/${s}`);
 
 export default function ReportHomes({ p }: { p: ProjectIntel }) {
   const homes = p.ops?.homes ?? [];

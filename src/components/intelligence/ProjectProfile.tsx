@@ -38,7 +38,7 @@ const basePath = "/Truth-Estate";
 
 /* media paths are repo-relative for the flagship files; pipeline rows may
    carry absolute (storage) URLs — pass those through untouched */
-const asset = (s: string) => (/^https?:\/\//i.test(s) ? s : `${basePath}/${s}`);
+const asset = (s: string) => (/^(https?:\/\/|data:)/i.test(s) ? s : `${basePath}/${s}`);
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return <p className="text-[11px] font-medium uppercase tracking-[0.34em] text-[#c9a96e]">{children}</p>;

@@ -53,9 +53,30 @@ const riskRating = (r: string | null): FinRating | null =>
 
 const dedupe = (xs: string[]): string[] => [...new Set(xs.map((x) => x.trim()).filter(Boolean))];
 
-/* media URLs must be images for the report's <img> slots — anything else
-   (PDFs, 3D html) keeps the slot in its request/hidden state for now */
-const imageish = (u: string | null): u is string => !!u && /\.(webp|jpe?g|png|avif|gif)(\?.*)?$/i.test(u);
+/* media columns may hold a URL, a relative path, a data: URI or RAW
+   base64 (the founder's upload path). Everything must resolve to
+   something an <img> can render — PDFs and unknown binaries keep the
+   slot in its request/hidden state for now. Raw base64 is sniffed by
+   magic prefix and wrapped as a data: URI. */
+const imageish = (u: string): boolean => /\.(webp|jpe?g|png|avif|gif)(\?.*)?$/i.test(u);
+const B64_MAGIC: [RegExp, string][] = [
+  [/^\/9j\//, "jpeg"],   // JPEG
+  [/^iVBOR/, "png"],     // PNG
+  [/^UklGR/, "webp"],    // WebP (RIFF)
+  [/^R0lGOD/, "gif"],    // GIF
+];
+function mediaSrc(u: string | null | undefined): string | null {
+  if (!u) return null;
+  const s = u.trim();
+  if (/^data:image\//i.test(s)) return s;
+  if (/^data:/i.test(s)) return null; // pdf / other — no image slot for these yet
+  if (s.length > 200 && /^[A-Za-z0-9+/=\r\n]+$/.test(s)) {
+    if (/^JVBERi/.test(s)) return null; // base64 PDF
+    for (const [re, type] of B64_MAGIC) if (re.test(s)) return `data:image/${type};base64,${s.replace(/\s+/g, "")}`;
+    return null; // unknown binary — don't guess
+  }
+  return imageish(s) ? s : null;
+}
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 function heroDateLabel(iso: string | null): string | null {
@@ -186,15 +207,20 @@ export function liveProjectIntel(
       ? { launchPsf: ext!.launchPrice!, launchDate: `${launchMonth[1].slice(0, 3)} ${launchMonth[2]}`, currentLow: range[0], currentHigh: range[1] }
       : null;
 
+  const heroSrc = mediaSrc(ext?.heroImageUrl);
+  const renderSrc = mediaSrc(ext?.renderElevationUrl);
+  const siteMapSrc = mediaSrc(ext?.siteMapImageUrl);
+  const brochureSrc = mediaSrc(ext?.brochureUrl);
+  const paymentSrc = mediaSrc(ext?.paymentPlanUrl);
   const media: NonNullable<ProjectOps["media"]> = {
-    ...(imageish(ext?.heroImageUrl ?? null) ? { heroImage: ext!.heroImageUrl! } : {}),
-    ...(imageish(ext?.renderElevationUrl ?? null) ? { render: ext!.renderElevationUrl! } : {}),
-    ...(imageish(ext?.siteMapImageUrl ?? null)
-      ? { masterplan: { src: ext!.siteMapImageUrl!, read: "The site layout as filed — tap to enlarge. Verify the RERA-approved siteplan before signing." } }
+    ...(heroSrc ? { heroImage: heroSrc } : {}),
+    ...(renderSrc ? { render: renderSrc } : {}),
+    ...(siteMapSrc
+      ? { masterplan: { src: siteMapSrc, read: "The site layout as filed — tap to enlarge. Verify the RERA-approved siteplan before signing." } }
       : {}),
-    ...(imageish(ext?.brochureUrl ?? null) ? { brochure: [ext!.brochureUrl!] } : {}),
-    ...(imageish(ext?.paymentPlanUrl ?? null)
-      ? { paymentPlan: { src: ext!.paymentPlanUrl!, read: "From the developer's kit — indicative until countersigned." } }
+    ...(brochureSrc ? { brochure: [brochureSrc] } : {}),
+    ...(paymentSrc
+      ? { paymentPlan: { src: paymentSrc, read: "From the developer's kit — indicative until countersigned." } }
       : {}),
   };
 
