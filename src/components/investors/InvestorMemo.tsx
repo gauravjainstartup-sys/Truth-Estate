@@ -75,20 +75,6 @@ function BrochureStandin() {
   );
 }
 
-/* growth bar that sweeps in when its slide becomes active */
-function Bar({ w, bg, children, h = "h-[34px] lg:h-[52px]" }: { w: number; bg: string; children?: React.ReactNode; h?: string }) {
-  return (
-    <div className={`${h} overflow-hidden rounded-lg bg-[#1a1a1a]/[0.05]`}>
-      <div
-        className={`flex h-full origin-left items-center rounded-lg pl-3.5 text-[0.86rem] tabular-nums text-white transition-transform duration-700 ease-out lg:scale-x-0 lg:text-[1.05rem] lg:group-data-[active=true]:scale-x-100 motion-reduce:scale-x-100 print:scale-x-100`}
-        style={{ width: `${w}%`, background: bg, minWidth: "3.2rem" }}
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
-
 /* ── set-piece: why-now timeline (lg+) ── */
 function Timeline() {
   const node = (left: string, year: string, title: string, body: string) => (
@@ -172,6 +158,22 @@ const FUNNEL = [
   { tag: "SAM · ELIGIBLE TO TRANSACT · 25%", big: "45,000", unit: "units", fee: "₹2,250 Cr / yr", note: "the slice actually trading in the year · GMV ₹2,25,000 Cr", w: 79, us: false },
   { tag: "SOM · OUR CAPTURE · FY27 → FY31", big: "23 → 1,793", unit: "keys", fee: "₹1.1 → ₹90 Cr / yr", note: "0.05% → 4% of the eligible units, year by year", w: 58, us: true },
 ] as const;
+
+/* ── demand-side revenue projection — the founder's model, verbatim.
+   Values are annual revenue in rupees per stream, FY27–31; the display
+   strings mirror the sheet's crore figures exactly. Five streams sum to
+   the Total Gross Platform Revenue row. ── */
+const REV_YEARS = ["FY27", "FY28", "FY29", "FY30", "FY31"] as const;
+const REV_TOTALS = [15500000, 170500000, 377100000, 640915000, 1183077500]; // ₹ per year
+const REV_TOTAL_LABELS = ["₹1.55 Cr", "₹17.05 Cr", "₹37.71 Cr", "₹64.09 Cr", "₹118.31 Cr"];
+const REV_MAX = 1183077500; // FY31 total → full bar height
+const REV_STREAMS: { name: string; tag: string; color: string; fy: number[]; fy31: string; share: string }[] = [
+  { name: "Closed Mandates", tag: "buyer-side brokerage on the deal", color: "#1e6b45", fy: [10000000, 110000000, 242000000, 399300000, 732050000], fy31: "₹73.21 Cr", share: "62%" },
+  { name: "Marketplace Services", tag: "home loan · legal · interiors", color: "#238c55", fy: [2500000, 27500000, 60500000, 99825000, 183012500], fy31: "₹18.30 Cr", share: "15%" },
+  { name: "Advisory Retainers", tag: "fee-based, refundable", color: "#7fd6a4", fy: [2000000, 22000000, 48400000, 79860000, 146410000], fy31: "₹14.64 Cr", share: "12%" },
+  { name: "Unit Intelligence", tag: "per-project 3D decision layer", color: "#9a7a2e", fy: [1000000, 11000000, 24200000, 39930000, 73205000], fy31: "₹7.32 Cr", share: "6%" },
+  { name: "Ownership OS", tag: "post-purchase subscription", color: "#d8b978", fy: [0, 0, 2000000, 22000000, 48400000], fy31: "₹4.84 Cr", share: "4%" },
+];
 
 /* ── slide contents ── */
 
@@ -577,27 +579,77 @@ const SLIDES: Slide[] = [
   },
 
   {
-    key: "traction",
+    key: "revenue",
     node: (
-      <Card label="V · Traction — Exhibit 10 · First 40 days" title="Half the people who open a forensic file finish it."
-        sub="Reports free by design — the phase is trust and search presence, not revenue. Zero paid marketing.">
-        <div className="mt-6 flex flex-col gap-3.5 lg:mt-8 lg:gap-5">
-          {([
-            ["Visited the site", 100, "500", "linear-gradient(90deg,#9a7a2e,#c9a96e)", "100%"],
-            ["Opened a project file", 25, "125", "linear-gradient(90deg,#1e6b45,#238c55)", "25% of visitors"],
-            ["Read it to the end", 12.5, "62", "linear-gradient(90deg,#0b1f1a,#1e6b45)", "50% of readers"],
-          ] as const).map(([label, w, n, bg, note]) => (
-            <div key={label} className="grid grid-cols-[130px_1fr_86px] items-center gap-3 sm:grid-cols-[190px_1fr_130px] sm:gap-4 lg:grid-cols-[230px_1fr_170px]">
-              <span className="text-[0.78rem] font-light text-[#1a1a1a]/65 sm:text-[0.84rem] lg:text-[1.05rem]">{label}</span>
-              <Bar w={w} bg={bg}>{n}</Bar>
-              <span className="text-right font-mono text-[0.62rem] leading-snug text-[#1e6b45] sm:text-[0.7rem] lg:text-[0.82rem]">{note}</span>
+      <Card label="IV · Revenue model — Exhibit 10 · Demand side" title="Five streams compound into ₹118 crore by FY31."
+        sub={<>The demand side of the same market: paid and organic buyers convert across four products and a post-purchase subscription. Brokerage on closed mandates leads; every other stream deepens the account. Bottom-up from the funnel — ≈76× over four years.</>}>
+        {/* phones: the stream ledger + the trajectory */}
+        <div className="mt-6 lg:hidden">
+          <div className="flex items-end justify-between gap-2 rounded-xl border border-[#1e6b45]/25 bg-[#1e6b45]/[0.05] px-4 py-3.5">
+            <div><p className="font-mono text-[0.56rem] tracking-[0.14em] text-[#1a1a1a]/45">FY27</p><p className="text-[1.15rem] font-normal tabular-nums">₹1.55 Cr</p></div>
+            <span className="mb-1 text-[#9a7a2e]">→</span>
+            <div className="text-right"><p className="font-mono text-[0.56rem] tracking-[0.14em] text-[#1e6b45]">FY31 GROSS</p><p className="text-[1.35rem] font-normal tabular-nums text-[#1e6b45]">₹118.31 Cr</p></div>
+          </div>
+          <div className="mt-3 flex flex-col gap-2">
+            {REV_STREAMS.map((s) => (
+              <div key={s.name} className="flex items-baseline gap-2.5">
+                <span className="h-2.5 w-2.5 shrink-0 translate-y-0.5 rounded-[2px]" style={{ background: s.color }} />
+                <span className="text-[0.82rem] font-light text-[#1a1a1a]/75">{s.name}</span>
+                <span className="ml-auto font-mono text-[0.74rem] tabular-nums text-[#1a1a1a]/60">{s.fy31}</span>
+                <span className="w-10 text-right font-mono text-[0.64rem] tabular-nums text-[#1a1a1a]/35">{s.share}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* desktop: the stacked revenue chart + the stream legend */}
+        <div className="mt-7 hidden lg:grid lg:grid-cols-[1.15fr_1fr] lg:gap-12">
+          <div className="flex flex-col">
+            <p className="font-mono text-[0.68rem] tracking-[0.16em] text-[#9a7a2e]">GROSS PLATFORM REVENUE / YR</p>
+            <div className="mt-5 flex h-[330px] items-end gap-6">
+              {REV_YEARS.map((y, i) => {
+                const totalPct = (REV_TOTALS[i] / REV_MAX) * 100;
+                return (
+                  <div key={y} className="flex h-full flex-1 flex-col items-center justify-end gap-2.5">
+                    <div className="relative w-full flex-1">
+                      <span className="absolute inset-x-0 text-center font-mono text-[0.72rem] tabular-nums text-[#1a1a1a]/70" style={{ bottom: `calc(${totalPct}% + 6px)` }}>{REV_TOTAL_LABELS[i]}</span>
+                      <div
+                        className="absolute inset-x-0 bottom-0 flex origin-bottom flex-col-reverse overflow-hidden rounded-t-[6px] transition-transform duration-700 ease-out lg:scale-y-0 lg:group-data-[active=true]:scale-y-100 motion-reduce:scale-y-100 print:scale-y-100"
+                        style={{ height: `max(3px, ${totalPct}%)`, transitionDelay: `${i * 110}ms` }}
+                      >
+                        {REV_STREAMS.map((s) => (
+                          <div key={s.name} style={{ height: `${(s.fy[i] / REV_TOTALS[i]) * 100}%`, background: s.color }} />
+                        ))}
+                      </div>
+                    </div>
+                    <span className="font-mono text-[0.7rem] tracking-[0.1em] text-[#1a1a1a]/50">{y}</span>
+                  </div>
+                );
+              })}
             </div>
-          ))}
+          </div>
+          <div className="flex flex-col justify-center">
+            <p className="font-mono text-[0.68rem] tracking-[0.16em] text-[#9a7a2e]">THE FIVE STREAMS · FY31</p>
+            <div className="mt-4 flex flex-col">
+              {REV_STREAMS.map((s, i) => (
+                <div key={s.name} className={`flex items-baseline gap-3 py-2.5 ${i > 0 ? "border-t border-[#1a1a1a]/[0.07]" : ""}`}>
+                  <span className="h-3 w-3 shrink-0 translate-y-0.5 rounded-[3px]" style={{ background: s.color }} />
+                  <div className="min-w-0">
+                    <p className="text-[0.98rem] font-normal leading-tight">{s.name}</p>
+                    <p className="mt-0.5 text-[0.74rem] font-light text-[#1a1a1a]/45">{s.tag}</p>
+                  </div>
+                  <span className="ml-auto whitespace-nowrap font-mono text-[0.98rem] tabular-nums text-[#1e6b45]">{s.fy31}</span>
+                  <span className="w-9 text-right font-mono text-[0.72rem] tabular-nums text-[#1a1a1a]/40">{s.share}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2.5">
+              {["FY31 funnel · 5,00,000 visitors → 1,83,013 registered", "₹10.98 Cr ad spend → 10.8× on gross revenue"].map((c) => (
+                <span key={c} className="rounded-full border border-[#1a1a1a]/12 bg-white px-3.5 py-1.5 font-mono text-[0.62rem] tracking-[0.06em] text-[#1a1a1a]/55">{c}</span>
+              ))}
+            </div>
+          </div>
         </div>
-        <div className="mt-5 rounded-r-xl border-l-2 border-[#1e6b45] bg-[#1e6b45]/[0.05] px-5 py-3 text-[0.86rem] font-light leading-[1.6] text-[#1a1a1a]/70 lg:mt-7 lg:px-6 lg:py-4 lg:text-[1.05rem]">
-          <b className="font-medium text-[#1a1a1a]">The number that matters is the last one.</b>{" "}One in two readers finishes an 8,000-word file — that depth of attention is the leading indicator of willingness to pay.
-        </div>
-        <p className="mt-3.5 text-[0.76rem] font-light italic text-[#1a1a1a]/45 lg:text-[0.88rem]">Buyer testimonials are being collected verbatim, with permission — available in the data room.</p>
+        <p className="mt-6 font-mono text-[0.58rem] tracking-[0.14em] text-[#1a1a1a]/35">FY27–31 MODELLED · CONVERSION &amp; RETENTION ASSUMPTIONS IN THE DATA ROOM · REPORTS FREE IN THE MVP PHASE, BY DESIGN</p>
       </Card>
     ),
   },
