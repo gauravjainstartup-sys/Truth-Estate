@@ -692,6 +692,31 @@ export default function ProjectProfile({
                         <span aria-hidden className="text-[#9a7a2e] transition-transform group-hover:translate-x-0.5">→</span>
                       </div>
                     </button>
+                  ) : ops?.media?.brochurePdf ? (
+                    <a
+                      href={asset(ops.media.brochurePdf)}
+                      target="_blank" rel="noopener noreferrer"
+                      download={ops.media.brochurePdf.startsWith("data:") ? `${p.slug}-brochure.pdf` : undefined}
+                      className="group overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-white/60 transition-colors hover:border-[#9a7a2e]/40"
+                    >
+                      <div className="relative aspect-[16/10] bg-[#f5f0e5]/70">
+                        <div className="absolute inset-0 grid place-items-center">
+                          <div className="text-center">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#9a7a2e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto h-8 w-8 opacity-70" aria-hidden>
+                              <path d="M6 2.5h8L19.5 8v13a1 1 0 0 1-1 1h-12a1 1 0 0 1-1-1v-17a1 1 0 0 1 1-1Z" /><path d="M14 2.5V8h5.5M9 13h6M9 17h6" />
+                            </svg>
+                            <p className="mt-2.5 text-[0.58rem] font-bold uppercase tracking-[0.18em] text-[#9a7a2e]/80">PDF · On file</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between gap-4 px-5 py-4">
+                        <div>
+                          <p className="text-[0.92rem] font-semibold">Project brochure</p>
+                          <p className="mt-0.5 text-[0.7rem] font-light text-[#1a1a1a]/45">The developer&rsquo;s file · PDF</p>
+                        </div>
+                        <span className="shrink-0 text-[0.78rem] font-semibold text-[#9a7a2e] transition-colors group-hover:text-[#7a5f1e]">Open →</span>
+                      </div>
+                    </a>
                   ) : (
                     <DocSlot project={p.name} title="Project brochure" sub="The developer&rsquo;s full brochure" />
                   )}

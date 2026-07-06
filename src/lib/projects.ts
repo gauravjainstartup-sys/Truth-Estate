@@ -180,6 +180,7 @@ export type ProjectOps = {
     /* Chapter I parts II/IV/V — images for now; PDFs/data later. */
     masterplan?: { src: string; read: string };
     brochure?: string[]; // page images, cover first
+    brochurePdf?: string; // PDF fallback (URL or data: URI) — opens as a link when no page images exist
     paymentPlan?: { src: string; read: string };
     costSheet?: string;
     sitePhotos?: { src: string; asOf: string; note?: string }[];

@@ -78,6 +78,36 @@ function mediaSrc(u: string | null | undefined): string | null {
   return imageish(s) ? s : null;
 }
 
+/* PDFs can't render in the report's <img> slots, but they CAN be
+   linked. Accepts a .pdf URL, a data:application/pdf URI or raw
+   base64 (JVBERi = "%PDF"); inline payloads are capped so a heavy
+   file can't bloat the static page. */
+const PDF_INLINE_CAP = 2_000_000; // ~1.5 MB decoded
+function pdfSrc(u: string | null | undefined): string | null {
+  if (!u) return null;
+  const s = u.trim();
+  if (/^data:application\/pdf/i.test(s)) return s.length <= PDF_INLINE_CAP ? s : null;
+  if (/^JVBERi/.test(s) && /^[A-Za-z0-9+/=\r\n]+$/.test(s))
+    return s.length <= PDF_INLINE_CAP ? `data:application/pdf;base64,${s.replace(/\s+/g, "")}` : null;
+  if (/^(https?:\/\/|[\w./-]+)/.test(s) && /\.pdf(\?.*)?$/i.test(s)) return s;
+  return null;
+}
+
+/* a brochure column may hold several page images — JSON array or a
+   comma/newline separated list — feeding the report's page-turner */
+function mediaPages(u: string | null | undefined): string[] | null {
+  if (!u) return null;
+  const s = u.trim();
+  let parts: string[] = [];
+  if (s.startsWith("[")) {
+    try { const j: unknown = JSON.parse(s); if (Array.isArray(j)) parts = j.filter((x): x is string => typeof x === "string"); } catch { /* fall through */ }
+  } else if (!/^data:/i.test(s) && s.includes(",") && !/^[A-Za-z0-9+/=\r\n]+$/.test(s)) {
+    parts = s.split(/[,\n]+/);
+  }
+  const pages = parts.map((p) => mediaSrc(p)).filter((p): p is string => !!p);
+  return pages.length ? pages : null;
+}
+
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 function heroDateLabel(iso: string | null): string | null {
   if (!iso) return null;
@@ -210,7 +240,8 @@ export function liveProjectIntel(
   const heroSrc = mediaSrc(ext?.heroImageUrl);
   const renderSrc = mediaSrc(ext?.renderElevationUrl);
   const siteMapSrc = mediaSrc(ext?.siteMapImageUrl);
-  const brochureSrc = mediaSrc(ext?.brochureUrl);
+  const brochurePages = mediaPages(ext?.brochureUrl) ?? (mediaSrc(ext?.brochureUrl) ? [mediaSrc(ext?.brochureUrl)!] : null);
+  const brochurePdf = brochurePages ? null : pdfSrc(ext?.brochureUrl);
   const paymentSrc = mediaSrc(ext?.paymentPlanUrl);
   const media: NonNullable<ProjectOps["media"]> = {
     ...(heroSrc ? { heroImage: heroSrc } : {}),
@@ -218,7 +249,8 @@ export function liveProjectIntel(
     ...(siteMapSrc
       ? { masterplan: { src: siteMapSrc, read: "The site layout as filed — tap to enlarge. Verify the RERA-approved siteplan before signing." } }
       : {}),
-    ...(brochureSrc ? { brochure: [brochureSrc] } : {}),
+    ...(brochurePages ? { brochure: brochurePages } : {}),
+    ...(brochurePdf ? { brochurePdf } : {}),
     ...(paymentSrc
       ? { paymentPlan: { src: paymentSrc, read: "From the developer's kit — indicative until countersigned." } }
       : {}),
