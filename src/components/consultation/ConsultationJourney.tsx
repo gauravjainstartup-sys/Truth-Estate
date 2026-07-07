@@ -3,50 +3,40 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Logo from "../Logo";
-import FocusOffRamp from "../FocusOffRamp";
-import { POSSESSION_OPTIONS, type InterestKind } from "@/lib/journey";
 import {
   CONSULT_DAYPARTS,
   CONSULT_DAYS,
   CONSULT_DURATION,
-  CONSULT_HEADLINE,
   CONSULT_FEE,
   CONSULT_FEE_ORIGINAL,
   CONSULT_FEE_DISCOUNT_LABEL,
   CONSULT_FEE_REFUND_NOTE,
   inr,
-  CONSULT_FIELDS,
   CONSULT_FORMATS,
   CONSULT_OUTCOMES,
   CONSULT_PILLARS,
-  CONSULT_REASONS,
   CONSULT_TIMELINE,
+  ConsultAdvisor,
   ConsultBooking,
   ConsultContext,
-  ConsultField,
-  ConsultFormat,
-  ConsultIntent,
   ConsultProfileChip,
   advisorFor,
   consultPrepLine,
   emptyConsultBooking,
   saveConsultation,
 } from "@/lib/consultation";
+import {
+  sendOtp,
+  verifyOtp,
+  loadVerified,
+  saveVerified,
+  maskContact,
+  type Verified,
+} from "@/lib/shortlistAuth";
 
 const basePath = "/Truth-Estate";
 
-type Step =
-  | "intro"
-  | "reason"
-  | "situation"
-  | "prep"
-  | "schedule"
-  | "account"
-  | "payment"
-  | "confirm"
-  | "office"
-  | "offramp-rtm"
-  | "offramp-commercial";
+type Step = "intro" | "payment" | "confirm" | "office";
 
 export default function ConsultationJourney({
   context = {},
@@ -61,15 +51,12 @@ export default function ConsultationJourney({
   const router = useRouter();
 
   // A "warm" visitor already shared a requirements profile (e.g. their Buyer
-  // DNA) — we skip the reason/situation steps and go straight to scheduling.
+  // DNA) — it lets us lead with "your advisor is ready" and pre-fill the brief.
   const warm = !!context.profile?.length;
   const paid = CONSULT_FEE != null;
-  const FLOW: Step[] = [
-    ...(warm
-      ? (["intro", "schedule", "account"] as Step[])
-      : (["intro", "reason", "situation", "prep", "schedule", "account"] as Step[])),
-    ...(paid ? (["payment"] as Step[]) : []),
-  ];
+  // The entry page now gates register → schedule → book on a single screen,
+  // so the flow past it is just the (optional) payment step and confirmation.
+  const FLOW: Step[] = paid ? ["intro", "payment"] : ["intro"];
 
   // Close on Escape — consistent with the journey modal.
   useEffect(() => {
@@ -80,7 +67,6 @@ export default function ConsultationJourney({
 
   const prepLine = consultPrepLine(context);
 
-  // If we already know the intent (e.g. from a journey), reason is preset.
   const goTo = (s: Step) => {
     setStep(s);
     scrollRef.current?.scrollTo(0, 0);
@@ -88,9 +74,6 @@ export default function ConsultationJourney({
 
   const fi = FLOW.indexOf(step);
   const progress = fi < 0 ? null : (fi + 1) / (FLOW.length + 1); // confirm / office: hidden
-
-  const setField = (name: string, value: string | string[]) =>
-    setBooking((b) => ({ ...b, details: { ...b.details, [name]: value } }));
 
   const reserve = () => {
     const finalised = { ...booking, createdAt: Date.now() };
@@ -107,20 +90,7 @@ export default function ConsultationJourney({
     </div>
   );
 
-  const back: Partial<Record<Step, Step>> = {
-    ...(warm
-      ? { schedule: "intro", account: "schedule" }
-      : {
-          reason: "intro",
-          situation: "reason",
-          prep: "situation",
-          schedule: "prep",
-          account: "schedule",
-        }),
-    ...(paid ? { payment: "account" as Step } : {}),
-    "offramp-rtm": "situation",
-    "offramp-commercial": "situation",
-  };
+  const back: Partial<Record<Step, Step>> = paid ? { payment: "intro" } : {};
 
   return frame(
     <Shell
@@ -132,62 +102,13 @@ export default function ConsultationJourney({
       bare={step === "office"}
     >
       {step === "intro" && (
-        <IntroStep
+        <AdviceEntry
+          booking={booking}
+          setBooking={setBooking}
           prepLine={prepLine}
           warm={warm}
           profile={context.profile}
-          onContinue={() => goTo(warm ? "schedule" : booking.reason ? "situation" : "reason")}
-        />
-      )}
-      {step === "reason" && (
-        <ReasonStep
-          value={booking.reason}
-          onPick={(r) => { setBooking((b) => ({ ...b, reason: r, details: {} })); goTo("situation"); }}
-        />
-      )}
-      {step === "situation" && (
-        <SituationStep
-          intent={booking.reason ?? "advice"}
-          details={booking.details}
-          setField={setField}
-          onContinue={() => goTo("prep")}
-          onOfframp={(kind) => goTo(kind === "commercial" ? "offramp-commercial" : "offramp-rtm")}
-        />
-      )}
-      {step === "offramp-rtm" && (
-        <div className="animate-fade-up mx-auto max-w-[680px] px-6 py-14 md:px-10 md:py-20">
-          <FocusOffRamp kind="ready-to-move" onExplore={() => { onClose(); router.push("/methodology"); }} />
-        </div>
-      )}
-      {step === "offramp-commercial" && (
-        <div className="animate-fade-up mx-auto max-w-[680px] px-6 py-14 md:px-10 md:py-20">
-          <FocusOffRamp kind="commercial" />
-        </div>
-      )}
-      {step === "prep" && (
-        <PrepStep
-          value={booking.prep}
-          source={context.source}
-          onChange={(v) => setBooking((b) => ({ ...b, prep: v }))}
-          onContinue={() => goTo("schedule")}
-        />
-      )}
-      {step === "schedule" && (
-        <ScheduleStep
-          intent={booking.reason}
-          day={booking.day}
-          time={booking.time}
-          format={booking.format}
-          onSelect={(patch) => setBooking((b) => ({ ...b, ...patch }))}
-          onContinue={() => goTo("account")}
-        />
-      )}
-      {step === "account" && (
-        <AccountStep
-          booking={booking}
-          onChange={(patch) => setBooking((b) => ({ ...b, ...patch }))}
-          onReserve={() => (paid ? goTo("payment") : reserve())}
-          ctaLabel={paid ? "Continue to Payment" : "Reserve Consultation"}
+          onBook={() => (paid ? goTo("payment") : reserve())}
         />
       )}
       {step === "payment" && (
@@ -298,473 +219,446 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   STEP 1 — INTRO
+   STEP 1 — ADVICE ENTRY  (gated: register → schedule → book)
+   The single entry screen. Left column carries the pitch; the right-hand
+   panel progressively gates — advisor + an open contact form to register
+   (phone-OTP), and only once verified does it reveal the day/time
+   scheduler + book. On mobile the order is headline → form → rest of pitch.
    ════════════════════════════════════════════════════════════════ */
-function IntroStep({
+
+/* Shared right-panel card shell + step badge. */
+const CARD =
+  "relative rounded-[20px] border border-[#1a1a1a]/[0.08] bg-white p-6 shadow-[0_26px_64px_-32px_rgba(26,26,26,0.3)] md:p-7";
+
+function CardBadge({ children, tone }: { children: React.ReactNode; tone: "gold" | "green" }) {
+  return (
+    <span
+      className={`absolute -top-3 left-6 rounded-md px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-white ${
+        tone === "green" ? "bg-[#1e6b45]" : "bg-[#9a7a2e]"
+      }`}
+    >
+      {children}
+    </span>
+  );
+}
+
+function AdvisorRow({ advisor }: { advisor: ConsultAdvisor }) {
+  return (
+    <div className="flex items-center gap-3.5">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#1e6b45]/10 font-serif text-[1rem] font-medium text-[#1e6b45]">
+        {advisor.initials}
+      </div>
+      <div className="min-w-0">
+        <p className="text-[9px] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/35">Your advisor</p>
+        <p className="font-serif text-[1.2rem] font-medium leading-tight text-[#1a1a1a]">{advisor.name}</p>
+        <p className="text-[0.8rem] font-light text-[#1a1a1a]/50">{advisor.focus}</p>
+      </div>
+    </div>
+  );
+}
+
+function AdviceEntry({
+  booking,
+  setBooking,
   prepLine,
   warm,
   profile,
-  onContinue,
+  onBook,
 }: {
+  booking: ConsultBooking;
+  setBooking: React.Dispatch<React.SetStateAction<ConsultBooking>>;
   prepLine: string | null;
   warm: boolean;
   profile?: ConsultProfileChip[];
-  onContinue: () => void;
+  onBook: () => void;
 }) {
-  const ctaLabel = warm ? "Book your consultation →" : "Request your consultation →";
+  const advisor = advisorFor(booking.reason);
+  const [phase, setPhase] = useState<"register" | "schedule">("register");
+  const [verified, setVerified] = useState<Verified | null>(null);
+
+  // A prior shortlist verification carries over — skip the second OTP and
+  // open straight on the scheduler. We start unverified so the first client
+  // render matches the static server render, then hydrate from storage.
+  useEffect(() => {
+    const v = loadVerified();
+    if (!v) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setVerified(v);
+    setBooking((b) => ({
+      ...b,
+      name: b.name || v.name || "",
+      mobile: b.mobile || (v.channel === "mobile" ? `${v.cc ?? ""} ${v.contact}`.trim() : b.mobile),
+      email: b.email || v.email || (v.channel === "email" ? v.contact : ""),
+    }));
+    setPhase("schedule");
+  }, [setBooking]);
+
+  const handleVerified = (v: Verified) => {
+    saveVerified(v);
+    setVerified(v);
+    setBooking((b) => ({
+      ...b,
+      name: v.name?.trim() || b.name,
+      mobile: v.channel === "mobile" ? `${v.cc ?? ""} ${v.contact}`.trim() : b.mobile,
+      email: v.email?.trim() || b.email,
+    }));
+    setPhase("schedule");
+  };
 
   return (
-    <div className="animate-fade-up mx-auto max-w-[1000px] px-6 py-6 md:px-10 md:py-10">
-      {/* ── Two columns: context on the left, the offer + CTA on the right ── */}
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:items-start md:gap-12">
-        {/* LEFT — context */}
-        <div>
+    <div className="animate-fade-up mx-auto max-w-[1200px] px-6 py-6 md:px-10 md:py-10">
+      {/* Mobile: flex column in DOM order (headline → form → rest of pitch).
+          Desktop: pitch left, gated panel right, spanning both rows. */}
+      <div className="flex flex-col gap-8 md:grid md:grid-cols-[minmax(0,1fr)_27rem] md:items-start md:gap-x-12 md:gap-y-9">
+        {/* headline — leads on mobile */}
+        <div className="md:col-start-1 md:row-start-1">
           <Eyebrow>Request Independent Advice</Eyebrow>
-          <h1 className="font-serif text-[1.9rem] font-medium leading-[1.1] text-[#1a1a1a] md:text-[2.6rem]">
+          <h1 className="font-serif text-[2rem] font-medium leading-[1.05] tracking-[-0.015em] text-[#1a1a1a] md:text-[3rem]">
             {warm ? "Your advisor is ready when you are." : "Every important property decision deserves independent thinking."}
           </h1>
-          <p className="mt-5 text-[0.95rem] font-light leading-[1.75] text-[#1a1a1a]/55 md:text-[1.02rem]">
+          <p className="mt-5 max-w-[480px] text-[0.98rem] font-light leading-[1.6] text-[#1a1a1a]/55 md:text-[1.08rem]">
             {warm
               ? "No sales pressure and no agenda — just one prepared, independent conversation about your decision."
               : "One clear recommendation, no agenda — independent advice tailored to your situation, and we'll tell you to walk away if that's the honest call."}
           </p>
+        </div>
 
-          {/* The founder is the seal — the desk this conversation runs through. */}
-          <div className="mt-6 flex items-center gap-3.5">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`${basePath}/images/founder-gaurav.webp`} alt="Gaurav Jain — Founder, Truth Estate" className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-[#c9a96e]/50" />
-            <div className="min-w-0">
-              <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#9a7a2e]">The Independent Desk</p>
-              <p className="mt-0.5 text-[0.92rem] font-semibold leading-tight text-[#1a1a1a]">Gaurav Jain</p>
-              <p className="text-[0.74rem] font-light text-[#1a1a1a]/50">Founder, Truth Estate — every file crosses this desk.</p>
-            </div>
-          </div>
-
-          {/* Context we already hold — the source we'll prep for (project /
-              developer / corridor) and, when warm, the visitor's brief. */}
-          {(prepLine || (profile && profile.length > 0)) && (
-            <div className="mt-7 rounded-xl border border-[#c9a96e]/30 bg-[#c9a96e]/[0.07] p-5">
-              {prepLine && (
-                <div className="flex items-start gap-3">
-                  <span className="mt-[2px] text-[#c9a96e]">◆</span>
-                  <p className="font-serif text-[0.96rem] font-light italic leading-relaxed text-[#1a1a1a]/70 md:text-[1.02rem]">
-                    {prepLine}
-                  </p>
-                </div>
-              )}
-              {profile && profile.length > 0 && (
-                <div className={`flex flex-wrap gap-2 ${prepLine ? "mt-4 border-t border-[#c9a96e]/20 pt-4" : ""}`}>
-                  {profile.map((c) => (
-                    <span
-                      key={c.label}
-                      className="rounded-full border border-[#1a1a1a]/10 bg-white/70 px-3.5 py-1.5 text-[0.78rem] font-light text-[#1a1a1a]/65"
-                    >
-                      <span className="text-[#1a1a1a]/40">{c.label}</span> {c.value}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
+        {/* the gated action panel */}
+        <div className="md:col-start-2 md:row-start-1 md:row-span-2 md:self-start">
+          {phase === "register" ? (
+            <RegisterCard advisor={advisor} initialName={booking.name} onVerified={handleVerified} />
+          ) : (
+            <ScheduleCard advisor={advisor} verified={verified} booking={booking} setBooking={setBooking} onBook={onBook} />
           )}
         </div>
 
-        {/* RIGHT — the offer + primary CTA, above the fold */}
-        <div className="rounded-2xl border border-[#1a1a1a]/[0.08] bg-white p-6 shadow-sm shadow-black/[0.02] md:sticky md:top-2 md:p-7">
-          <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <h2 className="font-serif text-[1.4rem] font-medium text-[#1a1a1a] md:text-[1.65rem]">{CONSULT_HEADLINE}</h2>
-            {CONSULT_FEE != null && (
-              <div className="flex items-center gap-2.5">
-                {CONSULT_FEE_ORIGINAL != null && CONSULT_FEE_ORIGINAL > CONSULT_FEE && (
-                  <span className="text-[0.82rem] font-light text-[#1a1a1a]/35 line-through">{inr(CONSULT_FEE_ORIGINAL)}</span>
-                )}
-                <span className="font-serif text-[1.25rem] font-medium text-[#1a1a1a]">{inr(CONSULT_FEE)}</span>
-                {CONSULT_FEE_ORIGINAL != null && CONSULT_FEE_ORIGINAL > CONSULT_FEE && (
-                  <span className="rounded-full bg-[#1e6b45]/[0.08] px-2.5 py-1 text-[0.66rem] font-medium tracking-[0.02em] text-[#1e6b45]">
-                    {CONSULT_FEE_DISCOUNT_LABEL}
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-          {CONSULT_FEE != null && (
-            <p className="mt-2 flex items-center gap-1.5 text-[0.78rem] font-light text-[#1a1a1a]/45">
-              <span className="text-[#1e6b45]">&#10003;</span> {CONSULT_FEE_REFUND_NOTE}
-            </p>
-          )}
-          <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-2.5 border-t border-[#1a1a1a]/[0.07] pt-5 text-[0.82rem] font-light text-[#1a1a1a]/55">
-            {["45 Minutes", "Video or Phone", "Prepared before the call", "100% Confidential"].map((t) => (
-              <span key={t} className="flex items-center gap-2">
-                <span className="text-[#c9a96e]">&#10003;</span>
-                {t}
-              </span>
-            ))}
-          </div>
-          <div className="mt-6">
-            <PrimaryButton onClick={onContinue} full>{ctaLabel}</PrimaryButton>
-          </div>
-          <p className="mt-4 text-center text-[0.78rem] font-light text-[#1a1a1a]/45">
-            {warm
-              ? "Takes about a minute — your details are already in."
-              : "We'll understand your situation and give you our honest read before we ever discuss working together."}
-          </p>
+        {/* rest of the pitch — sits below the form on mobile */}
+        <div className="md:col-start-1 md:row-start-2">
+          <PitchRest prepLine={prepLine} profile={profile} />
         </div>
       </div>
-
-      {/* ── Supporting detail, below the fold ── */}
-      <div className="mt-14">
-        <p className="mb-6 text-[10px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/30">
-          What happens during this consultation?
-        </p>
-        <ol className="relative ml-1">
-          {CONSULT_TIMELINE.map((t, i) => (
-            <li key={t} className="relative flex gap-5 pb-6 last:pb-0">
-              {i < CONSULT_TIMELINE.length - 1 && (
-                <span className="absolute left-[7px] top-5 h-full w-px bg-[#1a1a1a]/12" />
-              )}
-              <span className="relative z-10 mt-1 h-[15px] w-[15px] shrink-0 rounded-full border border-[#1e6b45] bg-[#F5F0E8]">
-                <span className="absolute inset-[3px] rounded-full bg-[#1e6b45]" />
-              </span>
-              <span className="font-serif text-[1.05rem] font-light text-[#1a1a1a]/75 md:text-[1.2rem]">{t}</span>
-            </li>
-          ))}
-        </ol>
-        <p className="mt-7 max-w-[560px] text-[0.82rem] font-light leading-relaxed text-[#1a1a1a]/45">
-          We won&apos;t always tell you to buy. Depending on the evidence, the right
-          recommendation may be to{" "}
-          {CONSULT_OUTCOMES.map((o, i) => (
-            <span key={o}>
-              <span className="text-[#1a1a1a]/70">{o}</span>
-              {i < CONSULT_OUTCOMES.length - 1 ? ", " : "."}
-            </span>
-          ))}
-        </p>
-      </div>
-
-      <div className="mt-10 hidden md:block">
-        <PrimaryButton onClick={onContinue}>{ctaLabel}</PrimaryButton>
-      </div>
-
-      <PillarStrip />
-
-      {/* Mobile: the offer card scrolls far below the fold, so keep the primary
-          action pinned to the bottom of the viewport within reach. */}
-      <div className="sticky bottom-0 z-20 -mx-6 -mb-6 mt-8 border-t border-[#1a1a1a]/10 bg-[#F5F0E8]/95 px-6 py-3 backdrop-blur md:hidden">
-        <PrimaryButton onClick={onContinue} full>{ctaLabel}</PrimaryButton>
-      </div>
     </div>
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   STEP 2 — REASON
-   ════════════════════════════════════════════════════════════════ */
-function ReasonStep({ value, onPick }: { value: ConsultIntent | null; onPick: (r: ConsultIntent) => void }) {
-  return (
-    <div className="animate-fade-up mx-auto max-w-[760px] px-6 py-12 md:px-10 md:py-16">
-      <Eyebrow>A little context</Eyebrow>
-      <h1 className="font-serif text-[2rem] font-medium leading-[1.12] text-[#1a1a1a] md:text-[2.7rem]">
-        What brings you here today?
-      </h1>
-
-      <div className="mt-10 grid gap-3.5 sm:grid-cols-2">
-        {CONSULT_REASONS.map((r) => (
-          <button
-            key={r.key}
-            onClick={() => onPick(r.key)}
-            className={`group rounded-xl border p-6 text-left transition-all duration-300 ${
-              value === r.key
-                ? "border-[#1e6b45]/50 bg-[#1e6b45]/[0.05]"
-                : "border-[#1a1a1a]/[0.08] bg-white hover:border-[#1a1a1a]/15 hover:shadow-lg hover:shadow-black/[0.03]"
-            }`}
-          >
-            <h3 className="font-serif text-[1.3rem] font-medium text-[#1a1a1a] transition-colors group-hover:text-[#1e6b45]">{r.title}</h3>
-            <p className="mt-1.5 text-[0.85rem] font-light leading-relaxed text-[#1a1a1a]/50">{r.line}</p>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   STEP 3 — SITUATION (dynamic fields)
-   ════════════════════════════════════════════════════════════════ */
-function SituationStep({
-  intent,
-  details,
-  setField,
-  onContinue,
-  onOfframp,
-}: {
-  intent: ConsultIntent;
-  details: Record<string, string | string[]>;
-  setField: (name: string, value: string | string[]) => void;
-  onContinue: () => void;
-  onOfframp: (kind: InterestKind) => void;
-}) {
-  const fields = CONSULT_FIELDS[intent];
-  const isBuy = intent === "buy";
-  const possession = details["possession"] as string | undefined;
-  const canContinue = !isBuy || !!possession;
-
-  const proceed = () => {
-    if (possession === "ready-to-move") onOfframp("ready-to-move");
-    else onContinue();
-  };
-
-  return (
-    <div className="animate-fade-up mx-auto max-w-[680px] px-6 py-12 md:px-10 md:py-16">
-      <Eyebrow>Your situation</Eyebrow>
-      <h1 className="font-serif text-[2rem] font-medium leading-[1.12] text-[#1a1a1a] md:text-[2.7rem]">
-        Tell us a little about
-        <br className="hidden md:block" /> your situation.
-      </h1>
-      <p className="mt-4 max-w-[460px] text-[0.9rem] font-light leading-relaxed text-[#1a1a1a]/45">
-        Only what helps us prepare. Everything here stays confidential — and you can
-        say more on the next step.
-      </p>
-
-      <div className="mt-10 flex flex-col gap-9">
-        {isBuy && (
-          <div>
-            <label className="mb-3 block text-[10px] font-light uppercase tracking-[0.22em] text-[#1a1a1a]/40">
-              Under construction or ready to move?
-            </label>
-            <div className="flex flex-wrap gap-2.5">
-              {POSSESSION_OPTIONS.map((o) => {
-                const on = possession === o.key;
-                return (
-                  <button
-                    key={o.key}
-                    onClick={() => setField("possession", o.key)}
-                    className={`rounded-full border px-5 py-2.5 text-[0.84rem] font-light transition-all duration-300 ${
-                      on
-                        ? "border-[#1e6b45] bg-[#1e6b45] text-white shadow-md shadow-black/10"
-                        : "border-[#1a1a1a]/15 text-[#1a1a1a]/60 hover:border-[#1a1a1a]/35 hover:text-[#1a1a1a]"
-                    }`}
-                  >
-                    {o.label}
-                  </button>
-                );
-              })}
-            </div>
-            <button
-              onClick={() => onOfframp("commercial")}
-              className="mt-3.5 text-[0.78rem] font-light text-[#1a1a1a]/45 underline decoration-[#1a1a1a]/15 underline-offset-4 transition-colors hover:text-[#1a1a1a]/80"
-            >
-              Looking for commercial space instead?
-            </button>
-          </div>
-        )}
-
-        {fields.map((f) => (
-          <FieldControl key={f.name} field={f} value={details[f.name]} onChange={(v) => setField(f.name, v)} />
-        ))}
-      </div>
-
-      <div className="mt-12">
-        <PrimaryButton onClick={proceed} disabled={!canContinue}>Continue →</PrimaryButton>
-      </div>
-    </div>
-  );
-}
-
-function FieldControl({
-  field,
-  value,
-  onChange,
-}: {
-  field: ConsultField;
-  value: string | string[] | undefined;
-  onChange: (v: string | string[]) => void;
-}) {
-  if (field.type === "text") {
-    return (
-      <div>
-        <label className="mb-3 block text-[10px] font-light uppercase tracking-[0.22em] text-[#1a1a1a]/40">{field.label}</label>
-        <input
-          type="text"
-          value={(value as string) ?? ""}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={field.placeholder}
-          className="w-full border-b border-[#1a1a1a]/15 bg-transparent py-3 font-serif text-[1.15rem] font-light text-[#1a1a1a] outline-none transition-colors duration-300 placeholder:text-[#1a1a1a]/25 focus:border-[#1e6b45]/50 md:text-[1.3rem]"
-        />
-      </div>
-    );
-  }
-
-  const selected: string[] = Array.isArray(value) ? value : value ? [value as string] : [];
-  const multi = field.type === "chips-multi";
-  const toggle = (opt: string) => {
-    if (multi) {
-      onChange(selected.includes(opt) ? selected.filter((x) => x !== opt) : [...selected, opt]);
-    } else {
-      onChange(opt);
-    }
-  };
-
+function PitchRest({ prepLine, profile }: { prepLine: string | null; profile?: ConsultProfileChip[] }) {
   return (
     <div>
-      <label className="mb-3 block text-[10px] font-light uppercase tracking-[0.22em] text-[#1a1a1a]/40">{field.label}</label>
-      <div className="flex flex-wrap gap-2.5">
-        {field.options!.map((opt) => {
-          const on = selected.includes(opt);
-          return (
-            <button
-              key={opt}
-              onClick={() => toggle(opt)}
-              className={`rounded-full border px-5 py-2.5 text-[0.84rem] font-light transition-all duration-300 ${
-                on
-                  ? "border-[#1e6b45] bg-[#1e6b45] text-white shadow-md shadow-black/10"
-                  : "border-[#1a1a1a]/15 text-[#1a1a1a]/60 hover:border-[#1a1a1a]/35 hover:text-[#1a1a1a]"
-              }`}
-            >
-              {opt}
-            </button>
-          );
-        })}
+      {/* The founder is the seal — the desk this conversation runs through. */}
+      <div className="flex items-center gap-3.5">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={`${basePath}/images/founder-gaurav.webp`} alt="Gaurav Jain — Founder, Truth Estate" className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-[#c9a96e]/50" />
+        <div className="min-w-0">
+          <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#9a7a2e]">The Independent Desk</p>
+          <p className="mt-0.5 text-[0.92rem] font-semibold leading-tight text-[#1a1a1a]">Gaurav Jain</p>
+          <p className="text-[0.74rem] font-light text-[#1a1a1a]/50">Founder, Truth Estate — every file crosses this desk.</p>
+        </div>
       </div>
-    </div>
-  );
-}
 
-/* ════════════════════════════════════════════════════════════════
-   STEP 4 — PREP
-   ════════════════════════════════════════════════════════════════ */
-function PrepStep({
-  value,
-  source,
-  onChange,
-  onContinue,
-}: {
-  value: string;
-  source?: string;
-  onChange: (v: string) => void;
-  onContinue: () => void;
-}) {
-  const examples = source
-    ? [`Compare ${source} with Puri The Aravallis`, "Help me shortlist projects", "Review construction quality", "Evaluate legal risks", "Should I wait six months?", "Explain Truth Score"]
-    : ["Compare DLF Arbour with Puri The Aravallis", "Help me shortlist projects", "Review construction quality", "Evaluate legal risks", "Should I wait six months?", "Explain Truth Score"];
+      {/* Context we already hold — the source we'll prep for and, when warm,
+          the visitor's brief. */}
+      {(prepLine || (profile && profile.length > 0)) && (
+        <div className="mt-6 rounded-xl border border-[#c9a96e]/30 bg-[#c9a96e]/[0.07] p-5">
+          {prepLine && (
+            <div className="flex items-start gap-3">
+              <span className="mt-[2px] text-[#c9a96e]">◆</span>
+              <p className="font-serif text-[0.96rem] font-light italic leading-relaxed text-[#1a1a1a]/70 md:text-[1.02rem]">
+                {prepLine}
+              </p>
+            </div>
+          )}
+          {profile && profile.length > 0 && (
+            <div className={`flex flex-wrap gap-2 ${prepLine ? "mt-4 border-t border-[#c9a96e]/20 pt-4" : ""}`}>
+              {profile.map((c) => (
+                <span
+                  key={c.label}
+                  className="rounded-full border border-[#1a1a1a]/10 bg-white/70 px-3.5 py-1.5 text-[0.78rem] font-light text-[#1a1a1a]/65"
+                >
+                  <span className="text-[#1a1a1a]/40">{c.label}</span> {c.value}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
-  return (
-    <div className="animate-fade-up mx-auto max-w-[680px] px-6 py-12 md:px-10 md:py-16">
-      <Eyebrow>Prepared advice</Eyebrow>
-      <h1 className="font-serif text-[2rem] font-medium leading-[1.12] text-[#1a1a1a] md:text-[2.7rem]">
-        Anything you&apos;d like us to
-        <br className="hidden md:block" /> prepare before the call?
-      </h1>
-      <p className="mt-4 max-w-[460px] text-[0.9rem] font-light leading-relaxed text-[#1a1a1a]/45">
-        The more specific, the more prepared we&apos;ll arrive. You won&apos;t have to
-        repeat yourself.
+      {/* What happens during the consultation */}
+      <p className="mt-8 text-[10px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/30">
+        What happens during this consultation?
+      </p>
+      <ol className="relative ml-1 mt-5">
+        {CONSULT_TIMELINE.map((t, i) => (
+          <li key={t} className="relative flex gap-5 pb-5 last:pb-0">
+            {i < CONSULT_TIMELINE.length - 1 && (
+              <span className="absolute left-[7px] top-5 h-full w-px bg-[#1a1a1a]/12" />
+            )}
+            <span className="relative z-10 mt-1 h-[15px] w-[15px] shrink-0 rounded-full border border-[#1e6b45] bg-[#F5F0E8]">
+              <span className="absolute inset-[3px] rounded-full bg-[#1e6b45]" />
+            </span>
+            <span className="font-serif text-[1.02rem] font-light text-[#1a1a1a]/75 md:text-[1.12rem]">{t}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-6 max-w-[520px] text-[0.82rem] font-light leading-relaxed text-[#1a1a1a]/45">
+        We won&apos;t always tell you to buy. Depending on the evidence, the right
+        recommendation may be to{" "}
+        {CONSULT_OUTCOMES.map((o, i) => (
+          <span key={o}>
+            <span className="text-[#1a1a1a]/70">{o}</span>
+            {i < CONSULT_OUTCOMES.length - 1 ? ", " : "."}
+          </span>
+        ))}
       </p>
 
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        rows={5}
-        placeholder="Tell us what's on your mind…"
-        className="mt-9 w-full resize-none rounded-xl border border-[#1a1a1a]/12 bg-white p-5 font-serif text-[1.1rem] font-light leading-relaxed text-[#1a1a1a] outline-none transition-colors duration-300 placeholder:text-[#1a1a1a]/25 focus:border-[#c9a96e]/40 md:text-[1.2rem]"
+      <PillarStrip />
+    </div>
+  );
+}
+
+/* ── Right panel, phase 1: advisor + contact form (phone-OTP) ── */
+function RegisterCard({
+  advisor,
+  initialName,
+  onVerified,
+}: {
+  advisor: ConsultAdvisor;
+  initialName: string;
+  onVerified: (v: Verified) => void;
+}) {
+  const [name, setName] = useState(initialName);
+  const [dialCode, setDialCode] = useState("+91");
+  const [num, setNum] = useState("");
+  const [email, setEmail] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const isIndia = dialCode === "+91";
+  const digits = num.replace(/\D/g, "");
+  const numValid = digits.length >= (isIndia ? 10 : 6);
+  const nameValid = name.trim().length > 1;
+  const otpComplete = otp.every((d) => d !== "");
+  const hasDiscount = CONSULT_FEE_ORIGINAL != null && CONSULT_FEE != null && CONSULT_FEE_ORIGINAL > CONSULT_FEE;
+
+  const send = async () => {
+    if (!numValid || sending) return;
+    setErr(null);
+    setSending(true);
+    const r = await sendOtp("mobile", digits);
+    setSending(false);
+    if (r.ok) {
+      setOtpSent(true);
+      setTimeout(() => otpRefs.current[0]?.focus(), 40);
+    } else setErr(r.error ?? "We couldn't send the code. Please try again.");
+  };
+
+  const verify = async () => {
+    if (!nameValid || !otpComplete || verifying) return;
+    setErr(null);
+    setVerifying(true);
+    const r = await verifyOtp("mobile", digits, otp.join(""));
+    setVerifying(false);
+    if (r.ok) {
+      onVerified({ channel: "mobile", contact: digits, cc: dialCode, name: name.trim(), email: email.trim() || undefined, at: Date.now() });
+    } else setErr(r.error ?? "That code didn't match. Please try again.");
+  };
+
+  const setOtpDigit = (i: number, v: string) => {
+    const digit = v.replace(/\D/g, "").slice(-1);
+    setOtp((o) => { const n = [...o]; n[i] = digit; return n; });
+    if (digit && i < otp.length - 1) otpRefs.current[i + 1]?.focus();
+  };
+
+  const inputCls =
+    "w-full rounded-xl border border-[#1a1a1a]/15 bg-[#FBF8F2] px-3.5 py-3 text-[0.95rem] font-light text-[#1a1a1a] outline-none transition-colors placeholder:text-[#1a1a1a]/35 focus:border-[#1e6b45]/50 disabled:opacity-60";
+
+  return (
+    <div className={CARD}>
+      <CardBadge tone="gold">Step 1 · Register</CardBadge>
+      <AdvisorRow advisor={advisor} />
+
+      {CONSULT_FEE != null && (
+        <div className="mt-4 flex flex-wrap items-baseline gap-2.5">
+          {hasDiscount && <span className="text-[0.85rem] font-light text-[#1a1a1a]/35 line-through">{inr(CONSULT_FEE_ORIGINAL!)}</span>}
+          <span className="font-serif text-[1.4rem] font-medium text-[#1a1a1a]">{inr(CONSULT_FEE)}</span>
+          {hasDiscount && (
+            <span className="rounded-full bg-[#1e6b45]/[0.09] px-2.5 py-1 text-[0.66rem] font-medium text-[#1e6b45]">{CONSULT_FEE_DISCOUNT_LABEL}</span>
+          )}
+        </div>
+      )}
+
+      <div className="my-5 h-px bg-[#1a1a1a]/[0.08]" />
+
+      <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.15em] text-[#1a1a1a]/40">Create your account to continue</p>
+
+      {/* Name */}
+      <input
+        type="text"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Full name"
+        className={`mb-2.5 ${inputCls}`}
       />
 
-      <div className="mt-5">
-        <p className="mb-3 text-[9px] font-light uppercase tracking-[0.25em] text-[#1a1a1a]/30">For example</p>
-        <div className="flex flex-wrap gap-2.5">
-          {examples.map((ex) => (
-            <button
-              key={ex}
-              onClick={() => onChange(value ? `${value}\n${ex}` : ex)}
-              className="rounded-full border border-[#1a1a1a]/[0.08] px-4 py-2 text-[0.8rem] font-light italic text-[#1a1a1a]/45 transition-all duration-300 hover:border-[#1a1a1a]/20 hover:text-[#1a1a1a]/70"
-            >
-              {ex}
-            </button>
+      {/* Phone + Send OTP */}
+      <div className="flex gap-2">
+        <select
+          value={dialCode}
+          onChange={(e) => setDialCode(e.target.value)}
+          disabled={otpSent}
+          aria-label="Country dialling code"
+          className="shrink-0 rounded-xl border border-[#1a1a1a]/15 bg-[#FBF8F2] px-2.5 text-[0.9rem] font-medium text-[#1a1a1a] outline-none focus:border-[#1e6b45]/50 disabled:opacity-60"
+        >
+          {DIAL_CODES.map((c) => (
+            <option key={c.iso} value={c.code}>{c.flag} {c.code}</option>
           ))}
-        </div>
+        </select>
+        <input
+          type="tel"
+          value={num}
+          onChange={(e) => setNum(e.target.value.replace(/[^\d\s]/g, ""))}
+          disabled={otpSent}
+          placeholder={isIndia ? "98765 43210" : "phone number"}
+          className={`min-w-0 flex-1 ${inputCls}`}
+        />
+        {!otpSent && (
+          <button
+            onClick={send}
+            disabled={!numValid || sending}
+            className="shrink-0 rounded-xl border border-[#1e6b45]/35 bg-[#1e6b45]/[0.05] px-3.5 text-[0.8rem] font-semibold text-[#1e6b45] transition-all enabled:hover:bg-[#1e6b45] enabled:hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {sending ? "Sending…" : "Send OTP"}
+          </button>
+        )}
       </div>
 
-      <div className="mt-12">
-        <PrimaryButton onClick={onContinue}>Continue →</PrimaryButton>
+      {/* OTP digits */}
+      {otpSent && (
+        <div className="animate-fade-up mt-3.5">
+          <div className="flex items-center justify-between">
+            <label className="text-[0.72rem] font-light uppercase tracking-[0.18em] text-[#1a1a1a]/40">Enter the 6-digit code</label>
+            <button onClick={send} disabled={sending} className="text-[0.72rem] font-light text-[#1e6b45] transition-opacity hover:opacity-70 disabled:opacity-40">
+              {sending ? "Sending…" : "Resend"}
+            </button>
+          </div>
+          <div className="mt-2 flex gap-2">
+            {otp.map((d, i) => (
+              <input
+                key={i}
+                ref={(el) => { otpRefs.current[i] = el; }}
+                value={d}
+                onChange={(e) => setOtpDigit(i, e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Backspace" && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus(); }}
+                inputMode="numeric"
+                maxLength={1}
+                aria-label={`Digit ${i + 1}`}
+                className="h-12 w-full rounded-lg border border-[#1a1a1a]/15 bg-white text-center font-serif text-[1.25rem] font-light text-[#1a1a1a] outline-none transition-colors focus:border-[#1e6b45]/50"
+              />
+            ))}
+          </div>
+          <p className="mt-2 text-[0.72rem] font-light italic text-[#1a1a1a]/35">Passwordless — enter any 6 digits to continue this preview.</p>
+        </div>
+      )}
+
+      {/* Email — optional contact, not a verification channel */}
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Email (optional)"
+        className={`mt-2.5 ${inputCls}`}
+      />
+
+      {err && <p className="mt-3 text-[0.78rem] font-light text-[#b23b3b]">{err}</p>}
+
+      <button
+        onClick={verify}
+        disabled={!nameValid || !otpSent || !otpComplete || verifying}
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-[13px] bg-[#1e6b45] px-6 py-3.5 text-[0.92rem] font-semibold tracking-[0.02em] text-white shadow-lg shadow-[#1e6b45]/20 transition-all enabled:hover:bg-[#238c55] disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        {verifying ? <><Spinner /> Verifying…</> : "Verify & continue →"}
+      </button>
+      <p className="mt-3 text-center text-[0.74rem] font-light text-[#1a1a1a]/40">One quick verification — then you pick your time.</p>
+
+      {/* Locked scheduler — unlocks on verify */}
+      <div className="mt-4 flex items-center gap-2.5 rounded-[13px] border border-dashed border-[#1a1a1a]/20 px-4 py-3.5 text-[0.82rem] font-light text-[#1a1a1a]/40">
+        <span className="text-[0.95rem]">🔒</span>
+        Day &amp; time — unlocks the moment you&apos;re verified.
       </div>
     </div>
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   STEP 5 — SCHEDULE
-   ════════════════════════════════════════════════════════════════ */
-function ScheduleStep({
-  intent,
-  day,
-  time,
-  format,
-  onSelect,
-  onContinue,
+/* ── Right panel, phase 2: verified — the scheduler is revealed ── */
+function ScheduleCard({
+  advisor,
+  verified,
+  booking,
+  setBooking,
+  onBook,
 }: {
-  intent: ConsultIntent | null;
-  day: string | null;
-  time: string | null;
-  format: ConsultFormat | null;
-  onSelect: (patch: Partial<ConsultBooking>) => void;
-  onContinue: () => void;
+  advisor: ConsultAdvisor;
+  verified: Verified | null;
+  booking: ConsultBooking;
+  setBooking: React.Dispatch<React.SetStateAction<ConsultBooking>>;
+  onBook: () => void;
 }) {
-  const advisor = advisorFor(intent);
-  const ready = day && time && format;
+  // Default the format so the booking summary reads cleanly; the toggle changes it.
+  useEffect(() => {
+    if (!booking.format) setBooking((b) => ({ ...b, format: "Video" }));
+  }, [booking.format, setBooking]);
+
+  const set = (patch: Partial<ConsultBooking>) => setBooking((b) => ({ ...b, ...patch }));
+  const ready = !!(booking.day && booking.time && booking.format);
+  const firstName = (verified?.name || booking.name || "").trim().split(" ")[0];
+
+  const pill = (on: boolean, accent: "day" | "slot") =>
+    `rounded-full border px-4 py-2 text-[0.82rem] font-light transition-all ${
+      on
+        ? "border-[#1e6b45] bg-[#1e6b45] font-medium text-white"
+        : accent === "slot"
+          ? "border-[#1e6b45]/30 text-[#1e6b45] hover:bg-[#1e6b45]/[0.06]"
+          : "border-[#1a1a1a]/15 text-[#1a1a1a]/70 hover:border-[#1a1a1a]/35"
+    }`;
 
   return (
-    <div className="animate-fade-up mx-auto max-w-[760px] px-6 py-12 md:px-10 md:py-16">
-      <Eyebrow>Scheduling</Eyebrow>
-      <h1 className="font-serif text-[2rem] font-medium leading-[1.12] text-[#1a1a1a] md:text-[2.7rem]">
-        Choose a convenient time.
-      </h1>
+    <div className={CARD}>
+      <CardBadge tone="green">Step 2 · Schedule</CardBadge>
+      <AdvisorRow advisor={advisor} />
 
-      {/* Advisor */}
-      <div className="mt-9 flex items-center gap-4 rounded-xl border border-[#1a1a1a]/[0.08] bg-white p-5">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#1e6b45]/10 font-serif text-[1rem] font-medium text-[#1e6b45]">
-          {advisor.initials}
-        </div>
-        <div className="flex-1">
-          <p className="text-[9px] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/35">Your advisor</p>
-          <p className="font-serif text-[1.2rem] font-medium text-[#1a1a1a]">{advisor.name}</p>
-          <p className="text-[0.8rem] font-light text-[#1a1a1a]/50">{advisor.focus}</p>
-        </div>
+      {/* Verified chip */}
+      <div className="mt-4 flex items-center gap-2.5 rounded-xl border border-[#1e6b45]/30 bg-[#1e6b45]/[0.06] px-3.5 py-2.5">
+        <span className="h-2 w-2 shrink-0 rounded-full bg-[#1e6b45]" />
+        <span className="text-[0.8rem] font-light text-[#1a1a1a]/75">
+          Verified — <b className="font-semibold text-[#1e6b45]">{verified ? maskContact(verified) : booking.mobile}</b>
+        </span>
+        {firstName && <span className="ml-auto text-[0.72rem] font-light text-[#1a1a1a]/40">welcome, {firstName}</span>}
       </div>
 
-      {/* Day */}
-      <div className="mt-10">
-        <p className="mb-3 text-[10px] font-light uppercase tracking-[0.22em] text-[#1a1a1a]/40">Day</p>
-        <div className="flex flex-wrap gap-2.5">
-          {CONSULT_DAYS.map((d) => (
-            <button
-              key={d}
-              onClick={() => onSelect({ day: d })}
-              className={`rounded-full border px-5 py-2.5 text-[0.84rem] font-light transition-all duration-300 ${
-                day === d ? "border-[#1e6b45] bg-[#1e6b45] text-white" : "border-[#1a1a1a]/15 text-[#1a1a1a]/60 hover:border-[#1a1a1a]/35"
-              }`}
-            >
-              {d}
-            </button>
-          ))}
-        </div>
+      <div className="my-5 h-px bg-[#1a1a1a]/[0.08]" />
+
+      <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.15em] text-[#1a1a1a]/40">Pick a day &amp; time</p>
+
+      {/* Days */}
+      <div className="flex flex-wrap gap-2">
+        {CONSULT_DAYS.map((d) => (
+          <button key={d} onClick={() => set({ day: d })} className={pill(booking.day === d, "day")}>{d}</button>
+        ))}
       </div>
 
       {/* Dayparts */}
-      <div className="mt-10 flex flex-col gap-7">
+      <div className="mt-4 flex flex-col gap-4">
         {CONSULT_DAYPARTS.map((dp) => (
           <div key={dp.part}>
-            <div className="mb-3 flex items-baseline gap-3">
-              <p className="text-[10px] font-light uppercase tracking-[0.22em] text-[#1a1a1a]/40">{dp.part}</p>
-              <p className="text-[0.74rem] font-light text-[#1a1a1a]/30">{dp.window}</p>
-            </div>
-            <div className="flex flex-wrap gap-2.5">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#1a1a1a]/40">
+              {dp.part} <span className="ml-1 font-light text-[#1a1a1a]/30">{dp.window}</span>
+            </p>
+            <div className="flex flex-wrap gap-2">
               {dp.slots.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => onSelect({ time: s })}
-                  className={`rounded-full border px-5 py-2.5 text-[0.84rem] font-light transition-all duration-300 ${
-                    time === s ? "border-[#1e6b45] bg-[#1e6b45] text-white shadow-md shadow-black/10" : "border-[#1e6b45]/30 text-[#1e6b45] hover:bg-[#1e6b45]/[0.06]"
-                  }`}
-                >
-                  {s}
-                </button>
+                <button key={s} onClick={() => set({ time: s })} className={pill(booking.time === s, "slot")}>{s}</button>
               ))}
             </div>
           </div>
@@ -772,33 +666,38 @@ function ScheduleStep({
       </div>
 
       {/* Format */}
-      <div className="mt-10">
-        <p className="mb-3 text-[10px] font-light uppercase tracking-[0.22em] text-[#1a1a1a]/40">Format</p>
-        <div className="flex gap-2.5">
+      <div className="mt-5">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#1a1a1a]/40">Format</p>
+        <div className="flex gap-2">
           {CONSULT_FORMATS.map((f) => (
-            <button
-              key={f}
-              onClick={() => onSelect({ format: f })}
-              className={`rounded-full border px-6 py-2.5 text-[0.84rem] font-light transition-all duration-300 ${
-                format === f ? "border-[#1e6b45] bg-[#1e6b45] text-white" : "border-[#1a1a1a]/15 text-[#1a1a1a]/60 hover:border-[#1a1a1a]/35"
-              }`}
-            >
-              {f}
-            </button>
+            <button key={f} onClick={() => set({ format: f })} className={pill(booking.format === f, "day")}>{f}</button>
           ))}
         </div>
       </div>
 
-      <div className="mt-12">
-        <PrimaryButton onClick={onContinue} disabled={!ready}>Continue →</PrimaryButton>
-      </div>
+      {/* Booking summary */}
+      {booking.day && booking.time && (
+        <div className="mt-5 flex items-center gap-2.5 text-[0.85rem] font-light text-[#1a1a1a]">
+          <span className="text-[#9a7a2e]">◷</span>
+          <span>
+            Booking <b className="font-semibold">{booking.day} · {booking.time}</b>
+            {booking.format ? ` · ${booking.format} call` : ""}
+          </span>
+        </div>
+      )}
+
+      <button
+        onClick={onBook}
+        disabled={!ready}
+        className="mt-5 flex w-full items-center justify-center gap-2 rounded-[13px] bg-[#1e6b45] px-6 py-3.5 text-[0.92rem] font-semibold tracking-[0.02em] text-white shadow-lg shadow-[#1e6b45]/20 transition-all enabled:hover:bg-[#238c55] disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        {CONSULT_FEE != null ? `Book your consultation · ${inr(CONSULT_FEE)} →` : "Book your consultation →"}
+      </button>
+      <p className="mt-3 text-center text-[0.74rem] font-light text-[#1a1a1a]/45">{CONSULT_FEE_REFUND_NOTE}</p>
     </div>
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   STEP 6 — ACCOUNT (passwordless)
-   ════════════════════════════════════════════════════════════════ */
 /* Dial codes for the audience — India first, then the main NRI hubs. */
 const DIAL_CODES: { iso: string; flag: string; code: string; name: string }[] = [
   { iso: "IN", flag: "🇮🇳", code: "+91", name: "India" },
@@ -814,269 +713,6 @@ const DIAL_CODES: { iso: string; flag: string; code: string; name: string }[] = 
   { iso: "HK", flag: "🇭🇰", code: "+852", name: "Hong Kong" },
   { iso: "NZ", flag: "🇳🇿", code: "+64", name: "New Zealand" },
 ];
-
-function WhatsAppIcon({ className = "h-4 w-4" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
-      <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38c1.45.79 3.08 1.21 4.79 1.21 5.46 0 9.91-4.45 9.91-9.91C21.95 6.45 17.5 2 12.04 2m0 18.15c-1.52 0-3.01-.41-4.3-1.18l-.31-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.37c0-4.54 3.7-8.23 8.24-8.23 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.82c0 4.54-3.69 8.23-8.23 8.23m4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.23.25-.87.85-.87 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.11-.22-.17-.47-.29" />
-    </svg>
-  );
-}
-
-function GoogleIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
-      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
-      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z" />
-      <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84z" />
-      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z" />
-    </svg>
-  );
-}
-
-function ChannelPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[0.78rem] font-light transition-all ${
-        active ? "border-[#1e6b45] bg-[#1e6b45]/[0.08] text-[#1e6b45]" : "border-[#1a1a1a]/15 text-[#1a1a1a]/55 hover:border-[#1a1a1a]/35"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function AccountStep({
-  booking,
-  onChange,
-  onReserve,
-  ctaLabel = "Reserve Consultation",
-}: {
-  booking: ConsultBooking;
-  onChange: (patch: Partial<ConsultBooking>) => void;
-  onReserve: () => void;
-  ctaLabel?: string;
-}) {
-  const [dialCode, setDialCode] = useState("+91");
-  const [num, setNum] = useState("");
-  const [channel, setChannel] = useState<"whatsapp" | "sms">("whatsapp");
-  const [method, setMethod] = useState<"phone" | "email">("phone");
-  const [emailMode, setEmailMode] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [googleDone, setGoogleDone] = useState(false);
-  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
-
-  const isIndia = dialCode === "+91";
-  const numValid = num.replace(/\D/g, "").length >= (isIndia ? 10 : 6);
-  const emailValid = /\S+@\S+\.\S+/.test(booking.email);
-  const otpComplete = otp.every((d) => d !== "");
-  const verified = googleDone || (otpSent && otpComplete);
-  const canReserve = booking.name.trim() && verified;
-  const channelName = isIndia ? (channel === "whatsapp" ? "WhatsApp" : "SMS") : "WhatsApp";
-
-  const syncMobile = (dc: string, n: string) => onChange({ mobile: n ? `${dc} ${n}` : "" });
-  const onNum = (v: string) => { const n = v.replace(/[^\d\s]/g, ""); setNum(n); syncMobile(dialCode, n); };
-  const onDial = (v: string) => { setDialCode(v); if (v !== "+91") setChannel("whatsapp"); syncMobile(v, num); };
-  const setOtpDigit = (i: number, v: string) => {
-    const digit = v.replace(/\D/g, "").slice(-1);
-    setOtp((o) => { const n = [...o]; n[i] = digit; return n; });
-    if (digit && i < otp.length - 1) otpRefs.current[i + 1]?.focus();
-  };
-
-  const perks = ["Continue conversations", "Review recommendations", "Upload documents", "Track shortlisted properties", "Collaborate with your advisor"];
-
-  const otpBlock = otpSent ? (
-    <div className="animate-fade-up">
-      <label className="mb-3 block text-[10px] font-light uppercase tracking-[0.22em] text-[#1a1a1a]/40">
-        {method === "email" ? "Enter the code sent to your email" : `Enter the code sent on ${channelName}`}
-      </label>
-      <div className="flex gap-2.5">
-        {otp.map((d, i) => (
-          <input
-            key={i}
-            ref={(el) => { otpRefs.current[i] = el; }}
-            value={d}
-            onChange={(e) => setOtpDigit(i, e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Backspace" && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus(); }}
-            inputMode="numeric"
-            maxLength={1}
-            className="h-14 w-11 rounded-lg border border-[#1a1a1a]/15 bg-white text-center font-serif text-[1.5rem] font-light text-[#1a1a1a] outline-none transition-colors focus:border-[#1e6b45]/50"
-          />
-        ))}
-      </div>
-      <p className="mt-3 text-[0.76rem] font-light italic text-[#1a1a1a]/35">
-        Passwordless — no password to remember. Enter any 6 digits to continue this preview.
-      </p>
-    </div>
-  ) : null;
-
-  return (
-    <div className="animate-fade-up mx-auto max-w-[640px] px-6 py-12 md:px-10 md:py-16">
-      <Eyebrow>Almost done</Eyebrow>
-      <h1 className="font-serif text-[2rem] font-medium leading-[1.12] text-[#1a1a1a] md:text-[2.7rem]">
-        Reserve your consultation.
-      </h1>
-      <p className="mt-4 max-w-[480px] text-[0.92rem] font-light leading-relaxed text-[#1a1a1a]/50">
-        Your account creates your secure Private Office — where every conversation,
-        recommendation and document related to your decision will live.
-      </p>
-
-      <ul className="mt-7 grid grid-cols-1 gap-x-8 gap-y-2.5 sm:grid-cols-2">
-        {perks.map((p) => (
-          <li key={p} className="flex items-center gap-2.5 text-[0.86rem] font-light text-[#1a1a1a]/60">
-            <span className="text-[#1e6b45]">&#10003;</span>{p}
-          </li>
-        ))}
-      </ul>
-
-      <div className="mt-10 flex flex-col gap-7">
-        <Field label="Name">
-          <input
-            type="text"
-            value={booking.name}
-            onChange={(e) => onChange({ name: e.target.value })}
-            placeholder="Your full name"
-            className="w-full border-b border-[#1a1a1a]/15 bg-transparent py-3 font-serif text-[1.2rem] font-light text-[#1a1a1a] outline-none transition-colors placeholder:text-[#1a1a1a]/25 focus:border-[#1e6b45]/50"
-          />
-        </Field>
-
-        {googleDone ? (
-          <div className="animate-fade-up flex items-center justify-between gap-3 rounded-xl border border-[#1e6b45]/25 bg-[#1e6b45]/[0.05] px-5 py-4">
-            <span className="flex items-center gap-2.5 text-[0.9rem] font-light text-[#1a1a1a]/75">
-              <GoogleIcon /> Signed in with Google — your identity is verified.
-            </span>
-            <button onClick={() => setGoogleDone(false)} className="shrink-0 text-[0.78rem] font-light text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a]">
-              Change
-            </button>
-          </div>
-        ) : (
-          <>
-            {/* Phone — country code + number, verified on WhatsApp (or SMS in India) */}
-            <div>
-              <label className="mb-1 block text-[10px] font-light uppercase tracking-[0.22em] text-[#1a1a1a]/40">Mobile</label>
-              <div className="flex items-center gap-3">
-                <select
-                  value={dialCode}
-                  onChange={(e) => onDial(e.target.value)}
-                  disabled={otpSent && method === "phone"}
-                  aria-label="Country dialling code"
-                  className="shrink-0 border-b border-[#1a1a1a]/15 bg-transparent py-3 font-serif text-[1.05rem] font-light text-[#1a1a1a] outline-none focus:border-[#1e6b45]/50 disabled:opacity-50"
-                >
-                  {DIAL_CODES.map((c) => (
-                    <option key={c.iso} value={c.code}>{c.flag} {c.code}</option>
-                  ))}
-                </select>
-                <input
-                  type="tel"
-                  value={num}
-                  onChange={(e) => onNum(e.target.value)}
-                  disabled={otpSent && method === "phone"}
-                  placeholder={isIndia ? "98xxx xxxxx" : "phone number"}
-                  className="min-w-0 flex-1 border-b border-[#1a1a1a]/15 bg-transparent py-3 font-serif text-[1.2rem] font-light text-[#1a1a1a] outline-none transition-colors placeholder:text-[#1a1a1a]/25 focus:border-[#1e6b45]/50 disabled:opacity-50"
-                />
-                {!(otpSent && method === "phone") && (
-                  <button
-                    onClick={() => numValid && (setMethod("phone"), setOtpSent(true))}
-                    disabled={!numValid}
-                    className="shrink-0 rounded-full border border-[#1e6b45]/40 px-5 py-2 text-[0.8rem] font-light text-[#1e6b45] transition-all hover:bg-[#1e6b45] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
-                  >
-                    Send code
-                  </button>
-                )}
-              </div>
-
-              {!(otpSent && method === "phone") &&
-                (isIndia ? (
-                  <div className="mt-3.5 flex flex-wrap items-center gap-2">
-                    <ChannelPill active={channel === "whatsapp"} onClick={() => setChannel("whatsapp")}>
-                      <WhatsAppIcon className="h-3.5 w-3.5" /> WhatsApp
-                    </ChannelPill>
-                    <ChannelPill active={channel === "sms"} onClick={() => setChannel("sms")}>SMS</ChannelPill>
-                    <span className="text-[0.74rem] font-light text-[#1a1a1a]/35">— how should we send your code?</span>
-                  </div>
-                ) : (
-                  <p className="mt-3.5 flex items-center gap-2 text-[0.8rem] font-light text-[#1e6b45]">
-                    <WhatsAppIcon className="h-3.5 w-3.5" /> We&apos;ll verify your number on WhatsApp.
-                  </p>
-                ))}
-            </div>
-
-            {method === "phone" && otpBlock}
-
-            <div className="flex items-center gap-4">
-              <span className="h-px flex-1 bg-[#1a1a1a]/10" />
-              <span className="text-[0.72rem] font-light uppercase tracking-[0.18em] text-[#1a1a1a]/35">or continue with</span>
-              <span className="h-px flex-1 bg-[#1a1a1a]/10" />
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <button
-                onClick={() => { setGoogleDone(true); setOtpSent(false); }}
-                className="flex flex-1 items-center justify-center gap-2.5 rounded-full border border-[#1a1a1a]/15 bg-white px-5 py-3 text-[0.86rem] font-light text-[#1a1a1a]/80 transition-all hover:border-[#1a1a1a]/35"
-              >
-                <GoogleIcon /> Continue with Google
-              </button>
-              <button
-                onClick={() => setEmailMode((v) => !v)}
-                className={`flex flex-1 items-center justify-center gap-2.5 rounded-full border px-5 py-3 text-[0.86rem] font-light transition-all ${
-                  emailMode ? "border-[#1e6b45]/50 text-[#1e6b45]" : "border-[#1a1a1a]/15 text-[#1a1a1a]/80 hover:border-[#1a1a1a]/35"
-                }`}
-              >
-                <span aria-hidden>&#9993;</span> Continue with Email
-              </button>
-            </div>
-
-            {emailMode && (
-              <div className="animate-fade-up">
-                <label className="mb-1 block text-[10px] font-light uppercase tracking-[0.22em] text-[#1a1a1a]/40">Email</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="email"
-                    value={booking.email}
-                    onChange={(e) => onChange({ email: e.target.value })}
-                    disabled={otpSent && method === "email"}
-                    placeholder="you@email.com"
-                    className="min-w-0 flex-1 border-b border-[#1a1a1a]/15 bg-transparent py-3 font-serif text-[1.2rem] font-light text-[#1a1a1a] outline-none transition-colors placeholder:text-[#1a1a1a]/25 focus:border-[#1e6b45]/50 disabled:opacity-50"
-                  />
-                  {!(otpSent && method === "email") && (
-                    <button
-                      onClick={() => emailValid && (setMethod("email"), setOtpSent(true))}
-                      disabled={!emailValid}
-                      className="shrink-0 rounded-full border border-[#1e6b45]/40 px-5 py-2 text-[0.8rem] font-light text-[#1e6b45] transition-all hover:bg-[#1e6b45] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
-                    >
-                      Send code
-                    </button>
-                  )}
-                </div>
-                {method === "email" && <div className="mt-6">{otpBlock}</div>}
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      <div className="mt-12">
-        <PrimaryButton onClick={onReserve} disabled={!canReserve} full>
-          {ctaLabel}
-        </PrimaryButton>
-      </div>
-      <p className="mt-5 text-center text-[0.76rem] font-light italic text-[#1a1a1a]/35">
-        Nothing shared. Your Private Office stays private to you.
-      </p>
-    </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="mb-1 block text-[10px] font-light uppercase tracking-[0.22em] text-[#1a1a1a]/40">{label}</label>
-      {children}
-    </div>
-  );
-}
 
 /* ════════════════════════════════════════════════════════════════
    STEP 6.5 — PAYMENT (Stripe gateway mock)
