@@ -62,6 +62,16 @@ function lookupKey<T>(
   return alt && table[alt] !== undefined ? alt : null;
 }
 
+/* A fully-populated SAMPLE file — the curated DLF Arbour dossier (all media:
+   brochure, site map, payment plan, floor plans, construction, USPs) hosted at
+   a distinct slug so it can sit beside the sparse live-… pipeline file as a
+   "this is what a complete file looks like" reference. */
+const SAMPLE_SLUG = "sample-dlf-the-arbour";
+function sampleIntel() {
+  const base = projectBySlug("dlf-arbour");
+  return base ? { ...base, slug: SAMPLE_SLUG, name: "DLF The Arbour" } : undefined;
+}
+
 export async function generateStaticParams() {
   const flagship = PROJECT_INTEL.map((p) => ({ slug: p.slug }));
   const rows = await backlog();
@@ -81,13 +91,22 @@ export async function generateStaticParams() {
   const live = (rows ?? [])
     .filter((r) => !flagshipSlugs.has(r.slug))
     .map((r) => ({ slug: r.slug }));
-  return [...flagship, ...live];
+  return [...flagship, ...live, { slug: SAMPLE_SLUG }];
 }
 
 export const dynamicParams = false;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
+  if (slug === SAMPLE_SLUG) {
+    return {
+      title: "DLF The Arbour (Sample) — Project Intelligence | Truth Estate",
+      description:
+        "A fully-populated sample project file — brochure, site map, payment plan and floor plans — on the standard Truth Estate report layout.",
+      robots: { index: false, follow: false },
+      alternates: { canonical: `/intelligence/projects/${SAMPLE_SLUG}` },
+    };
+  }
   const p = projectBySlug(slug);
   if (p) {
     return {
@@ -108,7 +127,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const p = projectBySlug(slug);
+  const p = slug === SAMPLE_SLUG ? sampleIntel() : projectBySlug(slug);
 
   if (!p) {
     const rows = await backlog();
