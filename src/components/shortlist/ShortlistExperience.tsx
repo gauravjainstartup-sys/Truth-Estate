@@ -1,0 +1,299 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Logo from "../Logo";
+import { useJourney } from "../journey/JourneyProvider";
+import ProjectOptionCard from "../intelligence/ProjectOptionCard";
+import LockedMatchCard from "./LockedMatchCard";
+import OtpSheet from "./OtpSheet";
+import { projectByName } from "@/lib/projects";
+import { briefChips } from "@/lib/shortlist";
+import {
+  loadVerified,
+  saveVerified,
+  maskContact,
+  type Verified,
+} from "@/lib/shortlistAuth";
+import {
+  loadBuyData,
+  hasPreferences,
+  deriveDNA,
+  rankProjects,
+  saveLead,
+  ACTIVE_PROJECT_COUNT,
+} from "@/lib/journey";
+
+/* ════════════════════════════════════════════════════════════════
+   THE SHORTLIST — a standalone lead-conversion surface.
+
+   Left: the buyer's DNA (who we read them to be) and their brief in a
+   collapsed accordion. Right: the funnel line and three ranked options —
+   #1 gated behind a single OTP, #2 and #3 shown in full through the
+   untouched ProjectOptionCard. Verifying once captures the lead, reveals
+   the #1, and keeps it revealed on return. Everything is derived from the
+   brief the visitor already gave us; no data is invented, nothing is sent.
+   ════════════════════════════════════════════════════════════════ */
+
+const basePath = "/Truth-Estate";
+
+export default function ShortlistExperience() {
+  const { open, isOpen } = useJourney();
+
+  const [mounted, setMounted] = useState(false);
+  const [buy, setBuy] = useState<ReturnType<typeof loadBuyData>>(null);
+  const [verified, setVerified] = useState<Verified | null>(null);
+  const [otpOpen, setOtpOpen] = useState(false);
+
+  const refresh = useCallback(() => {
+    setBuy(loadBuyData());
+    setVerified(loadVerified());
+  }, []);
+
+  useEffect(() => {
+    setMounted(true);
+    refresh();
+  }, [refresh]);
+
+  // When the refine journey closes, re-read the brief so the shortlist re-ranks.
+  const wasOpen = useRef(isOpen);
+  useEffect(() => {
+    if (wasOpen.current && !isOpen) refresh();
+    wasOpen.current = isOpen;
+  }, [isOpen, refresh]);
+
+  const dna = useMemo(() => (buy ? deriveDNA(buy) : null), [buy]);
+  const recs = useMemo(() => (buy ? rankProjects(buy) : []), [buy]);
+
+  // The top three, resolved to full dossiers; the shared card needs the intel.
+  const top = useMemo(
+    () =>
+      recs
+        .slice(0, 3)
+        .map((r) => ({ r, intel: projectByName(r.name) }))
+        .filter((x): x is { r: (typeof recs)[number]; intel: NonNullable<ReturnType<typeof projectByName>> } => Boolean(x.intel)),
+    [recs]
+  );
+
+  const ready = mounted && buy && hasPreferences(buy) && dna && top.length >= 1;
+  const revealed = verified != null;
+
+  function handleVerified(v: Verified) {
+    saveVerified(v);
+    const lead = top[0];
+    if (lead && buy) {
+      saveLead({
+        name: v.name ?? "",
+        email: v.email ?? (v.channel === "email" ? v.contact : ""),
+        phone: v.channel === "mobile" ? `${v.cc ?? ""} ${v.contact}`.trim() : undefined,
+        project: lead.intel.name,
+        intent: "shortlist-unlock",
+        buy,
+        createdAt: Date.now(),
+      });
+    }
+    setVerified(v);
+    setOtpOpen(false);
+  }
+
+  return (
+    <div className="min-h-svh bg-[#F5F0E8] text-[#1a1a1a]">
+      {/* ── Header — identity chip once verified, otherwise a quiet sign-in ── */}
+      <header className="sticky top-0 z-40 border-b border-[#1a1a1a]/[0.06] bg-[#F5F0E8]/90 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-5xl items-center gap-4 px-6 py-4 md:px-10">
+          <a href={basePath} aria-label="Truth Estate — home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
+          {mounted && verified ? (
+            <span className="ml-auto inline-flex items-center gap-2 rounded-full border border-[#1e6b45]/35 bg-[#1e6b45]/[0.06] px-3.5 py-2 font-mono text-[0.68rem] tracking-[0.02em] text-[#1e6b45]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#1e6b45]" aria-hidden /> {maskContact(verified)}
+            </span>
+          ) : (
+            <button
+              onClick={() => ready && setOtpOpen(true)}
+              className="ml-auto rounded-full border border-[#1a1a1a]/15 px-4 py-2 font-mono text-[0.7rem] tracking-[0.04em] text-[#1a1a1a]/60 transition-colors hover:border-[#1a1a1a]/35 hover:text-[#1a1a1a]"
+            >
+              Sign in
+            </button>
+          )}
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-5xl px-6 pb-24 pt-8 md:px-10 md:pt-12">
+        {!mounted ? null : !ready ? (
+          <EmptyState onStart={() => open("buy")} />
+        ) : (
+          <>
+            <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-14">
+              {/* ── LEFT · Buyer DNA + brief ── */}
+              <div className="lg:sticky lg:top-24 lg:self-start">
+                <p className="font-mono text-[0.66rem] font-semibold uppercase tracking-[0.24em] text-[#9a7a2e]">
+                  Your buyer DNA
+                </p>
+                <h1 className="mt-3.5 font-serif text-[2.2rem] font-medium leading-[1.06] tracking-[-0.01em] text-[#1a1a1a] md:text-[2.9rem]">
+                  You&apos;re a <span className="text-[#1e6b45]">{dna!.archetype}</span>.
+                </h1>
+                <p className="mt-3.5 max-w-md text-[0.92rem] font-light leading-relaxed text-[#1a1a1a]/60">
+                  {firstSentence(dna!.insight)}
+                </p>
+
+                <BriefAccordion chips={briefChips(dna!)} onRefine={() => open("buy")} />
+
+                {/* Desktop: trust stays pinned beside the cards as you evaluate. */}
+                <Honesty revealed={revealed} onAdvice={() => open()} stacked className="mt-12 hidden lg:block" />
+              </div>
+
+              {/* ── RIGHT · funnel + the three options ── */}
+              <div>
+                <p className="text-[0.82rem] font-light leading-[1.5] text-[#1a1a1a]/55">
+                  <b className="font-serif text-[1rem] font-medium text-[#1a1a1a]">{ACTIVE_PROJECT_COUNT}</b> scanned
+                  <span className="mx-1.5 text-[#c9a96e]">→</span>
+                  <b className="font-serif text-[1rem] font-medium text-[#1a1a1a]">{top.length}</b> make the cut
+                  <span className="mx-1.5 text-[#c9a96e]">→</span>
+                  <b className="font-serif text-[1rem] font-medium text-[#1e6b45]">1</b>
+                  <span className="text-[#1e6b45]"> fits you almost perfectly ↓</span>
+                </p>
+
+                <p className="mt-6 font-mono text-[0.62rem] uppercase tracking-[0.18em] text-[#1a1a1a]/40">Your shortlist</p>
+
+                <div className="mt-3.5 flex flex-col gap-5">
+                  {/* #1 — the gated match */}
+                  <LockedMatchCard
+                    p={top[0].intel}
+                    second={top[1]?.intel ?? null}
+                    buy={buy!}
+                    dna={dna!}
+                    matchPct={top[0].r.matchPct}
+                    revealed={revealed}
+                    onUnlock={() => setOtpOpen(true)}
+                  />
+
+                  {/* #2, #3 — the shared card, untouched */}
+                  {top.slice(1).map(({ r, intel }) => (
+                    <ProjectOptionCard key={intel.slug} p={intel} matchPct={r.matchPct} />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Honesty + trust — mobile shows it full-width after the cards;
+                 desktop keeps it pinned in the left column (above). ── */}
+            <Honesty revealed={revealed} onAdvice={() => open()} className="mt-14 lg:hidden" />
+          </>
+        )}
+      </main>
+
+      <OtpSheet open={otpOpen} onClose={() => setOtpOpen(false)} onVerified={handleVerified} />
+    </div>
+  );
+}
+
+/* First sentence of the archetype insight — the one-line explainer. */
+function firstSentence(s: string): string {
+  const m = s.match(/^[^.]*\./);
+  return (m ? m[0] : s).trim();
+}
+
+/* ── The brief, collapsed into an accordion so the cards get prime space ── */
+function BriefAccordion({ chips, onRefine }: { chips: string[]; onRefine: () => void }) {
+  const [open, setOpen] = useState(false);
+  const summary = chips.slice(0, 3).join(" · ");
+  const more = chips.length - 3;
+
+  return (
+    <div className="mt-8 border-y border-[#1a1a1a]/[0.09]">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-3 py-3.5 text-left"
+      >
+        <span className="shrink-0 font-mono text-[0.62rem] uppercase tracking-[0.16em] text-[#1a1a1a]/40">Your brief</span>
+        <span className="min-w-0 flex-1 truncate text-[0.8rem] text-[#1a1a1a]/70">
+          {summary}
+          {more > 0 && <span className="ml-1.5 font-mono text-[0.7rem] text-[#9a7a2e]">+{more} more</span>}
+        </span>
+        <span className={`text-[0.8rem] text-[#1a1a1a]/40 transition-transform duration-200 ${open ? "rotate-180" : ""}`} aria-hidden>⌄</span>
+      </button>
+      <div className={`grid transition-all duration-300 ease-out ${open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+        <div className="overflow-hidden">
+          <div className="flex flex-wrap gap-2 pb-1">
+            {chips.map((c) => (
+              <span key={c} className="rounded-full border border-[#1a1a1a]/12 bg-[#FBF8F2] px-3 py-1.5 text-[0.76rem] text-[#1a1a1a]/70">{c}</span>
+            ))}
+          </div>
+          <button onClick={onRefine} className="mb-4 mt-3 font-mono text-[0.68rem] tracking-[0.02em] text-[#9a7a2e] transition-opacity hover:opacity-70">
+            ✎ Refine your brief — your shortlist re-ranks.
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Why #1 is locked + the trust ledger. `stacked` renders the sidebar
+   variant (single column); otherwise a two-column full-width band. ── */
+function Honesty({
+  revealed,
+  onAdvice,
+  stacked = false,
+  className = "",
+}: {
+  revealed: boolean;
+  onAdvice: () => void;
+  stacked?: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={`${stacked ? "" : "border-t border-[#1a1a1a]/[0.09] pt-8"} ${className}`}>
+      <div className={stacked ? "flex flex-col gap-7" : "grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] md:gap-14"}>
+        <div>
+          <p className="font-mono text-[0.64rem] uppercase tracking-[0.16em] text-[#9a7a2e]">
+            {revealed ? "What happens now" : "Why is #1 locked?"}
+          </p>
+          <p className="mt-3 max-w-md text-[0.86rem] font-light leading-[1.7] text-[#1a1a1a]/60">
+            {revealed ? (
+              <>
+                Your shortlist is saved and your advisor has it. No automated blast — <b className="font-medium text-[#1a1a1a]">a
+                real person reviews your brief</b> before reaching out, buyer-side only.
+              </>
+            ) : (
+              <>
+                A recommendation this specific is a relationship, not a listing. Verify a number and your top match is
+                yours — <b className="font-medium text-[#1a1a1a]">free, and never shared with a developer.</b>
+              </>
+            )}
+          </p>
+          <button onClick={onAdvice} className="mt-5 text-[0.82rem] font-medium text-[#1e6b45] underline underline-offset-4 transition-opacity hover:opacity-70">
+            Prefer to talk it through? Request independent advice →
+          </button>
+        </div>
+        <ul className={`flex flex-col gap-2.5 ${stacked ? "" : "md:pt-6"}`}>
+          {["No developer money — ever", "Your details are never shared with a builder", "The founder reviews every shortlist"].map((t) => (
+            <li key={t} className="flex items-center gap-2.5 text-[0.8rem] font-light text-[#1a1a1a]/55">
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#c9a96e]" aria-hidden /> {t}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+/* ── Cold visitor (no brief yet, or a hard refresh wiped it) ── */
+function EmptyState({ onStart }: { onStart: () => void }) {
+  return (
+    <div className="mx-auto max-w-lg py-[12vh] text-center">
+      <p className="font-mono text-[0.66rem] font-semibold uppercase tracking-[0.24em] text-[#9a7a2e]">Your shortlist</p>
+      <h1 className="mt-4 font-serif text-[2.1rem] font-medium leading-[1.08] tracking-[-0.01em] md:text-[2.7rem]">
+        Tell us what you&apos;re looking for.
+      </h1>
+      <p className="mx-auto mt-4 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/60">
+        Your shortlist is built from your brief — budget, corridor, configuration and what matters most. Answer a few
+        questions and we&apos;ll rank the market against you.
+      </p>
+      <button
+        onClick={onStart}
+        className="mt-8 inline-flex items-center gap-2 rounded-[13px] bg-[#1e6b45] px-7 py-4 text-[0.9rem] font-semibold text-white shadow-[0_12px_30px_-12px_rgba(30,107,69,0.6)] transition-colors hover:bg-[#238c55]"
+      >
+        Build my brief →
+      </button>
+    </div>
+  );
+}

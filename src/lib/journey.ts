@@ -645,7 +645,7 @@ export type Lead = {
   email: string;
   phone?: string;
   project?: string;
-  intent: "tower-intel" | "buyer-office" | "documents" | "report-error" | "feedback";
+  intent: "tower-intel" | "buyer-office" | "documents" | "report-error" | "feedback" | "shortlist-unlock";
   docs?: string[]; // requested documents (intent: "documents")
   identity?: string; // who's reporting — Developer / Investor / End User / Broker (feedback flows)
   message?: string; // free-text detail (feedback / report-error flows)
