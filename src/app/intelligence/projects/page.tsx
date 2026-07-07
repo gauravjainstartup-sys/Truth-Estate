@@ -12,5 +12,6 @@ export const metadata: Metadata = {
    static; when the backend is unreachable the sections simply hide. */
 export default async function Page() {
   const [rows, stats] = await Promise.all([fetchBacklogFull(), fetchTrackedStats()]);
-  return <ProjectsIndex live={rows?.slice(0, 12) ?? null} stats={stats} />;
+  // Show the entire tracked universe from the view — no client-side cap.
+  return <ProjectsIndex live={rows ?? null} stats={stats} />;
 }

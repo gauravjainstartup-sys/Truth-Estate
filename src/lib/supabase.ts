@@ -229,7 +229,10 @@ export function liveSlug(name: string): string {
 export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
   const rows = await sbRows(
     "backlog_listing_public",
-    'select=*&truthScore=not.is.null&order="truthScore".desc&limit=60',
+    // The whole tracked universe: no score gate, highest-scored first with
+    // any unscored rows last, and a cap well above the current corpus so
+    // every project in the view is returned (list + per-project pages).
+    'select=*&order="truthScore".desc.nullslast&limit=500',
   );
   if (!rows) return null;
   // one-time shape record: the CI build log tells us the pipeline's true shapes
