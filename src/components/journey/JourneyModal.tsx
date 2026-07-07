@@ -6,7 +6,7 @@ import Logo from "../Logo";
 import BuyersOffice from "./BuyersOffice";
 import LocationPicker from "./LocationPicker";
 import ProjectProfile from "../intelligence/ProjectProfile";
-import ProjectOptionCard from "../intelligence/ProjectOptionCard";
+import ShortlistCore from "../shortlist/ShortlistCore";
 import FocusOffRamp from "../FocusOffRamp";
 import { projectByName } from "@/lib/projects";
 import { useConsultation } from "../consultation/ConsultationProvider";
@@ -326,25 +326,6 @@ function Avatar({ initials }: { initials: string }) {
   );
 }
 
-function useCountUp(end: number, run: boolean, dur = 1600) {
-  const [n, setN] = useState(0);
-  useEffect(() => {
-    if (!run) return;
-    let t0: number | null = null;
-    let raf = 0;
-    const tick = (ts: number) => {
-      if (t0 == null) t0 = ts;
-      const p = Math.min((ts - t0) / dur, 1);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setN(Math.round(eased * end));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [end, run, dur]);
-  return n;
-}
-
 /* ════════════════════════════════════════════════════════════════
    STEP MACHINE
    ════════════════════════════════════════════════════════════════ */
@@ -484,11 +465,11 @@ export default function JourneyModal({
   const nextBuy = () => {
     if (editReturn) {
       setEditReturn(false);
-      setStep("dna");
+      setStep("shortlist");
       return;
     }
     if (buyIndex < BUY_STEPS.length - 1) setStep(BUY_STEPS[buyIndex + 1]);
-    else setStep("dna");
+    else setStep("processing");
   };
   const backBuy = () => {
     if (editReturn) setEditReturn(false);
@@ -1165,7 +1146,7 @@ export default function JourneyModal({
               />
             ))}
           </div>
-          <NextBar onNext={nextBuy} disabled={!canContinue.priorities} label="See my Buyer DNA" />
+          <NextBar onNext={nextBuy} disabled={!canContinue.priorities} label="See my shortlist" />
         </div>
       </Shell>
     );
@@ -1175,37 +1156,19 @@ export default function JourneyModal({
     return frame(<ProcessingScreen onDone={() => setStep("shortlist")} />);
   }
 
-  if (step === "dna") {
-    const editStep = (s: BuyStep) => {
-      setEditReturn(true);
-      setStep(s);
-    };
-    return frame(
-      <Shell onClose={onClose} onBack={() => setStep("priorities")} eyebrow="Your Buyer DNA" wide>
-        <DnaScreen dna={dna} onContinue={() => setStep("processing")} onEdit={editStep} />
-      </Shell>
-    );
-  }
-
   if (step === "shortlist") {
     return frame(
-      <Shell onClose={onClose} eyebrow="Your Shortlist" align="top" wide>
-        <ShortlistScreen
+      <Shell onClose={onClose} onBack={() => setStep("priorities")} eyebrow="Your Shortlist" align="top" wide>
+        <ShortlistCore
+          buy={buy}
+          dna={dna}
           recs={recs}
-          onPick={(r) => {
-            // Open the real report page (proper URL) when one exists; fall back
-            // to the in-journey embedded preview for anything not yet published.
-            const intel = projectByName(r.name);
-            if (intel) {
-              onClose();
-              router.push(`/intelligence/projects/${intel.slug}`);
-            } else {
-              setSelected(r);
-              setStep("preview");
-            }
-          }}
-          onChangePreferences={() => setStep("dna")}
+          onRefine={() => setStep("budget")}
           onConsult={() => requestAdvice("buy")}
+          onPickCard={(intel) => {
+            onClose();
+            router.push(`/intelligence/projects/${intel.slug}`);
+          }}
         />
       </Shell>
     );
@@ -1384,179 +1347,6 @@ function ProcessingScreen({ onDone }: { onDone: () => void }) {
       <p key={i} className="animate-fade-up font-serif text-[1.1rem] font-light italic text-[#1a1a1a]/55 md:text-[1.4rem]">
         {lines[i]}
       </p>
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   BUYER DNA (profile)
-   ════════════════════════════════════════════════════════════════ */
-function DnaScreen({
-  dna,
-  onContinue,
-  onEdit,
-}: {
-  dna: DNA;
-  onContinue: () => void;
-  onEdit: (step: BuyStep) => void;
-}) {
-  const article = /^[aeiou]/i.test(dna.archetype) ? "an" : "a";
-  return (
-    <div key="dna" className="animate-fade-up">
-      <div className="grid grid-cols-1 gap-9 md:grid-cols-2 md:gap-14">
-        {/* ── Identity ── */}
-        <div className="md:pt-6">
-          <p className="text-[10px] font-light uppercase tracking-[0.4em] text-[#c9a96e]">Your Buyer DNA</p>
-          <h2 className="mt-5 font-serif text-[2.1rem] font-medium leading-[1.06] text-[#1a1a1a] md:text-[3rem]">
-            You&apos;re {article} <span className="text-[#1e6b45]">{dna.archetype}</span>.
-          </h2>
-          <p className="mt-5 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/60 md:text-[1.08rem]">
-            {dna.insight}
-          </p>
-          {/* desktop CTA + anticipation */}
-          <div className="mt-9 hidden md:block">
-            <PrimaryButton onClick={onContinue}>See what we&apos;d investigate</PrimaryButton>
-            <p className="mt-4 text-[0.82rem] font-light text-[#1a1a1a]/45">
-              Next: we scan {ACTIVE_PROJECT_COUNT} projects against your brief.
-            </p>
-          </div>
-        </div>
-
-        {/* ── The brief ── */}
-        <div className="rounded-2xl border border-[#1a1a1a]/10 bg-white/60 p-6 md:p-7">
-          <div className="mb-1.5 flex items-baseline justify-between">
-            <p className="text-[10px] font-light uppercase tracking-[0.3em] text-[#c9a96e]">Your Brief</p>
-            <p className="text-[0.72rem] font-light text-[#1a1a1a]/35">Tap to change</p>
-          </div>
-          <BriefRow label="Budget" value={dna.budgetRange} onEdit={() => onEdit("budget")} />
-          <BriefRow label="Preferred Markets" value={dna.markets.join(" · ")} onEdit={() => onEdit("locations")} />
-          <BriefRow label="Configuration" value={dna.config} onEdit={() => onEdit("configs")} />
-          <BriefRow label="Timeline" value={dna.timeline} onEdit={() => onEdit("timeline")} />
-          <BriefRow label="Focus" value={dna.possession} />
-          <BriefRow label="Risk Appetite" value={dna.risk} onEdit={() => onEdit("purchase")} />
-          <BriefRow label="Top Priorities" value={dna.topPriorities.join(" · ")} onEdit={() => onEdit("priorities")} />
-        </div>
-      </div>
-
-      {/* ── Mobile anticipation + sticky CTA ── */}
-      <p className="mt-8 text-center text-[0.82rem] font-light text-[#1a1a1a]/45 md:hidden">
-        Next: we scan {ACTIVE_PROJECT_COUNT} projects against your brief.
-      </p>
-      <div className="sticky bottom-0 -mx-6 mt-4 border-t border-[#1a1a1a]/10 bg-[#F5F0E8]/95 px-6 py-4 backdrop-blur md:hidden">
-        <PrimaryButton onClick={onContinue} full>
-          See what we&apos;d investigate
-        </PrimaryButton>
-      </div>
-    </div>
-  );
-}
-
-/* A single editable line in the Buyer DNA "brief" — label left, value right,
-   tap to jump back and change it. Omit onEdit to render a fixed row. */
-function BriefRow({ label, value, onEdit }: { label: string; value: string; onEdit?: () => void }) {
-  return (
-    <button
-      onClick={onEdit}
-      disabled={!onEdit}
-      className="group flex w-full items-baseline justify-between gap-5 border-b border-[#1a1a1a]/[0.07] py-3.5 text-left last:border-0 disabled:cursor-default"
-    >
-      <span className="shrink-0 text-[10px] font-light uppercase tracking-[0.18em] text-[#1a1a1a]/40">{label}</span>
-      <span className="flex items-center gap-1.5 text-right font-serif text-[1rem] font-light leading-snug text-[#1a1a1a] transition-colors group-enabled:group-hover:text-[#1e6b45] md:text-[1.05rem]">
-        {value}
-        {onEdit && (
-          <span className="text-[0.68rem] text-[#c9a96e] opacity-45 transition-opacity group-hover:opacity-100" aria-hidden>
-            ✎
-          </span>
-        )}
-      </span>
-    </button>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   SHORTLIST — 127 → 3 reveal + recommendations
-   ════════════════════════════════════════════════════════════════ */
-/* An animated circular gauge for the Truth Score (out of 100). */
-
-function ShortlistScreen({
-  recs,
-  onPick,
-  onChangePreferences,
-  onConsult,
-}: {
-  recs: Scored[];
-  onPick: (r: Scored) => void;
-  onChangePreferences: () => void;
-  onConsult: () => void;
-}) {
-  const [revealed, setRevealed] = useState(false);
-  const total = useCountUp(ACTIVE_PROJECT_COUNT, true, 1700);
-  useEffect(() => {
-    const t = setTimeout(() => setRevealed(true), 1500);
-    return () => clearTimeout(t);
-  }, []);
-
-  return (
-    <div key="shortlist" className="animate-fade-up">
-      {/* ── Compact reveal header ── */}
-      <div className="text-center">
-        <p className="text-[10px] font-light uppercase tracking-[0.4em] text-[#c9a96e]">Your Shortlist</p>
-        <h2 className="mx-auto mt-4 max-w-xl font-serif text-[1.6rem] font-medium leading-tight text-[#1a1a1a] md:text-[2.1rem]">
-          Based on everything you&apos;ve shared.
-        </h2>
-        <div className="mt-5 inline-flex items-center gap-4 rounded-full border border-[#1a1a1a]/10 bg-white/60 px-6 py-2.5 md:gap-5">
-          <span className="font-serif text-[1.7rem] font-medium leading-none text-[#1a1a1a] md:text-[2rem]">{total}</span>
-          <span className="text-[0.68rem] font-light uppercase tracking-[0.16em] text-[#1a1a1a]/45">active projects</span>
-          <span className="text-[#c9a96e]" aria-hidden>&rarr;</span>
-          <span className="font-serif text-[1.7rem] font-medium leading-none text-[#1e6b45] md:text-[2rem]">{recs.length}</span>
-          <span className="text-[0.68rem] font-light uppercase tracking-[0.16em] text-[#1e6b45]/70">worth investigating</span>
-        </div>
-      </div>
-
-      {/* ── Cards ── */}
-      <div
-        className="mt-9 transition-all duration-1000 md:mt-11"
-        style={{ opacity: revealed ? 1 : 0, transform: revealed ? "translateY(0)" : "translateY(20px)" }}
-      >
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 md:gap-6">
-          {recs.map((r, idx) => {
-            const intel = projectByName(r.name);
-            if (!intel) return null;
-            return (
-              <ProjectOptionCard
-                key={r.name}
-                p={intel}
-                rank={idx + 1}
-                matchPct={r.matchPct}
-                onSelect={() => onPick(r)}
-              />
-            );
-          })}
-        </div>
-
-        {/* ── CTA band ── */}
-        <div className="mt-9 rounded-2xl border border-[#1a1a1a]/10 bg-white/50 px-7 py-8 text-center md:mt-11">
-          <p className="font-serif text-[1.2rem] font-medium text-[#1a1a1a] md:text-[1.4rem]">
-            Not sure which one is right for you?
-          </p>
-          <p className="mx-auto mt-2.5 max-w-md text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/55">
-            Talk it through with an independent advisor who represents only you — no pressure,
-            just an honest read on your options.
-          </p>
-          <div className="mt-6 flex flex-col items-center justify-center gap-3.5 sm:flex-row">
-            <PrimaryButton onClick={onConsult}>Request Independent Advice</PrimaryButton>
-            <button
-              onClick={onChangePreferences}
-              className="inline-flex items-center gap-2 rounded-sm border border-[#1a1a1a]/20 bg-white px-8 py-4 text-[13px] font-light tracking-[0.05em] text-[#1a1a1a]/75 transition-all duration-300 hover:border-[#1a1a1a]/40"
-            >
-              Refine my preferences
-            </button>
-          </div>
-          <p className="mt-6 text-[0.75rem] font-light italic text-[#1a1a1a]/35">
-            No pricing yet — and no registration. Just our honest read.
-          </p>
-        </div>
-      </div>
     </div>
   );
 }

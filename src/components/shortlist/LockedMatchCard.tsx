@@ -28,6 +28,7 @@ export default function LockedMatchCard({
   matchPct,
   revealed,
   onUnlock,
+  onOpen,
 }: {
   p: ProjectIntel;
   second: ProjectIntel | null;
@@ -36,6 +37,9 @@ export default function LockedMatchCard({
   matchPct: number;
   revealed: boolean;
   onUnlock: () => void;
+  /* When set, the revealed CTA opens the report via this callback (the modal
+     closes itself first) instead of navigating by link. */
+  onOpen?: () => void;
 }) {
   const points = fitPoints(p, buy, dna).slice(0, 2); // top 2 only — keeps the card light
 
@@ -112,12 +116,21 @@ export default function LockedMatchCard({
 
         {/* CTA — unlock while gated, hand off to the file once revealed */}
         {revealed ? (
-          <a
-            href={`${basePath}/intelligence/projects/${p.slug}`}
-            className="mt-[18px] flex items-center justify-center gap-2 rounded-[13px] bg-[#0b1f1a] py-4 text-[0.9rem] font-semibold text-white transition-colors duration-300 hover:bg-[#12352c]"
-          >
-            Open the full file →
-          </a>
+          onOpen ? (
+            <button
+              onClick={onOpen}
+              className="mt-[18px] flex w-full items-center justify-center gap-2 rounded-[13px] bg-[#0b1f1a] py-4 text-[0.9rem] font-semibold text-white transition-colors duration-300 hover:bg-[#12352c]"
+            >
+              Open the full file →
+            </button>
+          ) : (
+            <a
+              href={`${basePath}/intelligence/projects/${p.slug}`}
+              className="mt-[18px] flex items-center justify-center gap-2 rounded-[13px] bg-[#0b1f1a] py-4 text-[0.9rem] font-semibold text-white transition-colors duration-300 hover:bg-[#12352c]"
+            >
+              Open the full file →
+            </a>
+          )
         ) : (
           <>
             <button
