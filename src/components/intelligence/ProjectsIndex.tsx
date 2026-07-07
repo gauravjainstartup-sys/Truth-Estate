@@ -2,17 +2,21 @@
 
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
-import { PROJECT_INTEL } from "@/lib/projects";
+import type { ProjectIntel } from "@/lib/projects";
+import type { TrackedStats } from "@/lib/supabase";
 import { ACTIVE_PROJECT_COUNT } from "@/lib/journey";
-import type { LiveBacklogFull, TrackedStats } from "@/lib/supabase";
 import ProjectOptionCard from "./ProjectOptionCard";
 
 const basePath = "/Truth-Estate";
 
-export default function ProjectsIndex({ live, stats }: { live?: LiveBacklogFull[] | null; stats?: TrackedStats | null }) {
+/* The projects index — the entire tracked universe, live from the pipeline.
+   Every project is a real backlog_listing_public row adapted onto the shared
+   ProjectOptionCard; no seed/demo entries. */
+export default function ProjectsIndex({ projects, stats }: { projects: ProjectIntel[]; stats?: TrackedStats | null }) {
   const { open } = useJourney();
-  const scores = PROJECT_INTEL.map((p) => p.truthScore);
-  const lo = Math.min(...scores), hi = Math.max(...scores);
+  const scores = projects.map((p) => p.truthScore).filter((s) => s > 0);
+  const lo = scores.length ? Math.min(...scores) : 0;
+  const hi = scores.length ? Math.max(...scores) : 0;
 
   return (
     <div className="min-h-svh bg-[#F5F0E8] text-[#1a1a1a]">
@@ -41,59 +45,32 @@ export default function ProjectsIndex({ live, stats }: { live?: LiveBacklogFull[
           {stats?.delayed != null && stats.delayed > 0 && (
             <Stat v={`${Math.round((stats.delayed / stats.tracked) * 100)}%`} k="of them running delayed" />
           )}
-          <Stat v={`${PROJECT_INTEL.length}`} k="Deep dossiers" />
-          <Stat v={`${lo}–${hi}`} k="Truth Score range" />
+          {projects.length > 0 && <Stat v={`${projects.length}`} k="scored & listed here" />}
+          {hi > 0 && <Stat v={`${lo}–${hi}`} k="Truth Score range" />}
         </div>
 
-        {/* Grid — the shared project-option card, ranked by Truth Score */}
-        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {PROJECT_INTEL.map((p, i) => (
-            <ProjectOptionCard key={p.slug} p={p} rank={i + 1} />
-          ))}
+        {/* ── The tracked universe — every project live from the pipeline ── */}
+        <div className="mt-11 flex items-center gap-3">
+          <span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">The tracked universe</span>
+          <span className="rounded-full border border-[#1e6b45]/35 bg-[#1e6b45]/[0.06] px-2.5 py-0.5 font-mono text-[0.54rem] tracking-[0.14em] text-[#1e6b45]">LIVE · FROM THE PIPELINE</span>
+          <span className="h-px flex-1 bg-[#1a1a1a]/10" />
         </div>
 
-        {/* ── The tracked universe — live from the scoring pipeline ── */}
-        {live && live.length > 0 && (
-          <div className="mt-16">
-            <div className="flex items-center gap-3">
-              <span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">The tracked universe</span>
-              <span className="rounded-full border border-[#1e6b45]/35 bg-[#1e6b45]/[0.06] px-2.5 py-0.5 font-mono text-[0.54rem] tracking-[0.14em] text-[#1e6b45]">LIVE · FROM THE PIPELINE</span>
-              <span className="h-px flex-1 bg-[#1a1a1a]/10" />
-            </div>
-            <p className="mt-2 text-[0.8rem] font-light leading-[1.6] text-[#1a1a1a]/50">
-              Beyond the deep dossiers, our pipeline scores the wider market from RERA filings — refreshed with every deploy. Highest-scored first; full files as they graduate from the backlog.
-            </p>
-            <div className="mt-5 overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-white/60">
-              {live.map((p, i) => (
-                <a key={`${p.name}-${i}`} href={`${basePath}/intelligence/projects/${p.slug}`}
-                  className={`flex flex-wrap items-center gap-x-4 gap-y-1.5 px-5 py-3.5 transition-colors hover:bg-[#1e6b45]/[0.04] ${i > 0 ? "border-t border-[#1a1a1a]/[0.06]" : ""}`}>
-                  <div className="min-w-0 flex-1 basis-56">
-                    <p className="truncate font-serif text-[1.02rem] font-medium leading-tight">{p.name}</p>
-                    <p className="mt-0.5 truncate text-[0.72rem] font-light text-[#1a1a1a]/45">
-                      {[p.developer, p.microMarket ?? p.location].filter(Boolean).join(" · ")}
-                    </p>
-                  </div>
-                  {p.config && <span className="hidden font-mono text-[0.68rem] text-[#1a1a1a]/45 md:inline">{p.config}</span>}
-                  {p.budget && <span className="hidden font-mono text-[0.68rem] text-[#1a1a1a]/45 sm:inline">{p.budget}</span>}
-                  {p.delayRisk && (
-                    <span className={`rounded-full border px-2.5 py-1 text-[0.6rem] font-medium ${/low/i.test(p.delayRisk) ? "border-[#238c55]/30 bg-[#238c55]/[0.08] text-[#1c7a4c]" : /high/i.test(p.delayRisk) ? "border-[#9a4130]/30 bg-[#9a4130]/[0.07] text-[#9a4130]" : "border-[#9a7a2e]/35 bg-[#9a7a2e]/[0.08] text-[#8a6a1e]"}`}>
-                      {p.delayRisk}{p.delayDelta ? ` · ${p.delayDelta}` : ""}
-                    </span>
-                  )}
-                  {p.redFlags != null && p.redFlags > 0 && (
-                    <span className="font-mono text-[0.64rem] text-[#9a4130]">{p.redFlags} red flag{p.redFlags > 1 ? "s" : ""}</span>
-                  )}
-                  <span className="ml-auto flex items-baseline gap-1.5">
-                    <span className="font-serif text-[1.35rem] font-medium leading-none text-[#1e6b45]">{p.truthScore ?? "—"}</span>
-                    <span className="font-mono text-[0.5rem] uppercase tracking-[0.14em] text-[#1a1a1a]/35">/100</span>
-                  </span>
-                </a>
+        {projects.length > 0 ? (
+          <>
+            <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {projects.map((p) => (
+                <ProjectOptionCard key={p.slug} p={p} />
               ))}
             </div>
-            <p className="mt-3 text-[0.68rem] font-light text-[#1a1a1a]/40">
-              Scores computed by our pipeline from public filings · shown as scored, unedited · deep files follow as each project clears review.
+            <p className="mt-6 text-[0.68rem] font-light text-[#1a1a1a]/40">
+              Scores computed by our pipeline from public filings — refreshed with every deploy, shown as scored and unedited. Deep files follow as each project clears review.
             </p>
-          </div>
+          </>
+        ) : (
+          <p className="mt-6 text-[0.9rem] font-light leading-relaxed text-[#1a1a1a]/55">
+            Live project files are refreshing from the pipeline — please check back shortly.
+          </p>
         )}
       </div>
     </div>

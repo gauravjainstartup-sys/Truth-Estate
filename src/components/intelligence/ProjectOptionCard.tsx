@@ -52,7 +52,13 @@ export default function ProjectOptionCard({
       <div className="mt-auto">
         <h3 className="min-h-[2.24em] max-w-[92%] font-serif text-[1.5rem] font-medium leading-[1.12] tracking-[-0.01em] text-[#1a1a1a] transition-colors duration-300 group-hover:text-[#1e6b45]">{p.name}</h3>
         <p className="mt-2 text-[0.75rem] leading-snug text-[#1a1a1a]/50">{streetAddress(p)}</p>
-        <p className="mt-1.5 font-mono text-[0.84rem] text-[#1a1a1a] tabular-nums">₹{p.budget[0]}–{p.budget[1]} Cr</p>
+        <p className="mt-1.5 font-mono text-[0.84rem] text-[#1a1a1a] tabular-nums">
+          {p.budget[0] <= 0
+            ? "Price NA"
+            : p.budget[0] === p.budget[1]
+            ? `₹${p.budget[0]} Cr+`
+            : `₹${p.budget[0]}–${p.budget[1]} Cr`}
+        </p>
         {matchPct != null && (
           <p className="mt-2.5 font-mono text-[0.68rem] font-semibold tracking-[0.02em] text-[#1e6b45] tabular-nums">{matchPct}% fit to you</p>
         )}
