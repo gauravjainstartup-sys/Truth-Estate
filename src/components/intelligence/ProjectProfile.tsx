@@ -27,6 +27,7 @@ import ReportConstruction from "./ReportConstruction";
 import ReportLegal from "./ReportLegal";
 import ReportLocation from "./ReportLocation";
 import ZoomStage from "./ZoomStage";
+import PdfScroller from "./PdfScroller";
 import ReportUSPs from "./ReportUSPs";
 import ReportPrice from "./ReportPrice";
 import ReportVerdict from "./ReportVerdict";
@@ -1004,7 +1005,7 @@ export default function ProjectProfile({
           </div>
           <div className="relative flex min-h-0 flex-1 items-center justify-center px-4 pb-6" onClick={(e) => e.stopPropagation()}>
             {"pdf" in doc ? (
-              <iframe src={asset(doc.pdf)} title={doc.title} className="h-full w-full max-w-[1000px] rounded-lg bg-white shadow-[0_30px_90px_rgba(0,0,0,0.5)]" />
+              <PdfScroller src={asset(doc.pdf)} />
             ) : (
               <>
                 {/* key resets the zoom whenever the page turns */}
