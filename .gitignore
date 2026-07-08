@@ -43,3 +43,6 @@ next-env.d.ts
 
 # generated at build by scripts/materialize-media.mjs
 public/live-media/
+
+# generated at build by scripts/copy-pdf-worker.mjs
+public/pdf.worker.min.js
