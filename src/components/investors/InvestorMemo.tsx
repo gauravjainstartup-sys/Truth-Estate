@@ -6,7 +6,7 @@ import RenderVsReality from "../intelligence/RenderVsReality";
 
 /* ════════════════════════════════════════════════════════════════
    INVESTOR MEMORANDUM — presented as a deck, sized for the room.
-   Sixteen scroll-snap frames. Desktop (lg+) runs the presentation
+   Seventeen scroll-snap frames. Desktop (lg+) runs the presentation
    scale: bigger frame, ~1.35× type, drawn set-pieces (the boardroom
    table, the timeline, the flywheel ring, the supply funnel) and
    slide-entry motion. Phones keep the reading scale. Cmd+P still
@@ -483,6 +483,38 @@ const SLIDES: Slide[] = [
           </span>
         </div>
         <FlywheelRing />
+      </Card>
+    ),
+  },
+
+  {
+    key: "buyer-office",
+    node: (
+      <Card label="III · The flagship — The Premium Buyer Office" title="The buyer appoints an office — not a broker."
+        sub={<>Eight offices under one membership — worth ₹1,25,000, priced at ₹9,999. The fee is the wedge; the trailing representation and referral are the revenue.</>}>
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-2.5 lg:mt-8 lg:gap-3">
+          {([
+            ["01", "Buyer Intelligence", "The right shortlist"],
+            ["02", "Unit Intelligence", "The right apartment"],
+            ["03", "Ground Intelligence", "The neighbourhood, verified"],
+            ["04", "Commercial Intelligence", "Represented in the deal"],
+            ["05", "Transaction Office", "Token to registration"],
+            ["06", "Buyer Memory™", "Nothing stays verbal"],
+            ["07", "Ownership OS", "Past possession"],
+            ["08", "Expert Network", "Every specialist on call"],
+          ] as const).map(([n, name, tag]) => (
+            <div key={n} className="rounded-xl border border-[#1a1a1a]/[0.08] bg-white/60 p-3 lg:p-4">
+              <span className="font-mono text-[0.58rem] tracking-[0.12em] text-[#9a7a2e] lg:text-[0.7rem]">{n}</span>
+              <p className="mt-1 font-serif text-[0.9rem] font-medium leading-tight lg:text-[1.12rem]">{name}</p>
+              {/* tag is teaser detail — hidden on phones so the CTA below never clips */}
+              <p className="mt-1 hidden text-[0.7rem] font-light leading-[1.4] text-[#1a1a1a]/50 sm:block lg:text-[0.8rem]">{tag}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 lg:mt-7">
+          <p className="max-w-[34rem] font-serif text-[0.98rem] font-medium italic leading-[1.4] text-[#1e6b45] lg:text-[1.18rem]">&ldquo;We stay with you until you&rsquo;re confident&mdash;not just until you book.&rdquo;</p>
+          <a href={`${basePath}/premiumbuyeroffice`} className="shrink-0 self-start rounded-sm border border-[#1e6b45]/40 bg-[#1e6b45]/[0.06] px-5 py-2.5 text-[0.8rem] font-medium text-[#1e6b45] transition-colors hover:bg-[#1e6b45] hover:text-white sm:self-auto lg:text-[0.92rem]">See the full Premium Buyer Office &rarr;</a>
+        </div>
       </Card>
     ),
   },
