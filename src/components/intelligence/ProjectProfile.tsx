@@ -285,7 +285,7 @@ export default function ProjectProfile({
   const [formOpen, setFormOpen] = useState(false);
   const [lead, setLead] = useState({ name: "", phone: "", time: "" });
   // document viewer (masterplan / brochure pages / payment plan)
-  const [doc, setDoc] = useState<{ title: string; pages: string[]; idx: number } | null>(null);
+  const [doc, setDoc] = useState<{ title: string; pages: string[]; idx: number } | { title: string; pdf: string } | null>(null);
   useEffect(() => {
     if (!doc) return;
     const prev = document.body.style.overflow;
@@ -693,11 +693,9 @@ export default function ProjectProfile({
                       </div>
                     </button>
                   ) : ops?.media?.brochurePdf ? (
-                    <a
-                      href={asset(ops.media.brochurePdf)}
-                      target="_blank" rel="noopener noreferrer"
-                      download={ops.media.brochurePdf.startsWith("data:") ? `${p.slug}-brochure.pdf` : undefined}
-                      className="group overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-white/60 transition-colors hover:border-[#9a7a2e]/40"
+                    <button
+                      onClick={() => setDoc({ title: "Project brochure", pdf: ops.media!.brochurePdf! })}
+                      className="group w-full overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-white/60 text-left transition-colors hover:border-[#9a7a2e]/40"
                     >
                       <div className="relative aspect-[16/10] bg-[#f5f0e5]/70">
                         <div className="absolute inset-0 grid place-items-center">
@@ -716,7 +714,7 @@ export default function ProjectProfile({
                         </div>
                         <span className="shrink-0 text-[0.78rem] font-semibold text-[#9a7a2e] transition-colors group-hover:text-[#7a5f1e]">Open →</span>
                       </div>
-                    </a>
+                    </button>
                   ) : (
                     <DocSlot project={p.name} title="Project brochure" sub="The developer&rsquo;s full brochure" />
                   )}
@@ -738,11 +736,9 @@ export default function ProjectProfile({
                       </div>
                     </button>
                   ) : ops?.media?.paymentPlanPdf ? (
-                    <a
-                      href={asset(ops.media.paymentPlanPdf)}
-                      target="_blank" rel="noopener noreferrer"
-                      download={ops.media.paymentPlanPdf.startsWith("data:") ? `${p.slug}-payment-plan.pdf` : undefined}
-                      className="group overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-white/60 transition-colors hover:border-[#9a7a2e]/40"
+                    <button
+                      onClick={() => setDoc({ title: "Payment plan", pdf: ops.media!.paymentPlanPdf! })}
+                      className="group w-full overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-white/60 text-left transition-colors hover:border-[#9a7a2e]/40"
                     >
                       <div className="relative aspect-[16/10] bg-[#f5f0e5]/70">
                         <div className="absolute inset-0 grid place-items-center">
@@ -761,7 +757,7 @@ export default function ProjectProfile({
                         </div>
                         <span className="shrink-0 text-[0.78rem] font-semibold text-[#9a7a2e] transition-colors group-hover:text-[#7a5f1e]">Open →</span>
                       </div>
-                    </a>
+                    </button>
                   ) : (
                     <DocSlot project={p.name} title="Payment plan" sub="Milestones and due percentages" />
                   )}
@@ -791,29 +787,8 @@ export default function ProjectProfile({
                       <DocSlot project={p.name} title="Floor plans" sub="Dimensioned plans for every layout" />
                     );
                   })()}
-                  {/* Cost sheet */}
-                  {ops?.media?.costSheet ? (
-                    <button
-                      onClick={() => setDoc({ title: "Cost sheet", pages: [ops.media!.costSheet!], idx: 0 })}
-                      className="group overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-white/60 text-left transition-colors hover:border-[#9a7a2e]/40"
-                    >
-                      <div className="relative aspect-[16/10] overflow-hidden bg-[#f0ece3]">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={asset(ops.media.costSheet)} alt={`${p.name} cost sheet`} className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]" />
-                      </div>
-                      <div className="flex items-center justify-between gap-4 px-5 py-4">
-                        <div>
-                          <p className="text-[0.92rem] font-semibold">Cost sheet</p>
-                          <p className="mt-0.5 text-[0.7rem] font-light text-[#1a1a1a]/45">All-in pricing · tap to view</p>
-                        </div>
-                        <span aria-hidden className="text-[#9a7a2e] transition-transform group-hover:translate-x-0.5">→</span>
-                      </div>
-                    </button>
-                  ) : (
-                    <DocSlot project={p.name} title="Cost sheet" sub="All-in pricing — GST, PLC, IFMS included" />
-                  )}
                 </div>
-                <Source>{ops?.media?.brochure || ops?.media?.brochurePdf || ops?.media?.paymentPlan || ops?.media?.paymentPlanPdf || ops?.media?.costSheet ? "Developer documents on file — indicative until countersigned." : "Documents arrive as the desk sources them — indicative until countersigned."} GST, PLC, IFMS &amp; registration additional as applicable.</Source>
+                <Source>{ops?.media?.brochure || ops?.media?.brochurePdf || ops?.media?.paymentPlan || ops?.media?.paymentPlanPdf ? "Developer documents on file — indicative until countersigned." : "Documents arrive as the desk sources them — indicative until countersigned."} GST, PLC, IFMS &amp; registration additional as applicable.</Source>
               </Section>
 
             <Chapter n="II" title="Can we trust it?" framing="Five pillars — developer, build, paperwork, location, edge." />
@@ -1016,28 +991,41 @@ export default function ProjectProfile({
         <div className="fixed inset-0 z-[140] flex flex-col bg-[#0b1f1a]/90 backdrop-blur-sm" onClick={() => setDoc(null)}>
           <div className="flex items-center justify-between gap-4 px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
             <p className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[#B29668]">
-              {doc.title}{doc.pages.length > 1 && <span className="ml-3 font-mono text-white/45 normal-case tracking-normal">{doc.idx + 1} / {doc.pages.length}</span>}
+              {doc.title}
+              {"pages" in doc && doc.pages.length > 1 && <span className="ml-3 font-mono text-white/45 normal-case tracking-normal">{doc.idx + 1} / {doc.pages.length}</span>}
+              {"pdf" in doc && <span className="ml-3 font-mono text-white/45 normal-case tracking-normal">PDF</span>}
             </p>
-            <button onClick={() => setDoc(null)} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white">✕</button>
+            <div className="flex items-center gap-1.5">
+              {"pdf" in doc && (
+                <a href={asset(doc.pdf)} target="_blank" rel="noopener noreferrer" className="rounded-full px-3 py-1.5 text-[0.72rem] font-medium text-white/65 transition-colors hover:bg-white/10 hover:text-white">Open in new tab ↗</a>
+              )}
+              <button onClick={() => setDoc(null)} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white">✕</button>
+            </div>
           </div>
           <div className="relative flex min-h-0 flex-1 items-center justify-center px-4 pb-6" onClick={(e) => e.stopPropagation()}>
-            {/* key resets the zoom whenever the page turns */}
-            <ZoomStage key={doc.idx}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={asset(doc.pages[doc.idx])} alt={`${doc.title} — page ${doc.idx + 1}`} className="max-h-[78vh] max-w-full rounded-lg shadow-[0_30px_90px_rgba(0,0,0,0.5)]" draggable={false} />
-            </ZoomStage>
-            {doc.pages.length > 1 && (
+            {"pdf" in doc ? (
+              <iframe src={asset(doc.pdf)} title={doc.title} className="h-full w-full max-w-[1000px] rounded-lg bg-white shadow-[0_30px_90px_rgba(0,0,0,0.5)]" />
+            ) : (
               <>
-                <button
-                  onClick={() => setDoc({ ...doc, idx: (doc.idx - 1 + doc.pages.length) % doc.pages.length })}
-                  aria-label="Previous page"
-                  className="absolute left-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-[1.2rem] text-white/85 backdrop-blur transition-colors hover:bg-white/20"
-                >←</button>
-                <button
-                  onClick={() => setDoc({ ...doc, idx: (doc.idx + 1) % doc.pages.length })}
-                  aria-label="Next page"
-                  className="absolute right-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-[1.2rem] text-white/85 backdrop-blur transition-colors hover:bg-white/20"
-                >→</button>
+                {/* key resets the zoom whenever the page turns */}
+                <ZoomStage key={doc.idx}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={asset(doc.pages[doc.idx])} alt={`${doc.title} — page ${doc.idx + 1}`} className="max-h-[78vh] max-w-full rounded-lg shadow-[0_30px_90px_rgba(0,0,0,0.5)]" draggable={false} />
+                </ZoomStage>
+                {doc.pages.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setDoc({ ...doc, idx: (doc.idx - 1 + doc.pages.length) % doc.pages.length })}
+                      aria-label="Previous page"
+                      className="absolute left-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-[1.2rem] text-white/85 backdrop-blur transition-colors hover:bg-white/20"
+                    >←</button>
+                    <button
+                      onClick={() => setDoc({ ...doc, idx: (doc.idx + 1) % doc.pages.length })}
+                      aria-label="Next page"
+                      className="absolute right-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-[1.2rem] text-white/85 backdrop-blur transition-colors hover:bg-white/20"
+                    >→</button>
+                  </>
+                )}
               </>
             )}
           </div>
