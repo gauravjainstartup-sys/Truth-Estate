@@ -234,14 +234,18 @@ export function liveProjectIntel(
   /* configurations table (when filled) is richer than the caption string */
   const homes = (cfgs ?? [])
     .filter((c) => (c.carpetArea ?? 0) > 0 && (c.superArea ?? 0) > 0)
-    .map((c) => ({
-      config: c.bhkType ? normBhk(c.bhkType) : "NA",
-      ...(c.areaType ? { variant: c.areaType } : {}),
-      carpetSqft: c.carpetArea!,
-      superSqft: c.superArea!,
-      ...((c.balconyArea ?? 0) > 0 ? { balconySqft: c.balconyArea! } : {}),
-      priceCr: 0, // pipeline doesn't publish per-config tickets yet — the UI hides the ticket at 0
-    }));
+    .map((c) => {
+      const plan = mediaSrc(c.floorPlanImageUrl); // the 2D floor-plan image (Storage URL, ext or not)
+      return {
+        config: c.bhkType ? normBhk(c.bhkType) : "NA",
+        ...(c.areaType ? { variant: c.areaType } : {}),
+        carpetSqft: c.carpetArea!,
+        superSqft: c.superArea!,
+        ...((c.balconyArea ?? 0) > 0 ? { balconySqft: c.balconyArea! } : {}),
+        priceCr: 0, // pipeline doesn't publish per-config tickets yet — the UI hides the ticket at 0
+        ...(plan ? { plan } : {}),
+      };
+    });
   const cfgNames = dedupe(homes.map((h) => h.config)).filter((c) => c !== "NA");
 
   const configs = cfgNames.length
@@ -296,6 +300,11 @@ export function liveProjectIntel(
         brochurePages ? `${brochurePages.length} page(s)` : brochurePdf ? "pdf-link" : why(ext.brochureUrl)
       } · payment=${paymentSrc ? "ok" : paymentPdf ? "pdf-link" : why(ext.paymentPlanUrl)} · sitemap=${siteMapSrc ? "ok" : why(ext.siteMapImageUrl)}`,
     );
+  }
+  // build-log record: configurations → homes, and how many carry a 2D floor plan
+  if (cfgs?.length) {
+    const withPlan = homes.filter((h) => h.plan).length;
+    console.log(`[supabase] configs ${row.name} → ${homes.length}/${cfgs.length} home(s) rendered · ${withPlan} with 2D floor plan`);
   }
 
   const ops: ProjectOps = {

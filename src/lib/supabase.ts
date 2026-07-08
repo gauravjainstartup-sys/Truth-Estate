@@ -358,6 +358,7 @@ export type LiveConfiguration = {
   carpetArea: number | null;
   balconyArea: number | null;
   superArea: number | null;
+  floorPlanImageUrl: string | null;
   config3dHtml: string | null;
 };
 
@@ -375,6 +376,7 @@ export async function fetchConfigurations(): Promise<Record<string, LiveConfigur
       carpetArea: n(r.carpet_area),
       balconyArea: n(r.balcony_area),
       superArea: n(r.super_area),
+      floorPlanImageUrl: s(r.floor_plan_image_url),
       config3dHtml: s(r.config_3d_html),
     });
   }
