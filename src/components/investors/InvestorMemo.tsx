@@ -6,7 +6,7 @@ import RenderVsReality from "../intelligence/RenderVsReality";
 
 /* ════════════════════════════════════════════════════════════════
    INVESTOR MEMORANDUM — presented as a deck, sized for the room.
-   Eighteen scroll-snap frames. Desktop (lg+) runs the presentation
+   Nineteen scroll-snap frames. Desktop (lg+) runs the presentation
    scale: bigger frame, ~1.35× type, drawn set-pieces (the boardroom
    table, the timeline, the flywheel ring, the supply funnel) and
    slide-entry motion. Phones keep the reading scale. Cmd+P still
@@ -233,9 +233,24 @@ function SlideCover() {
   );
 }
 
-type Slide = { key: string; node: React.ReactNode; backdrop?: "cream" | "emerald" };
+type Slide = { key: string; node: React.ReactNode; backdrop?: "cream" | "emerald" | "ink" };
 
 const SLIDES: Slide[] = [
+  {
+    key: "brand",
+    backdrop: "ink",
+    node: (
+      <div className="mx-auto flex max-w-[62rem] flex-col items-center px-4 text-center">
+        <p className="font-mono text-[0.6rem] uppercase tracking-[0.28em] text-[#c9a96e] lg:text-[0.72rem]">The Independent Buyer&rsquo;s Office</p>
+        <Logo color="#F7F3EA" className="mt-8 h-9 w-auto lg:mt-10 lg:h-[3.4rem]" />
+        <h1 className="mt-11 font-serif text-[clamp(2.2rem,5.4vw,4rem)] font-medium leading-[1.05] tracking-[-0.01em] text-[#F7F3EA] lg:mt-14 lg:whitespace-nowrap">Less promises. More proof.</h1>
+        <p className="mt-7 max-w-[41rem] font-serif text-[1.02rem] font-light leading-[1.6] text-[#F7F3EA]/55 lg:mt-9 lg:text-[1.35rem]">
+          Independent real estate intelligence &amp; advisory for NRI buyers in India &mdash; forensic due diligence, unbiased Truth Scores, one advisor who represents only you.
+        </p>
+        <p className="mt-14 font-mono text-[0.56rem] uppercase tracking-[0.24em] text-[#c9a96e]/70 lg:mt-20 lg:text-[0.68rem]">Gurugram &middot; Delhi NCR</p>
+      </div>
+    ),
+  },
   { key: "cover", node: <SlideCover />, backdrop: "cream" },
 
   {
@@ -979,7 +994,7 @@ export default function InvestorMemo() {
   };
 
   // the finale sits on an emerald backdrop — the fixed chrome flips to cream there
-  const onDark = SLIDES[idx]?.backdrop === "emerald";
+  const onDark = SLIDES[idx]?.backdrop === "emerald" || SLIDES[idx]?.backdrop === "ink";
 
   return (
     <div className="relative h-svh bg-[#F1EBDF] text-[#1a1a1a]">
@@ -1023,13 +1038,17 @@ export default function InvestorMemo() {
             {/* full-bleed backdrops for the bookend slides */}
             {s.backdrop && (
               <>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`${basePath}/images/aerial-dlf-arbour.webp`} alt="" aria-hidden
-                  className="absolute inset-0 h-full w-full object-cover" />
+                {s.backdrop !== "ink" && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={`${basePath}/images/aerial-dlf-arbour.webp`} alt="" aria-hidden
+                    className="absolute inset-0 h-full w-full object-cover" />
+                )}
                 <div className="absolute inset-0" style={{
                   background: s.backdrop === "cream"
                     ? "linear-gradient(180deg, rgba(241,235,223,0.93) 0%, rgba(241,235,223,0.88) 55%, rgba(241,235,223,0.95) 100%)"
-                    : "linear-gradient(180deg, rgba(11,31,26,0.94) 0%, rgba(11,31,26,0.9) 55%, rgba(11,31,26,0.96) 100%)",
+                    : s.backdrop === "ink"
+                      ? "radial-gradient(115% 85% at 50% 32%, #1c1710 0%, #100d09 55%, #070605 100%)"
+                      : "linear-gradient(180deg, rgba(11,31,26,0.94) 0%, rgba(11,31,26,0.9) 55%, rgba(11,31,26,0.96) 100%)",
                 }} />
               </>
             )}
