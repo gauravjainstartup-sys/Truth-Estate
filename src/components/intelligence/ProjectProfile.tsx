@@ -747,30 +747,7 @@ export default function ProjectProfile({
                   )}
                   {/* Master plan appears here as a slot only when it lacks its own section above */}
                   {!ops?.media?.masterplan && <DocSlot project={p.name} title="Master plan / site map" sub="The RERA-approved site layout" />}
-                  {/* Floor plans — licensed dimensioned plans (indicative schematics live in The Homes) */}
-                  {(() => {
-                    const plans = (ops?.homes ?? []).filter((h) => h.plan).map((h) => h.plan!);
-                    return plans.length ? (
-                      <button
-                        onClick={() => setDoc({ title: "Floor plans", pages: plans, idx: 0 })}
-                        className="group overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-white/60 text-left transition-colors hover:border-[#9a7a2e]/40"
-                      >
-                        <div className="relative aspect-[16/10] overflow-hidden bg-[#f0ece3]">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={asset(plans[0])} alt={`${p.name} floor plan`} className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]" />
-                        </div>
-                        <div className="flex items-center justify-between gap-4 px-5 py-4">
-                          <div>
-                            <p className="text-[0.92rem] font-semibold">Floor plans</p>
-                            <p className="mt-0.5 text-[0.7rem] font-light text-[#1a1a1a]/45">{plans.length} dimensioned plans · tap to view</p>
-                          </div>
-                          <span aria-hidden className="text-[#9a7a2e] transition-transform group-hover:translate-x-0.5">→</span>
-                        </div>
-                      </button>
-                    ) : (
-                      <DocSlot project={p.name} title="Floor plans" sub="Dimensioned plans for every layout" />
-                    );
-                  })()}
+                  {/* Floor plans intentionally omitted here — they live in The Homes section above. */}
                 </div>
                 <Source>{ops?.media?.brochure || ops?.media?.brochurePdf || ops?.media?.paymentPlan || ops?.media?.paymentPlanPdf ? "Developer documents on file — indicative until countersigned." : "Documents arrive as the desk sources them — indicative until countersigned."} GST, PLC, IFMS &amp; registration additional as applicable.</Source>
               </Section>
