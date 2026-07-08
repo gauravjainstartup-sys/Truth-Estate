@@ -28,6 +28,7 @@ import ReportLegal from "./ReportLegal";
 import ReportLocation from "./ReportLocation";
 import ZoomStage from "./ZoomStage";
 import PdfScroller from "./PdfScroller";
+import PdfThumb from "./PdfThumb";
 import ReportUSPs from "./ReportUSPs";
 import ReportPrice from "./ReportPrice";
 import ReportVerdict from "./ReportVerdict";
@@ -698,16 +699,7 @@ export default function ProjectProfile({
                       onClick={() => setDoc({ title: "Project brochure", pdf: ops.media!.brochurePdf! })}
                       className="group w-full overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-white/60 text-left transition-colors hover:border-[#9a7a2e]/40"
                     >
-                      <div className="relative aspect-[16/10] bg-[#f5f0e5]/70">
-                        <div className="absolute inset-0 grid place-items-center">
-                          <div className="text-center">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="#9a7a2e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto h-8 w-8 opacity-70" aria-hidden>
-                              <path d="M6 2.5h8L19.5 8v13a1 1 0 0 1-1 1h-12a1 1 0 0 1-1-1v-17a1 1 0 0 1 1-1Z" /><path d="M14 2.5V8h5.5M9 13h6M9 17h6" />
-                            </svg>
-                            <p className="mt-2.5 text-[0.58rem] font-bold uppercase tracking-[0.18em] text-[#9a7a2e]/80">PDF · On file</p>
-                          </div>
-                        </div>
-                      </div>
+                      <PdfThumb src={asset(ops.media.brochurePdf)} />
                       <div className="flex items-center justify-between gap-4 px-5 py-4">
                         <div>
                           <p className="text-[0.92rem] font-semibold">Project brochure</p>
@@ -741,16 +733,7 @@ export default function ProjectProfile({
                       onClick={() => setDoc({ title: "Payment plan", pdf: ops.media!.paymentPlanPdf! })}
                       className="group w-full overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-white/60 text-left transition-colors hover:border-[#9a7a2e]/40"
                     >
-                      <div className="relative aspect-[16/10] bg-[#f5f0e5]/70">
-                        <div className="absolute inset-0 grid place-items-center">
-                          <div className="text-center">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="#9a7a2e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto h-8 w-8 opacity-70" aria-hidden>
-                              <path d="M6 2.5h8L19.5 8v13a1 1 0 0 1-1 1h-12a1 1 0 0 1-1-1v-17a1 1 0 0 1 1-1Z" /><path d="M14 2.5V8h5.5M9 13h6M9 17h6" />
-                            </svg>
-                            <p className="mt-2.5 text-[0.58rem] font-bold uppercase tracking-[0.18em] text-[#9a7a2e]/80">PDF · On file</p>
-                          </div>
-                        </div>
-                      </div>
+                      <PdfThumb src={asset(ops.media.paymentPlanPdf)} />
                       <div className="flex items-center justify-between gap-4 px-5 py-4">
                         <div>
                           <p className="text-[0.92rem] font-semibold">Payment plan</p>

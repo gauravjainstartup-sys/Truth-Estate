@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-
-const basePath = "/Truth-Estate";
+import { loadPdfjs } from "./pdfjs";
 
 /* Renders a PDF as scrollable page images (canvas) with pdf.js — reliable on
    desktop AND mobile, where a native <iframe> PDF often shows nothing. The
@@ -27,23 +26,7 @@ export default function PdfScroller({ src }: { src: string }) {
 
     (async () => {
       try {
-        // pdf.js v4 uses Promise.withResolvers — shim it for older mobile browsers.
-        const P = Promise as unknown as { withResolvers?: unknown };
-        if (typeof P.withResolvers !== "function") {
-          P.withResolvers = function <T>() {
-            let resolve!: (v: T | PromiseLike<T>) => void, reject!: (r?: unknown) => void;
-            const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });
-            return { promise, resolve, reject };
-          };
-        }
-
-        const pdfjs = await import("pdfjs-dist");
-        // Serve the worker from public/ as a plain .js at a stable path. The
-        // `new URL(..., import.meta.url)` form emits a hashed _next/static .mjs
-        // that GitHub Pages serves with a MIME/path browsers reject for a
-        // module worker, so the worker silently never boots.
-        pdfjs.GlobalWorkerOptions.workerSrc = `${basePath}/pdf.worker.min.js`;
-
+        const pdfjs = await loadPdfjs();
         const doc = await pdfjs.getDocument({ url: src }).promise;
         if (stopped || !host) return;
         host.replaceChildren();
