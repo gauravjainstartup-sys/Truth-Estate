@@ -61,16 +61,25 @@ export default function PdfScroller({ src }: { src: string }) {
     return () => { cancelled = true; };
   }, [src]);
 
+  // If pdf.js can't fetch/parse (e.g. CORS on the Storage bucket), fall back to
+  // a native <iframe> — it displays a cross-origin PDF without needing CORS on
+  // desktop — with the open-in-new-tab link always available.
+  if (state === "error") {
+    return (
+      <div className="flex h-full w-full max-w-[940px] flex-col rounded-lg bg-[#e9e2d4] p-2 sm:p-3">
+        <iframe src={src} title="Document" className="w-full flex-1 rounded-md bg-white" />
+        <p className="shrink-0 py-2 text-center text-[0.78rem] font-light text-[#1a1a1a]/60">
+          Trouble viewing it here?{" "}
+          <a href={src} target="_blank" rel="noopener noreferrer" className="font-medium text-[#1e6b45] underline underline-offset-2">Open the PDF ↗</a>
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full w-full max-w-[940px] overflow-y-auto rounded-lg bg-[#e9e2d4] p-3 sm:p-4">
       {state === "loading" && (
         <p className="py-16 text-center text-[0.85rem] font-light text-[#1a1a1a]/50">Loading document…</p>
-      )}
-      {state === "error" && (
-        <p className="py-16 text-center text-[0.88rem] font-light text-[#1a1a1a]/65">
-          Couldn&rsquo;t display it inline.{" "}
-          <a href={src} target="_blank" rel="noopener noreferrer" className="font-medium text-[#1e6b45] underline underline-offset-2">Open the PDF ↗</a>
-        </p>
       )}
       <div ref={hostRef} />
     </div>
