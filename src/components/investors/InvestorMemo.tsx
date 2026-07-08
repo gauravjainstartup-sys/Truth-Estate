@@ -6,7 +6,7 @@ import RenderVsReality from "../intelligence/RenderVsReality";
 
 /* ════════════════════════════════════════════════════════════════
    INVESTOR MEMORANDUM — presented as a deck, sized for the room.
-   Seventeen scroll-snap frames. Desktop (lg+) runs the presentation
+   Eighteen scroll-snap frames. Desktop (lg+) runs the presentation
    scale: bigger frame, ~1.35× type, drawn set-pieces (the boardroom
    table, the timeline, the flywheel ring, the supply funnel) and
    slide-entry motion. Phones keep the reading scale. Cmd+P still
@@ -15,6 +15,19 @@ import RenderVsReality from "../intelligence/RenderVsReality";
 
 const basePath = "/Truth-Estate";
 const DATA_ROOM = "mailto:gauravjainstartup@gmail.com?subject=Truth%20Estate%20%E2%80%94%20Data%20room%20request";
+
+/* The premium buyer's eight-step lifecycle — [stage, name, NRI-sharpest?,
+   today (alone), with Truth Estate]. Drawn from the NRI desk's own copy. */
+const JOURNEY = [
+  ["1", "Requirement", false, "A broker's list, sized to his stock", "Buyer DNA → an independent shortlist"],
+  ["2", "Due diligence", true, "Title, RERA, litigation unchecked", "Forensic diligence before a rupee moves"],
+  ["3", "Site visit", true, "A model flat and a sales pitch", "Accompanied & live-video visits"],
+  ["4", "Price", true, "The quoted rate — the “NRI price”", "Benchmarked & negotiated for you"],
+  ["5", "FEMA & PoA", true, "Funding guesswork; a broad PoA", "FEMA-compliant; a narrow, revocable PoA"],
+  ["6", "Token & agreement", false, "Sign the builder's paper as-is", "Reviewed before you commit"],
+  ["7", "Registration & handover", false, "Coordinate four parties yourself", "One advisor to registration & handover"],
+  ["8", "Custody & management", false, "After booking, you're alone", "We stay on — dues, tenancy, exit read"],
+] as const;
 
 /* ── primitives ── */
 
@@ -337,6 +350,64 @@ const SLIDES: Slide[] = [
               Down to the unit: <b className="font-normal text-[#9fe6bf]">Tower B · mid-stack · east</b>{" "}— and the price at which we&rsquo;d walk away.
             </p>
           </div>
+        </div>
+      </Card>
+    ),
+  },
+
+  {
+    key: "journey",
+    node: (
+      <Card label="I · The four gaps, made real" title="Every buyer walks this alone. We make it one relationship."
+        sub={<>The premium buyer&rsquo;s eight-step lifecycle — fragmented and seller-paid today, and the NRI feels every gap most. We turn it into one represented relationship.</>}>
+        {/* desktop: the two-world ladder — disconnected today vs. one continuous spine */}
+        <div className="mt-6 hidden md:block lg:mt-7">
+          <div className="grid grid-cols-[210px_1fr_1fr] pb-2.5">
+            <span />
+            <span className="pl-7 font-mono text-[0.6rem] font-bold uppercase tracking-[0.14em] text-[#9a7a2e] lg:text-[0.7rem]">Today — alone</span>
+            <span className="pl-7 font-mono text-[0.6rem] font-bold uppercase tracking-[0.14em] text-[#1e6b45] lg:text-[0.7rem]">With Truth Estate</span>
+          </div>
+          {JOURNEY.map(([n, name, nri, today, te]) => (
+            <div key={n} className="grid grid-cols-[210px_1fr_1fr] items-stretch border-t border-[#1a1a1a]/10">
+              <div className="flex items-center gap-2 py-3 pr-3">
+                <span className="font-mono text-[0.7rem] font-bold text-[#9a7a2e]">{n}</span>
+                <span className="font-serif text-[0.98rem] font-medium leading-tight lg:text-[1.05rem]">{name}</span>
+                {nri && <span className="rounded-[5px] bg-[#9a7a2e] px-1.5 py-0.5 font-mono text-[0.5rem] font-bold tracking-[0.08em] text-white">NRI</span>}
+              </div>
+              <div className="relative flex items-center py-3 pl-7 pr-4 text-[0.86rem] font-light leading-snug text-[#1a1a1a]/45 lg:text-[0.98rem]">
+                <span className="absolute left-2 top-1/2 h-[7px] w-[7px] -translate-y-1/2 rounded-[2px] bg-[#c9a96e]/80" />
+                {today}
+              </div>
+              <div className="relative flex items-center border-l-2 border-[#1e6b45] bg-[#1e6b45]/[0.035] py-3 pl-7 pr-4 text-[0.86rem] leading-snug text-[#1a1a1a] lg:text-[0.98rem]">
+                <span className="absolute -left-[6px] top-1/2 h-[10px] w-[10px] -translate-y-1/2 rounded-full border-2 border-[#FBF8F2] bg-[#1e6b45]" />
+                {te}
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* phones: compact stacked stages */}
+        <div className="mt-5 md:hidden">
+          {JOURNEY.map(([n, name, nri, today, te]) => (
+            <div key={n} className="border-t border-[#1a1a1a]/10 py-2.5">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-[0.62rem] font-bold text-[#9a7a2e]">{n}</span>
+                <span className="font-serif text-[0.92rem] font-medium">{name}</span>
+                {nri && <span className="rounded-[4px] bg-[#9a7a2e] px-1.5 py-0.5 font-mono text-[0.46rem] font-bold tracking-[0.08em] text-white">NRI</span>}
+              </div>
+              <p className="mt-1 flex gap-2 text-[0.78rem] font-light leading-snug text-[#1a1a1a]/45">
+                <span className="mt-[1px] w-[54px] shrink-0 font-mono text-[0.5rem] font-bold uppercase tracking-[0.06em] text-[#9a7a2e]">Today</span>
+                <span>{today}</span>
+              </p>
+              <p className="mt-0.5 flex gap-2 text-[0.78rem] leading-snug text-[#1a1a1a]/85">
+                <span className="mt-[1px] w-[54px] shrink-0 font-mono text-[0.5rem] font-bold uppercase tracking-[0.06em] text-[#1e6b45]">Truth Est.</span>
+                <span>{te}</span>
+              </p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-5 rounded-r-xl border-l-2 border-[#1e6b45] bg-[#1e6b45]/[0.06] px-5 py-3 text-[0.86rem] font-light leading-[1.6] text-[#1a1a1a]/75 lg:mt-6 lg:px-6 lg:py-4 lg:text-[1.05rem]">
+          <b className="font-medium text-[#1a1a1a]">Today:</b> seller-paid, and it ends at your booking.{" "}
+          <b className="font-medium text-[#1a1a1a]">Ours:</b> buyer-paid, all eight steps — one relationship, not one transaction.
         </div>
       </Card>
     ),
