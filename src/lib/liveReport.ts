@@ -265,9 +265,11 @@ export function liveProjectIntel(
      RERA registration date (the filing that starts the clock) */
   const range = psfRange(ext?.priceRangeSqft ?? null);
   const launchMonth = row.registrationDate?.match(/([A-Za-z]{3,9})\s+(\d{4})\s*$/);
+  // "Jan 2023" from the RERA registration date — the filing that starts the clock.
+  const launchLabel = launchMonth ? `${launchMonth[1].slice(0, 3)} ${launchMonth[2]}` : null;
   const price =
     range && (ext?.launchPrice ?? 0) > 0 && launchMonth
-      ? { launchPsf: ext!.launchPrice!, launchDate: `${launchMonth[1].slice(0, 3)} ${launchMonth[2]}`, currentLow: range[0], currentHigh: range[1] }
+      ? { launchPsf: ext!.launchPrice!, launchDate: launchLabel!, currentLow: range[0], currentHigh: range[1] }
       : null;
 
   const heroSrc = mediaSrc(ext?.heroImageUrl);
@@ -311,6 +313,7 @@ export function liveProjectIntel(
     ...(row.location ? { address: row.location } : {}),
     ...(totalUnits != null ? { units: totalUnits } : {}),
     ...(row.promised ? { possession: row.promised } : {}),
+    ...(launchLabel ? { launch: launchLabel } : {}),
     ...(ext?.floorsRange ? { floors: ext.floorsRange } : {}),
     ...(heroDateLabel(ext?.heroDate ?? null) ? { reviewed: heroDateLabel(ext!.heroDate)! } : {}),
     ...(price ? { price } : {}),

@@ -625,17 +625,18 @@ export default function ProjectProfile({
                 {/* the registry — dotted-leader detail list */}
                 <div className="mt-9 grid border-t border-[#1a1a1a]/8 pt-4 md:grid-cols-2 md:gap-x-12">
                   {ops?.price && <Reg icon={VITAL_ICON.tag} k="Launch price / sq ft" v={fmtPsf(ops.price.launchPsf)} />}
-                  {ops?.price && p.psf && <Reg icon={VITAL_ICON.psf} k="Corridor avg / sq ft" v={fmtPsf(p.psf.avg)} />}
+                  {/* Fields the live pipeline doesn't carry yet render "NA" (founder: columns coming). */}
+                  <Reg icon={VITAL_ICON.psf} k="Corridor avg / sq ft" v={ops?.price && p.psf ? fmtPsf(p.psf.avg) : "NA"} />
                   {ops?.units != null && <Reg icon={VITAL_ICON.units} k="Total units" v={`${ops.units.toLocaleString("en-IN")}`} />}
-                  {ops?.towers != null && <Reg icon={VITAL_ICON.towers} k="Towers" v={`${ops.towers}`} />}
-                  {ops?.landAcres != null && <Reg icon={VITAL_ICON.land} k="Land" v={`${ops.landAcres} acre`} />}
+                  <Reg icon={VITAL_ICON.towers} k="Towers" v={ops?.towers != null ? `${ops.towers}` : "NA"} />
+                  <Reg icon={VITAL_ICON.land} k="Land" v={ops?.landAcres != null ? `${ops.landAcres} acre` : "NA"} />
                   {ops?.floors && <Reg icon={VITAL_ICON.floors} k="Floors" v={ops.floors} />}
                   {ops?.floors && riseTypeOf(ops.floors) && <Reg icon={VITAL_ICON.rise} k="Type" v={riseTypeOf(ops.floors)!} />}
-                  {ops?.density != null && <Reg icon={VITAL_ICON.density} k="Density" v={`${ops.density} / acre`} tag={ops.density <= 50 ? "Low-density" : undefined} />}
-                  {ops?.openAreaPct != null && <Reg icon={VITAL_ICON.leaf} k="Open area" v={`${ops.openAreaPct}%`} tag={ops.openAreaPct >= 80 ? "Green" : undefined} />}
-                  {ops?.launch && <Reg icon={VITAL_ICON.calendar} k="Launched" v={ops.launch} />}
+                  <Reg icon={VITAL_ICON.density} k="Density" v={ops?.density != null ? `${ops.density} / acre` : "NA"} tag={ops?.density != null && ops.density <= 50 ? "Low-density" : undefined} />
+                  <Reg icon={VITAL_ICON.leaf} k="Open area" v={ops?.openAreaPct != null ? `${ops.openAreaPct}%` : "NA"} tag={ops?.openAreaPct != null && ops.openAreaPct >= 80 ? "Green" : undefined} />
+                  <Reg icon={VITAL_ICON.calendar} k="Launched" v={ops?.launch ?? "NA"} />
                   {ops?.possession && <Reg icon={VITAL_ICON.key} k="RERA possession" v={ops.possession} />}
-                  {ops?.reraId && <Reg icon={VITAL_ICON.file} k="RERA ID" v={ops.reraId} href="https://haryanarera.gov.in/" />}
+                  <Reg icon={VITAL_ICON.file} k="RERA ID" v={ops?.reraId ?? "NA"} {...(ops?.reraId ? { href: "https://haryanarera.gov.in/" } : {})} />
                 </div>
               </div>
               {ops?.reraNote && <Source>{ops.reraNote}. Sources: Haryana RERA registry & project filings.</Source>}
