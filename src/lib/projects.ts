@@ -445,6 +445,24 @@ export const TOWER_INTEL: Record<string, TowerIntelMeta> = {
       idealFor: "Large & joint families (4–6)",
     },
   },
+  "Signature Global Titanium SPR": {
+    file: "tower-intel/signature-global-titanium-spr.html",
+    preview: "tower-intel/signature-global-titanium-spr-preview.jpg",
+    towers: 7,
+    unitTypes: 2, // 4.5 BHK (2-to-core) & 3.5 BHK (3-to-core)
+    totalUnits: "640+",
+    // Mirrors the advisor's own #1-for-winter-sun pick, so the teaser stays
+    // honest against what a buyer sees once the model opens.
+    sample: {
+      ref: "Tower T-6 · Flat 101",
+      type: "4.5 BHK · east-facing living · lagoon view",
+      sun: "4.6 h/day",
+      sunPct: 79,
+      ventilation: "2-to-core plate · dual-aspect corner",
+      vastu: "East-facing living · morning light",
+      idealFor: "Large families (4.5 BHK)",
+    },
+  },
 };
 export const towerIntelMeta = (p: ProjectIntel): TowerIntelMeta | undefined => TOWER_INTEL[p.name];
 
