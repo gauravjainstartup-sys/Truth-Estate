@@ -15,8 +15,10 @@ import type { FinRating } from "./developers";
 import { developerSlugOf, type ProjectIntel, type ProjectOps, type ScoreInputKey } from "./projects";
 import mediaManifest from "./live-media.manifest.json";
 
-/* base64 blobs are decoded to real files before the build
-   (scripts/materialize-media.mjs); the manifest maps them back */
+/* Media now arrives as Supabase Storage URLs, which pass straight through.
+   The manifest only covers any LEGACY base64 rows — decoded to real files
+   before the build (scripts/materialize-media.mjs) — and is empty once every
+   row has migrated. When present, a materialized path is preferred. */
 const MANIFEST = mediaManifest as Record<string, Partial<Record<string, string>>>;
 
 /* tiny defensive readers over the pipeline-owned JSON payloads */
@@ -58,12 +60,16 @@ const riskRating = (r: string | null): FinRating | null =>
 
 const dedupe = (xs: string[]): string[] => [...new Set(xs.map((x) => x.trim()).filter(Boolean))];
 
-/* media columns may hold a URL, a relative path, a data: URI or RAW
-   base64 (the founder's upload path). Everything must resolve to
-   something an <img> can render — PDFs and unknown binaries keep the
-   slot in its request/hidden state for now. Raw base64 is sniffed by
-   magic prefix and wrapped as a data: URI. */
+/* Media columns now hold a Supabase Storage PUBLIC URL — the founder's
+   current upload path, e.g.
+     https://<ref>.supabase.co/storage/v1/object/public/project_assets/general/<file>
+   Older rows may still carry a data: URI or RAW base64. Everything must
+   resolve to something an <img> can render — PDFs and unknown binaries keep
+   the slot in its request/hidden state. Raw base64 is sniffed by magic
+   prefix and wrapped as a data: URI. */
 const imageish = (u: string): boolean => /\.(webp|jpe?g|png|avif|gif)(\?.*)?$/i.test(u);
+const isHttpUrl = (u: string): boolean => /^https?:\/\//i.test(u);
+const isPdfUrl = (u: string): boolean => /\.pdf(\?.*)?$/i.test(u);
 const B64_MAGIC: [RegExp, string][] = [
   [/^\/9j\//, "jpeg"],   // JPEG
   [/^iVBOR/, "png"],     // PNG
@@ -80,6 +86,11 @@ function mediaSrc(u: string | null | undefined): string | null {
     for (const [re, type] of B64_MAGIC) if (re.test(s)) return `data:image/${type};base64,${s.replace(/\s+/g, "")}`;
     return null; // unknown binary — don't guess
   }
+  // A Storage/CDN URL. A Storage object key may carry no file extension, so
+  // we can't require one — treat any non-PDF http(s) URL as an image; a .pdf
+  // URL falls through to pdfSrc for a link instead of an <img>.
+  if (isHttpUrl(s)) return isPdfUrl(s) ? null : s;
+  // A relative/materialized path — keep the extension gate.
   return imageish(s) ? s : null;
 }
 
@@ -94,7 +105,8 @@ function pdfSrc(u: string | null | undefined): string | null {
   if (/^data:application\/pdf/i.test(s)) return s.length <= PDF_INLINE_CAP ? s : null;
   if (/^JVBERi/.test(s) && /^[A-Za-z0-9+/=\r\n]+$/.test(s))
     return s.length <= PDF_INLINE_CAP ? `data:application/pdf;base64,${s.replace(/\s+/g, "")}` : null;
-  if (/^(https?:\/\/|[\w./-]+)/.test(s) && /\.pdf(\?.*)?$/i.test(s)) return s;
+  // A Storage/CDN URL (or relative path) that ends in .pdf — link it as-is.
+  if ((isHttpUrl(s) || /^[\w./-]+$/.test(s)) && isPdfUrl(s)) return s;
   return null;
 }
 
