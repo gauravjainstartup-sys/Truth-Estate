@@ -272,6 +272,7 @@ export function liveProjectIntel(
   const brochurePages = mediaPages(ext?.brochureUrl) ?? (mediaSrc(ext?.brochureUrl) ? [mediaSrc(ext?.brochureUrl)!] : null);
   const brochurePdf = brochurePages ? null : pdfSrc(ext?.brochureUrl);
   const paymentSrc = mediaSrc(ext?.paymentPlanUrl);
+  const paymentPdf = paymentSrc ? null : pdfSrc(ext?.paymentPlanUrl);
   const media: NonNullable<ProjectOps["media"]> = {
     ...(heroSrc ? { heroImage: heroSrc } : {}),
     ...(renderSrc ? { render: renderSrc } : {}),
@@ -283,6 +284,7 @@ export function liveProjectIntel(
     ...(paymentSrc
       ? { paymentPlan: { src: paymentSrc, read: "From the developer's kit — indicative until countersigned." } }
       : {}),
+    ...(paymentPdf ? { paymentPlanPdf: paymentPdf } : {}),
   };
 
   // build-log record: how each media column resolved (or why it didn't)
@@ -292,7 +294,7 @@ export function liveProjectIntel(
     console.log(
       `[supabase] media ${row.name} → hero=${heroSrc ? "ok" : why(ext.heroImageUrl)} · brochure=${
         brochurePages ? `${brochurePages.length} page(s)` : brochurePdf ? "pdf-link" : why(ext.brochureUrl)
-      } · payment=${paymentSrc ? "ok" : why(ext.paymentPlanUrl)} · sitemap=${siteMapSrc ? "ok" : why(ext.siteMapImageUrl)}`,
+      } · payment=${paymentSrc ? "ok" : paymentPdf ? "pdf-link" : why(ext.paymentPlanUrl)} · sitemap=${siteMapSrc ? "ok" : why(ext.siteMapImageUrl)}`,
     );
   }
 

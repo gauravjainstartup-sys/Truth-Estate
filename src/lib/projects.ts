@@ -182,6 +182,7 @@ export type ProjectOps = {
     brochure?: string[]; // page images, cover first
     brochurePdf?: string; // PDF fallback (URL or data: URI) — opens as a link when no page images exist
     paymentPlan?: { src: string; read: string };
+    paymentPlanPdf?: string; // PDF fallback — opens as a link when the plan isn't an image
     costSheet?: string;
     sitePhotos?: { src: string; asOf: string; note?: string }[];
   };
