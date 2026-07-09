@@ -360,12 +360,16 @@ const topH=()=>LOBBY+FLOORS*FH;
 const collMeshes=[],towerPick=[],tilePick=[];
 function makeUnits(t){const cw=3.5; // half core width along slab
   if(t.core===2)return[
-    {id:'101',x0:-t.hw,x1:-cw,prim:'lake',end:-1},
-    {id:'102',x0: cw,x1: t.hw,prim:'lake',end: 1}];
+    {id:'101',x0:-t.hw,x1:-cw,prim:'lake',end:-1,mir:-1},
+    {id:'102',x0: cw,x1: t.hw,prim:'lake',end: 1,mir: 1}];
+  /* T-7/T-8: L-shaped. 101 = one wing, 102 = the other (both on the N-S slab),
+     103 = a nose block that protrudes toward the lagoon. Numbering matches the
+     sanctioned site plan; `mir` (Vastu handedness) is tied to each unit's own
+     plate, independent of which end it sits on. */
   return[
-    {id:'101',x0:-t.hw,x1:-t.hw/3,prim:'end',end:-1},
-    {id:'103',x0:-t.hw/3,x1:t.hw/3,prim:'lake',end:0},
-    {id:'102',x0: t.hw/3,x1:t.hw,prim:'end',end: 1}];}
+    {id:'102',x0:-t.hw,x1:-cw,prim:'end',end:-1,mir: 1},
+    {id:'103',x0:-t.hw*0.46,x1:t.hw*0.46,prim:'lake',end:0,mir:1,nose:1,zhw:t.hd*0.95},
+    {id:'101',x0: cw,x1: t.hw,prim:'end',end: 1,mir:-1}];}
 towers.forEach(t=>{const h=topH();
   t.units=makeUnits(t);
   // resolve each unit's primary world normal
@@ -376,6 +380,10 @@ towers.forEach(t=>{const h=topH();
     u.cx=(u.x0+u.x1)/2;u.hw2=(u.x1-u.x0)/2;
     u.primL = u.prim==='lake'?t.lakeFace:[u.end,0];
     u.faces = u.end===0 ? [[0,1],[0,-1]] : [[0,1],[0,-1],[u.end,0]];
+    u.zhw = u.zhw||t.hd; u.zc = u.nose ? t.lakeFace[1]*(t.hd+u.zhw-1) : 0;
+    /* align sun with the founder-confirmed decks: wings face the lagoon (E, morning sun),
+       the nose faces N (inland face -> no direct winter sun). Facing labels use vfacing. */
+    if(t.id==='T-7'||t.id==='T-8') u.primL = u.nose ? [1,0] : t.lakeFace;
   });
   // podium
   const pod=new T.Mesh(new T.BoxGeometry(t.hw*2+6,LOBBY,t.hd*2+6),new T.MeshStandardMaterial({color:'#aeb8c6',roughness:.7}));
@@ -383,9 +391,10 @@ towers.forEach(t=>{const h=topH();
   // unit segments (full height, colored by config)
   const base=new T.Color(CONFIGS[t.cfg].col);
   t.units.forEach((u,i)=>{const w=u.x1-u.x0;
-    const m=new T.Mesh(new T.BoxGeometry(w-.4,h-LOBBY,t.hd*2),new T.MeshStandardMaterial({color:base.clone().offsetHSL(0,0,(i-1)*.035),roughness:.6,metalness:.12}));
-    const[ox,oz]=rotV(t.rot,u.cx,0);
-    m.position.set(t.x+ox,LOBBY+(h-LOBBY)/2,t.z+oz);m.rotation.y=t.rot;m.castShadow=m.receiveShadow=true;siteGrp.add(m);u.mesh=m;u.baseCol=m.material.color.clone();});
+    const m=new T.Mesh(new T.BoxGeometry(w-.4,h-LOBBY,u.zhw*2),new T.MeshStandardMaterial({color:base.clone().offsetHSL(0,0,(i-1)*.035),roughness:.6,metalness:.12}));
+    const[ox,oz]=rotV(t.rot,u.cx,u.zc);
+    m.position.set(t.x+ox,LOBBY+(h-LOBBY)/2,t.z+oz);m.rotation.y=t.rot;m.castShadow=m.receiveShadow=true;siteGrp.add(m);u.mesh=m;u.baseCol=m.material.color.clone();
+    if(u.nose){m.userData.tower=t.id;towerPick.push(m);}});
   // core strip
   const core=new T.Mesh(new T.BoxGeometry(7,h-LOBBY+1.5,4),new T.MeshStandardMaterial({color:'#7e8a96',roughness:.8}));
   core.position.set(t.x,LOBBY+(h-LOBBY)/2,t.z);core.rotation.y=t.rot;core.castShadow=true;siteGrp.add(core);
@@ -397,8 +406,8 @@ towers.forEach(t=>{const h=topH();
   // roof tiles (hidden until tower selected)
   t.tiles=[];t.tileGrp=new T.Group();t.tileGrp.visible=false;siteGrp.add(t.tileGrp);
   t.units.forEach(u=>{const w=u.x1-u.x0;
-    const tile=new T.Mesh(new T.BoxGeometry(w-1.2,1.6,t.hd*2-1.2),new T.MeshStandardMaterial({color:CONFIGS[t.cfg].col,emissive:CONFIGS[t.cfg].col,emissiveIntensity:.55,roughness:.3,metalness:.15}));
-    const[ox,oz]=rotV(t.rot,u.cx,0);tile.position.set(t.x+ox,h+0.8,t.z+oz);tile.rotation.y=t.rot;
+    const tile=new T.Mesh(new T.BoxGeometry(w-1.2,1.6,u.zhw*2-1.2),new T.MeshStandardMaterial({color:CONFIGS[t.cfg].col,emissive:CONFIGS[t.cfg].col,emissiveIntensity:.55,roughness:.3,metalness:.15}));
+    const[ox,oz]=rotV(t.rot,u.cx,u.zc);tile.position.set(t.x+ox,h+0.8,t.z+oz);tile.rotation.y=t.rot;
     tile.userData={tower:t.id,unit:u.id};t.tileGrp.add(tile);tilePick.push(tile);u.tile=tile;
     u.tileLabel=label(t.x+ox,t.z+oz,h+9,`${u.id}  ↑ tap`,{fs:38,scale:.72,bg:'rgba(11,18,14,.92)',border:CONFIGS[t.cfg].col,fg:'#ffffff'});u.tileLabel.visible=false;});
   t.tag=label(t.x,t.z,h+18,`${t.id} · ${t.cfg}`,{fs:46,scale:.82});
@@ -644,7 +653,8 @@ function renderTowerPanel(){const t=selTower;document.getElementById('pClose').s
   const bandLow=bandAvg(best.curve,1,10),bandMid=bandAvg(best.curve,11,25),bandHigh=bandAvg(best.curve,26,40);
   let html='<div class="callout" style="margin-top:0">\u25bc <b>The flats are on the roof.</b> Click a coloured tile on this tower\u2019s roof (or a row below) to open its floor plan and full intelligence.</div>';
   html+='<div class="sech">Flats on every floor</div>';
-  selData.forEach(r=>{const b=bearingOf(t,r.u.primL),c=compassOf(b);
+  const _tt=(t.id==='T-7'||t.id==='T-8'),_DEG={N:0,NE:45,E:90,SE:135,S:180,SW:225,W:270,NW:315};
+  selData.forEach(r=>{const c=_tt?vfacing(t,r.u):compassOf(bearingOf(t,r.u.primL)),b=_tt?_DEG[c]:bearingOf(t,r.u.primL);
     const q=r.st.rawAvg<0.4?'no direct sun':r.st.amAvg>r.st.pmAvg*1.4?'AM sun':r.st.pmAvg>r.st.amAvg*1.4?'PM sun':'all-day sun';
     const rl2=r.u.faces.find(fc=>fc[0]===-r.u.primL[0]&&fc[1]===-r.u.primL[1]);
     const rst=(rl2&&r.st.rawAvg<2)?unitStats(t,Object.assign({},r.u,{primL:rl2}),4,0.4):null;
@@ -977,7 +987,7 @@ function openFlat(t,uid){
     (()=>{const rkeys=cfg.beds===4
       ?['living','kitchen','masterBed','bed2','bed3','study','pooja','bathroom']
       :['living','kitchen','masterBed','bed2','bed3','bathroom'];
-    const scores=rkeys.map(k=>vastuRoomScore(k,compass,t.cfg,u.end));
+    const scores=rkeys.map(k=>vastuRoomScore(k,compass,t.cfg,u.mir));
     const names=(cfg.beds===4)?{living:'Living room',kitchen:'Kitchen',masterBed:'Master bed',bed2:'Bedroom 2',bed3:'Bedroom 3 / JM',study:'Home office',pooja:'Puja room',bathroom:'Bathrooms'}:{living:'Living room',kitchen:'Kitchen',masterBed:'Master bed',bed2:'Bedroom 1',bed3:'Bedroom 2',bathroom:'Bathrooms'};
     const sc=s=>s>=5?'#6dbf88':s>=4?'#a8cf78':s>=3?'var(--gold)':s>=2?'#e07878':'#c04848';
     return`<div style="margin-bottom:10px;font:500 10.5px/1.5 'Geist';color:#8ea3bd">${v.n}</div>
@@ -1247,7 +1257,7 @@ function subScores(t,u){
   if(/W/.test(c))cool=Math.max(0,cool-15);
   if(t.id==='T-7'||t.id==='T-8'){const _M={N:32,NE:82,E:90,SE:76,S:48,SW:36,W:26,NW:30},_C={N:92,NE:86,E:82,SE:72,S:64,SW:48,W:44,NW:52};if(_M[c]!=null)morning=_M[c];if(_C[c]!=null)cool=_C[c];}                                    // W/NW/SW facades bake in summer
   const rk=(CONFIGS[t.cfg].beds===4)?['living','masterBed','kitchen','bed2','bed3','pooja','bathroom']:['living','masterBed','kitchen','bed2','bed3','bathroom'];
-  const vr=rk.map(k=>vastuRoomScore(k,c,t.cfg,u.end).score);
+  const vr=rk.map(k=>vastuRoomScore(k,c,t.cfg,u.mir).score);
   const vastu=Math.round((vr.reduce((a,b)=>a+b,0)/vr.length)/5*100);          // provisional composite
   const view=lake?90:55;
   const vent=isEnd?90:62;
