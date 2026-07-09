@@ -75,6 +75,29 @@
   .ulr .nm{font-weight:700;width:32px}.ulr .or{font:500 10.5px/1 ui-monospace,monospace;color:var(--accent);width:56px}
   .ulr .ty{color:var(--muted);font-size:10.5px;flex:1}.ulr .hh{font:600 11px/1 'Geist';color:var(--sun)}
   .note{margin-top:12px;font:500 9.5px/1.5 ui-monospace,monospace;color:#8f8672;border-top:1px solid var(--line);padding-top:9px}
+  /* progressive disclosure */
+  .intro-lede{font-size:13px;line-height:1.62;color:#d9d1c2;margin:2px 0 16px}.intro-lede b{color:#fff;font-weight:600}
+  .pacts{display:flex;flex-direction:column;gap:9px}
+  .pact{display:flex;align-items:center;width:100%;text-align:left;padding:14px 16px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--text);font:600 13px/1.1 'Geist';cursor:pointer;transition:transform .15s,border-color .15s,background .15s}
+  .pact:hover{border-color:var(--accent);background:rgba(63,160,106,.1);transform:translateY(-1px)}
+  .pact.primary{background:linear-gradient(135deg,rgba(255,206,99,.2),rgba(255,206,99,.05));border-color:rgba(255,206,99,.5);color:#ffe3a6;font-size:14px}
+  .pact.primary:hover{border-color:var(--sun);background:linear-gradient(135deg,rgba(255,206,99,.28),rgba(255,206,99,.09))}
+  .intro-foot{margin-top:14px;font:500 10px/1.6 ui-monospace,monospace;color:#8f8672}
+  .backrow{font:600 11px/1 'Geist';color:var(--muted);cursor:pointer;margin-bottom:12px;display:inline-block}.backrow:hover{color:var(--accent)}
+  .actrow{display:flex;gap:8px;margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+  .minibtn{flex:1;padding:9px 8px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--accent);font:600 11px/1 'Geist';cursor:pointer;transition:.15s}
+  .minibtn:hover{border-color:var(--accent);background:rgba(63,160,106,.1)}
+  .minibtn.on{border-color:var(--sun);color:#ffe3a6;background:rgba(255,206,99,.12)}
+  #sunToggle{bottom:14px;left:16px;display:inline-flex;align-items:center;padding:11px 15px;cursor:pointer;font:600 12px/1 'Geist';color:#ffe3a6}
+  #sunToggle:hover{border-color:var(--sun)}
+  body.sun-open #sunToggle{display:none}
+  body:not(.sun-open) #sunctl{display:none}
+  #sunClose{position:absolute;top:10px;right:11px;width:22px;height:22px;border:1px solid var(--line);border-radius:7px;background:rgba(255,255,255,.03);color:var(--text);cursor:pointer;font-size:11px;line-height:1;padding:0}
+  #sunClose:hover{border-color:var(--sun)}
+  #wpanel{display:none}
+  body.show-priorities #wpanel{display:block}
+  #wpanelClose{position:absolute;top:9px;right:11px;width:22px;height:22px;border:1px solid var(--line);border-radius:7px;background:rgba(255,255,255,.03);color:var(--text);cursor:pointer;font-size:11px;line-height:1;padding:0}
+  #wpanelClose:hover{border-color:var(--gold)}
   /* full-screen flat sheet */
   /* ── flat sheet ── */
   #flatSheet{position:fixed;inset:0;z-index:100;background:rgba(10,16,12,.97);backdrop-filter:blur(8px);display:none;flex-direction:column}
@@ -181,6 +204,7 @@
 </div>
 
 <div id="sunctl" class="card">
+  <button id="sunClose" title="Collapse">✕</button>
   <div class="eyebrow">☀ Sun position</div>
   <div class="clock"><span class="t" id="clock">12:00</span><span class="ph" id="phase">midday</span></div>
   <div class="seg" id="bench">
@@ -193,6 +217,8 @@
   <div class="north"><label>True-north offset <b id="noff">0°</b></label>
     <input type="range" id="northdial" min="-180" max="180" step="1" value="0"></div>
 </div>
+
+<div id="sunToggle" class="card">☀&nbsp;&nbsp;Sun &amp; season</div>
 
 <div id="panel" class="card">
   <div class="phead">
@@ -548,48 +574,63 @@ function computeScores2(){scores=towers.map(t=>{const us=t.units.map(u=>({u,st:u
   const good=us.filter(o=>o.st.rawAvg>=BENCH).length;const best=[...us].sort((a,b)=>b.st.wtAvg-a.st.wtAvg)[0];
   const frac=us.reduce((s,o)=>s+Math.min(1,o.st.rawAvg/BENCH),0)/us.length;
   return{t,us,good,best,frac};}).sort((a,b)=>b.frac-a.frac||b.best.st.wtAvg-a.best.st.wtAvg);}
+let siteView='intro';
+function goRanking(){siteView='ranking';renderOverview();}
+function goIntro(){siteView='intro';document.body.classList.remove('show-priorities');renderOverview();}
 function renderOverview(){selTower=null;selUnit=null;towers.forEach(t=>{t.tileGrp.visible=false;t.units.forEach(u=>{u.tileLabel.visible=false;u.mesh.material.color.copy(u.baseCol);u.mesh.material.emissiveIntensity=0;});});
   document.getElementById('pClose').style.display='none';
-  document.getElementById('pEy').textContent='Site overview \u00b7 '+benchShort[String(decl)];
-  document.getElementById('pName').textContent='Best tower for you';
-  document.getElementById('pSub').textContent='Click a tower in 3D or in the list';
   if(!scores)computeScores2();
+  if(siteView==='ranking')renderRanking();else renderIntro();}
+function renderIntro(){
+  document.getElementById('pEy').textContent='Sun · heat · Vastu advisor';
+  document.getElementById('pName').textContent='Find your tower';
+  document.getElementById('pSub').textContent='7 towers · G+40 · lagoon-facing';
+  const html=`<div class="intro-lede">Every tower and flat, scored on the five things that decide a Gurugram luxury home — <b>morning sun, summer heat, Vastu, view and floor</b> — then weighted to what <b>you</b> care about.</div>
+    <div class="pacts">
+      <button class="pact primary" id="actRank">★&nbsp;&nbsp;Rank towers for me</button>
+      <button class="pact" id="actExplore">◈&nbsp;&nbsp;Explore in 3D</button>
+      <button class="pact" id="actSun">☀&nbsp;&nbsp;Sun &amp; season study</button>
+    </div>
+    <div class="intro-foot">Or tap any tower in the scene · drag to orbit, scroll to zoom.</div>`;
+  const body=document.getElementById('pBody');body.innerHTML=html;body.scrollTop=0;
+  document.getElementById('actRank').onclick=goRanking;
+  document.getElementById('actExplore').onclick=()=>{document.body.classList.add('panel-min');document.getElementById('pMin').textContent='+';};
+  document.getElementById('actSun').onclick=()=>{document.body.classList.add('sun-open');};
+}
+function renderRanking(){
   const win=scores[0],bc=vfacing(win.t,win.best.u);
-  let html=`<div class="hero"><div class="htag">\u2605 BEST FOR YOUR PRIORITIES</div><div class="hname">Tower ${win.t.id}</div>
-    <div class="hline">Its best, <b>Flat ${win.best.u.id} (${bc}-facing living)</b> \u2014 <b>${win.best.fs.s}/100 (${win.best.fs.grade})</b>. Morning sun <b>${win.best.fs.sub.morning}</b> \u00b7 summer-cool <b>${win.best.fs.sub.cool}</b> \u00b7 Vastu <b>${win.best.fs.sub.vastu}</b> (provisional).</div></div>`;
-  html+='<div class="sech">Ranking \u00b7 weighted composite</div>';
+  document.getElementById('pEy').textContent='Best for you · '+benchShort[String(decl)];
+  document.getElementById('pName').textContent='Tower '+win.t.id;
+  document.getElementById('pSub').textContent='Weighted composite · tap a tower to open it';
+  let html='<div class="backrow" id="toIntro">‹ Overview</div>';
+  html+=`<div class="hero"><div class="htag">★ BEST FOR YOUR PRIORITIES</div><div class="hname">Tower ${win.t.id}</div>
+    <div class="hline">Its best, <b>Flat ${win.best.u.id} (${bc}-facing)</b> — <b>${win.best.fs.s}/100 (${win.best.fs.grade})</b>. Morning <b>${win.best.fs.sub.morning}</b> · summer-cool <b>${win.best.fs.sub.cool}</b> · Vastu <b>${win.best.fs.sub.vastu}</b>.</div></div>`;
+  html+='<div class="sech">Ranking · weighted composite</div>';
   scores.forEach((sc,i)=>{html+=`<div class="rk ${i===0?'best':''}" data-t="${sc.t.id}"><span class="pos">${i+1}</span><span class="nm">${sc.t.id}</span><span class="cfg">${sc.t.cfg}</span><span class="track"><span class="fill" style="left:0;width:${sc.best.fs.s}%"></span></span><span class="v">${sc.best.fs.s}/100</span></div>`;});
-  html+='<div class="hintline">Weighted composite of six independent scores \u2014 drag the priorities panel to reorder. Living-facade sun; Vastu provisional, pending consultant sign-off.</div>';
-  /* \u2500 top picks: which flat + which floors, project-wide \u2500 */
-  const picks=scores.slice(0,3).map(sc=>{
-    const curve=floorCurve(sc.t,sc.best.u,4,0.4);
-    const cf=clearFloorOf(curve),bd=bandsFor(cf);
-    return{sc,cf,bd,lake:sc.best.u.prim==='lake',fs:flatScore(sc.t,sc.best.u,sc.best.st)};});
-  html+='<div class="sech">Where to buy \u00b7 top picks across the project</div>';
-  picks.forEach((p,i)=>{const s=p.sc;
-    html+=`<div class="rk ${i===0?'best':''}" data-t="${s.t.id}" style="flex-wrap:wrap;padding:9px 10px">
-      <div style="display:flex;align-items:center;gap:9px;width:100%">
-        <span class="pos">${i+1}</span>
-        <span style="font:700 13px/1 'Geist';color:#fff">${s.t.id} \u00b7 Flat ${s.best.u.id}</span>
-        <span style="font:700 11px/1 'Geist';color:${gradeColor(p.fs.grade)};border:1px solid ${gradeColor(p.fs.grade)};border-radius:5px;padding:2px 6px;margin-left:auto">${p.fs.s}/100 \u00b7 ${p.fs.grade}</span><span style="font:600 11px/1 ui-monospace;color:var(--sun)">F${p.bd.vLo}\u2013${p.bd.vHi}</span>
-      </div>
-      <div style="font:500 10px/1.5 ui-monospace;color:#8ea3bd;margin-top:4px;padding-left:25px">Morning ${s.best.fs.sub.morning} · cool ${s.best.fs.sub.cool} \u00b7 ${s.t.cfg}${p.lake?' \u00b7 lagoon view':''}${p.cf!=null&&p.cf>10?` \u00b7 sun clears shadows ~F${p.cf}`:' \u00b7 sunny from low floors'}</div>
-    </div>`;});
-  html+='<div class="hintline">Value floor band per pick \u2014 the lowest floors that capture near-full winter sun, above tree line and street noise, before the steep high-floor premium. Premium seekers: F27\u201334 near the 30F sky terrace.</div>';
-  if(Math.abs(northOff)<0.01)html+='<div class="callout">\u2938 <b>North is assumed plan-up.</b> This marketing plan has no north arrow \u2014 set the <b>true-north dial</b> (bottom-left) against the zoning plan or satellite and every number recomputes.</div>';
-  html+='<div class="sech">Best flat per tower \u00b7 sun through the day</div><div class="chart" id="siteChart"></div><div class="clegend" id="siteLeg"></div>';
-  html+='<div class="howbtn" id="howBtn">How is this scored? <span>▾</span></div><div class="howbox" id="howBox" style="display:none">'+
-    '<p><b>Six independent scores.</b> Each flat is graded 0–100 on morning sun, summer heat, Vastu, view, airflow and floor — shown separately, never hidden in one blended number.</p>'+
-    '<p><b>You set the weights.</b> The composite is your weighting of the six — drag the priorities panel and every ranking recomputes live.</p>'+
-    '<p><b>Real orientation & plate Vastu.</b> North is calibrated to the site plan (T-2 living = NW); room directions are traced from the sanctioned plate — <b>provisional, pending your Vastu consultant</b>. T-7/T-8 (3.5 BHK) plate still to be locked.</p>'+
-    '<p><b>Per-floor sun.</b> Neighbouring G+40 towers shadow low floors; the value band starts where a stack reaches ~90% of its top-floor sun (min F10 for tree line + noise; premium F27–34 near the 30F sky terrace).</p></div>';
-  html+='<div class="note">G+40 \u00b7 3.6 m floor-to-floor \u00b7 triple-height lobby (public listings). Orientation calibrated to the site plan (T-2 living NW); per-tower facings pending validation \u2014 editable in the data block. Lat 28.42\u00b0N.</div>';
+  html+='<div class="actrow"><button class="minibtn" id="adjBtn">⚖ Adjust priorities</button><button class="minibtn" id="howBtn">ⓘ How scored</button></div>';
+  html+='<div class="howbox" id="howBox" style="display:none"><p><b>Six independent scores.</b> Each flat is graded 0–100 on morning sun, summer heat, Vastu, view, airflow and floor — shown separately, never blended away.</p><p><b>You set the weights.</b> The composite is your weighting of the six — open <b>Adjust priorities</b> and every ranking recomputes live.</p><p><b>Real orientation &amp; plate Vastu.</b> North is calibrated to the site plan (T-2 living = NW); room directions are traced from the sanctioned plates — <b>provisional, pending your Vastu consultant</b>.</p><p><b>Per-floor sun.</b> Neighbouring G+40 towers shadow low floors; the value band starts where a stack reaches ~90% of its top-floor sun.</p></div>';
+  html+='<div class="howbtn" id="deepBtn">Deeper analysis <span>▾</span></div><div class="howbox" id="deepBox" style="display:none"></div>';
+  html+='<div class="note">G+40 · 3.6 m floor-to-floor · triple-height lobby (public listings). Orientation calibrated to the site plan (T-2 living NW); per-tower facings pending validation. Lat 28.42°N.</div>';
   const body=document.getElementById('pBody');body.innerHTML=html;body.scrollTop=0;
   body.querySelectorAll('.rk').forEach(r=>r.onclick=()=>selectTower(r.dataset.t));
-  const hb=document.getElementById('howBtn');hb.onclick=()=>{const x=document.getElementById('howBox');const o=x.style.display==='none';x.style.display=o?'block':'none';hb.querySelector('span').textContent=o?'\u25b4':'\u25be';};
+  document.getElementById('toIntro').onclick=goIntro;
+  const adj=document.getElementById('adjBtn');adj.classList.toggle('on',document.body.classList.contains('show-priorities'));
+  adj.onclick=()=>{const on=document.body.classList.toggle('show-priorities');adj.classList.toggle('on',on);};
+  const hb=document.getElementById('howBtn');hb.onclick=()=>{const x=document.getElementById('howBox');const o=x.style.display==='none';x.style.display=o?'block':'none';hb.classList.toggle('on',o);};
+  const deep=document.getElementById('deepBtn');let deepBuilt=false;
+  deep.onclick=()=>{const x=document.getElementById('deepBox');const o=x.style.display==='none';x.style.display=o?'block':'none';deep.querySelector('span').textContent=o?'▴':'▾';if(o&&!deepBuilt){deepBuilt=true;buildDeep(x);}};
+}
+function buildDeep(box){
+  const picks=scores.slice(0,3).map(sc=>{const curve=floorCurve(sc.t,sc.best.u,4,0.4);const cf=clearFloorOf(curve),bd=bandsFor(cf);return{sc,cf,bd,lake:sc.best.u.prim==='lake',fs:flatScore(sc.t,sc.best.u,sc.best.st)};});
+  let html='<div class="sech" style="margin-top:2px">Where to buy · top picks</div>';
+  picks.forEach((p,i)=>{const s=p.sc;html+=`<div class="rk ${i===0?'best':''}" data-t="${s.t.id}" style="flex-wrap:wrap;padding:9px 10px"><div style="display:flex;align-items:center;gap:9px;width:100%"><span class="pos">${i+1}</span><span style="font:700 13px/1 'Geist';color:#fff">${s.t.id} · Flat ${s.best.u.id}</span><span style="font:700 11px/1 'Geist';color:${gradeColor(p.fs.grade)};border:1px solid ${gradeColor(p.fs.grade)};border-radius:5px;padding:2px 6px;margin-left:auto">${p.fs.s}/100 · ${p.fs.grade}</span><span style="font:600 11px/1 ui-monospace;color:var(--sun)">F${p.bd.vLo}–${p.bd.vHi}</span></div><div style="font:500 10px/1.5 ui-monospace;color:#8ea3bd;margin-top:4px;padding-left:25px">Morning ${s.best.fs.sub.morning} · cool ${s.best.fs.sub.cool} · ${s.t.cfg}${p.lake?' · lagoon view':''}</div></div>`;});
+  html+='<div class="sech">Best flat per tower · sun through the day</div><div class="chart" id="siteChart"></div><div class="clegend" id="siteLeg"></div>';
+  box.innerHTML=html;
+  box.querySelectorAll('.rk').forEach(r=>r.onclick=()=>selectTower(r.dataset.t));
   const tcol={'T-6':'#e0b98c','T-5':'#8fb6cf','T-4':'#aac49a','T-3':'#cd9fb6','T-2':'#ffce63','T-7':'#3fa06a','T-8':'#7f9fe0'};
   document.getElementById('siteChart').innerHTML=chart(scores.map((sc,i)=>({color:tcol[sc.t.id],points:profile(sc.t,sc.best.u,FLOORS,36),w:i===0?2.6:1.2,op:i===0?1:.55})),1);
-  document.getElementById('siteLeg').innerHTML=scores.map(sc=>`<span><i style="background:${tcol[sc.t.id]}"></i>${sc.t.id}\u00b7${sc.best.u.id}</span>`).join('');}
+  document.getElementById('siteLeg').innerHTML=scores.map(sc=>`<span><i style="background:${tcol[sc.t.id]}"></i>${sc.t.id}·${sc.best.u.id}</span>`).join('');
+}
 
 function renderTowerPanel(){const t=selTower;document.getElementById('pClose').style.display='block';
   document.getElementById('pEy').textContent='Tower \u00b7 '+benchShort[String(decl)];
@@ -1132,7 +1173,7 @@ camApply();
 function flyTo(tx,ty,tz,rad,polr,azr){camTween={t0:performance.now(),dur:800,f:{x:target.x,y:target.y,z:target.z,r:radius,p:pol,a:az},t:{x:tx,y:ty,z:tz,r:rad,p:polr,a:azr!=null?azr:az}};}
 function camStep(){if(!camTween)return;const k=Math.min(1,(performance.now()-camTween.t0)/camTween.dur),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2,a=camTween.f,b=camTween.t;target.set(a.x+(b.x-a.x)*e,a.y+(b.y-a.y)*e,a.z+(b.z-a.z)*e);radius=a.r+(b.r-a.r)*e;pol=a.p+(b.p-a.p)*e;az=a.a+(b.a-a.a)*e;camApply();if(k>=1)camTween=null;}
 let hintLabelSprite=null;
-function selectTower(id){const t=towers.find(x=>x.id===id);if(!t)return;selTower=t;
+function selectTower(id){const t=towers.find(x=>x.id===id);if(!t)return;selTower=t;document.body.classList.remove('panel-min');document.getElementById('pMin').textContent='–';
   towers.forEach(o=>{o.tileGrp.visible=o===t;o.units.forEach(u=>u.tileLabel.visible=o===t);});
   // remove old hint label
   if(hintLabelSprite){siteGrp.remove(hintLabelSprite);hintLabelSprite=null;}
@@ -1185,6 +1226,8 @@ document.getElementById('play').addEventListener('click',()=>{playing=!playing;d
 document.getElementById('bench').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...e.currentTarget.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');decl=parseFloat(b.dataset.d);const[sr,ss]=dayB();document.getElementById('srise').textContent=fmt(sr);document.getElementById('sset').textContent=fmt(ss);setTime(parseFloat(timeEl.value));scores=null;if(document.body.classList.contains('flat-open')&&selTower&&selUnit){selData=null;openFlat(selTower,selUnit);}else if(selTower){renderTowerPanel();}else renderOverview();});
 const ndial=document.getElementById('northdial');
 ndial.addEventListener('input',()=>{northOff=NORTH_CAL+ndial.value*Math.PI/180;document.getElementById('noff').textContent=ndial.value+'°';setTime(parseFloat(timeEl.value));scores=null;if(document.body.classList.contains('flat-open')&&selTower&&selUnit){selData=null;openFlat(selTower,selUnit);}else if(selTower){renderTowerPanel();}else renderOverview();});
+document.getElementById('sunToggle').onclick=()=>document.body.classList.add('sun-open');
+document.getElementById('sunClose').onclick=()=>document.body.classList.remove('sun-open');
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 
 /* ═══════════ STAGE 2 — six independent scores + adjustable weights ═══════════ */
@@ -1231,7 +1274,7 @@ computeScores2=function(){scores=towers.map(t=>{
   const META=[['morning','Morning sun','#ecc463'],['cool','Summer cool','#5cb487'],['vastu','Vastu','#c9a96e'],
               ['view','View','#8fb6a0'],['vent','Airflow','#3fa06a'],['floor','Floor','#a9c49a']];
   const card=document.createElement('div'); card.id='wpanel'; card.className='card';
-  card.style.cssText='top:16px;left:50%;transform:translateX(-50%);padding:10px 14px 11px;width:min(600px,94vw);z-index:20';
+  card.style.cssText='bottom:16px;left:50%;transform:translateX(-50%);padding:10px 14px 11px;width:min(560px,94vw);z-index:20';
   let rows='';
   META.forEach(m=>{rows+=`<label style="display:flex;align-items:center;gap:7px;font:600 9.5px/1 ui-monospace,monospace;color:var(--muted)">`
     +`<span style="width:78px;color:${m[2]}">${m[1]}</span>`
@@ -1240,6 +1283,7 @@ computeScores2=function(){scores=towers.map(t=>{
   card.innerHTML='<div class="eyebrow" style="color:var(--gold)">⚖ Your priorities · drag to reweight the ranking</div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px 16px;margin-top:8px">'+rows+'</div>';
   document.body.appendChild(card);
+  const wc=document.createElement('button');wc.id='wpanelClose';wc.textContent='✕';wc.title='Close';wc.onclick=()=>{document.body.classList.remove('show-priorities');const a=document.getElementById('adjBtn');if(a)a.classList.remove('on');};card.appendChild(wc);
   card.addEventListener('input',e=>{const i=e.target; if(i.tagName!=='INPUT')return;
     WEIGHTS[i.dataset.k]=+i.value; card.querySelector('[data-v="'+i.dataset.k+'"]').textContent=i.value;
     scores=null; try{renderOverview();}catch(_){}
