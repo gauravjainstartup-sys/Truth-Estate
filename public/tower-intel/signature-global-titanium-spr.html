@@ -554,7 +554,7 @@ function renderOverview(){selTower=null;selUnit=null;towers.forEach(t=>{t.tileGr
   document.getElementById('pName').textContent='Best tower for you';
   document.getElementById('pSub').textContent='Click a tower in 3D or in the list';
   if(!scores)computeScores2();
-  const win=scores[0],bc=compassOf(bearingOf(win.t,win.best.u.primL));
+  const win=scores[0],bc=vfacing(win.t,win.best.u);
   let html=`<div class="hero"><div class="htag">\u2605 BEST FOR YOUR PRIORITIES</div><div class="hname">Tower ${win.t.id}</div>
     <div class="hline">Its best, <b>Flat ${win.best.u.id} (${bc}-facing living)</b> \u2014 <b>${win.best.fs.s}/100 (${win.best.fs.grade})</b>. Morning sun <b>${win.best.fs.sub.morning}</b> \u00b7 summer-cool <b>${win.best.fs.sub.cool}</b> \u00b7 Vastu <b>${win.best.fs.sub.vastu}</b> (provisional).</div></div>`;
   html+='<div class="sech">Ranking \u00b7 weighted composite</div>';
@@ -839,7 +839,7 @@ function starBar(n,max){let s='';for(let i=0;i<max;i++)s+=`<span style="color:${
 function openFlat(t,uid){
   selUnit=uid;
   const rec=(selData||t.units.map(u=>({u,st:unitStats(t,u,2,0.3)}))).find(x=>x.u.id===uid);
-  const u=rec.u,st=rec.st,cfg=CONFIGS[t.cfg],b=bearingOf(t,u.primL),compass=compassOf(b),v=vastuFor(compass);
+  const u=rec.u,st=rec.st,cfg=CONFIGS[t.cfg],compass=vfacing(t,u),b=((t.id==='T-7'||t.id==='T-8')?{N:0,NE:45,E:90,SE:135,S:180,SW:225,W:270,NW:315}[compass]:bearingOf(t,u.primL)),v=vastuFor(compass);
   const lakeFacing=u.prim==='lake',isEnd=u.faces.length>=3;
   const sunQ=st.rawAvg<0.4?'No direct sun':st.amAvg>st.pmAvg*1.4?'Morning sun':st.pmAvg>st.amAvg*1.4?'Afternoon sun':'All-day sun';
   const sunStars=Math.max(0,Math.min(5,Math.round(st.rawAvg/2)));
@@ -935,9 +935,9 @@ function openFlat(t,uid){
     {icon:'&#x262F;',label:'Vastu — room by room',badge:'est',val:
     (()=>{const rkeys=cfg.beds===4
       ?['living','kitchen','masterBed','bed2','bed3','study','pooja','bathroom']
-      :['living','kitchen','masterBed','bed2','bed3','pooja','bathroom'];
+      :['living','kitchen','masterBed','bed2','bed3','bathroom'];
     const scores=rkeys.map(k=>vastuRoomScore(k,compass,t.cfg,u.end));
-    const names={living:'Living room',kitchen:'Kitchen',masterBed:'Master bed',bed2:'Bedroom 2',bed3:'Bedroom 3 / JM',study:'Home office',pooja:'Puja room',bathroom:'Bathrooms'};
+    const names=(cfg.beds===4)?{living:'Living room',kitchen:'Kitchen',masterBed:'Master bed',bed2:'Bedroom 2',bed3:'Bedroom 3 / JM',study:'Home office',pooja:'Puja room',bathroom:'Bathrooms'}:{living:'Living room',kitchen:'Kitchen',masterBed:'Master bed',bed2:'Bedroom 1',bed3:'Bedroom 2',bathroom:'Bathrooms'};
     const sc=s=>s>=5?'#6dbf88':s>=4?'#a8cf78':s>=3?'var(--gold)':s>=2?'#e07878':'#c04848';
     return`<div style="margin-bottom:10px;font:500 10.5px/1.5 'Geist';color:#8ea3bd">${v.n}</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:12px">
@@ -1015,7 +1015,7 @@ function openFlat(t,uid){
     {n:'Bedroom 2',d:"12\u201811\u2033 \u00d7 12\u20186\u2033",sqft:162,tag:'+ balcony',type:'carpet'},
     {n:'Junior master',d:"10\u20186\u2033 \u00d7 14\u20180\u2033",sqft:148,tag:'+ JM balcony',type:'carpet'},
     {n:'Home office',d:"4\u20186\u2033 \u00d7 7\u201810\u2033",sqft:36,tag:'compact WFH',type:'carpet'},
-    {n:'Kitchen',d:"12\u20188\u2033 \u00d7 8\u20182\u2033",sqft:104,tag:'SE \u2014 Vastu ideal',type:'carpet'},
+    {n:'Kitchen',d:"12\u20188\u2033 \u00d7 8\u20182\u2033",sqft:104,tag:'open, utility-linked',type:'carpet'},
     {n:'Utility / staff room',d:"7\u20182\u2033 \u00d7 7\u20181\u2033",sqft:51,tag:'live-in staff',type:'carpet'},
     {n:'Puja',d:'\u2014',sqft:6,tag:'est',type:'carpet'},
     {n:'Powder room',d:"5\u20183\u2033 \u00d7 5\u20189\u2033",sqft:31,tag:'guest WC',type:'carpet'},
@@ -1027,18 +1027,15 @@ function openFlat(t,uid){
   ];
   const rooms35=[
     {n:'Living/Dining/Family lounge',d:"25\u20187\u2033 \u00d7 15\u20183\u2033",sqft:390,tag:'primary living',type:'carpet',sp:true},
-    {n:'Outdoor deck',d:"25\u20187\u2033 \u00d7 7\u20181\u2033",sqft:181,tag:'lagoon side',type:'balcony',sp:true},
-    {n:'Master bedroom',d:"11\u20186\u2033 \u00d7 16\u20181\u2033",sqft:188,tag:'+ dressing',type:'carpet'},
-    {n:'Master dressing',d:"5\u201810\u2033 \u00d7 6\u201811\u2033",sqft:40,tag:'walk-in',type:'carpet'},
-    {n:'Junior master bedroom',d:"12\u201811\u2033 \u00d7 14\u201810\u2033",sqft:151,tag:'en-suite bath',type:'carpet'},
-    {n:'Bedroom 1',d:"11\u20180\u2033 \u00d7 13\u20189\u2033",sqft:151,tag:'+ balcony',type:'carpet'},
-    {n:'Bedroom 2',d:"11\u20183\u2033 \u00d7 13\u20186\u2033",sqft:151,tag:'+ balcony',type:'carpet'},
-    {n:'Home office',d:"~11\u20181\u2033 \u00d7 7\u201810\u2033",sqft:87,tag:'est',type:'carpet'},
-    {n:'Kitchen',d:"7\u20187\u2033 \u00d7 11\u201810\u2033",sqft:90,tag:'SE \u2014 Vastu ideal',type:'carpet'},
-    {n:'Utility / staff room',d:"7\u20184\u2033 \u00d7 9\u20184\u2033",sqft:68,tag:'live-in staff',type:'carpet'},
-    {n:'Puja room',d:'\u2014',sqft:12,tag:'est',type:'carpet'},
-    {n:'Powder room',d:"4\u20187\u2033 \u00d7 6\u20180\u2033",sqft:28,tag:'guest WC',type:'carpet'},
-    {n:'Private lift lobby',d:"6\u201810\u2033 \u00d7 5\u201911\u2033",sqft:40,tag:'exclusive entry',type:'carpet'},
+    {n:'Outdoor deck',d:"25\u20187\u2033 \u00d7 6\u201911\u2033",sqft:177,tag:'view side',type:'balcony',sp:true},
+    {n:'Master bedroom',d:"16\u20181\u2033 \u00d7 11\u20186\u2033",sqft:185,tag:'+ dress & toilet',type:'carpet'},
+    {n:'Master dressing',d:"6\u201911\u2033 \u00d7 5\u201910\u2033",sqft:40,tag:'walk-in',type:'carpet'},
+    {n:'Bedroom 1',d:"13\u20189\u2033 \u00d7 11\u20180\u2033",sqft:151,tag:'+ balcony & toilet',type:'carpet'},
+    {n:'Bedroom 2',d:"13\u20186\u2033 \u00d7 11\u20183\u2033",sqft:152,tag:'+ balcony & toilet',type:'carpet'},
+    {n:'Kitchen',d:"11\u201910\u2033 \u00d7 8\u20183\u2033",sqft:98,tag:'open, utility-linked',type:'carpet'},
+    {n:'Utility / staff room',d:"8\u20188\u2033 \u00d7 7\u20184\u2033",sqft:64,tag:'live-in staff',type:'carpet'},
+    {n:'Powder room',d:"6\u20180\u2033 \u00d7 4\u20187\u2033",sqft:28,tag:'guest WC',type:'carpet'},
+    {n:'Private lift lobby',d:"6\u201910\u2033 \u00d7 5\u201911\u2033",sqft:40,tag:'exclusive entry',type:'carpet'},
     {n:'VRF / utility balcony',d:"13\u20182\u2033 \u00d7 5\u201911\u2033",sqft:78,tag:'service balcony',type:'balcony'},
     {n:'Bedroom 1 balcony',d:"11\u20183\u2033 \u00d7 4\u20185\u2033",sqft:50,tag:'open-to-sky',type:'balcony'},
     {n:'Bedroom 2 balcony',d:"11\u20182\u2033 \u00d7 5\u201911\u2033",sqft:66,tag:'open-to-sky',type:'balcony'},
@@ -1193,16 +1190,20 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
 /* ═══════════ STAGE 2 — six independent scores + adjustable weights ═══════════ */
 function seasonStat(t,u,d){const s=decl;decl=d;const r=unitStats(t,u,5,0.4);decl=s;return r;}
 function scCol(v){return v>=75?'#5cb487':v>=55?'#ecc463':v>=40?'#d6a94e':'#e08a72';}
+/* T-7/T-8 decks confirmed by the founder from the plate (nose faces N, wings face E);
+   the traced straight-slab massing can't represent both wings east, so facing is authoritative. */
+function vfacing(t,u){if(t.id==='T-7'||t.id==='T-8')return (u.prim==='lake')?'N':'E';return compassOf(bearingOf(t,u.primL));}
 const _ssCache={};
 function subScores(t,u){
   const key=t.id+'|'+u.id; if(_ssCache[key])return _ssCache[key];
-  const c=compassOf(bearingOf(t,u.primL));
+  const c=vfacing(t,u);
   const eq=seasonStat(t,u,0), su=seasonStat(t,u,23.45);
   const isEnd=u.faces.length>=3, lake=(u.prim==='lake');
-  const morning=Math.round(Math.max(0,Math.min(100,(eq.amAvg/4)*100)));      // equinox AM hours → morning light
+  let morning=Math.round(Math.max(0,Math.min(100,(eq.amAvg/4)*100)));      // equinox AM hours → morning light
   let cool=Math.round(Math.max(0,Math.min(100,100-(su.pmAvg/5)*100)));       // summer afternoon exposure (inverted = cooler)
-  if(/W/.test(c))cool=Math.max(0,cool-15);                                    // W/NW/SW facades bake in summer
-  const rk=['living','masterBed','kitchen','bed2','bed3','pooja','bathroom'];
+  if(/W/.test(c))cool=Math.max(0,cool-15);
+  if(t.id==='T-7'||t.id==='T-8'){const _M={N:32,NE:82,E:90,SE:76,S:48,SW:36,W:26,NW:30},_C={N:92,NE:86,E:82,SE:72,S:64,SW:48,W:44,NW:52};if(_M[c]!=null)morning=_M[c];if(_C[c]!=null)cool=_C[c];}                                    // W/NW/SW facades bake in summer
+  const rk=(CONFIGS[t.cfg].beds===4)?['living','masterBed','kitchen','bed2','bed3','pooja','bathroom']:['living','masterBed','kitchen','bed2','bed3','bathroom'];
   const vr=rk.map(k=>vastuRoomScore(k,c,t.cfg,u.end).score);
   const vastu=Math.round((vr.reduce((a,b)=>a+b,0)/vr.length)/5*100);          // provisional composite
   const view=lake?90:55;
