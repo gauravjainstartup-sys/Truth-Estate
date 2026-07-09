@@ -118,7 +118,9 @@ function mediaPages(u: string | null | undefined): string[] | null {
   let parts: string[] = [];
   if (s.startsWith("[")) {
     try { const j: unknown = JSON.parse(s); if (Array.isArray(j)) parts = j.filter((x): x is string => typeof x === "string"); } catch { /* fall through */ }
-  } else if (!/^data:/i.test(s) && s.includes(",") && !/^[A-Za-z0-9+/=\r\n]+$/.test(s)) {
+  } else if (!/^data:/i.test(s) && /[,\n]/.test(s) && !/^[A-Za-z0-9+/=\r\n]+$/.test(s)) {
+    // a plain-text list of URLs/paths — comma OR newline separated. (A base64
+    // blob, even multi-line, is excluded by the pure-base64 guard above.)
     parts = s.split(/[,\n]+/);
   }
   const pages = parts.map((p) => mediaSrc(p)).filter((p): p is string => !!p);
@@ -247,7 +249,11 @@ export function liveProjectIntel(
       carpetSqft: c.carpetArea!,
       superSqft: c.superArea!,
       balconySqft: (c.balconyArea ?? 0) > 0 ? c.balconyArea! : undefined,
-      plan: mediaSrc(c.floorPlanImageUrl), // 2D floor-plan image (Storage URL, ext or not)
+      // a floor-plan cell may hold ONE Storage URL or SEVERAL (a duplex filed
+      // with a plan per level, comma/newline/JSON-joined in a single field).
+      // Split so each resolves to its own <img> — never one malformed
+      // multi-URL src ("url1,url2" → a 400 that falls back to the schematic).
+      plans: mediaPages(c.floorPlanImageUrl) ?? (mediaSrc(c.floorPlanImageUrl) ? [mediaSrc(c.floorPlanImageUrl)!] : []),
     }));
   const homeKeys: string[] = [];
   const homeGroups: Record<string, typeof rawHomes> = {};
@@ -259,18 +265,28 @@ export function liveProjectIntel(
   const homes = homeKeys.map((key) => {
     const g = homeGroups[key];
     const first = g[0];
-    const planSrcs = dedupe(g.map((r) => r.plan).filter((s): s is string => !!s));
-    // multiple plans of one unit → a labelled toggle (Lower/Upper for a 2-level
-    // duplex, unless the data already names the levels via area_type)
+    // collect every distinct plan image for the unit, in order, remembering the
+    // row each came from and whether that row contributed it alone — so a plan
+    // filed on its own row can be named by its area_type, while two plans that
+    // share one cell (a duplex) can't be told apart that way.
+    const seen = new Set<string>();
+    const planRefs: { src: string; at: string | null; solo: boolean }[] = [];
+    for (const r of g)
+      for (const src of r.plans) {
+        if (seen.has(src)) continue;
+        seen.add(src);
+        planRefs.push({ src, at: r.areaType ?? null, solo: r.plans.length === 1 });
+      }
+    // >1 image for one unit → a labelled toggle (Lower/Upper for a 2-level
+    // duplex, unless a per-row area_type already names the level)
     const plans =
-      planSrcs.length > 1
-        ? planSrcs.map((src, idx) => {
-            const at = g.find((r) => r.plan === src)?.areaType ?? null;
+      planRefs.length > 1
+        ? planRefs.map((p, idx) => {
             const label =
-              at && levelWord.test(at) ? at
-              : planSrcs.length === 2 ? (idx === 0 ? "Lower level" : "Upper level")
+              p.solo && p.at && levelWord.test(p.at) ? p.at
+              : planRefs.length === 2 ? (idx === 0 ? "Lower level" : "Upper level")
               : `Plan ${idx + 1}`;
-            return { src, label };
+            return { src: p.src, label };
           })
         : null;
     return {
@@ -282,7 +298,7 @@ export function liveProjectIntel(
       superSqft: first.superSqft,
       ...(first.balconySqft != null ? { balconySqft: first.balconySqft } : {}),
       priceCr: 0, // pipeline doesn't publish per-config tickets yet — the UI hides the ticket at 0
-      ...(planSrcs.length ? { plan: planSrcs[0] } : {}),
+      ...(planRefs.length ? { plan: planRefs[0].src } : {}),
       ...(plans ? { plans } : {}),
     };
   });
