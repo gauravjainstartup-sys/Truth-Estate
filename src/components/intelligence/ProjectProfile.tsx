@@ -185,12 +185,27 @@ function configsCompact(list: string[]): string {
   return `${Math.min(...nums)} BHK${list.length > 1 ? "+" : ""}`;
 }
 
-/* "3 BHK · 3.5 BHK · 4 BHK · Duplex" → "3 · 3.5 · 4 BHK · Duplex" — say
-   BHK once, keep non-BHK configs verbatim. Long lists stay scannable. */
+/* The Configs vital wants ONE scannable value, however many configurations a
+   project offers — a BHK span (mirroring the Super-area range beside it) plus
+   any distinct special types. The exact per-config breakdown lives in Homes.
+   "3.5 BHK · 4.5 BHK · 4 BHK Duplex Penthouse · 5 BHK Duplex Penthouse"
+     → "3.5–5 BHK · Duplex Penthouse". */
 function configsDisplay(list: string[]): string {
-  const bhk = list.filter((c) => / BHK$/.test(c)).map((c) => c.replace(/ BHK$/, ""));
-  const rest = list.filter((c) => !/ BHK$/.test(c));
-  return [...(bhk.length ? [`${bhk.join(" · ")} BHK`] : []), ...rest].join(" · ");
+  if (!list.length) return "—";
+  const nums: number[] = [];
+  const extras: string[] = []; // "Duplex Penthouse" etc., or a whole non-BHK label
+  for (const c of list) {
+    const m = c.match(/^\s*(\d+(?:\.\d+)?)\s*BHK\b\s*(.*)$/i);
+    if (m) { nums.push(parseFloat(m[1])); const t = m[2].trim(); if (t) extras.push(t); }
+    else { const t = c.trim(); if (t) extras.push(t); }
+  }
+  const parts: string[] = [];
+  if (nums.length) {
+    const lo = Math.min(...nums), hi = Math.max(...nums);
+    parts.push(lo === hi ? `${lo} BHK` : `${lo}–${hi} BHK`);
+  }
+  for (const e of extras) if (!parts.includes(e)) parts.push(e); // dedupe, keep order
+  return parts.join(" · ") || "—";
 }
 
 export default function ProjectProfile({
