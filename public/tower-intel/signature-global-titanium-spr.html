@@ -522,7 +522,7 @@ function vastuRoomScore(roomKey,flatFacing,cfg,endSign){
      bed2 E, jr-master/study S, bathrooms SE). The −wing unit mirrors.
      PROVISIONAL — pending Vastu-consultant sign-off. 3.5 BHK plate still on the
      generic map until its orientation is locked. */
-  const PLATE={'4.5 BHK':{living:0,masterBed:1,kitchen:7,bed2:3,bed3:5,study:5,pooja:5,bathroom:4}};
+  const PLATE={'4.5 BHK':{living:0,masterBed:1,kitchen:7,bed2:3,bed3:5,study:5,pooja:5,bathroom:4},'3.5 BHK':{living:0,masterBed:1,kitchen:5,bed2:4,bed3:3,study:2,pooja:2,bathroom:1}};
   const GEN={kitchen:2,masterBed:4,bed2:5,bed3:3,living:0,bathroom:2,pooja:-1,study:3};
   const tbl=PLATE[cfg];let off;
   if(tbl){const mir=(endSign<0)?-1:1;off=((((tbl[roomKey]||0)*mir)%8)+8)%8;}
