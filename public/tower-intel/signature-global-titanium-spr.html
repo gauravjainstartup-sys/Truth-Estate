@@ -382,7 +382,7 @@ towers.forEach(t=>{const h=topH();
   label(-250,222,3,'N',{fs:30,scale:.6,bg:'rgba(224,86,63,.9)',fg:'#fff'});})();
 
 /* ── solar engine (validated) ── */
-let decl=-23.45,northOff=0;const SUN_R=1200;
+let decl=-23.45;const NORTH_CAL=25*Math.PI/180;let northOff=NORTH_CAL;/*site-calibrated: T-02 living=NW*/const SUN_R=1200;
 function sunTrue(h){const d=decl*Math.PI/180,H=15*(h-12)*Math.PI/180;const sa=Math.sin(LAT)*Math.sin(d)+Math.cos(LAT)*Math.cos(d)*Math.cos(H);const al=Math.asin(Math.max(-1,Math.min(1,sa)));let ca=(Math.sin(d)-Math.sin(LAT)*sa)/(Math.cos(LAT)*Math.cos(al)+1e-9);let az=Math.acos(Math.max(-1,Math.min(1,ca)));if(H>0)az=2*Math.PI-az;return{alt:al,az,up:al>0};}
 function dirPlan(h){const s=sunTrue(h);const dt=new T.Vector3(Math.cos(s.alt)*Math.sin(s.az),Math.sin(s.alt),-Math.cos(s.alt)*Math.cos(s.az));const c=Math.cos(northOff),si=Math.sin(northOff);return new T.Vector3(dt.x*c+dt.z*si,dt.y,-dt.x*si+dt.z*c);}
 function dayB(){const d=decl*Math.PI/180;let c=-Math.tan(LAT)*Math.tan(d);c=Math.max(-1,Math.min(1,c));const H=Math.acos(c)*180/Math.PI/15;return[12-H,12+H];}
@@ -514,11 +514,20 @@ function vastuFor(c){
       reason:'Home office: west aids concentration, north (Kuber) attracts prosperity. Sit facing east or north while working.'}};
   return{s:(overall[c]||{s:3}).s,n:(overall[c]||{n:'Workable with a considered internal layout.'}).n,rooms};
 }
-function vastuRoomScore(roomKey,flatFacing){
+function vastuRoomScore(roomKey,flatFacing,cfg,endSign){
   const compass8=['N','NE','E','SE','S','SW','W','NW'];
   const idx=Math.max(0,compass8.indexOf(flatFacing));
-  const offsets={kitchen:2,masterBed:4,bed2:5,bed3:3,living:0,bathroom:2,pooja:-1,study:3};
-  const roomDir=compass8[(idx+(offsets[roomKey]||0)+8)%8];
+  /* Real room offsets in 45° steps from the living/lagoon facade, traced from
+     the sanctioned 4.5 BHK plate (living NW → master N, kitchen W, puja S,
+     bed2 E, jr-master/study S, bathrooms SE). The −wing unit mirrors.
+     PROVISIONAL — pending Vastu-consultant sign-off. 3.5 BHK plate still on the
+     generic map until its orientation is locked. */
+  const PLATE={'4.5 BHK':{living:0,masterBed:1,kitchen:7,bed2:3,bed3:5,study:5,pooja:5,bathroom:4}};
+  const GEN={kitchen:2,masterBed:4,bed2:5,bed3:3,living:0,bathroom:2,pooja:-1,study:3};
+  const tbl=PLATE[cfg];let off;
+  if(tbl){const mir=(endSign<0)?-1:1;off=((((tbl[roomKey]||0)*mir)%8)+8)%8;}
+  else{off=(((GEN[roomKey]||0))+8)%8;}
+  const roomDir=compass8[(idx+off)%8];
   const v=vastuFor(flatFacing);
   if(!v.rooms[roomKey])return{dir:roomDir,score:3,reason:'',ideal:'NE'};
   const r=v.rooms[roomKey];
@@ -923,7 +932,7 @@ function openFlat(t,uid){
       </div>
       <div style="margin-top:8px;font:500 10.5px/1.5 'Geist';color:#8ea3bd">${st.pmAvg>st.amAvg?`Afternoon-dominant \u2014 bright evenings but PM heat. Afternoon sun weighted ${Math.round(WEST_W*100)}% in the tower ranking.`:'Morning-dominant \u2014 the preferred pattern. Peak light before noon keeps afternoons cooler and AC load lower.'}</div>
     </div>
-    <div style="margin-top:9px;font:500 9px/1.5 ui-monospace,monospace;color:#3d4f63">Living facade \u00b7 scores averaged over G+40 \u00b7 north assumed plan-up</div>`;
+    <div style="margin-top:9px;font:500 9px/1.5 ui-monospace,monospace;color:#3d4f63">Living facade \u00b7 scores averaged over G+40 \u00b7 north calibrated to the site plan (T-02 living = NW)</div>`;
   /* TAB 2: METRICS */
   const mrows=[
     {icon:'&#x1F9ED;',label:'Orientation',badge:'doc',val:`<b>${compass}-facing</b> living room &amp; deck (bearing ${Math.round(b)}&deg;). ${lakeFacing?'Faces the central lagoon \u2014 the prestige view axis.':'Faces outward from the lagoon side \u2014 perimeter views.'}`,stars:null,barW:null,barC:null},
@@ -931,7 +940,7 @@ function openFlat(t,uid){
     (()=>{const rkeys=cfg.beds===4
       ?['living','kitchen','masterBed','bed2','bed3','study','pooja','bathroom']
       :['living','kitchen','masterBed','bed2','bed3','pooja','bathroom'];
-    const scores=rkeys.map(k=>vastuRoomScore(k,compass));
+    const scores=rkeys.map(k=>vastuRoomScore(k,compass,t.cfg,u.end));
     const names={living:'Living room',kitchen:'Kitchen',masterBed:'Master bed',bed2:'Bedroom 2',bed3:'Bedroom 3 / JM',study:'Home office',pooja:'Puja room',bathroom:'Bathrooms'};
     const sc=s=>s>=5?'#6dbf88':s>=4?'#a8cf78':s>=3?'var(--gold)':s>=2?'#e07878':'#c04848';
     return`<div style="margin-bottom:10px;font:500 10.5px/1.5 'Geist';color:#8ea3bd">${v.n}</div>
@@ -953,7 +962,7 @@ function openFlat(t,uid){
       </div>
       <div style="font:500 10.5px/1.4 'Geist';color:#8ea3bd">${scores[i].reason}</div>
     </div>`).join('')}
-    <div style="margin-top:8px;font:500 9px/1.5 ui-monospace;color:#3d4f63">Room orientations estimated from flat’s primary facing · provide plate key to lock exact values.</div>`;})()
+    <div style="margin-top:8px;font:500 9px/1.5 ui-monospace;color:#3d4f63">Room orientations traced from the sanctioned plate · PROVISIONAL, pending Vastu-consultant sign-off.</div>`;})()
     ,stars:null,barW:null,barC:null},
     {icon:'&#x2248;',label:'Ventilation',badge:'doc',val:isEnd?'<b>3-side cross-ventilation.</b> End flat \u2014 opens on the long face, end face, and rear. Air circulates freely. Best configuration on this plate.':'<b>2-side through-draft.</b> Front and rear openings give good airflow. End flats gain the additional third side.',stars:ventStars,barW:pct(ventStars,5),barC:'var(--teal)'},
     {icon:'&#x1F321;',label:'Heat &amp; cooling',badge:'est',val:compass.includes('W')?'West-leaning facade \u2014 afternoon heat gain is higher. The VRF/VRV system is spec\u2019d for it; expect higher summer AC use.':compass==='N'?'North-facing: lowest solar heat gain. Easiest and cheapest to condition year-round.':'Balanced \u2014 sun arrives before peak heat hours. Lower AC load than west or south-west.',stars:heatScore,barW:pct(heatScore,5),barC:'#8fd0e8'},
@@ -1182,7 +1191,7 @@ timeEl.addEventListener('input',()=>{playing=false;document.getElementById('play
 document.getElementById('play').addEventListener('click',()=>{playing=!playing;document.getElementById('play').textContent=playing?'❚❚':'▶';});
 document.getElementById('bench').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...e.currentTarget.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');decl=parseFloat(b.dataset.d);const[sr,ss]=dayB();document.getElementById('srise').textContent=fmt(sr);document.getElementById('sset').textContent=fmt(ss);setTime(parseFloat(timeEl.value));scores=null;if(document.body.classList.contains('flat-open')&&selTower&&selUnit){selData=null;openFlat(selTower,selUnit);}else if(selTower){renderTowerPanel();}else renderOverview();});
 const ndial=document.getElementById('northdial');
-ndial.addEventListener('input',()=>{northOff=ndial.value*Math.PI/180;document.getElementById('noff').textContent=ndial.value+'°';setTime(parseFloat(timeEl.value));scores=null;if(document.body.classList.contains('flat-open')&&selTower&&selUnit){selData=null;openFlat(selTower,selUnit);}else if(selTower){renderTowerPanel();}else renderOverview();});
+ndial.addEventListener('input',()=>{northOff=NORTH_CAL+ndial.value*Math.PI/180;document.getElementById('noff').textContent=ndial.value+'°';setTime(parseFloat(timeEl.value));scores=null;if(document.body.classList.contains('flat-open')&&selTower&&selUnit){selData=null;openFlat(selTower,selUnit);}else if(selTower){renderTowerPanel();}else renderOverview();});
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 (function init(){const[sr,ss]=dayB();document.getElementById('srise').textContent=fmt(sr);document.getElementById('sset').textContent=fmt(ss);setTime(0.5);renderOverview();})();
 (function loop(){requestAnimationFrame(loop);camStep();pulseTiles();f3tick();if(playing){playT+=.0014;if(playT>1)playT=0;timeEl.value=playT;setTime(playT);if(!selTower&&!camTween){az+=0.0018;camApply();}}renderer.render(scene,camera);})();
