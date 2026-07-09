@@ -28,6 +28,8 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
   const [tab, setTab] = useState(order[0] ?? "");
   const [vIdx, setVIdx] = useState(0);
   const [zoom, setZoom] = useState(false);
+  const [planIdx, setPlanIdx] = useState(0); // which floor-plan (e.g. duplex level)
+  const [imgErr, setImgErr] = useState(false); // active plan image failed to load
 
   // Esc closes the floor-plan lightbox
   useEffect(() => {
@@ -43,6 +45,11 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
   const variants = groups[activeTab];
   const i = Math.min(vIdx, variants.length - 1);
   const h = variants[i];
+
+  // a home may carry several plan images (a duplex's levels); fall back to the
+  // single `plan`, then to the schematic
+  const plans = h.plans ?? (h.plan ? [{ src: h.plan, label: "" }] : []);
+  const activePlan = plans.length ? plans[Math.min(planIdx, plans.length - 1)] : null;
 
   const eff = Math.round((h.carpetSqft / h.superSqft) * 100);
   const loading = 100 - eff;
@@ -64,7 +71,7 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
       {order.length > 1 && (
         <div className="mb-4 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {order.map((cfg) => (
-            <button key={cfg} onClick={() => { setTab(cfg); setVIdx(0); }}
+            <button key={cfg} onClick={() => { setTab(cfg); setVIdx(0); setPlanIdx(0); setImgErr(false); }}
               className={`inline-flex shrink-0 items-baseline gap-1.5 rounded-full border px-4 py-2 text-[0.82rem] font-medium transition-colors ${cfg === activeTab ? "border-[#1a1a1a] bg-[#1a1a1a] text-white" : "border-[#1a1a1a]/12 bg-white/70 text-[#1a1a1a]/55 hover:border-[#1a1a1a]/30 hover:text-[#1a1a1a]"}`}>
               {cfg}
               <span className={`text-[0.62rem] font-normal ${cfg === activeTab ? "text-white/55" : "text-[#1a1a1a]/35"}`}>{groups[cfg].length} {groups[cfg].length > 1 ? "sizes" : "size"}</span>
@@ -96,7 +103,7 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
                 const on = idx === i;
                 const psf = Math.round((v.priceCr * 1e7) / v.superSqft / 100) * 100;
                 return (
-                  <button key={idx} onClick={() => setVIdx(idx)}
+                  <button key={idx} onClick={() => { setVIdx(idx); setPlanIdx(0); setImgErr(false); }}
                     className={`min-w-[112px] flex-1 rounded-xl border px-4 py-2.5 text-left transition-colors sm:flex-none ${on ? "border-[#9a7a2e] bg-[#9a7a2e]/[0.09] shadow-[0_0_0_1px_#9a7a2e]" : "border-[#1a1a1a]/12 bg-white hover:border-[#1a1a1a]/30"}`}>
                     <span className={`block text-[0.82rem] font-semibold ${on ? "text-[#7a5f1e]" : "text-[#1a1a1a]/75"}`}>{v.variant ?? `Size ${idx + 1}`}</span>
                     <span className="mt-0.5 block font-mono text-[0.68rem] text-[#1a1a1a]/50">{psf > 0 ? <>{v.superSqft.toLocaleString("en-IN")} sq ft · {fmtPsf(psf)}</> : <>{v.superSqft.toLocaleString("en-IN")} sq ft</>}</span>
@@ -111,10 +118,22 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
           {/* ── the 2D plan — the image is the click target, enlarge affordance
              in the corner; same pattern as the masterplan ── */}
           <div>
+            {/* level / plan toggle — only when the unit carries more than one plan
+               (e.g. a duplex's lower + upper floor) */}
+            {plans.length > 1 && (
+              <div className="mb-2.5 flex flex-wrap gap-2">
+                {plans.map((pl, idx) => (
+                  <button key={idx} type="button" onClick={() => { setPlanIdx(idx); setImgErr(false); }}
+                    className={`rounded-full border px-3.5 py-1.5 text-[0.72rem] font-medium transition-colors ${idx === planIdx ? "border-[#9a7a2e] bg-[#9a7a2e]/[0.09] text-[#7a5f1e]" : "border-[#1a1a1a]/12 bg-white/70 text-[#1a1a1a]/55 hover:border-[#1a1a1a]/30 hover:text-[#1a1a1a]"}`}>
+                    {pl.label || `Plan ${idx + 1}`}
+                  </button>
+                ))}
+              </div>
+            )}
             <button type="button" onClick={() => setZoom(true)} aria-label="Enlarge the floor plan"
               className="group relative block w-full cursor-zoom-in overflow-hidden rounded-xl border border-[#1a1a1a]/10 bg-[#FBF8F2] text-left">
-              {h.plan ? (
-                <img src={asset(h.plan)} alt={`${h.config} ${h.variant ?? ""} floor plan — ${p.name}`} className="block w-full transition-transform duration-500 group-hover:scale-[1.02]" />
+              {activePlan && !imgErr ? (
+                <img src={asset(activePlan.src)} onError={() => setImgErr(true)} alt={`${h.config} ${activePlan.label || h.variant || ""} floor plan — ${p.name}`} className="block w-full transition-transform duration-500 group-hover:scale-[1.02]" />
               ) : (
                 <FloorPlanSchematic beds={beds} balcony={h.balconySqft != null} />
               )}
@@ -164,14 +183,14 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
         <div className="fixed inset-0 z-[140] flex flex-col bg-[#0b1f1a]/90 backdrop-blur-sm" onClick={() => setZoom(false)} role="dialog" aria-modal="true" aria-label="Floor plan — enlarged">
           <div className="flex items-center justify-between gap-4 px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
             <p className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[#B29668]">
-              {h.config}{h.variant ? ` · ${h.variant}` : ""} — Floor plan
+              {h.config}{h.variant ? ` · ${h.variant}` : ""}{activePlan?.label ? ` · ${activePlan.label}` : ""} — Floor plan
             </p>
             <button onClick={() => setZoom(false)} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white">✕</button>
           </div>
           <div className="flex min-h-0 flex-1 items-center justify-center px-4 pb-6" onClick={(e) => e.stopPropagation()}>
             <ZoomStage>
-              {h.plan ? (
-                <img src={asset(h.plan)} alt={`${h.config} floor plan — ${p.name}`} className="max-h-[78vh] max-w-full rounded-lg shadow-[0_30px_90px_rgba(0,0,0,0.5)]" draggable={false} />
+              {activePlan && !imgErr ? (
+                <img src={asset(activePlan.src)} onError={() => setImgErr(true)} alt={`${h.config} ${activePlan.label || ""} floor plan — ${p.name}`} className="max-h-[78vh] max-w-full rounded-lg shadow-[0_30px_90px_rgba(0,0,0,0.5)]" draggable={false} />
               ) : (
                 <div className="w-[min(42rem,88vw)] overflow-hidden rounded-lg bg-[#FBF8F2] shadow-[0_30px_90px_rgba(0,0,0,0.5)]">
                   <FloorPlanSchematic beds={beds} balcony={h.balconySqft != null} />

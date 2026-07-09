@@ -232,20 +232,60 @@ export function liveProjectIntel(
   if (bandRating(bands.location) === "strong") tags.push("Location");
 
   /* configurations table (when filled) is richer than the caption string */
-  const homes = (cfgs ?? [])
+  /* One physical unit can arrive as several configuration rows — a duplex with
+     a plan per level, or the same plan filed on a super- vs carpet-area basis.
+     Collapse rows that describe the same unit (same config + carpet + super)
+     into ONE home that carries every distinct floor-plan image, so the UI shows
+     a single card with a plan toggle rather than a fake multi-size picker.
+     Genuinely different sizes (different areas) stay as separate homes. */
+  const levelWord = /lower|upper|level|ground|first|second|third|floor|duplex/i;
+  const rawHomes = (cfgs ?? [])
     .filter((c) => (c.carpetArea ?? 0) > 0 && (c.superArea ?? 0) > 0)
-    .map((c) => {
-      const plan = mediaSrc(c.floorPlanImageUrl); // the 2D floor-plan image (Storage URL, ext or not)
-      return {
-        config: c.bhkType ? normBhk(c.bhkType) : "NA",
-        ...(c.areaType ? { variant: c.areaType } : {}),
-        carpetSqft: c.carpetArea!,
-        superSqft: c.superArea!,
-        ...((c.balconyArea ?? 0) > 0 ? { balconySqft: c.balconyArea! } : {}),
-        priceCr: 0, // pipeline doesn't publish per-config tickets yet — the UI hides the ticket at 0
-        ...(plan ? { plan } : {}),
-      };
-    });
+    .map((c) => ({
+      config: c.bhkType ? normBhk(c.bhkType) : "NA",
+      areaType: c.areaType,
+      carpetSqft: c.carpetArea!,
+      superSqft: c.superArea!,
+      balconySqft: (c.balconyArea ?? 0) > 0 ? c.balconyArea! : undefined,
+      plan: mediaSrc(c.floorPlanImageUrl), // 2D floor-plan image (Storage URL, ext or not)
+    }));
+  const homeKeys: string[] = [];
+  const homeGroups: Record<string, typeof rawHomes> = {};
+  for (const rh of rawHomes) {
+    const key = `${rh.config}|${rh.carpetSqft}|${rh.superSqft}`;
+    if (!homeGroups[key]) { homeGroups[key] = []; homeKeys.push(key); }
+    homeGroups[key].push(rh);
+  }
+  const homes = homeKeys.map((key) => {
+    const g = homeGroups[key];
+    const first = g[0];
+    const planSrcs = dedupe(g.map((r) => r.plan).filter((s): s is string => !!s));
+    // multiple plans of one unit → a labelled toggle (Lower/Upper for a 2-level
+    // duplex, unless the data already names the levels via area_type)
+    const plans =
+      planSrcs.length > 1
+        ? planSrcs.map((src, idx) => {
+            const at = g.find((r) => r.plan === src)?.areaType ?? null;
+            const label =
+              at && levelWord.test(at) ? at
+              : planSrcs.length === 2 ? (idx === 0 ? "Lower level" : "Upper level")
+              : `Plan ${idx + 1}`;
+            return { src, label };
+          })
+        : null;
+    return {
+      config: first.config,
+      // area-basis text ("Super Area" / "Carpet Area") is not a size — keep a
+      // variant chip only for a lone row that names a real one
+      ...(g.length === 1 && first.areaType ? { variant: first.areaType } : {}),
+      carpetSqft: first.carpetSqft,
+      superSqft: first.superSqft,
+      ...(first.balconySqft != null ? { balconySqft: first.balconySqft } : {}),
+      priceCr: 0, // pipeline doesn't publish per-config tickets yet — the UI hides the ticket at 0
+      ...(planSrcs.length ? { plan: planSrcs[0] } : {}),
+      ...(plans ? { plans } : {}),
+    };
+  });
   const cfgNames = dedupe(homes.map((h) => h.config)).filter((c) => c !== "NA");
 
   const configs = cfgNames.length
