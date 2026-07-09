@@ -97,7 +97,7 @@
   #fs3d canvas{border-radius:10px;display:block}
   .fs3d-cap{position:absolute;left:10px;bottom:8px;font:500 8.5px/1.4 ui-monospace,monospace;color:#9a917f;pointer-events:none;background:rgba(10,16,12,.55);padding:3px 7px;border-radius:6px}
   #fsImg{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;background:#fff}
-  .fs-scorestrip{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--line);flex:0 0 auto}
+  .fs-scorestrip{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--line);flex:0 0 auto}
   .fs-sc{display:flex;flex-direction:column;align-items:center;padding:10px 6px;gap:4px;border-right:1px solid var(--line)}
   .fs-sc:last-child{border-right:none}
   .fs-sc-k{font:600 9px/1 ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -551,15 +551,15 @@ function computeScores2(){scores=towers.map(t=>{const us=t.units.map(u=>({u,st:u
 function renderOverview(){selTower=null;selUnit=null;towers.forEach(t=>{t.tileGrp.visible=false;t.units.forEach(u=>{u.tileLabel.visible=false;u.mesh.material.color.copy(u.baseCol);u.mesh.material.emissiveIntensity=0;});});
   document.getElementById('pClose').style.display='none';
   document.getElementById('pEy').textContent='Site overview \u00b7 '+benchShort[String(decl)];
-  document.getElementById('pName').textContent='Best tower for sun';
+  document.getElementById('pName').textContent='Best tower for you';
   document.getElementById('pSub').textContent='Click a tower in 3D or in the list';
   if(!scores)computeScores2();
   const win=scores[0],bc=compassOf(bearingOf(win.t,win.best.u.primL));
-  let html=`<div class="hero"><div class="htag">\u2605 BEST FOR SUN</div><div class="hname">Tower ${win.t.id}</div>
-    <div class="hline"><b>${win.good} of its ${win.us.length} flats</b> clear ${BENCH}h of usable winter sun. Its best, <b>Flat ${win.best.u.id} (${bc}-facing living)</b>, averages <b>${win.best.st.rawAvg.toFixed(1)} h</b>/day across all 40 floors.</div></div>`;
-  html+='<div class="sech">Ranking \u00b7 flats with usable sun</div>';
-  scores.forEach((sc,i)=>{html+=`<div class="rk ${i===0?'best':''}" data-t="${sc.t.id}"><span class="pos">${i+1}</span><span class="nm">${sc.t.id}</span><span class="cfg">${sc.t.cfg}</span><span class="track"><span class="fill" style="left:0;width:${Math.round(sc.frac*100)}%"></span></span><span class="v">${sc.good}/${sc.us.length} sunny</span></div>`;});
-  html+='<div class="hintline">Graded bar: how close each flat gets to the '+BENCH+'h benchmark. Living-room facade only \u2014 the validated way to score corner-free plates. Flats whose living side faces away from the winter sun still catch it on the opposite bedroom facade \u2014 open a tower to see both sides.</div>';
+  let html=`<div class="hero"><div class="htag">\u2605 BEST FOR YOUR PRIORITIES</div><div class="hname">Tower ${win.t.id}</div>
+    <div class="hline">Its best, <b>Flat ${win.best.u.id} (${bc}-facing living)</b> \u2014 <b>${win.best.fs.s}/100 (${win.best.fs.grade})</b>. Morning sun <b>${win.best.fs.sub.morning}</b> \u00b7 summer-cool <b>${win.best.fs.sub.cool}</b> \u00b7 Vastu <b>${win.best.fs.sub.vastu}</b> (provisional).</div></div>`;
+  html+='<div class="sech">Ranking \u00b7 weighted composite</div>';
+  scores.forEach((sc,i)=>{html+=`<div class="rk ${i===0?'best':''}" data-t="${sc.t.id}"><span class="pos">${i+1}</span><span class="nm">${sc.t.id}</span><span class="cfg">${sc.t.cfg}</span><span class="track"><span class="fill" style="left:0;width:${sc.best.fs.s}%"></span></span><span class="v">${sc.best.fs.s}/100</span></div>`;});
+  html+='<div class="hintline">Weighted composite of six independent scores \u2014 drag the priorities panel to reorder. Living-facade sun; Vastu provisional, pending consultant sign-off.</div>';
   /* \u2500 top picks: which flat + which floors, project-wide \u2500 */
   const picks=scores.slice(0,3).map(sc=>{
     const curve=floorCurve(sc.t,sc.best.u,4,0.4);
@@ -573,17 +573,17 @@ function renderOverview(){selTower=null;selUnit=null;towers.forEach(t=>{t.tileGr
         <span style="font:700 13px/1 'Geist';color:#fff">${s.t.id} \u00b7 Flat ${s.best.u.id}</span>
         <span style="font:700 11px/1 'Geist';color:${gradeColor(p.fs.grade)};border:1px solid ${gradeColor(p.fs.grade)};border-radius:5px;padding:2px 6px;margin-left:auto">${p.fs.s}/100 \u00b7 ${p.fs.grade}</span><span style="font:600 11px/1 ui-monospace;color:var(--sun)">F${p.bd.vLo}\u2013${p.bd.vHi}</span>
       </div>
-      <div style="font:500 10px/1.5 ui-monospace;color:#8ea3bd;margin-top:4px;padding-left:25px">${s.best.st.rawAvg.toFixed(1)}h sun \u00b7 ${s.t.cfg}${p.lake?' \u00b7 lagoon view':''}${p.cf!=null&&p.cf>10?` \u00b7 sun clears shadows ~F${p.cf}`:' \u00b7 sunny from low floors'}</div>
+      <div style="font:500 10px/1.5 ui-monospace;color:#8ea3bd;margin-top:4px;padding-left:25px">Morning ${s.best.fs.sub.morning} · cool ${s.best.fs.sub.cool} \u00b7 ${s.t.cfg}${p.lake?' \u00b7 lagoon view':''}${p.cf!=null&&p.cf>10?` \u00b7 sun clears shadows ~F${p.cf}`:' \u00b7 sunny from low floors'}</div>
     </div>`;});
   html+='<div class="hintline">Value floor band per pick \u2014 the lowest floors that capture near-full winter sun, above tree line and street noise, before the steep high-floor premium. Premium seekers: F27\u201334 near the 30F sky terrace.</div>';
   if(Math.abs(northOff)<0.01)html+='<div class="callout">\u2938 <b>North is assumed plan-up.</b> This marketing plan has no north arrow \u2014 set the <b>true-north dial</b> (bottom-left) against the zoning plan or satellite and every number recomputes.</div>';
   html+='<div class="sech">Best flat per tower \u00b7 sun through the day</div><div class="chart" id="siteChart"></div><div class="clegend" id="siteLeg"></div>';
-  html+='<div class="howbtn" id="howBtn">How is this scored? <span>\u25be</span></div><div class="howbox" id="howBox" style="display:none">'+
-    '<p><b>Living-facade scoring.</b> Each flat is scored on its main living/deck facade \u2014 for 4.5 BHK flats that\u2019s the lagoon-facing deck side; for T-7/T-8 end flats it\u2019s the end facade (inferred \u2014 correct me with the plate key).</p>'+
-    `<p><b>Morning weighted.</b> Afternoon/west sun counts ${Math.round(WEST_W*100)}% of a morning hour (heat + AC load). Raw hours shown honestly.</p>`+
-    '<p><b>Tower rank = usable-sun flats,</b> graded to the '+BENCH+'h benchmark \u2014 a tower wins by having more good-facing homes, not one great one.</p>'+
-    '<p><b>Floor benchmark.</b> The engine computes sun for every floor: neighbouring G+40 towers shadow low floors in winter, and the analysis finds the floor where each stack reaches ~90% of its top-floor sun. The value band starts there (min floor 10 for tree line + noise); the premium band is F27\u201334 \u2014 unbroken views, near the 30F sky terrace, below the roof-heat floors.</p></div>';
-  html+='<div class="note">G+40 \u00b7 3.6 m floor-to-floor \u00b7 triple-height lobby (public listings). Positions & rotations traced from the master plan \u2014 editable in the data block. Lat 28.42\u00b0N.</div>';
+  html+='<div class="howbtn" id="howBtn">How is this scored? <span>▾</span></div><div class="howbox" id="howBox" style="display:none">'+
+    '<p><b>Six independent scores.</b> Each flat is graded 0–100 on morning sun, summer heat, Vastu, view, airflow and floor — shown separately, never hidden in one blended number.</p>'+
+    '<p><b>You set the weights.</b> The composite is your weighting of the six — drag the priorities panel and every ranking recomputes live.</p>'+
+    '<p><b>Real orientation & plate Vastu.</b> North is calibrated to the site plan (T-2 living = NW); room directions are traced from the sanctioned plate — <b>provisional, pending your Vastu consultant</b>. T-7/T-8 (3.5 BHK) plate still to be locked.</p>'+
+    '<p><b>Per-floor sun.</b> Neighbouring G+40 towers shadow low floors; the value band starts where a stack reaches ~90% of its top-floor sun (min F10 for tree line + noise; premium F27–34 near the 30F sky terrace).</p></div>';
+  html+='<div class="note">G+40 \u00b7 3.6 m floor-to-floor \u00b7 triple-height lobby (public listings). Orientation calibrated to the site plan (T-2 living NW); per-tower facings pending validation \u2014 editable in the data block. Lat 28.42\u00b0N.</div>';
   const body=document.getElementById('pBody');body.innerHTML=html;body.scrollTop=0;
   body.querySelectorAll('.rk').forEach(r=>r.onclick=()=>selectTower(r.dataset.t));
   const hb=document.getElementById('howBtn');hb.onclick=()=>{const x=document.getElementById('howBox');const o=x.style.display==='none';x.style.display=o?'block':'none';hb.querySelector('span').textContent=o?'\u25b4':'\u25be';};
@@ -855,11 +855,7 @@ function openFlat(t,uid){
   buildFlat3D(t.cfg,b);(function(){const _c=document.querySelector('#fs3d .fs3d-cap');_c.innerHTML='Deck faces '+compass+' \u00b7 drag to orbit \u00b7 scroll to zoom \u00b7 walls traced from the plan \u00b7 glass balcony railings';if(f3)f3.capOrbit=_c.innerHTML;})();setFsView('3d');
   /* score strip */
   document.getElementById('fsCap').innerHTML=`
-    <div class="fs-scorestrip">
-      <div class="fs-sc"><span class="fs-sc-k">\u2600 Winter sun</span><span class="fs-sc-v" style="color:${sunColor(st.rawAvg)}">${st.rawAvg.toFixed(1)}h</span><div class="fs-sc-bar"><div class="fs-sc-fill" style="width:${pct(st.rawAvg,10)};background:${sunColor(st.rawAvg)}"></div></div><span class="fs-sc-tag">${sunQ}</span></div>
-      <div class="fs-sc"><span class="fs-sc-k">\u262f Vastu</span><span class="fs-sc-v" style="color:var(--gold)">${v.s}/5</span><div class="fs-sc-bar"><div class="fs-sc-fill" style="width:${pct(v.s,5)};background:var(--gold)"></div></div><span class="fs-sc-tag">${compass}-facing</span></div>
-      <div class="fs-sc"><span class="fs-sc-k">\u2248 Airflow</span><span class="fs-sc-v" style="color:var(--teal)">${ventStars}/5</span><div class="fs-sc-bar"><div class="fs-sc-fill" style="width:${pct(ventStars,5)};background:var(--teal)"></div></div><span class="fs-sc-tag">${isEnd?'3-side':'2-side'}</span></div>
-      <div class="fs-sc"><span class="fs-sc-k">Heat load</span><span class="fs-sc-v" style="color:#8fd0e8">${heatScore}/5</span><div class="fs-sc-bar"><div class="fs-sc-fill" style="width:${pct(heatScore,5)};background:#8fd0e8"></div></div><span class="fs-sc-tag">${heatScore>=4?'Low':'Moderate'}</span></div>
+     <div class="fs-scorestrip">${[['\u2600 Morning',fscore.sub.morning],['\u2744 Summer cool',fscore.sub.cool],['\u262f Vastu',fscore.sub.vastu],['\u25c9 View',fscore.sub.view],['\u2248 Airflow',fscore.sub.vent],['\u25a4 Floor',fscore.sub.floor]].map(m=>`<div class="fs-sc"><span class="fs-sc-k">${m[0]}</span><span class="fs-sc-v" style="color:${scCol(m[1])}">${m[1]}</span><div class="fs-sc-bar"><div class="fs-sc-fill" style="width:${m[1]}%;background:${scCol(m[1])}"></div></div><span class="fs-sc-tag">of 100</span></div>`).join('')}
     </div>`;
   /* tabs */
   const R=document.getElementById('fsIntel');
@@ -1193,6 +1189,64 @@ document.getElementById('bench').addEventListener('click',e=>{const b=e.target.c
 const ndial=document.getElementById('northdial');
 ndial.addEventListener('input',()=>{northOff=NORTH_CAL+ndial.value*Math.PI/180;document.getElementById('noff').textContent=ndial.value+'°';setTime(parseFloat(timeEl.value));scores=null;if(document.body.classList.contains('flat-open')&&selTower&&selUnit){selData=null;openFlat(selTower,selUnit);}else if(selTower){renderTowerPanel();}else renderOverview();});
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+
+/* ═══════════ STAGE 2 — six independent scores + adjustable weights ═══════════ */
+function seasonStat(t,u,d){const s=decl;decl=d;const r=unitStats(t,u,5,0.4);decl=s;return r;}
+function scCol(v){return v>=75?'#5cb487':v>=55?'#ecc463':v>=40?'#d6a94e':'#e08a72';}
+const _ssCache={};
+function subScores(t,u){
+  const key=t.id+'|'+u.id; if(_ssCache[key])return _ssCache[key];
+  const c=compassOf(bearingOf(t,u.primL));
+  const eq=seasonStat(t,u,0), su=seasonStat(t,u,23.45);
+  const isEnd=u.faces.length>=3, lake=(u.prim==='lake');
+  const morning=Math.round(Math.max(0,Math.min(100,(eq.amAvg/4)*100)));      // equinox AM hours → morning light
+  let cool=Math.round(Math.max(0,Math.min(100,100-(su.pmAvg/5)*100)));       // summer afternoon exposure (inverted = cooler)
+  if(/W/.test(c))cool=Math.max(0,cool-15);                                    // W/NW/SW facades bake in summer
+  const rk=['living','masterBed','kitchen','bed2','bed3','pooja','bathroom'];
+  const vr=rk.map(k=>vastuRoomScore(k,c,t.cfg,u.end).score);
+  const vastu=Math.round((vr.reduce((a,b)=>a+b,0)/vr.length)/5*100);          // provisional composite
+  const view=lake?90:55;
+  const vent=isEnd?90:62;
+  let floor=70; try{const cf=clearFloorOf(floorCurve(t,u,4,0.4));floor=Math.round(Math.max(25,100-(cf/FLOORS)*100));}catch(e){}
+  const r={morning,cool,vastu,view,vent,floor,c,amEq:eq.amAvg,pmSummer:su.pmAvg,lake,isEnd};
+  _ssCache[key]=r; return r;
+}
+let WEIGHTS={morning:25,cool:20,vastu:25,view:15,vent:10,floor:5};
+function composite(s){let tot=0,w=0;for(const k in WEIGHTS){tot+=WEIGHTS[k]*(s[k]||0);w+=WEIGHTS[k];}return Math.round(tot/(w||1));}
+/* redefine the composite buy-score as the weighted six */
+flatScore=function(t,u,st){const s=subScores(t,u);const sc=composite(s);
+  const grade=sc>=85?'A+':sc>=75?'A':sc>=65?'B+':sc>=55?'B':'C';
+  return{s:sc,grade,c:s.c,vs:Math.round(s.vastu/20),lake:s.lake,isEnd:s.isEnd,heat:Math.round(s.cool/20),sub:s};};
+/* rank towers by their best flat's composite (and the share of strong flats) */
+computeScores2=function(){scores=towers.map(t=>{
+    const us=t.units.map(u=>({u,st:unitStats(t,u,5,0.4),fs:flatScore(t,u,null)}));
+    const best=[...us].sort((a,b)=>b.fs.s-a.fs.s)[0];
+    const good=us.filter(o=>o.fs.s>=65).length;
+    const frac=us.reduce((a,o)=>a+o.fs.s,0)/us.length/100;
+    return{t,us,good,best,frac};
+  }).sort((a,b)=>b.best.fs.s-a.best.fs.s||b.frac-a.frac);};
+/* priorities panel — injected once, persists across re-renders */
+(function(){
+  const META=[['morning','Morning sun','#ecc463'],['cool','Summer cool','#5cb487'],['vastu','Vastu','#c9a96e'],
+              ['view','View','#8fb6a0'],['vent','Airflow','#3fa06a'],['floor','Floor','#a9c49a']];
+  const card=document.createElement('div'); card.id='wpanel'; card.className='card';
+  card.style.cssText='top:16px;left:50%;transform:translateX(-50%);padding:10px 14px 11px;width:min(600px,94vw);z-index:20';
+  let rows='';
+  META.forEach(m=>{rows+=`<label style="display:flex;align-items:center;gap:7px;font:600 9.5px/1 ui-monospace,monospace;color:var(--muted)">`
+    +`<span style="width:78px;color:${m[2]}">${m[1]}</span>`
+    +`<input type="range" min="0" max="40" step="5" value="${WEIGHTS[m[0]]}" data-k="${m[0]}" style="flex:1;accent-color:${m[2]}">`
+    +`<b data-v="${m[0]}" style="width:22px;text-align:right;color:var(--text)">${WEIGHTS[m[0]]}</b></label>`;});
+  card.innerHTML='<div class="eyebrow" style="color:var(--gold)">⚖ Your priorities · drag to reweight the ranking</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px 16px;margin-top:8px">'+rows+'</div>';
+  document.body.appendChild(card);
+  card.addEventListener('input',e=>{const i=e.target; if(i.tagName!=='INPUT')return;
+    WEIGHTS[i.dataset.k]=+i.value; card.querySelector('[data-v="'+i.dataset.k+'"]').textContent=i.value;
+    scores=null; try{renderOverview();}catch(_){}
+    try{if(document.body.classList.contains('flat-open')&&selTower&&selUnit)openFlat(selTower,selUnit);}catch(_){}
+  });
+})();
+/* ═══════════ end Stage 2 ═══════════ */
+
 (function init(){const[sr,ss]=dayB();document.getElementById('srise').textContent=fmt(sr);document.getElementById('sset').textContent=fmt(ss);setTime(0.5);renderOverview();})();
 (function loop(){requestAnimationFrame(loop);camStep();pulseTiles();f3tick();if(playing){playT+=.0014;if(playT>1)playT=0;timeEl.value=playT;setTime(playT);if(!selTower&&!camTween){az+=0.0018;camApply();}}renderer.render(scene,camera);})();
 </script>
