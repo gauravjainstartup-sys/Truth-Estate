@@ -49,6 +49,43 @@ function decode(value) {
   return { buf, ext: hit[1] };
 }
 
+const CT_EXT = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif", "application/pdf": "pdf" };
+function urlExt(u) {
+  try {
+    const m = new URL(u).pathname.match(/\.([a-z0-9]+)$/i);
+    const e = m && m[1].toLowerCase();
+    return e === "jpeg" ? "jpg" : ["png", "jpg", "webp", "gif", "pdf"].includes(e) ? e : null;
+  } catch {
+    return null;
+  }
+}
+
+/* A media column may hold a Storage URL rather than base64. Pull a SINGLE-URL
+   value into the static build so it serves same-origin — essential for the PDF
+   thumbnails pdf.js renders (a cross-origin Storage fetch is CORS-blocked, so
+   the brochure/payment-plan cover never paints), and it also frees the deploy
+   from Supabase at runtime. Multi-URL lists (a brochure's page images) are left
+   to the adapter's cross-origin <img> page-turner. Fail-soft: any hiccup leaves
+   the value as its original URL. */
+async function fetchUrlMedia(value) {
+  if (!value || typeof value !== "string") return null;
+  const s = value.trim();
+  if (!/^https?:\/\//i.test(s) || /[,\n]/.test(s)) return null; // only a lone URL
+  let res;
+  try {
+    res = await fetch(s, { signal: AbortSignal.timeout(30000) });
+  } catch {
+    return null;
+  }
+  if (!res.ok) return null;
+  const ct = (res.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+  const ext = CT_EXT[ct] ?? urlExt(s);
+  if (!ext) return null; // unknown type — don't guess
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (!buf.length || buf.length > MAX_BYTES) return null;
+  return { buf, ext, from: "url" };
+}
+
 async function fetchRows() {
   const fix = process.env.SUPABASE_FIXTURES;
   if (fix) {
@@ -76,14 +113,14 @@ try {
     const id = row?.backlog_id;
     if (!id) continue;
     for (const field of FIELDS) {
-      const dec = decode(row[field]);
+      const dec = decode(row[field]) ?? (await fetchUrlMedia(row[field]));
       if (!dec) continue;
       const slug = field.replace(/_url$/, "").replace(/_/g, "-");
       const rel = `live-media/${id}-${slug}.${dec.ext}`;
       await writeFile(path.join("public", rel), dec.buf);
       (manifest[id] ??= {})[field] = rel;
       files++;
-      console.log(`[materialize] ${rel} ← ${field} (${(dec.buf.length / 1024).toFixed(0)} KB)`);
+      console.log(`[materialize] ${rel} ← ${field} (${(dec.buf.length / 1024).toFixed(0)} KB${dec.from === "url" ? ", from URL" : ""})`);
     }
   }
   console.log(`[materialize] ${files} file(s) across ${Object.keys(manifest).length} project(s)`);
