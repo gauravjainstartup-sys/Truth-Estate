@@ -162,6 +162,7 @@ export type ProjectOps = {
   launch?: string;
   possession?: string; // RERA-committed handover
   reraId?: string;
+  reraUrl?: string; // project-specific RERA filing link (else the registry home)
   reraNote?: string;
   /* Price history — the PSF journey since launch (Chapter III). currentLow/High
      bound today's tracked range; premium & CAGR are derived, not stored. */

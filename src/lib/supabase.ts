@@ -212,6 +212,12 @@ export type LiveBacklogFull = {
   registrationDate: string | null;
   insight: string | null;
   constructionPaceNum: number | null;
+  /* extended vitals — present on backlog_listing_public_v2; null on the base view */
+  reraId: string | null;
+  reraUrl: string | null;
+  densityAptPerAcre: number | null;
+  openAreaPct: number | null;
+  landAcres: number | null;
   /* module payloads — shapes owned by the pipeline */
   modConstruction: unknown;
   modTrackRecord: unknown;
@@ -226,14 +232,17 @@ export function liveSlug(name: string): string {
   return `live-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`;
 }
 
+// The whole tracked universe: no score gate, highest-scored first with any
+// unscored rows last, and a cap well above the current corpus so every project
+// in the view is returned (list + per-project pages).
+const BACKLOG_QUERY = 'select=*&order="truthScore".desc.nullslast&limit=500';
+
 export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
-  const rows = await sbRows(
-    "backlog_listing_public",
-    // The whole tracked universe: no score gate, highest-scored first with
-    // any unscored rows last, and a cap well above the current corpus so
-    // every project in the view is returned (list + per-project pages).
-    'select=*&order="truthScore".desc.nullslast&limit=500',
-  );
+  // Prefer the extended view (adds RERA link, density, open area, land size);
+  // fall back to the base view so a missing/late v2 can never blank the catalog.
+  const rows =
+    (await sbRows("backlog_listing_public_v2", BACKLOG_QUERY)) ??
+    (await sbRows("backlog_listing_public", BACKLOG_QUERY));
   if (!rows) return null;
   // one-time shape record: the CI build log tells us the pipeline's true shapes
   if (rows[0]) console.log("[supabase] backlog sample:", JSON.stringify(rows[0]).slice(0, 2000));
@@ -268,6 +277,11 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
       registrationDate: s(r.registration_date),
       insight: s(r.insight),
       constructionPaceNum: n(r.construction_pace),
+      reraId: s(r.rera_id),
+      reraUrl: s(r.rera_url),
+      densityAptPerAcre: n(r.density_apt_per_acre),
+      openAreaPct: n(r.open_area_pct),
+      landAcres: n(r.land_acres),
       modConstruction: r.construction_pace,
       modTrackRecord: r.developer_track_record,
       modLegal: r.legal_risks,

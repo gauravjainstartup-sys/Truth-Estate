@@ -637,7 +637,7 @@ export default function ProjectProfile({
                   <Reg icon={VITAL_ICON.leaf} k="Open area" v={ops?.openAreaPct != null ? `${ops.openAreaPct}%` : "NA"} tag={ops?.openAreaPct != null && ops.openAreaPct >= 80 ? "Green" : undefined} />
                   <Reg icon={VITAL_ICON.calendar} k="Launched" v={ops?.launch ?? "NA"} />
                   {ops?.possession && <Reg icon={VITAL_ICON.key} k="RERA possession" v={ops.possession} />}
-                  <Reg icon={VITAL_ICON.file} k="RERA ID" v={ops?.reraId ?? "NA"} {...(ops?.reraId ? { href: "https://haryanarera.gov.in/" } : {})} />
+                  <Reg icon={VITAL_ICON.file} k="RERA ID" v={ops?.reraId ?? "NA"} {...(ops?.reraId ? { href: ops?.reraUrl ?? "https://haryanarera.gov.in/" } : {})} />
                 </div>
               </div>
               {ops?.reraNote && <Source>{ops.reraNote}. Sources: Haryana RERA registry & project filings.</Source>}

@@ -376,13 +376,24 @@ export function liveProjectIntel(
     console.log(`[supabase] configs ${row.name} → ${homes.length}/${cfgs.length} home(s) rendered · ${withPlan} with 2D floor plan`);
   }
 
+  /* extended vitals (backlog_listing_public_v2): density & open area read as
+     whole numbers, land keeps one decimal — matching the flagship convention */
+  const density = row.densityAptPerAcre != null ? Math.round(row.densityAptPerAcre) : null;
+  const openAreaPct = row.openAreaPct != null ? Math.round(row.openAreaPct) : null;
+  const landAcres = row.landAcres != null ? Math.round(row.landAcres * 10) / 10 : null;
+
   const ops: ProjectOps = {
     ...(row.location ? { address: row.location } : {}),
     ...(totalUnits != null ? { units: totalUnits } : {}),
+    ...(landAcres != null ? { landAcres } : {}),
+    ...(density != null ? { density } : {}),
+    ...(openAreaPct != null ? { openAreaPct } : {}),
     ...(row.promised ? { possession: row.promised } : {}),
     ...(launchLabel ? { launch: launchLabel } : {}),
     ...(ext?.floorsRange ? { floors: ext.floorsRange } : {}),
     ...(heroDateLabel(ext?.heroDate ?? null) ? { reviewed: heroDateLabel(ext!.heroDate)! } : {}),
+    ...(row.reraId ? { reraId: row.reraId } : {}),
+    ...(row.reraUrl ? { reraUrl: row.reraUrl } : {}),
     ...(price ? { price } : {}),
     ...(homes.length ? { homes } : {}),
     ...(Object.keys(media).length ? { media } : {}),
