@@ -176,12 +176,13 @@ const VITAL_ICON = {
   file: <svg {...vi} className={VI} aria-hidden><path d="M6 2.5h8L19.5 8v13a1 1 0 0 1-1 1h-12a1 1 0 0 1-1-1v-17a1 1 0 0 1 1-1Z" /><path d="M14 2.5V8h5.5M9 13h6M9 17h6" /></svg>,
 } as const;
 
-/* The hero meta wants one token — the top BHK with a "+" when the project
-   offers more configurations: "3 · 4 BHK · Penthouse" → "4 BHK+". */
+/* The hero meta wants one token — the ENTRY BHK with a "+" when the project
+   offers more configurations, mirroring the "from ₹X Cr+" ticket beside it:
+   "3 · 4 BHK · Penthouse" → "3 BHK+" (starts at 3 BHK, larger also on offer). */
 function configsCompact(list: string[]): string {
   const nums = list.map((c) => parseFloat(c)).filter((n) => !Number.isNaN(n));
   if (!nums.length) return list[0] ?? "";
-  return `${Math.max(...nums)} BHK${list.length > 1 ? "+" : ""}`;
+  return `${Math.min(...nums)} BHK${list.length > 1 ? "+" : ""}`;
 }
 
 /* "3 BHK · 3.5 BHK · 4 BHK · Duplex" → "3 · 3.5 · 4 BHK · Duplex" — say

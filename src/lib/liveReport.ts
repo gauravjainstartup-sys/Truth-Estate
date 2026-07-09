@@ -310,16 +310,27 @@ export function liveProjectIntel(
       ? row.config.split(/[,·/]+/).map((s) => s.trim()).filter(Boolean).map((c) => normBhk(c))
       : ["NA"];
 
-  const priceLo = row.minPriceCr ?? (row.budget ? parseFloat(row.budget.replace(/[^\d.]/g, "")) : NaN);
-  const lo = Number.isFinite(priceLo) ? priceLo : 0;
-
   const marketName = row.microMarket ?? row.location ?? "Gurugram";
   const market = MARKETS.find((m) => m.name === marketName);
+  const range = psfRange(ext?.priceRangeSqft ?? null);
+
+  /* Hero ticket = the lowest psf we can cite × the smallest super area on
+     offer — the honest "from ₹X Cr" for the ENTRY configuration (it pairs
+     with the entry-BHK chip). Prefer the project's own filed psf range, then
+     the corridor floor; only when neither a psf nor a super area is known do
+     we fall back to the pipeline's min ticket. Rounded to a clean 0.1 Cr. */
+  const psfLo = range?.[0] ?? market?.psf.low ?? null;
+  const superAreas = homes.map((h) => h.superSqft).filter((n) => n > 0);
+  const smallestSuper = superAreas.length ? Math.min(...superAreas) : null;
+  const fallbackCr = row.minPriceCr ?? (row.budget ? parseFloat(row.budget.replace(/[^\d.]/g, "")) : NaN);
+  const lo =
+    psfLo && smallestSuper
+      ? Math.round(((psfLo * smallestSuper) / 1e7) * 10) / 10
+      : Number.isFinite(fallbackCr) ? fallbackCr : 0;
 
   /* price journey — only when the extended row carries a parseable
      current range AND a launch price; the launch month anchors to the
      RERA registration date (the filing that starts the clock) */
-  const range = psfRange(ext?.priceRangeSqft ?? null);
   const launchMonth = row.registrationDate?.match(/([A-Za-z]{3,9})\s+(\d{4})\s*$/);
   // "Jan 2023" from the RERA registration date — the filing that starts the clock.
   const launchLabel = launchMonth ? `${launchMonth[1].slice(0, 3)} ${launchMonth[2]}` : null;
