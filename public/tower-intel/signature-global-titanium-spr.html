@@ -144,16 +144,16 @@
   #fsBack,#fsClose{border:1px solid var(--line);background:rgba(0,0,0,.04);color:var(--text);font:600 11.5px/1 'Geist';padding:8px 13px;border-radius:9px;cursor:pointer;white-space:nowrap}
   #fsBack:hover,#fsClose:hover{border-color:var(--accent)}
   .fs-body{flex:1;display:flex;min-height:0}
-  /* left: plan image + score strip */
-  .fs-left{flex:1.25;display:flex;flex-direction:column;border-right:1px solid var(--line);min-width:0;background:var(--paper)}
-  .fs-imgwrap{flex:1;display:flex;align-items:center;justify-content:center;padding:18px 18px 10px;min-height:0}
+  /* left 60%: selectors + media + actions · right 40%: this-unit detail */
+  .fs-left{flex:0 0 60%;max-width:60%;display:flex;flex-direction:column;border-right:1px solid var(--line);min-width:0;background:var(--paper)}
+  .fs-imgwrap{flex:1;display:none;align-items:center;justify-content:center;padding:16px;min-height:0;margin:10px 18px 4px;border:1px solid var(--line);border-radius:14px;background:radial-gradient(135% 125% at 50% 12%,#f1ead9 0%,#e2d6bd 58%,#d2c4a2 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -20px 46px rgba(120,92,40,.12)}
   .fs-viewtabs{display:flex;gap:6px;padding:10px 18px 0;flex:0 0 auto}
   .fs-viewtabs button{border:1px solid var(--line);background:rgba(0,0,0,.04);color:var(--muted);font:600 10.5px/1 'Geist';padding:6px 12px;border-radius:8px;cursor:pointer}
   .fs-viewtabs button.on{color:#0b120e;background:var(--gold);border-color:var(--gold)}
-  #fs3d{flex:1;min-height:0;display:none;position:relative;margin:10px 18px 4px}
-  #fs3d canvas{border-radius:10px;display:block}
-  .fs3d-cap{position:absolute;left:10px;bottom:8px;font:500 8.5px/1.4 ui-monospace,monospace;color:#75705f;pointer-events:none;background:rgba(255,255,255,.7);padding:3px 7px;border-radius:6px}
-  #fsImg{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;background:#fff}
+  #fs3d{flex:1;min-height:0;display:none;position:relative;margin:10px 18px 4px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:radial-gradient(135% 125% at 50% 12%,#f1ead9 0%,#e2d6bd 58%,#d2c4a2 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -22px 48px rgba(120,92,40,.13)}
+  #fs3d canvas{display:block}
+  .fs3d-cap{position:absolute;left:10px;bottom:8px;z-index:2;font:500 8.5px/1.4 ui-monospace,monospace;color:#6b6552;pointer-events:none;background:rgba(255,253,247,.78);padding:3px 7px;border-radius:6px}
+  #fsImg{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;background:#fff;box-shadow:0 6px 20px rgba(90,70,30,.14)}
   /* floor selector (drives sun + value tier only) */
   .fs-floor{flex:0 0 auto;padding:12px 20px 13px;border-bottom:1px solid var(--line);background:rgba(0,0,0,.015)}
   .fs-floor .ffhead{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
@@ -165,6 +165,16 @@
   .fs-floor .ffbest{color:var(--sun)}
   .fs-floor .ffhint{margin-top:9px;font:500 11px/1.5 'Geist';color:#64707d}
   .fs-floor .ffhint b{font-weight:600}
+  .fs-floor .ff-lines{display:flex;align-items:center;gap:11px;margin-bottom:12px}
+  .fs-floor .ff-lines-lab{font:600 10px/1 ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);flex:0 0 auto}
+  .fs-floor .ff-lineseg{display:flex;gap:7px;flex-wrap:wrap}
+  .fs-floor .ff-line{border:1px solid var(--line);background:var(--surf);border-radius:9px;padding:6px 13px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:46px;transition:.15s}
+  .fs-floor .ff-line:hover{border-color:var(--gold)}
+  .fs-floor .ff-line .fl-no{font:700 13px/1 'Geist';color:#5a6068}
+  .fs-floor .ff-line .fl-face{font:600 8px/1 ui-monospace,monospace;letter-spacing:.05em;color:var(--muted)}
+  .fs-floor .ff-line.on{border-color:var(--gold);background:rgba(255,206,99,.14)}
+  .fs-floor .ff-line.on .fl-no{color:#23272e}
+  .fs-floor .ff-line.on .fl-face{color:var(--gold)}
   /* walk-through: coming-soon + early access */
   .fs-walk{display:none;flex:1;min-height:0;margin:10px 18px 4px;border:1px solid var(--line);border-radius:12px;background:radial-gradient(120% 100% at 50% 0,rgba(255,206,99,.06),transparent 60%);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
   .fs-walk .wk-ico{width:52px;height:52px;border-radius:50%;border:1px solid rgba(255,206,99,.4);display:grid;place-items:center;font-size:17px;color:var(--sun);background:rgba(255,206,99,.06)}
@@ -182,11 +192,8 @@
   .fs-walk .wk-form button{flex:0 0 auto;background:var(--sun);color:#0b120e;border:0;border-radius:9px;cursor:pointer;font:700 11px/1 'Geist';padding:0 15px}
   .fs-walk .wk-form button:hover{background:#ffd884}
   .fs-walk .wk-ok{margin-top:16px;max-width:34ch;font:500 12.5px/1.5 'Geist';color:#6dbf88}
-  /* ── simplified unit view: primary (3D-forward) + details drawer ── */
-  .fs-primary{flex:1;min-height:0;display:flex;flex-direction:column}
-  #flatSheet.details-open .fs-primary{display:none}
-  #flatSheet.details-open #fsFloor{display:none}
-  .fs-idband{flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:11px 18px 3px}
+  /* ── unit view: left media column · right this-unit detail column ── */
+  .fs-idband{flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:16px 18px 14px;border-bottom:1px solid var(--line);background:var(--paper)}
   .fs-verdict{flex:1;min-width:0;font:500 12.5px/1.5 'Geist';color:#4a4638}
   .fs-verdict b{color:var(--text);font-weight:600}
   .fs-gradering{flex:0 0 auto;width:64px;height:64px;border-radius:50%;position:relative;display:grid;place-items:center;
@@ -201,13 +208,7 @@
   .fs-cta-primary:hover{background:#f4d477}
   .fs-cta-secondary{background:rgba(0,0,0,.03);border-color:var(--line);color:var(--text)}
   .fs-cta-secondary:hover{border-color:var(--gold)}
-  .fs-details{display:none;flex:1;min-height:0;overflow-y:auto}
-  #flatSheet.details-open .fs-details{display:block}
-  .fs-dethead{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:12px;padding:11px 18px;background:var(--ink);border-bottom:1px solid var(--line)}
-  .fs-dethead button{border:1px solid var(--line);background:rgba(0,0,0,.04);color:var(--text);font:600 11.5px/1 'Geist';padding:8px 12px;border-radius:9px;cursor:pointer;white-space:nowrap}
-  .fs-dethead button:hover{border-color:var(--gold)}
-  .fs-dethead-t{font:600 10px/1 ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-  .fs-details .fs-panels{overflow:visible}
+  .fs-right .fs-panels{overflow:visible;flex:none}
   .fs-scorestrip{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--line);flex:0 0 auto}
   .fs-sc{display:flex;flex-direction:column;align-items:center;padding:10px 6px;gap:4px;border-right:1px solid var(--line)}
   .fs-sc:last-child{border-right:none}
@@ -216,9 +217,10 @@
   .fs-sc-bar{width:100%;height:4px;border-radius:3px;background:rgba(0,0,0,.08);overflow:hidden;margin-top:2px}
   .fs-sc-fill{height:100%;border-radius:3px;transition:width .5s ease}
   .fs-sc-tag{font:500 9px/1 ui-monospace,monospace;color:var(--muted)}
-  /* right: tabs + content */
-  .fs-right{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
-  .fs-tabs{display:flex;border-bottom:1px solid var(--line);flex:0 0 auto;overflow-x:auto}
+  /* right 40%: this-unit detail — score header, sub-scores, tabbed intel */
+  .fs-right{flex:1 1 40%;display:flex;flex-direction:column;min-width:0;overflow-y:auto;background:var(--paper)}
+  .fs-intel{display:block;min-width:0}
+  .fs-tabs{display:flex;border-bottom:1px solid var(--line);flex:0 0 auto;overflow-x:auto;position:sticky;top:0;z-index:3;background:var(--paper)}
   .fs-tab{padding:11px 16px;font:600 11.5px/1 'Geist';color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:.15s}
   .fs-tab:hover{color:var(--text)}
   .fs-tab.on{color:var(--gold);border-color:var(--gold)}
@@ -279,7 +281,7 @@
   .buyer-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
   .buyer-tag{font:600 10.5px/1 'Geist';padding:5px 10px;border-radius:20px;border:1px solid rgba(0,0,0,.12);color:var(--muted)}
   .buyer-tag.on{border-color:var(--gold);color:#a67c3d;background:rgba(255,206,99,.1)}
-  @media (max-width:840px){.fs-body{flex-direction:column}.fs-left{flex:none;height:42vh;border-right:0;border-bottom:1px solid var(--line)}.fs-scorestrip{grid-template-columns:repeat(4,1fr)}#title,#hint{display:none}#panel{width:min(93vw,340px)}body.tower-open #panel{top:auto;bottom:0;left:0;right:0;width:100%;max-width:100%;max-height:82vh;border-radius:18px 18px 0 0;border-bottom:0;box-shadow:0 -12px 40px rgba(0,0,0,.16)}body.tower-open.panel-min #panel{max-height:none}}
+  @media (max-width:840px){.fs-body{flex-direction:column;overflow-y:auto}.fs-left{flex:none;max-width:none;border-right:0;border-bottom:1px solid var(--line)}.fs-media{height:46vh}.fs-right{flex:none;overflow:visible}.fs-right .fs-tabs{position:static}.fs-scorestrip{grid-template-columns:repeat(4,1fr)}#title,#hint{display:none}#panel{width:min(93vw,340px)}body.tower-open #panel{top:auto;bottom:0;left:0;right:0;width:100%;max-width:100%;max-height:82vh;border-radius:18px 18px 0 0;border-bottom:0;box-shadow:0 -12px 40px rgba(0,0,0,.16)}body.tower-open.panel-min #panel{max-height:none}}
 
 #title h1,.phead h2,#pName,.hero .hname,.fs-title h2,.clock .t,.sun-big{font-family:'Playfair Display',Georgia,serif;font-weight:500;letter-spacing:-.01em}
 </style>
@@ -333,37 +335,37 @@
     <button id="fsBack">← Back to roof</button>
     <button id="fsClose">✕ Close</button>
   </div>
-  <div id="fsFloor" class="fs-floor"></div>
-  <div class="fs-primary" id="fsPrimary">
-    <div class="fs-idband">
-      <div class="fs-verdict" id="fsVerdict"></div>
-      <div class="fs-gradering" id="fsGrade"></div>
-    </div>
-    <div class="fs-media">
-      <div class="fs-viewtabs"><button id="fsBtn3d" class="on">◧ 3D model</button><button id="fsBtnWalk">⛶ Walk-through</button><button id="fsBtn2d">▤ 2D plan</button></div>
-      <div id="fs3d"><div class="fs3d-cap"></div></div>
-      <div class="fs-imgwrap"><img id="fsImg" src="" alt="Floor plan"></div>
-      <div id="fsWalk" class="fs-walk">
-        <div class="wk-ico">▶</div>
-        <div class="wk-tag">Coming soon</div>
-        <div class="wk-ttl">Immersive walk-through</div>
-        <p class="wk-sub">Step inside <b id="fsWalkUnit">—</b> — a first-person walk of the actual unit, room by room.</p>
-        <form class="wk-form" id="fsWalkForm">
-          <div class="wk-phone"><span class="cc">+91</span><input type="tel" required pattern="\d{10}" inputmode="numeric" placeholder="Mobile number" id="fsWalkPhone" autocomplete="tel-national"></div>
-          <button type="submit">Get early access</button>
-        </form>
-        <div class="wk-ok" id="fsWalkOk" hidden>✓ You&rsquo;re on the list — we&rsquo;ll text you the moment this unit&rsquo;s walk-through is live.</div>
+  <div class="fs-body">
+    <div class="fs-left">
+      <div id="fsFloor" class="fs-floor"></div>
+      <div class="fs-media">
+        <div class="fs-viewtabs"><button id="fsBtn3d" class="on">◧ 3D model</button><button id="fsBtnWalk">⛶ Walk-through</button><button id="fsBtn2d">▤ 2D plan</button></div>
+        <div id="fs3d"><div class="fs3d-cap"></div></div>
+        <div class="fs-imgwrap"><img id="fsImg" src="" alt="Floor plan"></div>
+        <div id="fsWalk" class="fs-walk">
+          <div class="wk-ico">▶</div>
+          <div class="wk-tag">Coming soon</div>
+          <div class="wk-ttl">Immersive walk-through</div>
+          <p class="wk-sub">Step inside <b id="fsWalkUnit">—</b> — a first-person walk of the actual unit, room by room.</p>
+          <form class="wk-form" id="fsWalkForm">
+            <div class="wk-phone"><span class="cc">+91</span><input type="tel" required pattern="\d{10}" inputmode="numeric" placeholder="Mobile number" id="fsWalkPhone" autocomplete="tel-national"></div>
+            <button type="submit">Get early access</button>
+          </form>
+          <div class="wk-ok" id="fsWalkOk" hidden>✓ You&rsquo;re on the list — we&rsquo;ll text you the moment this unit&rsquo;s walk-through is live.</div>
+        </div>
+      </div>
+      <div class="fs-cta">
+        <button class="fs-cta-btn fs-cta-primary" id="fsAdvisor">Talk to an advisor</button>
       </div>
     </div>
-    <div class="fs-cta">
-      <button class="fs-cta-btn fs-cta-primary" id="fsAdvisor">Talk to an advisor</button>
-      <button class="fs-cta-btn fs-cta-secondary" id="fsMore">More details</button>
+    <div class="fs-right" id="fsDetails">
+      <div class="fs-idband">
+        <div class="fs-verdict" id="fsVerdict"></div>
+        <div class="fs-gradering" id="fsGrade"></div>
+      </div>
+      <div id="fsCap"></div>
+      <div class="fs-intel" id="fsIntel"></div>
     </div>
-  </div>
-  <div class="fs-details" id="fsDetails">
-    <div class="fs-dethead"><button id="fsBackUnit">← Back to unit</button><span class="fs-dethead-t">Full intelligence · sun · Vastu · metrics</span></div>
-    <div id="fsCap"></div>
-    <div class="fs-intel" id="fsIntel"></div>
   </div>
 </div>
 
@@ -1138,9 +1140,9 @@ function sunFloorHTML(t,u,fl,oppSt){
     </div>
     <div style="margin-top:9px;font:500 9px/1.5 ui-monospace,monospace;color:#abaea1">Living facade · sun computed for floor ${fl} · north calibrated to the site plan</div>`;
 }
-function openFlat(t,uid){
+function openFlat(t,uid,keepFloor){
   selUnit=uid;
-  const rec=(selData||t.units.map(u=>({u,st:unitStats(t,u,2,0.3)}))).find(x=>x.u.id===uid);
+  const rec=((selData||[]).find(x=>x.u.id===uid))||t.units.map(u=>({u,st:unitStats(t,u,2,0.3)})).find(x=>x.u.id===uid);
   const u=rec.u,st=rec.st,cfg=CONFIGS[t.cfg],compass=vfacing(t,u),b=((t.id==='T-7'||t.id==='T-8')?{N:0,NE:45,E:90,SE:135,S:180,SW:225,W:270,NW:315}[compass]:bearingOf(t,u.primL)),v=vastuFor(compass);
   const lakeFacing=u.prim==='lake',isEnd=u.faces.length>=3;
   const sunQ=st.rawAvg<0.4?'No direct sun':st.amAvg>st.pmAvg*1.4?'Morning sun':st.pmAvg>st.amAvg*1.4?'Afternoon sun':'All-day sun';
@@ -1424,14 +1426,17 @@ function openFlat(t,uid){
   /* ── floor selector — drives sun + value tier; naming becomes floor-based ── */
   const bv=bestValueFloor(t,u),cf=bv.cf,bd=bv.bd;
   const lineNum=('0'+(parseInt(String(u.id).slice(-2),10)||0)).slice(-2);
-  const uidKey=t.id+'|'+u.id; if(uidKey!==flatUidKey){flatUidKey=uidKey;selFloor=bv.fl;}
+  const uidKey=t.id+'|'+u.id; if(uidKey!==flatUidKey){flatUidKey=uidKey;if(!keepFloor)selFloor=bv.fl;}
   selFloor=Math.max(1,Math.min(FLOORS,selFloor||bv.fl));
   const ffEl=document.getElementById('fsFloor');
+  const linesHTML=t.units.slice().sort((a,b)=>(parseInt(String(a.id).slice(-2),10)||0)-(parseInt(String(b.id).slice(-2),10)||0)).map(u2=>{const ln=('0'+(parseInt(String(u2.id).slice(-2),10)||0)).slice(-2);return `<button class="ff-line${u2.id===u.id?' on':''}" data-uid="${u2.id}"><span class="fl-no">${ln}</span><span class="fl-face">${vfacing(t,u2)}</span></button>`;}).join('');
   if(ffEl){ffEl.innerHTML=`
+    <div class="ff-lines"><span class="ff-lines-lab">Line</span><div class="ff-lineseg">${linesHTML}</div></div>
     <div class="ffhead"><span class="ffttl">Choose your floor</span><span class="ffnow">Floor <b id="ffCur">${selFloor}</b> of ${FLOORS}</span></div>
     <input type="range" id="ffRange" min="1" max="${FLOORS}" step="1" value="${selFloor}">
     <div class="ffscale"><span>01</span><span class="ffbest">◎ best value · ${bv.fl}</span><span>${FLOORS}</span></div>
-    <div class="ffhint" id="ffHint"></div>`;}
+    <div class="ffhint" id="ffHint"></div>`;
+    ffEl.querySelectorAll('.ff-line').forEach(bt=>bt.onclick=()=>{const nu=bt.dataset.uid;if(nu!==u.id)openFlat(t,nu,true);});}
   function paintFloor(fl){
     fl=Math.max(1,Math.min(FLOORS,fl|0));selFloor=fl;
     const flatNo=`${fl}${lineNum}`;
