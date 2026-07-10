@@ -1298,10 +1298,12 @@ const faqs: { q: string; a: React.ReactNode }[] = [
 ];
 
 function FaqItem({
+  n,
   item,
   isOpen,
   onToggle,
 }: {
+  n: number;
   item: (typeof faqs)[0];
   isOpen: boolean;
   onToggle: () => void;
@@ -1316,16 +1318,31 @@ function FaqItem({
   }, [isOpen]);
 
   return (
-    <div data-r style={{ opacity: 0, transform: "translateY(16px)" }}>
+    <div data-r className="border-t border-[#1a1a1a]/10" style={{ opacity: 0, transform: "translateY(16px)" }}>
       <button
         onClick={onToggle}
-        className="flex w-full items-start justify-between gap-6 py-2 text-left"
+        aria-expanded={isOpen}
+        className="grid w-full grid-cols-[auto_1fr_auto] items-baseline gap-5 py-7 text-left md:gap-8 md:py-8"
       >
-        <h3 className="font-serif text-[1.2rem] font-medium leading-[1.3] text-[#1a1a1a] md:text-[1.5rem] lg:text-[1.7rem]">
+        {/* quiet index — turns gold on open (the numbered motif, echoing Decisions/Audience) */}
+        <span
+          className="font-serif text-[0.85rem] leading-none tabular-nums transition-[color,transform] duration-500 md:text-[1rem]"
+          style={{
+            color: isOpen ? "#c9a96e" : "rgba(201,169,110,0.5)",
+            transform: isOpen ? "scale(1.08)" : "scale(1)",
+            transformOrigin: "left center",
+          }}
+        >
+          {String(n).padStart(2, "0")}
+        </span>
+        <h3
+          className="font-serif text-[1.2rem] font-medium leading-[1.3] text-[#1a1a1a] transition-transform duration-500 md:text-[1.5rem] lg:text-[1.7rem]"
+          style={{ transform: isOpen ? "translateX(6px)" : "translateX(0)" }}
+        >
           {item.q}
         </h3>
         <span
-          className="mt-1 shrink-0 text-[1.2rem] font-light text-[#c9a96e]/60 transition-transform duration-500 md:text-[1.4rem]"
+          className="self-center text-[1.3rem] font-light text-[#c9a96e]/60 transition-transform duration-500 md:text-[1.5rem]"
           style={{ transform: isOpen ? "rotate(45deg)" : "rotate(0deg)" }}
         >
           +
@@ -1335,8 +1352,14 @@ function FaqItem({
         className="overflow-hidden transition-[height] duration-500 ease-[cubic-bezier(0.25,0.1,0.25,1)]"
         style={{ height }}
       >
-        <div ref={bodyRef} className="pb-2 pt-4">
-          <p className="max-w-xl text-[0.88rem] font-light leading-[1.85] text-[#1a1a1a]/50 md:text-[0.98rem]">
+        {/* answer aligns under the question (invisible number-width spacer) with a
+           gold left-rule that fades in on open */}
+        <div ref={bodyRef} className="grid grid-cols-[auto_1fr] gap-5 pb-8 md:gap-8">
+          <span aria-hidden className="invisible font-serif text-[0.85rem] leading-none tabular-nums md:text-[1rem]">00</span>
+          <p
+            className="max-w-xl border-l-2 pl-5 text-[0.88rem] font-light leading-[1.85] text-[#1a1a1a]/55 transition-colors duration-500 md:text-[0.98rem]"
+            style={{ borderColor: isOpen ? "rgba(201,169,110,0.4)" : "transparent" }}
+          >
             {item.a}
           </p>
         </div>
@@ -1378,19 +1401,16 @@ function QuestionsSection() {
         </p>
       </div>
 
-      {/* Accordion */}
-      <div className="mx-auto mt-[8vh] max-w-3xl md:mt-[12vh]">
+      {/* Accordion — a numbered register enclosed in hairlines; one open at a time */}
+      <div className="mx-auto mt-[8vh] max-w-3xl border-b border-[#1a1a1a]/10 md:mt-[12vh]">
         {faqs.map((item, i) => (
-          <div key={item.q}>
-            {i > 0 && (
-              <div className="my-7 h-px w-full bg-[#1a1a1a]/6 md:my-9" />
-            )}
-            <FaqItem
-              item={item}
-              isOpen={openIdx === i}
-              onToggle={() => setOpenIdx(openIdx === i ? null : i)}
-            />
-          </div>
+          <FaqItem
+            key={item.q}
+            n={i + 1}
+            item={item}
+            isOpen={openIdx === i}
+            onToggle={() => setOpenIdx(openIdx === i ? null : i)}
+          />
         ))}
       </div>
 
