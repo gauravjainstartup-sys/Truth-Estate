@@ -499,16 +499,16 @@ function towerFacade(t){const W=224,H=1120,cols=(t.core===2?6:5),rows=FLOORS,cv=
   const tex=new T.CanvasTexture(cv);tex.anisotropy=8;return tex;}
 function makeUnits(t){const cw=3.5; // half core width along slab
   if(t.core===2)return[
-    {id:'101',x0:-t.hw,x1:-cw,prim:'lake',end:-1,mir:-1},
-    {id:'102',x0: cw,x1: t.hw,prim:'lake',end: 1,mir: 1}];
+    {id:'101',x0:-t.hw,x1:-cw,prim:'lake',end:-1,mir: 1},   /* 101 = the sanctioned-plate layout (SW-zone entrance) */
+    {id:'102',x0: cw,x1: t.hw,prim:'lake',end: 1,mir:-1}];   /* 102 = its mirror (NE-zone entrance) */
   /* T-7/T-8: L-shaped. 101 = one wing, 102 = the other (both on the N-S slab),
      103 = a nose block that protrudes toward the lagoon. Numbering matches the
      sanctioned site plan; `mir` (Vastu handedness) is tied to each unit's own
      plate, independent of which end it sits on. */
   return[
-    {id:'102',x0:-t.hw,x1:-cw,prim:'end',end:-1,mir: 1},
+    {id:'102',x0:-t.hw,x1:-cw,prim:'end',end:-1,mir:-1},
     {id:'103',x0:-t.hw*0.46,x1:t.hw*0.46,prim:'lake',end:0,mir:1,nose:1,zhw:t.hd*0.95},
-    {id:'101',x0: cw,x1: t.hw,prim:'end',end: 1,mir:-1}];}
+    {id:'101',x0: cw,x1: t.hw,prim:'end',end: 1,mir: 1}];}   /* 101 = sanctioned-plate layout (S-zone entrance) */
 towers.forEach(t=>{const h=topH();
   t.units=makeUnits(t);
   // resolve each unit's primary world normal
