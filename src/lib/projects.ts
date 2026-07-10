@@ -110,7 +110,7 @@ export type ProjectIntel = Project & {
   liveLegal?: LiveLegalRead;
 };
 
-export type LegalRiskLevel = "Critical" | "High" | "Medium" | "Low";
+export type LegalRiskLevel = "Critical" | "High" | "Medium" | "Moderate" | "Low";
 export type LiveLegalRead = {
   headline?: string;
   keyFlags: string[];

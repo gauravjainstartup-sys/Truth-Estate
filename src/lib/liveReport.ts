@@ -596,17 +596,30 @@ export function liveProjectIntel(
     if (dm) return `${+dm[3]} ${MON3[+dm[2] - 1]} ${dm[1]}`;
     return monthLabel(sv) ?? undefined;
   })();
-  const riskBreakdown = obj(pick(row.modLegal, "risk_breakdown")) ?? obj(pick(row.modLegal, "score.risk_breakdown"));
+  /* The v3 legal_risks column holds the breakdown FLAT at the root —
+     {"title_risk":"LOW","developer_risk":"MODERATE",…} — with nested
+     risk_breakdown shapes accepted as fallbacks. */
+  const SEV_RE = /^(critical|high|medium|moderate|low)$/i;
+  const rbNested = obj(pick(row.modLegal, "risk_breakdown")) ?? obj(pick(row.modLegal, "score.risk_breakdown"));
+  let rbEntries: [string, unknown][] = rbNested ? Object.entries(rbNested) : [];
+  if (!rbEntries.length) {
+    const root = obj(row.modLegal);
+    if (root) rbEntries = Object.entries(root).filter(([, v]) => typeof v === "string" && SEV_RE.test(v.trim()));
+  }
   const legalRisks: NonNullable<ProjectIntel["liveLegal"]>["risks"] = [];
-  if (riskBreakdown)
-    for (const [k, v] of Object.entries(riskBreakdown).slice(0, 8)) {
-      const sev = typeof v === "string" ? v : tIn(v, ["level", "severity", "risk"]);
-      if (!sev) continue;
-      const level = /critical/i.test(sev) ? "Critical" : /high/i.test(sev) ? "High" : /medium|moderate/i.test(sev) ? "Medium" : /low/i.test(sev) ? "Low" : null;
-      if (!level) continue;
-      const label = k.replace(/_/g, " ").replace(/^\w/, (ch) => ch.toUpperCase());
-      legalRisks.push({ label, level });
-    }
+  for (const [k, v] of rbEntries.slice(0, 8)) {
+    const sev = typeof v === "string" ? v : tIn(v, ["level", "severity", "risk"]);
+    if (!sev) continue;
+    const level =
+      /critical/i.test(sev) ? "Critical"
+      : /high/i.test(sev) ? "High"
+      : /moderate/i.test(sev) ? "Moderate"
+      : /medium/i.test(sev) ? "Medium"
+      : /low/i.test(sev) ? "Low" : null;
+    if (!level) continue;
+    const label = k.replace(/_/g, " ").replace(/^\w/, (ch) => ch.toUpperCase());
+    legalRisks.push({ label, level });
+  }
   const legalKeyFlags = strList(row.legalKeyFlags, ["flag", "text", "title", "point"]);
   const liveLegal: ProjectIntel["liveLegal"] =
     row.legalHeadline || legalKeyFlags.length || legalRisks.length
