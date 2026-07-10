@@ -527,7 +527,7 @@ towers.forEach(t=>{const h=topH();
   const core=new T.Mesh(new T.BoxGeometry(7,h-LOBBY+1.5,4),new T.MeshStandardMaterial({color:'#312a20',roughness:.85}));
   core.position.set(t.x,LOBBY+(h-LOBBY)/2,t.z);core.rotation.y=t.rot;core.castShadow=true;siteGrp.add(core);
   // green vertical gardens — signature cascading planters from the project render
-  [[-t.hw*0.52,1,0.66],[t.hw*0.34,-1,0.82],[t.hw*0.60,1,0.48]].forEach(([gx,zs,frac])=>{
+  [[-t.hw*0.42,1,0.74]].forEach(([gx,zs,frac])=>{
     const gh=(h-LOBBY)*frac,gy=LOBBY+(h-LOBBY)-gh/2-(h-LOBBY)*0.03;
     const gm=new T.Mesh(new T.BoxGeometry(3.2,gh,1.15),new T.MeshStandardMaterial({color:'#4f7d33',roughness:1,emissive:'#1a3310',emissiveIntensity:.1}));
     const[gox,goz]=rotV(t.rot,gx,zs*(t.hd+0.35));
