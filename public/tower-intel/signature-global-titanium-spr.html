@@ -281,7 +281,54 @@
   .buyer-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
   .buyer-tag{font:600 10.5px/1 'Geist';padding:5px 10px;border-radius:20px;border:1px solid rgba(0,0,0,.12);color:var(--muted)}
   .buyer-tag.on{border-color:var(--gold);color:#a67c3d;background:rgba(255,206,99,.1)}
-  @media (max-width:840px){.fs-body{flex-direction:column;overflow-y:auto}.fs-left{flex:none;max-width:none;border-right:0;border-bottom:1px solid var(--line)}.fs-media{height:46vh}.fs-right{flex:none;overflow:visible}.fs-right .fs-tabs{position:static}.fs-scorestrip{grid-template-columns:repeat(4,1fr)}#title,#hint{display:none}#panel{width:min(93vw,340px)}body.tower-open #panel{top:auto;bottom:0;left:0;right:0;width:100%;max-width:100%;max-height:82vh;border-radius:18px 18px 0 0;border-bottom:0;box-shadow:0 -12px 40px rgba(0,0,0,.16)}body.tower-open.panel-min #panel{max-height:none}}
+  @media (max-width:840px){
+  #title,#hint{display:none}
+  #panel{width:min(93vw,340px)}
+  body.tower-open #panel{top:auto;bottom:0;left:0;right:0;width:100%;max-width:100%;max-height:82vh;border-radius:18px 18px 0 0;border-bottom:0;box-shadow:0 -12px 40px rgba(0,0,0,.16)}
+  body.tower-open.panel-min #panel{max-height:none}
+  /* ── flat sheet · mobile: media-first, app-like ── */
+  .fs-top{padding:8px 12px;gap:8px;flex-wrap:nowrap;align-items:center}
+  .fs-title .fe{display:none}
+  .fs-title h2{margin:0;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fs-title .fsub{margin-top:2px;font-size:8.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #fsBack,#fsClose{padding:8px 10px;font-size:10.5px;border-radius:10px;flex:0 0 auto}
+  .fs-body{flex-direction:column;overflow-y:auto;overscroll-behavior:contain}
+  .fs-body::after{content:"";flex:0 0 78px}
+  .fs-left{flex:none;max-width:none;border-right:0;background:transparent}
+  /* media first, fixed visible height */
+  .fs-media{order:-1;flex:none;height:min(46dvh,420px);min-height:300px;position:relative;border-bottom:1px solid var(--line)}
+  #fs3d,.fs-imgwrap,.fs-walk{margin:8px 10px 40px}
+  .fs3d-cap{display:none}
+  .fs-viewtabs{position:absolute;left:50%;bottom:9px;transform:translateX(-50%);z-index:4;padding:4px;gap:2px;background:rgba(255,253,247,.92);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:12px;box-shadow:0 4px 18px rgba(60,45,10,.16);white-space:nowrap}
+  .fs-viewtabs button{border:0;background:transparent;padding:7px 11px;border-radius:9px;font-size:10px}
+  /* 2D plan: pan to inspect */
+  .fs-imgwrap{overflow:auto;align-items:flex-start;justify-content:flex-start;-webkit-overflow-scrolling:touch}
+  #fsImg{max-width:none;max-height:none;width:185%;box-shadow:none}
+  /* line + floor: compact card */
+  .fs-floor{padding:10px 14px}
+  .fs-floor .ff-lines{margin-bottom:8px;gap:8px}
+  .fs-floor .ff-line{padding:5px 11px;min-width:44px}
+  .fs-floor .ff-line .fl-no{font-size:12px}
+  .fs-floor input[type=range]{margin:7px 0 4px}
+  .fs-floor .ffhint{margin-top:6px;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* verdict + ring compact */
+  .fs-idband{padding:12px 14px;gap:12px}
+  .fs-verdict{font-size:11.5px;line-height:1.45}
+  .fs-gradering{width:50px;height:50px}
+  .fs-gradering .gr-s{font-size:16px}
+  .fs-gradering .gr-g{font-size:7.5px;bottom:-7px}
+  /* score tiles: horizontal snap strip */
+  .fs-scorestrip{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .fs-scorestrip::-webkit-scrollbar{display:none}
+  .fs-sc{flex:0 0 31%;min-width:104px;scroll-snap-align:start;padding:9px 8px}
+  /* detail */
+  .fs-right{flex:none;overflow:visible}
+  .fs-right .fs-tabs{position:sticky;top:0}
+  .fs-panel{padding:14px 14px 20px}
+  /* CTA pinned to the bottom */
+  .fs-cta{position:fixed;left:0;right:0;bottom:0;z-index:6;margin:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-top:1px solid var(--line)}
+  .fs-cta-btn{padding:15px 12px;font-size:13.5px}
+}
 
 #title h1,.phead h2,#pName,.hero .hname,.fs-title h2,.clock .t,.sun-big{font-family:'Playfair Display',Georgia,serif;font-weight:500;letter-spacing:-.01em}
 </style>

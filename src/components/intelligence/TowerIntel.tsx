@@ -142,15 +142,15 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
       {/* Full-screen 3D advisor — free to explore; the full verdict is paid */}
       {modal && src && (
         <div className="fixed inset-0 z-[120] flex flex-col bg-[#f6f3ea]">
-          <div className="flex items-center gap-4 border-b border-black/10 bg-white/70 px-5 py-3">
-            <div>
-              <p className="text-[0.6rem] font-medium uppercase tracking-[0.18em] text-[#a67c3d]">Sun · Heat · Vastu Advisor</p>
-              <p className="text-[0.9rem] font-medium text-[#23272e]">{project.name}</p>
+          <div className="flex items-center gap-3 border-b border-black/10 bg-white/70 px-4 py-2 sm:gap-4 sm:px-5 sm:py-3">
+            <div className="min-w-0">
+              <p className="hidden text-[0.6rem] font-medium uppercase tracking-[0.18em] text-[#a67c3d] sm:block">Sun · Heat · Vastu Advisor</p>
+              <p className="truncate text-[0.8rem] font-medium text-[#23272e] sm:text-[0.9rem]">{project.name}</p>
             </div>
             <span className="ml-3 hidden rounded-full border border-black/12 px-2.5 py-1 text-[0.62rem] font-light text-[#6f7568] sm:inline">
               {access ? "Full verdict unlocked" : "Free to explore · one sample free"}
             </span>
-            <button onClick={() => setModal(false)} aria-label="Close" className="ml-auto grid h-9 w-9 place-items-center rounded-sm border border-black/15 bg-black/5 text-[0.95rem] text-[#23272e] transition-colors hover:border-[#a67c3d] hover:text-[#a67c3d]">✕</button>
+            <button onClick={() => setModal(false)} aria-label="Close" className="ml-auto grid h-8 w-8 flex-none place-items-center rounded-sm border border-black/15 bg-black/5 text-[0.95rem] text-[#23272e] transition-colors hover:border-[#a67c3d] hover:text-[#a67c3d] sm:h-9 sm:w-9">✕</button>
           </div>
           <iframe
             ref={iframeRef}
