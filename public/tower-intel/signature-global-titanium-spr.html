@@ -585,9 +585,10 @@ function faceLit(t,u,f,hy,sdir){const n=worldN(t,f);if(n[0]*sdir.x+n[1]*sdir.z<=
 function unitLit(t,u,fl,sdir){if(sdir.y<=0.02)return false;return faceLit(t,u,u.primL,LOBBY+(fl-0.5)*FH,sdir);}
 function unitIntensity(t,u,fl,sdir){if(sdir.y<=0.02)return 0;const n=worldN(t,u.primL);const dh=n[0]*sdir.x+n[1]*sdir.z;
   if(dh<=0.02)return 0;return faceLit(t,u,u.primL,LOBBY+(fl-0.5)*FH,sdir)?dh:0;}
+function sunUsable(sy){const a=Math.max(0,sy);return 0.30+0.70*Math.min(1,a/0.42);}   // usable-sun fraction: haze/air-mass cut low winter & dawn sun (Gurugram)
 function unitStats(t,u,flStep,hStep){flStep=flStep||1;hStep=hStep||0.25;const[sr,ss]=dayB(),noon=(sr+ss)/2;let raw=0,wt=0,am=0,pm=0,n=0;
   for(let fl=1;fl<=FLOORS;fl+=flStep){n++;for(let h=sr;h<=ss;h+=hStep){const sdir=dirPlan(h);if(sdir.y<=0.02)continue;
-    if(unitLit(t,u,fl,sdir)){raw+=hStep;if(h<noon){am+=hStep;wt+=hStep;}else{pm+=hStep;wt+=hStep*WEST_W;}}}}
+    if(unitLit(t,u,fl,sdir)){const w=hStep*sunUsable(sdir.y);raw+=w;if(h<noon){am+=w;wt+=w;}else{pm+=w;wt+=w*WEST_W;}}}}
   return{rawAvg:raw/n,wtAvg:wt/n,amAvg:am/n,pmAvg:pm/n};}
 function bearingOf(t,f){const n=worldN(t,f);const c=Math.cos(-northOff),s=Math.sin(-northOff);
   const tx=n[0]*c+n[1]*s,tz=-n[0]*s+n[1]*c;let b=Math.atan2(tx,-tz)*180/Math.PI;if(b<0)b+=360;return b;}
@@ -610,7 +611,7 @@ function floorCurve(t,u,flStep,hStep){
   if(fcCache[key])return fcCache[key];
   const[sr,ss]=dayB(),out=[];
   for(let fl=1;fl<=FLOORS;fl+=flStep){
-    let h=0;for(let hr=sr;hr<=ss;hr+=hStep){if(unitLit(t,u,fl,dirPlan(hr)))h+=hStep;}
+    let h=0;for(let hr=sr;hr<=ss;hr+=hStep){const sd=dirPlan(hr);if(unitLit(t,u,fl,sd))h+=hStep*sunUsable(sd.y);}
     out.push({fl,h});}
   fcCache[key]=out;return out;}
 function clearFloorOf(curve){
@@ -732,7 +733,7 @@ function verdict(sun,vs,lake){if(vs>=4&&sun>=5)return'✓ <b>Top pick:</b> stron
 /* ── state & panels ── */
 let scores=null,selTower=null,selUnit=null,selData=null;
 const benchShort={'-23.45':'Winter','0':'Equinox','23.45':'Summer'};
-function computeScores2(){scores=towers.map(t=>{const us=t.units.map(u=>({u,st:unitStats(t,u,5,0.4)}));
+function computeScores2(){scores=towers.map(t=>{const us=t.units.map(u=>({u,st:unitStats(t,u,3,0.2)}));
   const good=us.filter(o=>o.st.rawAvg>=BENCH).length;const best=[...us].sort((a,b)=>b.st.wtAvg-a.st.wtAvg)[0];
   const frac=us.reduce((s,o)=>s+Math.min(1,o.st.rawAvg/BENCH),0)/us.length;
   return{t,us,good,best,frac};}).sort((a,b)=>b.frac-a.frac||b.best.st.wtAvg-a.best.st.wtAvg);}
@@ -1537,7 +1538,7 @@ document.getElementById('ovRank').onclick=goRanking;
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 
 /* ═══════════ STAGE 2 — six independent scores + adjustable weights ═══════════ */
-function seasonStat(t,u,d){const s=decl;decl=d;const r=unitStats(t,u,5,0.4);decl=s;return r;}
+function seasonStat(t,u,d){const s=decl;decl=d;const r=unitStats(t,u,3,0.2);decl=s;return r;}
 function scCol(v){return v>=75?'#5cb487':v>=55?'#ecc463':v>=40?'#d6a94e':'#e08a72';}
 /* T-7/T-8 decks confirmed by the founder from the plate (nose faces N, wings face E);
    the traced straight-slab massing can't represent both wings east, so facing is authoritative. */
@@ -1570,23 +1571,30 @@ function ventScore(t,u){
   if(fc.some(f=>WIND.includes(compassOf(bearingOf(t,f)))))s+=6;                     // catches the prevailing breeze
   return Math.round(Math.max(40,Math.min(97,s)));
 }
+/* Summer heat-gain index (Cool score) — real solar load on the living facade, not an hour count:
+   direct exposure × low-angle wall-heat × afternoon peak-temp coincidence, over the summer day. */
+function heatLoad(t,u){const _d=decl;decl=23.45;const[sr,ss]=dayB(),noon=(sr+ss)/2;let load=0,nn=0;
+  for(const fl of [10,24,36]){nn++;for(let h=sr;h<=ss;h+=0.2){const sd=dirPlan(h);if(sd.y<=0.02)continue;
+    const inten=unitIntensity(t,u,fl,sd);if(inten<=0)continue;                              // direct facade exposure 0..1
+    const wall=0.35+0.65*(1-Math.min(1,Math.max(0,sd.y)/0.85));                             // low sun bakes vertical glass
+    const tod=h>noon?1.6:0.7;                                                               // afternoon = peak ambient heat
+    load+=inten*wall*tod*0.2;}}
+  decl=_d;return nn?load/nn:0;}
 const _ssCache={};
 function subScores(t,u){
   const key=t.id+'|'+u.id; if(_ssCache[key])return _ssCache[key];
   const c=vfacing(t,u);
   const eq=seasonStat(t,u,0), su=seasonStat(t,u,23.45);
   const isEnd=u.faces.length>=3, lake=(u.prim==='lake');
-  let morning=Math.round(Math.max(0,Math.min(100,(eq.amAvg/4)*100)));      // equinox AM hours → morning light
-  let cool=Math.round(Math.max(0,Math.min(100,100-(su.pmAvg/5)*100)));       // summer afternoon exposure (inverted = cooler)
-  if(/W/.test(c))cool=Math.max(0,cool-15);
-  if(t.id==='T-7'||t.id==='T-8'){const _M={N:32,NE:82,E:90,SE:76,S:48,SW:36,W:26,NW:30},_C={N:92,NE:86,E:82,SE:72,S:64,SW:48,W:44,NW:52};if(_M[c]!=null)morning=_M[c];if(_C[c]!=null)cool=_C[c];}                                    // W/NW/SW facades bake in summer
+  let morning=Math.round(Math.max(0,Math.min(100,(eq.amAvg/5.2)*100)));                 // usable equinox AM sun (haze-weighted) → morning light
+  let cool=Math.round(Math.max(5,Math.min(98,100-heatLoad(t,u)*32)));                    // inverse of the summer solar heat-load on the living facade
   const rk=(CONFIGS[t.cfg].beds===4)?['entrance','living','masterBed','kitchen','bed2','bed3','pooja','bathroom']:['entrance','living','masterBed','kitchen','bed2','bed3','bathroom'];
   const WV={entrance:3,kitchen:2.5,masterBed:2,pooja:2,living:1.5,bed2:1,bed3:1,bathroom:.8,study:.6};   // classical room importance
   const vr=rk.map(k=>({s:vastuRoomScore(k,c,t.cfg,u.mir).score,w:WV[k]||1}));
   const vastu=Math.round((vr.reduce((a,o)=>a+o.s*o.w,0)/vr.reduce((a,o)=>a+o.w,0))/5*100);   // weighted composite, classical Shastra
   const view=viewScore(t,u);
   const vent=ventScore(t,u);
-  let floor=70; try{const cf=clearFloorOf(floorCurve(t,u,4,0.4));floor=Math.round(Math.max(25,100-(cf/FLOORS)*100));}catch(e){}
+  let floor=70; try{const cf=clearFloorOf(floorCurve(t,u,2,0.25));floor=Math.round(Math.max(25,100-(cf/FLOORS)*100));}catch(e){}
   const r={morning,cool,vastu,view,vent,floor,c,amEq:eq.amAvg,pmSummer:su.pmAvg,lake,isEnd};
   _ssCache[key]=r; return r;
 }
@@ -1598,7 +1606,7 @@ flatScore=function(t,u,st){const s=subScores(t,u);const sc=composite(s);
   return{s:sc,grade,c:s.c,vs:Math.round(s.vastu/20),lake:s.lake,isEnd:s.isEnd,heat:Math.round(s.cool/20),sub:s};};
 /* rank towers by their best flat's composite (and the share of strong flats) */
 computeScores2=function(){scores=towers.map(t=>{
-    const us=t.units.map(u=>({u,st:unitStats(t,u,5,0.4),fs:flatScore(t,u,null)}));
+    const us=t.units.map(u=>({u,st:unitStats(t,u,3,0.2),fs:flatScore(t,u,null)}));
     const best=[...us].sort((a,b)=>b.fs.s-a.fs.s)[0];
     const good=us.filter(o=>o.fs.s>=65).length;
     const frac=us.reduce((a,o)=>a+o.fs.s,0)/us.length/100;
