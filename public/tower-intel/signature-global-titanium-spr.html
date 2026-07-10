@@ -476,6 +476,16 @@ poly([[1035,885],[1058,885],[1058,908],[1035,908]],'#7fcfe0',0.07,{em:'#2b9fbc',
 /* ── towers: rotated slabs, per-unit segments, roof tiles ── */
 const topH=()=>LOBBY+FLOORS*FH;
 const collMeshes=[],towerPick=[],tilePick=[];
+/* dark-bronze facade with a lit-window grid — matches the project render */
+function towerFacade(t){const W=224,H=1120,cols=(t.core===2?6:5),rows=FLOORS,cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');
+  let s=((t.x*131+t.z*17+9)>>>0)||7;const rnd=()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;};
+  const grad=g.createLinearGradient(0,0,W,0);grad.addColorStop(0,'#382e22');grad.addColorStop(.5,'#493d2c');grad.addColorStop(1,'#302819');g.fillStyle=grad;g.fillRect(0,0,W,H);
+  const cw=W/cols,rh=H/rows;
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const x=c*cw+cw*0.15,y=r*rh+rh*0.2,ww=cw*0.7,wh=rh*0.55,q=rnd();
+    g.fillStyle=q<0.16?'#e6b877':(q<0.58?'#2b2416':'#352c1d');g.fillRect(x,y,ww,wh);
+    g.fillStyle='rgba(112,96,66,0.20)';g.fillRect(x,y+wh,ww,Math.max(1,rh*0.06));}
+  g.fillStyle='rgba(18,13,7,0.6)';for(let c=0;c<=cols;c++)g.fillRect(c*cw-1,0,2,H);
+  const tex=new T.CanvasTexture(cv);tex.anisotropy=8;return tex;}
 function makeUnits(t){const cw=3.5; // half core width along slab
   if(t.core===2)return[
     {id:'101',x0:-t.hw,x1:-cw,prim:'lake',end:-1,mir:-1},
@@ -504,20 +514,26 @@ towers.forEach(t=>{const h=topH();
     if(t.id==='T-7'||t.id==='T-8') u.primL = u.nose ? [1,0] : t.lakeFace;
   });
   // podium
-  const pod=new T.Mesh(new T.BoxGeometry(t.hw*2+6,LOBBY,t.hd*2+6),new T.MeshStandardMaterial({color:'#aeb8c6',roughness:.7}));
+  const pod=new T.Mesh(new T.BoxGeometry(t.hw*2+6,LOBBY,t.hd*2+6),new T.MeshStandardMaterial({color:'#6b6047',roughness:.75}));
   pod.position.set(t.x,LOBBY/2,t.z);pod.rotation.y=t.rot;pod.castShadow=pod.receiveShadow=true;siteGrp.add(pod);
   // unit segments (full height, colored by config)
-  const base=new T.Color(CONFIGS[t.cfg].col);
+  const facMap=towerFacade(t);
   t.units.forEach((u,i)=>{const w=u.x1-u.x0;
-    const m=new T.Mesh(new T.BoxGeometry(w-.4,h-LOBBY,u.zhw*2),new T.MeshStandardMaterial({color:base.clone().offsetHSL(0,0,(i-1)*.035),roughness:.6,metalness:.12}));
+    const m=new T.Mesh(new T.BoxGeometry(w-.4,h-LOBBY,u.zhw*2),new T.MeshStandardMaterial({map:facMap,color:new T.Color('#ffffff').offsetHSL(0,0,(i-1)*.03),roughness:.62,metalness:.18}));
     const[ox,oz]=rotV(t.rot,u.cx,u.zc);
     m.position.set(t.x+ox,LOBBY+(h-LOBBY)/2,t.z+oz);m.rotation.y=t.rot;m.castShadow=m.receiveShadow=true;siteGrp.add(m);u.mesh=m;u.baseCol=m.material.color.clone();
     if(u.nose){m.userData.tower=t.id;towerPick.push(m);}});
   // core strip
-  const core=new T.Mesh(new T.BoxGeometry(7,h-LOBBY+1.5,4),new T.MeshStandardMaterial({color:'#7e8a96',roughness:.8}));
+  const core=new T.Mesh(new T.BoxGeometry(7,h-LOBBY+1.5,4),new T.MeshStandardMaterial({color:'#312a20',roughness:.85}));
   core.position.set(t.x,LOBBY+(h-LOBBY)/2,t.z);core.rotation.y=t.rot;core.castShadow=true;siteGrp.add(core);
+  // green vertical gardens — signature cascading planters from the project render
+  [[-t.hw*0.52,1,0.66],[t.hw*0.34,-1,0.82],[t.hw*0.60,1,0.48]].forEach(([gx,zs,frac])=>{
+    const gh=(h-LOBBY)*frac,gy=LOBBY+(h-LOBBY)-gh/2-(h-LOBBY)*0.03;
+    const gm=new T.Mesh(new T.BoxGeometry(3.2,gh,1.15),new T.MeshStandardMaterial({color:'#4f7d33',roughness:1,emissive:'#1a3310',emissiveIntensity:.1}));
+    const[gox,goz]=rotV(t.rot,gx,zs*(t.hd+0.35));
+    gm.position.set(t.x+gox,gy,t.z+goz);gm.rotation.y=t.rot;gm.castShadow=true;siteGrp.add(gm);});
   // floor bands
-  for(let f=8;f<FLOORS;f+=8){const ln=new T.Mesh(new T.BoxGeometry(t.hw*2+.3,.16,t.hd*2+.3),new T.MeshStandardMaterial({color:'#5b677a'}));ln.position.set(t.x,LOBBY+f*FH,t.z);ln.rotation.y=t.rot;siteGrp.add(ln);}
+  for(let f=8;f<FLOORS;f+=8){const ln=new T.Mesh(new T.BoxGeometry(t.hw*2+.3,.16,t.hd*2+.3),new T.MeshStandardMaterial({color:'#2e2619'}));ln.position.set(t.x,LOBBY+f*FH,t.z);ln.rotation.y=t.rot;siteGrp.add(ln);}
   // collision (whole slab)
   const coll=new T.Mesh(new T.BoxGeometry(t.hw*2,h-LOBBY,t.hd*2),new T.MeshBasicMaterial({visible:false}));
   coll.position.set(t.x,LOBBY+(h-LOBBY)/2,t.z);coll.rotation.y=t.rot;coll.userData.tower=t.id;siteGrp.add(coll);collMeshes.push(coll);towerPick.push(coll);
