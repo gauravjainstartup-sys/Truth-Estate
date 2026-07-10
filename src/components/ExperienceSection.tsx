@@ -1053,44 +1053,42 @@ const audiences = [
   },
 ];
 
-function useFocusReveal(ref: React.RefObject<HTMLElement | null>) {
+function AudienceSection() {
+  const ref = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const curRef = useRef<HTMLSpanElement>(null);
+  const fillRef = useRef<HTMLDivElement>(null);
+  const { open } = useJourney();
+  const { openConsult } = useConsultation();
+  useReveal(ref, 0.12);
+
+  // Cinematic focus stage: one persona owns the screen at a time and cross-fades
+  // to the next as you scroll (a sibling of the opening "…is left alone" beat).
+  // A persistent eyebrow, an NN/06 counter and the bottom rail keep your place.
   useEffect(() => {
-    const root = ref.current;
-    if (!root) return;
-    const items = root.querySelectorAll<HTMLElement>("[data-aud]");
-    items.forEach((el) => {
-      el.style.transition = "opacity 0.6s ease";
-    });
+    const track = trackRef.current;
+    if (!track) return;
+    const fps = Array.from(track.querySelectorAll<HTMLElement>("[data-fp]"));
+    const cur = curRef.current;
+    const fill = fillRef.current;
+    const N = fps.length;
+    if (!N) return;
 
     let ticking = false;
     const update = () => {
       ticking = false;
       const vh = window.innerHeight;
-      const focus = vh * 0.45;
-      let closest: HTMLElement | null = null;
-      let closestDist = Infinity;
-
-      items.forEach((el) => {
-        const r = el.getBoundingClientRect();
-        const mid = r.top + r.height * 0.5;
-        const dist = Math.abs(mid - focus);
-        if (dist < closestDist) {
-          closestDist = dist;
-          closest = el;
-        }
+      const scrollable = track.offsetHeight - vh;
+      const p = scrollable > 0 ? Math.max(0, Math.min(1, -track.getBoundingClientRect().top / scrollable)) : 0;
+      const af = p * (N - 1); // active-float: which persona holds the screen
+      fps.forEach((el, i) => {
+        const op = Math.max(0, 1 - Math.abs(i - af) * 1.7);
+        el.style.opacity = op.toFixed(3);
+        el.style.transform = `translateY(calc(-50% + ${((i - af) * 38).toFixed(1)}px))`;
+        el.style.pointerEvents = op > 0.5 ? "auto" : "none";
       });
-
-      items.forEach((el) => {
-        if (el === closest) {
-          el.style.opacity = "1";
-        } else {
-          const r = el.getBoundingClientRect();
-          const mid = r.top + r.height * 0.5;
-          const dist = Math.abs(mid - focus);
-          const op = Math.max(0.18, 1 - dist / (vh * 0.6));
-          el.style.opacity = op.toFixed(2);
-        }
-      });
+      if (cur) cur.textContent = `0${Math.min(N, Math.max(1, Math.round(af) + 1))}`.slice(-2);
+      if (fill) fill.style.width = `${(p * 100).toFixed(2)}%`;
     };
 
     const onScroll = () => {
@@ -1099,100 +1097,98 @@ function useFocusReveal(ref: React.RefObject<HTMLElement | null>) {
         requestAnimationFrame(update);
       }
     };
-
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
     update();
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [ref]);
-}
-
-function AudienceSection() {
-  const ref = useRef<HTMLDivElement>(null);
-  const { open } = useJourney();
-  const { openConsult } = useConsultation();
-  useReveal(ref, 0.12);
-  useFocusReveal(ref);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
 
   return (
-    <div
-      ref={ref}
-      className="bg-[#F5F0E8] px-6 pb-[14vh] pt-[14vh] md:px-8 md:pb-[20vh] md:pt-[20vh]"
-    >
-      {/* Heading */}
-      <div className="mx-auto max-w-3xl">
-        <h2
-          data-r
-          className="font-serif text-[2.2rem] font-medium leading-[1.08] text-[#1a1a1a] md:text-[3.6rem] lg:text-[4.2rem]"
-          style={{ opacity: 0, transform: "translateY(24px)" }}
-        >
-          Who We Work
-          <br />
-          Best With.
-        </h2>
-        <p
-          data-r
-          className="mt-7 max-w-lg font-serif text-[1.1rem] font-light leading-snug text-[#1a1a1a]/50 md:mt-10 md:text-[1.4rem]"
-          style={{ opacity: 0, transform: "translateY(16px)" }}
-        >
-          Independent advice is most valuable when
-          <br />
-          the decision is too important to get wrong.
-        </p>
-      </div>
-
-      {/* Audience blocks */}
-      <div className="mx-auto mt-[10vh] max-w-3xl md:mt-[14vh]">
-        {audiences.map((a, i) => (
-          <div key={a.title}>
-            {i > 0 && (
-              <div className="my-[6vh] h-px w-full bg-[#1a1a1a]/6 md:my-[7vh]" />
-            )}
-            <div data-aud style={{ opacity: 0.18 }}>
-              <h3 className="font-serif text-[1.5rem] font-medium leading-[1.15] text-[#1a1a1a] md:text-[2rem] lg:text-[2.3rem]">
-                {a.title}
-              </h3>
-              <p className="mt-4 max-w-lg text-[0.92rem] font-light leading-relaxed text-[#1a1a1a]/55 md:mt-5 md:text-[1.08rem]">
-                {a.line}
+    <div ref={ref} className="bg-[#F5F0E8]">
+      {/* One persona owns the screen; scroll cross-fades to the next. */}
+      <div ref={trackRef} className="relative h-[600vh]">
+        <div className="sticky top-0 flex h-svh flex-col overflow-hidden px-6 py-[9vh] md:px-10 md:py-[11vh] lg:px-[6vw]">
+          {/* persistent context — the section thesis stays as the personas change */}
+          <div className="flex flex-none items-start justify-between gap-6">
+            <div>
+              <p className="text-[11px] font-light uppercase tracking-[0.34em] text-[#c9a96e]">Who We Work Best With</p>
+              <p className="mt-3 max-w-[30ch] font-serif text-[0.95rem] font-light italic leading-snug text-[#1a1a1a]/50 md:text-[1.25rem]">
+                Independent advice is most valuable when the decision is too important to get wrong.
               </p>
             </div>
+            <p className="shrink-0 whitespace-nowrap font-serif text-[1rem] tabular-nums text-[#1a1a1a]/30 md:text-[1.25rem]">
+              <span ref={curRef} className="font-semibold text-[#1a1a1a]">01</span> / 06
+            </p>
           </div>
-        ))}
+
+          {/* the focus area — six personas stacked; only ~one visible at a time */}
+          <div className="relative flex-1">
+            {audiences.map((a, i) => (
+              <div
+                key={a.title}
+                data-fp
+                className="absolute inset-x-0 top-1/2"
+                style={{ opacity: i === 0 ? 1 : 0, transform: "translateY(-50%)", willChange: "opacity, transform" }}
+              >
+                <div className="font-serif text-[1.3rem] leading-none text-[#c9a96e] md:text-[1.8rem]">
+                  {String(i + 1).padStart(2, "0")}
+                </div>
+                <h3 className="mt-4 max-w-[15ch] font-serif text-[2.5rem] font-semibold leading-[1.02] tracking-[-0.015em] text-[#1a1a1a] md:text-[4.2rem] lg:text-[5.2rem]">
+                  {a.title}
+                </h3>
+                <p className="mt-6 max-w-[34ch] text-[1.02rem] font-light leading-relaxed text-[#1a1a1a]/55 md:max-w-[40ch] md:text-[1.35rem]">
+                  {a.line}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* progress rail */}
+          <div className="relative h-0.5 flex-none bg-[#1a1a1a]/10">
+            <div ref={fillRef} className="absolute left-0 top-0 h-full w-0 bg-[#c9a96e]" />
+          </div>
+        </div>
       </div>
 
       {/* Bottom editorial + CTAs */}
-      <div className="mx-auto mt-[12vh] max-w-2xl text-center md:mt-[16vh]">
-        <h3
-          data-r
-          className="font-serif text-[1.7rem] font-medium leading-[1.2] text-[#1a1a1a] md:text-[2.6rem] lg:text-[3rem]"
-          style={{ opacity: 0, transform: "translateY(18px)" }}
-        >
-          If you value independent judgement,
-          <br />
-          <span className="font-light italic text-[#1a1a1a]/55">
-            we&rsquo;ll probably get along.
-          </span>
-        </h3>
-
-        <div
-          data-r
-          className="mt-12 flex flex-col items-center gap-6 md:mt-14"
-          style={{ opacity: 0, transform: "translateY(14px)" }}
-        >
-          <button
-            onClick={() => open()}
-            className="rounded-sm bg-[#1e6b45] px-10 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/10 transition-colors duration-500 hover:bg-[#238c55]"
+      <div className="px-6 pb-[14vh] pt-[6vh] md:px-8 md:pb-[20vh]">
+        <div className="mx-auto max-w-2xl text-center">
+          <h3
+            data-r
+            className="font-serif text-[1.7rem] font-medium leading-[1.2] text-[#1a1a1a] md:text-[2.6rem] lg:text-[3rem]"
+            style={{ opacity: 0, transform: "translateY(18px)" }}
           >
-            {PRIMARY_CTA}
-          </button>
-          <button
-            onClick={() => openConsult({ sourceKind: "homepage" })}
-            className="group inline-flex items-center gap-2 text-[12px] font-light tracking-[0.14em] text-[#1a1a1a]/55 transition-colors duration-300 hover:text-[#1a1a1a]"
-          >
-            Request Independent Advice
-            <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
-              &rarr;
+            If you value independent judgement,
+            <br />
+            <span className="font-light italic text-[#1a1a1a]/55">
+              we&rsquo;ll probably get along.
             </span>
-          </button>
+          </h3>
+
+          <div
+            data-r
+            className="mt-12 flex flex-col items-center gap-6 md:mt-14"
+            style={{ opacity: 0, transform: "translateY(14px)" }}
+          >
+            <button
+              onClick={() => open()}
+              className="rounded-sm bg-[#1e6b45] px-10 py-4 text-[13px] font-medium tracking-[0.08em] text-white shadow-lg shadow-black/10 transition-colors duration-500 hover:bg-[#238c55]"
+            >
+              {PRIMARY_CTA}
+            </button>
+            <button
+              onClick={() => openConsult({ sourceKind: "homepage" })}
+              className="group inline-flex items-center gap-2 text-[12px] font-light tracking-[0.14em] text-[#1a1a1a]/55 transition-colors duration-300 hover:text-[#1a1a1a]"
+            >
+              Request Independent Advice
+              <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
+                &rarr;
+              </span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
