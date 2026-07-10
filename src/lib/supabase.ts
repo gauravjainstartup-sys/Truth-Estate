@@ -226,6 +226,92 @@ export type LiveBacklogFull = {
   modRuleVerdict: unknown;
   modRiskIntel: unknown;
   modRiskVerdict: unknown;
+  /* ── backlog_listing_public_v3 — the detail-page rollups (all null on older views) ── */
+  /* developer-level rollups from developers_overview */
+  devSlug: string | null;
+  devTotal: number | null;
+  devDelivered: number | null;
+  devOngoing: number | null;
+  devLapsed: number | null;
+  devDelayedPct: number | null;
+  devAvgDelayMonths: number | null;
+  devFinancialBand: string | null;
+  devLegalBand: string | null;
+  devLegalScore: number | null;
+  companyType: string | null;
+  /* developer financial metrics (values arrive as text from jsonb) */
+  finLeverage: number | null;        // net_debt_to_equity
+  finCoverage: number | null;        // interest_coverage_ratio
+  finCash: number | null;            // ocf_to_ebitda
+  finMargin: number | null;          // ebitda_margin
+  finInventory: number | null;       // inventory_to_sales_years
+  finMetricScores: unknown;          // pipeline's own per-metric scoring payload
+  /* construction & sales velocity */
+  sectionTag: string | null;
+  demandScore: number | null;
+  paceScore: number | null;
+  salesVelocityPct: number | null;
+  totalUnits: number | null;
+  soldUnits: number | null;
+  constructionProgressPct: number | null;
+  lastQprDate: string | null;
+  reraPromiseDate: string | null;
+  predictedDeliveryDate: string | null;
+  predictedDelayMonths: number | null;
+  paceVsScheduleMonths: number | null;
+  chancesOfDelayPct: number | null;
+  /* legal & compliance */
+  legalScore: number | null;
+  legalHeadline: string | null;
+  legalKeyFlags: unknown;
+  legalLastUpdated: string | null;
+  legalProjectCases: unknown;
+  legalDeveloperCases: unknown;
+  legalTopRisks: unknown;
+  legalWhatThisMeans: unknown;
+  legalBuyerChecks: unknown;
+  /* location intelligence */
+  locVerdict: string | null;
+  locKeyStrengths: unknown;
+  locPillarTag: string | null;
+  locPlannedInfra: unknown;
+  locSupplyCatalysts: unknown;
+  locMarketStage: string | null;
+  locGrowthDrivers: unknown;
+  locRisks: unknown;
+  locPoiDensity: unknown;
+  locMetro: unknown;
+  locAirport: unknown;
+  locRoads: unknown;
+  locBusiness: unknown;
+  locLastMile: unknown;
+  locConnStrengths: unknown;
+  locConnConstraints: unknown;
+  /* project USPs / X-factors */
+  uspCards: unknown;
+  uspConsultants: unknown;
+  brandedStatus: string | null;
+  brandedReasoning: string | null;
+  ecosystemStatus: string | null;
+  ecosystemName: string | null;
+  ecosystemReasoning: string | null;
+  /* ROI · risk · FAQ rollups */
+  roiCostCr: number | null;
+  roiExitYears: number | null;
+  roiStdTimeline: number | null;
+  roiCityCagr: number | null;
+  roiIdealCagr: number | null;
+  roiActualCagr: number | null;
+  roiIdealProfit: number | null;
+  roiAdjProfit: number | null;
+  roiBleed: number | null;
+  riskVerdictCleaned: string | null;
+  riskNoActiveFlags: boolean | null;
+  faqLocationScore: number | null;
+  faqLocCatScores: unknown;
+  faqLocStrength: string | null;
+  faqLocGap: string | null;
+  faqFinancialVerdict: string | null;
 };
 
 export function liveSlug(name: string): string {
@@ -238,9 +324,11 @@ export function liveSlug(name: string): string {
 const BACKLOG_QUERY = 'select=*&order="truthScore".desc.nullslast&limit=500';
 
 export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
-  // Prefer the extended view (adds RERA link, density, open area, land size);
-  // fall back to the base view so a missing/late v2 can never blank the catalog.
+  // Prefer the richest view (v3 adds developer rollups, financial metrics,
+  // construction velocity, legal, location and ROI detail for the project
+  // pages); fall back v3 → v2 → base so a missing view never blanks the catalog.
   const rows =
+    (await sbRows("backlog_listing_public_v3", BACKLOG_QUERY)) ??
     (await sbRows("backlog_listing_public_v2", BACKLOG_QUERY)) ??
     (await sbRows("backlog_listing_public", BACKLOG_QUERY));
   if (!rows) return null;
@@ -289,6 +377,85 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
       modRuleVerdict: r.rule_verdict,
       modRiskIntel: r.risk_intelligence,
       modRiskVerdict: r.risk_verdict,
+      /* v3 rollups — null wherever an older view served the row */
+      devSlug: s(r.developer_slug),
+      devTotal: n(r.developer_total_projects),
+      devDelivered: n(r.developer_delivered_projects),
+      devOngoing: n(r.developer_ongoing_projects),
+      devLapsed: n(r.developer_lapsed_projects),
+      devDelayedPct: n(r.developer_delayed_pct),
+      devAvgDelayMonths: n(r.developer_avg_delay_months),
+      devFinancialBand: s(r.developer_financial_band),
+      devLegalBand: s(r.developer_legal_band),
+      devLegalScore: n(r.developer_legal_score),
+      companyType: s(r.company_type_badge),
+      finLeverage: n(r.net_debt_to_equity),
+      finCoverage: n(r.interest_coverage_ratio),
+      finCash: n(r.ocf_to_ebitda),
+      finMargin: n(r.ebitda_margin),
+      finInventory: n(r.inventory_to_sales_years),
+      finMetricScores: r.metric_scores,
+      sectionTag: s(r.overall_section_tag),
+      demandScore: n(r.demand_sales_score),
+      paceScore: n(r.construction_pace_score),
+      salesVelocityPct: n(r.sales_velocity_pct),
+      totalUnits: n(r.total_units),
+      soldUnits: n(r.sold_units),
+      constructionProgressPct: n(r.construction_progress_pct),
+      lastQprDate: s(r.last_updated_qpr_date),
+      reraPromiseDate: s(r.rera_promise_date),
+      predictedDeliveryDate: s(r.predicted_delivery_date),
+      predictedDelayMonths: n(r.predicted_delay_months),
+      paceVsScheduleMonths: n(r.pace_vs_schedule_months),
+      chancesOfDelayPct: n(r.chances_of_delay_pct),
+      legalScore: n(r.legal_score),
+      legalHeadline: s(r.legal_assessment_headline),
+      legalKeyFlags: r.legal_key_flags,
+      legalLastUpdated: s(r.legal_last_updated_date),
+      legalProjectCases: r.legal_project_litigation_cases,
+      legalDeveloperCases: r.legal_developer_litigation_cases,
+      legalTopRisks: r.legal_top_risks,
+      legalWhatThisMeans: r.legal_what_this_means,
+      legalBuyerChecks: r.legal_buyer_checks,
+      locVerdict: s(r.location_overall_verdict_headline),
+      locKeyStrengths: r.location_key_strengths,
+      locPillarTag: s(r.location_score_pillar_tag),
+      locPlannedInfra: r.location_planned_infrastructure,
+      locSupplyCatalysts: r.location_upcoming_supply_catalysts,
+      locMarketStage: s(r.location_market_stage_insight),
+      locGrowthDrivers: r.location_growth_drivers,
+      locRisks: r.location_vulnerabilities_risks,
+      locPoiDensity: r.location_hyperlocal_poi_density,
+      locMetro: r.location_connectivity_metro,
+      locAirport: r.location_connectivity_airport,
+      locRoads: r.location_connectivity_roads,
+      locBusiness: r.location_connectivity_business_districts,
+      locLastMile: r.location_last_mile_access_audit,
+      locConnStrengths: r.location_connectivity_strengths,
+      locConnConstraints: r.location_connectivity_constraints,
+      uspCards: r.x_factor_usp_cards,
+      uspConsultants: r.x_factor_consultants,
+      brandedStatus: s(r.x_factor_branded_status),
+      brandedReasoning: s(r.x_factor_branded_reasoning),
+      ecosystemStatus: s(r.x_factor_ecosystem_status),
+      ecosystemName: s(r.x_factor_ecosystem_name),
+      ecosystemReasoning: s(r.x_factor_ecosystem_reasoning),
+      roiCostCr: n(r.roi_property_cost_cr),
+      roiExitYears: n(r.roi_exit_years_default),
+      roiStdTimeline: n(r.roi_standard_timeline_years),
+      roiCityCagr: n(r.roi_city_cagr),
+      roiIdealCagr: n(r.roi_ideal_cagr),
+      roiActualCagr: n(r.roi_actual_cagr),
+      roiIdealProfit: n(r.roi_ideal_projected_profit),
+      roiAdjProfit: n(r.roi_adjusted_projected_profit),
+      roiBleed: n(r.roi_opportunity_bleed),
+      riskVerdictCleaned: s(r.risk_verdict_cleaned),
+      riskNoActiveFlags: typeof r.risk_no_active_flags === "boolean" ? r.risk_no_active_flags : null,
+      faqLocationScore: n(r.faq_location_score),
+      faqLocCatScores: r.faq_location_category_scores,
+      faqLocStrength: s(r.faq_location_primary_strength),
+      faqLocGap: s(r.faq_location_primary_gap),
+      faqFinancialVerdict: s(r.faq_financial_verdict),
     });
   }
   return out.length ? out : null;

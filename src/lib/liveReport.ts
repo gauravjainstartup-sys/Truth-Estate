@@ -11,8 +11,8 @@
 
 import type { LiveBacklogFull, LiveConfiguration, LiveExtendedDetails } from "./supabase";
 import { MARKETS } from "./markets";
-import type { FinRating } from "./developers";
-import { developerSlugOf, type ProjectIntel, type ProjectOps, type ScoreInputKey } from "./projects";
+import type { DeveloperIntel, FinKey, FinRating, LegalCase } from "./developers";
+import { developerSlugOf, type ProjectIntel, type ProjectOps, type RoiModel, type ScoreInputKey } from "./projects";
 import mediaManifest from "./live-media.manifest.json";
 
 /* Media now arrives as Supabase Storage URLs, which pass straight through.
@@ -44,6 +44,93 @@ const numAt = (root: unknown, path: string): number | null => {
 const listAt = (root: unknown, path: string): string[] => {
   const v = pick(root, path);
   return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && !!x.trim()) : [];
+};
+
+/* ── v3 payload readers — the view emits jsonb whose inner keys the
+   pipeline owns; read by alias, never assume, drop what doesn't parse ── */
+const asArr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
+/* an array that may hold strings OR objects carrying the text under a known key */
+function strList(v: unknown, keys: string[] = ["text", "title", "name", "risk", "point"]): string[] {
+  const out: string[] = [];
+  for (const it of asArr(v)) {
+    if (typeof it === "string" && it.trim()) out.push(it.trim());
+    else {
+      const o = obj(it);
+      if (o) for (const k of keys) { const t = typeof o[k] === "string" && (o[k] as string).trim(); if (t) { out.push(t as string); break; } }
+    }
+  }
+  return out;
+}
+const tIn = (o: unknown, keys: string[]): string | null => {
+  const r = obj(o); if (!r) return null;
+  for (const k of keys) { const v = r[k]; if (typeof v === "string" && v.trim()) return v.trim(); if (typeof v === "number" && Number.isFinite(v)) return String(v); }
+  return null;
+};
+const nIn = (o: unknown, keys: string[]): number | null => {
+  const r = obj(o); if (!r) return null;
+  for (const k of keys) {
+    const v = r[k];
+    if (typeof v === "number" && Number.isFinite(v)) return v;
+    if (typeof v === "string") { const x = parseFloat(v); if (Number.isFinite(x)) return x; }
+  }
+  return null;
+};
+const kmLabel = (o: unknown): string | null => {
+  const km = nIn(o, ["distance_km", "dist_km", "km", "distance"]);
+  if (km != null) return `${Math.round(km * 10) / 10} km`;
+  return tIn(o, ["distance", "dist"]);
+};
+const minLabel = (o: unknown): string | null => {
+  const min = nIn(o, ["time_min", "travel_time_min", "minutes", "min", "drive_time_min"]);
+  if (min != null) return `${Math.round(min)} min`;
+  return tIn(o, ["time", "travel_time"]);
+};
+
+/* pipeline dates arrive as "2027-06-30", "30/06/2027", "Jun 2027", "30 Jun 2027" … */
+const MON3 = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function parseAnyDate(sv: string | null): { y: number; m: number } | null {
+  if (!sv) return null;
+  const t = sv.trim();
+  let m = t.match(/^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?/);                    // 2027-06-30
+  if (m) return { y: +m[1], m: +m[2] - 1 };
+  m = t.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);                       // 30/06/2027
+  if (m) return { y: +m[3], m: +m[2] - 1 };
+  m = t.match(/([A-Za-z]{3,9})\s+(\d{4})/);                                // Jun 2027 / 30 Jun 2027
+  if (m) { const mi = MON3.findIndex((x) => m![1].toLowerCase().startsWith(x.toLowerCase())); if (mi >= 0) return { y: +m[2], m: mi }; }
+  return null;
+}
+const monthLabel = (sv: string | null): string | null => {
+  const d = parseAnyDate(sv);
+  return d ? `${MON3[d.m]} ${d.y}` : sv; // an unparseable date still reads as text
+};
+const quarterLabel = (sv: string | null): string | null => {
+  const d = parseAnyDate(sv);
+  return d ? `Q${Math.floor(d.m / 3) + 1} ${d.y}` : null;
+};
+const monthsBetween = (a: string | null, b: string | null): number | null => {
+  const da = parseAnyDate(a), db = parseAnyDate(b);
+  return da && db ? (db.y - da.y) * 12 + (db.m - da.m) : null;
+};
+
+/* financial-metric ratings from the audited values (same thresholds the
+   flagship registry was graded on; conservative middles) */
+const FIN_THRESHOLDS: Record<FinKey, (v: number) => FinRating> = {
+  leverage:  (v) => (v <= 0.5 ? "strong" : v <= 1.2 ? "moderate" : "weak"),
+  coverage:  (v) => (v >= 4 ? "strong" : v >= 2 ? "moderate" : "weak"),
+  cash:      (v) => (v >= 0.8 ? "strong" : v >= 0.4 ? "moderate" : "weak"),
+  margin:    (v) => (v >= 20 ? "strong" : v >= 12 ? "moderate" : "weak"),
+  inventory: (v) => (v <= 2 ? "strong" : v <= 4 ? "moderate" : "weak"),
+};
+const FIN_TOP: Record<FinKey, (v: number) => boolean> = {
+  leverage: (v) => v <= 0.2, coverage: (v) => v >= 8, cash: (v) => v >= 1,
+  margin: (v) => v >= 30, inventory: (v) => v <= 1.2,
+};
+const FIN_FMT: Record<FinKey, (v: number) => string> = {
+  leverage: (v) => `${Math.round(v * 100) / 100}×`,
+  coverage: (v) => `${Math.round(v * 10) / 10}×`,
+  cash: (v) => `${Math.round(v * 100) / 100}×`,
+  margin: (v) => `${Math.round(v * 10) / 10}%`,
+  inventory: (v) => `${Math.round(v * 10) / 10} yrs`,
 };
 
 /* pipeline bands (strong / good / moderate / weak) → the report's
@@ -179,9 +266,10 @@ export function liveProjectIntel(
   const recoMatch = row.insight?.match(/^\s*([A-Za-z][A-Za-z ]{2,22}?)\s+project\b/i);
   const recommendation = recoMatch ? recoMatch[1].trim() : "Under Review";
 
+  const delayPct = row.chancesOfDelayPct ?? row.delayChancePct;
   const confidence =
-    row.delayChancePct != null
-      ? row.delayChancePct <= 25 ? "High" : row.delayChancePct <= 50 ? "Medium" : "Low"
+    delayPct != null
+      ? delayPct <= 25 ? "High" : delayPct <= 50 ? "Medium" : "Low"
       : row.delayRisk
         ? /low/i.test(row.delayRisk) ? "High" : /high/i.test(row.delayRisk) ? "Low" : "Medium"
         : "Provisional";
@@ -199,22 +287,56 @@ export function liveProjectIntel(
     .map((k) => numAt(fin, k))
     .filter((v): v is number => v != null);
   const subsAvg = subs.length ? subs.reduce((a, b) => a + b, 0) / subs.length : null;
-  const pace = row.constructionPaceNum;
+  const pace = row.paceVsScheduleMonths ?? row.constructionPaceNum;
+
+  /* v3 audited metric values → per-metric ratings (preferred over module JSON) */
+  const finVals: Partial<Record<FinKey, number>> = {};
+  if (row.finLeverage != null) finVals.leverage = row.finLeverage;
+  if (row.finCoverage != null) finVals.coverage = row.finCoverage;
+  if (row.finCash != null) finVals.cash = row.finCash;
+  if (row.finMargin != null) finVals.margin = row.finMargin;
+  if (row.finInventory != null) finVals.inventory = row.finInventory;
+  const finKeys = Object.keys(finVals) as FinKey[];
+  const finRatings: Partial<Record<FinKey, FinRating>> = {};
+  for (const k of finKeys) finRatings[k] = FIN_THRESHOLDS[k](finVals[k]!);
+  const finAvg = finKeys.length
+    ? finKeys.reduce((a, k) => a + (finRatings[k] === "strong" ? 3 : finRatings[k] === "moderate" ? 2 : 1), 0) / finKeys.length
+    : null;
+  const finRatingOverall: FinRating | null =
+    finAvg != null && finKeys.length >= 2 ? (finAvg >= 2.6 ? "strong" : finAvg >= 1.9 ? "moderate" : "weak") : null;
+
+  const velocityPct =
+    row.salesVelocityPct ??
+    (row.soldUnits != null && (row.totalUnits ?? 0) > 0 ? Math.round((row.soldUnits / row.totalUnits!) * 1000) / 10 : null) ??
+    absorptionPct;
+  const legalRatingV3: FinRating | null =
+    row.legalScore != null
+      ? row.legalScore >= 80 ? "strong" : row.legalScore >= 60 ? "moderate" : "weak"
+      : bandRating(row.devLegalBand);
+  const deliveryRatingV3: FinRating | null =
+    row.devDelayedPct != null ? (row.devDelayedPct <= 15 ? "strong" : row.devDelayedPct <= 35 ? "moderate" : "weak") : null;
+
   const anatomy: Record<ScoreInputKey, FinRating> = {
-    delivery: bandRating(bands.developer) ?? riskRating(row.delayRisk) ?? "moderate",
-    legal: bandRating(bands.legal) ?? "moderate",
-    financials: subsAvg != null ? (subsAvg >= 75 ? "strong" : subsAvg >= 45 ? "moderate" : "weak") : bandRating(bands.fundamentals) ?? "moderate",
-    liquidity: absorptionPct != null ? (absorptionPct >= 85 ? "strong" : absorptionPct >= 45 ? "moderate" : "weak") : "moderate",
+    delivery: deliveryRatingV3 ?? bandRating(bands.developer) ?? riskRating(row.delayRisk) ?? "moderate",
+    legal: legalRatingV3 ?? bandRating(bands.legal) ?? "moderate",
+    financials:
+      finRatingOverall ??
+      (subsAvg != null ? (subsAvg >= 75 ? "strong" : subsAvg >= 45 ? "moderate" : "weak") : bandRating(bands.fundamentals) ?? "moderate"),
+    liquidity: velocityPct != null ? (velocityPct >= 85 ? "strong" : velocityPct >= 45 ? "moderate" : "weak") : "moderate",
     pricing: bandRating(bands.roi) ?? "moderate",
     construction: pace != null ? (pace >= -1 ? "strong" : pace >= -8 ? "moderate" : "weak") : "moderate",
   };
 
-  /* strengths / watch-outs from the rules engine's own words */
+  /* strengths / watch-outs — the rules engine's words first, then the v3
+     location & legal intelligence (dedupe keeps the count honest) */
   const primaryRisk = textAt(ruleV, "one_liner_inputs.risk");
   const strengths = dedupe([
     textAt(ruleV, "one_liner_inputs.strength_1") ?? "",
     textAt(ruleV, "one_liner_inputs.strength_2") ?? "",
     ...listAt(ruleV, "key_signals"),
+    ...strList(row.locKeyStrengths),
+    ...(row.faqLocStrength ? [row.faqLocStrength] : []),
+    ...strList(row.locGrowthDrivers),
   ]).filter((s) => s !== primaryRisk).slice(0, 5);
   const watchouts = dedupe([
     primaryRisk ?? "",
@@ -222,16 +344,21 @@ export function liveProjectIntel(
     ...listAt(riskI, "financials.triggered"),
     ...(pick(riskI, "track_record.delay_triggered") === true ? ["Developer delay rule triggered by the risk engine"] : []),
     ...(pick(riskI, "track_record.lapsed_triggered") === true ? ["Developer lapse rule triggered by the risk engine"] : []),
+    ...strList(row.legalTopRisks, ["risk", "title", "text", "name"]),
+    ...strList(row.locRisks),
+    ...(row.faqLocGap ? [row.faqLocGap] : []),
+    ...strList(row.locConnConstraints),
   ]).slice(0, 5);
 
   /* priorities served — claimed only where the signal is clearly strong */
   const tags: string[] = [];
   if (row.delayRisk && /low/i.test(row.delayRisk)) tags.push("On-Time Delivery");
   if (absorptionPct != null && absorptionPct >= 90) tags.push("Liquidity");
-  if (bandRating(bands.legal) === "strong") tags.push("Legal Safety");
-  if ((row.expectedCagrNum ?? 0) >= 12) tags.push("Capital Appreciation");
+  if (bandRating(bands.legal) === "strong" || (row.legalScore ?? 0) >= 80 || row.riskNoActiveFlags === true) tags.push("Legal Safety");
+  if ((row.expectedCagrNum ?? 0) >= 12 || (row.roiIdealCagr ?? 0) >= 12) tags.push("Capital Appreciation");
   if (bandRating(bands.developer) === "strong") tags.push("Developer Reputation");
-  if (bandRating(bands.location) === "strong") tags.push("Location");
+  if (bandRating(bands.location) === "strong" || /Prime Advantage|Strong Access/i.test(row.locPillarTag ?? "")) tags.push("Location");
+  if (/High Momentum/i.test(row.sectionTag ?? "")) tags.push("Construction Progress");
 
   /* configurations table (when filled) is richer than the caption string */
   /* One physical unit can arrive as several configuration rows — a duplex with
@@ -322,7 +449,7 @@ export function liveProjectIntel(
   const psfLo = range?.[0] ?? market?.psf.low ?? null;
   const superAreas = homes.map((h) => h.superSqft).filter((n) => n > 0);
   const smallestSuper = superAreas.length ? Math.min(...superAreas) : null;
-  const fallbackCr = row.minPriceCr ?? (row.budget ? parseFloat(row.budget.replace(/[^\d.]/g, "")) : NaN);
+  const fallbackCr = row.minPriceCr ?? row.roiCostCr ?? (row.budget ? parseFloat(row.budget.replace(/[^\d.]/g, "")) : NaN);
   const lo =
     psfLo && smallestSuper
       ? Math.round(((psfLo * smallestSuper) / 1e7) * 10) / 10
@@ -382,21 +509,255 @@ export function liveProjectIntel(
   const openAreaPct = row.openAreaPct != null ? Math.round(row.openAreaPct) : null;
   const landAcres = row.landAcres != null ? Math.round(row.landAcres * 10) / 10 : null;
 
+  /* ════════ backlog_listing_public_v3 → the detail page's own slots ════════ */
+
+  /* ── developer dossier — lights up Pillar I, Legal history & the FAQs
+     through developerOf(); built only when the rollup actually has a ledger ── */
+  const mapCases = (v: unknown, scope: "project" | "developer"): LegalCase[] =>
+    asArr(v)
+      .map((c): LegalCase | null => {
+        const title = tIn(c, ["title", "case_title", "name", "case", "matter"]);
+        if (!title) return null;
+        const impactRaw = tIn(c, ["impact", "severity"]) ?? "";
+        return {
+          title,
+          court: tIn(c, ["court", "forum", "authority"]) ?? "On public record",
+          status: tIn(c, ["status", "stage", "outcome"]) ?? "Tracked",
+          relevance: tIn(c, ["relevance"]) ?? (scope === "project" ? "Direct" : "Contextual"),
+          impact: /high/i.test(impactRaw) ? "High" : /low/i.test(impactRaw) ? "Low" : "Medium",
+          scope,
+          summary: tIn(c, ["summary", "details", "description", "note"]) ?? "",
+          buyerImpact: tIn(c, ["buyer_impact", "buyerImpact", "what_this_means", "implication"]) ?? "",
+          ...(tIn(c, ["ref", "link", "url", "case_no", "case_number"]) ? { ref: tIn(c, ["ref", "link", "url", "case_no", "case_number"])! } : {}),
+        };
+      })
+      .filter((c): c is LegalCase => !!c);
+  const legalCases = [...mapCases(row.legalProjectCases, "project"), ...mapCases(row.legalDeveloperCases, "developer")];
+
+  const finValues: Partial<Record<FinKey, string>> = {};
+  const finBand: Partial<Record<FinKey, "exceptional" | "strong" | "moderate" | "watch">> = {};
+  for (const k of finKeys) {
+    finValues[k] = FIN_FMT[k](finVals[k]!);
+    if (FIN_TOP[k](finVals[k]!)) finBand[k] = "exceptional";
+  }
+  const devLedger = row.devTotal != null && row.devDelivered != null;
+  const liveDeveloper: DeveloperIntel | undefined =
+    row.developer && devLedger
+      ? {
+          slug: row.devSlug ?? developerSlugOf(row.developer) ?? row.developer.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+          name: row.developer,
+          est: "",
+          listed: false,
+          listedNote: "",
+          tagline: "",
+          about: "",
+          signature: [],
+          brandValue: "",
+          recent: [],
+          pipeline: [],
+          performance: {
+            launched: row.devTotal!,
+            delivered: row.devDelivered!,
+            ongoing: row.devOngoing ?? Math.max(0, row.devTotal! - row.devDelivered!),
+            onTimePct: row.devDelayedPct != null ? Math.round(100 - row.devDelayedPct) : 0,
+            avgDelayMonths: row.devAvgDelayMonths != null ? Math.round(row.devAvgDelayMonths * 10) / 10 : 0,
+            ...(row.devLapsed != null ? { lapsed: row.devLapsed } : {}),
+          },
+          financials: {
+            leverage: finRatings.leverage ?? bandRating(row.devFinancialBand) ?? "moderate",
+            coverage: finRatings.coverage ?? bandRating(row.devFinancialBand) ?? "moderate",
+            cash: finRatings.cash ?? bandRating(row.devFinancialBand) ?? "moderate",
+            margin: finRatings.margin ?? bandRating(row.devFinancialBand) ?? "moderate",
+            inventory: finRatings.inventory ?? bandRating(row.devFinancialBand) ?? "moderate",
+          },
+          ...(Object.keys(finValues).length ? { finValues } : {}),
+          ...(Object.keys(finBand).length ? { finBand } : {}),
+          finNote:
+            row.faqFinancialVerdict ??
+            (row.companyType || row.devFinancialBand
+              ? `${row.companyType ? `${row.companyType} · ` : ""}financial band from filings: ${row.devFinancialBand ?? "tracked"}.`
+              : "Assessed from public filings by the scoring pipeline."),
+          legal: row.devLegalBand ?? "tracked",
+          ...(legalCases.length ? { legalCases } : {}),
+          verdict:
+            row.faqFinancialVerdict ??
+            `Track record computed from ${row.devTotal} RERA filings: ${row.devDelivered} delivered, ${row.devOngoing ?? 0} ongoing${
+              row.devDelayedPct != null ? `, ${Math.round(row.devDelayedPct)}% delayed` : ""
+            }${row.devAvgDelayMonths != null ? ` (avg ${Math.round(row.devAvgDelayMonths)} mo slippage)` : ""}.`,
+        }
+      : undefined;
+
+  /* ── ROI model — the pipeline's own projection replaces the corridor
+     approximation wherever the view has computed it ── */
+  const crFromAbs = (abs: number | null): number | null => (abs != null ? Math.round((abs / 1e7) * 100) / 100 : null);
+  const liveRoi: RoiModel | undefined =
+    row.roiIdealCagr != null && row.roiActualCagr != null && row.roiCostCr != null
+      ? (() => {
+          const ticketCr = Math.round(row.roiCostCr! * 10) / 10;
+          const horizonYears = row.roiExitYears ?? 5;
+          const grow = (r: number) => Math.round(ticketCr * Math.pow(1 + r / 100, horizonYears) * 100) / 100;
+          const benchValueCr = crFromAbs(row.roiIdealProfit) != null ? Math.round((ticketCr + crFromAbs(row.roiIdealProfit)!) * 100) / 100 : grow(row.roiIdealCagr!);
+          const adjValueCr = crFromAbs(row.roiAdjProfit) != null ? Math.round((ticketCr + crFromAbs(row.roiAdjProfit)!) * 100) / 100 : grow(row.roiActualCagr!);
+          return {
+            horizonYears,
+            corridor3Y: row.roiCityCagr != null ? `~${Math.round(row.roiCityCagr * 10) / 10}% CAGR (city benchmark)` : "the tracked city benchmark",
+            benchCagr: Math.round(row.roiIdealCagr! * 10) / 10,
+            adjCagr: Math.round(row.roiActualCagr! * 10) / 10,
+            ticketCr,
+            benchValueCr,
+            adjValueCr,
+            deltaCr: Math.round((adjValueCr - benchValueCr) * 100) / 100,
+          };
+        })()
+      : undefined;
+
+  /* ── construction & sales — the QPR read; expectedPct is derived from the
+     pace-vs-schedule months at the project's own observed build rate ── */
+  const actualPct = row.constructionProgressPct != null ? Math.round(row.constructionProgressPct) : null;
+  const reraDate = monthLabel(row.reraPromiseDate) ?? row.promised;
+  const predictedDate = monthLabel(row.predictedDeliveryDate) ?? row.predicted;
+  const behindMonths = row.paceVsScheduleMonths != null ? -row.paceVsScheduleMonths : row.predictedDelayMonths;
+  let expectedPct: number | null = null;
+  if (actualPct != null) {
+    if (behindMonths == null || behindMonths === 0) expectedPct = actualPct;
+    else {
+      const elapsed = monthsBetween(row.registrationDate, row.lastQprDate);
+      const rate = elapsed && elapsed > 3 ? actualPct / elapsed : 1.5; // %-points per month, observed else a conservative build norm
+      expectedPct = Math.max(0, Math.min(100, Math.round(actualPct + behindMonths * rate)));
+    }
+  }
+  const conAbsorption = velocityPct != null ? Math.round(velocityPct) : absorptionPct;
+  const construction: ProjectOps["construction"] =
+    actualPct != null && expectedPct != null && conAbsorption != null && reraDate && predictedDate
+      ? {
+          actualPct,
+          expectedPct,
+          absorptionPct: conAbsorption,
+          reraDate,
+          predictedDate,
+          qpr: quarterLabel(row.lastQprDate) ?? "latest QPR",
+        }
+      : undefined;
+
+  /* ── location intelligence → the report's own POI / connectivity / infra rows ── */
+  const poiGroups: [string, string][] = [
+    ["hospitals", "Hospital"],
+    ["schools_colleges", "School / college"],
+    ["office_spaces", "Offices"],
+    ["malls_shopping", "Retail & dining"],
+  ];
+  const pois: NonNullable<NonNullable<ProjectOps["location"]>["pois"]> = [];
+  for (const [key, label] of poiGroups) {
+    const groupRows = asArr(pick(row.locPoiDensity, key));
+    groupRows.forEach((it, i) => {
+      const name = tIn(it, ["name", "title"]);
+      if (!name) return;
+      pois.push({
+        name,
+        sub: tIn(it, ["type", "category", "sub", "descriptor"]) ?? label,
+        ...(nIn(it, ["rating", "google_rating"]) != null ? { rating: nIn(it, ["rating", "google_rating"])! } : {}),
+        dist: kmLabel(it) ?? "nearby",
+        ...(i === 0 ? { key: true } : {}),
+      });
+    });
+  }
+  const connectivity: NonNullable<NonNullable<ProjectOps["location"]>["connectivity"]> = [];
+  if (obj(row.locMetro) && tIn(row.locMetro, ["name", "station", "nearest_station"]))
+    connectivity.push({
+      icon: "◇",
+      name: tIn(row.locMetro, ["name", "station", "nearest_station"])!,
+      sub: tIn(row.locMetro, ["line", "corridor"]) ?? "metro station",
+      dist: kmLabel(row.locMetro) ?? "—",
+      tag: minLabel(row.locMetro) ?? "metro",
+    });
+  for (const rd of asArr(row.locRoads).slice(0, 3)) {
+    const name = tIn(rd, ["name", "road", "title"]);
+    if (!name) continue;
+    const direct = /direct/i.test(tIn(rd, ["type", "access"]) ?? "");
+    connectivity.push({
+      icon: "▤", name, sub: tIn(rd, ["type", "access", "class"]) ?? "arterial road",
+      dist: kmLabel(rd) ?? "—", tag: direct ? "Direct" : minLabel(rd) ?? "road", ...(direct ? { direct: true } : {}),
+    });
+  }
+  if (obj(row.locAirport) && (kmLabel(row.locAirport) || minLabel(row.locAirport)))
+    connectivity.push({
+      icon: "✈",
+      name: tIn(row.locAirport, ["name", "airport"]) ?? "IGI Airport",
+      sub: tIn(row.locAirport, ["via", "route"]) ?? "airport",
+      dist: kmLabel(row.locAirport) ?? "—",
+      tag: minLabel(row.locAirport) ?? "airport",
+    });
+  for (const b of asArr(row.locBusiness).slice(0, 3)) {
+    const name = tIn(b, ["name", "district", "title"]);
+    if (!name) continue;
+    connectivity.push({ icon: "▦", name, sub: tIn(b, ["type", "class"]) ?? "business district", dist: kmLabel(b) ?? "—", tag: minLabel(b) ?? "hub" });
+  }
+  const infra: NonNullable<NonNullable<ProjectOps["location"]>["infra"]> = [];
+  for (const it of asArr(row.locPlannedInfra).slice(0, 6)) {
+    const title = tIn(it, ["name", "title", "project"]);
+    if (!title) continue;
+    infra.push({
+      cat: tIn(it, ["type", "category", "cat"]) ?? "Infrastructure",
+      status: tIn(it, ["status"]) ?? "Under Construction",
+      title,
+      body: tIn(it, ["details", "description", "body", "summary", "impact_reasoning"]) ?? "",
+      impact: /high/i.test(tIn(it, ["impact", "importance"]) ?? "") ? "High" : "Medium",
+      eta: tIn(it, ["timeline", "eta", "expected_completion", "completion", "year"]) ?? "—",
+    });
+  }
+  for (const it of asArr(row.locSupplyCatalysts).slice(0, 3)) {
+    const title = tIn(it, ["name", "title", "project"]);
+    if (!title || infra.some((x) => x.title === title)) continue;
+    infra.push({
+      cat: "Real estate",
+      status: tIn(it, ["status", "stage"]) ?? "Announced",
+      title,
+      body: tIn(it, ["details", "description", "body", "summary"]) ?? "",
+      impact: "Medium",
+      eta: tIn(it, ["timeline", "eta", "completion", "year"]) ?? "—",
+    });
+  }
+  const location: ProjectOps["location"] =
+    pois.length || connectivity.length || infra.length
+      ? {
+          ...(pois.length ? { pois: pois.slice(0, 9) } : {}),
+          ...(connectivity.length ? { connectivity: connectivity.slice(0, 6) } : {}),
+          ...(infra.length ? { infra } : {}),
+        }
+      : undefined;
+
+  /* ── project USPs — the pipeline's substantiated differentiators ── */
+  const usps: NonNullable<ProjectOps["usps"]> = [];
+  for (const c of asArr(row.uspCards).slice(0, 6)) {
+    const title = tIn(c, ["title"]);
+    const body = tIn(c, ["insight", "body", "deep_insight"]);
+    if (title && body && !usps.some((u) => u.title === title)) usps.push({ title, body });
+  }
+  if (row.brandedStatus === "Branded" && row.brandedReasoning) usps.push({ title: "Branded development", body: row.brandedReasoning });
+  if (/Township/i.test(row.ecosystemStatus ?? "") && row.ecosystemReasoning)
+    usps.push({ title: row.ecosystemName ? `Part of ${row.ecosystemName}` : "Part of a township ecosystem", body: row.ecosystemReasoning });
+  const consultants = strList(row.uspConsultants, ["name", "title", "consultant"]);
+  if (consultants.length >= 2) usps.push({ title: "Marquee consultants on record", body: consultants.slice(0, 6).join(" · ") });
+
   const ops: ProjectOps = {
     ...(row.location ? { address: row.location } : {}),
-    ...(totalUnits != null ? { units: totalUnits } : {}),
+    ...(row.totalUnits != null ? { units: Math.round(row.totalUnits) } : totalUnits != null ? { units: totalUnits } : {}),
     ...(landAcres != null ? { landAcres } : {}),
     ...(density != null ? { density } : {}),
     ...(openAreaPct != null ? { openAreaPct } : {}),
-    ...(row.promised ? { possession: row.promised } : {}),
+    ...(row.promised ? { possession: row.promised } : reraDate ? { possession: reraDate } : {}),
     ...(launchLabel ? { launch: launchLabel } : {}),
     ...(ext?.floorsRange ? { floors: ext.floorsRange } : {}),
     ...(heroDateLabel(ext?.heroDate ?? null) ? { reviewed: heroDateLabel(ext!.heroDate)! } : {}),
     ...(row.reraId ? { reraId: row.reraId } : {}),
     ...(row.reraUrl ? { reraUrl: row.reraUrl } : {}),
+    ...(row.legalHeadline ? { reraNote: row.legalHeadline } : {}),
     ...(price ? { price } : {}),
     ...(homes.length ? { homes } : {}),
     ...(Object.keys(media).length ? { media } : {}),
+    ...(construction ? { construction } : {}),
+    ...(location ? { location } : {}),
+    ...(usps.length ? { usps: usps.slice(0, 8) } : {}),
   };
 
   return {
@@ -411,17 +772,20 @@ export function liveProjectIntel(
     tags,
     reason:
       row.insight ??
+      row.riskVerdictCleaned ??
       textAt(ruleV, "verdict") ??
       `Independently scored ${Math.round(row.truthScore ?? 0)}/100 by our pipeline from RERA filings and public records.`,
     strengths,
     watchouts,
     slug: row.slug,
-    devSlug: row.developer ? developerSlugOf(row.developer) : undefined,
+    devSlug: row.devSlug ?? (row.developer ? developerSlugOf(row.developer) : undefined),
     marketSlug: market?.slug,
     marketShort: market?.short ?? marketName,
     psf: market?.psf ?? null,
     sizeBand: ext?.superAreaRange ?? null,
     anatomy,
     ops,
+    ...(liveDeveloper ? { liveDeveloper } : {}),
+    ...(liveRoi ? { liveRoi } : {}),
   };
 }

@@ -98,6 +98,12 @@ export type ProjectIntel = Project & {
   sizeBand: string | null; // indicative sq ft from ticket ÷ corridor psf
   anatomy: Record<ScoreInputKey, FinRating>;
   ops?: ProjectOps; // operational specifics for the projects we track most closely
+  /* Live-pipeline data seams — a developer dossier / ROI model computed from
+     the scored view rather than the hand-curated registries. When present,
+     developerOf()/roiModel() serve these, so the SAME report components light
+     up for pipeline projects without any UI change. */
+  liveDeveloper?: DeveloperIntel;
+  liveRoi?: RoiModel;
 };
 
 function sizeBand(p: Project, avgPsf: number | undefined): string | null {
@@ -401,7 +407,7 @@ export function alternativesIn(market: string, excludeName: string): ProjectInte
    rich without us inventing precision we can't stand behind. */
 
 export const developerOf = (p: ProjectIntel): DeveloperIntel | undefined =>
-  DEVELOPERS.find((d) => d.name === p.developer);
+  p.liveDeveloper ?? DEVELOPERS.find((d) => d.name === p.developer);
 export const marketOf = (p: ProjectIntel): MarketIntel | undefined =>
   MARKETS.find((m) => m.name === p.market);
 
@@ -488,6 +494,7 @@ export type RoiModel = {
 };
 
 export function roiModel(p: ProjectIntel): RoiModel | null {
+  if (p.liveRoi) return p.liveRoi; // pipeline-computed model for live projects
   const market = marketOf(p);
   if (!market) return null;
   const horizonYears = 5;
