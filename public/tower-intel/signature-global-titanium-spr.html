@@ -63,8 +63,16 @@
   .rk .track{flex:1;height:8px;border-radius:5px;background:rgba(0,0,0,.06);overflow:hidden;position:relative}
   .rk .fill{position:absolute;top:0;height:100%;border-radius:5px;background:linear-gradient(90deg,#b9742a,var(--sun))}
   .rk .v{width:62px;text-align:right;font:600 10.5px/1 ui-monospace,monospace;color:#a67c3d}
+  .rk .rk-sun{width:23px;height:23px;flex:0 0 auto;display:flex;align-items:center;justify-content:center}
   .hintline{font:500 10px/1.5 ui-monospace,monospace;color:#726d5c;margin:6px 0 2px}
   .callout{margin:11px 0 2px;background:rgba(63,160,106,.09);border:1px solid rgba(63,160,106,.32);border-radius:11px;padding:11px 13px;font-size:12px;line-height:1.5;color:#3d3a30}.callout b{color:#23272e}
+  .twx{margin:9px 0 4px;border:1px solid var(--line);border-radius:12px;background:rgba(0,0,0,.02);overflow:hidden}
+  .twx>summary{list-style:none;cursor:pointer;padding:10px 13px;font:600 10px/1 ui-monospace,monospace;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:7px;user-select:none}
+  .twx>summary::-webkit-details-marker{display:none}
+  .twx>summary::after{content:'\25be';margin-left:auto;transition:transform .2s ease;font-size:11px;color:var(--muted)}
+  .twx[open]>summary::after{transform:rotate(180deg)}
+  .twx[open]>summary{border-bottom:1px solid var(--line)}
+  .twx-in{padding:2px 13px 12px}.twx-in .sech:first-child{margin-top:11px}
   .chart{margin-top:6px;background:rgba(0,0,0,.02);border:1px solid var(--line);border-radius:10px;padding:8px 8px 4px}
   .clegend{display:flex;flex-wrap:wrap;gap:9px;margin-top:6px;font:500 10px/1 ui-monospace,monospace;color:var(--muted)}
   .clegend span{display:inline-flex;align-items:center;gap:5px}.clegend i{width:11px;height:3px;border-radius:2px}
@@ -260,7 +268,7 @@
   .buyer-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
   .buyer-tag{font:600 10.5px/1 'Geist';padding:5px 10px;border-radius:20px;border:1px solid rgba(0,0,0,.12);color:var(--muted)}
   .buyer-tag.on{border-color:var(--gold);color:#a67c3d;background:rgba(255,206,99,.1)}
-  @media (max-width:840px){.fs-body{flex-direction:column}.fs-left{flex:none;height:42vh;border-right:0;border-bottom:1px solid var(--line)}.fs-scorestrip{grid-template-columns:repeat(4,1fr)}#title,#hint{display:none}#panel{width:min(93vw,340px)}}
+  @media (max-width:840px){.fs-body{flex-direction:column}.fs-left{flex:none;height:42vh;border-right:0;border-bottom:1px solid var(--line)}.fs-scorestrip{grid-template-columns:repeat(4,1fr)}#title,#hint{display:none}#panel{width:min(93vw,340px)}body.tower-open #panel{top:auto;bottom:0;left:0;right:0;width:100%;max-width:100%;max-height:82vh;border-radius:18px 18px 0 0;border-bottom:0;box-shadow:0 -12px 40px rgba(0,0,0,.16)}body.tower-open.panel-min #panel{max-height:none}}
 
 #title h1,.phead h2,#pName,.hero .hname,.fs-title h2,.clock .t,.sun-big{font-family:'Playfair Display',Georgia,serif;font-weight:500;letter-spacing:-.01em}
 </style>
@@ -292,8 +300,8 @@
 <div id="ovDock" class="card">
   <div class="ovd-hint">Pick a tower — its <b>sun, heat &amp; Vastu</b>, floor by floor</div>
   <div class="ovd-acts">
-    <button id="ovSun" class="ovd-btn">☀&nbsp;&nbsp;Sun &amp; season</button>
-    <button id="ovRank" class="ovd-btn primary">★&nbsp;&nbsp;Sunniest tower ▸</button>
+    <button id="ovSun" class="ovd-btn">▶&nbsp;&nbsp;Play sun movement</button>
+    <button id="ovRank" class="ovd-btn primary">★&nbsp;&nbsp;Select best tower ▸</button>
   </div>
 </div>
 
@@ -590,7 +598,7 @@ function bandsFor(clearFl){
 
 function floorMatrixHTML(t,sel,mCurves,bands,clearFl){
   const cols=sel.length;
-  let head=`<div style="display:grid;grid-template-columns:36px repeat(${cols},1fr);gap:2px;margin-bottom:4px;position:sticky;top:0;background:rgba(12,18,29,.95);padding:2px 0;z-index:2"><div style="font:500 8px/1 ui-monospace;color:#9a9c95">floor</div>${sel.map(r=>`<div style="text-align:center;font:700 10px/1 'Geist';color:#23272e">${r.u.id}</div>`).join('')}</div>`;
+  let head=`<div style="display:grid;grid-template-columns:36px repeat(${cols},1fr);gap:2px;margin-bottom:4px;position:sticky;top:0;background:rgba(255,255,255,.96);border-bottom:1px solid var(--line);padding:3px 0;z-index:2"><div style="font:500 8px/1 ui-monospace;color:var(--muted)">floor</div>${sel.map(r=>`<div style="text-align:center;font:700 10px/1 'Geist';color:#23272e">${r.u.id}</div>`).join('')}</div>`;
   let rows='';
   for(let fl=FLOORS;fl>=1;fl--){
     const isSky=fl===30,inVal=fl>=bands.vLo&&fl<=bands.vHi,inPrem=fl>=bands.pLo&&fl<=bands.pHi;
@@ -598,7 +606,7 @@ function floorMatrixHTML(t,sel,mCurves,bands,clearFl){
     let cells='';
     sel.forEach((r,ci)=>{const h=mCurves[ci][fl-1].h;
       const a=(0.10+Math.min(1,h/10)*0.55).toFixed(2);
-      cells+=`<div style="background:rgba(255,206,99,${h>0.3?a:0.03});border-radius:3px;text-align:center;font:600 8.5px/16px ui-monospace;color:${h>=4?'#ffe9bd':h>0.3?'#c9a45e':'#abaea1'}">${h>0.3?h.toFixed(1):'\u2013'}</div>`;});
+      cells+=`<div style="background:rgba(255,206,99,${h>0.3?a:0.03});border-radius:3px;text-align:center;font:600 8.5px/16px ui-monospace;color:${h>=4?'#5f4712':h>0.3?'#7c5e22':'#b0b3a8'}">${h>0.3?h.toFixed(1):'\u2013'}</div>`;});
     rows+=`<div style="display:grid;grid-template-columns:36px repeat(${cols},1fr);gap:2px;margin-bottom:2px;align-items:center">
       <div style="font:500 8px/1 ui-monospace;color:${isSky?'#e0b667':'#9a9c95'};display:flex;align-items:center;gap:3px"><span style="width:5px;height:5px;border-radius:50%;background:${dot};flex:0 0 auto"></span>F${fl}${isSky?' \u2605':''}</div>${cells}</div>`;}
   return `<div class="sech">Floor \u00d7 flat \u00b7 sun hours per floor</div>
@@ -686,7 +694,7 @@ function computeScores2(){scores=towers.map(t=>{const us=t.units.map(u=>({u,st:u
 let siteView='intro';
 function goRanking(){siteView='ranking';renderOverview();}
 function goIntro(){siteView='intro';document.body.classList.remove('show-priorities');renderOverview();}
-function renderOverview(){selTower=null;selUnit=null;towers.forEach(t=>{t.tileGrp.visible=false;t.units.forEach(u=>{u.tileLabel.visible=false;u.mesh.material.color.copy(u.baseCol);u.mesh.material.emissiveIntensity=0;});});
+function renderOverview(){selTower=null;selUnit=null;document.body.classList.remove('tower-open');towers.forEach(t=>{t.tileGrp.visible=false;t.units.forEach(u=>{u.tileLabel.visible=false;u.mesh.material.color.copy(u.baseCol);u.mesh.material.emissiveIntensity=0;});});
   document.getElementById('pClose').style.display='none';
   if(!scores)computeScores2();
   if(siteView==='ranking')renderRanking();else renderIntro();}
@@ -707,6 +715,10 @@ function renderIntro(){
   document.getElementById('actExplore').onclick=()=>{document.body.classList.add('panel-min');document.getElementById('pMin').textContent='+';};
   document.getElementById('actSun').onclick=()=>{document.body.classList.add('sun-open');};
 }
+function sunIcon(v){v=Math.max(0,Math.min(1,v));const col=v>=.72?'#f2a71e':v>=.5?'#e0a02e':v>=.32?'#cf9a34':'#b7a273';
+  const cr=(3.0+2.8*v),rl=(2.2+3.6*v),cx=12,cy=12;let rays='';
+  for(let i=0;i<8;i++){const a=i*Math.PI/4,r0=cr+1.8,r1=cr+1.8+rl;rays+=`<line x1="${(cx+Math.cos(a)*r0).toFixed(1)}" y1="${(cy+Math.sin(a)*r0).toFixed(1)}" x2="${(cx+Math.cos(a)*r1).toFixed(1)}" y2="${(cy+Math.sin(a)*r1).toFixed(1)}" stroke="${col}" stroke-width="1.7" stroke-linecap="round" opacity="${(0.3+0.7*v).toFixed(2)}"/>`;}
+  return `<svg width="23" height="23" viewBox="0 0 24 24">${rays}<circle cx="12" cy="12" r="${cr.toFixed(1)}" fill="${col}"/></svg>`;}
 function renderRanking(){
   document.body.classList.remove('ov-intro');
   const win=scores[0],bc=vfacing(win.t,win.best.u);
@@ -717,7 +729,7 @@ function renderRanking(){
   html+=`<div class="hero"><div class="htag">★ BEST FOR YOUR PRIORITIES</div><div class="hname">Tower ${win.t.id}</div>
     <div class="hline">Its best, <b>Flat ${win.best.u.id} (${bc}-facing)</b> — <b>${win.best.fs.s}/100 (${win.best.fs.grade})</b>. Morning <b>${win.best.fs.sub.morning}</b> · summer-cool <b>${win.best.fs.sub.cool}</b> · Vastu <b>${win.best.fs.sub.vastu}</b>.</div></div>`;
   html+='<div class="sech">Ranking · weighted composite</div>';
-  scores.forEach((sc,i)=>{html+=`<div class="rk ${i===0?'best':''}" data-t="${sc.t.id}"><span class="pos">${i+1}</span><span class="nm">${sc.t.id}</span><span class="cfg">${sc.t.cfg}</span><span class="track"><span class="fill" style="left:0;width:${sc.best.fs.s}%"></span></span><span class="v">${sc.best.fs.s}/100</span></div>`;});
+  scores.forEach((sc,i)=>{html+=`<div class="rk ${i===0?'best':''}" data-t="${sc.t.id}"><span class="pos">${i+1}</span><span class="nm">${sc.t.id}</span><span class="cfg">${sc.t.cfg}</span><span class="rk-sun" title="${sc.best.st.rawAvg.toFixed(1)}h winter sun">${sunIcon(Math.min(1,0.14+sc.best.st.rawAvg/7.4))}</span><span class="track"><span class="fill" style="left:0;width:${sc.best.fs.s}%"></span></span><span class="v">${sc.best.fs.s}/100</span></div>`;});
   html+='<div class="actrow"><button class="minibtn" id="adjBtn">⚖ Adjust priorities</button><button class="minibtn" id="howBtn">ⓘ How scored</button></div>';
   html+='<div class="howbox" id="howBox" style="display:none"><p><b>Six independent scores.</b> Each flat is graded 0–100 on morning sun, summer heat, Vastu, view, airflow and floor — shown separately, never blended away.</p><p><b>You set the weights.</b> The composite is your weighting of the six — open <b>Adjust priorities</b> and every ranking recomputes live.</p><p><b>Real orientation &amp; plate Vastu.</b> North is calibrated to the site plan (T-2 living = NW); room directions are traced from the sanctioned plates — <b>provisional, pending your Vastu consultant</b>.</p><p><b>Per-floor sun.</b> Neighbouring G+40 towers shadow low floors; the value band starts where a stack reaches ~90% of its top-floor sun.</p></div>';
   html+='<div class="howbtn" id="deepBtn">Deeper analysis <span>▾</span></div><div class="howbox" id="deepBox" style="display:none"></div>';
@@ -753,17 +765,17 @@ function renderTowerPanel(){const t=selTower;document.getElementById('pClose').s
   const best=curves[0],clearFl=clearFloorOf(best.curve),bands=bandsFor(clearFl);
   const mCurves=selData.map(r=>floorCurve(t,r.u,1,0.4));
   const bandLow=bandAvg(best.curve,1,10),bandMid=bandAvg(best.curve,11,25),bandHigh=bandAvg(best.curve,26,40);
-  let html='<div class="callout" style="margin-top:0">\u25bc <b>The flats are on the roof.</b> Click a coloured tile on this tower\u2019s roof (or a row below) to open its floor plan and full intelligence.</div>';
-  html+='<div class="sech">Flats on every floor</div>';
+  let html='<div class="sech">Flats on every floor</div>';
   const _tt=(t.id==='T-7'||t.id==='T-8'),_DEG={N:0,NE:45,E:90,SE:135,S:180,SW:225,W:270,NW:315};
   selData.forEach(r=>{const c=_tt?vfacing(t,r.u):compassOf(bearingOf(t,r.u.primL)),b=_tt?_DEG[c]:bearingOf(t,r.u.primL);
     const q=r.st.rawAvg<0.4?'no direct sun':r.st.amAvg>r.st.pmAvg*1.4?'AM sun':r.st.pmAvg>r.st.amAvg*1.4?'PM sun':'all-day sun';
     const rl2=r.u.faces.find(fc=>fc[0]===-r.u.primL[0]&&fc[1]===-r.u.primL[1]);
     const rst=(rl2&&r.st.rawAvg<2)?unitStats(t,Object.assign({},r.u,{primL:rl2}),4,0.4):null;
-    html+=`<div class="ulr" data-u="${r.u.id}"><span class="sw" style="background:${CONFIGS[t.cfg].col}"></span><span class="nm">${r.u.id}</span><span class="or">${c} ${Math.round(b)}\u00b0</span><span class="ty">${t.cfg} \u00b7 ${q}${rst&&rst.rawAvg>2?' \u00b7 bedrooms '+rst.rawAvg.toFixed(1)+'h \u2600':''}</span><span class="hh">${r.st.rawAvg.toFixed(1)}h</span><span style="font:700 10.5px/1 'Geist';color:${gradeColor(r.fs.grade)};border:1px solid ${gradeColor(r.fs.grade)};border-radius:6px;padding:3px 6px;margin-left:7px;flex:0 0 auto">${r.fs.s}</span></div>`;});
-  /* \u2500 floor analysis \u2500 */
-  html+='<div class="sech">Floor analysis \u00b7 sun hours by floor</div><div class="chart" id="flChart"></div><div class="clegend" id="flLeg"></div>';
+    html+=`<div class="ulr" data-u="${r.u.id}"><span class="sw" style="background:${CONFIGS[t.cfg].col}"></span><span class="nm" style="width:auto;white-space:nowrap">Line ${String(r.u.id).slice(-2)}</span><span class="or">${c} ${Math.round(b)}\u00b0</span><span class="ty">${t.cfg} \u00b7 ${q}${rst&&rst.rawAvg>2?' \u00b7 bedrooms '+rst.rawAvg.toFixed(1)+'h \u2600':''}</span><span class="hh">${r.st.rawAvg.toFixed(1)}h</span><span style="font:700 10.5px/1 'Geist';color:${gradeColor(r.fs.grade)};border:1px solid ${gradeColor(r.fs.grade)};border-radius:6px;padding:3px 6px;margin-left:7px;flex:0 0 auto">${r.fs.s}</span></div>`;});
+  /* \u2500 floor analysis \u00b7 matrix + bands collapsed \u2500 */
   html+=`<div class="hintline">${clearFl==null?'This stack gets little direct winter sun at any floor \u2014 orientation-driven, not height-driven.':clearFl<=6?'Full sun from the lowest floors \u2014 no neighbouring tower shadows this facade in winter.':`Neighbouring towers shadow the lower floors in winter \u2014 full sun arrives around <b>floor ${clearFl}</b> for Line ${String(best.r.u.id).slice(-2)}.`}</div>`;
+  html+='<details class="twx"><summary>\u2600&nbsp;&nbsp;Sun by floor \u2014 full breakdown</summary><div class="twx-in">';
+  html+='<div class="sech">Floor analysis \u00b7 sun hours by floor</div><div class="chart" id="flChart"></div><div class="clegend" id="flLeg"></div>';
   html+=floorMatrixHTML(t,selData,mCurves,bands,clearFl);
   html+=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:10px 0 4px">
     <div style="background:rgba(0,0,0,.03);border:1px solid var(--line);border-radius:9px;padding:9px 10px">
@@ -782,6 +794,7 @@ function renderTowerPanel(){const t=selTower;document.getElementById('pClose').s
       <div style="font:500 8.5px/1.4 ui-monospace;color:#726d5c;margin-top:4px">unbroken views \u00b7 sky terrace at 30F \u00b7 top 2 floors: roof heat</div>
     </div>
   </div>`;
+  html+='</div></details>';
   /* buy recommendation */
   html+=`<div class="sech">Which flat to buy \u00b7 composite score</div>
   ${selData.map((r,i)=>{const cfl=clearFloorOf(curves[i].curve),fb=bandsFor(cfl);
@@ -1403,13 +1416,13 @@ camApply();
 function flyTo(tx,ty,tz,rad,polr,azr){camTween={t0:performance.now(),dur:800,f:{x:target.x,y:target.y,z:target.z,r:radius,p:pol,a:az},t:{x:tx,y:ty,z:tz,r:rad,p:polr,a:azr!=null?azr:az}};}
 function camStep(){if(!camTween)return;const k=Math.min(1,(performance.now()-camTween.t0)/camTween.dur),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2,a=camTween.f,b=camTween.t;target.set(a.x+(b.x-a.x)*e,a.y+(b.y-a.y)*e,a.z+(b.z-a.z)*e);radius=a.r+(b.r-a.r)*e;pol=a.p+(b.p-a.p)*e;az=a.a+(b.a-a.a)*e;camApply();if(k>=1)camTween=null;}
 let hintLabelSprite=null;
-function selectTower(id){const t=towers.find(x=>x.id===id);if(!t)return;selTower=t;document.body.classList.remove('ov-intro');document.body.classList.remove('panel-min');document.getElementById('pMin').textContent='–';
+function selectTower(id){const t=towers.find(x=>x.id===id);if(!t)return;selTower=t;document.body.classList.remove('ov-intro');document.body.classList.remove('panel-min');document.body.classList.add('tower-open');document.getElementById('pMin').textContent='–';
   towers.forEach(o=>{o.tileGrp.visible=o===t;o.units.forEach(u=>u.tileLabel.visible=o===t);});
   // remove old hint label
   if(hintLabelSprite){siteGrp.remove(hintLabelSprite);hintLabelSprite=null;}
   // add "↓ click a flat" hint above this tower's roof
   const h=topH();
-  hintLabelSprite=label(t.x,t.z,h+30,'↓  click a flat to open its analysis',{fs:32,scale:.68,bg:'rgba(255,206,99,.18)',border:'rgba(255,206,99,.9)',fg:'#ffe3a6'});
+  hintLabelSprite=label(t.x,t.z,h+30,'↓  click a flat to open its analysis',{fs:32,scale:.68,bg:'rgba(26,32,24,.9)',border:'rgba(255,206,99,.85)',fg:'#ffe3a6'});
   renderTowerPanel();
   flyTo(t.x,topH()+6,t.z,120,0.32,az);}
 function backToSite(){selTower=null;if(hintLabelSprite){siteGrp.remove(hintLabelSprite);hintLabelSprite=null;}renderOverview();flyTo(0,40,20,520,0.8,-0.9);}
@@ -1458,7 +1471,7 @@ const ndial=document.getElementById('northdial');
 ndial.addEventListener('input',()=>{northOff=NORTH_CAL+ndial.value*Math.PI/180;document.getElementById('noff').textContent=ndial.value+'°';setTime(parseFloat(timeEl.value));scores=null;if(document.body.classList.contains('flat-open')&&selTower&&selUnit){selData=null;openFlat(selTower,selUnit);}else if(selTower){renderTowerPanel();}else renderOverview();});
 document.getElementById('sunToggle').onclick=()=>document.body.classList.add('sun-open');
 document.getElementById('sunClose').onclick=()=>document.body.classList.remove('sun-open');
-document.getElementById('ovSun').onclick=()=>document.body.classList.add('sun-open');
+document.getElementById('ovSun').onclick=()=>{document.body.classList.add('sun-open');if(!playing){playing=true;const pb=document.getElementById('play');if(pb)pb.textContent='❚❚';}};
 document.getElementById('ovRank').onclick=goRanking;
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 
