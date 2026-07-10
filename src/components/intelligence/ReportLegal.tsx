@@ -8,13 +8,15 @@ import { developerOf, legalStatus, type ProjectIntel } from "@/lib/projects";
    with a buyer-impact read, and a before-you-sign checklist. Inverts to a
    red-led layout when the project itself is flagged. */
 
-type Lvl = "Low" | "Moderate" | "High";
+type Lvl = "Low" | "Medium" | "Moderate" | "High" | "Critical";
 const LVL: Record<Lvl, string> = {
   Low: "text-[#1e6b45] border-[#1e6b45]/25 bg-[#1e6b45]/[0.05]",
+  Medium: "text-[#9a7a2e] border-[#9a7a2e]/25 bg-[#9a7a2e]/[0.06]",
   Moderate: "text-[#9a7a2e] border-[#9a7a2e]/25 bg-[#9a7a2e]/[0.06]",
   High: "text-[#b0503e] border-[#b0503e]/28 bg-[#b0503e]/[0.05]",
+  Critical: "text-[#8f2f1e] border-[#8f2f1e]/40 bg-[#8f2f1e]/[0.08]",
 };
-const DOT: Record<Lvl, string> = { Low: "bg-[#1e6b45]", Moderate: "bg-[#9a7a2e]", High: "bg-[#b0503e]" };
+const DOT: Record<Lvl, string> = { Low: "bg-[#1e6b45]", Medium: "bg-[#9a7a2e]", Moderate: "bg-[#9a7a2e]", High: "bg-[#b0503e]", Critical: "bg-[#8f2f1e]" };
 
 export default function ReportLegal({ p }: { p: ProjectIntel }) {
   const dev = developerOf(p);
@@ -33,12 +35,16 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
 
   const [ddLimit, setDdLimit] = useState(3);
 
-  const matrix: { label: string; level: Lvl; note: string }[] = [
-    { label: "Title risk", level: flagged ? "High" : status === "watch" ? "Moderate" : "Low", note: "Land title & RERA registration" },
-    { label: "Developer risk", level: hasHistory ? "Moderate" : "Low", note: "Track record behind the build" },
-    { label: "Litigation risk", level: flagged ? "High" : hasHistory ? "Moderate" : "Low", note: "Live & historical disputes" },
-    { label: "Regulatory risk", level: flagged ? "High" : "Moderate", note: "Approvals & compliance" },
-  ];
+  /* Pipeline risk_breakdown (title_disputes → "Title disputes" · severity) when
+     the legal payload carries one; else the heuristic read. */
+  const matrix: { label: string; level: Lvl; note?: string }[] = p.liveLegal?.risks.length
+    ? p.liveLegal.risks.map((r) => ({ label: r.label, level: r.level as Lvl }))
+    : [
+        { label: "Title risk", level: flagged ? "High" : status === "watch" ? "Moderate" : "Low", note: "Land title & RERA registration" },
+        { label: "Developer risk", level: hasHistory ? "Moderate" : "Low", note: "Track record behind the build" },
+        { label: "Litigation risk", level: flagged ? "High" : hasHistory ? "Moderate" : "Low", note: "Live & historical disputes" },
+        { label: "Regulatory risk", level: flagged ? "High" : "Moderate", note: "Approvals & compliance" },
+      ];
 
   return (
     <div className="mt-8">
@@ -50,11 +56,21 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
         </div>
       </div>
 
-      {dev && (
+      {(p.liveLegal?.headline || dev) && (
         <div className="mt-6 rounded-2xl border-l-2 border-[#9a7a2e]/50 bg-white/50 p-6 md:p-7">
           <p className="text-[0.62rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/40">Analyst assessment</p>
-          <p className="mt-2.5 font-serif text-[1.2rem] leading-[1.4] md:text-[1.35rem]">{dev.legal}</p>
-          <p className="mt-3 text-[0.72rem] font-light italic text-[#1a1a1a]/40">Updated {`${new Date().getFullYear()}`} · Source: e-Courts + RERA litigation repositories · independently verifiable.</p>
+          <p className="mt-2.5 font-serif text-[1.2rem] leading-[1.4] md:text-[1.35rem]">{p.liveLegal?.headline ?? dev?.legal}</p>
+          {(p.liveLegal?.keyFlags.length ?? 0) > 0 && (
+            <ul className="mt-3.5 space-y-1.5">
+              {p.liveLegal!.keyFlags.map((f) => (
+                <li key={f} className="flex gap-2.5 text-[0.84rem] font-light leading-[1.55] text-[#1a1a1a]/65">
+                  <span className="mt-[7px] h-[5px] w-[5px] shrink-0 rounded-full bg-[#9a7a2e]" aria-hidden />
+                  <span className="min-w-0">{f}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-3 text-[0.72rem] font-light italic text-[#1a1a1a]/40">Updated {p.liveLegal?.lastUpdated ?? `${new Date().getFullYear()}`} · Source: e-Courts + RERA litigation repositories · independently verifiable.</p>
         </div>
       )}
 
@@ -64,7 +80,7 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
           <div key={m.label} className={`rounded-xl border p-4 ${LVL[m.level]}`}>
             <p className="text-[0.6rem] font-medium uppercase tracking-[0.1em] opacity-70">{m.label}</p>
             <p className="mt-2 flex items-center gap-2 text-[1.05rem] font-semibold"><span className={`h-[8px] w-[8px] rounded-full ${DOT[m.level]}`} />{m.level}</p>
-            <p className="mt-2 text-[0.62rem] font-light leading-[1.4] text-[#1a1a1a]/45">{m.note}</p>
+            {m.note && <p className="mt-2 text-[0.62rem] font-light leading-[1.4] text-[#1a1a1a]/45">{m.note}</p>}
           </div>
         ))}
       </div>
@@ -88,7 +104,9 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
           <h4 className="mt-3 font-serif text-[1.35rem] font-medium">{hasHistory && !flagged ? "Carries real history" : "Clean track record"}</h4>
           <p className="mt-2.5 text-[0.86rem] font-light leading-[1.65] text-[#1a1a1a]/65">
             {hasHistory
-              ? <>{dev?.name} has a <b className="font-medium text-[#1a1a1a]">Supreme-Court loss for possession delay</b> and a <b className="font-medium text-[#1a1a1a]">CCI penalty</b> for one-sided buyer agreements — same city, same kind of project.</>
+              ? p.liveDeveloper
+                ? <>{dev?.name} carries <b className="font-medium text-[#1a1a1a]">{cases.length} {cases.length === 1 ? "case" : "cases"}</b> on public record — including <b className="font-medium text-[#1a1a1a]">{(devCases[0] ?? projectCases[0])?.title}</b>. Read each one below.</>
+                : <>{dev?.name} has a <b className="font-medium text-[#1a1a1a]">Supreme-Court loss for possession delay</b> and a <b className="font-medium text-[#1a1a1a]">CCI penalty</b> for one-sided buyer agreements — same city, same kind of project.</>
               : `${dev?.name ?? "The developer"} carries no material public disputes on our read.`}
           </p>
           <p className={`mt-3.5 text-[0.8rem] font-semibold ${hasHistory && !flagged ? "text-[#b0503e]" : "text-[#1e6b45]"}`}>{hasHistory && !flagged ? "The risk isn't the address — it's the counterparty." : "A strong, clean counterparty."}</p>
@@ -132,7 +150,9 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
                       <p className="mt-1 text-[0.64rem] font-medium uppercase tracking-[0.08em] text-[#1a1a1a]/40">{c.court}</p>
                     </div>
                     <div className="flex shrink-0 flex-wrap gap-1.5">
-                      <Chip>{c.status}</Chip><Chip>{c.relevance}</Chip><Chip hi>Impact: {c.impact}</Chip>
+                      <Chip>Status: {c.status}</Chip>
+                      {caseScope === "developer" && <Chip>Relevance: {c.relevance}</Chip>}
+                      <Chip hi>Impact: {c.impact}</Chip>
                     </div>
                   </div>
                   <p className="mt-3 text-[0.86rem] font-light leading-[1.65] text-[#1a1a1a]/65">{c.summary}</p>

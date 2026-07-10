@@ -104,6 +104,18 @@ export type ProjectIntel = Project & {
      up for pipeline projects without any UI change. */
   liveDeveloper?: DeveloperIntel;
   liveRoi?: RoiModel;
+  /* The pipeline's legal read for the Legal Audit section: the analyst
+     headline + key flags + as-of date, and the per-category risk breakdown
+     (title_disputes → "Title disputes" · Critical/High/Medium/Low). */
+  liveLegal?: LiveLegalRead;
+};
+
+export type LegalRiskLevel = "Critical" | "High" | "Medium" | "Low";
+export type LiveLegalRead = {
+  headline?: string;
+  keyFlags: string[];
+  lastUpdated?: string;
+  risks: { label: string; level: LegalRiskLevel }[];
 };
 
 function sizeBand(p: Project, avgPsf: number | undefined): string | null {

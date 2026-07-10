@@ -518,12 +518,12 @@ export function liveProjectIntel(
       .map((c): LegalCase | null => {
         const title = tIn(c, ["title", "case_title", "name", "case", "matter"]);
         if (!title) return null;
-        const impactRaw = tIn(c, ["impact", "severity"]) ?? "";
+        const impactRaw = tIn(c, ["impact_level", "impact", "severity"]) ?? "";
         return {
           title,
           court: tIn(c, ["court", "forum", "authority"]) ?? "On public record",
-          status: tIn(c, ["status", "stage", "outcome"]) ?? "Tracked",
-          relevance: tIn(c, ["relevance"]) ?? (scope === "project" ? "Direct" : "Contextual"),
+          status: tIn(c, ["status", "case_status", "stage", "outcome"]) ?? "Tracked",
+          relevance: tIn(c, ["relevance_to_project", "relevance"]) ?? (scope === "project" ? "Direct" : "Contextual"),
           impact: /high/i.test(impactRaw) ? "High" : /low/i.test(impactRaw) ? "Low" : "Medium",
           scope,
           summary: tIn(c, ["summary", "details", "description", "note"]) ?? "",
@@ -584,6 +584,37 @@ export function liveProjectIntel(
             `Track record computed from ${row.devTotal} RERA filings: ${row.devDelivered} delivered, ${row.devOngoing ?? 0} ongoing${
               row.devDelayedPct != null ? `, ${Math.round(row.devDelayedPct)}% delayed` : ""
             }${row.devAvgDelayMonths != null ? ` (avg ${Math.round(row.devAvgDelayMonths)} mo slippage)` : ""}.`,
+        }
+      : undefined;
+
+  /* ── the pipeline's legal read — analyst headline, key flags, as-of date
+     and the per-category risk breakdown (from the legal_risks payload) ── */
+  const legalUpdated = (() => {
+    const sv = row.legalLastUpdated;
+    if (!sv) return undefined;
+    const dm = sv.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (dm) return `${+dm[3]} ${MON3[+dm[2] - 1]} ${dm[1]}`;
+    return monthLabel(sv) ?? undefined;
+  })();
+  const riskBreakdown = obj(pick(row.modLegal, "risk_breakdown")) ?? obj(pick(row.modLegal, "score.risk_breakdown"));
+  const legalRisks: NonNullable<ProjectIntel["liveLegal"]>["risks"] = [];
+  if (riskBreakdown)
+    for (const [k, v] of Object.entries(riskBreakdown).slice(0, 8)) {
+      const sev = typeof v === "string" ? v : tIn(v, ["level", "severity", "risk"]);
+      if (!sev) continue;
+      const level = /critical/i.test(sev) ? "Critical" : /high/i.test(sev) ? "High" : /medium|moderate/i.test(sev) ? "Medium" : /low/i.test(sev) ? "Low" : null;
+      if (!level) continue;
+      const label = k.replace(/_/g, " ").replace(/^\w/, (ch) => ch.toUpperCase());
+      legalRisks.push({ label, level });
+    }
+  const legalKeyFlags = strList(row.legalKeyFlags, ["flag", "text", "title", "point"]);
+  const liveLegal: ProjectIntel["liveLegal"] =
+    row.legalHeadline || legalKeyFlags.length || legalRisks.length
+      ? {
+          ...(row.legalHeadline ? { headline: row.legalHeadline } : {}),
+          keyFlags: legalKeyFlags.slice(0, 6),
+          ...(legalUpdated ? { lastUpdated: legalUpdated } : {}),
+          risks: legalRisks,
         }
       : undefined;
 
@@ -788,5 +819,6 @@ export function liveProjectIntel(
     ops,
     ...(liveDeveloper ? { liveDeveloper } : {}),
     ...(liveRoi ? { liveRoi } : {}),
+    ...(liveLegal ? { liveLegal } : {}),
   };
 }
