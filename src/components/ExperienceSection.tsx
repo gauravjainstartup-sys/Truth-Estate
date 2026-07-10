@@ -1372,7 +1372,13 @@ function QuestionsSection() {
   const ref = useRef<HTMLDivElement>(null);
   const { open } = useJourney();
   const { openConsult } = useConsultation();
-  const [openIdx, setOpenIdx] = useState<number | null>(null);
+  // Open "How do you make money?" by default — transparency-forward, and it
+  // shows the open-state (gold rule, ×) without a click. Found by lookup so it
+  // survives reordering; falls back to all-closed.
+  const [openIdx, setOpenIdx] = useState<number | null>(() => {
+    const i = faqs.findIndex((f) => /how do you make money/i.test(f.q));
+    return i >= 0 ? i : null;
+  });
   useReveal(ref, 0.1);
 
   return (
