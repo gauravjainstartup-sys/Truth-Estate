@@ -763,12 +763,111 @@ export function liveProjectIntel(
       eta: tIn(it, ["expected_completion", "timeline", "eta", "completion", "year"]) ?? "—",
     });
   }
+  /* ── map-led geo layout — only when the view carries the project's own
+     coordinates; POI pins keep their real lat/lng, nothing is approximated ── */
+  const GEO_CAT: Record<string, "schools" | "offices" | "hospitals" | "retail"> = {
+    hospitals: "hospitals", schools_colleges: "schools", office_spaces: "offices", malls_shopping: "retail",
+  };
+  const centerLat = row.latitude, centerLng = row.longitude;
+  const centerOk = centerLat != null && centerLng != null && Math.abs(centerLat) <= 90 && Math.abs(centerLng) <= 180 && (centerLat !== 0 || centerLng !== 0);
+  let geo: NonNullable<ProjectOps["location"]>["geo"];
+  if (centerOk) {
+    const nearby: NonNullable<NonNullable<ProjectOps["location"]>["geo"]>["nearby"] = [];
+    let maxKm = 0;
+    for (const [key, cat] of Object.entries(GEO_CAT)) {
+      for (const it of asArr(pick(row.locPoiDensity, key))) {
+        const name = tIn(it, ["name", "title"]);
+        const lat = nIn(it, ["latitude", "lat"]), lng = nIn(it, ["longitude", "lng", "lon"]);
+        if (!name || lat == null || lng == null) continue;
+        const imp = tIn(it, ["importance"]);
+        maxKm = Math.max(maxKm, nIn(it, ["distance_km"]) ?? 0);
+        nearby.push({
+          cat, name,
+          sub: tIn(it, ["sub_category", "type", "sub", "descriptor"]) ?? tIn(it, ["category"]) ?? cat,
+          lat, lng,
+          ...(nIn(it, ["google_rating", "rating"]) != null ? { rating: nIn(it, ["google_rating", "rating"])! } : {}),
+          ...(imp && /^(High|Medium|Low)$/i.test(imp) ? { importance: (imp[0].toUpperCase() + imp.slice(1).toLowerCase()) as "High" | "Medium" | "Low" } : {}),
+        });
+      }
+    }
+    const metroKm = nIn(row.locMetro, ["distance_km"]), metroMin = nIn(row.locMetro, ["travel_time_min", "time_min"]);
+    const airKm = nIn(row.locAirport, ["distance_km"]), airMin = nIn(row.locAirport, ["travel_time_min", "time_min"]);
+    const geoRoads = asArr(row.locRoads)
+      .map((rd) => {
+        const name = tIn(rd, ["name", "road", "title"]), km = nIn(rd, ["distance_km", "km"]);
+        if (!name || km == null) return null;
+        return { name, km, type: (/direct/i.test(tIn(rd, ["connectivity_type", "type", "access"]) ?? "") ? "Direct" : "Indirect") as "Direct" | "Indirect" };
+      })
+      .filter((x): x is NonNullable<typeof x> => !!x);
+    const geoBiz = asArr(row.locBusiness)
+      .map((b) => {
+        const name = tIn(b, ["name", "district", "title"]), km = nIn(b, ["distance_km", "km"]), min = nIn(b, ["travel_time_min", "time_min"]);
+        return name && km != null && min != null ? { name, km, min } : null;
+      })
+      .filter((x): x is NonNullable<typeof x> => !!x);
+    const lm = row.locLastMile;
+    const lastMile = obj(lm)
+      ? {
+          ...(tIn(lm, ["road_width"]) ? { roadWidth: tIn(lm, ["road_width"])! } : {}),
+          ...(tIn(lm, ["road_quality", "surface"]) ? { surface: tIn(lm, ["road_quality", "surface"])! } : {}),
+          ...(tIn(lm, ["auto_cab_availability"]) ? { autoCab: tIn(lm, ["auto_cab_availability"])! } : {}),
+          ...(tIn(lm, ["bus_connectivity"]) ? { bus: tIn(lm, ["bus_connectivity"])! } : {}),
+          ...(tIn(lm, ["walkability"]) ? { walkability: tIn(lm, ["walkability"])! } : {}),
+          ...(tIn(lm, ["traffic_congestion"]) ? { traffic: tIn(lm, ["traffic_congestion"])! } : {}),
+          ...(tIn(lm, ["bottlenecks"]) ? { bottlenecks: tIn(lm, ["bottlenecks"])! } : {}),
+        }
+      : undefined;
+    const catScore = (k: string): number | null => {
+      const v = pick(row.faqLocCatScores, k);
+      return typeof v === "number" && Number.isFinite(v) ? v : nIn(v, ["score", "value"]);
+    };
+    const byCat = {
+      ...(catScore("schools") != null ? { schools: catScore("schools")! } : {}),
+      ...(catScore("office_spaces") != null ? { offices: catScore("office_spaces")! } : {}),
+      ...(catScore("hospitals") != null ? { hospitals: catScore("hospitals")! } : {}),
+      ...(catScore("malls_shopping") != null ? { retail: catScore("malls_shopping")! } : {}),
+      ...(catScore("real_estate") != null ? { realEstate: catScore("real_estate")! } : {}),
+    };
+    const insightsStrengths = strList(row.locKeyStrengths).concat(strList(row.locConnStrengths)).slice(0, 5);
+    const insightsGaps = strList(row.locConnConstraints).concat(strList(row.locRisks)).slice(0, 4);
+    geo = {
+      center: { lat: centerLat!, lng: centerLng! },
+      radiusKm: Math.min(4, Math.max(1.5, Math.ceil(maxKm * 2) / 2)),
+      nearby,
+      connectivity: {
+        ...(tIn(row.locMetro, ["station_name", "name", "station"]) && metroKm != null && metroMin != null
+          ? { metro: { name: tIn(row.locMetro, ["station_name", "name", "station"])!, line: tIn(row.locMetro, ["line", "corridor"]) ?? "metro", km: metroKm, min: metroMin } }
+          : {}),
+        roads: geoRoads,
+        ...(airKm != null && airMin != null
+          ? { airport: { name: tIn(row.locAirport, ["name", "airport"]) ?? "IGI Airport", km: airKm, min: airMin } }
+          : {}),
+        business: geoBiz,
+        ...(lastMile && Object.keys(lastMile).length ? { lastMile } : {}),
+      },
+      ...(row.faqLocationScore != null || Object.keys(byCat).length
+        ? { scores: { ...(row.faqLocationScore != null ? { overall: Math.round(row.faqLocationScore) } : {}), ...(Object.keys(byCat).length ? { byCat } : {}) } }
+        : {}),
+      ...(row.locVerdict || row.locMarketStage || insightsStrengths.length || insightsGaps.length
+        ? {
+            insights: {
+              ...(row.locVerdict ? { verdict: row.locVerdict } : {}),
+              ...(row.locMarketStage ? { marketStage: row.locMarketStage } : {}),
+              ...(insightsStrengths.length ? { strengths: insightsStrengths } : {}),
+              ...(insightsGaps.length ? { gaps: insightsGaps } : {}),
+            },
+          }
+        : {}),
+    };
+  }
+
   const location: ProjectOps["location"] =
-    pois.length || connectivity.length || infra.length
+    pois.length || connectivity.length || infra.length || geo
       ? {
           ...(pois.length ? { pois: pois.slice(0, 9) } : {}),
           ...(connectivity.length ? { connectivity: connectivity.slice(0, 6) } : {}),
           ...(infra.length ? { infra } : {}),
+          ...(geo ? { geo } : {}),
         }
       : undefined;
 
