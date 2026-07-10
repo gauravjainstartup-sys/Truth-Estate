@@ -805,119 +805,189 @@ const cases = [
 
 function DecisionsSection() {
   const ref = useRef<HTMLDivElement>(null);
+  const spineRef = useRef<HTMLDivElement>(null);
+  const fillRef = useRef<HTMLDivElement>(null);
   const { open } = useJourney();
   const { openConsult } = useConsultation();
   useReveal(ref, 0.12);
+
+  // A sibling of Independent Representation's spine: the gold line fills as you
+  // scroll, dots light up as it passes, and each case brightens as it reaches
+  // the middle of the screen. Self-contained so the flagship section upstream
+  // stays untouched.
+  useEffect(() => {
+    const root = ref.current;
+    const spine = spineRef.current;
+    const fill = fillRef.current;
+    if (!root || !spine || !fill) return;
+    const nodes = Array.from(root.querySelectorAll<HTMLElement>("[data-node]"));
+
+    let ticking = false;
+    const update = () => {
+      ticking = false;
+      const vh = window.innerHeight;
+      const sr = spine.getBoundingClientRect();
+      const fillH = Math.max(0, Math.min(vh * 0.5 - sr.top, sr.height));
+      fill.style.height = `${fillH}px`;
+      const fillBottom = sr.top + fillH;
+      const focus = vh * 0.4;
+
+      nodes.forEach((el) => {
+        const r = el.getBoundingClientRect();
+        const anchor = r.top + 14;
+        const op =
+          anchor >= focus
+            ? Math.max(0.16, Math.min(1, 1 - (anchor - focus) / (vh * 0.5)))
+            : Math.max(0.42, Math.min(1, 1 - (focus - anchor) / (vh * 1.3)));
+        el.style.opacity = op.toFixed(3);
+
+        const core = el.querySelector<HTMLElement>("[data-dotcore]");
+        if (core) {
+          const active = fillBottom >= r.top + 13;
+          core.style.background = active ? "#c9a96e" : "rgba(201,169,110,0.3)";
+          core.style.transform = active ? "scale(1.3)" : "scale(1)";
+        }
+      });
+    };
+
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    update();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
 
   return (
     <div
       ref={ref}
       className="bg-[#F5F0E8] px-6 pb-[14vh] pt-[14vh] md:px-8 md:pb-[20vh] md:pt-[20vh]"
     >
-      {/* Heading */}
-      <div className="mx-auto max-w-3xl">
-        <h2
-          data-r
-          className="font-serif text-[2.2rem] font-medium leading-[1.08] text-[#1a1a1a] md:text-[3.6rem] lg:text-[4.2rem]"
-          style={{ opacity: 0, transform: "translateY(24px)" }}
-        >
-          Decisions We&rsquo;ve
-          <br />
-          Helped Make.
-        </h2>
-        <p
-          data-r
-          className="mt-7 max-w-lg font-serif text-[1.1rem] font-light leading-snug text-[#1a1a1a]/50 md:mt-10 md:text-[1.4rem]"
-          style={{ opacity: 0, transform: "translateY(16px)" }}
-        >
-          Independent thinking only matters
-          <br />
-          when it changes outcomes.
-        </p>
-      </div>
+      {/* Desktop: sticky thesis (left) + scrolling spine (right). Mobile/tablet: natural stack. */}
+      <div className="mx-auto max-w-2xl lg:grid lg:max-w-6xl lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-x-12">
+        {/* Left — thesis. Simply sticky + vertically centred on desktop (no dock slide). */}
+        <div className="lg:sticky lg:top-0 lg:flex lg:h-svh lg:flex-col lg:justify-center">
+          <div className="lg:max-w-[30rem]">
+            <h2
+              data-r
+              className="font-serif text-[2.5rem] font-medium leading-[1.05] text-[#1a1a1a] md:text-[4rem] lg:text-[3.7rem]"
+              style={{ opacity: 0, transform: "translateY(24px)" }}
+            >
+              Decisions We&rsquo;ve
+              <br />
+              Helped Make.
+            </h2>
+            <p
+              data-r
+              className="mt-7 font-serif text-[1.25rem] font-light italic leading-snug text-[#1a1a1a]/60 md:text-[1.7rem]"
+              style={{ opacity: 0, transform: "translateY(16px)" }}
+            >
+              Independent thinking only matters when it changes outcomes.
+            </p>
+            <p
+              data-r
+              className="mt-6 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/50 md:text-[1.05rem]"
+              style={{ opacity: 0, transform: "translateY(16px)" }}
+            >
+              Not testimonials &mdash; a short record of moments where the evidence pointed somewhere the crowd didn&rsquo;t.
+            </p>
+          </div>
+        </div>
 
-      {/* Cases */}
-      <div className="mx-auto mt-[10vh] max-w-4xl md:mt-[14vh]">
-        {cases.map((c, i) => {
-          const flipped = i % 2 === 1;
-          return (
-            <div key={c.num}>
-              {i > 0 && (
-                <div className="mx-auto my-[8vh] h-px w-16 bg-[#1a1a1a]/10 md:my-[10vh] md:w-24" />
-              )}
-              <div
-                data-r
-                className={`flex flex-col gap-10 md:flex-row md:items-start md:gap-16 lg:gap-24 ${flipped ? "md:flex-row-reverse" : ""}`}
-                style={{ opacity: 0, transform: "translateY(28px)" }}
-              >
-                {/* Left column — number, category, value */}
-                <div className="shrink-0 md:w-[200px] lg:w-[240px]">
-                  <span className="font-serif text-[3.5rem] font-light leading-none text-[#c9a96e]/25 md:text-[4.5rem]">
-                    {c.num}
-                  </span>
-                  <div className="mt-5 flex items-baseline gap-4">
-                    <span className="text-[9px] font-light uppercase tracking-[0.4em] text-[#1a1a1a]/35">
+        {/* Right — the spine timeline (natural scroll). Desktop top-pad so the first case enters after the intro. */}
+        <div className="mt-[16vh] md:mt-[20vh] lg:mt-0 lg:pt-[64vh]">
+          <div ref={spineRef} className="relative">
+            <div className="absolute bottom-1 left-[5.5px] top-1 w-px bg-[#1a1a1a]/12" />
+            <div ref={fillRef} className="absolute left-[5.5px] top-1 w-px bg-[#c9a96e]" style={{ height: 0 }} />
+
+            <div className="flex flex-col gap-[16vh] md:gap-[20vh]">
+              {cases.map((c) => {
+                const money = c.value.startsWith("₹");
+                return (
+                  <div
+                    key={c.num}
+                    data-node
+                    className="relative pl-9 md:pl-14"
+                    style={{ opacity: 0.16, willChange: "opacity" }}
+                  >
+                    <span className="absolute left-0 top-[9px] flex h-3 w-3 items-center justify-center rounded-full border border-[#1a1a1a]/20 bg-[#F5F0E8]">
+                      <span
+                        data-dotcore
+                        className="h-[5px] w-[5px] rounded-full"
+                        style={{ background: "rgba(201,169,110,0.3)", transition: "all 0.45s ease" }}
+                      />
+                    </span>
+
+                    <span className="font-serif text-[3.25rem] font-light leading-none text-[#c9a96e]/25 md:text-[4.5rem]">
+                      {c.num}
+                    </span>
+                    <p className="mt-4 text-[10px] font-light uppercase tracking-[0.4em] text-[#c9a96e]">
                       {c.category}
-                    </span>
-                  </div>
-                  <p className="mt-3 font-serif text-[1.6rem] font-medium leading-[1.1] text-[#1a1a1a] md:text-[1.9rem]">
-                    {c.value}
-                  </p>
-                </div>
-
-                {/* Right column — narrative */}
-                <div className="flex-1">
-                  <div>
-                    <span className="text-[9px] font-light uppercase tracking-[0.35em] text-[#1a1a1a]/35">
-                      Challenge
-                    </span>
-                    <p className="mt-3 font-serif text-[1.1rem] font-light leading-relaxed text-[#1a1a1a]/70 md:text-[1.25rem]">
+                    </p>
+                    <h3 className="mt-3 font-serif text-[1.7rem] font-medium leading-[1.1] text-[#1a1a1a] md:text-[2.05rem]">
+                      {c.recommendation}
+                    </h3>
+                    <p className="mt-4 max-w-md font-serif text-[1.05rem] font-light leading-relaxed text-[#1a1a1a]/60 md:text-[1.2rem]">
                       {c.challenge}
                     </p>
-                  </div>
 
-                  <div className="mt-8">
-                    <span className="text-[9px] font-light uppercase tracking-[0.35em] text-[#c9a96e]/70">
-                      What we discovered
-                    </span>
-                    <p className="mt-3 text-[0.92rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.02rem]">
-                      {c.discovery}
-                    </p>
-                  </div>
+                    {/* the reasoning card — discovered → the call → outcome */}
+                    <div className="mt-8 max-w-md rounded-xl border border-[#1a1a1a]/12 bg-white p-6">
+                      <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]/80">What we discovered</p>
+                      <p className="mt-3 text-[0.92rem] font-light leading-relaxed text-[#1a1a1a]/60 md:text-[0.98rem]">
+                        {c.discovery}
+                      </p>
 
-                  <div className="mt-8">
-                    <span className="text-[9px] font-light uppercase tracking-[0.35em] text-[#1a1a1a]/35">
-                      Recommendation
-                    </span>
-                    <p className="mt-3 font-serif text-[1.15rem] font-medium leading-snug text-[#1a1a1a] md:text-[1.3rem]">
-                      {c.recommendation}
-                    </p>
-                  </div>
-
-                  <div className="mt-8 border-l border-[#c9a96e]/25 pl-5">
-                    <span className="text-[9px] font-light uppercase tracking-[0.35em] text-[#1a1a1a]/35">
-                      Outcome
-                    </span>
-                    <div className="mt-3 space-y-1.5">
-                      {c.outcomes.map((o) => (
-                        <p
-                          key={o}
-                          className="font-serif text-[1rem] font-light leading-relaxed text-[#1a1a1a]/65 md:text-[1.1rem]"
+                      <div className="mt-5 flex items-baseline justify-between gap-3 border-t border-dotted border-[#1a1a1a]/15 pt-4">
+                        <span className="text-[10px] font-light uppercase tracking-[0.24em] text-[#1a1a1a]/40">
+                          {money ? "Investment" : "Our call"}
+                        </span>
+                        <span
+                          className={
+                            money
+                              ? "font-mono text-[1.35rem] font-medium tracking-tight text-[#1a1a1a]"
+                              : "font-serif text-[1.25rem] font-medium text-[#1a1a1a]/80"
+                          }
                         >
-                          {o}
-                        </p>
-                      ))}
+                          {c.value}
+                        </span>
+                      </div>
+
+                      <div className="mt-5">
+                        <p className="text-[10px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/40">Outcome</p>
+                        <div className="mt-3 flex flex-col gap-2.5">
+                          {c.outcomes.map((o) => (
+                            <p
+                              key={o}
+                              className="flex items-center gap-3 font-serif text-[1rem] font-light leading-relaxed text-[#1a1a1a]/70 md:text-[1.05rem]"
+                            >
+                              <span className="flex h-[17px] w-[17px] shrink-0 items-center justify-center rounded-full bg-[#1e6b45] text-[9px] leading-none text-white">
+                                &#10003;
+                              </span>
+                              {o}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
+                );
+              })}
             </div>
-          );
-        })}
+          </div>
+        </div>
       </div>
 
       {/* Bottom editorial + CTAs */}
-      <div className="mx-auto mt-[12vh] max-w-2xl text-center md:mt-[16vh]">
+      <div className="mx-auto mt-[16vh] max-w-2xl text-center md:mt-[22vh]">
         <p
           data-r
           className="font-serif text-[0.92rem] font-light italic leading-[1.9] text-[#1a1a1a]/40 md:text-[1.15rem]"
