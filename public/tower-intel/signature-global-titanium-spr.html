@@ -632,9 +632,11 @@ function floorChart(seriesArr){
     g+=`<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" opacity=".9"/>`;});
   return g+'</svg>';}
 function bandsFor(clearFl){
-  const cf=clearFl==null?10:clearFl;
-  const vLo=Math.max(cf,10),vHi=Math.min(vLo+9,26);
-  return{vLo,vHi,pLo:Math.max(27,vLo),pHi:Math.min(Math.max(27,vLo)+7,38)};}
+  const cf=Math.max(clearFl==null?10:clearFl,10);          // full-sun floor (>=10)
+  const pLo=Math.min(Math.max(27,cf),FLOORS-3);            // premium floor, capped below the top so it never inverts
+  const pHi=Math.min(pLo+7,FLOORS-2);
+  const vLo=Math.min(cf,pLo-1),vHi=Math.min(vLo+9,pLo-1);  // value band sits just below premium; never runs high->low
+  return{vLo,vHi,pLo,pHi};}
 
 function floorMatrixHTML(t,sel,mCurves,bands,clearFl){
   const cols=sel.length;
