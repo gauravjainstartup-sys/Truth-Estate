@@ -19,19 +19,19 @@
   /* sun control */
   #sunctl{bottom:14px;left:16px;padding:12px 13px;width:250px}
   #sunctl .eyebrow{color:var(--sun)}
-  .clock{display:flex;align-items:baseline;gap:8px;margin:6px 0 1px}.clock .t{font:600 24px/1 'Geist'}.clock .ph{font:500 11px/1 ui-monospace,monospace;color:var(--muted)}
+  .clock{display:flex;align-items:baseline;gap:9px;margin:7px 0 2px}.clock .t{font:600 25px/1 'Geist';font-variant-numeric:tabular-nums}.clock .ph{font:600 10px/1 ui-monospace,monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--gold)}
   .seg{display:flex;gap:5px;margin-bottom:8px}
   .seg button{flex:1;border:1px solid var(--line);background:rgba(0,0,0,.03);color:var(--muted);font:600 10px/1.2 'Geist';padding:6px 2px;border-radius:8px;cursor:pointer;text-align:center}
   .seg button.on{border-color:var(--sun);color:#a67c3d;background:rgba(255,206,99,.13)}
   .seg button small{display:block;font:500 8px/1.1 ui-monospace,monospace;opacity:.7;margin-top:2px}
   .timewrap{display:flex;align-items:center;gap:8px;margin-bottom:5px}
-  .timewrap button{width:30px;height:30px;flex:0 0 auto;border:1px solid var(--line);background:rgba(0,0,0,.04);color:var(--text);border-radius:8px;cursor:pointer;font-size:12px}
-  input[type=range]{flex:1;-webkit-appearance:none;height:4px;border-radius:5px;background:linear-gradient(90deg,#3a3120,var(--sun));outline:none}
+  .timewrap button{width:34px;height:34px;flex:0 0 auto;border:none;background:var(--sun);color:#3a2c0c;border-radius:9px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(166,124,61,.28)}
+  .timewrap button:hover{background:#d8a53d}
+  input[type=range]{flex:1;-webkit-appearance:none;height:5px;border-radius:5px;background:linear-gradient(90deg,rgba(0,0,0,.13),var(--sun));outline:none}
   input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--sun);border:2px solid #d8cdb0;cursor:pointer}
   input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--sun);border:2px solid #d8cdb0;cursor:pointer}
   .scale{display:flex;justify-content:space-between;font:500 9px/1 ui-monospace,monospace;color:var(--muted);margin-top:3px}
-  .north{margin-top:9px;border-top:1px solid var(--line);padding-top:8px}
-  .north label{display:flex;justify-content:space-between;font:500 10px/1 ui-monospace,monospace;color:var(--muted);margin-bottom:5px}.north label b{color:var(--gold)}
+  .sun-note{margin-top:9px;border-top:1px solid var(--line);padding-top:8px;font:500 8.5px/1.45 ui-monospace,monospace;color:var(--muted);opacity:.9}
   #hint{bottom:14px;right:16px;padding:7px 11px;font:500 10px/1.5 ui-monospace,monospace;color:var(--muted)}#hint b{color:var(--text);font-weight:500}
   /* right panel */
   #panel{top:16px;right:16px;width:340px;max-height:calc(100vh - 32px);display:flex;flex-direction:column;padding:0;overflow:hidden}
@@ -282,17 +282,16 @@
 
 <div id="sunctl" class="card">
   <button id="sunClose" title="Collapse">✕</button>
-  <div class="eyebrow">☀ Sun position</div>
-  <div class="clock"><span class="t" id="clock">12:00</span><span class="ph" id="phase">midday</span></div>
+  <div class="eyebrow">☀ Sun movement</div>
+  <div class="clock"><span class="t" id="clock">12:00</span><span class="ph" id="phase">noon</span></div>
   <div class="seg" id="bench">
-    <button data-d="-23.45" class="on">Winter<small>21 Dec</small></button>
-    <button data-d="0">Equinox<small>21 Mar</small></button>
+    <button data-d="-23.45">Winter<small>21 Dec</small></button>
+    <button data-d="0" class="on">Equinox<small>21 Mar</small></button>
     <button data-d="23.45">Summer<small>21 Jun</small></button>
   </div>
-  <div class="timewrap"><button id="play">▶</button><input type="range" id="time" min="0" max="1" step="0.001" value="0.5"></div>
-  <div class="scale"><span id="srise">—</span><span>noon</span><span id="sset">—</span></div>
-  <div class="north"><label>True-north offset <b id="noff">0°</b></label>
-    <input type="range" id="northdial" min="-180" max="180" step="1" value="0"></div>
+  <div class="timewrap"><button id="play" aria-label="Play sun movement">▶</button><input type="range" id="time" min="0" max="1" step="0.001" value="0.5"></div>
+  <div class="scale"><span>midnight</span><span>noon</span><span>midnight</span></div>
+  <div class="sun-note">Sun path shown for the selected season · analysis is benchmarked on winter</div>
 </div>
 
 <div id="sunToggle" class="card">☀&nbsp;&nbsp;Sun &amp; season</div>
@@ -537,6 +536,8 @@ towers.forEach(t=>{const h=topH();
 
 /* ── solar engine (validated) ── */
 let decl=-23.45;const NORTH_CAL=25*Math.PI/180;let northOff=NORTH_CAL;/*site-calibrated: T-02 living=NW*/const SUN_R=1200;
+/* vizDecl drives ONLY the sun-movement visual (default equinox); scoring stays on the winter benchmark (decl) — never coupled */
+let vizDecl=0;let lastSunDir=new T.Vector3(0,1,0);const playAz0=-0.9;
 function sunTrue(h){const d=decl*Math.PI/180,H=15*(h-12)*Math.PI/180;const sa=Math.sin(LAT)*Math.sin(d)+Math.cos(LAT)*Math.cos(d)*Math.cos(H);const al=Math.asin(Math.max(-1,Math.min(1,sa)));let ca=(Math.sin(d)-Math.sin(LAT)*sa)/(Math.cos(LAT)*Math.cos(al)+1e-9);let az=Math.acos(Math.max(-1,Math.min(1,ca)));if(H>0)az=2*Math.PI-az;return{alt:al,az,up:al>0};}
 function dirPlan(h){const s=sunTrue(h);const dt=new T.Vector3(Math.cos(s.alt)*Math.sin(s.az),Math.sin(s.alt),-Math.cos(s.alt)*Math.cos(s.az));const c=Math.cos(northOff),si=Math.sin(northOff);return new T.Vector3(dt.x*c+dt.z*si,dt.y,-dt.x*si+dt.z*c);}
 function dayB(){const d=decl*Math.PI/180;let c=-Math.tan(LAT)*Math.tan(d);c=Math.max(-1,Math.min(1,c));const H=Math.acos(c)*180/Math.PI/15;return[12-H,12+H];}
@@ -1460,7 +1461,18 @@ dom.addEventListener('touchend',e=>{if(moved<8){const tt=e.changedTouches[0];
   const tw=pick(tt,towerPick);if(tw)selectTower(tw.userData.tower);}});
 
 /* ── sun visuals & time ── */
-function tint(alt){const a=Math.max(0,Math.sin(alt)),warm=1-Math.min(1,a*2.2);const sky=new T.Color().setHSL(.57-.03*warm,.28+.14*a,.80+.09*a);scene.background.copy(sky);scene.fog.color.copy(sky);sun.intensity=.6+.9*a;sun.color.setHSL(.11-.02*a,.35*warm+.08,.72+.1*a);hemi.intensity=.55+.35*a;amb.intensity=.34+.14*a;const sc=new T.Color('#ffe6a0').lerp(new T.Color('#ff9d52'),warm);sunBall.material.color.copy(sc);glow.material.color.copy(sc);halo.material.color.copy(sc);}
+function tint(alt){const a=Math.sin(alt);                                   // -1 (deep night) .. ~0.9 (noon)
+  const day=Math.max(0,Math.min(1,(a+0.02)/0.30));                          // 0 at/below horizon -> 1 full day
+  const twi=Math.max(0,Math.min(1,1-Math.abs(a)/0.30));                      // golden hour: wide warm band around the horizon
+  const cNight=new T.Color('#0d1530'),cDay=new T.Color('#dce7ef'),cTwi=new T.Color('#ef8f3c');
+  const sky=cNight.clone().lerp(cDay,day);sky.lerp(cTwi,twi*0.82);           // warm wash at dawn/dusk
+  scene.background.copy(sky);scene.fog.color.copy(sky);
+  sun.intensity=0.05+1.55*day;
+  sun.color.copy(new T.Color('#ff8a3a').lerp(new T.Color('#fff4e0'),Math.min(1,day*1.3)));
+  hemi.intensity=0.12+0.5*day;hemi.color.copy(sky);
+  amb.intensity=0.10+0.32*day;amb.color.copy(new T.Color('#7d8cb2').lerp(new T.Color('#ffe6c0'),Math.max(day,twi*0.7)));
+  const sc=new T.Color('#ffe0a0').lerp(new T.Color('#ff6a2a'),twi);          // sun disc: bright high -> deep orange low
+  sunBall.material.color.copy(sc);glow.material.color.copy(sc);halo.material.color.copy(sc);}
 let sunArc=null,sunArcKey='';
 function updateSunArc(){
   const key=decl+'|'+northOff.toFixed(4);
@@ -1472,16 +1484,21 @@ function updateSunArc(){
   sunArc=new T.Line(new T.BufferGeometry().setFromPoints(pts),
     new T.LineBasicMaterial({color:'#e0b667',transparent:true,opacity:.45,fog:false}));
   scene.add(sunArc);}
-function setTime(fr){const[sr,ss]=dayB(),h=sr+(ss-sr)*fr,sdir=dirPlan(h),st=sunTrue(h);updateSunArc();const pos=new T.Vector3(0,40,20).add(sdir.clone().multiplyScalar(SUN_R));sun.position.copy(pos);sun.target.position.set(0,25,20);sun.target.updateMatrixWorld();sunBall.position.copy(pos);glow.position.copy(pos);halo.position.copy(pos);sunBall.visible=glow.visible=halo.visible=st.up;tint(st.alt);
-  document.getElementById('clock').textContent=fmt(h);const noon=(sr+ss)/2;document.getElementById('phase').textContent=!st.up?'below horizon':h<sr+.7?'sunrise':h>ss-.7?'sunset':Math.abs(h-noon)<.5?'solar noon':h<noon?'morning':'afternoon';}
+function setTime(fr){const _sd=decl;decl=vizDecl;                             // visual sun path uses vizDecl; scoring decl restored below
+  const h=24*fr,hd=h%24,sdir=dirPlan(h),st=sunTrue(h);updateSunArc();
+  const pos=new T.Vector3(0,40,20).add(sdir.clone().multiplyScalar(SUN_R));
+  sun.position.copy(pos);sun.target.position.set(0,25,20);sun.target.updateMatrixWorld();
+  sunBall.position.copy(pos);glow.position.copy(pos);halo.position.copy(pos);
+  sunBall.visible=glow.visible=halo.visible=st.up;lastSunDir.copy(sdir);tint(st.alt);
+  const cl=document.getElementById('clock');if(cl)cl.textContent=fmt(hd);
+  const ph=document.getElementById('phase');if(ph)ph.textContent=hd<5.2?'night':hd<7.2?'sunrise':hd<11.4?'morning':hd<12.6?'noon':hd<16.6?'afternoon':hd<18.8?'evening':hd<20.6?'dusk':'night';
+  decl=_sd;}
 const timeEl=document.getElementById('time');let playing=false,playT=0.5;
 timeEl.addEventListener('input',()=>{playing=false;document.getElementById('play').textContent='▶';setTime(parseFloat(timeEl.value));});
 document.getElementById('play').addEventListener('click',()=>{playing=!playing;document.getElementById('play').textContent=playing?'❚❚':'▶';});
-document.getElementById('bench').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...e.currentTarget.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');decl=parseFloat(b.dataset.d);const[sr,ss]=dayB();document.getElementById('srise').textContent=fmt(sr);document.getElementById('sset').textContent=fmt(ss);setTime(parseFloat(timeEl.value));scores=null;if(document.body.classList.contains('flat-open')&&selTower&&selUnit){selData=null;openFlat(selTower,selUnit);}else if(selTower){renderTowerPanel();}else renderOverview();});
-const ndial=document.getElementById('northdial');
-ndial.addEventListener('input',()=>{northOff=NORTH_CAL+ndial.value*Math.PI/180;document.getElementById('noff').textContent=ndial.value+'°';setTime(parseFloat(timeEl.value));scores=null;if(document.body.classList.contains('flat-open')&&selTower&&selUnit){selData=null;openFlat(selTower,selUnit);}else if(selTower){renderTowerPanel();}else renderOverview();});
-document.getElementById('sunToggle').onclick=()=>document.body.classList.add('sun-open');
-document.getElementById('sunClose').onclick=()=>document.body.classList.remove('sun-open');
+document.getElementById('bench').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...e.currentTarget.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');vizDecl=parseFloat(b.dataset.d);sunArcKey='';setTime(parseFloat(timeEl.value));});   /* visual sun path only — scoring benchmark (winter) untouched */
+document.getElementById('sunToggle').onclick=()=>{document.body.classList.add('sun-open');if(!playing){playing=true;const pb=document.getElementById('play');if(pb)pb.textContent='❚❚';}};
+document.getElementById('sunClose').onclick=()=>{document.body.classList.remove('sun-open');playing=false;const pb=document.getElementById('play');if(pb)pb.textContent='▶';};
 document.getElementById('ovSun').onclick=()=>{document.body.classList.add('sun-open');if(!playing){playing=true;const pb=document.getElementById('play');if(pb)pb.textContent='❚❚';}};
 document.getElementById('ovRank').onclick=goRanking;
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
@@ -1548,6 +1565,9 @@ computeScores2=function(){scores=towers.map(t=>{
 })();
 /* ═══════════ end Stage 2 ═══════════ */
 
-(function init(){const[sr,ss]=dayB();document.getElementById('srise').textContent=fmt(sr);document.getElementById('sset').textContent=fmt(ss);setTime(0.5);renderOverview();})();
-(function loop(){requestAnimationFrame(loop);camStep();pulseTiles();f3tick();if(playing){playT+=.0014;if(playT>1)playT=0;timeEl.value=playT;setTime(playT);if(!selTower&&!camTween){az+=0.0018;camApply();}}renderer.render(scene,camera);})();
+(function init(){setTime(0.5);renderOverview();})();
+(function loop(){requestAnimationFrame(loop);camStep();pulseTiles();f3tick();
+  if(playing){playT+=(lastSunDir.y<-0.12?0.0044:0.0016);if(playT>1)playT-=1;timeEl.value=playT;setTime(playT);
+    if(!selTower&&!camTween){az=playAz0+Math.sin(playT*2*Math.PI)*1.0;camApply();}}   /* scene pans with the sun through the day */
+  renderer.render(scene,camera);})();
 </script>
