@@ -847,7 +847,7 @@ function renderTowerPanel(){const t=selTower;document.getElementById('pClose').s
     <div style="width:100%;height:4px;border-radius:2px;background:rgba(0,0,0,.06);overflow:hidden;margin:6px 0 5px"><div style="width:${r.fs.s}%;height:100%;background:${gradeColor(r.fs.grade)}"></div></div>
     <div style="font:500 9.5px/1.5 ui-monospace;color:#64707d;width:100%">${r.st.rawAvg.toFixed(1)}h sun \u00b7 Vastu ${r.fs.vs}/5 \u00b7 ${r.fs.lake?'lagoon view':'outward view'} \u00b7 ${r.fs.isEnd?'3-side airflow':'2-side airflow'} \u00b7 buy <b style="color:#a67c3d">F${fb.vLo}\u2013${fb.vHi}</b></div>
   </div>`;}).join('')}
-  <div style="margin:2px 0 10px;font:500 8.5px/1.5 ui-monospace;color:#a4a69b">Score = 35% sun \u00b7 20% Vastu \u00b7 20% view \u00b7 15% ventilation \u00b7 10% heat <span class="badge badge-est" style="font-size:8px">est</span></div>
+  <div style="margin:2px 0 10px;font:500 8.5px/1.5 ui-monospace;color:#a4a69b">Score = morning 25 \u00b7 cool 20 \u00b7 Vastu 25 \u00b7 view 15 \u00b7 airflow 10 \u00b7 floor 5 \u00b7 your weights <span class="badge badge-est" style="font-size:8px">est</span></div>
   <div class="sech">Where to buy in ${t.id}</div>
   <div style="background:rgba(255,206,99,.09);border:1px solid rgba(255,206,99,.35);border-radius:12px;padding:11px 13px;margin-bottom:7px">
     <div style="font:600 9.5px/1 ui-monospace;letter-spacing:.12em;color:#a67c3d">\u2605 BEST VALUE</div>
@@ -1401,7 +1401,7 @@ function openFlat(t,uid){
       <div style="font:700 40px/1 'Geist';color:${gradeColor(fscore.grade)}">${fscore.s}<span style="font-size:15px;color:var(--muted)">/100</span></div>
       <div>
         <div style="font:700 16px/1 'Geist';color:${gradeColor(fscore.grade)}">Grade ${fscore.grade}</div>
-        <div style="font:500 9.5px/1.5 ui-monospace;color:var(--muted);margin-top:4px">35% sun \u00b7 20% Vastu \u00b7 20% view \u00b7 15% airflow \u00b7 10% heat</div>
+        <div style="font:500 9.5px/1.5 ui-monospace;color:var(--muted);margin-top:4px">morning 25 \u00b7 cool 20 \u00b7 Vastu 25 \u00b7 view 15 \u00b7 airflow 10 \u00b7 floor 5</div>
       </div>
     </div>
     <div class="verdict-hero"><div class="verdict-text">${verdict(st.rawAvg,v.s,lakeFacing)}</div></div>
@@ -1536,6 +1536,34 @@ function scCol(v){return v>=75?'#5cb487':v>=55?'#ecc463':v>=40?'#d6a94e':'#e08a7
 /* T-7/T-8 decks confirmed by the founder from the plate (nose faces N, wings face E);
    the traced straight-slab massing can't represent both wings east, so facing is authoritative. */
 function vfacing(t,u){if(t.id==='T-7'||t.id==='T-8')return (u.prim==='lake')?'N':'E';return compassOf(bearingOf(t,u.primL));}
+/* View — ray-traced from the actual massing at an upper-mid floor: lagoon angle/distance,
+   neighbour-tower obstruction, plus a small dual-aspect (corner) premium. */
+const VIEW_FL=30;
+function faceOutlook(t,u,f){
+  const n=worldN(t,f);const dir=new T.Vector3(n[0],0,n[1]);if(dir.lengthSq()<1e-6)return 0;dir.normalize();
+  const p=facePoint(t,u,f,LOBBY+VIEW_FL*FH);
+  const toLake=new T.Vector3(LAKE.x-p.x,0,LAKE.z-p.z);const lakeDist=toLake.length();if(lakeDist>1e-3)toLake.normalize();
+  const lakeAlign=Math.max(0,dir.dot(toLake));
+  ray.set(p.clone().add(dir.clone().multiplyScalar(1.6)),dir);
+  const hit=ray.intersectObjects(collMeshes,false);const obs=hit.length?hit[0].distance:Infinity;
+  if(lakeAlign>0.35&&lakeDist<300){const open=obs>lakeDist-12?1:Math.max(0,Math.min(1,(obs-40)/180));return 60+38*lakeAlign*open;}
+  const open=obs>200?1:Math.max(0,Math.min(1,(obs-40)/180));return 46+26*open;   // outward: open city/greenery vs neighbour-blocked
+}
+function viewScore(t,u){
+  const prim=faceOutlook(t,u,u.primL);let sec=0;
+  u.faces.forEach(f=>{if(f[0]===u.primL[0]&&f[1]===u.primL[1])return;sec=Math.max(sec,faceOutlook(t,u,f));});
+  return Math.round(Math.max(20,Math.min(100,prim+Math.max(0,sec-55)*0.16)));      // dual-view (corner) premium
+}
+/* Airflow — aspect (corner / dual through-draft / single) + cross-ventilation + prevailing-breeze alignment.
+   Prevailing summer breeze assumed W–NW (Gurugram); adjust WIND if the founder confirms otherwise. */
+const WIND=['W','NW','N'];
+function ventScore(t,u){
+  const fc=u.faces,hasFront=fc.some(f=>f[1]===1),hasBack=fc.some(f=>f[1]===-1),hasEnd=fc.some(f=>f[0]!==0);
+  let s=(hasEnd&&(hasFront||hasBack))?86:(hasFront&&hasBack)?73:57;
+  if(hasEnd&&hasFront&&hasBack)s+=4;                                                // corner + through-draft
+  if(fc.some(f=>WIND.includes(compassOf(bearingOf(t,f)))))s+=6;                     // catches the prevailing breeze
+  return Math.round(Math.max(40,Math.min(97,s)));
+}
 const _ssCache={};
 function subScores(t,u){
   const key=t.id+'|'+u.id; if(_ssCache[key])return _ssCache[key];
@@ -1549,8 +1577,8 @@ function subScores(t,u){
   const rk=(CONFIGS[t.cfg].beds===4)?['living','masterBed','kitchen','bed2','bed3','pooja','bathroom']:['living','masterBed','kitchen','bed2','bed3','bathroom'];
   const vr=rk.map(k=>vastuRoomScore(k,c,t.cfg,u.mir).score);
   const vastu=Math.round((vr.reduce((a,b)=>a+b,0)/vr.length)/5*100);          // provisional composite
-  const view=lake?90:55;
-  const vent=isEnd?90:62;
+  const view=viewScore(t,u);
+  const vent=ventScore(t,u);
   let floor=70; try{const cf=clearFloorOf(floorCurve(t,u,4,0.4));floor=Math.round(Math.max(25,100-(cf/FLOORS)*100));}catch(e){}
   const r={morning,cool,vastu,view,vent,floor,c,amEq:eq.amAvg,pmSummer:su.pmAvg,lake,isEnd};
   _ssCache[key]=r; return r;
