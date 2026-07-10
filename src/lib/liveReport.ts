@@ -813,7 +813,10 @@ export function liveProjectIntel(
     devSlug: row.devSlug ?? (row.developer ? developerSlugOf(row.developer) : undefined),
     marketSlug: market?.slug,
     marketShort: market?.short ?? marketName,
-    psf: market?.psf ?? null,
+    psf:
+      row.avgCostSqft != null && row.avgCostSqft > 0
+        ? { low: market?.psf.low ?? row.avgCostSqft, avg: Math.round(row.avgCostSqft), high: market?.psf.high ?? row.avgCostSqft }
+        : market?.psf ?? null,
     sizeBand: ext?.superAreaRange ?? null,
     anatomy,
     ops,

@@ -589,7 +589,7 @@ export function projectFaqs(p: ProjectIntel): { q: string; a: string }[] {
   faqs.push({
     q: `Is ${p.name} fairly priced?`,
     a: `${p.reason} The tracked ${p.marketShort} corridor trades at ${
-      p.psf ? `${fmtPsf(p.psf.low)}–${fmtPsf(p.psf.high)} / sq ft` : "a range we track"
+      p.psf ? (p.psf.low === p.psf.high ? `≈${fmtPsf(p.psf.avg)} / sq ft` : `${fmtPsf(p.psf.low)}–${fmtPsf(p.psf.high)} / sq ft`) : "a range we track"
     }, and we assess this project's pricing & value as ${p.anatomy.pricing === "strong" ? "attractive" : "fair"} for the address.`,
   });
   return faqs;

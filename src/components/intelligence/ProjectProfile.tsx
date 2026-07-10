@@ -642,7 +642,7 @@ export default function ProjectProfile({
                 <div className="mt-9 grid border-t border-[#1a1a1a]/8 pt-4 md:grid-cols-2 md:gap-x-12">
                   {ops?.price && <Reg icon={VITAL_ICON.tag} k="Launch price / sq ft" v={fmtPsf(ops.price.launchPsf)} />}
                   {/* Fields the live pipeline doesn't carry yet render "NA" (founder: columns coming). */}
-                  <Reg icon={VITAL_ICON.psf} k="Corridor avg / sq ft" v={ops?.price && p.psf ? fmtPsf(p.psf.avg) : "NA"} />
+                  <Reg icon={VITAL_ICON.psf} k="Corridor avg / sq ft" v={p.psf ? fmtPsf(p.psf.avg) : "NA"} />
                   {ops?.units != null && <Reg icon={VITAL_ICON.units} k="Total units" v={`${ops.units.toLocaleString("en-IN")}`} />}
                   <Reg icon={VITAL_ICON.towers} k="Towers" v={ops?.towers != null ? `${ops.towers}` : "NA"} />
                   <Reg icon={VITAL_ICON.land} k="Land" v={ops?.landAcres != null ? `${ops.landAcres} acre` : "NA"} />

@@ -312,6 +312,8 @@ export type LiveBacklogFull = {
   faqLocStrength: string | null;
   faqLocGap: string | null;
   faqFinancialVerdict: string | null;
+  /* corridor pricing — per-project average cost / sq ft from the view */
+  avgCostSqft: number | null;
 };
 
 export function liveSlug(name: string): string {
@@ -456,6 +458,7 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
       faqLocStrength: s(r.faq_location_primary_strength),
       faqLocGap: s(r.faq_location_primary_gap),
       faqFinancialVerdict: s(r.faq_financial_verdict),
+      avgCostSqft: n(r.avg_cost_sqft),
     });
   }
   return out.length ? out : null;
