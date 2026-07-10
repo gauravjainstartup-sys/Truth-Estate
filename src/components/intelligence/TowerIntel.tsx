@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { hasFullAccess, unlockProject, setMember, saveLead } from "@/lib/journey";
 import BuyerOfficeGate from "./BuyerOfficeGate";
+import { useConsultation } from "../consultation/ConsultationProvider";
 import type { ProjectIntel, TowerIntelMeta } from "@/lib/projects";
 
 const basePath = "/Truth-Estate";
@@ -26,6 +27,7 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
 
   const has3D = !!meta?.file;
   const openGate = (s: GateStart) => setGateStart(s);
+  const { openConsult } = useConsultation();
 
   useEffect(() => {
     setAccess(hasFullAccess(slug));
@@ -53,6 +55,8 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
       if (!d || typeof d !== "object") return;
       if (d.type === "te-ready" && hasFullAccess(slug)) postPaid();
       if (d.type === "te-pay") openGate("plans");
+      // "Talk to an advisor" from a unit — close the model and open the consult flow with the unit as source.
+      if (d.type === "te-consult") { setModal(false); openConsult({ source: project.name, sourceKind: "project", intent: "buy" }); }
       // Walk-through early-access — capture the mobile number into the app's lead store.
       if (d.type === "te-lead" && d.phone) {
         saveLead({ name: "", email: "", phone: String(d.phone), project: project.name, intent: "tower-intel", message: `walkthrough-early-access · ${String(d.unit ?? "")}`.trim(), createdAt: Date.now() });

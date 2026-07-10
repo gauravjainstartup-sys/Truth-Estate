@@ -148,6 +148,32 @@
   .fs-walk .wk-form button{flex:0 0 auto;background:var(--sun);color:#0b120e;border:0;border-radius:9px;cursor:pointer;font:700 11px/1 'Geist';padding:0 15px}
   .fs-walk .wk-form button:hover{background:#ffd884}
   .fs-walk .wk-ok{margin-top:16px;max-width:34ch;font:500 12.5px/1.5 'Geist';color:#6dbf88}
+  /* ── simplified unit view: primary (3D-forward) + details drawer ── */
+  .fs-primary{flex:1;min-height:0;display:flex;flex-direction:column}
+  #flatSheet.details-open .fs-primary{display:none}
+  #flatSheet.details-open #fsFloor{display:none}
+  .fs-idband{flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:11px 18px 3px}
+  .fs-verdict{flex:1;min-width:0;font:500 12.5px/1.5 'Geist';color:#d9d0be}
+  .fs-verdict b{color:var(--text);font-weight:600}
+  .fs-gradering{flex:0 0 auto;width:64px;height:64px;border-radius:50%;position:relative;display:grid;place-items:center;
+    background:radial-gradient(closest-side,var(--ink) 75%,transparent 76%),conic-gradient(var(--gc,var(--gold)) calc(var(--gp,50)*1%),rgba(255,255,255,.09) 0)}
+  .fs-gradering .gr-s{font-family:'Playfair Display',Georgia,serif;font-weight:600;font-size:20px;line-height:1;color:var(--text)}
+  .fs-gradering .gr-o{font:500 8px/1 ui-monospace,monospace;color:var(--muted);margin-top:2px}
+  .fs-gradering .gr-g{position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);font:700 8.5px/1 ui-monospace,monospace;color:#0b120e;padding:2px 6px;border-radius:8px}
+  .fs-media{flex:1;min-height:0;display:flex;flex-direction:column}
+  .fs-cta{flex:0 0 auto;display:flex;gap:9px;padding:12px 18px 15px;border-top:1px solid var(--line);margin-top:8px}
+  .fs-cta-btn{flex:1;border-radius:10px;font:700 12.5px/1 'Geist';padding:14px 12px;cursor:pointer;border:1px solid}
+  .fs-cta-primary{background:var(--sun);border-color:var(--sun);color:#0b120e}
+  .fs-cta-primary:hover{background:#f4d477}
+  .fs-cta-secondary{background:rgba(255,255,255,.03);border-color:var(--line);color:var(--text)}
+  .fs-cta-secondary:hover{border-color:var(--gold)}
+  .fs-details{display:none;flex:1;min-height:0;overflow-y:auto}
+  #flatSheet.details-open .fs-details{display:block}
+  .fs-dethead{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:12px;padding:11px 18px;background:var(--ink);border-bottom:1px solid var(--line)}
+  .fs-dethead button{border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);font:600 11.5px/1 'Geist';padding:8px 12px;border-radius:9px;cursor:pointer;white-space:nowrap}
+  .fs-dethead button:hover{border-color:var(--gold)}
+  .fs-dethead-t{font:600 10px/1 ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .fs-details .fs-panels{overflow:visible}
   .fs-scorestrip{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--line);flex:0 0 auto}
   .fs-sc{display:flex;flex-direction:column;align-items:center;padding:10px 6px;gap:4px;border-right:1px solid var(--line)}
   .fs-sc:last-child{border-right:none}
@@ -267,8 +293,12 @@
     <button id="fsClose">✕ Close</button>
   </div>
   <div id="fsFloor" class="fs-floor"></div>
-  <div class="fs-body">
-    <div class="fs-left">
+  <div class="fs-primary" id="fsPrimary">
+    <div class="fs-idband">
+      <div class="fs-verdict" id="fsVerdict"></div>
+      <div class="fs-gradering" id="fsGrade"></div>
+    </div>
+    <div class="fs-media">
       <div class="fs-viewtabs"><button id="fsBtn3d" class="on">◧ 3D model</button><button id="fsBtnWalk">⛶ Walk-through</button><button id="fsBtn2d">▤ 2D plan</button></div>
       <div id="fs3d"><div class="fs3d-cap"></div></div>
       <div class="fs-imgwrap"><img id="fsImg" src="" alt="Floor plan"></div>
@@ -283,9 +313,16 @@
         </form>
         <div class="wk-ok" id="fsWalkOk" hidden>✓ You&rsquo;re on the list — we&rsquo;ll text you the moment this unit&rsquo;s walk-through is live.</div>
       </div>
-      <div id="fsCap"></div>
     </div>
-    <div class="fs-right" id="fsIntel"></div>
+    <div class="fs-cta">
+      <button class="fs-cta-btn fs-cta-primary" id="fsAdvisor">Talk to an advisor</button>
+      <button class="fs-cta-btn fs-cta-secondary" id="fsMore">More details</button>
+    </div>
+  </div>
+  <div class="fs-details" id="fsDetails">
+    <div class="fs-dethead"><button id="fsBackUnit">← Back to unit</button><span class="fs-dethead-t">Full intelligence · sun · Vastu · metrics</span></div>
+    <div id="fsCap"></div>
+    <div class="fs-intel" id="fsIntel"></div>
   </div>
 </div>
 
@@ -823,6 +860,13 @@ function initFlat3D(){
       try{parent.postMessage({type:'te-lead',kind:'walkthrough-early-access',phone:'+91'+ph.value,unit:unit,project:'Signature Global Titanium SPR'},'*');}catch(_){}
       try{var K='te_walk_leads',a=JSON.parse(localStorage.getItem(K)||'[]');a.push({phone:'+91'+ph.value,unit:unit,ts:Date.now()});localStorage.setItem(K,JSON.stringify(a));}catch(_){}
       fm.hidden=true;document.getElementById('fsWalkOk').hidden=false;});
+  })();
+  (function(){var sheet=document.getElementById('flatSheet'),more=document.getElementById('fsMore'),backU=document.getElementById('fsBackUnit'),adv=document.getElementById('fsAdvisor');
+    if(more)more.onclick=function(){sheet.classList.add('details-open');if(f3)f3.active=false;var d=document.getElementById('fsDetails');if(d)d.scrollTop=0;};
+    if(backU)backU.onclick=function(){sheet.classList.remove('details-open');
+      if(f3){f3.active=(document.getElementById('fs3d').style.display!=='none');if(f3.active)requestAnimationFrame(f3resize);}};
+    if(adv)adv.onclick=function(){var unit=(document.getElementById('fsName')||{}).textContent||'';
+      try{parent.postMessage({type:'te-consult',unit:unit,project:'Signature Global Titanium SPR'},'*');}catch(_){}};
   })();}
 function buildFlat3D(cfgKey,bearing){
   initFlat3D();
@@ -1020,9 +1064,15 @@ function openFlat(t,uid){
   const oppL=u.faces.find(fc=>fc[0]===-u.primL[0]&&fc[1]===-u.primL[1]);
   const oppSt=oppL?unitStats(t,Object.assign({},u,{primL:oppL}),4,0.4):null;
   /* header */
+  document.getElementById('flatSheet').classList.remove('details-open');
   document.getElementById('fsEy').textContent='Flat intelligence \u00b7 '+benchShort[String(decl)];
   document.getElementById('fsName').textContent=`${t.id} \u00b7 Flat ${u.id}`;
-  document.getElementById('fsSub').textContent=`${t.cfg} \u00b7 ${cfg.saleable.toLocaleString()} sq ft saleable \u00b7 G+40 \u00b7 ${t.core}-to-core \u00b7 Score ${fscore.s}/100 (${fscore.grade})`;
+  document.getElementById('fsSub').textContent=`${t.cfg} \u00b7 ${cfg.saleable.toLocaleString()} sq ft saleable \u00b7 G+40 \u00b7 ${t.core}-to-core`;
+  (function(){const gc=gradeColor(fscore.grade),gEl=document.getElementById('fsGrade');
+    if(gEl){gEl.style.setProperty('--gc',gc);gEl.style.setProperty('--gp',fscore.s);
+      gEl.innerHTML=`<div class="gr-s">${fscore.s}</div><div class="gr-o">/100</div><div class="gr-g" style="background:${gc}">${fscore.grade}</div>`;}
+    const vEl=document.getElementById('fsVerdict');
+    if(vEl)vEl.innerHTML=`<b>${compass}-facing.</b> ${st.rawAvg>=4?`Strong winter sun (${st.rawAvg.toFixed(1)}h)`:st.rawAvg>=1.5?`Limited winter sun (${st.rawAvg.toFixed(1)}h)`:'No direct winter sun'} \u00b7 ${lakeFacing?'lagoon views':'perimeter views'} \u00b7 ${isEnd?'3-side cross-airflow':'2-side airflow'}.`;})();
   document.getElementById('fsImg').src=cfg.img;
   buildFlat3D(t.cfg,b);(function(){const _c=document.querySelector('#fs3d .fs3d-cap');_c.innerHTML='Deck faces '+compass+' \u00b7 drag to orbit \u00b7 scroll to zoom \u00b7 walls traced from the plan \u00b7 glass balcony railings';if(f3)f3.capOrbit=_c.innerHTML;})();setFsView('3d');
   /* score strip */
