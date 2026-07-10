@@ -144,13 +144,13 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
         <div className="fixed inset-0 z-[120] flex flex-col bg-[#0B1F1A]">
           <div className="flex items-center gap-4 border-b border-white/10 px-5 py-3">
             <div>
-              <p className="text-[0.6rem] font-medium uppercase tracking-[0.18em] text-[#e0b667]">Tower &amp; Unit Intelligence</p>
+              <p className="text-[0.6rem] font-medium uppercase tracking-[0.18em] text-[#e0b667]">Sun · Heat · Vastu Advisor</p>
               <p className="text-[0.9rem] font-medium text-white">{project.name}</p>
             </div>
             <span className="ml-3 hidden rounded-full border border-white/12 px-2.5 py-1 text-[0.62rem] font-light text-white/45 sm:inline">
               {access ? "Full verdict unlocked" : "Free to explore · one sample free"}
             </span>
-            <button onClick={() => setModal(false)} className="ml-auto rounded-sm border border-white/15 bg-white/5 px-4 py-2 text-[0.78rem] font-medium tracking-[0.04em] text-white transition-colors hover:border-[#46c2ff]">Close ✕</button>
+            <button onClick={() => setModal(false)} aria-label="Close" className="ml-auto grid h-9 w-9 place-items-center rounded-sm border border-white/15 bg-white/5 text-[0.95rem] text-white transition-colors hover:border-[#e0b667] hover:text-[#e0b667]">✕</button>
           </div>
           <iframe
             ref={iframeRef}

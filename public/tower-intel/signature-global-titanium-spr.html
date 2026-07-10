@@ -92,6 +92,20 @@
   #sunToggle:hover{border-color:var(--sun)}
   body.sun-open #sunToggle{display:none}
   body:not(.sun-open) #sunctl{display:none}
+  /* overview redesign: hide legacy chrome, use one bottom dock */
+  #title{display:none}
+  #hint{display:none}
+  #sunToggle{display:none}
+  body.ov-intro #panel{display:none}
+  #ovDock{left:50%;transform:translateX(-50%);bottom:16px;width:min(520px,94vw);padding:13px 15px 14px;z-index:20;display:none}
+  body.ov-intro:not(.sun-open) #ovDock{display:block}
+  #ovDock .ovd-hint{font:300 13px/1.45 'Geist';color:#dfe6da;text-align:center;letter-spacing:.004em}
+  #ovDock .ovd-hint b{color:#fff;font-weight:500}
+  #ovDock .ovd-acts{display:flex;gap:9px;margin-top:11px}
+  #ovDock .ovd-btn{flex:1;border-radius:11px;cursor:pointer;font:600 12.5px/1 'Geist';padding:13px 12px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--text);transition:.2s}
+  #ovDock .ovd-btn:hover{border-color:var(--sun);background:rgba(236,196,99,.1)}
+  #ovDock .ovd-btn.primary{background:var(--sun);border-color:var(--sun);color:#0b120e}
+  #ovDock .ovd-btn.primary:hover{background:#f4d477}
   #sunClose{position:absolute;top:10px;right:11px;width:22px;height:22px;border:1px solid var(--line);border-radius:7px;background:rgba(255,255,255,.03);color:var(--text);cursor:pointer;font-size:11px;line-height:1;padding:0}
   #sunClose:hover{border-color:var(--sun)}
   #wpanel{display:none}
@@ -273,6 +287,14 @@
 </div>
 
 <div id="sunToggle" class="card">☀&nbsp;&nbsp;Sun &amp; season</div>
+
+<div id="ovDock" class="card">
+  <div class="ovd-hint">Pick a tower — its <b>sun, heat &amp; Vastu</b>, floor by floor</div>
+  <div class="ovd-acts">
+    <button id="ovSun" class="ovd-btn">☀&nbsp;&nbsp;Sun &amp; season</button>
+    <button id="ovRank" class="ovd-btn primary">★&nbsp;&nbsp;Sunniest tower ▸</button>
+  </div>
+</div>
 
 <div id="panel" class="card">
   <div class="phead">
@@ -668,6 +690,7 @@ function renderOverview(){selTower=null;selUnit=null;towers.forEach(t=>{t.tileGr
   if(!scores)computeScores2();
   if(siteView==='ranking')renderRanking();else renderIntro();}
 function renderIntro(){
+  document.body.classList.add('ov-intro');
   document.getElementById('pEy').textContent='Sun · heat · Vastu advisor';
   document.getElementById('pName').textContent='Find your tower';
   document.getElementById('pSub').textContent='7 towers · G+40 · lagoon-facing';
@@ -684,6 +707,7 @@ function renderIntro(){
   document.getElementById('actSun').onclick=()=>{document.body.classList.add('sun-open');};
 }
 function renderRanking(){
+  document.body.classList.remove('ov-intro');
   const win=scores[0],bc=vfacing(win.t,win.best.u);
   document.getElementById('pEy').textContent='Best for you · '+benchShort[String(decl)];
   document.getElementById('pName').textContent='Tower '+win.t.id;
@@ -1378,7 +1402,7 @@ camApply();
 function flyTo(tx,ty,tz,rad,polr,azr){camTween={t0:performance.now(),dur:800,f:{x:target.x,y:target.y,z:target.z,r:radius,p:pol,a:az},t:{x:tx,y:ty,z:tz,r:rad,p:polr,a:azr!=null?azr:az}};}
 function camStep(){if(!camTween)return;const k=Math.min(1,(performance.now()-camTween.t0)/camTween.dur),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2,a=camTween.f,b=camTween.t;target.set(a.x+(b.x-a.x)*e,a.y+(b.y-a.y)*e,a.z+(b.z-a.z)*e);radius=a.r+(b.r-a.r)*e;pol=a.p+(b.p-a.p)*e;az=a.a+(b.a-a.a)*e;camApply();if(k>=1)camTween=null;}
 let hintLabelSprite=null;
-function selectTower(id){const t=towers.find(x=>x.id===id);if(!t)return;selTower=t;document.body.classList.remove('panel-min');document.getElementById('pMin').textContent='–';
+function selectTower(id){const t=towers.find(x=>x.id===id);if(!t)return;selTower=t;document.body.classList.remove('ov-intro');document.body.classList.remove('panel-min');document.getElementById('pMin').textContent='–';
   towers.forEach(o=>{o.tileGrp.visible=o===t;o.units.forEach(u=>u.tileLabel.visible=o===t);});
   // remove old hint label
   if(hintLabelSprite){siteGrp.remove(hintLabelSprite);hintLabelSprite=null;}
@@ -1433,6 +1457,8 @@ const ndial=document.getElementById('northdial');
 ndial.addEventListener('input',()=>{northOff=NORTH_CAL+ndial.value*Math.PI/180;document.getElementById('noff').textContent=ndial.value+'°';setTime(parseFloat(timeEl.value));scores=null;if(document.body.classList.contains('flat-open')&&selTower&&selUnit){selData=null;openFlat(selTower,selUnit);}else if(selTower){renderTowerPanel();}else renderOverview();});
 document.getElementById('sunToggle').onclick=()=>document.body.classList.add('sun-open');
 document.getElementById('sunClose').onclick=()=>document.body.classList.remove('sun-open');
+document.getElementById('ovSun').onclick=()=>document.body.classList.add('sun-open');
+document.getElementById('ovRank').onclick=goRanking;
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 
 /* ═══════════ STAGE 2 — six independent scores + adjustable weights ═══════════ */
