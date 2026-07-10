@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { hasFullAccess, unlockProject, setMember } from "@/lib/journey";
+import { hasFullAccess, unlockProject, setMember, saveLead } from "@/lib/journey";
 import BuyerOfficeGate from "./BuyerOfficeGate";
 import type { ProjectIntel, TowerIntelMeta } from "@/lib/projects";
 
@@ -53,10 +53,14 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
       if (!d || typeof d !== "object") return;
       if (d.type === "te-ready" && hasFullAccess(slug)) postPaid();
       if (d.type === "te-pay") openGate("plans");
+      // Walk-through early-access — capture the mobile number into the app's lead store.
+      if (d.type === "te-lead" && d.phone) {
+        saveLead({ name: "", email: "", phone: String(d.phone), project: project.name, intent: "tower-intel", message: `walkthrough-early-access · ${String(d.unit ?? "")}`.trim(), createdAt: Date.now() });
+      }
     };
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
-  }, [modal, slug]);
+  }, [modal, slug, project.name]);
 
   // Only the 3D modal locks scroll here; BuyerOfficeGate owns its own lock.
   useEffect(() => {
