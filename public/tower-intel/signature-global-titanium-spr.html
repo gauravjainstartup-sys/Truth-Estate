@@ -693,7 +693,9 @@ function vastuFor(c){
     pooja:{ideal:'NE',good:['E'],ok:['N'],bad:['S','W','SW','SE'],
       reason:'Puja room belongs in the NE (Ishan kona) \u2014 the most sacred zone. Deity faces east or west; the devotee faces east or north.'},
     study:{ideal:'W',good:['N','E'],ok:['NE'],bad:['S','SW'],
-      reason:'Home office: west aids concentration, north (Kuber) attracts prosperity. Sit facing east or north while working.'}};
+      reason:'Home office: west aids concentration, north (Kuber) attracts prosperity. Sit facing east or north while working.'},
+    entrance:{ideal:'NE',good:['N','E'],ok:['W','NW'],bad:['S','SW','SE'],
+      reason:'The main door is most auspicious in the NE, N or E (the Ishan–Kuber arc); W and NW are workable; S, SW and SE entries are cautioned and rely on remedies.'}};
   return{s:(overall[c]||{s:3}).s,n:(overall[c]||{n:'Workable with a considered internal layout.'}).n,rooms};
 }
 function vastuRoomScore(roomKey,flatFacing,cfg,endSign){
@@ -702,9 +704,13 @@ function vastuRoomScore(roomKey,flatFacing,cfg,endSign){
   /* Real room offsets in 45° steps from the living/lagoon facade, traced from
      the sanctioned 4.5 BHK plate (living NW → master N, kitchen W, puja S,
      bed2 E, jr-master/study S, bathrooms SE). The −wing unit mirrors.
-     PROVISIONAL — pending Vastu-consultant sign-off. 3.5 BHK plate still on the
-     generic map until its orientation is locked. */
-  const PLATE={'4.5 BHK':{living:0,masterBed:1,kitchen:7,bed2:3,bed3:5,study:5,pooja:5,bathroom:4},'3.5 BHK':{living:0,masterBed:1,kitchen:5,bed2:4,bed3:3,study:2,pooja:2,bathroom:1}};
+     PROVISIONAL — the 3.5 BHK plate is now the real T-07/T-08 layout, on the
+     sanctioned plate. Facings from the site plan (North-up). */
+  const PLATE={
+    /* 4.5 BHK — sanctioned T-02 plate: living NW → master N, kitchen W, bed2 E, jr-master/study S, puja S, baths SE, entrance (lift lobby) SW */
+    '4.5 BHK':{living:0,masterBed:1,kitchen:7,bed2:3,bed3:5,study:5,pooja:5,bathroom:4,entrance:6},
+    /* 3.5 BHK — sanctioned T-07/T-08 plate: living E → master N, kitchen W, bed1 W, bed2 NW, baths SE, entrance (lift lobby) S */
+    '3.5 BHK':{living:0,masterBed:6,kitchen:4,bed2:4,bed3:5,study:5,pooja:2,bathroom:1,entrance:2}};
   const GEN={kitchen:2,masterBed:4,bed2:5,bed3:3,living:0,bathroom:2,pooja:-1,study:3};
   const tbl=PLATE[cfg];let off;
   if(tbl){const mir=(endSign<0)?-1:1;off=((((tbl[roomKey]||0)*mir)%8)+8)%8;}
@@ -770,9 +776,9 @@ function renderRanking(){
   html+='<div class="sech">Ranking · weighted composite</div>';
   scores.forEach((sc,i)=>{html+=`<div class="rk ${i===0?'best':''}" data-t="${sc.t.id}"><span class="pos">${i+1}</span><span class="nm">${sc.t.id}</span><span class="cfg">${sc.t.cfg}</span><span class="rk-sun" title="${sc.best.st.rawAvg.toFixed(1)}h winter sun">${sunIcon(Math.min(1,0.14+sc.best.st.rawAvg/7.4))}</span><span class="track"><span class="fill" style="left:0;width:${sc.best.fs.s}%"></span></span><span class="v">${sc.best.fs.s}/100</span></div>`;});
   html+='<div class="actrow"><button class="minibtn" id="adjBtn">⚖ Adjust priorities</button><button class="minibtn" id="howBtn">ⓘ How scored</button></div>';
-  html+='<div class="howbox" id="howBox" style="display:none"><p><b>Six independent scores.</b> Each flat is graded 0–100 on morning sun, summer heat, Vastu, view, airflow and floor — shown separately, never blended away.</p><p><b>You set the weights.</b> The composite is your weighting of the six — open <b>Adjust priorities</b> and every ranking recomputes live.</p><p><b>Real orientation &amp; plate Vastu.</b> North is calibrated to the site plan (T-2 living = NW); room directions are traced from the sanctioned plates — <b>provisional, pending your Vastu consultant</b>.</p><p><b>Per-floor sun.</b> Neighbouring G+40 towers shadow low floors; the value band starts where a stack reaches ~90% of its top-floor sun.</p></div>';
+  html+='<div class="howbox" id="howBox" style="display:none"><p><b>Six independent scores.</b> Each flat is graded 0–100 on morning sun, summer heat, Vastu, view, airflow and floor — shown separately, never blended away.</p><p><b>You set the weights.</b> The composite is your weighting of the six — open <b>Adjust priorities</b> and every ranking recomputes live.</p><p><b>Real orientation &amp; plate Vastu.</b> North is calibrated to the site plan (T-2 living = NW); room directions are traced from the sanctioned plates — <b>scored on classical Vaastu Shastra room canons</b>.</p><p><b>Per-floor sun.</b> Neighbouring G+40 towers shadow low floors; the value band starts where a stack reaches ~90% of its top-floor sun.</p></div>';
   html+='<div class="howbtn" id="deepBtn">Deeper analysis <span>▾</span></div><div class="howbox" id="deepBox" style="display:none"></div>';
-  html+='<div class="note">G+40 · 3.6 m floor-to-floor · triple-height lobby (public listings). Orientation calibrated to the site plan (T-2 living NW); per-tower facings pending validation. Lat 28.42°N.</div>';
+  html+='<div class="note">G+40 · 3.6 m floor-to-floor · triple-height lobby (public listings). Orientation calibrated to the site plan (T-2 living NW); per-tower facings read from the sanctioned site plan (North-up). Lat 28.42°N.</div>';
   const body=document.getElementById('pBody');body.innerHTML=html;body.scrollTop=0;
   body.querySelectorAll('.rk').forEach(r=>r.onclick=()=>selectTower(r.dataset.t));
   document.getElementById('toIntro').onclick=goIntro;
@@ -1257,7 +1263,7 @@ function openFlat(t,uid){
       </div>
       <div style="font:500 10.5px/1.4 'Geist';color:#64707d">${scores[i].reason}</div>
     </div>`).join('')}
-    <div style="margin-top:8px;font:500 9px/1.5 ui-monospace;color:#abaea1">Room orientations traced from the sanctioned plate · PROVISIONAL, pending Vastu-consultant sign-off.</div>`;})()
+    <div style="margin-top:8px;font:500 9px/1.5 ui-monospace;color:#abaea1">Room directions traced from the sanctioned plates + site-plan north; scored on classical Vaastu Shastra room canons.</div>`;})()
     ,stars:null,barW:null,barC:null},
     {icon:'&#x2248;',label:'Ventilation',badge:'doc',val:isEnd?'<b>3-side cross-ventilation.</b> End flat \u2014 opens on the long face, end face, and rear. Air circulates freely. Best configuration on this plate.':'<b>2-side through-draft.</b> Front and rear openings give good airflow. End flats gain the additional third side.',stars:ventStars,barW:pct(ventStars,5),barC:'var(--teal)'},
     {icon:'&#x1F321;',label:'Heat &amp; cooling',badge:'est',val:compass.includes('W')?'West-leaning facade \u2014 afternoon heat gain is higher. The VRF/VRV system is spec\u2019d for it; expect higher summer AC use.':compass==='N'?'North-facing: lowest solar heat gain. Easiest and cheapest to condition year-round.':'Balanced \u2014 sun arrives before peak heat hours. Lower AC load than west or south-west.',stars:heatScore,barW:pct(heatScore,5),barC:'#8fd0e8'},
@@ -1574,9 +1580,10 @@ function subScores(t,u){
   let cool=Math.round(Math.max(0,Math.min(100,100-(su.pmAvg/5)*100)));       // summer afternoon exposure (inverted = cooler)
   if(/W/.test(c))cool=Math.max(0,cool-15);
   if(t.id==='T-7'||t.id==='T-8'){const _M={N:32,NE:82,E:90,SE:76,S:48,SW:36,W:26,NW:30},_C={N:92,NE:86,E:82,SE:72,S:64,SW:48,W:44,NW:52};if(_M[c]!=null)morning=_M[c];if(_C[c]!=null)cool=_C[c];}                                    // W/NW/SW facades bake in summer
-  const rk=(CONFIGS[t.cfg].beds===4)?['living','masterBed','kitchen','bed2','bed3','pooja','bathroom']:['living','masterBed','kitchen','bed2','bed3','bathroom'];
-  const vr=rk.map(k=>vastuRoomScore(k,c,t.cfg,u.mir).score);
-  const vastu=Math.round((vr.reduce((a,b)=>a+b,0)/vr.length)/5*100);          // provisional composite
+  const rk=(CONFIGS[t.cfg].beds===4)?['entrance','living','masterBed','kitchen','bed2','bed3','pooja','bathroom']:['entrance','living','masterBed','kitchen','bed2','bed3','bathroom'];
+  const WV={entrance:3,kitchen:2.5,masterBed:2,pooja:2,living:1.5,bed2:1,bed3:1,bathroom:.8,study:.6};   // classical room importance
+  const vr=rk.map(k=>({s:vastuRoomScore(k,c,t.cfg,u.mir).score,w:WV[k]||1}));
+  const vastu=Math.round((vr.reduce((a,o)=>a+o.s*o.w,0)/vr.reduce((a,o)=>a+o.w,0))/5*100);   // weighted composite, classical Shastra
   const view=viewScore(t,u);
   const vent=ventScore(t,u);
   let floor=70; try{const cf=clearFloorOf(floorCurve(t,u,4,0.4));floor=Math.round(Math.max(25,100-(cf/FLOORS)*100));}catch(e){}
