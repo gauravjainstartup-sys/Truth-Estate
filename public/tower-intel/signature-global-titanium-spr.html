@@ -121,6 +121,17 @@
   body.show-priorities #wpanel{display:block}
   #wpanelClose{position:absolute;top:9px;right:11px;width:22px;height:22px;border:1px solid var(--line);border-radius:7px;background:rgba(0,0,0,.03);color:var(--text);cursor:pointer;font-size:11px;line-height:1;padding:0}
   #wpanelClose:hover{border-color:var(--gold)}
+  #wpanel .whead{margin-right:28px}
+  #wpanel .whead .eyebrow{color:var(--gold)}
+  #wpanel .whead .wsub{font:500 10px/1.3 ui-monospace,monospace;color:var(--muted);margin-top:4px}
+  #wpanel .wgrid{display:grid;grid-template-columns:1fr 1fr;gap:13px 22px;margin-top:12px}
+  #wpanel .wrow{display:flex;flex-direction:column;gap:7px}
+  #wpanel .wtop{display:flex;align-items:center;gap:7px}
+  #wpanel .wdot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  #wpanel .wname{font:600 11.5px/1 'Geist';color:var(--text)}
+  #wpanel .wval{margin-left:auto;font:700 12.5px/1 ui-monospace,monospace;color:var(--gold);font-variant-numeric:tabular-nums}
+  #wpanel .wrow input[type=range]{flex:none;width:100%}
+  @media (max-width:560px){#wpanel .wgrid{grid-template-columns:1fr;gap:10px}}
   /* full-screen flat sheet */
   /* ── flat sheet ── */
   #flatSheet{position:fixed;inset:0;z-index:100;background:rgba(255,255,255,.98);backdrop-filter:blur(8px);display:none;flex-direction:column}
@@ -1563,14 +1574,14 @@ computeScores2=function(){scores=towers.map(t=>{
   const META=[['morning','Morning sun','#ecc463'],['cool','Summer cool','#5cb487'],['vastu','Vastu','#c9a96e'],
               ['view','View','#8fb6a0'],['vent','Airflow','#3fa06a'],['floor','Floor','#a9c49a']];
   const card=document.createElement('div'); card.id='wpanel'; card.className='card';
-  card.style.cssText='bottom:16px;left:50%;transform:translateX(-50%);padding:10px 14px 11px;width:min(560px,94vw);z-index:20';
+  card.style.cssText='bottom:16px;left:50%;transform:translateX(-50%);padding:13px 17px 16px;width:min(500px,94vw);z-index:20';
   let rows='';
-  META.forEach(m=>{rows+=`<label style="display:flex;align-items:center;gap:7px;font:600 9.5px/1 ui-monospace,monospace;color:var(--muted)">`
-    +`<span style="width:78px;color:${m[2]}">${m[1]}</span>`
-    +`<input type="range" min="0" max="40" step="5" value="${WEIGHTS[m[0]]}" data-k="${m[0]}" style="flex:1;accent-color:${m[2]}">`
-    +`<b data-v="${m[0]}" style="width:22px;text-align:right;color:var(--text)">${WEIGHTS[m[0]]}</b></label>`;});
-  card.innerHTML='<div class="eyebrow" style="color:var(--gold)">⚖ Your priorities · drag to reweight the ranking</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px 16px;margin-top:8px">'+rows+'</div>';
+  META.forEach(m=>{rows+=`<div class="wrow">`
+    +`<div class="wtop"><span class="wdot" style="background:${m[2]}"></span><span class="wname">${m[1]}</span><b class="wval" data-v="${m[0]}">${WEIGHTS[m[0]]}</b></div>`
+    +`<input type="range" min="0" max="40" step="5" value="${WEIGHTS[m[0]]}" data-k="${m[0]}">`
+    +`</div>`;});
+  card.innerHTML='<div class="whead"><div class="eyebrow">⚖ Your priorities</div><div class="wsub">Drag to reweight how the six scores combine</div></div>'
+    +'<div class="wgrid">'+rows+'</div>';
   document.body.appendChild(card);
   const wc=document.createElement('button');wc.id='wpanelClose';wc.textContent='✕';wc.title='Close';wc.onclick=()=>{document.body.classList.remove('show-priorities');const a=document.getElementById('adjBtn');if(a)a.classList.remove('on');};card.appendChild(wc);
   card.addEventListener('input',e=>{const i=e.target; if(i.tagName!=='INPUT')return;
