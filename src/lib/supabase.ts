@@ -474,6 +474,7 @@ export type LiveExtendedDetails = {
   superAreaRange: string | null;
   launchPrice: number | null;
   floorsRange: string | null;
+  totalTowers: number | null;
   brochureUrl: string | null;
   paymentPlanUrl: string | null;
   renderElevationUrl: string | null;
@@ -496,6 +497,7 @@ export async function fetchExtendedDetails(): Promise<Record<string, LiveExtende
       superAreaRange: s(r.super_area_range),
       launchPrice: n(r.launch_price),
       floorsRange: s(r.floors_range),
+      totalTowers: n(r.total_towers),
       brochureUrl: s(r.brochure_url),
       paymentPlanUrl: s(r.payment_plan_url),
       renderElevationUrl: s(r.render_elevation_url),

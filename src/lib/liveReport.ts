@@ -742,6 +742,7 @@ export function liveProjectIntel(
   const ops: ProjectOps = {
     ...(row.location ? { address: row.location } : {}),
     ...(row.totalUnits != null ? { units: Math.round(row.totalUnits) } : totalUnits != null ? { units: totalUnits } : {}),
+    ...(ext?.totalTowers != null && ext.totalTowers > 0 ? { towers: Math.round(ext.totalTowers) } : {}),
     ...(landAcres != null ? { landAcres } : {}),
     ...(density != null ? { density } : {}),
     ...(openAreaPct != null ? { openAreaPct } : {}),
