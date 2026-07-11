@@ -698,7 +698,7 @@ export function liveProjectIntel(
       if (!name) return;
       pois.push({
         name,
-        sub: tIn(it, ["type", "category", "sub", "descriptor"]) ?? label,
+        sub: tIn(it, ["sub_category", "type", "sub", "descriptor"]) ?? tIn(it, ["category"]) ?? label,
         ...(nIn(it, ["rating", "google_rating"]) != null ? { rating: nIn(it, ["rating", "google_rating"])! } : {}),
         dist: kmLabel(it) ?? "nearby",
         ...(i === 0 ? { key: true } : {}),
@@ -706,10 +706,10 @@ export function liveProjectIntel(
     });
   }
   const connectivity: NonNullable<NonNullable<ProjectOps["location"]>["connectivity"]> = [];
-  if (obj(row.locMetro) && tIn(row.locMetro, ["name", "station", "nearest_station"]))
+  if (obj(row.locMetro) && tIn(row.locMetro, ["station_name", "name", "station", "nearest_station"]))
     connectivity.push({
       icon: "◇",
-      name: tIn(row.locMetro, ["name", "station", "nearest_station"])!,
+      name: tIn(row.locMetro, ["station_name", "name", "station", "nearest_station"])!,
       sub: tIn(row.locMetro, ["line", "corridor"]) ?? "metro station",
       dist: kmLabel(row.locMetro) ?? "—",
       tag: minLabel(row.locMetro) ?? "metro",
@@ -717,9 +717,9 @@ export function liveProjectIntel(
   for (const rd of asArr(row.locRoads).slice(0, 3)) {
     const name = tIn(rd, ["name", "road", "title"]);
     if (!name) continue;
-    const direct = /direct/i.test(tIn(rd, ["type", "access"]) ?? "");
+    const direct = /direct/i.test(tIn(rd, ["connectivity_type", "type", "access"]) ?? "");
     connectivity.push({
-      icon: "▤", name, sub: tIn(rd, ["type", "access", "class"]) ?? "arterial road",
+      icon: "▤", name, sub: direct ? "direct frontage" : "arterial road",
       dist: kmLabel(rd) ?? "—", tag: direct ? "Direct" : minLabel(rd) ?? "road", ...(direct ? { direct: true } : {}),
     });
   }
@@ -741,24 +741,26 @@ export function liveProjectIntel(
     const title = tIn(it, ["name", "title", "project"]);
     if (!title) continue;
     infra.push({
-      cat: tIn(it, ["type", "category", "cat"]) ?? "Infrastructure",
+      cat: tIn(it, ["category", "type", "cat"]) ?? "Infrastructure",
       status: tIn(it, ["status"]) ?? "Under Construction",
       title,
-      body: tIn(it, ["details", "description", "body", "summary", "impact_reasoning"]) ?? "",
-      impact: /high/i.test(tIn(it, ["impact", "importance"]) ?? "") ? "High" : "Medium",
-      eta: tIn(it, ["timeline", "eta", "expected_completion", "completion", "year"]) ?? "—",
+      body: textAt(it, "impact.description") ?? tIn(it, ["details", "description", "body", "summary", "impact_reasoning"]) ?? "",
+      impact: /high/i.test(textAt(it, "impact.level") ?? tIn(it, ["impact", "importance"]) ?? "") ? "High" : "Medium",
+      eta: tIn(it, ["expected_completion", "timeline", "eta", "completion", "year"]) ?? "—",
     });
   }
   for (const it of asArr(row.locSupplyCatalysts).slice(0, 3)) {
-    const title = tIn(it, ["name", "title", "project"]);
-    if (!title || infra.some((x) => x.title === title)) continue;
+    const title = tIn(it, ["project_name", "name", "title", "project"]);
+    if (!title || title === row.name || infra.some((x) => x.title === title)) continue;
+    const scale = tIn(it, ["scale_indicator"]);
+    const marketImpact = textAt(it, "impact_on_market.description") ?? tIn(it, ["details", "description", "body", "summary"]);
     infra.push({
       cat: "Real estate",
       status: tIn(it, ["status", "stage"]) ?? "Announced",
       title,
-      body: tIn(it, ["details", "description", "body", "summary"]) ?? "",
+      body: [scale, marketImpact].filter(Boolean).join(" — "),
       impact: "Medium",
-      eta: tIn(it, ["timeline", "eta", "completion", "year"]) ?? "—",
+      eta: tIn(it, ["expected_completion", "timeline", "eta", "completion", "year"]) ?? "—",
     });
   }
   const location: ProjectOps["location"] =
