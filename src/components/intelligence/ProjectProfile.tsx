@@ -252,6 +252,10 @@ export default function ProjectProfile({
 
   const dev = developerOf(p);
   const market = marketOf(p);
+  // Pillar II mounts for a curated market dossier OR live location data —
+  // the live radar/POI section is fully self-contained (ReportLocation
+  // reads none of the static market fields)
+  const locIntel = !!market || !!p.ops?.location;
   const roi = roiModel(p);
   const faqs = projectFaqs(p);
   const ops = p.ops;
@@ -277,7 +281,7 @@ export default function ProjectProfile({
     { id: "documents", label: "Brochure & payment plan", show: true },
     { id: "anatomy", label: "Truth Score anatomy", show: true },
     { id: "developer", label: "Developer DNA", show: !!dev },
-    { id: "location", label: "Location intelligence", show: !!market },
+    { id: "location", label: "Location intelligence", show: locIntel },
     { id: "construction", label: "Construction & sales", show: !!con },
     { id: "legal", label: "Legal & compliance", show: true },
     { id: "usps", label: "Project USPs", show: usps.length > 0 },
@@ -784,7 +788,7 @@ export default function ProjectProfile({
             )}
 
             {/* Pillar II · Location Intelligence */}
-            {market && (
+            {locIntel && (
               <div id="location" className="mt-16 scroll-mt-24 border-t border-[#1a1a1a]/8 pt-12 md:mt-20">
                 <ReportLocation p={p} />
               </div>
