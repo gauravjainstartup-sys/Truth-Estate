@@ -103,12 +103,65 @@ async function fetchRows() {
   return await res.json();
 }
 
+/* Page-1 cover thumbnail for a saved PDF — so document cards can show a
+   real cover WITHOUT the browser fetching the PDF (the whole point: no
+   multi-MB file moves until the reader clicks). Fail-soft: any renderer
+   hiccup just means the card keeps its designed placeholder. */
+async function pdfThumb(buf) {
+  try {
+    const napi = await import("@napi-rs/canvas");
+    // pdf.js draws glyphs as Path2D and measures via DOMMatrix — give Node the
+    // canvas package's implementations before it loads
+    globalThis.Path2D ??= napi.Path2D;
+    globalThis.DOMMatrix ??= napi.DOMMatrix;
+    globalThis.ImageData ??= napi.ImageData;
+    const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    const { createCanvas } = napi;
+    const doc = await getDocument({
+      data: new Uint8Array(buf),
+      // Node has no font-face pipeline — point pdf.js at its bundled standard
+      // fonts and let it rasterise glyphs itself
+      standardFontDataUrl: "node_modules/pdfjs-dist/standard_fonts/",
+      disableFontFace: true,
+      verbosity: 0,
+    }).promise;
+    const page = await doc.getPage(1);
+    const base = page.getViewport({ scale: 1 });
+    const vp = page.getViewport({ scale: 520 / base.width });
+    const canvas = createCanvas(Math.ceil(vp.width), Math.ceil(vp.height));
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    return canvas.toBuffer("image/png");
+  } catch (e) {
+    console.log(`[materialize] thumb skip: ${e instanceof Error ? e.message.slice(0, 80) : "render error"}`);
+    return null;
+  }
+}
+
+/* Split a multi-URL cell (JSON array or comma/newline list) into lone URLs. */
+function urlList(value) {
+  if (!value || typeof value !== "string") return [];
+  const s = value.trim();
+  let parts = [];
+  if (s.startsWith("[")) {
+    try { const j = JSON.parse(s); if (Array.isArray(j)) parts = j.filter((x) => typeof x === "string"); } catch { /* not json */ }
+  } else if (/[,\n]/.test(s) && !/^[A-Za-z0-9+/=\r\n]+$/.test(s)) {
+    parts = s.split(/[,\n]+/);
+  } else if (/^https?:\/\//i.test(s)) {
+    parts = [s];
+  }
+  return parts.map((x) => x.trim()).filter((x) => /^https?:\/\//i.test(x));
+}
+
 const manifest = {};
 try {
   await rm(OUT_DIR, { recursive: true, force: true });
   await mkdir(OUT_DIR, { recursive: true });
   const rows = await fetchRows();
   let files = 0;
+  const urlQueue = new Map(); // url → source label; fetched once after the row walk
   for (const row of rows) {
     const id = row?.backlog_id;
     if (!id) continue;
@@ -129,7 +182,66 @@ try {
       (manifest[id] ??= {})[field] = rel;
       files++;
       console.log(`[materialize] ${rel} ← ${field} (${(dec.buf.length / 1024).toFixed(0)} KB${dec.from === "url" ? ", from URL" : ""})`);
+      if (dec.ext === "pdf") {
+        const tb = await pdfThumb(dec.buf);
+        if (tb) {
+          const trel = `live-media/${id}-${slug}-thumb.png`;
+          await writeFile(path.join("public", trel), tb);
+          manifest[id][field.replace(/_url$/, "") + "_thumb"] = trel;
+          files++;
+          console.log(`[materialize] ${trel} ← page-1 cover (${(tb.length / 1024).toFixed(0)} KB)`);
+        }
+      }
     }
+    // multi-URL cells (brochure page lists) — each page image pulled
+    // same-origin so readers never hit Storage per page-turn
+    for (const field of FIELDS) {
+      const items = urlList(row[field]);
+      if (items.length < 2) continue; // lone URLs were handled above
+      for (const u of items) urlQueue.set(u, `${id} ${field}`);
+    }
+  }
+
+  /* ── URL map: floor plans + brochure pages → same-origin files ──
+     Every http URL collected above (and every configuration floor plan)
+     is fetched ONCE per build and recorded under manifest.__urls, so the
+     adapter serves it from the site instead of Storage on every visit. */
+  try {
+    const fix = process.env.SUPABASE_FIXTURES;
+    let cfgRows = [];
+    if (fix) {
+      try { cfgRows = JSON.parse(await readFile(path.join(fix, "project_configurations.json"), "utf8")); } catch { cfgRows = []; }
+    } else {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/project_configurations?select=floor_plan_image_url&limit=2000`, {
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+        signal: AbortSignal.timeout(30000),
+      });
+      if (res.ok) cfgRows = await res.json();
+    }
+    for (const c of cfgRows) {
+      const v = c?.floor_plan_image_url;
+      if (!v) continue;
+      const items = urlList(v);
+      for (const u of items) urlQueue.set(u, "floor_plan");
+      if (!items.length && typeof v === "string" && /^https?:\/\//i.test(v.trim())) urlQueue.set(v.trim(), "floor_plan");
+    }
+  } catch { /* configurations unavailable — floor plans stay remote */ }
+
+  if (urlQueue.size) {
+    const { createHash } = await import("node:crypto");
+    const urls = {};
+    let saved = 0;
+    for (const [u, from] of urlQueue) {
+      const r = await fetchUrlMedia(u);
+      if (!r || !r.buf) { console.log(`[materialize] SKIP url (${from}): ${(r && r.skip) ?? "unfetchable"} ← ${u.slice(-60)}`); continue; }
+      const h = createHash("sha1").update(u).digest("hex").slice(0, 12);
+      const rel = `live-media/u-${h}.${r.ext}`;
+      await writeFile(path.join("public", rel), r.buf);
+      urls[u] = rel;
+      saved++; files++;
+    }
+    if (saved) manifest.__urls = urls;
+    console.log(`[materialize] url-map: ${saved}/${urlQueue.size} remote file(s) pulled same-origin`);
   }
   console.log(`[materialize] ${files} file(s) across ${Object.keys(manifest).length} project(s)`);
 } catch (e) {

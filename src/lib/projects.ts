@@ -200,8 +200,10 @@ export type ProjectOps = {
     masterplan?: { src: string; read: string };
     brochure?: string[]; // page images, cover first
     brochurePdf?: string; // PDF fallback (URL or data: URI) — opens as a link when no page images exist
+    brochureThumb?: string; // build-rendered page-1 cover — shown so the PDF itself never loads pre-click
     paymentPlan?: { src: string; read: string };
     paymentPlanPdf?: string; // PDF fallback — opens as a link when the plan isn't an image
+    paymentPlanThumb?: string; // build-rendered page-1 cover
     costSheet?: string;
     sitePhotos?: { src: string; asOf: string; note?: string }[];
   };

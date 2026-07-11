@@ -133,7 +133,7 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
             <button type="button" onClick={() => setZoom(true)} aria-label="Enlarge the floor plan"
               className="group relative block w-full cursor-zoom-in overflow-hidden rounded-xl border border-[#1a1a1a]/10 bg-[#FBF8F2] text-left">
               {activePlan && !imgErr ? (
-                <img src={asset(activePlan.src)} onError={() => setImgErr(true)} alt={`${h.config} ${activePlan.label || h.variant || ""} floor plan — ${p.name}`} className="block w-full transition-transform duration-500 group-hover:scale-[1.02]" />
+                <img loading="lazy" src={asset(activePlan.src)} onError={() => setImgErr(true)} alt={`${h.config} ${activePlan.label || h.variant || ""} floor plan — ${p.name}`} className="block w-full transition-transform duration-500 group-hover:scale-[1.02]" />
               ) : (
                 <FloorPlanSchematic beds={beds} balcony={h.balconySqft != null} />
               )}

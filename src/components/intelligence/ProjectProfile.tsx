@@ -673,7 +673,7 @@ export default function ProjectProfile({
                   className="group relative block w-full cursor-zoom-in overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-white/60 text-left"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={asset(ops.media.masterplan.src)} alt={`${p.name} — site masterplan (indicative)`} className="w-full transition-transform duration-500 group-hover:scale-[1.02]" />
+                  <img loading="lazy" src={asset(ops.media.masterplan.src)} alt={`${p.name} — site masterplan (indicative)`} className="w-full transition-transform duration-500 group-hover:scale-[1.02]" />
                   {/* persistent enlarge affordance — the image is the click target */}
                   <span className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-[#0b1f1a]/70 px-3 py-1.5 text-[0.66rem] font-medium text-white backdrop-blur-sm transition-colors group-hover:bg-[#0b1f1a]/90">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
@@ -707,7 +707,7 @@ export default function ProjectProfile({
                     >
                       <div className="relative aspect-[16/10] overflow-hidden bg-[#0b1f1a]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={asset(ops.media.brochure[0])} alt={`${p.name} brochure cover`} className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]" />
+                        <img loading="lazy" src={asset(ops.media.brochure[0])} alt={`${p.name} brochure cover`} className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]" />
                       </div>
                       <div className="flex items-center justify-between gap-4 px-5 py-4">
                         <div>
@@ -722,7 +722,7 @@ export default function ProjectProfile({
                       onClick={() => setDoc({ title: "Project brochure", pdf: ops.media!.brochurePdf! })}
                       className="group w-full overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-white/60 text-left transition-colors hover:border-[#9a7a2e]/40"
                     >
-                      <PdfThumb src={asset(ops.media.brochurePdf)} />
+                      <PdfThumb thumb={ops.media.brochureThumb ? asset(ops.media.brochureThumb) : undefined} alt={`${p.name} brochure cover`} />
                       <div className="flex items-center justify-between gap-4 px-5 py-4">
                         <div>
                           <p className="text-[0.92rem] font-semibold">Project brochure</p>
@@ -741,7 +741,7 @@ export default function ProjectProfile({
                     >
                       <div className="relative aspect-[16/10] overflow-hidden bg-[#f0ece3]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={asset(ops.media.paymentPlan.src)} alt={`${p.name} payment plan`} className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]" />
+                        <img loading="lazy" src={asset(ops.media.paymentPlan.src)} alt={`${p.name} payment plan`} className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]" />
                       </div>
                       <div className="flex items-center justify-between gap-4 px-5 py-4">
                         <div>
@@ -756,7 +756,7 @@ export default function ProjectProfile({
                       onClick={() => setDoc({ title: "Payment plan", pdf: ops.media!.paymentPlanPdf! })}
                       className="group w-full overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-white/60 text-left transition-colors hover:border-[#9a7a2e]/40"
                     >
-                      <PdfThumb src={asset(ops.media.paymentPlanPdf)} />
+                      <PdfThumb thumb={ops.media.paymentPlanThumb ? asset(ops.media.paymentPlanThumb) : undefined} alt={`${p.name} payment plan cover`} />
                       <div className="flex items-center justify-between gap-4 px-5 py-4">
                         <div>
                           <p className="text-[0.92rem] font-semibold">Payment plan</p>

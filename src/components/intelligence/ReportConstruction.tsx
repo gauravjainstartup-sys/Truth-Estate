@@ -63,8 +63,8 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
         {heroImg ? (
           <div className="mt-4">
             <RenderVsReality
-              left={render ? <img src={`${basePath}/${render}`} alt={`${p.name} — developer render`} className="h-full w-full object-cover" draggable={false} /> : <RenderStandin />}
-              right={<img src={`${basePath}/${heroImg}`} alt={`${p.name} — site aerial`} className="h-full w-full object-cover" draggable={false} />}
+              left={render ? <img loading="lazy" src={`${basePath}/${render}`} alt={`${p.name} — developer render`} className="h-full w-full object-cover" draggable={false} /> : <RenderStandin />}
+              right={<img loading="lazy" src={`${basePath}/${heroImg}`} alt={`${p.name} — site aerial`} className="h-full w-full object-cover" draggable={false} />}
               leftChip="The brochure · artist's impression"
               rightChip={`The site · ${site?.asOf ?? p.ops?.reviewed ?? "satellite"}`}
             />

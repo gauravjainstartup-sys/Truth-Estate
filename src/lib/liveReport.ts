@@ -19,7 +19,10 @@ import mediaManifest from "./live-media.manifest.json";
    The manifest only covers any LEGACY base64 rows — decoded to real files
    before the build (scripts/materialize-media.mjs) — and is empty once every
    row has migrated. When present, a materialized path is preferred. */
-const MANIFEST = mediaManifest as Record<string, Partial<Record<string, string>>>;
+const MANIFEST = mediaManifest as Record<string, Partial<Record<string, string>>> & { __urls?: Record<string, string> };
+/* remote URL → same-origin materialized path (floor plans, brochure pages);
+   unmapped URLs pass through untouched */
+const viaUrls = (s: string): string => MANIFEST.__urls?.[s] ?? s;
 
 /* tiny defensive readers over the pipeline-owned JSON payloads */
 const obj = (v: unknown): Record<string, unknown> | null =>
@@ -165,7 +168,7 @@ const B64_MAGIC: [RegExp, string][] = [
 ];
 function mediaSrc(u: string | null | undefined): string | null {
   if (!u) return null;
-  const s = u.trim();
+  const s = viaUrls(u.trim());
   if (/^data:image\//i.test(s)) return s;
   if (/^data:/i.test(s)) return null; // pdf / other — no image slot for these yet
   if (s.length > 200 && /^[A-Za-z0-9+/=\r\n]+$/.test(s)) {
@@ -188,7 +191,7 @@ function mediaSrc(u: string | null | undefined): string | null {
 const PDF_INLINE_CAP = 2_000_000; // ~1.5 MB decoded
 function pdfSrc(u: string | null | undefined): string | null {
   if (!u) return null;
-  const s = u.trim();
+  const s = viaUrls(u.trim());
   if (/^data:application\/pdf/i.test(s)) return s.length <= PDF_INLINE_CAP ? s : null;
   if (/^JVBERi/.test(s) && /^[A-Za-z0-9+/=\r\n]+$/.test(s))
     return s.length <= PDF_INLINE_CAP ? `data:application/pdf;base64,${s.replace(/\s+/g, "")}` : null;
@@ -210,7 +213,7 @@ function mediaPages(u: string | null | undefined): string[] | null {
     // blob, even multi-line, is excluded by the pure-base64 guard above.)
     parts = s.split(/[,\n]+/);
   }
-  const pages = parts.map((p) => mediaSrc(p)).filter((p): p is string => !!p);
+  const pages = parts.map((p) => mediaSrc(viaUrls(p.trim()))).filter((p): p is string => !!p);
   return pages.length ? pages : null;
 }
 
@@ -485,10 +488,12 @@ export function liveProjectIntel(
       : {}),
     ...(brochurePages ? { brochure: brochurePages } : {}),
     ...(brochurePdf ? { brochurePdf } : {}),
+    ...(extRaw && MANIFEST[extRaw.backlogId]?.brochure_thumb ? { brochureThumb: MANIFEST[extRaw.backlogId]!.brochure_thumb! } : {}),
     ...(paymentSrc
       ? { paymentPlan: { src: paymentSrc, read: "From the developer's kit — indicative until countersigned." } }
       : {}),
     ...(paymentPdf ? { paymentPlanPdf: paymentPdf } : {}),
+    ...(extRaw && MANIFEST[extRaw.backlogId]?.payment_plan_thumb ? { paymentPlanThumb: MANIFEST[extRaw.backlogId]!.payment_plan_thumb! } : {}),
   };
 
   // build-log record: how each media column resolved (or why it didn't)
