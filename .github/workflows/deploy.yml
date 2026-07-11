@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main, claude/exciting-lamport-9x99ik]
+    branches: [main]
   # Manual "Run workflow" button — publish the latest Supabase data on demand.
   workflow_dispatch:
   # Hourly rebuild — the site is a static export, so this re-fetches Supabase
