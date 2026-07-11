@@ -485,7 +485,33 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
       longitude: n(r.longitude),
     });
   }
-  return out.length ? out : null;
+  /* Two view rows can slugify to the same page (a duplicate/enriched pair, or
+     two filings of one project). The detail page selects by slug with .find(),
+     so a sparse duplicate can shadow the fully-populated row. Collapse per slug
+     keeping the RICHEST row — scored on the signal columns that drive the
+     report — so the page always renders the most-complete data. */
+  const signal = (r: LiveBacklogFull): number => {
+    const has = (v: unknown) => (v == null || v === "" ? 0 : 1);
+    return (
+      has(r.locPoiDensity) + has(r.locMetro) + has(r.locRoads) + has(r.latitude) +
+      has(r.constructionProgressPct) + has(r.predictedDeliveryDate) + has(r.reraPromiseDate) +
+      has(r.devTotal) + has(r.devDelivered) + has(r.roiIdealCagr) + has(r.legalHeadline) +
+      has(r.modLegal) + has(r.totalUnits) + has(r.avgCostSqft) + has(r.salesVelocityPct) +
+      has(r.uspCards) + has(r.legalProjectCases)
+    );
+  };
+  const bySlug = new Map<string, LiveBacklogFull>();
+  let collisions = 0;
+  for (const r of out) {
+    const prev = bySlug.get(r.slug);
+    if (!prev) { bySlug.set(r.slug, r); continue; }
+    collisions++;
+    if (signal(r) > signal(prev)) bySlug.set(r.slug, r);
+    console.log(`[dedupe] ${r.slug}: kept signal=${Math.max(signal(r), signal(prev))} dropped=${Math.min(signal(r), signal(prev))}`);
+  }
+  const deduped = out.length === bySlug.size ? out : [...bySlug.values()];
+  if (collisions) console.log(`[dedupe] ${collisions} slug collision(s) resolved · ${out.length} → ${deduped.length} rows`);
+  return deduped.length ? deduped : null;
 }
 
 /* ── extended details — hero, vitals & document media per project ──
