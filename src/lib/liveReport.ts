@@ -916,6 +916,50 @@ export function liveProjectIntel(
     ...(usps.length ? { usps: usps.slice(0, 8) } : {}),
   };
 
+  /* ── AUDIT: per-section v3-resolution dump for a target slug (CI log).
+     Reports each report slot as mapped / derived / fallback / missing so a
+     "this looks static" question is answerable field-by-field. ── */
+  if (row.slug === "live-dlf-the-arbour" || row.slug === "live-m3m-crown-test") {
+    const yn = (v: unknown) => (v == null || v === "" ? "–" : "✓");
+    const a = {
+      hero: {
+        truthScore: row.truthScore ?? "MISSING",
+        reco: recommendation === "Under Review" ? "fallback(Under Review)" : `v3(${recommendation})`,
+        confidence: `${confidence}${delayPct != null ? " ← chances_of_delay_pct" : row.delayRisk ? " ← delay_risk" : " ← fallback"}`,
+        reason: row.insight ? "v3.insight" : row.riskVerdictCleaned ? "v3.risk_verdict" : textAt(ruleV, "verdict") ? "v3.rule_verdict" : "FALLBACK(generic)",
+        address: yn(row.location),
+        psf: row.avgCostSqft ? `v3.avg_cost_sqft(${Math.round(row.avgCostSqft)})` : market ? "MARKET-FALLBACK" : "missing",
+      },
+      vitals: {
+        units: row.totalUnits != null ? "v3.total_units" : totalUnits != null ? "parsed.insight" : "MISSING",
+        towers: ext?.totalTowers ? "ext.total_towers" : "MISSING",
+        land: landAcres ?? "missing", density: density ?? "missing", openArea: openAreaPct ?? "missing",
+        possession: row.promised ? "v3.promised" : reraDate ? "v3.rera_promise" : "MISSING",
+        launch: launchLabel ? "v3.registration_date" : "MISSING",
+        floors: ext?.floorsRange ? "ext.floors_range" : "MISSING",
+        reraId: yn(row.reraId), reviewed: ext?.heroDate ? "ext.hero_date" : "MISSING",
+      },
+      anatomy: {
+        delivery: `${anatomy.delivery}${deliveryRatingV3 ? " ← v3.dev_delayed_pct" : " ← FALLBACK"}`,
+        legal: `${anatomy.legal}${legalRatingV3 ? " ← v3.legal_score/band" : " ← FALLBACK"}`,
+        financials: `${anatomy.financials}${finRatingOverall ? " ← v3.fin_metrics" : subsAvg != null ? " ← module.subscores" : " ← FALLBACK"}`,
+        liquidity: `${anatomy.liquidity}${velocityPct != null ? " ← v3.sales_velocity" : " ← FALLBACK(moderate)"}`,
+        pricing: `${anatomy.pricing}${bandRating(bands.roi) ? " ← v3.roi_band" : " ← FALLBACK(moderate)"}`,
+        construction: `${anatomy.construction}${pace != null ? " ← v3.pace" : " ← FALLBACK(moderate)"}`,
+      },
+      developer: liveDeveloper ? `v3 ledger (${row.devTotal}/${row.devDelivered})` : "MISSING → curated fallback via developerOf()",
+      construction: construction ? `built=${construction.actualPct} rera-due=${construction.expectedPct}(DERIVED) delay=${construction.delayChancePct ?? "heuristic"} predOC=${construction.predictedDate}` : "MISSING",
+      price: price ? `launch=${price.launchPsf} now=${price.currentLow}-${price.currentHigh}` : "MISSING (no launch_price or current range)",
+      roi: liveRoi ? `v3 ideal=${liveRoi.benchCagr} adj=${liveRoi.adjCagr}` : "MISSING → corridor approximation",
+      legal: `headline=${yn(row.legalHeadline)} flags=${legalKeyFlags.length} risks=${legalRisks.length} cases=${legalCases.length}`,
+      location: location ? `pois=${location.pois?.length ?? 0} conn=${location.connectivity?.length ?? 0} infra=${location.infra?.length ?? 0} geo=${location.geo?.nearby.length ?? "none"}` : "MISSING",
+      media: `hero=${yn(ops.media?.heroImage)} render=${yn(ops.media?.render)} sitemap=${yn(ops.media?.masterplan)} brochure=${yn(ops.media?.brochure ?? ops.media?.brochurePdf)} payment=${yn(ops.media?.paymentPlan ?? ops.media?.paymentPlanPdf)}`,
+      homes: homes.length, usps: usps.length, strengths: strengths.length, watchouts: watchouts.length,
+      configs: configs.length, sizeBand: yn(ext?.superAreaRange),
+    };
+    console.log(`[AUDIT ${row.slug}]`, JSON.stringify(a));
+  }
+
   return {
     name: row.name,
     developer: row.developer ?? "",
