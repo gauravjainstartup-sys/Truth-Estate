@@ -325,6 +325,10 @@ export type LiveBacklogFull = {
   /* project coordinates — power the map-led Location layout */
   latitude: number | null;
   longitude: number | null;
+  // ids of duplicate rows collapsed into this one (same slug) — so the
+  // extended-details / configuration join can still find media & vitals that
+  // were filed against the dropped row's id
+  altIds?: string[];
 };
 
 export function liveSlug(name: string): string {
@@ -506,8 +510,12 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
     const prev = bySlug.get(r.slug);
     if (!prev) { bySlug.set(r.slug, r); continue; }
     collisions++;
-    if (signal(r) > signal(prev)) bySlug.set(r.slug, r);
-    console.log(`[dedupe] ${r.slug}: kept signal=${Math.max(signal(r), signal(prev))} dropped=${Math.min(signal(r), signal(prev))}`);
+    // keep the richer row; carry the loser's id (+ its aliases) so the
+    // extended-details / config join still finds media filed against it
+    const [keep, drop] = signal(r) >= signal(prev) ? [r, prev] : [prev, r];
+    keep.altIds = [...new Set([...(keep.altIds ?? []), ...(drop.altIds ?? []), drop.id])];
+    bySlug.set(r.slug, keep);
+    console.log(`[dedupe] ${r.slug}: kept signal=${signal(keep)} (id ${keep.id}) · absorbed id ${drop.id} signal=${signal(drop)}`);
   }
   const deduped = out.length === bySlug.size ? out : [...bySlug.values()];
   if (collisions) console.log(`[dedupe] ${collisions} slug collision(s) resolved · ${out.length} → ${deduped.length} rows`);

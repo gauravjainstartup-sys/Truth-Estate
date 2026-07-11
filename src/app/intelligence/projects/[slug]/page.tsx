@@ -55,9 +55,12 @@ function lookupKey<T>(
   name: string,
   table: Record<string, T> | null,
   nameIds: Record<string, string> | null,
+  altIds: string[] = [],
 ): string | null {
   if (!table) return null;
   if (table[rowId] !== undefined) return rowId;
+  // a duplicate row's data may be filed under a collapsed sibling's id
+  for (const a of altIds) if (table[a] !== undefined) return a;
   const alt = nameIds?.[name];
   return alt && table[alt] !== undefined ? alt : null;
 }
@@ -80,8 +83,8 @@ export async function generateStaticParams() {
   if (rows && (ext || cfg)) {
     let direct = 0, bridged = 0;
     for (const r of rows) {
-      const eK = lookupKey(r.id, r.name, ext, nameIds);
-      const cK = lookupKey(r.id, r.name, cfg, nameIds);
+      const eK = lookupKey(r.id, r.name, ext, nameIds, r.altIds);
+      const cK = lookupKey(r.id, r.name, cfg, nameIds, r.altIds);
       if (eK === r.id || cK === r.id) direct++;
       else if (eK || cK) bridged++;
     }
@@ -140,8 +143,8 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       { name: live.name, path: `/intelligence/projects/${slug}` },
     ]);
     const [ext, cfg, nameIds] = [await extended(), await configurations(), await backlogNameIds()];
-    const extKey = lookupKey(live.id, live.name, ext, nameIds);
-    const cfgKey = lookupKey(live.id, live.name, cfg, nameIds);
+    const extKey = lookupKey(live.id, live.name, ext, nameIds, live.altIds);
+    const cfgKey = lookupKey(live.id, live.name, cfg, nameIds, live.altIds);
     return (
       <>
         <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(liveBreadcrumb)} />
