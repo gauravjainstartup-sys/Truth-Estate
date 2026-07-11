@@ -221,6 +221,7 @@ export type ProjectOps = {
     reraDate: string; // committed possession
     predictedDate: string; // our execution-adjusted estimate
     qpr: string; // QPR the read is drawn from
+    delayChancePct?: number; // pipeline-scored delay probability (live rows)
   };
   usps?: { title: string; body: string }[];
 };
@@ -687,7 +688,8 @@ export function deliveryOutlook(p: ProjectIntel) {
   if (!con) return null;
   const ahead = monthIndex(con.reraDate) - monthIndex(con.predictedDate);
   const aheadOfPlan = con.actualPct - con.expectedPct;
-  const delayChance = Math.round(clamp(26 - ahead * 3 + Math.max(0, -aheadOfPlan) * 2, 10, 60));
+  // live rows carry the pipeline's own scored probability; the heuristic only covers curated rows
+  const delayChance = con.delayChancePct ?? Math.round(clamp(26 - ahead * 3 + Math.max(0, -aheadOfPlan) * 2, 10, 60));
   const confidence = delayChance <= 20 ? "High confidence" : delayChance <= 35 ? "Moderate confidence" : "Lower confidence";
   return { ...con, ahead, aheadOfPlan, delayChance, confidence };
 }

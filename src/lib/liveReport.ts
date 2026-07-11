@@ -684,6 +684,7 @@ export function liveProjectIntel(
           reraDate,
           predictedDate,
           qpr: quarterLabel(row.lastQprDate) ?? "latest QPR",
+          ...(delayPct != null ? { delayChancePct: Math.round(delayPct) } : {}),
         }
       : undefined;
 
