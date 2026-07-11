@@ -49,12 +49,12 @@ function decode(value) {
   return { buf, ext: hit[1] };
 }
 
-const CT_EXT = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif", "application/pdf": "pdf" };
+const CT_EXT = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif", "image/avif": "avif", "application/pdf": "pdf" };
 function urlExt(u) {
   try {
     const m = new URL(u).pathname.match(/\.([a-z0-9]+)$/i);
     const e = m && m[1].toLowerCase();
-    return e === "jpeg" ? "jpg" : ["png", "jpg", "webp", "gif", "pdf"].includes(e) ? e : null;
+    return e === "jpeg" ? "jpg" : ["png", "jpg", "webp", "gif", "avif", "pdf"].includes(e) ? e : null;
   } catch {
     return null;
   }
