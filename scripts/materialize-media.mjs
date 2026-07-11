@@ -75,14 +75,14 @@ async function fetchUrlMedia(value) {
   try {
     res = await fetch(s, { signal: AbortSignal.timeout(30000) });
   } catch {
-    return null;
+    return { skip: "fetch-failed" };
   }
-  if (!res.ok) return null;
+  if (!res.ok) return { skip: `http-${res.status}` };
   const ct = (res.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
   const ext = CT_EXT[ct] ?? urlExt(s);
-  if (!ext) return null; // unknown type — don't guess
+  if (!ext) return { skip: `unknown-type (${ct || "no content-type"})` };
   const buf = Buffer.from(await res.arrayBuffer());
-  if (!buf.length || buf.length > MAX_BYTES) return null;
+  if (!buf.length || buf.length > MAX_BYTES) return { skip: `too-big (${(buf.length / 1048576).toFixed(1)} MB)` };
   return { buf, ext, from: "url" };
 }
 
@@ -113,8 +113,16 @@ try {
     const id = row?.backlog_id;
     if (!id) continue;
     for (const field of FIELDS) {
-      const dec = decode(row[field]) ?? (await fetchUrlMedia(row[field]));
-      if (!dec) continue;
+      const raw = row[field];
+      if (!raw) continue;
+      let dec = decode(raw);
+      let skip = null;
+      if (!dec) {
+        const r = await fetchUrlMedia(raw);
+        if (r && r.buf) dec = r;
+        else skip = (r && r.skip) ?? (typeof raw !== "string" ? "not-a-string" : /^https?:\/\//i.test(raw.trim()) ? "multi-url-list" : raw.length > 200 ? "undecodable-blob" : "not-media");
+      }
+      if (!dec) { console.log(`[materialize] SKIP ${id} ${field}: ${skip}`); continue; }
       const slug = field.replace(/_url$/, "").replace(/_/g, "-");
       const rel = `live-media/${id}-${slug}.${dec.ext}`;
       await writeFile(path.join("public", rel), dec.buf);

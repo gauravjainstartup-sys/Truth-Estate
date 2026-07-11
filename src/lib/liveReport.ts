@@ -251,7 +251,11 @@ export function liveProjectIntel(
         brochureUrl: mm.brochure_url ?? extRaw.brochureUrl,
         paymentPlanUrl: mm.payment_plan_url ?? extRaw.paymentPlanUrl,
         siteMapImageUrl: mm.site_map_image_url ?? extRaw.siteMapImageUrl,
-        renderElevationUrl: mm.render_elevation_url ?? extRaw.renderElevationUrl,
+        // render feeds the brochure-vs-site slider directly: only a
+        // materialized same-origin file is safe — a raw value that failed
+        // materialization (dead URL, oversized, odd format) would ship a
+        // broken <img>; absent means the branded stand-in renders instead
+        renderElevationUrl: mm.render_elevation_url ?? null,
       }
     : extRaw;
   const ruleV = row.modRuleVerdict;
