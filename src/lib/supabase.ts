@@ -347,6 +347,17 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
   if (!rows) return null;
   // one-time shape record: the CI build log tells us the pipeline's true shapes
   if (rows[0]) console.log("[supabase] backlog sample:", JSON.stringify(rows[0]).slice(0, 2000));
+  // per-row location presence: which live pages will surface the radar section
+  {
+    const yn = (v: unknown) => (v == null || v === "" ? "0" : "1");
+    for (const r of rows) {
+      const nm = s(r.name);
+      if (!nm) continue;
+      console.log(
+        `[v3-loc] ${liveSlug(nm)} | geo:${yn(r.latitude)}${yn(r.longitude)} pois:${yn(r.location_hyperlocal_poi_density)} metro:${yn(r.location_connectivity_metro)} roads:${yn(r.location_connectivity_roads)} air:${yn(r.location_connectivity_airport)} biz:${yn(r.location_connectivity_business_districts)} infra:${yn(r.location_planned_infrastructure)} cat:${yn(r.location_upcoming_supply_catalysts)} verdict:${yn(r.location_overall_verdict_headline)}`,
+      );
+    }
+  }
   const out: LiveBacklogFull[] = [];
   for (const r of rows) {
     const name = s(r.name);
