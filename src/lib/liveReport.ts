@@ -494,7 +494,7 @@ export function liveProjectIntel(
     console.log(
       `[supabase] media ${row.name} → hero=${heroSrc ? "ok" : why(ext.heroImageUrl)} · brochure=${
         brochurePages ? `${brochurePages.length} page(s)` : brochurePdf ? "pdf-link" : why(ext.brochureUrl)
-      } · payment=${paymentSrc ? "ok" : paymentPdf ? "pdf-link" : why(ext.paymentPlanUrl)} · sitemap=${siteMapSrc ? "ok" : why(ext.siteMapImageUrl)}`,
+      } · payment=${paymentSrc ? "ok" : paymentPdf ? "pdf-link" : why(ext.paymentPlanUrl)} · sitemap=${siteMapSrc ? "ok" : why(ext.siteMapImageUrl)} · render=${renderSrc ? "ok" : why(ext.renderElevationUrl)}`,
     );
   }
   // build-log record: configurations → homes, and how many carry a 2D floor plan
