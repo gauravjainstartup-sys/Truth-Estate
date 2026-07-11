@@ -861,6 +861,11 @@ export function liveProjectIntel(
     };
   }
 
+  // parse-outcome record: pairs with the [v3-loc] presence log in supabase.ts —
+  // presence 1s with zero counts here means a shape the readers don't recognise
+  console.log(
+    `[locparse] ${row.slug} pois:${pois.length} conn:${connectivity.length} infra:${infra.length} geo:${geo ? geo.nearby.length : "none"}`,
+  );
   const location: ProjectOps["location"] =
     pois.length || connectivity.length || infra.length || geo
       ? {
