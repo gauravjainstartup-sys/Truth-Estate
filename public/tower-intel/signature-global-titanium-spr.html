@@ -331,6 +331,58 @@
 }
 
 #title h1,.phead h2,#pName,.hero .hname,.fs-title h2,.clock .t,.sun-big{font-family:'Playfair Display',Georgia,serif;font-weight:500;letter-spacing:-.01em}
+  /* ── ranked tower dock (Select best tower) ── */
+  #rankdock{position:fixed;left:50%;bottom:16px;transform:translateX(-50%) translateY(14px);display:flex;align-items:flex-end;gap:5px;background:rgba(251,249,242,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:17px;padding:9px 10px 8px;box-shadow:0 18px 50px -16px rgba(35,30,20,.4);z-index:19;opacity:0;pointer-events:none;transition:opacity .25s ease,transform .25s ease}
+  body.ranking #rankdock{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
+  body.flat-open #rankdock,body.sun-open #rankdock,body.playing #rankdock{opacity:0 !important;pointer-events:none !important}
+  body.ranking #ovDock{display:none !important}
+  body.ranking #hint{opacity:0;pointer-events:none}
+  .rdk{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;width:56px;padding:7px 0 9px;border-radius:12px;border:1.5px solid transparent;background:transparent;cursor:pointer;font-family:inherit;transition:transform .18s cubic-bezier(.34,1.56,.64,1),background .18s,border-color .18s}
+  .rdk:hover{transform:translateY(-7px) scale(1.1);background:#fff}
+  .rdk .rk{font:600 8.5px/1 ui-monospace,monospace;color:#b3ac97}
+  .rdk .id{font:700 13px/1.1 'Geist',system-ui,sans-serif;color:#23272e}
+  .rdk .sc{font:700 11px/1 ui-monospace,monospace;color:var(--gold)}
+  .rdk.on{background:#fff;border-color:rgba(224,182,103,.85);transform:translateY(-5px)}
+  .rdk.on::after{content:"";position:absolute;bottom:2.5px;width:4px;height:4px;border-radius:50%;background:var(--gold)}
+  .rdk .tip{position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%) scale(.92);transform-origin:bottom center;background:#23272e;color:#f6f3ea;font:500 10.5px/1.35 ui-monospace,monospace;padding:6px 9px;border-radius:7px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s,transform .15s;z-index:5}
+  .rdk:hover .tip{opacity:1;transform:translateX(-50%) scale(1)}
+  #rankdock .rx{width:30px;height:30px;margin:0 0 6px 6px;border-radius:9px;border:1px solid var(--line);background:#fff;font:500 13px/1 system-ui;color:var(--muted);cursor:pointer;align-self:center;flex:0 0 auto}
+  #rankdock .rsep{width:1px;align-self:stretch;background:var(--line);margin:4px 2px;flex:0 0 auto}
+  @media (min-width:841px){body.ranking.tower-open #rankdock{left:calc((100vw - 372px)/2)}}
+  @media (max-width:700px){#rankdock{max-width:94vw;overflow-x:auto;justify-content:flex-start;bottom:12px;padding:8px 8px 7px}.rdk{width:48px;flex:0 0 auto}.rdk .tip{display:none}}
+  @media (prefers-reduced-motion:reduce){.rdk,#rankdock{transition:none}}
+  /* ── de-cluttered tower panel ── */
+  .vd{border-radius:12px;padding:11px 13px;border:1px solid;margin-bottom:3px}
+  .vd.buy{background:rgba(255,206,99,.10);border-color:rgba(255,206,99,.4)}
+  .vd.good{background:rgba(63,160,106,.07);border-color:rgba(63,160,106,.28)}
+  .vd.ok{background:rgba(224,160,46,.08);border-color:rgba(224,160,46,.3)}
+  .vd.think{background:rgba(0,0,0,.03);border-color:var(--line)}
+  .vd .ve{font:700 9px/1 ui-monospace,monospace;letter-spacing:.18em}
+  .vd.buy .ve{color:var(--gold)}.vd.good .ve{color:#3fa06a}.vd.ok .ve{color:#c07830}.vd.think .ve{color:#b3564a}
+  .vd .vt{font:600 15.5px/1.25 'Geist',system-ui,sans-serif;color:#23272e;margin-top:5px}
+  .vd .vs{font:500 11px/1.55 'Geist',system-ui,sans-serif;color:#514c3e;margin-top:3px}
+  .vd .vgo{display:inline-block;font:600 11px/1 'Geist',system-ui,sans-serif;color:var(--gold);margin-top:6px;cursor:pointer}
+  .lgrid{display:grid;gap:6px;margin-top:3px}
+  .lgrid.c2{grid-template-columns:1fr 1fr}.lgrid.c3{grid-template-columns:1fr 1fr 1fr}
+  .lc{position:relative;border:1.5px solid var(--line);border-radius:11px;background:rgba(255,255,255,.5);padding:9px 10px 8px;cursor:pointer;transition:border-color .15s,background .15s}
+  .lc:hover{border-color:rgba(224,182,103,.7);background:#fff}
+  .lc.win{border-color:rgba(224,182,103,.85);background:rgba(255,206,99,.07)}
+  .lc .best{position:absolute;top:-7px;left:9px;background:var(--gold);color:#fff;font:700 7.5px/1 ui-monospace,monospace;letter-spacing:.1em;padding:3px 6px;border-radius:5px}
+  .lc .ln{font:600 9.5px/1.2 ui-monospace,monospace;color:var(--muted);white-space:nowrap}
+  .lc .lsc{font:700 19px/1.15 'Geist',system-ui,sans-serif;color:#23272e;margin-top:3px}
+  .lc .lsc i{font:600 8.5px/1 ui-monospace,monospace;font-style:normal;color:var(--muted)}
+  .lc .r{display:flex;justify-content:space-between;gap:4px;font:500 9.5px/1.7 ui-monospace,monospace;color:#64707d}
+  .lc .r b{font-weight:700;color:#3d4149}
+  .lc .r b.w{color:#3fa06a}
+  .lad .ladbar{position:relative;height:12px;border-radius:7px;border:1px solid var(--line);margin-top:22px}
+  .lad .ladflag{position:absolute;top:-21px;transform:translateX(-50%);background:var(--gold);color:#fff;font:700 8.5px/1 ui-monospace,monospace;padding:3px 6px;border-radius:5px;white-space:nowrap}
+  .lad .ladtick{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--gold);border-radius:2px;transform:translateX(-50%)}
+  .lad .ladcap{display:flex;justify-content:space-between;font:500 8.5px/1 ui-monospace,monospace;color:var(--muted);margin-top:5px}
+  .lad .ladnote{font:500 10.5px/1.55 'Geist',system-ui,sans-serif;color:#514c3e;margin-top:6px}
+  .tpcta{display:block;width:100%;text-align:center;background:linear-gradient(180deg,#d29a2b,#b8860b);color:#fff;border:0;border-radius:10px;font:600 12.5px/1 'Geist',system-ui,sans-serif;padding:12px 0;margin-top:12px;cursor:pointer;letter-spacing:.02em}
+  .tpcta:hover{filter:brightness(1.06)}
+  .tpsub{display:block;text-align:center;font:500 10.5px/1 'Geist',system-ui,sans-serif;color:var(--muted);margin-top:8px;cursor:pointer;background:none;border:0;width:100%}
+  .tpspec{font:500 9px/1.5 ui-monospace,monospace;color:#a4a69b;margin-top:10px}
   /* ── boot loader ── */
   #boot{position:fixed;inset:0;z-index:300;background:#f6f3ea;display:grid;place-items:center;opacity:1;transition:opacity .55s ease}
   body.booted #boot{opacity:0;pointer-events:none}
@@ -372,6 +424,8 @@
   <div class="b-name">Signature Global Titanium SPR</div>
   <div class="b-sub">Raising the towers · computing today's sun…</div>
 </div></div>
+
+<div id="rankdock" role="toolbar" aria-label="Tower ranking"></div>
 
 <div id="playbar">
   <button id="pbPlay" aria-label="Play / pause">❚❚</button>
@@ -856,12 +910,19 @@ function computeScores2(){scores=towers.map(t=>{const us=t.units.map(u=>({u,st:u
   const frac=us.reduce((s,o)=>s+Math.min(1,o.st.rawAvg/BENCH),0)/us.length;
   return{t,us,good,best,frac};}).sort((a,b)=>b.frac-a.frac||b.best.st.wtAvg-a.best.st.wtAvg);}
 let siteView='intro';
-function goRanking(){siteView='ranking';renderOverview();}
+function goRanking(){if(!scores)computeScores2();document.body.classList.add('ranking');buildRankDock();
+  const bid=scores[0].t.id;if(!selTower||selTower.id!==bid)selectTower(bid);else updateRankDock(bid);}
+function buildRankDock(){const d=document.getElementById('rankdock');if(!scores)computeScores2();
+  d.innerHTML=scores.map((sc,i)=>`<button class="rdk${selTower&&selTower.id===sc.t.id?' on':''}" data-t="${sc.t.id}"><span class="tip">rank ${i+1} · ${sc.t.cfg} · winter ${sc.best.st.rawAvg.toFixed(1)} h</span><span class="rk">${i+1}</span><span class="id">${sc.t.id}</span><span class="sun">${sunIcon(Math.min(1,0.14+sc.best.st.rawAvg/7.4))}</span><span class="sc">${sc.best.fs.s}</span></button>`).join('')+'<div class="rsep"></div><button class="rx" title="Close ranking" aria-label="Close ranking">✕</button>';
+  d.querySelectorAll('.rdk').forEach(b=>b.onclick=()=>{if(!selTower||selTower.id!==b.dataset.t)selectTower(b.dataset.t);});
+  d.querySelector('.rx').onclick=exitRank;}
+function updateRankDock(id){document.querySelectorAll('#rankdock .rdk').forEach(b=>b.classList.toggle('on',b.dataset.t===id));}
+function exitRank(){document.body.classList.remove('ranking');if(selTower)backToSite();}
 function goIntro(){siteView='intro';document.body.classList.remove('show-priorities');renderOverview();}
 function renderOverview(){selTower=null;selUnit=null;document.body.classList.remove('tower-open');towers.forEach(t=>{t.tileGrp.visible=false;t.units.forEach(u=>{u.tileLabel.visible=false;u.mesh.material.color.copy(u.baseCol);u.mesh.material.emissiveIntensity=0;});});
   document.getElementById('pClose').style.display='none';
   if(!scores)computeScores2();
-  if(siteView==='ranking')renderRanking();else renderIntro();}
+  renderIntro();}
 function renderIntro(){
   document.body.classList.add('ov-intro');
   document.getElementById('pEy').textContent='Sun · heat · Vastu advisor';
@@ -883,112 +944,91 @@ function sunIcon(v){v=Math.max(0,Math.min(1,v));const col=v>=.72?'#f2a71e':v>=.5
   const cr=(3.0+2.8*v),rl=(2.2+3.6*v),cx=12,cy=12;let rays='';
   for(let i=0;i<8;i++){const a=i*Math.PI/4,r0=cr+1.8,r1=cr+1.8+rl;rays+=`<line x1="${(cx+Math.cos(a)*r0).toFixed(1)}" y1="${(cy+Math.sin(a)*r0).toFixed(1)}" x2="${(cx+Math.cos(a)*r1).toFixed(1)}" y2="${(cy+Math.sin(a)*r1).toFixed(1)}" stroke="${col}" stroke-width="1.7" stroke-linecap="round" opacity="${(0.3+0.7*v).toFixed(2)}"/>`;}
   return `<svg width="23" height="23" viewBox="0 0 24 24">${rays}<circle cx="12" cy="12" r="${cr.toFixed(1)}" fill="${col}"/></svg>`;}
-function renderRanking(){
-  document.body.classList.remove('ov-intro');
-  const win=scores[0],bc=vfacing(win.t,win.best.u);
-  document.getElementById('pEy').textContent='Best for you · '+benchShort[String(decl)];
-  document.getElementById('pName').textContent='Tower '+win.t.id;
-  document.getElementById('pSub').textContent='Weighted composite · tap a tower to open it';
-  let html='<div class="backrow" id="toIntro">‹ Overview</div>';
-  html+=`<div class="hero"><div class="htag">★ BEST FOR YOUR PRIORITIES</div><div class="hname">Tower ${win.t.id}</div>
-    <div class="hline">Its best, <b>Flat ${win.best.u.id} (${bc}-facing)</b> — <b>${win.best.fs.s}/100 (${win.best.fs.grade})</b>. Morning <b>${win.best.fs.sub.morning}</b> · summer-cool <b>${win.best.fs.sub.cool}</b> · Vastu <b>${win.best.fs.sub.vastu}</b>.</div></div>`;
-  html+='<div class="sech">Ranking · weighted composite</div>';
-  scores.forEach((sc,i)=>{html+=`<div class="rk ${i===0?'best':''}" data-t="${sc.t.id}"><span class="pos">${i+1}</span><span class="nm">${sc.t.id}</span><span class="cfg">${sc.t.cfg}</span><span class="rk-sun" title="${sc.best.st.rawAvg.toFixed(1)}h winter sun">${sunIcon(Math.min(1,0.14+sc.best.st.rawAvg/7.4))}</span><span class="track"><span class="fill" style="left:0;width:${sc.best.fs.s}%"></span></span><span class="v">${sc.best.fs.s}/100</span></div>`;});
-  html+='<div class="actrow"><button class="minibtn" id="adjBtn">⚖ Adjust priorities</button><button class="minibtn" id="howBtn">ⓘ How scored</button></div>';
-  html+='<div class="howbox" id="howBox" style="display:none"><p><b>Six independent scores.</b> Each flat is graded 0–100 on morning sun, summer heat, Vastu, view, airflow and floor — shown separately, never blended away.</p><p><b>You set the weights.</b> The composite is your weighting of the six — open <b>Adjust priorities</b> and every ranking recomputes live.</p><p><b>Real orientation &amp; plate Vastu.</b> North is calibrated to the site plan (T-2 living = NW); room directions are traced from the sanctioned plates — <b>scored on classical Vaastu Shastra room canons</b>.</p><p><b>Per-floor sun.</b> Neighbouring G+40 towers shadow low floors; the value band starts where a stack reaches ~90% of its top-floor sun.</p></div>';
-  html+='<div class="howbtn" id="deepBtn">Deeper analysis <span>▾</span></div><div class="howbox" id="deepBox" style="display:none"></div>';
-  html+='<div class="note">G+40 · 3.6 m floor-to-floor · triple-height lobby (public listings). Orientation calibrated to the site plan (T-2 living NW); per-tower facings read from the sanctioned site plan (North-up). Lat 28.42°N.</div>';
-  const body=document.getElementById('pBody');body.innerHTML=html;body.scrollTop=0;
-  body.querySelectorAll('.rk').forEach(r=>r.onclick=()=>selectTower(r.dataset.t));
-  document.getElementById('toIntro').onclick=goIntro;
-  const adj=document.getElementById('adjBtn');adj.classList.toggle('on',document.body.classList.contains('show-priorities'));
-  adj.onclick=()=>{const on=document.body.classList.toggle('show-priorities');adj.classList.toggle('on',on);};
-  const hb=document.getElementById('howBtn');hb.onclick=()=>{const x=document.getElementById('howBox');const o=x.style.display==='none';x.style.display=o?'block':'none';hb.classList.toggle('on',o);};
-  const deep=document.getElementById('deepBtn');let deepBuilt=false;
-  deep.onclick=()=>{const x=document.getElementById('deepBox');const o=x.style.display==='none';x.style.display=o?'block':'none';deep.querySelector('span').textContent=o?'▴':'▾';if(o&&!deepBuilt){deepBuilt=true;buildDeep(x);}};
-}
-function buildDeep(box){
-  const picks=scores.slice(0,3).map(sc=>{const curve=floorCurve(sc.t,sc.best.u,4,0.4);const cf=clearFloorOf(curve),bd=bandsFor(cf);return{sc,cf,bd,lake:sc.best.u.prim==='lake',fs:flatScore(sc.t,sc.best.u,sc.best.st)};});
-  let html='<div class="sech" style="margin-top:2px">Where to buy · top picks</div>';
-  picks.forEach((p,i)=>{const s=p.sc;html+=`<div class="rk ${i===0?'best':''}" data-t="${s.t.id}" style="flex-wrap:wrap;padding:9px 10px"><div style="display:flex;align-items:center;gap:9px;width:100%"><span class="pos">${i+1}</span><span style="font:700 13px/1 'Geist';color:#23272e">${s.t.id} · Flat ${s.best.u.id}</span><span style="font:700 11px/1 'Geist';color:${gradeColor(p.fs.grade)};border:1px solid ${gradeColor(p.fs.grade)};border-radius:5px;padding:2px 6px;margin-left:auto">${p.fs.s}/100 · ${p.fs.grade}</span><span style="font:600 11px/1 ui-monospace;color:var(--sun)">F${p.bd.vLo}–${p.bd.vHi}</span></div><div style="font:500 10px/1.5 ui-monospace;color:#64707d;margin-top:4px;padding-left:25px">Morning ${s.best.fs.sub.morning} · cool ${s.best.fs.sub.cool} · ${s.t.cfg}${p.lake?' · lagoon view':''}</div></div>`;});
-  html+='<div class="sech">Best flat per tower · sun through the day</div><div class="chart" id="siteChart"></div><div class="clegend" id="siteLeg"></div>';
-  box.innerHTML=html;
-  box.querySelectorAll('.rk').forEach(r=>r.onclick=()=>selectTower(r.dataset.t));
-  const tcol={'T-6':'#e0b98c','T-5':'#8fb6cf','T-4':'#aac49a','T-3':'#cd9fb6','T-2':'#ffce63','T-7':'#3fa06a','T-8':'#7f9fe0'};
-  document.getElementById('siteChart').innerHTML=chart(scores.map((sc,i)=>({color:tcol[sc.t.id],points:profile(sc.t,sc.best.u,FLOORS,36),w:i===0?2.6:1.2,op:i===0?1:.55})),1);
-  document.getElementById('siteLeg').innerHTML=scores.map(sc=>`<span><i style="background:${tcol[sc.t.id]}"></i>${sc.t.id}·${sc.best.u.id}</span>`).join('');
-}
+/* renderRanking/buildDeep removed — ranking now lives in the bottom dock (goRanking) */
 
 function renderTowerPanel(){const t=selTower;document.getElementById('pClose').style.display='block';
-  document.getElementById('pEy').textContent='Tower \u00b7 '+benchShort[String(decl)];
+  if(!scores)computeScores2();const rank=scores.findIndex(sc=>sc.t===t)+1;
+  document.getElementById('pEy').textContent='#'+rank+' of '+scores.length+' · '+benchShort[String(decl)];
   document.getElementById('pName').textContent='Tower '+t.id;
-  document.getElementById('pSub').textContent=`G+40 \u00b7 ${t.core}-to-core \u00b7 ${t.cfg} \u00b7 ${CONFIGS[t.cfg].saleable.toLocaleString()} sq ft`;
+  document.getElementById('pSub').textContent='';
   selData=t.units.map(u=>({u,st:unitStats(t,u,2,0.3)}));selData.forEach(r=>r.fs=flatScore(t,r.u,r.st));selData.sort((a,b)=>b.fs.s-a.fs.s||b.st.wtAvg-a.st.wtAvg);
   const ucol=['#ffd88a','#8fd0e8','#b8e39a'];
   const curves=selData.map((r,i)=>({r,color:ucol[i%3],curve:floorCurve(t,r.u,3,0.3)}));
   const best=curves[0],clearFl=clearFloorOf(best.curve),bands=bandsFor(clearFl);
   const mCurves=selData.map(r=>floorCurve(t,r.u,1,0.4));
   const bandLow=bandAvg(best.curve,1,10),bandMid=bandAvg(best.curve,11,25),bandHigh=bandAvg(best.curve,26,40);
-  let html='<div class="sech">Flats on every floor</div>';
   const _tt=(t.id==='T-7'||t.id==='T-8'),_DEG={N:0,NE:45,E:90,SE:135,S:180,SW:225,W:270,NW:315};
-  selData.forEach(r=>{const c=_tt?vfacing(t,r.u):compassOf(bearingOf(t,r.u.primL)),b=_tt?_DEG[c]:bearingOf(t,r.u.primL);
-    const q=r.st.rawAvg<0.4?'no direct sun':r.st.amAvg>r.st.pmAvg*1.4?'AM sun':r.st.pmAvg>r.st.amAvg*1.4?'PM sun':'all-day sun';
-    const rl2=r.u.faces.find(fc=>fc[0]===-r.u.primL[0]&&fc[1]===-r.u.primL[1]);
-    const rst=(rl2&&r.st.rawAvg<2)?unitStats(t,Object.assign({},r.u,{primL:rl2}),4,0.4):null;
-    html+=`<div class="ulr" data-u="${r.u.id}"><span class="sw" style="background:${CONFIGS[t.cfg].col}"></span><span class="nm" style="width:auto;white-space:nowrap">Line ${String(r.u.id).slice(-2)}</span><span class="or">${c} ${Math.round(b)}\u00b0</span><span class="ty">${t.cfg} \u00b7 ${q}${rst&&rst.rawAvg>2?' \u00b7 bedrooms '+rst.rawAvg.toFixed(1)+'h \u2600':''}</span><span class="hh">${r.st.rawAvg.toFixed(1)}h</span><span style="font:700 10.5px/1 'Geist';color:${gradeColor(r.fs.grade)};border:1px solid ${gradeColor(r.fs.grade)};border-radius:6px;padding:3px 6px;margin-left:7px;flex:0 0 auto">${r.fs.s}</span></div>`;});
-  /* \u2500 floor analysis \u00b7 matrix + bands collapsed \u2500 */
-  html+=`<div class="hintline">${clearFl==null?'This stack gets little direct winter sun at any floor \u2014 orientation-driven, not height-driven.':clearFl<=6?'Full sun from the lowest floors \u2014 no neighbouring tower shadows this facade in winter.':`Neighbouring towers shadow the lower floors in winter \u2014 full sun arrives around <b>floor ${clearFl}</b> for Line ${String(best.r.u.id).slice(-2)}.`}</div>`;
-  html+='<details class="twx"><summary>\u2600&nbsp;&nbsp;Sun by floor \u2014 full breakdown</summary><div class="twx-in">';
-  html+='<div class="sech">Floor analysis \u00b7 sun hours by floor</div><div class="chart" id="flChart"></div><div class="clegend" id="flLeg"></div>';
+  const faceOf=u=>_tt?vfacing(t,u):compassOf(bearingOf(t,u.primL));
+  /* ─ 1 · the verdict ─ */
+  const bestR=selData[0],bLn=String(bestR.u.id).slice(-2),bFace=faceOf(bestR.u);
+  const sunPhrase=bestR.st.rawAvg<0.4?'little direct winter sun':bestR.st.amAvg>bestR.st.pmAvg*1.4?'morning winter sun':bestR.st.pmAvg>bestR.st.amAvg*1.4?'afternoon winter sun':'all-day winter sun';
+  const tier=(rank<=2&&bestR.fs.s>=75)?'buy':bestR.fs.s>=68?'good':bestR.fs.s>=55?'ok':'think';
+  const ve={buy:'★ BUY HERE',good:'GOOD PICK',ok:'OK — CHECK THE FLOORS',think:'THINK TWICE'}[tier];
+  let vt,vs,vgo='';
+  if(tier==='think'){vt='Weakest winter sun of the '+scores.length+' towers';
+    vs=bestR.st.rawAvg<0.5?'Living faces '+bFace+' — almost no direct winter sun at any floor. No floor fixes orientation.':'Living faces '+bFace+' — about '+bestR.st.rawAvg.toFixed(1)+' h of winter sun even on high floors. No floor fully fixes orientation.';
+    vgo='<span class="vgo" id="vdSee">See Tower '+scores[0].t.id+' →</span>';}
+  else{vt='Line '+bLn+' · Floor '+bands.vLo+'+';
+    vs=[sunPhrase,bestR.fs.lake?'lagoon view':null,bestR.fs.isEnd?'breeze from 3 sides':null,bestR.fs.vs>=4?'Vastu '+bestR.fs.vs+'/5':null].filter(Boolean).join(' · ')+'.';}
+  let html='<div class="vd '+tier+'"><div class="ve">'+ve+'</div><div class="vt">'+vt+'</div><div class="vs">'+vs+'</div>'+vgo+'</div>';
+  /* ─ 2 · pick your line ─ */
+  const maxSun=Math.max(...selData.map(r=>r.st.rawAvg)),minSun=Math.min(...selData.map(r=>r.st.rawAvg)),maxVs=Math.max(...selData.map(r=>r.fs.vs)),minVs=Math.min(...selData.map(r=>r.fs.vs));const sunLead=maxSun-minSun>=0.15&&maxSun>=0.3,vsLead=maxVs>minVs;
+  html+='<div class="sech">Pick your line</div><div class="lgrid '+(selData.length===3?'c3':'c2')+'">';
+  selData.forEach((r,i)=>{const fb=bandsFor(clearFloorOf(curves[i].curve));
+    html+='<div class="lc'+(i===0?' win':'')+'" data-u="'+r.u.id+'">'+(i===0?'<span class="best">★ BEST</span>':'')
+      +'<div class="ln">LINE '+String(r.u.id).slice(-2)+' · '+faceOf(r.u)+'</div>'
+      +'<div class="lsc">'+r.fs.s+'<i>/100</i></div>'
+      +'<div class="r"><span>☀ sun</span><b class="'+(sunLead&&r.st.rawAvg===maxSun?'w':'')+'">'+r.st.rawAvg.toFixed(1)+' h</b></div>'
+      +'<div class="r"><span>✦ Vastu</span><b class="'+(vsLead&&r.fs.vs===maxVs?'w':'')+'">'+r.fs.vs+'/5</b></div>'
+      +'<div class="r"><span>⌂ buy</span><b>F'+fb.vLo+'+</b></div></div>';});
+  html+='</div>';
+  /* ─ 3 · which floor · the ladder ─ */
+  const orientLtd=clearFl==null||clearFl>=FLOORS-1||tier==='think';const ladNote=orientLtd?'Orientation, not height — this facade gets little direct winter sun at any floor.':clearFl<=6?'Full sun from the lowest floors — no neighbouring tower shadows this facade in winter.':'Below floor '+clearFl+' the neighbour towers shade winter mornings. From '+clearFl+' up — full sun for Line '+bLn+'.';
+  const cutPct=clearFl==null?null:Math.max(6,Math.min(94,Math.round(clearFl/FLOORS*100)));
+  html+='<div class="sech">Which floor</div><div class="lad">';
+  if(orientLtd){html+='<div class="ladbar" style="background:#ded8c6"></div>';}
+  else if(clearFl<=6){html+='<div class="ladbar" style="background:linear-gradient(90deg,#ecc978,#e8c06a)"><span class="ladflag" style="left:8%">SUN ALL FLOORS</span><span class="ladtick" style="left:8%"></span></div>';}
+  else{html+='<div class="ladbar" style="background:linear-gradient(90deg,#ded8c6 0 '+cutPct+'%,#ecc978 '+cutPct+'% 100%)"><span class="ladflag" style="left:'+cutPct+'%">F'+clearFl+'</span><span class="ladtick" style="left:'+cutPct+'%"></span></div>';}
+  html+='<div class="ladcap"><span>GROUND</span><span>SHADOW → SUN</span><span>F'+FLOORS+'</span></div><div class="ladnote">'+ladNote+'</div></div>';
+  /* ─ 4 · go ─ */
+  html+=tier==='think'?'<button class="tpcta" id="vdGo">Compare with '+scores[0].t.id+' →</button>':'<button class="tpcta" id="vdGo">Open Line '+bLn+' · Floor '+bands.vLo+' →</button>';
+  html+='<button class="tpsub" id="vdAdv">Talk to an advisor</button>';
+  /* ─ everything deep · one tap away ─ */
+  html+='<details class="twx"><summary>☀&nbsp;&nbsp;More — full sun analysis</summary><div class="twx-in">';
+  html+='<div class="sech">Floor analysis · sun hours by floor</div><div class="chart" id="flChart"></div><div class="clegend" id="flLeg"></div>';
   html+=floorMatrixHTML(t,selData,mCurves,bands,clearFl);
   html+=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:10px 0 4px">
     <div style="background:rgba(0,0,0,.03);border:1px solid var(--line);border-radius:9px;padding:9px 10px">
-      <div style="font:600 9px/1 ui-monospace;letter-spacing:.08em;color:var(--muted)">LOW \u00b7 F1\u201310</div>
+      <div style="font:600 9px/1 ui-monospace;letter-spacing:.08em;color:var(--muted)">LOW · F1–10</div>
       <div style="font:700 15px/1.2 'Geist';color:${bandLow>=4?'var(--sun)':'#c07830'};margin-top:4px">${bandLow.toFixed(1)}h</div>
-      <div style="font:500 8.5px/1.4 ui-monospace;color:#726d5c;margin-top:4px">tree-line views \u00b7 ground noise \u00b7 lowest floor-rise cost</div>
+      <div style="font:500 8.5px/1.4 ui-monospace;color:#726d5c;margin-top:4px">tree-line views · ground noise · lowest floor-rise cost</div>
     </div>
     <div style="background:rgba(0,0,0,.03);border:1px solid var(--line);border-radius:9px;padding:9px 10px">
-      <div style="font:600 9px/1 ui-monospace;letter-spacing:.08em;color:var(--muted)">MID \u00b7 F11\u201325</div>
+      <div style="font:600 9px/1 ui-monospace;letter-spacing:.08em;color:var(--muted)">MID · F11–25</div>
       <div style="font:700 15px/1.2 'Geist';color:${bandMid>=4?'var(--sun)':'#c07830'};margin-top:4px">${bandMid.toFixed(1)}h</div>
-      <div style="font:500 8.5px/1.4 ui-monospace;color:#726d5c;margin-top:4px">clear of noise \u00b7 balanced floor-rise \u00b7 the value zone</div>
+      <div style="font:500 8.5px/1.4 ui-monospace;color:#726d5c;margin-top:4px">clear of noise · balanced floor-rise · the value zone</div>
     </div>
     <div style="background:rgba(0,0,0,.03);border:1px solid var(--line);border-radius:9px;padding:9px 10px">
-      <div style="font:600 9px/1 ui-monospace;letter-spacing:.08em;color:var(--muted)">HIGH \u00b7 F26\u201340</div>
+      <div style="font:600 9px/1 ui-monospace;letter-spacing:.08em;color:var(--muted)">HIGH · F26–40</div>
       <div style="font:700 15px/1.2 'Geist';color:${bandHigh>=4?'var(--sun)':'#c07830'};margin-top:4px">${bandHigh.toFixed(1)}h</div>
-      <div style="font:500 8.5px/1.4 ui-monospace;color:#726d5c;margin-top:4px">unbroken views \u00b7 sky terrace at 30F \u00b7 top 2 floors: roof heat</div>
+      <div style="font:500 8.5px/1.4 ui-monospace;color:#726d5c;margin-top:4px">unbroken views · sky terrace at 30F · top 2 floors: roof heat</div>
     </div>
   </div>`;
+  html+=`<div style="background:rgba(63,160,106,.07);border:1px solid rgba(63,160,106,.3);border-radius:12px;padding:11px 13px;margin-top:8px">
+    <div style="font:600 9.5px/1 ui-monospace;letter-spacing:.12em;color:#8fd0e8">◆ BEST PREMIUM</div>
+    <div style="font:700 14px/1.3 'Geist';color:#23272e;margin:5px 0 3px">Line ${bLn} · Floors ${bands.pLo}–${bands.pHi}</div>
+    <div style="font:500 11px/1.5 'Geist';color:#514c3e">Unbroken ${bestR.u.prim==='lake'?'lagoon':'skyline'} views, ${bandHigh.toFixed(1)}h winter sun, and the 30F sky terrace within a short lift ride. Floors 39–40 sit under the roof slab — slightly higher summer heat.</div>
+  </div>`;
+  html+='<div style="margin:8px 0 2px;font:500 8.5px/1.5 ui-monospace;color:#a4a69b">Score = morning 25 · cool 20 · Vastu 25 · view 15 · airflow 10 · floor 5 <span class="badge badge-est" style="font-size:8px">est</span> · bands weigh sun-by-floor + view + noise + floor-rise economics</div>';
+  html+='<div class="sech">Sun through the day · top floor</div><div class="chart" id="uChart"></div><div class="clegend" id="uLeg"></div>';
+  html+='<div class="note">Living-facade scoring; primary facades inferred from the 2/3-to-core layout — send the plate key to lock them.</div>';
   html+='</div></details>';
-  /* buy recommendation */
-  html+=`<div class="sech">Which flat to buy \u00b7 composite score</div>
-  ${selData.map((r,i)=>{const cfl=clearFloorOf(curves[i].curve),fb=bandsFor(cfl);
-    return`<div class="ulr" data-u="${r.u.id}" style="flex-wrap:wrap;padding:9px 10px;${i===0?'border-color:rgba(255,206,99,.5);background:rgba(255,206,99,.05);':''}">
-    <div style="display:flex;align-items:center;gap:8px;width:100%">
-      <span style="font:700 11px/1 ui-monospace;color:${i===0?'var(--gold)':'#9a9c95'};flex:0 0 auto">${i===0?'\u2605':'#'+(i+1)}</span>
-      <span style="font:700 13px/1 'Geist';color:#23272e">Line ${String(r.u.id).slice(-2)}</span>
-      <span style="font:700 10px/1 'Geist';color:${gradeColor(r.fs.grade)};border:1px solid ${gradeColor(r.fs.grade)};border-radius:5px;padding:2px 5px">${r.fs.grade}</span>
-      <span style="font:700 13px/1 'Geist';color:${gradeColor(r.fs.grade)};margin-left:auto">${r.fs.s}<span style="font-size:9px;color:var(--muted)">/100</span></span>
-    </div>
-    <div style="width:100%;height:4px;border-radius:2px;background:rgba(0,0,0,.06);overflow:hidden;margin:6px 0 5px"><div style="width:${r.fs.s}%;height:100%;background:${gradeColor(r.fs.grade)}"></div></div>
-    <div style="font:500 9.5px/1.5 ui-monospace;color:#64707d;width:100%">${r.st.rawAvg.toFixed(1)}h sun \u00b7 Vastu ${r.fs.vs}/5 \u00b7 ${r.fs.lake?'lagoon view':'outward view'} \u00b7 ${r.fs.isEnd?'3-side airflow':'2-side airflow'} \u00b7 buy <b style="color:#a67c3d">F${fb.vLo}\u2013${fb.vHi}</b></div>
-  </div>`;}).join('')}
-  <div style="margin:2px 0 10px;font:500 8.5px/1.5 ui-monospace;color:#a4a69b">Score = morning 25 \u00b7 cool 20 \u00b7 Vastu 25 \u00b7 view 15 \u00b7 airflow 10 \u00b7 floor 5 \u00b7 your weights <span class="badge badge-est" style="font-size:8px">est</span></div>
-  <div class="sech">Where to buy in ${t.id}</div>
-  <div style="background:rgba(255,206,99,.09);border:1px solid rgba(255,206,99,.35);border-radius:12px;padding:11px 13px;margin-bottom:7px">
-    <div style="font:600 9.5px/1 ui-monospace;letter-spacing:.12em;color:#a67c3d">\u2605 BEST VALUE</div>
-    <div style="font:700 14px/1.3 'Geist';color:#23272e;margin:5px 0 3px">Line ${String(best.r.u.id).slice(-2)} \u00b7 Floors ${bands.vLo}\u2013${bands.vHi}</div>
-    <div style="font:500 11px/1.5 'Geist';color:#514c3e">${clearFl!=null&&clearFl>10?`Full winter sun arrives by floor ~${clearFl}; buying just above it captures the light without paying the high-floor premium.`:'Above the tree line and street noise with near-full sun \u2014 the light arrives early in this stack, so the mid floors deliver it at a lower floor-rise premium.'}</div>
-  </div>
-  <div style="background:rgba(63,160,106,.07);border:1px solid rgba(63,160,106,.3);border-radius:12px;padding:11px 13px">
-    <div style="font:600 9.5px/1 ui-monospace;letter-spacing:.12em;color:#8fd0e8">\u25c6 BEST PREMIUM</div>
-    <div style="font:700 14px/1.3 'Geist';color:#23272e;margin:5px 0 3px">Line ${String(best.r.u.id).slice(-2)} \u00b7 Floors ${bands.pLo}\u2013${bands.pHi}</div>
-    <div style="font:500 11px/1.5 'Geist';color:#514c3e">Unbroken ${best.r.u.prim==='lake'?'lagoon':'skyline'} views, ${bandHigh.toFixed(1)}h winter sun, and the 30F sky terrace within a short lift ride. Floors 39\u201340 sit under the roof slab \u2014 slightly higher summer heat.</div>
-  </div>
-  <div style="margin-top:7px;font:500 9px/1.5 ui-monospace;color:#a4a69b">Bands weigh computed sun-by-floor + view clearance + noise + floor-rise economics <span class="badge badge-est" style="font-size:8px">est</span> \u00b7 sky terrace 30F <span class="badge badge-web" style="font-size:8px">web</span></div>`;
-  html+='<div class="sech">Sun through the day \u00b7 top floor</div><div class="chart" id="uChart"></div><div class="clegend" id="uLeg"></div>';
-  html+='<div class="note">Living-facade scoring; primary facades inferred from the 2/3-to-core layout \u2014 send the plate key to lock them.</div>';
+  html+='<div class="tpspec">G+40 · '+t.cfg+' · '+CONFIGS[t.cfg].saleable.toLocaleString()+' sq ft · '+t.core+' homes per floor per line</div>';
   const body=document.getElementById('pBody');body.innerHTML=html;body.scrollTop=0;
-  body.querySelectorAll('.ulr').forEach(r=>r.onclick=()=>openFlat(t,r.dataset.u));
+  body.querySelectorAll('.lc').forEach(el=>el.onclick=()=>openFlat(t,el.dataset.u));
+  const vgoEl=document.getElementById('vdSee');if(vgoEl)vgoEl.onclick=e=>{e.stopPropagation();selectTower(scores[0].t.id);};
+  document.getElementById('vdGo').onclick=()=>{if(tier==='think')selectTower(scores[0].t.id);else openFlat(t,bestR.u.id);};
+  document.getElementById('vdAdv').onclick=()=>{try{parent.postMessage({type:'te-consult',unit:'Tower '+t.id+' · Line '+bLn,project:'Signature Global Titanium SPR'},'*');}catch(_){}};
   document.getElementById('flChart').innerHTML=floorChart(curves);
   document.getElementById('flLeg').innerHTML=curves.map(c=>`<span><i style="background:${c.color}"></i>${c.r.u.id}</span>`).join('');
   document.getElementById('uChart').innerHTML=chart(curves.map(c=>({color:c.color,points:profile(t,c.r.u,FLOORS,36),w:2,op:.9})),1);
@@ -1593,7 +1633,7 @@ camApply();
 function flyTo(tx,ty,tz,rad,polr,azr){camTween={t0:performance.now(),dur:800,f:{x:target.x,y:target.y,z:target.z,r:radius,p:pol,a:az},t:{x:tx,y:ty,z:tz,r:rad,p:polr,a:azr!=null?azr:az}};}
 function camStep(){if(!camTween)return;const k=Math.min(1,(performance.now()-camTween.t0)/camTween.dur),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2,a=camTween.f,b=camTween.t;target.set(a.x+(b.x-a.x)*e,a.y+(b.y-a.y)*e,a.z+(b.z-a.z)*e);radius=a.r+(b.r-a.r)*e;pol=a.p+(b.p-a.p)*e;az=a.a+(b.a-a.a)*e;camApply();if(k>=1)camTween=null;}
 let hintLabelSprite=null;
-function selectTower(id){const t=towers.find(x=>x.id===id);if(!t)return;selTower=t;document.body.classList.remove('ov-intro');document.body.classList.remove('panel-min');document.body.classList.add('tower-open');document.getElementById('pMin').textContent='–';
+function selectTower(id){const t=towers.find(x=>x.id===id);if(!t)return;selTower=t;if(document.body.classList.contains('ranking'))updateRankDock(id);document.body.classList.remove('ov-intro');document.body.classList.remove('panel-min');document.body.classList.add('tower-open');document.getElementById('pMin').textContent='–';
   towers.forEach(o=>{o.tileGrp.visible=o===t;o.units.forEach(u=>u.tileLabel.visible=o===t);});
   // remove old hint label
   if(hintLabelSprite){siteGrp.remove(hintLabelSprite);hintLabelSprite=null;}
