@@ -539,20 +539,21 @@ const BENCH=4.0;                     // usable-sun threshold (h)
 let   WEST_W=0.6;                    // afternoon/west sun weight vs morning
 const LAKE={x:0,z:0};                // central clubhouse dome + lagoon = site origin
 /* Tower centres (m, +x east / -z north; north-up site plan). Traced from Elan's
-   OFFICIAL brochure site plan (origin = central clubhouse oval, scale ≈1.47 m/px).
-   N rank: T-6…T-1 straight E–W along the north edge, all noses due south to the
-   clubhouse (rot 0). SE rank: T-15/T-14 set on the south-east boundary — wings run
-   parallel to that edge (which falls ~26° from the east corner to the south tip),
-   noses face NW inward (rot ≈ −2.69). T-1/T-2 = 3 BHK, T-3…T-6 = 4 BHK, T-14/T-15 = 5 BHK. */
+   OFFICIAL brochure site plan (origin = central clubhouse oval, scale ≈1.50 m/px).
+   N rank: T-6…T-1 straight E–W along the north edge (~45 m pitch), all noses due
+   south to the clubhouse (rot 0). SE rank: T-15/T-14 set on the south-east boundary
+   near the EAST corner — wings parallel to that edge (which falls ~26° from the east
+   corner to the south tip), noses face NW inward (rot ≈ −2.69). A clear ~110 m of open
+   space separates the two ranks. T-1/T-2 = 3 BHK, T-3…T-6 = 4 BHK, T-14/T-15 = 5 BHK. */
 const towers=[
- {id:'T-6',x:-179,z:-76,rot: 0.00,hw:24,hd:9.0,core:3,cfg:'4 BHK'},
- {id:'T-5',x: -98,z:-76,rot: 0.00,hw:24,hd:9.0,core:3,cfg:'4 BHK'},
- {id:'T-4',x: -16,z:-76,rot: 0.00,hw:24,hd:9.0,core:3,cfg:'4 BHK'},
- {id:'T-3',x:  65,z:-76,rot: 0.00,hw:24,hd:9.0,core:3,cfg:'4 BHK'},
- {id:'T-2',x: 147,z:-76,rot: 0.00,hw:24,hd:9.0,core:3,cfg:'3 BHK'},
- {id:'T-1',x: 228,z:-76,rot: 0.00,hw:24,hd:9.0,core:3,cfg:'3 BHK'},
- {id:'T-15',x:157,z:   8,rot:-2.69,hw:26,hd:9.5,core:3,cfg:'5 BHK'},
- {id:'T-14',x:225,z: -25,rot:-2.69,hw:26,hd:9.5,core:3,cfg:'5 BHK'},
+ {id:'T-6',x:-35,z:-89,rot: 0.00,hw:20,hd:8.0,core:3,cfg:'4 BHK'},
+ {id:'T-5',x: 11,z:-89,rot: 0.00,hw:20,hd:8.0,core:3,cfg:'4 BHK'},
+ {id:'T-4',x: 56,z:-89,rot: 0.00,hw:20,hd:8.0,core:3,cfg:'4 BHK'},
+ {id:'T-3',x:101,z:-89,rot: 0.00,hw:20,hd:8.0,core:3,cfg:'4 BHK'},
+ {id:'T-2',x:146,z:-89,rot: 0.00,hw:20,hd:8.0,core:3,cfg:'3 BHK'},
+ {id:'T-1',x:191,z:-89,rot: 0.00,hw:20,hd:8.0,core:3,cfg:'3 BHK'},
+ {id:'T-15',x:225,z: -6,rot:-2.69,hw:22,hd:8.5,core:3,cfg:'5 BHK'},
+ {id:'T-14',x:290,z:-35,rot:-2.69,hw:22,hd:8.5,core:3,cfg:'5 BHK'},
 ];
 const CONFIGS={
  '5 BHK':{beds:5,extra:'family lounge + pooja',baths:6,saleable:4495,carpetSqft:2200,balconySqft:520,deck:"private deck",
@@ -608,7 +609,7 @@ function poly(ptsPx,c,y,o={}){const s=new T.Shape();ptsPx.forEach((p,i)=>{const[
 /* Elan The Presidential plot — traced from the official brochure site plan
    (pentagon: NW → NE(north edge) → E corner → S tip → W kink). plan-px via
    planpx = model_m/0.55 + (1180,690); model origin = central clubhouse oval. */
-const phase1px=[[720,417],[1674,537],[1722,643],[980,1005],[698,775],[720,417]];
+const phase1px=[[738,381],[1562,490],[1762,610],[1002,981],[716,574],[738,381]];
 poly(phase1px,'#bcca9f',0.02,{em:'#000',ei:0});
 poly([[1075,565],[1300,562],[1330,690],[1230,800],[1090,800],[1015,690]],'#c9c6b3',0.05);
 /* boundary wall with pillars + gate */
@@ -628,7 +629,7 @@ function road(p1,p2,w,c){const[ax,az]=PX(p1[0],p1[1]),[bx,bz]=PX(p2[0],p2[1]);co
   const m=new T.Mesh(new T.BoxGeometry(len,.4,w),new T.MeshStandardMaterial({color:c||'#868b93',roughness:.95}));
   m.position.set((ax+bx)/2,.2,(az+bz)/2);m.rotation.y=-Math.atan2(bz-az,bx-ax);m.receiveShadow=true;siteGrp.add(m);}
 /* SE boundary arterial (the access road along the south-east edge, per aerial) + an internal E–W spine south of the north rank */
-road([1770,650],[1000,1035],36,'#7a808a');road([760,505],[1660,600],12);road([1660,600],[1500,760],12);
+road([1790,620],[1020,1000],34,'#7a808a');road([1120,560],[1560,620],11);
 function blob(cx,cy,rx,rz,seg=40){const pts=[];for(let i=0;i<seg;i++){const a=i/seg*Math.PI*2,wob=.82+.18*Math.sin(a*3+1.1)+.08*Math.cos(a*5);pts.push([cx+Math.cos(a)*rx*wob,cy+Math.sin(a)*rz*wob]);}return pts;}
 poly(blob(1180,690,120,72),'#7fcfe0',0.07,{em:'#2b9fbc',ei:.14});
 poly(blob(1258,668,34,24,28),'#8bd6e4',0.075,{em:'#2b9fbc',ei:.12});
