@@ -47,6 +47,8 @@ public/live-media/
 .media-cache/
 # per-build Supabase snapshot (scripts/snapshot-supabase.mjs)
 .data-snapshot/
+# extracted advisor intelligence + local render artifacts (regenerable output)
+/scratchpad/
 
 # generated at build by scripts/copy-pdf-worker.mjs
 public/pdf.worker.min.js
