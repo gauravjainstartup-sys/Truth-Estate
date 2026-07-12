@@ -662,7 +662,6 @@ export default function ProjectProfile({
                   <Reg icon={VITAL_ICON.file} k="RERA ID" v={ops?.reraId ?? "NA"} {...(ops?.reraId ? { href: ops?.reraUrl ?? "https://haryanarera.gov.in/" } : {})} />
                 </div>
               </div>
-              {ops?.reraNote && <Source>{ops.reraNote}. Sources: Haryana RERA registry & project filings.</Source>}
             </Section>
 
             {/* 02 · Masterplan — the plan itself, then one honest read of it */}
