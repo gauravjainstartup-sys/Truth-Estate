@@ -176,10 +176,14 @@ function mediaSrc(u: string | null | undefined): string | null {
     for (const [re, type] of B64_MAGIC) if (re.test(s)) return `data:image/${type};base64,${s.replace(/\s+/g, "")}`;
     return null; // unknown binary — don't guess
   }
-  // A Storage/CDN URL. A Storage object key may carry no file extension, so
-  // we can't require one — treat any non-PDF http(s) URL as an image; a .pdf
-  // URL falls through to pdfSrc for a link instead of an <img>.
-  if (isHttpUrl(s)) return isPdfUrl(s) ? null : s;
+  // A bare http(s) URL reaching here means materialization was skipped —
+  // viaUrls already remapped anything pulled same-origin. NEVER hand the
+  // browser a raw Storage image: an inline <img> to Storage is cached egress
+  // on every page view. Return null so the component renders its stand-in
+  // (founder rule: missing data hides, it never leaks). PDFs are unaffected —
+  // pdfSrc links them, and an over-cap brochure's click-gated Storage link is
+  // intentional (paid only when a reader actually opens it).
+  if (isHttpUrl(s)) return null;
   // A relative/materialized path — keep the extension gate.
   return imageish(s) ? s : null;
 }
@@ -503,14 +507,22 @@ export function liveProjectIntel(
     ...(extRaw && MANIFEST[extRaw.backlogId]?.payment_plan_thumb ? { paymentPlanThumb: MANIFEST[extRaw.backlogId]!.payment_plan_thumb! } : {}),
   };
 
-  // build-log record: how each media column resolved (or why it didn't)
+  // build-log record — and the egress guardrail: classify how each column
+  // resolved so any Storage-pointing INLINE asset (per-view cached egress)
+  // is loud in CI. same-origin = materialized file · miss→hidden = a remote
+  // URL that failed materialization and was correctly hidden (investigate the
+  // skip, but no leak) · storage-pdf = the intended click-gated over-cap
+  // brochure · ⚠INLINE-STORAGE = an inline <img> slipped the mediaSrc gate.
   if (ext) {
-    const why = (v: string | null | undefined): string =>
-      !v ? "null" : v.length > PDF_INLINE_CAP ? "too-big" : "unrecognised";
+    const img = (src: string | null | undefined, raw?: string | null): string =>
+      src ? (isHttpUrl(src) ? "STORAGE" : "same-origin")
+          : raw && isHttpUrl(String(raw).trim()) ? "miss→hidden" : "–";
+    const pdf = (src: string | null): string | null => (!src ? null : isHttpUrl(src) ? "storage-pdf" : "same-origin-pdf");
+    const brochureState = brochurePages ? `${brochurePages.length}img·same-origin` : pdf(brochurePdf) ?? img(null, ext.brochureUrl);
+    const paymentState = paymentSrc ? img(paymentSrc, ext.paymentPlanUrl) : pdf(paymentPdf) ?? img(null, ext.paymentPlanUrl);
+    const inlineLeak = [heroSrc, siteMapSrc, renderSrc, ...(brochurePages ?? [])].some((s) => s && isHttpUrl(s));
     console.log(
-      `[supabase] media ${row.name} → hero=${heroSrc ? "ok" : why(ext.heroImageUrl)} · brochure=${
-        brochurePages ? `${brochurePages.length} page(s)` : brochurePdf ? "pdf-link" : why(ext.brochureUrl)
-      } · payment=${paymentSrc ? "ok" : paymentPdf ? "pdf-link" : why(ext.paymentPlanUrl)} · sitemap=${siteMapSrc ? "ok" : why(ext.siteMapImageUrl)} · render=${renderSrc ? "ok" : why(ext.renderElevationUrl)}`,
+      `[supabase] media ${row.name} →${inlineLeak ? " ⚠INLINE-STORAGE" : ""} hero=${img(heroSrc, ext.heroImageUrl)} sitemap=${img(siteMapSrc, ext.siteMapImageUrl)} render=${img(renderSrc, ext.renderElevationUrl)} brochure=${brochureState} payment=${paymentState}`,
     );
   }
   // build-log record: configurations → homes, and how many carry a 2D floor plan
