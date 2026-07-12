@@ -226,7 +226,9 @@ async function pdfThumb(buf) {
     await page.render({ canvasContext: ctx, viewport: vp }).promise;
     return canvas.toBuffer("image/png");
   } catch (e) {
-    console.log(`[materialize] thumb skip: ${e instanceof Error ? e.message.slice(0, 80) : "render error"}`);
+    // full name+message — the 80-char cut hid exactly which napi type check
+    // rejects some real brochures' page-1 render
+    console.log(`[materialize] thumb skip: ${e instanceof Error ? `${e.name}: ${e.message.slice(0, 220)}` : "render error"}`);
     return null;
   }
 }
