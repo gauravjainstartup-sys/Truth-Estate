@@ -2,18 +2,30 @@
    MATERIALIZE MEDIA — prebuild step.
 
    The founder's upload path stores hero/brochure/plan media as
-   base64 in project_extended_details. Inlining those into the
-   static pages is heavy (each blob lands in the HTML twice), so
-   before `next build` this script decodes every base64 blob into a
-   real file under public/live-media/ and records the mapping in
-   src/lib/live-media.manifest.json. The adapter prefers the
-   materialized path; URL values pass through untouched.
+   base64 or Storage URLs in project_extended_details. Before
+   `next build` this script turns each into a real file under
+   public/live-media/ and records the mapping in
+   src/lib/live-media.manifest.json, so visitors are served from
+   the static site and never touch Storage.
+
+   Egress control:
+   · Every URL fetch goes through a cross-build cache (.media-cache,
+     restored by the deploy workflow) and is revalidated with a
+     conditional GET — an unchanged asset costs headers, not a
+     re-download, so the hourly rebuild stops re-pulling the whole
+     media set from Supabase every run.
+   · A URL-sourced PDF above MEDIA_PDF_CAP_MB is NOT baked into the
+     site (GitHub Pages caps the artifact at ~1 GB): only its page-1
+     cover ships, the manifest omits the field, and the adapter falls
+     back to the Storage URL — so the full file moves only when a
+     reader actually clicks, and only from Storage.
 
    Fail-soft: any error leaves an empty manifest and exits 0 — a
    deploy can never be broken by media.
    ════════════════════════════════════════════════════════════════ */
 
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import path from "node:path";
 
 // same public-by-design pair the app uses (src/lib/supabase.ts)
@@ -24,6 +36,9 @@ const SUPABASE_ANON_KEY =
 const OUT_DIR = "public/live-media";
 const MANIFEST = "src/lib/live-media.manifest.json";
 const MAX_BYTES = 40 * 1024 * 1024; // per-file guard
+const CACHE_DIR = process.env.MEDIA_CACHE_DIR || ".media-cache";
+// URL-sourced PDFs above the cap ship cover-only; the click serves Storage
+const PDF_CAP = Math.round((Number(process.env.MEDIA_PDF_CAP_MB) || 10) * 1048576);
 
 const FIELDS = ["hero_image_url", "brochure_url", "payment_plan_url", "site_map_image_url", "render_elevation_url"];
 
@@ -60,30 +75,106 @@ function urlExt(u) {
   }
 }
 
+/* ── Cross-build URL cache with conditional GET ──
+   Every remote asset is keyed on sha1(url) in CACHE_DIR: `<h>.bin` (bytes),
+   `<h>.json` (etag/last-modified/ext/bytes[/thumbOnly]), `<h>-thumb.png`
+   (a PDF's rendered cover). Each build revalidates with If-None-Match /
+   If-Modified-Since: a 304 reuses the cached bytes (near-zero egress); a 200
+   refreshes them; a network error keeps the last good copy rather than
+   dropping media from the deploy. Over-cap PDFs store ONLY their cover
+   (thumbOnly) so the cache never carries multi-MB files it won't ship. */
+const cacheStats = { hit: 0, fresh: 0, changed: 0, stale: 0 };
+const cacheTouched = new Set();
+const cKey = (u) => createHash("sha1").update(u).digest("hex").slice(0, 16);
+const cPath = (h, suffix) => path.join(CACHE_DIR, h + suffix);
+const readOpt = async (p) => { try { return await readFile(p); } catch { return null; } };
+
+async function cachedGet(u) {
+  const h = cKey(u);
+  cacheTouched.add(h);
+  const metaRaw = await readOpt(cPath(h, ".json"));
+  let meta = null;
+  try { meta = metaRaw && JSON.parse(metaRaw.toString()); } catch { meta = null; }
+  const bin = meta && !meta.thumbOnly ? await readOpt(cPath(h, ".bin")) : null;
+  const cachedThumb = meta ? await readOpt(cPath(h, "-thumb.png")) : null;
+  // usable = the cache alone could satisfy this URL. A thumbOnly entry whose
+  // recorded size now fits a raised cap must refetch the full body instead.
+  const usable =
+    !!meta && (meta.etag || meta.lastModified) &&
+    (meta.thumbOnly ? !!cachedThumb && meta.bytes > PDF_CAP : !!bin);
+  const cached = usable
+    ? meta.thumbOnly
+      ? { thumbOnly: true, ext: meta.ext, bytes: meta.bytes, cachedThumb, key: h }
+      : { buf: bin, ext: meta.ext, bytes: bin.length, from: "cache", cachedThumb, key: h }
+    : null;
+  const headers = {};
+  if (cached) {
+    if (meta.etag) headers["If-None-Match"] = meta.etag;
+    if (meta.lastModified) headers["If-Modified-Since"] = meta.lastModified;
+  }
+  let res;
+  try {
+    res = await fetch(u, { headers, signal: AbortSignal.timeout(30000) });
+  } catch {
+    if (cached) { cacheStats.stale++; return cached; }
+    return { skip: "fetch-failed" };
+  }
+  if (res.status === 304 && cached) {
+    try { await res.body?.cancel(); } catch { /* no body on 304 */ }
+    cacheStats.hit++;
+    return cached;
+  }
+  if (!res.ok) {
+    try { await res.body?.cancel(); } catch { /* discard */ }
+    if (cached) { cacheStats.stale++; return cached; }
+    return { skip: `http-${res.status}` };
+  }
+  const ct = (res.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+  const ext = CT_EXT[ct] ?? urlExt(u);
+  if (!ext) { try { await res.body?.cancel(); } catch { /* discard */ } return { skip: `unknown-type (${ct || "no content-type"})` }; }
+  // don't even download a body the per-file guard would throw away
+  const len = Number(res.headers.get("content-length") || 0);
+  if (len > MAX_BYTES) { try { await res.body?.cancel(); } catch { /* discard */ } return { skip: `too-big (${(len / 1048576).toFixed(1)} MB)` }; }
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (!buf.length || buf.length > MAX_BYTES) return { skip: `too-big (${(buf.length / 1048576).toFixed(1)} MB)` };
+  cacheStats[meta ? "changed" : "fresh"]++;
+  try {
+    await mkdir(CACHE_DIR, { recursive: true });
+    await writeFile(cPath(h, ".bin"), buf);
+    await writeFile(cPath(h, ".json"), JSON.stringify({
+      etag: res.headers.get("etag") || undefined,
+      lastModified: res.headers.get("last-modified") || undefined,
+      ext, bytes: buf.length,
+    }));
+    await rm(cPath(h, "-thumb.png"), { force: true }); // content changed → cover is stale
+  } catch { /* cache is best-effort — the build proceeds on the fresh bytes */ }
+  return { buf, ext, bytes: buf.length, from: "url", key: h };
+}
+
+/* Persist a PDF's rendered cover next to its cache entry; thumbOnly entries
+   drop the bin — the cover is all future builds need until the file changes. */
+async function cacheThumb(key, tb, thumbOnly) {
+  if (!key) return;
+  try {
+    await writeFile(cPath(key, "-thumb.png"), tb);
+    if (thumbOnly) {
+      const meta = JSON.parse((await readFile(cPath(key, ".json"))).toString());
+      meta.thumbOnly = true;
+      await writeFile(cPath(key, ".json"), JSON.stringify(meta));
+      await rm(cPath(key, ".bin"), { force: true });
+    }
+  } catch { /* cache is best-effort */ }
+}
+
 /* A media column may hold a Storage URL rather than base64. Pull a SINGLE-URL
-   value into the static build so it serves same-origin — essential for the PDF
-   thumbnails pdf.js renders (a cross-origin Storage fetch is CORS-blocked, so
-   the brochure/payment-plan cover never paints), and it also frees the deploy
-   from Supabase at runtime. Multi-URL lists (a brochure's page images) are left
-   to the adapter's cross-origin <img> page-turner. Fail-soft: any hiccup leaves
-   the value as its original URL. */
+   value into the static build so it serves same-origin — frees every visit
+   from Supabase — via the conditional-GET cache above. Fail-soft: any hiccup
+   leaves the value as its original URL. */
 async function fetchUrlMedia(value) {
   if (!value || typeof value !== "string") return null;
   const s = value.trim();
   if (!/^https?:\/\//i.test(s) || /[,\n]/.test(s)) return null; // only a lone URL
-  let res;
-  try {
-    res = await fetch(s, { signal: AbortSignal.timeout(30000) });
-  } catch {
-    return { skip: "fetch-failed" };
-  }
-  if (!res.ok) return { skip: `http-${res.status}` };
-  const ct = (res.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
-  const ext = CT_EXT[ct] ?? urlExt(s);
-  if (!ext) return { skip: `unknown-type (${ct || "no content-type"})` };
-  const buf = Buffer.from(await res.arrayBuffer());
-  if (!buf.length || buf.length > MAX_BYTES) return { skip: `too-big (${(buf.length / 1048576).toFixed(1)} MB)` };
-  return { buf, ext, from: "url" };
+  return await cachedGet(s);
 }
 
 async function fetchRows() {
@@ -168,28 +259,53 @@ try {
     for (const field of FIELDS) {
       const raw = row[field];
       if (!raw) continue;
+      // base64 cells are always materialized — there's no source URL a
+      // reader could click through to, so the cap can't apply to them
       let dec = decode(raw);
       let skip = null;
       if (!dec) {
         const r = await fetchUrlMedia(raw);
-        if (r && r.buf) dec = r;
+        if (r && (r.buf || r.thumbOnly)) dec = r;
         else skip = (r && r.skip) ?? (typeof raw !== "string" ? "not-a-string" : /^https?:\/\//i.test(raw.trim()) ? "multi-url-list" : raw.length > 200 ? "undecodable-blob" : "not-media");
       }
       if (!dec) { console.log(`[materialize] SKIP ${id} ${field}: ${skip}`); continue; }
       const slug = field.replace(/_url$/, "").replace(/_/g, "-");
+      const bytes = dec.bytes ?? dec.buf.length;
+      /* Over-cap URL PDF — and only when the URL itself would satisfy the
+         adapter's .pdf link check, so the click-through stays renderable:
+         ship the cover alone and leave the field out of the manifest; the
+         report then links the Storage URL and the full file moves only on
+         an actual click. */
+      const passthru = !!dec.key && dec.ext === "pdf" && bytes > PDF_CAP && /\.pdf(\?.*)?$/i.test(raw.trim());
+      if (passthru) {
+        const tb = dec.cachedThumb ?? (dec.buf ? await pdfThumb(dec.buf) : null);
+        if (tb) {
+          const trel = `live-media/${id}-${slug}-thumb.png`;
+          await writeFile(path.join("public", trel), tb);
+          (manifest[id] ??= {})[field.replace(/_url$/, "") + "_thumb"] = trel;
+          files++;
+          // holding a body on a passthru means the cache entry still carries
+          // it — flip the entry to cover-only so the bytes are shed
+          if (dec.buf) await cacheThumb(dec.key, tb, true);
+        }
+        console.log(`[materialize] PASSTHRU ${id} ${field}: ${(bytes / 1048576).toFixed(1)} MB > ${(PDF_CAP / 1048576).toFixed(0)} MB cap — cover ${tb ? "shipped" : "unavailable"}, click serves the source URL`);
+        continue;
+      }
+      if (!dec.buf) { console.log(`[materialize] SKIP ${id} ${field}: cover-only cache without body`); continue; }
       const rel = `live-media/${id}-${slug}.${dec.ext}`;
       await writeFile(path.join("public", rel), dec.buf);
       (manifest[id] ??= {})[field] = rel;
       files++;
-      console.log(`[materialize] ${rel} ← ${field} (${(dec.buf.length / 1024).toFixed(0)} KB${dec.from === "url" ? ", from URL" : ""})`);
+      console.log(`[materialize] ${rel} ← ${field} (${(dec.buf.length / 1024).toFixed(0)} KB${dec.from === "url" ? ", from URL" : dec.from === "cache" ? ", cached" : ""})`);
       if (dec.ext === "pdf") {
-        const tb = await pdfThumb(dec.buf);
+        const tb = dec.cachedThumb ?? await pdfThumb(dec.buf);
         if (tb) {
           const trel = `live-media/${id}-${slug}-thumb.png`;
           await writeFile(path.join("public", trel), tb);
           manifest[id][field.replace(/_url$/, "") + "_thumb"] = trel;
           files++;
-          console.log(`[materialize] ${trel} ← page-1 cover (${(tb.length / 1024).toFixed(0)} KB)`);
+          console.log(`[materialize] ${trel} ← page-1 cover (${(tb.length / 1024).toFixed(0)} KB${dec.cachedThumb ? ", cached" : ""})`);
+          if (!dec.cachedThumb && dec.key) await cacheThumb(dec.key, tb, false);
         }
       }
     }
@@ -228,12 +344,11 @@ try {
   } catch { /* configurations unavailable — floor plans stay remote */ }
 
   if (urlQueue.size) {
-    const { createHash } = await import("node:crypto");
     const urls = {};
     let saved = 0;
     for (const [u, from] of urlQueue) {
       const r = await fetchUrlMedia(u);
-      if (!r || !r.buf) { console.log(`[materialize] SKIP url (${from}): ${(r && r.skip) ?? "unfetchable"} ← ${u.slice(-60)}`); continue; }
+      if (!r || !r.buf) { console.log(`[materialize] SKIP url (${from}): ${(r && (r.skip ?? (r.thumbOnly ? "over-cap-pdf" : null))) ?? "unfetchable"} ← ${u.slice(-60)}`); continue; }
       const h = createHash("sha1").update(u).digest("hex").slice(0, 12);
       const rel = `live-media/u-${h}.${r.ext}`;
       await writeFile(path.join("public", rel), r.buf);
@@ -243,6 +358,16 @@ try {
     if (saved) manifest.__urls = urls;
     console.log(`[materialize] url-map: ${saved}/${urlQueue.size} remote file(s) pulled same-origin`);
   }
+  console.log(`[materialize] cache: ${cacheStats.hit} unchanged (304) · ${cacheStats.fresh} new · ${cacheStats.changed} changed · ${cacheStats.stale} stale-kept`);
+  // drop cache entries whose URL vanished from the data — the cache tracks
+  // the live media set instead of growing without bound. Only prune when this
+  // run saw URLs at all: an empty fetch result must not wipe a good cache.
+  try {
+    if (!cacheTouched.size) throw null;
+    for (const f of await readdir(CACHE_DIR)) {
+      if (!cacheTouched.has(f.replace(/(-thumb\.png|\.bin|\.json)$/, ""))) await rm(path.join(CACHE_DIR, f), { force: true });
+    }
+  } catch { /* no cache dir this run */ }
   console.log(`[materialize] ${files} file(s) across ${Object.keys(manifest).length} project(s)`);
 } catch (e) {
   console.warn(`[materialize] skipped (${e instanceof Error ? e.message : "error"}) — media stays inline/absent`);

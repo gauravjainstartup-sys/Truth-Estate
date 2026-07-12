@@ -33,7 +33,22 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      # Media cache — carries fetched Storage assets across builds. The
+      # materializer revalidates every URL with a conditional GET (ETag), so
+      # an unchanged asset costs headers instead of a re-download and the
+      # hourly rebuild stops re-pulling the whole media set from Supabase.
+      # Unique key + restore-keys prefix = restore the newest, save updated.
+      - uses: actions/cache@v4
+        with:
+          path: .media-cache
+          key: media-cache-${{ github.run_id }}
+          restore-keys: media-cache-
       - run: npm run build
+        env:
+          # PDFs above this many MB are not baked into the site (GitHub Pages
+          # caps the artifact at ~1 GB) — the card keeps its build-rendered
+          # cover and the click serves the file from Supabase Storage.
+          MEDIA_PDF_CAP_MB: "10"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: out
