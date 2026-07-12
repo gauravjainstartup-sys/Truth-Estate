@@ -150,7 +150,7 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
             <dl className="mt-2.5">
               <Row k="Carpet area" v={`${h.carpetSqft.toLocaleString("en-IN")} sq ft`} strong />
               <Row k="Super area" v={`${h.superSqft.toLocaleString("en-IN")} sq ft`} />
-              {h.balconySqft != null && <Row k="Balcony / deck" v={`${h.balconySqft.toLocaleString("en-IN")} sq ft`} />}
+              <Row k="Balcony / deck" v={h.balconySqft != null ? `${h.balconySqft.toLocaleString("en-IN")} sq ft` : "NA"} />
               <Row k="Loading" v={`${loading}%`} />
               <Row k="Carpet efficiency" v={`${eff}%`} strong />
             </dl>
