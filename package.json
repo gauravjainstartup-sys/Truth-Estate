@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "prebuild": "node scripts/materialize-media.mjs && node scripts/copy-pdf-worker.mjs",
+    "prebuild": "node scripts/snapshot-supabase.mjs && node scripts/materialize-media.mjs && node scripts/copy-pdf-worker.mjs",
     "postbuild": "node scripts/verify-out.mjs"
   },
   "dependencies": {

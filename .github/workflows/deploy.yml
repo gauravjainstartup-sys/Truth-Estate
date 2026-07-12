@@ -49,6 +49,13 @@ jobs:
           # caps the artifact at ~1 GB) — the card keeps its build-rendered
           # cover and the click serves the file from Supabase Storage.
           MEDIA_PDF_CAP_MB: "10"
+          # One consistent DB sample per build: the snapshot prebuild step
+          # fills .data-snapshot and every page reads it, so a build can no
+          # longer race the pipeline's table rewrite into half-empty pages.
+          # REQUIRE_SNAPSHOT fails the build if the snapshot can't be taken —
+          # the previous deploy stays live instead of shipping a gutted site.
+          SUPABASE_FIXTURES: ".data-snapshot"
+          REQUIRE_SNAPSHOT: "1"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: out

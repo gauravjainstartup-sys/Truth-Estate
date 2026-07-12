@@ -45,6 +45,8 @@ next-env.d.ts
 public/live-media/
 # cross-build media cache (restored by the deploy workflow)
 .media-cache/
+# per-build Supabase snapshot (scripts/snapshot-supabase.mjs)
+.data-snapshot/
 
 # generated at build by scripts/copy-pdf-worker.mjs
 public/pdf.worker.min.js
