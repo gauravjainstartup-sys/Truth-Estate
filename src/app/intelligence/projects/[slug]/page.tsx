@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { PROJECT_INTEL, projectBySlug, projectFaqs, trackedRankOf } from "@/lib/projects";
+import { projectBySlug, projectFaqs, trackedRankOf } from "@/lib/projects";
 import {
   fetchBacklogFull,
   fetchBacklogNameIds,
@@ -14,14 +14,16 @@ import ProjectProfile from "@/components/intelligence/ProjectProfile";
 import { liveProjectIntel } from "@/lib/liveReport";
 import { breadcrumbLd, ldJson } from "@/lib/seo";
 
-/* Two kinds of file share this route: the hand-built flagship dossiers
-   (PROJECT_INTEL) and auto-generated pipeline files for every scored
-   backlog project ("live-…" slugs, fetched at build time). Both render
-   through the SAME original report UI — live rows are adapted onto the
-   ProjectIntel shape and the report's own hide/NA behaviour covers
-   whatever the pipeline hasn't extracted yet. The backlog is fetched
-   once per build; a fetch failure simply means only the flagship pages
-   exist in that deploy. */
+/* ONE URL per project: /intelligence/projects/<slugified DB name>. Every
+   page here is the pipeline file for a v3 row (the DB name is the source
+   of truth), rendered through the original report UI with hide/NA covering
+   whatever the pipeline hasn't extracted yet. Around that single structure:
+   · legacy addresses (the old live-<slug> form and the two retired curated
+     URLs) render as tiny redirect stubs — canonical + instant client
+     redirect — because GitHub Pages cannot 301;
+   · the one curated SAMPLE dossier stays at its noindexed sample-… slug.
+   The backlog is fetched once per build; a fetch failure means only the
+   sample page exists in that deploy. */
 
 let backlogCache: LiveBacklogFull[] | null | undefined;
 async function backlog(): Promise<LiveBacklogFull[] | null> {
@@ -85,8 +87,48 @@ function sampleIntel() {
   return base ? { ...base, slug: SAMPLE_SLUG, name: "DLF The Arbour" } : undefined;
 }
 
+/* ── legacy addresses ──
+   Retired curated URLs → their pipeline twin, resolved against the actual
+   rows so a DB rename self-heals; null = no twin (the stub points at the
+   projects index). The other two curated slugs (dlf-privana-south,
+   godrej-aristocrat) match their DB names exactly, so those URLs simply
+   BECAME the pipeline pages — no stub needed. */
+const RETIRED_CURATED: Record<string, string | null> = {
+  "dlf-arbour": "dlf-the-arbour",
+  "m3m-golf-estate-ii": null,
+};
+/* undefined = not a legacy address · null = stub to the index · string = new slug */
+async function legacyTarget(slug: string): Promise<string | null | undefined> {
+  const rows = await backlog();
+  if (slug.startsWith("live-")) {
+    const bare = slug.slice(5);
+    if (rows?.some((r) => r.slug === bare)) return bare;
+  }
+  if (slug in RETIRED_CURATED) {
+    const t = RETIRED_CURATED[slug];
+    return t && rows?.some((r) => r.slug === t) ? t : null;
+  }
+  return undefined;
+}
+
+const BASE = "/Truth-Estate";
+/* The old address keeps working: rel=canonical carries the SEO equity to the
+   new URL and the script hops humans there instantly; the visible link covers
+   anything that doesn't run scripts. GitHub Pages cannot 301 — this is the
+   static-host equivalent. */
+function LegacyStub({ href }: { href: string }) {
+  return (
+    <div data-legacy-stub className="mx-auto max-w-xl px-6 py-28 text-center">
+      <script dangerouslySetInnerHTML={{ __html: `location.replace(${JSON.stringify(href)})` }} />
+      <p className="text-[0.8rem] font-light text-[#1a1a1a]/55">This report moved to a new address.</p>
+      <a href={href} className="mt-3 inline-block text-[0.95rem] font-medium text-[#1e6b45] underline underline-offset-4">
+        Continue to the report →
+      </a>
+    </div>
+  );
+}
+
 export async function generateStaticParams() {
-  const flagship = PROJECT_INTEL.map((p) => ({ slug: p.slug }));
   const rows = await backlog();
   // join record in the build log: direct id hits vs name-bridged hits
   const [ext, cfg, nameIds] = [await extended(), await configurations(), await backlogNameIds()];
@@ -100,11 +142,13 @@ export async function generateStaticParams() {
     }
     console.log(`[supabase] extended/config join → direct ${direct} · name-bridged ${bridged} · unmatched ${rows.length - direct - bridged} (of ${rows.length} scored)`);
   }
-  const flagshipSlugs = new Set(flagship.map((f) => f.slug));
-  const live = (rows ?? [])
-    .filter((r) => !flagshipSlugs.has(r.slug))
-    .map((r) => ({ slug: r.slug }));
-  return [...flagship, ...live, { slug: SAMPLE_SLUG }];
+  const live = (rows ?? []).map((r) => ({ slug: r.slug }));
+  // every old address survives as a redirect stub
+  const liveSlugSet = new Set((rows ?? []).map((r) => r.slug));
+  const stubs = (rows ?? []).map((r) => ({ slug: `live-${r.slug}` }));
+  for (const s of Object.keys(RETIRED_CURATED)) if (!liveSlugSet.has(s)) stubs.push({ slug: s });
+  console.log(`[urls] project pages:${live.length} · legacy stubs:${stubs.length} · +sample`);
+  return [...live, ...stubs, { slug: SAMPLE_SLUG }];
 }
 
 export const dynamicParams = false;
@@ -120,32 +164,38 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       alternates: { canonical: `/intelligence/projects/${SAMPLE_SLUG}` },
     };
   }
-  const p = projectBySlug(slug);
-  if (p) {
-    return {
-      title: `${p.name} — Project Intelligence | Truth Estate`,
-      description: `Independent Truth Score (${p.truthScore}/100) for ${p.name} by ${p.developer}, ${p.market}: developer track record, financial audit, construction velocity, legal & RERA signals, location intelligence and projected ROI. ${p.reason}`,
-      alternates: { canonical: `/intelligence/projects/${p.slug}` },
-    };
-  }
   const rows = await backlog();
   const live = rows?.find((r) => r.slug === slug);
-  if (!live) return { title: "Project Intelligence — Truth Estate" };
-  return {
-    title: `${live.name} — Pipeline File | Truth Estate`,
-    description: `Auto-generated independent read on ${live.name}${live.developer ? ` by ${live.developer}` : ""}${live.truthScore != null ? ` — Truth Score ${live.truthScore}/100` : ""}: delivery risk, construction pace, legal and financial signals from RERA filings and public records.`,
-    alternates: { canonical: `/intelligence/projects/${slug}` },
-  };
+  if (live) {
+    return {
+      title: `${live.name} — Project Intelligence | Truth Estate`,
+      description: `Independent read on ${live.name}${live.developer ? ` by ${live.developer}` : ""}${live.truthScore != null ? ` — Truth Score ${live.truthScore}/100` : ""}: delivery risk, construction pace, legal and financial signals from RERA filings and public records.`,
+      alternates: { canonical: `/intelligence/projects/${slug}` },
+    };
+  }
+  const target = await legacyTarget(slug);
+  if (target !== undefined) {
+    // moved address: the canonical carries the equity to the new URL
+    return {
+      title: "Report moved — Truth Estate",
+      alternates: { canonical: target ? `/intelligence/projects/${target}` : "/intelligence/projects" },
+    };
+  }
+  return { title: "Project Intelligence — Truth Estate" };
 }
 
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const p = slug === SAMPLE_SLUG ? sampleIntel() : projectBySlug(slug);
+  const p = slug === SAMPLE_SLUG ? sampleIntel() : undefined;
 
   if (!p) {
     const rows = await backlog();
     const live = rows?.find((r) => r.slug === slug);
-    if (!live) notFound();
+    if (!live) {
+      const target = await legacyTarget(slug);
+      if (target === undefined) notFound();
+      return <LegacyStub href={target ? `${BASE}/intelligence/projects/${target}` : `${BASE}/intelligence/projects`} />;
+    }
     const liveBreadcrumb = breadcrumbLd([
       { name: "Home", path: "" },
       { name: "Intelligence", path: "/intelligence" },
@@ -210,7 +260,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(breadcrumb)} />
       <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(productLd)} />
       <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(faqLd)} />
-      {/* flagship dossiers rank against the same live set as pipeline pages */}
+      {/* the sample dossier ranks against the same live set as real pages */}
       <ProjectProfile p={{ ...p, trackedRank: trackedRankOf(p.truthScore, await liveScores()) }} />
     </>
   );

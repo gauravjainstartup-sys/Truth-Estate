@@ -453,7 +453,9 @@ export type TowerIntelMeta = {
 };
 
 export const TOWER_INTEL: Record<string, TowerIntelMeta> = {
-  "DLF Arbour": {
+  // keyed by the DB project_name (source of truth) so the advisor attaches
+  // to the live page; the sample dossier carries the same name
+  "DLF The Arbour": {
     file: "tower-intel/dlf-arbour.html",
     preview: "tower-intel/preview.jpg",
     towers: 5,

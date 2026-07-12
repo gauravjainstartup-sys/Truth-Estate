@@ -1,7 +1,8 @@
-/* Build-emitted search index for the project-page palette: every curated +
-   live project file and developer dossier in ~14 KB. Static export writes
-   this once per deploy; the palette fetches it on first open only. */
-import { PROJECT_INTEL } from "@/lib/projects";
+/* Build-emitted search index for the project-page palette: every live
+   project file and developer dossier in ~14 KB. Static export writes
+   this once per deploy; the palette fetches it on first open only.
+   (Curated dossiers no longer exist as pages — the pipeline files ARE
+   the project pages, so only live rows are indexed.) */
 import { DEVELOPERS } from "@/lib/developers";
 import { fetchBacklogFull, fetchDevelopersOverview } from "@/lib/supabase";
 
@@ -11,7 +12,7 @@ type P = { n: string; s: string; m?: string; d?: string; ts?: number };
 type D = { n: string; s: string; c?: number };
 
 export async function GET() {
-  const p: P[] = PROJECT_INTEL.map((x) => ({ n: x.name, s: x.slug, m: x.market, d: x.developer, ts: x.truthScore }));
+  const p: P[] = [];
   for (const r of (await fetchBacklogFull()) ?? []) {
     if (p.some((e) => e.s === r.slug)) continue;
     p.push({

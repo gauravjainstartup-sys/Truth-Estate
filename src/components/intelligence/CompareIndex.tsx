@@ -85,7 +85,7 @@ export default function CompareIndex() {
             // click, ordered to match the names in the label
             const scores = c.kind === "project"
               ? c.pair.split("-vs-")
-                  .map((s) => projectBySlug(s))
+                  .map((s) => projectBySlug(s.replace(/^sample-/, "")))
                   .filter((p): p is NonNullable<typeof p> => p != null)
                   .sort((x, y) => c.label.indexOf(x.name) - c.label.indexOf(y.name))
                   .map((p) => p.truthScore)

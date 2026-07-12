@@ -458,7 +458,7 @@ const SLIDES: Slide[] = [
         sub="Not mockups — every card links to the live surface.">
         <div className="mt-6 grid gap-4 md:grid-cols-2 lg:mt-8 lg:gap-6">
           <ProductCard name="Truth Score" what="The score no developer can buy."
-            trust="Published weights · re-scored quarterly · challengeable" only href={`${basePath}/intelligence/projects/dlf-arbour`}>
+            trust="Published weights · re-scored quarterly · challengeable" only href={`${basePath}/intelligence/projects/dlf-the-arbour`}>
             <div className="rounded-xl border border-[#1a1a1a]/10 bg-[#F7F3EA] p-4 lg:p-6">
               <p className="font-mono text-[0.52rem] tracking-[0.26em] text-[#1a1a1a]/40 lg:text-[0.64rem]">TRUTH SCORE</p>
               <p className="mt-1.5 font-serif text-[2.4rem] font-medium leading-none text-[#1e6b45] lg:text-[4rem]">92<span className="ml-1.5 font-mono text-[0.7rem] text-[#1a1a1a]/35 lg:text-[0.95rem]">/100</span></p>
@@ -471,7 +471,7 @@ const SLIDES: Slide[] = [
             </div>
           </ProductCard>
           <ProductCard name="Project Intelligence" what="8,000-word forensic files — everything on record."
-            trust="Every claim carries its source and its date" only href={`${basePath}/intelligence/projects/dlf-arbour`}>
+            trust="Every claim carries its source and its date" only href={`${basePath}/intelligence/projects/dlf-the-arbour`}>
             <div className="overflow-hidden rounded-xl border border-[#1a1a1a]/10 bg-white">
               {([
                 ["Construction vs RERA-due", "QPR-verified"],
@@ -497,7 +497,7 @@ const SLIDES: Slide[] = [
       <Card label="III · The products — Exhibit 06 · 2 of 3" title="From a brief to a unit: judgement, personalised.">
         <div className="mt-6 grid gap-4 md:grid-cols-2 lg:mt-8 lg:gap-6">
           <ProductCard name="Match Score" what="The project, judged against your brief — not the brochure."
-            trust="Same evidence, personalised; never a lead-gen ranking" href={`${basePath}/intelligence/projects/dlf-arbour`}>
+            trust="Same evidence, personalised; never a lead-gen ranking" href={`${basePath}/intelligence/projects/dlf-the-arbour`}>
             <div className="flex items-center gap-5 rounded-xl border border-[#1a1a1a]/10 bg-white p-4 lg:gap-7 lg:p-6">
               <p className="text-[2.4rem] font-normal leading-none tracking-[-0.02em] tabular-nums text-[#1e6b45] lg:text-[3.6rem]">87<span className="text-[1rem] text-[#1a1a1a]/35 lg:text-[1.4rem]">%</span></p>
               <div>
@@ -511,7 +511,7 @@ const SLIDES: Slide[] = [
             </div>
           </ProductCard>
           <ProductCard name="Unit Intelligence" what="The decision, closed to the unit — tower, floor, stack."
-            trust="Sun, air, privacy and price modelled per stack" only href={`${basePath}/intelligence/projects/dlf-arbour`}>
+            trust="Sun, air, privacy and price modelled per stack" only href={`${basePath}/intelligence/projects/dlf-the-arbour`}>
             <div className="flex items-center gap-5 rounded-xl border border-[#1a1a1a]/10 bg-white p-4 lg:gap-7 lg:p-6">
               <div className="grid shrink-0 grid-cols-5 gap-[3px] lg:gap-1">
                 {Array.from({ length: 40 }).map((_, i) => (

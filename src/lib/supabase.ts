@@ -331,8 +331,11 @@ export type LiveBacklogFull = {
   altIds?: string[];
 };
 
+/* THE project URL: /intelligence/projects/<slugified DB name>. The DB name is
+   the single source of truth (founder call) — no live-/sample- prefixes. The
+   old live-<slug> addresses render as redirect stubs in the [slug] route. */
 export function liveSlug(name: string): string {
-  return `live-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`;
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
 // The whole tracked universe: no score gate, highest-scored first with any

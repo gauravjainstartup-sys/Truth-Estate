@@ -25,8 +25,14 @@ function pairsOf(slugs: string[]): string[] {
   return out;
 }
 
+/* Project comparisons will be rebuilt on the LIVE tracked set (founder call);
+   until that slice ships, exactly ONE noindexed sample pair exists — curated
+   data standing in as the dummy. The sample- prefix keeps it out of the real
+   projects' URL namespace. */
+export const SAMPLE_COMPARE_PAIR = comparePairSlug("sample-dlf-arbour", "sample-dlf-privana-south");
+
 export const COMPARE_PAIRS: string[] = [
-  ...pairsOf(PROJECT_INTEL.map((p) => p.slug)),
+  SAMPLE_COMPARE_PAIR,
   ...pairsOf(DEVELOPERS.map((d) => d.slug)),
   ...pairsOf(MARKETS.map((m) => m.slug)),
 ];
@@ -46,7 +52,9 @@ export function resolvePair(pair: string): ResolvedCompare | null {
   if (!sp) return null;
   const [x, y] = sp;
 
-  const pa = PROJECT_INTEL.find((p) => p.slug === x), pb = PROJECT_INTEL.find((p) => p.slug === y);
+  // the sample pair's slugs resolve to the curated dossiers behind them
+  const unsample = (s: string) => (s.startsWith("sample-") ? s.slice(7) : s);
+  const pa = PROJECT_INTEL.find((p) => p.slug === unsample(x)), pb = PROJECT_INTEL.find((p) => p.slug === unsample(y));
   if (pa && pb) return { kind: "project", a: pa, b: pb };
 
   const da = developerBySlug(x), db = developerBySlug(y);
@@ -62,15 +70,17 @@ export const compareTitle = (r: ResolvedCompare): string => `${r.a.name} vs ${r.
 
 /* Curated entries for the index picker */
 export const COMPARE_OPTIONS: Record<CompareKind, { slug: string; name: string }[]> = {
-  project: PROJECT_INTEL.map((p) => ({ slug: p.slug, name: p.name })),
+  // the picker's project kind offers only the sample pair until live compare ships
+  project: [
+    { slug: "sample-dlf-arbour", name: "DLF Arbour (sample)" },
+    { slug: "sample-dlf-privana-south", name: "DLF Privana South (sample)" },
+  ],
   developer: DEVELOPERS.map((d) => ({ slug: d.slug, name: d.name })),
   market: MARKETS.map((m) => ({ slug: m.slug, name: m.name })),
 };
 
 export const POPULAR_COMPARISONS: { label: string; pair: string; kind: CompareKind }[] = [
-  { label: "DLF Arbour vs Godrej Aristocrat", pair: comparePairSlug("dlf-arbour", "godrej-aristocrat"), kind: "project" },
-  { label: "M3M Golf Estate II vs Birla Navya", pair: comparePairSlug("m3m-golf-estate-ii", "birla-navya"), kind: "project" },
-  { label: "DLF Privana South vs Godrej Aristocrat", pair: comparePairSlug("dlf-privana-south", "godrej-aristocrat"), kind: "project" },
+  { label: "DLF Arbour vs DLF Privana South (sample)", pair: SAMPLE_COMPARE_PAIR, kind: "project" },
   { label: "DLF vs Godrej", pair: comparePairSlug("dlf", "godrej"), kind: "developer" },
   { label: "M3M vs Birla Estates", pair: comparePairSlug("m3m", "birla"), kind: "developer" },
   { label: "Golf Course Extension vs SPR", pair: comparePairSlug("golf-course-extension", "spr"), kind: "market" },

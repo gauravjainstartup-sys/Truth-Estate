@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { COMPARE_PAIRS, resolvePair, compareTitle } from "@/lib/compare";
+import { COMPARE_PAIRS, SAMPLE_COMPARE_PAIR, resolvePair, compareTitle } from "@/lib/compare";
 import ComparePage from "@/components/intelligence/ComparePage";
 import { breadcrumbLd, ldJson } from "@/lib/seo";
 
@@ -15,6 +15,14 @@ export async function generateMetadata({ params }: { params: Promise<{ pair: str
   const r = resolvePair(pair);
   if (!r) return { title: "Compare — Truth Estate Intelligence" };
   const title = compareTitle(r);
+  // the sample project pair is a demo on curated data — kept out of the index
+  if (pair === SAMPLE_COMPARE_PAIR) {
+    return {
+      title: `${title} (Sample) — Compare | Truth Estate`,
+      description: `A sample side-by-side project comparison on the Truth Estate layout — curated demonstration data.`,
+      robots: { index: false, follow: false },
+    };
+  }
   return {
     title: `${title} — Compare | Truth Estate`,
     description: `Independent side-by-side comparison of ${title}: measured on the same evidence — score, signals, delivery, pricing and outlook. No paid rankings.`,

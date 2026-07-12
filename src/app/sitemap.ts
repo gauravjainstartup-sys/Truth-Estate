@@ -1,15 +1,15 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/site";
-import { PROJECT_INTEL } from "@/lib/projects";
 import { DEVELOPERS } from "@/lib/developers";
 import { MARKETS } from "@/lib/markets";
-import { COMPARE_PAIRS } from "@/lib/compare";
+import { COMPARE_PAIRS, SAMPLE_COMPARE_PAIR } from "@/lib/compare";
+import { fetchBacklogFull } from "@/lib/supabase";
 
 export const dynamic = "force-static";
 
 type Freq = "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const entries: MetadataRoute.Sitemap = [];
   const add = (path: string, priority: number, changeFrequency: Freq = "monthly") =>
@@ -37,11 +37,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
   add("/terms", 0.2, "yearly");
   add("/disclaimer", 0.2, "yearly");
 
-  // Dynamic intelligence detail pages
-  PROJECT_INTEL.forEach((p) => add(`/intelligence/projects/${p.slug}`, 0.8, "weekly"));
+  // Dynamic intelligence detail pages. Project pages ARE the tracked
+  // pipeline (one URL per v3 row, DB name as source of truth); legacy
+  // live-* stubs and the sample dossier stay out of the sitemap.
+  ((await fetchBacklogFull()) ?? []).forEach((r) => add(`/intelligence/projects/${r.slug}`, 0.8, "weekly"));
   DEVELOPERS.forEach((d) => add(`/intelligence/developers/${d.slug}`, 0.6, "monthly"));
   MARKETS.forEach((m) => add(`/intelligence/markets/${m.slug}`, 0.6, "monthly"));
-  COMPARE_PAIRS.forEach((pair) => add(`/intelligence/compare/${pair}`, 0.4, "monthly"));
+  // the sample project pair is noindexed — a sitemap entry would contradict it
+  COMPARE_PAIRS.filter((pair) => pair !== SAMPLE_COMPARE_PAIR).forEach((pair) => add(`/intelligence/compare/${pair}`, 0.4, "monthly"));
 
   return entries;
 }
