@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { PROJECT_INTEL, projectBySlug, projectFaqs } from "@/lib/projects";
+import { PROJECT_INTEL, projectBySlug, projectFaqs, trackedRankOf } from "@/lib/projects";
 import {
   fetchBacklogFull,
   fetchBacklogNameIds,
@@ -45,6 +45,16 @@ let nameIdCache: Record<string, string> | null | undefined;
 async function backlogNameIds(): Promise<Record<string, string> | null> {
   if (nameIdCache === undefined) nameIdCache = await fetchBacklogNameIds();
   return nameIdCache;
+}
+
+/* every scored live row — the honest basis for the hero card's
+   "Top N% / Ranks N of M tracked projects" line (founder call: the live
+   set only, never the curated dossiers) */
+async function liveScores(): Promise<number[]> {
+  const rows = await backlog();
+  return (rows ?? [])
+    .map((r) => r.truthScore)
+    .filter((s): s is number => typeof s === "number" && s > 0);
 }
 
 /* the extended/config tables key on backlog_projects.id; join directly
@@ -145,10 +155,14 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     const [ext, cfg, nameIds] = [await extended(), await configurations(), await backlogNameIds()];
     const extKey = lookupKey(live.id, live.name, ext, nameIds, live.altIds);
     const cfgKey = lookupKey(live.id, live.name, cfg, nameIds, live.altIds);
+    const intel = {
+      ...liveProjectIntel(live, extKey ? ext![extKey] : null, cfgKey ? cfg![cfgKey] : null),
+      trackedRank: trackedRankOf(live.truthScore, await liveScores()),
+    };
     return (
       <>
         <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(liveBreadcrumb)} />
-        <ProjectProfile p={liveProjectIntel(live, extKey ? ext![extKey] : null, cfgKey ? cfg![cfgKey] : null)} />
+        <ProjectProfile p={intel} />
       </>
     );
   }
@@ -196,7 +210,8 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(breadcrumb)} />
       <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(productLd)} />
       <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(faqLd)} />
-      <ProjectProfile p={p} />
+      {/* flagship dossiers rank against the same live set as pipeline pages */}
+      <ProjectProfile p={{ ...p, trackedRank: trackedRankOf(p.truthScore, await liveScores()) }} />
     </>
   );
 }

@@ -587,12 +587,13 @@ export default function ProjectProfile({
                       <div className="mt-3 border-t border-[#1a1a1a]/8 pt-2.5">
                         <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.7rem] text-[#1a1a1a]/60 sm:hidden">
                           {ctx.delta > 0 && <><span><b className="font-semibold text-[#1a1a1a]">+{ctx.delta}</b> vs {p.marketShort}</span><span className="text-[#1a1a1a]/25">·</span></>}
-                          {ctx.rank > 0 && <><span><b className="font-semibold text-[#1a1a1a]">Top {ctx.topPct}%</b> tracked</span><span className="text-[#1a1a1a]/25">·</span></>}
+                          {ctx.rank > 0 && <><span>{ctx.bottomHalf ? <><b className="font-semibold text-[#1a1a1a]">Ranks {ctx.rank}/{ctx.total}</b> tracked</> : <><b className="font-semibold text-[#1a1a1a]">Top {ctx.topPct}%</b> tracked</>}</span><span className="text-[#1a1a1a]/25">·</span></>}
                           <span><b className="font-semibold text-[#1a1a1a]">{p.confidence}</b> confidence</span>
                         </p>
                         <div className="hidden space-y-1.5 sm:block">
                           {ctx.delta > 0 && <p className="flex items-center gap-2 text-[0.72rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]"><IconTrendUp /></span><span><b className="font-semibold text-[#1a1a1a]">+{ctx.delta}</b> vs {p.marketShort} average</span></p>}
-                          {ctx.rank > 0 && <p className="flex items-center gap-2 text-[0.72rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]"><IconTiers /></span><span><b className="font-semibold text-[#1a1a1a]">Top {ctx.topPct}%</b> of tracked projects</span></p>}
+                          {/* bottom-half scores read as a plain rank — "Top 76%" is honest math that reads like a typo */}
+                          {ctx.rank > 0 && <p className="flex items-center gap-2 text-[0.72rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]"><IconTiers /></span><span>{ctx.bottomHalf ? <><b className="font-semibold text-[#1a1a1a]">Ranks {ctx.rank} of {ctx.total}</b> tracked projects</> : <><b className="font-semibold text-[#1a1a1a]">Top {ctx.topPct}%</b> of {ctx.total} tracked projects</>}</span></p>}
                           <p className="flex items-center gap-2 text-[0.72rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]"><IconShieldCheck /></span><span><b className="font-semibold text-[#1a1a1a]">{p.confidence}</b> confidence · re-scored quarterly</span></p>
                         </div>
                       </div>

@@ -38,7 +38,7 @@ function buildCalls(p: ProjectIntel): Record<ProfileKey, Call> {
   const investor: Call = cagr >= 8
     ? { tone: "buy", short: "Strong buy", head: "Strong buy — with a clock on it.",
         body: `The maths works: a construction-linked entry models a real (cash-flow) return above the ~${cagr}% price CAGR on a ${out && out.absorptionPct >= 98 ? "sold-out, " : ""}${out && out.aheadOfPlan > 0 ? "ahead-of-schedule " : ""}tower. Treat it as buy-and-exit, not hold-forever${supplyRisk ? " — new corridor supply will cap the late-decade premium" : ""}.`,
-        fits: [`Models ~${cagr}% CAGR — and higher XIRR on a staged plan`, out && out.absorptionPct >= 98 ? "Fully absorbed — exit demand is proven" : "Healthy absorption at current velocity", `${p.truthScore} Truth Score — top ${ctx.topPct}% of tracked projects`],
+        fits: [`Models ~${cagr}% CAGR — and higher XIRR on a staged plan`, out && out.absorptionPct >= 98 ? "Fully absorbed — exit demand is proven" : "Healthy absorption at current velocity", `${p.truthScore} Truth Score — ${ctx.bottomHalf ? `ranks ${ctx.rank} of ${ctx.total} tracked projects` : `top ${ctx.topPct}% of tracked projects`}`],
         watch: [supplyRisk ? `Plan the exit: ${supplyRisk.toLowerCase()}` : "Plan your exit window before you enter", legalWatch] }
     : { tone: "consider", short: "Consider", head: "Consider — the return is fair, not exceptional.",
         body: `Modelled at ~${cagr}% CAGR, this compounds respectably but doesn't beat the corridor. Buy it for the asset quality, not for outsized returns.`,

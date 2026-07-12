@@ -274,12 +274,19 @@ export function liveProjectIntel(
   const recommendation = recoMatch ? recoMatch[1].trim() : "Under Review";
 
   const delayPct = row.chancesOfDelayPct ?? row.delayChancePct;
-  const confidence =
-    delayPct != null
-      ? delayPct <= 25 ? "High" : delayPct <= 50 ? "Medium" : "Low"
-      : row.delayRisk
-        ? /low/i.test(row.delayRisk) ? "High" : /high/i.test(row.delayRisk) ? "Low" : "Medium"
-        : "Provisional";
+  /* Confidence = audit coverage: how many of the 17 pipeline-audited inputs
+     are actually on file for this row (the same fields the dedupe's signal()
+     weighs in supabase.ts). Delivery risk is NOT confidence — it has its own
+     home in the Construction section's delay ring. */
+  const auditInputs = [
+    row.locPoiDensity, row.locMetro, row.locRoads, row.latitude,
+    row.constructionProgressPct, row.predictedDeliveryDate, row.reraPromiseDate,
+    row.devTotal, row.devDelivered, row.roiIdealCagr, row.legalHeadline,
+    row.modLegal, row.totalUnits, row.avgCostSqft, row.salesVelocityPct,
+    row.uspCards, row.legalProjectCases,
+  ];
+  const coverage = auditInputs.reduce((n: number, v) => n + (v == null || v === "" ? 0 : 1), 0);
+  const confidence = coverage === 0 ? "Provisional" : coverage >= 13 ? "High" : coverage >= 8 ? "Medium" : "Low";
 
   /* six audited inputs, derived from real pipeline signals only;
      no signal → the neutral middle (the honest NA of a 3-level scale) */

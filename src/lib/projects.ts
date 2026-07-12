@@ -108,6 +108,10 @@ export type ProjectIntel = Project & {
      headline + key flags + as-of date, and the per-category risk breakdown
      (title_disputes → "Title disputes" · Critical/High/Medium/Low). */
   liveLegal?: LiveLegalRead;
+  /* Where this score ranks inside the live tracked set — computed once per
+     build (trackedRankOf) and consumed by rankContext. rank 0 = unscored,
+     the hero context line stays hidden. */
+  trackedRank?: { rank: number; total: number; topPct: number };
 };
 
 export type LegalRiskLevel = "Critical" | "High" | "Medium" | "Moderate" | "Low";
@@ -668,19 +672,39 @@ export function pillars(p: ProjectIntel): Pillar[] {
   ];
 }
 
+/* Build-time: rank a score inside the live tracked set (every scored v3 row).
+   rank 0 = unscored project → the context line stays hidden. The result rides
+   on ProjectIntel.trackedRank so the client components never need the set. */
+export function trackedRankOf(
+  score: number | null | undefined,
+  liveScores: number[],
+): { rank: number; total: number; topPct: number } | undefined {
+  const total = liveScores.length;
+  if (!total) return undefined; // no live set this build → rankContext falls back
+  if (!score || score <= 0) return { rank: 0, total, topPct: 0 };
+  const rank = liveScores.filter((s) => s > score).length + 1;
+  return { rank, total, topPct: Math.max(1, Math.round((rank / total) * 100)) };
+}
+
 /* Where the Truth Score sits vs the tracked set + its corridor —
    the "TripAdvisor context" for the hero seal. */
 export function rankContext(p: ProjectIntel) {
   const all = PROJECT_INTEL; // sorted desc by truthScore
-  /* Pipeline rows aren't members of the flagship set — rank them by score
-     against it (an honest percentile), never a fabricated #0 / "Top 1%". */
   const member = all.findIndex((x) => x.slug === p.slug);
-  const rank = member >= 0 ? member + 1 : all.filter((x) => x.truthScore > p.truthScore).length + 1;
-  const total = member >= 0 ? all.length : all.length + 1;
+  /* Percentile basis is the LIVE tracked set (trackedRank, computed at build
+     from every scored pipeline row) — never the handful of curated dossiers,
+     whose 80+ scores made any pipeline page read "Top 100%". The curated-set
+     math survives only as a fallback for builds with no live data at all. */
+  const tr = p.trackedRank;
+  const rank = tr ? tr.rank : member >= 0 ? member + 1 : all.filter((x) => x.truthScore > p.truthScore).length + 1;
+  const total = tr ? tr.total : member >= 0 ? all.length : all.length + 1;
+  const topPct = tr ? tr.topPct : Math.max(1, Math.round((rank / total) * 100));
   const corridor = all.filter((x) => x.market === p.market);
   const corridorRank = corridor.findIndex((x) => x.slug === p.slug) + 1;
   const corridorAvg = corridor.length ? Math.round(corridor.reduce((s, x) => s + x.truthScore, 0) / corridor.length) : p.truthScore;
-  return { rank, total, corridorRank, corridorCount: corridor.length, corridorAvg, delta: p.truthScore - corridorAvg, topPct: Math.max(1, Math.round((rank / total) * 100)) };
+  /* bottom-half projects switch to plain rank — "Top 76%" is honest math that
+     reads like a typo */
+  return { rank, total, corridorRank, corridorCount: corridor.length, corridorAvg, delta: p.truthScore - corridorAvg, topPct, bottomHalf: topPct > 50 };
 }
 
 /* Delivery outlook — reads the QPR construction data into an "ahead/behind"
