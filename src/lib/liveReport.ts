@@ -447,6 +447,24 @@ export function liveProjectIntel(
       ...(plans ? { plans } : {}),
     };
   });
+  /* Order the tabs small → large by home size. Raw project_configurations rows
+     arrive in DB insertion order (which put a penthouse ahead of the 3.5/4.5
+     BHK). Rank each configuration by its smallest carpet, then order the sizes
+     within a configuration ascending — so regular flats precede the larger
+     penthouses instead of leading with one. ReportHomes renders tabs in this
+     array's first-seen order, so sorting here fixes the tab order with no UI
+     change. */
+  const cfgMinCarpet = new Map<string, number>();
+  for (const h of homes) {
+    const prev = cfgMinCarpet.get(h.config);
+    if (prev == null || h.carpetSqft < prev) cfgMinCarpet.set(h.config, h.carpetSqft);
+  }
+  homes.sort(
+    (a, b) =>
+      (cfgMinCarpet.get(a.config)! - cfgMinCarpet.get(b.config)!) ||
+      (a.carpetSqft - b.carpetSqft) ||
+      (a.superSqft - b.superSqft),
+  );
   const cfgNames = dedupe(homes.map((h) => h.config)).filter((c) => c !== "NA");
 
   const configs = cfgNames.length
