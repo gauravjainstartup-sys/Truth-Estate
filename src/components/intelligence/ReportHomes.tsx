@@ -84,7 +84,7 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
       <div className="overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-white/60">
         <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1.5 border-b border-[#1a1a1a]/8 px-6 py-4">
           <p className="font-serif text-[1.3rem] font-medium">
-            {h.config}{h.variant && <span className="ml-2 align-middle text-[0.82rem] font-normal text-[#1a1a1a]/45">{h.variant}</span>}
+            {h.config}
           </p>
           {h.priceCr > 0 && (
           <p className="text-right">
@@ -183,7 +183,7 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
         <div className="fixed inset-0 z-[140] flex flex-col bg-[#0b1f1a]/90 backdrop-blur-sm" onClick={() => setZoom(false)} role="dialog" aria-modal="true" aria-label="Floor plan — enlarged">
           <div className="flex items-center justify-between gap-4 px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
             <p className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[#B29668]">
-              {h.config}{h.variant ? ` · ${h.variant}` : ""}{activePlan?.label ? ` · ${activePlan.label}` : ""} — Floor plan
+              {h.config}{activePlan?.label ? ` · ${activePlan.label}` : ""} — Floor plan
             </p>
             <button onClick={() => setZoom(false)} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white">✕</button>
           </div>
