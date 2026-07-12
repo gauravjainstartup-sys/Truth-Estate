@@ -208,6 +208,37 @@ async function pdfThumb(buf) {
     globalThis.ImageData ??= napi.ImageData;
     const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
     const { createCanvas } = napi;
+    // Some real brochures hand fill/clip/stroke an object napi-canvas rejects
+    // ("Value is none of these types `String`, `Path`") and one bad path op
+    // kills the whole cover. Skip the op instead — a partially drawn cover
+    // beats none — and name the offending type so the build log can
+    // root-cause it. Patch EVERY context pdf.js draws on: the page context
+    // below plus the internal ones its CanvasFactory makes for patterns,
+    // masks and groups (where the crash actually happens for that brochure).
+    const skipped = new Map();
+    const patchCtx = (ctx) => {
+      for (const m of ["fill", "clip", "stroke", "drawImage"]) {
+        const orig = ctx[m].bind(ctx);
+        ctx[m] = (...a) => {
+          try { return orig(...a); } catch (e) {
+            const t = a.length ? (a[0]?.constructor?.name ?? typeof a[0]) : "no-arg";
+            skipped.set(`${m}(${t})`, (skipped.get(`${m}(${t})`) ?? 0) + 1);
+          }
+        };
+      }
+      return ctx;
+    };
+    // same tiny interface as pdf.js's own (unexported) NodeCanvasFactory
+    class CoverCanvasFactory {
+      constructor(_opts) {}
+      create(width, height) {
+        if (width <= 0 || height <= 0) throw new Error("Invalid canvas size");
+        const canvas = createCanvas(width, height);
+        return { canvas, context: patchCtx(canvas.getContext("2d")) };
+      }
+      reset(cc, width, height) { if (cc.canvas) { cc.canvas.width = width; cc.canvas.height = height; } }
+      destroy(cc) { if (cc.canvas) { cc.canvas.width = 0; cc.canvas.height = 0; cc.canvas = null; cc.context = null; } }
+    }
     const doc = await getDocument({
       data: new Uint8Array(buf),
       // Node has no font-face pipeline — point pdf.js at its bundled standard
@@ -215,6 +246,7 @@ async function pdfThumb(buf) {
       standardFontDataUrl: "node_modules/pdfjs-dist/standard_fonts/",
       disableFontFace: true,
       verbosity: 0,
+      CanvasFactory: CoverCanvasFactory,
     }).promise;
     const page = await doc.getPage(1);
     const base = page.getViewport({ scale: 1 });
@@ -223,21 +255,7 @@ async function pdfThumb(buf) {
     const ctx = canvas.getContext("2d");
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    // Some real brochures hand fill/clip/stroke an object napi-canvas rejects
-    // ("Value is none of these types `String`, `Path`") and the whole cover
-    // dies on one path op. Skip the op instead — a partially drawn cover beats
-    // none — and name the offending type so the build log can root-cause it.
-    const skipped = new Map();
-    for (const m of ["fill", "clip", "stroke"]) {
-      const orig = ctx[m].bind(ctx);
-      ctx[m] = (...a) => {
-        try { return orig(...a); } catch (e) {
-          const t = a.length ? (a[0]?.constructor?.name ?? typeof a[0]) : "no-arg";
-          skipped.set(`${m}(${t})`, (skipped.get(`${m}(${t})`) ?? 0) + 1);
-        }
-      };
-    }
-    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    await page.render({ canvasContext: patchCtx(ctx), viewport: vp }).promise;
     if (skipped.size) console.log(`[materialize] thumb partial: skipped ${[...skipped].map(([k, n]) => `${k}×${n}`).join(" · ")}`);
     return canvas.toBuffer("image/png");
   } catch (e) {
