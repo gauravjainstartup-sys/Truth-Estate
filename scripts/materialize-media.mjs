@@ -223,7 +223,22 @@ async function pdfThumb(buf) {
     const ctx = canvas.getContext("2d");
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Some real brochures hand fill/clip/stroke an object napi-canvas rejects
+    // ("Value is none of these types `String`, `Path`") and the whole cover
+    // dies on one path op. Skip the op instead — a partially drawn cover beats
+    // none — and name the offending type so the build log can root-cause it.
+    const skipped = new Map();
+    for (const m of ["fill", "clip", "stroke"]) {
+      const orig = ctx[m].bind(ctx);
+      ctx[m] = (...a) => {
+        try { return orig(...a); } catch (e) {
+          const t = a.length ? (a[0]?.constructor?.name ?? typeof a[0]) : "no-arg";
+          skipped.set(`${m}(${t})`, (skipped.get(`${m}(${t})`) ?? 0) + 1);
+        }
+      };
+    }
     await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    if (skipped.size) console.log(`[materialize] thumb partial: skipped ${[...skipped].map(([k, n]) => `${k}×${n}`).join(" · ")}`);
     return canvas.toBuffer("image/png");
   } catch (e) {
     // full name+message — the 80-char cut hid exactly which napi type check
