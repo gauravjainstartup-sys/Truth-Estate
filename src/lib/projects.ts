@@ -652,7 +652,7 @@ const round1 = (n: number) => Math.round(n * 10) / 10;
 const ratingBase = (r: FinRating) => (r === "strong" ? 8.3 : r === "moderate" ? 6.8 : 5.0);
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
 
-export const PILLAR_WEIGHTS = { developer: 0.28, construction: 0.22, location: 0.22, legal: 0.18, usps: 0.1 } as const;
+export const PILLAR_WEIGHTS = { developer: 0.25, construction: 0.22, location: 0.26, legal: 0.15, usps: 0.12 } as const;
 
 export function pillars(p: ProjectIntel): Pillar[] {
   const dev = developerOf(p);
