@@ -47,11 +47,6 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
   return <p className="text-[11px] font-medium uppercase tracking-[0.34em] text-[#c9a96e]">{children}</p>;
 }
 
-const recoTone = (r: string) =>
-  r.includes("Strong") ? "border-[#1e6b45]/30 text-[#1e6b45] bg-[#1e6b45]/8"
-  : r === "Buy" ? "border-[#3e8e62]/30 text-[#3e8e62] bg-[#3e8e62]/8"
-  : "border-[#9a7a2e]/30 text-[#9a7a2e] bg-[#c9a96e]/10";
-
 /* Vitals, part 1 — a money fact: the value leads big in the site sans
    (Geist) so the figures read as clean data, not calligraphy; the label
    whispers underneath. */
@@ -575,9 +570,10 @@ export default function ProjectProfile({
                         <span className="font-serif text-[3.2rem] font-normal leading-[0.82] text-[#1e6b45]">{p.truthScore}</span>
                         <span className="ml-1.5 font-mono text-[0.95rem] text-[#1a1a1a]/30">/100</span>
                       </p>
-                      <p className="mt-2 flex items-center gap-2">
+                      <p className="mt-2">
+                        {/* the score's own grade word — the analyst's action call
+                           ('Watchlist' etc.) stays in the Anatomy section + verdict */}
                         <span className="text-[0.62rem] font-bold uppercase tracking-[0.12em] text-[#1e6b45]">{scoreGrade(p.truthScore)}</span>
-                        <span className={`rounded-full border px-2.5 py-0.5 text-[0.6rem] font-semibold ${recoTone(p.recommendation)}`}>{p.recommendation}</span>
                       </p>
                       <div className="mt-2.5 flex w-full gap-[3px]">
                         {Array.from({ length: 10 }).map((_, idx) => (
