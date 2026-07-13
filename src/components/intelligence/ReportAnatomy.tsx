@@ -31,7 +31,8 @@ export default function ReportAnatomy({ p }: { p: ProjectIntel }) {
           <span className="ml-2 font-mono text-[1.2rem] text-[#1a1a1a]/30">/100</span>
         </p>
         <p className="mt-3 text-[0.7rem] font-bold uppercase tracking-[0.12em] text-[#1e6b45]">
-          {grade} · {p.recommendation}{ctx.topPct <= 25 && ` · Top ${ctx.topPct}%`}
+          {/* grade + rank only — the recommendation lives in the verdict, not as a tag here */}
+          {grade}{ctx.topPct <= 25 && ` · Top ${ctx.topPct}%`}
         </p>
         <div className="mx-auto mt-3 flex max-w-[240px] gap-[3px] lg:mx-0">
           {Array.from({ length: 10 }).map((_, idx) => (
