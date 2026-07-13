@@ -685,7 +685,7 @@ towers.forEach(t=>{const h=topH();
   t.lakeFace=(nF[0]*lakeDir[0]+nF[1]*lakeDir[1])>=(nB[0]*lakeDir[0]+nB[1]*lakeDir[1])?[0,1]:[0,-1];
   t.units.forEach(u=>{
     u.cx=(u.x0+u.x1)/2;u.hw2=(u.x1-u.x0)/2;
-    u.primL = u.prim==='lake'?t.lakeFace:[u.end,0];
+    u.primL = t.lakeFace;   // Elan: every unit's living/main deck faces the lagoon (head nose + wing long side), so sun & vastu compute from there
     u.faces = u.end===0 ? [[0,1],[0,-1]] : [[0,1],[0,-1],[u.end,0]];
     u.zhw = u.zhw||t.hd; u.zc = u.nose ? t.lakeFace[1]*(t.hd+u.zhw-1) : 0;
     /* align sun with the founder-confirmed decks: wings face the lagoon (E, morning sun),
@@ -879,22 +879,30 @@ function vastuFor(c){
       reason:'The main door is most auspicious in the NE, N or E (the Ishan–Kuber arc); W and NW are workable; S, SW and SE entries are cautioned and rely on remedies.'}};
   return{s:(overall[c]||{s:3}).s,n:(overall[c]||{n:'Workable with a considered internal layout.'}).n,rooms};
 }
-function plateCfg(t,u){return (u.id==='103'&&t.cfg==='3.5 BHK')?'3.5 BHK|103':t.cfg;}
+function plateCfg(t,u){return u.id==='103' ? t.cfg+'|103' : t.cfg;}
 function vastuRoomScore(roomKey,flatFacing,cfg,endSign){
   const compass8=['N','NE','E','SE','S','SW','W','NW'];
   const idx=Math.max(0,compass8.indexOf(flatFacing));
-  /* Real room offsets in 45° steps from the living/lagoon facade, traced from
-     the sanctioned 4.5 BHK plate (living NW → master N, kitchen W, puja S,
-     bed2 E, jr-master/study S, bathrooms SE). The −wing unit mirrors.
-     PROVISIONAL — the 3.5 BHK plate is now the real T-07/T-08 layout, on the
-     sanctioned plate. Facings from the site plan (North-up). */
+  /* Room offsets in 45° steps clockwise from the unit's lagoon-facing facade
+     (offset 0). Traced from Elan The Presidential's own floor plans (the head
+     '|103' plate + the shared wing plate). The two physical wings mirror via
+     `mir` (endSign); the wing plates below are the +end (east) canonical form —
+     verified: all three configs normalise to the same wing plate, and it
+     reproduces the founder-confirmed north-row directions.
+     HEAD (nose faces lagoon): master AT the nose (0), living opposite (4).
+     WING (long side faces lagoon): a bedroom AT the lagoon (bed2=0), living
+     toward the core, master at the outer tip, kitchen away from the lagoon. */
   const PLATE={
-    /* 4.5 BHK — sanctioned T-02 plate: living NW → master N, kitchen W, bed2 E, jr-master/study S, puja S, baths SE, entrance (lift lobby) SW */
-    '4.5 BHK':{living:0,masterBed:1,kitchen:7,bed2:3,bed3:5,study:5,pooja:5,bathroom:4,entrance:6},
-    /* 3.5 BHK — sanctioned T-07/T-08 plate: living E → master N, kitchen W, bed1 W, bed2 NW, baths SE, entrance (lift lobby) S */
-    '3.5 BHK':{living:0,masterBed:6,kitchen:4,bed2:4,bed3:5,study:5,pooja:2,bathroom:1,entrance:2},
-    /* 3.5 BHK corner unit 103 — its own sanctioned plate (compass: N = page-right): living/deck N, entrance (lift lobby) W, master NE, kitchen SW, bed1 S, bed2 SE, NE toilet (flagged) */
-    '3.5 BHK|103':{living:0,masterBed:1,kitchen:5,bed2:4,bed3:3,study:3,pooja:1,bathroom:1,entrance:6}};
+    /* 3 BHK head — living N, master S(lagoon), kitchen NE, bed1 NW, bed2 SE, puja/entrance N, bath SW (for a south-facing north-row tower) */
+    '3 BHK|103':{living:4,masterBed:0,kitchen:5,bed2:3,bed3:7,study:5,pooja:4,bathroom:1,entrance:4},
+    /* 4 BHK head — living N, master S, kitchen W, bed1 E, bed2 SW, multipurpose/study NE, puja/entrance N */
+    '4 BHK|103':{living:4,masterBed:0,kitchen:2,bed2:6,bed3:1,study:5,pooja:4,bathroom:1,entrance:4},
+    /* 5 BHK head — master at nose, living opposite, kitchen SE, beds NW/NE/SW, puja/entrance by the core */
+    '5 BHK|103':{living:4,masterBed:0,kitchen:3,bed2:7,bed3:1,study:5,pooja:4,bathroom:6,entrance:4},
+    /* Wing (shared, +end canonical) — bedroom at the lagoon (bed2=0), living toward core (2), master at tip (6), kitchen away (4), puja NE(3), entrance by core (2), bath at far corner (7) */
+    '3 BHK':{living:2,masterBed:6,kitchen:4,bed2:0,bed3:5,study:1,pooja:3,bathroom:7,entrance:2},
+    '4 BHK':{living:2,masterBed:6,kitchen:4,bed2:0,bed3:5,study:1,pooja:3,bathroom:7,entrance:2},
+    '5 BHK':{living:2,masterBed:6,kitchen:4,bed2:0,bed3:5,study:1,pooja:3,bathroom:7,entrance:2}};
   const GEN={kitchen:2,masterBed:4,bed2:5,bed3:3,living:0,bathroom:2,pooja:-1,study:3};
   const tbl=PLATE[cfg];let off;
   if(tbl){const mir=(endSign<0)?-1:1;off=((((tbl[roomKey]||0)*mir)%8)+8)%8;}
