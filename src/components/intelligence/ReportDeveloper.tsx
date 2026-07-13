@@ -71,6 +71,20 @@ export default function ReportDeveloper({ p }: { p: ProjectIntel }) {
   const chipLabel = gradeWord ? cap(rawVerdict) : LABEL[perfBand];
   const assessment = gradeWord || rawVerdict.length === 0 ? composeAssessment(perf, lapsed) : cap(rawVerdict);
 
+  // Part B · financial audit — an overall band from the metric grades, and an
+  // assessment sentence: the developer's own note where it's real prose, else
+  // one composed from how the balance-sheet lines score.
+  const BAND_SCORE: Record<Band, number> = { exceptional: 4, strong: 3, moderate: 2, watch: 1 };
+  const finBands = FIN_METRICS.map((f) => dev.finBand?.[f.key] ?? fromRating(dev.financials[f.key]));
+  const finAvg = finBands.length ? finBands.reduce((a, b) => a + BAND_SCORE[b], 0) / finBands.length : 2;
+  const finBand: Band = finAvg >= 3.5 ? "exceptional" : finAvg >= 2.6 ? "strong" : finAvg >= 1.8 ? "moderate" : "watch";
+  const finStrong = finBands.filter((b) => b === "exceptional" || b === "strong").length;
+  const finRaw = (dev.finNote ?? "").trim();
+  const finProse = finRaw.split(/\s+/).length > 2 && !/scoring pipeline|financial band from filings/i.test(finRaw);
+  const finSentence = finProse
+    ? cap(finRaw)
+    : `${finStrong} of ${finBands.length} balance-sheet metric${finBands.length === 1 ? "" : "s"} score strong or better${finBand === "watch" ? ", with real strain in the weaker lines" : ""}. ${finBand === "exceptional" || finBand === "strong" ? "Well-capitalised to finish construction from its own resources." : finBand === "moderate" ? "Adequately placed to reach handover — worth monitoring." : "Balance-sheet strain worth watching before you commit."}`;
+
   return (
     <div className="mt-8">
       {/* ── Part A · track record ── */}
@@ -135,6 +149,12 @@ export default function ReportDeveloper({ p }: { p: ProjectIntel }) {
         <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">The numbers behind whether the money actually reaches handover.</p>
       </div>
 
+      <div className="mt-6 rounded-2xl border-l-2 border-[#1e6b45]/40 bg-white/50 p-6 md:p-7">
+        <p className="text-[0.62rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/40">Analyst assessment</p>
+        <div className="mt-2.5"><BandChip band={finBand} /></div>
+        <p className="mt-3 font-serif text-[1.2rem] leading-[1.45] md:text-[1.3rem]">{finSentence}</p>
+      </div>
+
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {FIN_METRICS.map((f) => {
           const band = dev.finBand?.[f.key] ?? fromRating(dev.financials[f.key]);
@@ -153,7 +173,6 @@ export default function ReportDeveloper({ p }: { p: ProjectIntel }) {
           );
         })}
       </div>
-      <p className="mt-4 text-[0.8rem] font-light leading-[1.65] text-[#1a1a1a]/55">{dev.finNote}</p>
       <p className="mt-5 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">Sources: {dev.listed ? "audited annual & quarterly financial reports" : "MCA-filed financial statements"} · Haryana RERA track record. Independent read — not supplied by the developer.</p>
     </div>
   );
