@@ -248,7 +248,7 @@ export default function ProjectProfile({
 
   const dev = developerOf(p);
   const market = marketOf(p);
-  // Pillar II mounts for a curated market dossier OR live location data —
+  // Pillar III mounts for a curated market dossier OR live location data —
   // the live radar/POI section is fully self-contained (ReportLocation
   // reads none of the static market fields)
   const locIntel = !!market || !!p.ops?.location;
@@ -277,8 +277,8 @@ export default function ProjectProfile({
     { id: "documents", label: "Brochure & payment plan", show: true },
     { id: "anatomy", label: "Truth Score anatomy", show: true },
     { id: "developer", label: "Developer DNA", show: !!dev },
-    { id: "location", label: "Location intelligence", show: locIntel },
     { id: "construction", label: "Construction & sales", show: !!con },
+    { id: "location", label: "Location intelligence", show: locIntel },
     { id: "legal", label: "Legal & compliance", show: true },
     { id: "usps", label: "Project USPs", show: usps.length > 0 },
     { id: "roi", label: "Price & returns", show: !!roi },
@@ -771,7 +771,7 @@ export default function ProjectProfile({
                 <Source>{ops?.media?.brochure || ops?.media?.brochurePdf || ops?.media?.paymentPlan || ops?.media?.paymentPlanPdf ? "Developer documents on file — indicative until countersigned." : "Documents arrive as the desk sources them — indicative until countersigned."} GST, PLC, IFMS &amp; registration additional as applicable.</Source>
               </Section>
 
-            <Chapter n="II" title="Can we trust it?" framing="Five pillars — developer, build, paperwork, location, edge." />
+            <Chapter n="II" title="Can we trust it?" framing="Five pillars — developer, build, location, paperwork, edge." />
 
             {/* Truth Score anatomy — the composition spine */}
             <div id="anatomy" className="scroll-mt-24">
@@ -785,17 +785,17 @@ export default function ProjectProfile({
               </div>
             )}
 
-            {/* Pillar II · Location Intelligence */}
-            {locIntel && (
-              <div id="location" className="mt-16 scroll-mt-24 border-t border-[#1a1a1a]/8 pt-12 md:mt-20">
-                <ReportLocation p={p} />
-              </div>
-            )}
-
-            {/* Pillar III · Construction & Sales */}
+            {/* Pillar II · Construction & Sales */}
             {con && (
               <div id="construction" className="mt-16 scroll-mt-24 border-t border-[#1a1a1a]/8 pt-12 md:mt-20">
                 <ReportConstruction p={p} />
+              </div>
+            )}
+
+            {/* Pillar III · Location Intelligence */}
+            {locIntel && (
+              <div id="location" className="mt-16 scroll-mt-24 border-t border-[#1a1a1a]/8 pt-12 md:mt-20">
+                <ReportLocation p={p} />
               </div>
             )}
 

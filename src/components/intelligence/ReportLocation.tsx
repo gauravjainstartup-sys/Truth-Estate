@@ -19,7 +19,7 @@ function BandChip({ band }: { band: Band }) {
   );
 }
 
-/* Chapter II · Pillar II — Location Intelligence. When a project carries rich
+/* Chapter II · Pillar III — Location Intelligence. When a project carries rich
    geo data we lead with a coordinate-accurate interactive map, a connectivity
    readout with real distances & travel times, a category-score breakdown and
    the analyst's strengths/gaps. Projects not yet migrated fall back to the
@@ -34,7 +34,7 @@ export default function ReportLocation({ p }: { p: ProjectIntel }) {
     <div className="mt-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Pillar II · Location Intelligence</p>
+          <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Pillar III · Location Intelligence</p>
           <h3 className="mt-2 font-serif text-[1.7rem] font-medium leading-tight md:text-[2rem]">Will this address still be winning in 2035?</h3>
           <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">What&apos;s here today, what&apos;s funded and coming, and how you get around.</p>
         </div>
