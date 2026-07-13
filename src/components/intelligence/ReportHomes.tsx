@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fmtPsf, type ProjectIntel } from "@/lib/projects";
+import type { ProjectIntel } from "@/lib/projects";
 import ZoomStage from "./ZoomStage";
 
 /* Chapter I — the homes. One plan on screen at a time: BHK tabs pick the
@@ -24,6 +24,12 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
     if (!groups[hh.config]) { groups[hh.config] = []; order.push(hh.config); }
     groups[hh.config].push(hh);
   }
+  // tab order — plain BHKs first (ascending by BHK count), then the penthouses /
+  // duplex penthouses (also ascending). "Penthouse"/"Duplex" anywhere in the
+  // config name drops it to the second group.
+  const isPenthouse = (c: string) => /penthouse|duplex/i.test(c);
+  const bhkCount = (c: string) => { const m = c.match(/\d+(?:\.\d+)?/); return m ? parseFloat(m[0]) : 99; };
+  order.sort((a, b) => (isPenthouse(a) ? 1 : 0) - (isPenthouse(b) ? 1 : 0) || bhkCount(a) - bhkCount(b));
 
   const [tab, setTab] = useState(order[0] ?? "");
   const [vIdx, setVIdx] = useState(0);
@@ -53,7 +59,15 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
 
   const eff = Math.round((h.carpetSqft / h.superSqft) * 100);
   const loading = 100 - eff;
-  const psfOnSuper = Math.round((h.priceCr * 1e7) / h.superSqft / 100) * 100;
+  // the unit's cost as a clean ~figure: super area × the project's own filed avg
+  // psf (p.psf.avg). Falls back to a per-config ticket only if no psf is on file.
+  const psfAvg = p.psf?.avg ?? null;
+  const approxCr = (superSqft: number, ticketCr: number): string | null => {
+    const cr = psfAvg ? (psfAvg * superSqft) / 1e7 : ticketCr > 0 ? ticketCr : null;
+    if (cr == null) return null;
+    const r = Math.round(cr * 2) / 2; // nearest 0.5 Cr
+    return `~${Number.isInteger(r) ? r : r.toFixed(1)} Cr`;
+  };
   const beds = h.beds ?? (parseInt(h.config, 10) || 3);
   const effRead =
     eff >= 72 ? { grade: "Strong", tone: "#1e6b45", note: "well above the segment norm — you keep more of what you pay for." }
@@ -86,38 +100,34 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
           <p className="font-serif text-[1.3rem] font-medium">
             {h.config}
           </p>
-          {h.priceCr > 0 && (
-          <p className="text-right">
-            <span className="font-mono text-[1.05rem] font-semibold">₹{h.priceCr} Cr</span>
-            <span className="ml-2 text-[0.68rem] font-light text-[#1a1a1a]/45">≈ {fmtPsf(psfOnSuper)}/sqft on super</span>
-          </p>
-          )}
+          {/* the unit's ~price rides on the size chips below, not here */}
         </div>
 
-        {/* ── size picker (segmented cards — only when the BHK has >1 size) ── */}
-        {variants.length > 1 && (
-          <div className="border-b border-[#1a1a1a]/8 bg-[#FBF8F2] px-6 py-4">
-            <p className="mb-2.5 text-[0.6rem] font-semibold uppercase tracking-[0.14em] text-[#1a1a1a]/40">Choose a size · {variants.length} options</p>
-            <div className="flex flex-wrap gap-2">
-              {variants.map((v, idx) => {
-                const on = idx === i;
-                const psf = Math.round((v.priceCr * 1e7) / v.superSqft / 100) * 100;
-                return (
-                  <button key={idx} onClick={() => { setVIdx(idx); setPlanIdx(0); setImgErr(false); }}
-                    className={`min-w-[112px] flex-1 rounded-xl border px-4 py-2.5 text-left transition-colors sm:flex-none ${on ? "border-[#9a7a2e] bg-[#9a7a2e]/[0.09] shadow-[0_0_0_1px_#9a7a2e]" : "border-[#1a1a1a]/12 bg-white hover:border-[#1a1a1a]/30"}`}>
-                    <span className={`block text-[0.82rem] font-semibold ${on ? "text-[#7a5f1e]" : "text-[#1a1a1a]/75"}`}>{v.variant ?? `Size ${idx + 1}`}</span>
-                    <span className="mt-0.5 block font-mono text-[0.68rem] text-[#1a1a1a]/50">{psf > 0 ? <>{v.superSqft.toLocaleString("en-IN")} sq ft · {fmtPsf(psf)}</> : <>{v.superSqft.toLocaleString("en-IN")} sq ft</>}</span>
-                  </button>
-                );
-              })}
-            </div>
+        {/* ── size picker (segmented cards) — the unit's ~price rides on each
+           chip; single-size configs still render the one chip so the price has
+           a home ── */}
+        <div className="border-b border-[#1a1a1a]/8 bg-[#FBF8F2] px-6 py-4">
+          <p className="mb-2.5 text-[0.6rem] font-semibold uppercase tracking-[0.14em] text-[#1a1a1a]/40">{variants.length > 1 ? `Choose a size · ${variants.length} options` : "The home"}</p>
+          <div className="flex flex-wrap gap-2">
+            {variants.map((v, idx) => {
+              const on = idx === i;
+              const price = approxCr(v.superSqft, v.priceCr);
+              return (
+                <button key={idx} onClick={() => { setVIdx(idx); setPlanIdx(0); setImgErr(false); }}
+                  className={`min-w-[112px] flex-1 rounded-xl border px-4 py-2.5 text-left transition-colors sm:flex-none ${on ? "border-[#9a7a2e] bg-[#9a7a2e]/[0.09] shadow-[0_0_0_1px_#9a7a2e]" : "border-[#1a1a1a]/12 bg-white hover:border-[#1a1a1a]/30"}`}>
+                  <span className={`block text-[0.82rem] font-semibold ${on ? "text-[#7a5f1e]" : "text-[#1a1a1a]/75"}`}>{v.variant ?? `Size ${idx + 1}`}</span>
+                  <span className="mt-0.5 block font-mono text-[0.68rem] text-[#1a1a1a]/50">{v.superSqft.toLocaleString("en-IN")} sq ft</span>
+                  {price && <span className={`mt-1 block font-mono text-[0.98rem] font-semibold ${on ? "text-[#7a5f1e]" : "text-[#1a1a1a]"}`}>{price}</span>}
+                </button>
+              );
+            })}
           </div>
-        )}
+        </div>
 
         <div className="grid gap-5 p-6 lg:grid-cols-[1.2fr_1fr]">
           {/* ── the 2D plan — the image is the click target, enlarge affordance
              in the corner; same pattern as the masterplan ── */}
-          <div>
+          <div className="lg:flex lg:flex-col">
             {/* level / plan toggle — only when the unit carries more than one plan
                (e.g. a duplex's lower + upper floor) */}
             {plans.length > 1 && (
@@ -130,10 +140,12 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
                 ))}
               </div>
             )}
+            {/* the plan fills the column so it matches the measured panel's
+               height on desktop; contain-fit centres it on the cream ground */}
             <button type="button" onClick={() => setZoom(true)} aria-label="Enlarge the floor plan"
-              className="group relative block w-full cursor-zoom-in overflow-hidden rounded-xl border border-[#1a1a1a]/10 bg-[#FBF8F2] text-left">
+              className="group relative block w-full cursor-zoom-in overflow-hidden rounded-xl border border-[#1a1a1a]/10 bg-[#FBF8F2] text-left lg:min-h-0 lg:flex-1">
               {activePlan && !imgErr ? (
-                <img loading="lazy" src={asset(activePlan.src)} onError={() => setImgErr(true)} alt={`${h.config} ${activePlan.label || h.variant || ""} floor plan — ${p.name}`} className="block w-full transition-transform duration-500 group-hover:scale-[1.02]" />
+                <img loading="lazy" src={asset(activePlan.src)} onError={() => setImgErr(true)} alt={`${h.config} ${activePlan.label || h.variant || ""} floor plan — ${p.name}`} className="block w-full transition-transform duration-500 group-hover:scale-[1.02] lg:h-full lg:object-contain" />
               ) : (
                 <FloorPlanSchematic beds={beds} balcony={h.balconySqft != null} />
               )}
