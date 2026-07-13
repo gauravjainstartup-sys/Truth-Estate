@@ -21,6 +21,13 @@
   .sun input{width:104px;accent-color:#e0b062}
   .room{position:fixed;left:50%;transform:translateX(-50%);bottom:76px;pointer-events:none;color:#fff;font-family:'Playfair Display',Georgia,serif;font-size:1.5rem;font-weight:600;text-shadow:0 2px 14px rgba(0,0,0,.5);opacity:0;transition:opacity .4s;z-index:5}
   .hint{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;color:#fff;background:rgba(20,24,28,.55);backdrop-filter:blur(6px);padding:12px 18px;border-radius:12px;font-size:.82rem;font-weight:500;text-align:center;opacity:0;transition:opacity .3s;z-index:6}
+  .mmap{position:fixed;top:14px;right:14px;z-index:6;width:196px;background:rgba(250,248,244,.9);backdrop-filter:blur(10px);border-radius:13px;padding:9px 9px 7px;box-shadow:0 8px 28px rgba(0,0,0,.25);pointer-events:auto}
+  .mmap canvas{display:block;width:178px;height:200px;border-radius:7px;cursor:pointer}
+  .mmcap{margin-top:6px;text-align:center;font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#1a1a1a;line-height:1.2}
+  .mmcap b{color:#8a6a1e}
+  .mmcap .sm{display:block;font-weight:400;letter-spacing:.01em;text-transform:none;font-size:.6rem;color:rgba(26,26,26,.5);margin-top:3px}
+  .fade{position:fixed;inset:0;background:#12140f;opacity:0;pointer-events:none;transition:opacity .17s ease;z-index:7}
+  @media(max-width:560px){.mmap{width:150px;top:10px;right:10px;padding:7px}.mmap canvas{width:136px;height:153px}.top{padding-right:172px}}
   .load{position:fixed;inset:0;background:#e9e3d8;display:flex;align-items:center;justify-content:center;z-index:10;transition:opacity .6s;color:#5b5346;font-size:.8rem;letter-spacing:.15em;text-transform:uppercase;font-weight:600}
   /* mobile joysticks */
   .stick{position:fixed;bottom:96px;width:104px;height:104px;border-radius:999px;border:1.5px solid rgba(255,255,255,.35);background:rgba(255,255,255,.06);z-index:5;display:none}
@@ -31,10 +38,11 @@
 <canvas id="c"></canvas>
 <div class="ui top">
   <div class="brand"><div class="ey">Truth Estate · Unit Intelligence</div><h1>Elan The Presidential — 3 BHK · Head</h1><div class="sub">2,340 sq ft · walk the actual layout, in real daylight</div></div>
-  <div class="chip"><span class="d"></span> Layout to RERA plan · finishes indicative</div>
 </div>
+<div class="mmap" id="mmap"><canvas id="mmc" width="178" height="200"></canvas><div class="mmcap" id="mmcap">Foyer<span class="sm">tap a room to go there</span></div></div>
 <div class="room" id="roomLbl"></div>
 <div class="hint" id="hint"></div>
+<div class="fade" id="fade"></div>
 <div class="ui dock"><div class="dockin">
   <button class="btn on" id="bOrbit"><span class="i">⟲</span> Orbit</button>
   <button class="btn" id="bWalk"><span class="i">🚶</span> Walk</button>
@@ -137,7 +145,7 @@ const IW=11.25, ID=13.25;                 // interior envelope
 const DECK=1.8;
 const cx=IW/2, cz=ID/2;                    // unit center (for centering)
 // walkable colliders (wall AABBs), filled by seg()
-const COL=[];
+const COL=[], SEGS=[];
 function pushCol(x1,z1,x2,z2){COL.push([Math.min(x1,x2)-cx,Math.min(z1,z2)-cz,Math.max(x1,x2)-cx,Math.max(z1,z2)-cz]);}
 // a wall segment from A to B; opts: glass, doors:[[s,e]], header(add lintel over door)
 function seg(ax,az,bx,bz,o={}){
@@ -152,9 +160,11 @@ function seg(ax,az,bx,bz,o={}){
     const mxpx=ax+ux*(s0+L/2)-cx, mzpz=az+uz*(s0+L/2)-cz;
     const ang=-Math.atan2(uz,ux);
     const m=new T.Mesh(new T.BoxGeometry(L,h,th),mat);m.position.set(mxpx,h/2,mzpz);m.rotation.y=ang;m.castShadow=!o.glass;m.receiveShadow=true;root.add(m);
-    // collider (approx AABB from segment ends + thickness)
+    // collider: pad only ACROSS wall thickness (never along its length, or doorways close up)
     const p1x=ax+ux*s0,p1z=az+uz*s0,p2x=ax+ux*s1,p2z=az+uz*s1;
-    pushCol(Math.min(p1x,p2x)-th,Math.min(p1z,p2z)-th,Math.max(p1x,p2x)+th,Math.max(p1z,p2z)+th);
+    const hz=Math.abs(p2x-p1x)>=Math.abs(p2z-p1z),padx=hz?0.02:th,padz=hz?th:0.02;
+    pushCol(Math.min(p1x,p2x)-padx,Math.min(p1z,p2z)-padz,Math.max(p1x,p2x)+padx,Math.max(p1z,p2z)+padz);
+    SEGS.push([p1x,p1z,p2x,p2z,o.glass?1:0]); // for the 2D minimap
   });
   if(o.glass){ // mullions
     const nm=Math.max(1,Math.round(len/1.6));
@@ -186,17 +196,33 @@ seg(IW,9.6, IW,ID);                                             // east lower
 seg(IW,ID, 7.9,ID);                                            // south right solid
 seg(7.9,ID, 2.5,ID, {glass:true, doors:[[2.4,3.6]]});         // south — master glazing + slider
 seg(2.5,ID, 0,ID);                                            // south left solid
-seg(0,ID, 0,2.3, {glass:true, doors:[[6.0,7.0]]});          // west — living/bed glazing + slider to deck
+seg(0,ID, 0,2.3, {glass:true, doors:[[5.6,7.0]]});          // west — living/bed glazing + slider to deck
 seg(0,2.3, 0,0);                                            // west upper solid
 // ---- interior partitions ----
-seg(0,6.25, IW,6.25, {doors:[[1.4,2.1],[4.7,6.5],[8.7,9.4]]});  // living/dining | bedrooms band
-seg(3.95,6.25, 3.95,9.6, {doors:[[2.0,2.8]]});                  // bed01 east
+seg(0,6.25, IW,6.25, {doors:[[1.2,2.4],[4.5,6.6],[8.4,9.6]]});  // living/dining | bedrooms band
+seg(3.95,6.25, 3.95,9.6, {doors:[[1.8,3.0]]});                  // bed01 east
 seg(0,9.6, 3.95,9.6);                                          // bed01 south
-seg(7.3,6.25, 7.3,9.6, {doors:[[2.0,2.8]]});                   // bed02 west
+seg(7.3,6.25, 7.3,9.6, {doors:[[1.8,3.0]]});                   // bed02 west
 seg(7.3,9.6, IW,9.6);                                         // bed02 south
 seg(2.5,9.6, 2.5,ID);                                        // master west
 seg(7.9,9.6, 7.9,ID);                                       // master east
-seg(2.5,9.6, 7.9,9.6, {doors:[[2.4,3.2]]});                // master north
+seg(2.5,9.6, 7.9,9.6, {doors:[[2.2,3.5]]});                // master north
+
+// rooms: rect in plan coords [x0,z0,x1,z1] + a "stand here" viewpoint [x,z,yaw,pitch]
+const ROOMS=[
+  {n:'Foyer',      r:[3.9,0,6.4,2.3],       v:[5.2,1.4,0.15,-0.02]},
+  {n:'Living',     r:[0,2.3,4.6,6.25],      v:[4.1,4.5,-Math.PI/2-0.05,-0.05]},
+  {n:'Dining',     r:[4.6,2.3,7.3,6.25],    v:[6.1,5.2,-0.55,-0.05]},
+  {n:'Kitchen',    r:[7.3,2.3,11.25,6.25],  v:[8.9,6.0,Math.PI,-0.06]},
+  {n:'Bedroom 01', r:[0,6.25,3.95,9.6],     v:[3.4,8.7,-Math.PI/2-0.25,-0.05]},
+  {n:'Bedroom 02', r:[7.3,6.25,11.25,9.6],  v:[9.6,9.2,Math.PI,-0.05]},
+  {n:'Master',     r:[2.5,9.6,7.9,13.25],   v:[3.7,10.3,0.2,-0.07]},
+];
+function roomAt(px,pz){for(const rm of ROOMS){const r=rm.r;if(px>=r[0]&&px<=r[2]&&pz>=r[1]&&pz<=r[3])return rm;}return null;}
+// outer safety bounds so you can never walk off the floor plate (centered coords, no mesh)
+(function(){const bt=0.4,x0=-cx-DECK,x1=cx,z0=-cz,z1=cz+DECK;
+  COL.push([x0-bt,z0-bt,x1+bt,z0]);COL.push([x0-bt,z1,x1+bt,z1+bt]);
+  COL.push([x0-bt,z0,x0,z1]);COL.push([x1,z0,x1+bt,z1]);})();
 
 /* ============ furniture kit ============ */
 const F=(x,z)=>({x:x-cx,z:z-cz});
@@ -293,21 +319,23 @@ lounger(3.0,14.1,0); planter(6.5,14.1,2.0); plant(1.0,14.1,true);
 
 /* ============ camera control: orbit + walk ============ */
 let mode='orbit';
-const orbit={az:-0.7,pol:0.98,rad:15,tgt:new T.Vector3(0,1.2,0)};
-const walk={x:0,z:2.0,yaw:Math.PI,pitch:0,eye:1.62};
+let touring=false, tourBaseYaw=0, tourI=0, tourTimer=null, tourT0=0;
+const orbit={az:-0.7,pol:0.9,rad:16,tgt:new T.Vector3(0,1.1,0)};
+const walk={x:5.2-cx,z:1.4-cz,yaw:0.15,pitch:-0.02,eye:1.62};
 function applyOrbit(){const o=orbit;camera.position.set(o.tgt.x+o.rad*Math.sin(o.pol)*Math.cos(o.az),o.tgt.y+o.rad*Math.cos(o.pol),o.tgt.z+o.rad*Math.sin(o.pol)*Math.sin(o.az));camera.lookAt(o.tgt);}
-function applyWalk(){camera.position.set(walk.x,walk.eye,walk.z);const dz=Math.cos(walk.yaw),dx=Math.sin(walk.yaw);camera.lookAt(walk.x+dx*Math.cos(walk.pitch),walk.eye+Math.sin(walk.pitch),walk.z+dz*Math.cos(walk.pitch));}
-function collide(nx,nz){const r=0.26;for(const c of COL){const px=Math.max(c[0],Math.min(nx,c[2])),pz=Math.max(c[1],Math.min(nz,c[3]));const dx=nx-px,dz=nz-pz;if(dx*dx+dz*dz<r*r){/*blocked*/return true;}}return false;}
-function move(fwd,strafe,dt){const sp=2.6*dt;let nx=walk.x+ (Math.sin(walk.yaw)*fwd+Math.cos(walk.yaw)*strafe)*sp;let nz=walk.z+(Math.cos(walk.yaw)*fwd-Math.sin(walk.yaw)*strafe)*sp;
-  if(!collide(nx,walk.z))walk.x=nx; if(!collide(walk.x,nz))walk.z=nz;}
+function applyWalk(){const c=Math.cos(walk.pitch);camera.position.set(walk.x,walk.eye,walk.z);camera.lookAt(walk.x+Math.sin(walk.yaw)*c,walk.eye+Math.sin(walk.pitch),walk.z+Math.cos(walk.yaw)*c);}
+function collide(nx,nz){const r=0.25;for(const c of COL){const px=Math.max(c[0],Math.min(nx,c[2])),pz=Math.max(c[1],Math.min(nz,c[3]));const dx=nx-px,dz=nz-pz;if(dx*dx+dz*dz<r*r)return true;}return false;}
+function move(fwd,strafe,dt){const sp=2.4*dt;const nx=walk.x+(Math.sin(walk.yaw)*fwd+Math.cos(walk.yaw)*strafe)*sp,nz=walk.z+(Math.cos(walk.yaw)*fwd-Math.sin(walk.yaw)*strafe)*sp;
+  if(!collide(nx,walk.z))walk.x=nx;if(!collide(walk.x,nz))walk.z=nz;}
 
-/* input */
+/* input — drag to look (no pointer-lock, so the minimap stays tappable) */
 const cvs=renderer.domElement;let drag=false,lx=0,ly=0;
-cvs.addEventListener('pointerdown',e=>{if(mode==='orbit'){drag=true;lx=e.clientX;ly=e.clientY;}});
-addEventListener('pointerup',()=>drag=false);
-addEventListener('pointermove',e=>{if(mode==='orbit'&&drag){orbit.az-=(e.clientX-lx)*0.005;orbit.pol=Math.max(0.25,Math.min(1.45,orbit.pol-(e.clientY-ly)*0.005));lx=e.clientX;ly=e.clientY;}
-  else if(mode==='walk'&&document.pointerLockElement===cvs){walk.yaw-=e.movementX*0.0024;walk.pitch=Math.max(-0.9,Math.min(0.9,walk.pitch-e.movementY*0.0024));}});
-cvs.addEventListener('wheel',e=>{if(mode==='orbit'){orbit.rad=Math.max(5,Math.min(30,orbit.rad+e.deltaY*0.01));}e.preventDefault();},{passive:false});
+cvs.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;cvs.setPointerCapture&&cvs.setPointerCapture(e.pointerId);});
+cvs.addEventListener('pointerup',()=>{drag=false;});
+cvs.addEventListener('pointermove',e=>{if(!drag)return;const mx=e.clientX-lx,my=e.clientY-ly;lx=e.clientX;ly=e.clientY;
+  if(mode==='orbit'){orbit.az-=mx*0.006;orbit.pol=Math.max(0.22,Math.min(1.45,orbit.pol-my*0.006));}
+  else{stopTour();walk.yaw-=mx*0.006;walk.pitch=Math.max(-0.85,Math.min(0.85,walk.pitch-my*0.006));}});
+cvs.addEventListener('wheel',e=>{if(mode==='orbit')orbit.rad=Math.max(6,Math.min(30,orbit.rad+e.deltaY*0.01));e.preventDefault();},{passive:false});
 const keys={};addEventListener('keydown',e=>keys[e.code]=true);addEventListener('keyup',e=>keys[e.code]=false);
 // mobile sticks
 const sticks={L:{el:document.getElementById('sL'),x:0,y:0,id:null},R:{el:document.getElementById('sR'),x:0,y:0,id:null}};
@@ -318,14 +346,20 @@ function stickEnd(k,e){const s=sticks[k];if(s.id===e.pointerId){s.id=null;s.x=s.
 
 /* mode switch */
 const bO=document.getElementById('bOrbit'),bW=document.getElementById('bWalk'),bT=document.getElementById('bTour');
-function setMode(m){mode=m;bO.classList.toggle('on',m==='orbit');bW.classList.toggle('on',m==='walk');
-  const mob=matchMedia('(pointer:coarse)').matches;document.getElementById('sL').style.display=(m==='walk'&&mob)?'block':'none';document.getElementById('sR').style.display=(m==='walk'&&mob)?'block':'none';
-  if(m==='walk'){showHint(mob?'Left stick move · right stick look':'Click to look · W A S D to move · Esc to exit');if(!mob)cvs.requestPointerLock&&cvs.requestPointerLock();}
-}
-bO.onclick=()=>setMode('orbit');bW.onclick=()=>{setMode('walk');};
-cvs.addEventListener('click',()=>{if(mode==='walk'&&!matchMedia('(pointer:coarse)').matches&&document.pointerLockElement!==cvs)cvs.requestPointerLock&&cvs.requestPointerLock();});
-document.addEventListener('pointerlockchange',()=>{});
-function showHint(t){const h=document.getElementById('hint');h.textContent=t;h.style.opacity=1;clearTimeout(showHint._t);showHint._t=setTimeout(()=>h.style.opacity=0,2600);}
+function setMode(m){mode=m;bO.classList.toggle('on',m==='orbit');bW.classList.toggle('on',m==='walk'||touring);
+  const mob=matchMedia('(pointer:coarse)').matches;
+  document.getElementById('sL').style.display=(m==='walk'&&!touring&&mob)?'block':'none';document.getElementById('sR').style.display=(m==='walk'&&!touring&&mob)?'block':'none';}
+bO.onclick=()=>{stopTour();setMode('orbit');};
+bW.onclick=()=>{stopTour();setMode('walk');goRoom(ROOMS[0],false);showHint(matchMedia('(pointer:coarse)').matches?'You start at the front door · drag to look · left stick to move · tap a room on the map to jump':'You start at the front door · drag to look · W A S D to move · tap a room on the map to jump');};
+function showHint(t){const h=document.getElementById('hint');h.textContent=t;h.style.opacity=1;clearTimeout(showHint._t);showHint._t=setTimeout(()=>h.style.opacity=0,3600);}
+
+/* room label + teleport with a quick fade */
+const fadeEl=document.getElementById('fade');
+function setRoom(n){const r=document.getElementById('roomLbl');r.textContent=n||'';r.style.opacity=n?1:0;}
+function goRoom(rm,fade){if(!rm)return;mode='walk';bO.classList.remove('on');bW.classList.add('on');
+  const apply=()=>{walk.x=rm.v[0]-cx;walk.z=rm.v[1]-cz;walk.yaw=rm.v[2];walk.pitch=rm.v[3];tourBaseYaw=rm.v[2];applyWalk();};
+  if(fade===false){apply();return;}
+  fadeEl.style.opacity=1;setTimeout(()=>{apply();fadeEl.style.opacity=0;},165);}
 
 /* sun slider */
 const sunEl=document.getElementById('sun'),sunT=document.getElementById('sunT');
@@ -333,51 +367,67 @@ function fmtT(h){const hh=Math.floor(h),mm=h%1?'30':'00';const ap=hh<12?'am':'pm
 sunEl.oninput=()=>{sunAngle=parseFloat(sunEl.value);sunT.textContent=fmtT(sunAngle);placeSun();applySky();};
 sunT.textContent=fmtT(sunAngle);
 
-/* guided tour */
-const TOUR=[
-  {p:[0,2.1,cz*0-cz+2.0],t:'Entrance'},
-];
-let touring=false,tourT=0,tourSeq=[];
-function buildTour(){ // eye-level waypoints through rooms (centered coords)
-  const w=[
-    {pos:[4.6-cx,1.62,0.6-cz],look:[3-cx,1.4,5-cz],name:'Foyer'},
-    {pos:[3.2-cx,1.62,4.6-cz],look:[0-cx,1.4,4.3-cz],name:'Living'},
-    {pos:[5.6-cx,1.62,4.0-cz],look:[9-cx,1.4,4.4-cz],name:'Dining & Kitchen'},
-    {pos:[2.0-cx,1.62,8.0-cz],look:[1.9-cx,1.4,6.3-cz],name:'Bedroom 01'},
-    {pos:[9.0-cx,1.62,8.0-cz],look:[11-cx,1.4,8-cz],name:'Bedroom 02'},
-    {pos:[5.2-cx,1.62,11.6-cz],look:[5.2-cx,1.35,14-cz],name:'Master suite'},
-  ];return w;
+/* guided tour — hops room to room (never straight through walls) */
+function tourGo(i){tourI=i;const rm=ROOMS[i];goRoom(rm,true);tourT0=performance.now();setRoom(rm.n);
+  tourTimer=setTimeout(()=>{if(!touring)return;if(i+1<ROOMS.length)tourGo(i+1);else stopTour(true);},3200);}
+function startTour(){stopTour();touring=true;bT.classList.add('on');setMode('walk');tourGo(0);}
+function stopTour(done){if(tourTimer){clearTimeout(tourTimer);tourTimer=null;}if(touring){touring=false;bT.classList.remove('on');setRoom('');if(done)showHint('Tour complete — drag to look, or tap any room on the map');}}
+bT.onclick=()=>{if(touring)stopTour();else startTour();};
+
+/* ============ 2D minimap ============ */
+const mmc=document.getElementById('mmc'),mmx=mmc.getContext('2d');
+const PXMIN=-DECK-0.5,PXMAX=IW+0.5,PZMIN=-0.5,PZMAX=ID+DECK+0.5,MPAD=9;
+const MS=Math.min((mmc.width-2*MPAD)/(PXMAX-PXMIN),(mmc.height-2*MPAD)/(PZMAX-PZMIN));
+const MOX=(mmc.width-(PXMAX-PXMIN)*MS)/2,MOY=(mmc.height-(PZMAX-PZMIN)*MS)/2;
+const mmap=(px,pz)=>[MOX+(px-PXMIN)*MS,MOY+(pz-PZMIN)*MS];
+const mmInv=(mx,my)=>[PXMIN+(mx-MOX)/MS,PZMIN+(my-MOY)/MS];
+const mstatic=document.createElement('canvas');mstatic.width=mmc.width;mstatic.height=mmc.height;
+(function(){const g=mstatic.getContext('2d');
+  g.fillStyle='#e7ded0';let a=mmap(-DECK,0),b=mmap(0,ID+DECK);g.fillRect(a[0],a[1],b[0]-a[0],b[1]-a[1]);
+  a=mmap(-DECK,ID);b=mmap(IW,ID+DECK);g.fillRect(a[0],a[1],b[0]-a[0],b[1]-a[1]);
+  g.fillStyle='#f6f2ea';ROOMS.forEach(rm=>{const p=mmap(rm.r[0],rm.r[1]),q=mmap(rm.r[2],rm.r[3]);g.fillRect(p[0],p[1],q[0]-p[0],q[1]-p[1]);});
+  SEGS.forEach(s=>{const p=mmap(s[0],s[1]),q=mmap(s[2],s[3]);g.beginPath();g.moveTo(p[0],p[1]);g.lineTo(q[0],q[1]);g.strokeStyle=s[4]?'#5f9aa4':'#2e2c28';g.lineWidth=s[4]?1.5:2.2;g.lineCap='round';g.stroke();});
+  g.fillStyle='rgba(26,26,26,.55)';g.font='700 6.5px Inter,system-ui';g.textAlign='center';
+  const ab={'Bedroom 01':'BED 1','Bedroom 02':'BED 2'};
+  ROOMS.forEach(rm=>{const c=mmap((rm.r[0]+rm.r[2])/2,(rm.r[1]+rm.r[3])/2);g.fillText((ab[rm.n]||rm.n).toUpperCase(),c[0],c[1]+2);});
+  g.fillStyle='#8a6a1e';g.font='700 8px Inter';g.fillText('N',13,14);g.beginPath();g.moveTo(13,4);g.lineTo(10,9);g.lineTo(16,9);g.closePath();g.fill();
+})();
+let curRoom=null;
+function drawMap(){mmx.clearRect(0,0,mmc.width,mmc.height);mmx.drawImage(mstatic,0,0);
+  if(mode==='walk'){const pp=[walk.x+cx,walk.z+cz],rm=roomAt(pp[0],pp[1]);
+    if(rm){const p=mmap(rm.r[0],rm.r[1]),q=mmap(rm.r[2],rm.r[3]);mmx.fillStyle='rgba(154,122,46,.22)';mmx.fillRect(p[0],p[1],q[0]-p[0],q[1]-p[1]);}
+    const m=mmap(pp[0],pp[1]),ang=Math.atan2(Math.cos(walk.yaw),Math.sin(walk.yaw));
+    mmx.save();mmx.translate(m[0],m[1]);mmx.rotate(ang);mmx.fillStyle='rgba(30,107,69,.4)';mmx.beginPath();mmx.moveTo(0,0);mmx.arc(0,0,14,-0.5,0.5);mmx.closePath();mmx.fill();mmx.restore();
+    mmx.fillStyle='#1e6b45';mmx.beginPath();mmx.arc(m[0],m[1],4,0,7);mmx.fill();mmx.strokeStyle='#fff';mmx.lineWidth=1.6;mmx.stroke();
+    curRoom=rm?rm.n:'Hallway';
+  } else curRoom=null;
 }
-function setRoom(n){const r=document.getElementById('roomLbl');r.textContent=n||'';r.style.opacity=n?1:0;}
-bT.onclick=()=>{if(touring){touring=false;bT.classList.remove('on');setRoom('');return;}tourSeq=buildTour();touring=true;tourT=0;bT.classList.add('on');setMode('walk');document.exitPointerLock&&document.exitPointerLock();};
-function tourStep(dt){if(!touring)return;tourT+=dt*0.16;const n=tourSeq.length;const i=Math.floor(tourT)%n,j=(i+1)%n,f=tourT-Math.floor(tourT);
-  const ease=f<0.5?2*f*f:1-Math.pow(-2*f+2,2)/2;const a=tourSeq[i],b=tourSeq[j];
-  const px=a.pos[0]+(b.pos[0]-a.pos[0])*ease,py=a.pos[1],pz=a.pos[2]+(b.pos[2]-a.pos[2])*ease;
-  const lx=a.look[0]+(b.look[0]-a.look[0])*ease,ly=a.look[1],lz=a.look[2]+(b.look[2]-a.look[2])*ease;
-  camera.position.set(px,py,pz);camera.lookAt(lx,ly,lz);setRoom(f<0.5?a.name:b.name);
-  if(tourT>=n){touring=false;bT.classList.remove('on');setRoom('');}}
+mmc.addEventListener('click',e=>{const r=mmc.getBoundingClientRect();const mx=(e.clientX-r.left)*mmc.width/r.width,my=(e.clientY-r.top)*mmc.height/r.height;const pp=mmInv(mx,my),rm=roomAt(pp[0],pp[1]);if(rm){stopTour();goRoom(rm,true);}});
 
 /* ============ loop ============ */
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
-let last=performance.now();
+let last=performance.now(),tick=0;
 function loop(){const now=performance.now(),dt=Math.min(0.05,(now-last)/1000);last=now;
-  if(touring){tourStep(dt);}
-  else if(mode==='orbit'){applyOrbit();}
+  if(mode==='orbit'){applyOrbit();}
+  else if(touring){walk.yaw=tourBaseYaw+Math.sin((now-tourT0)/1000*0.5)*0.3;applyWalk();}
   else{let f=0,s=0;if(keys['KeyW'])f+=1;if(keys['KeyS'])f-=1;if(keys['KeyA'])s-=1;if(keys['KeyD'])s+=1;
-    f-=sticks.L.y;s+=sticks.L.x;walk.yaw-=sticks.R.x*0.03;walk.pitch=Math.max(-0.9,Math.min(0.9,walk.pitch-sticks.R.y*0.03));
+    f-=sticks.L.y;s+=sticks.L.x;walk.yaw-=sticks.R.x*0.03;walk.pitch=Math.max(-0.85,Math.min(0.85,walk.pitch-sticks.R.y*0.03));
     if(f||s)move(f,s,dt);applyWalk();}
+  drawMap();const cap=document.getElementById('mmcap');
+  if(mode==='walk')cap.innerHTML='<b>'+(curRoom||'—')+'</b><span class="sm">'+(touring?'guided tour':'tap a room to jump')+'</span>';
+  else cap.innerHTML='Orbit view<span class="sm">tap a room to walk in</span>';
+  setRoom(touring?curRoom:'');
   renderer.render(scene,camera);requestAnimationFrame(loop);}
 loop();
-// expose for screenshots
 window.__view=(name)=>{const V={
   top:()=>{mode='orbit';orbit.az=-Math.PI/2;orbit.pol=0.20;orbit.rad=21;orbit.tgt.set(0,0,0);},
   iso:()=>{mode='orbit';orbit.az=-0.7;orbit.pol=0.82;orbit.rad=15.5;orbit.tgt.set(0,1.0,0);},
-  living:()=>{mode='walk';walk.x=6.4-cx;walk.z=4.9-cz;walk.yaw=-Math.PI/2-0.16;walk.pitch=-0.06;},
-  master:()=>{mode='walk';walk.x=3.7-cx;walk.z=10.3-cz;walk.yaw=0.2;walk.pitch=-0.08;},
-  kitchen:()=>{mode='walk';walk.x=8.8-cx;walk.z=6.4-cz;walk.yaw=Math.PI;walk.pitch=-0.06;},
-  bed:()=>{mode='walk';walk.x=3.5-cx;walk.z=8.6-cz;walk.yaw=-Math.PI/2-0.22;walk.pitch=-0.05;},
+  living:()=>goRoom(ROOMS[1],false),master:()=>goRoom(ROOMS[6],false),kitchen:()=>goRoom(ROOMS[3],false),bed:()=>goRoom(ROOMS[4],false),foyer:()=>goRoom(ROOMS[0],false),
 };(V[name]||V.iso)();if(mode==='walk')applyWalk();else applyOrbit();};
 setTimeout(()=>{const l=document.getElementById('load');l.style.opacity=0;setTimeout(()=>l.remove(),700);},500);
+window.__pos=()=>[+(walk.x+cx).toFixed(2),+(walk.z+cz).toFixed(2)];
+window.__set=(px,pz,yaw)=>{mode='walk';walk.x=px-cx;walk.z=pz-cz;if(yaw!=null)walk.yaw=yaw;walk.pitch=0;};
+window.__step=(f,s,n)=>{for(let i=0;i<(n||60);i++)move(f,s,0.05);return [+(walk.x+cx).toFixed(2),+(walk.z+cz).toFixed(2)];};
 window.__ready=true;
 </script>
 </body></html>
