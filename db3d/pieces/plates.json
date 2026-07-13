@@ -1,0 +1,47 @@
+[
+  {
+    "slug": "signature-global-titanium-spr",
+    "config": "4.5 BHK",
+    "offsets": {
+      "living": 0,
+      "masterBed": 1,
+      "kitchen": 7,
+      "bed2": 3,
+      "bed3": 5,
+      "study": 5,
+      "pooja": 5,
+      "bathroom": 4,
+      "entrance": 6
+    }
+  },
+  {
+    "slug": "signature-global-titanium-spr",
+    "config": "3.5 BHK",
+    "offsets": {
+      "living": 0,
+      "masterBed": 6,
+      "kitchen": 4,
+      "bed2": 4,
+      "bed3": 5,
+      "study": 5,
+      "pooja": 2,
+      "bathroom": 1,
+      "entrance": 2
+    }
+  },
+  {
+    "slug": "signature-global-titanium-spr",
+    "config": "3.5 BHK|103",
+    "offsets": {
+      "living": 0,
+      "masterBed": 1,
+      "kitchen": 5,
+      "bed2": 4,
+      "bed3": 3,
+      "study": 3,
+      "pooja": 1,
+      "bathroom": 1,
+      "entrance": 6
+    }
+  }
+]

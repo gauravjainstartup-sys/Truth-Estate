@@ -1,0 +1,79 @@
+[
+  {
+    "slug": "signature-global-titanium-spr",
+    "id": "T-6",
+    "x": -93.5,
+    "z": -66,
+    "rot": 1.45,
+    "hw": 21,
+    "hd": 7.5,
+    "core": 2,
+    "cfg": "4.5 BHK"
+  },
+  {
+    "slug": "signature-global-titanium-spr",
+    "id": "T-5",
+    "x": -77,
+    "z": -2.8,
+    "rot": 1.85,
+    "hw": 21,
+    "hd": 7.5,
+    "core": 2,
+    "cfg": "4.5 BHK"
+  },
+  {
+    "slug": "signature-global-titanium-spr",
+    "id": "T-4",
+    "x": -20.9,
+    "z": 56.1,
+    "rot": 0.06,
+    "hw": 21,
+    "hd": 7.5,
+    "core": 2,
+    "cfg": "4.5 BHK"
+  },
+  {
+    "slug": "signature-global-titanium-spr",
+    "id": "T-3",
+    "x": 50.6,
+    "z": 55,
+    "rot": -0.06,
+    "hw": 21,
+    "hd": 7.5,
+    "core": 2,
+    "cfg": "4.5 BHK"
+  },
+  {
+    "slug": "signature-global-titanium-spr",
+    "id": "T-2",
+    "x": 105.6,
+    "z": -8.3,
+    "rot": 1.22,
+    "hw": 21,
+    "hd": 7.5,
+    "core": 2,
+    "cfg": "4.5 BHK"
+  },
+  {
+    "slug": "signature-global-titanium-spr",
+    "id": "T-7",
+    "x": -96.3,
+    "z": 88,
+    "rot": 1.57,
+    "hw": 24,
+    "hd": 8,
+    "core": 3,
+    "cfg": "3.5 BHK"
+  },
+  {
+    "slug": "signature-global-titanium-spr",
+    "id": "T-8",
+    "x": -96.3,
+    "z": 144.7,
+    "rot": 1.57,
+    "hw": 24,
+    "hd": 8,
+    "core": 3,
+    "cfg": "3.5 BHK"
+  }
+]

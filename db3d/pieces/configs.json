@@ -1,0 +1,28 @@
+[
+  {
+    "slug": "signature-global-titanium-spr",
+    "config": "4.5 BHK",
+    "beds": 4,
+    "extra": "home office + pooja",
+    "baths": 5,
+    "saleable": 3780,
+    "carpetSqft": 1972,
+    "balconySqft": 442,
+    "deck": "28'10\" outdoor deck",
+    "rooms": "Living/dining/family lounge 25'5\"×21'1\" · Master 16'8\"×12'4\" + dress · Jr-master + home office · Bed 1 & 2 · Pooja · Powder · Kitchen + utility + VRF balcony",
+    "col": "#e0b667"
+  },
+  {
+    "slug": "signature-global-titanium-spr",
+    "config": "3.5 BHK",
+    "beds": 3,
+    "extra": "utility/staff room",
+    "baths": 4,
+    "saleable": 2780,
+    "carpetSqft": 1441,
+    "balconySqft": 443,
+    "deck": "25'7\" outdoor deck",
+    "rooms": "Living/dining/family lounge 25'7\"×15'3\" · Master 11'6\"×16'1\" + dress · Bed 1 & 2 · Utility room · Powder · Kitchen + VRF balcony",
+    "col": "#3fa06a"
+  }
+]

@@ -1,0 +1,59 @@
+{
+  "slug": "signature-global-titanium-spr",
+  "name": "Signature Global Titanium SPR",
+  "latitudeRad": 0.4960225734167885,
+  "latitudeDeg": 28.42,
+  "floors": 40,
+  "floorHeightM": 10.8,
+  "lobbyHeightM": 10.8,
+  "northCalRad": 0.4363323129985824,
+  "northCalDeg": 25,
+  "sunBenchmarkHours": 4,
+  "westWeight": 0.6,
+  "sunRayLenM": 1200,
+  "lake": {
+    "x": 0,
+    "z": 0
+  },
+  "scaleMPerPx": 0.55,
+  "pxOriginX": 1180,
+  "pxOriginY": 690,
+  "boundaryPx": [
+    [
+      940,
+      515
+    ],
+    [
+      1505,
+      560
+    ],
+    [
+      1490,
+      785
+    ],
+    [
+      1335,
+      915
+    ],
+    [
+      1095,
+      1000
+    ],
+    [
+      1095,
+      1065
+    ],
+    [
+      965,
+      1065
+    ],
+    [
+      958,
+      790
+    ],
+    [
+      940,
+      515
+    ]
+  ]
+}
