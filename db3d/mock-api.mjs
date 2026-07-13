@@ -24,7 +24,8 @@ import { readFileSync, readdirSync } from "node:fs";
 const PORT = Number(process.env.PORT || 8791);
 const SECRET = process.env.MODEL_JWT_SECRET || "dev-secret-not-for-prod"; // real: Edge Function env var
 const TTL_S = 300; // short-lived token
-const ORIGIN_ALLOW = ["http://localhost:" + PORT, "http://127.0.0.1:" + PORT, "https://gauravjainstartup-sys.github.io"];
+const ORIGIN_ALLOW = ["http://localhost:" + PORT, "http://127.0.0.1:" + PORT, "https://gauravjainstartup-sys.github.io",
+  ...(process.env.EXTRA_ORIGIN ? process.env.EXTRA_ORIGIN.split(",") : [])]; // parity harness serves the engine on another port
 const RATE_MAX = 5, RATE_WIN_MS = 60_000; // 5 mints / minute / subject
 
 // ── entitlement source of truth (real: SELECT from model_access_grants) ──
@@ -117,5 +118,8 @@ const server = createServer((req, res) => {
   send(404, { error: "no-route" });
 });
 
-if (process.argv[2] !== "--silent") server.listen(PORT, () => console.log(`[mock-api] gated model API on :${PORT}`));
+// listen only when run directly (not when test-gate imports the handlers); --silent mutes the log
+import { pathToFileURL } from "node:url";
+const isMain = import.meta.url === pathToFileURL(process.argv[1] || "").href;
+if (isMain) server.listen(PORT, () => { if (process.argv[2] !== "--silent") console.log(`[mock-api] gated model API on :${PORT}`); });
 export { handleMintToken, handleModel, mint, verify, bundle };
