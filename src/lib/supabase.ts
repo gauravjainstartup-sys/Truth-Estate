@@ -19,6 +19,13 @@ const SUPABASE_URL = "https://lyetvabfgaidvqrbmaoy.supabase.co";
 const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5ZXR2YWJmZ2FpZHZxcmJtYW95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MDI2MzEsImV4cCI6MjA5MzI3ODYzMX0.zJzqyfhANxChklw7bEiOc7PwSq2R9wiJIpS39wCYS_8";
 
+/* Per-row/per-project build logs (presence tables, sample dumps) are useful
+   when debugging a shape, but ~4 lines × ~90 projects buries everything else —
+   including the prebuild's egress instrumentation — past the CI log-tail cap.
+   Off by default; set BUILD_DEBUG=1 to restore them. Aggregate/verification
+   logs (per-view row counts, dedupe summary) stay on always. */
+const DBG = process.env.BUILD_DEBUG === "1";
+
 type Row = Record<string, unknown>;
 
 async function readFixture(view: string): Promise<Row[] | null> {
@@ -356,9 +363,9 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
     (await sbRows("backlog_listing_public", BACKLOG_QUERY));
   if (!rows) return null;
   // one-time shape record: the CI build log tells us the pipeline's true shapes
-  if (rows[0]) console.log("[supabase] backlog sample:", JSON.stringify(rows[0]).slice(0, 2000));
+  if (DBG && rows[0]) console.log("[supabase] backlog sample:", JSON.stringify(rows[0]).slice(0, 2000));
   // per-row location presence: which live pages will surface the radar section
-  {
+  if (DBG) {
     const yn = (v: unknown) => (v == null || v === "" ? "0" : "1");
     for (const r of rows) {
       const nm = s(r.name);
@@ -521,7 +528,7 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
     const [keep, drop] = signal(r) >= signal(prev) ? [r, prev] : [prev, r];
     keep.altIds = [...new Set([...(keep.altIds ?? []), ...(drop.altIds ?? []), drop.id])];
     bySlug.set(r.slug, keep);
-    console.log(`[dedupe] ${r.slug}: kept signal=${signal(keep)} (id ${keep.id}) · absorbed id ${drop.id} signal=${signal(drop)}`);
+    if (DBG) console.log(`[dedupe] ${r.slug}: kept signal=${signal(keep)} (id ${keep.id}) · absorbed id ${drop.id} signal=${signal(drop)}`);
   }
   const deduped = out.length === bySlug.size ? out : [...bySlug.values()];
   if (collisions) console.log(`[dedupe] ${collisions} slug collision(s) resolved · ${out.length} → ${deduped.length} rows`);

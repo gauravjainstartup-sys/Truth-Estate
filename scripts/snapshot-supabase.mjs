@@ -93,6 +93,23 @@ await mkdir(OUT, { recursive: true });
 //    deploy log shows exactly where the read egress goes (base64 media in
 //    project_extended_details / project_configurations is the suspect) ──
 const MB = (n) => (n / 1048576).toFixed(1);
+// For a heavy view, attribute its bytes to columns — a base64 media column
+// (hero/brochure/etc. stored inline) shows up here as the dominant field, which
+// is the actionable signal: migrate that column to a Storage URL and the pull
+// collapses to a cacheable link.
+function columnBytes(view, rows) {
+  const cols = {};
+  for (const r of rows) {
+    if (!r || typeof r !== "object") continue;
+    for (const k of Object.keys(r)) {
+      const v = r[k];
+      if (v == null) continue;
+      cols[k] = (cols[k] || 0) + Buffer.byteLength(typeof v === "string" ? v : JSON.stringify(v));
+    }
+  }
+  const top = Object.entries(cols).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  if (top.length) console.log(`[snapshot]   ${view} heaviest columns → ${top.map(([k, b]) => `${k} ${MB(b)}MB`).join(" · ")}`);
+}
 let totalBytes = 0, wrote = 0;
 async function snap(view, q, rows) {
   if (rows === undefined) rows = await getJson(`${view}?${q}`);
@@ -101,6 +118,7 @@ async function snap(view, q, rows) {
   totalBytes += bytes;
   await writeFile(`${OUT}/${view}.json`, JSON.stringify(rows));
   console.log(`[snapshot] ${view} → ${rows.length} rows · ${MB(bytes)} MB`);
+  if (bytes > 1048576) columnBytes(view, rows); // heavy view → show where the bytes live
   wrote++;
   return rows;
 }

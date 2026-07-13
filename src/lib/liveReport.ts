@@ -24,6 +24,12 @@ const MANIFEST = mediaManifest as Record<string, Partial<Record<string, string>>
    unmapped URLs pass through untouched */
 const viaUrls = (s: string): string => MANIFEST.__urls?.[s] ?? s;
 
+/* Per-project media/config/parse records are handy for debugging one project
+   but fire ~90× during static export and bury the prebuild's egress numbers
+   past the CI log-tail cap. Off by default (BUILD_DEBUG=1 restores them); an
+   actual media leak still logs as a warning regardless. */
+const DBG = process.env.BUILD_DEBUG === "1";
+
 /* tiny defensive readers over the pipeline-owned JSON payloads */
 const obj = (v: unknown): Record<string, unknown> | null =>
   v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
@@ -539,12 +545,15 @@ export function liveProjectIntel(
     const brochureState = brochurePages ? `${brochurePages.length}img·same-origin` : pdf(brochurePdf) ?? img(null, ext.brochureUrl);
     const paymentState = paymentSrc ? img(paymentSrc, ext.paymentPlanUrl) : pdf(paymentPdf) ?? img(null, ext.paymentPlanUrl);
     const inlineLeak = [heroSrc, siteMapSrc, renderSrc, ...(brochurePages ?? [])].some((s) => s && isHttpUrl(s));
-    console.log(
-      `[supabase] media ${row.name} →${inlineLeak ? " ⚠INLINE-STORAGE" : ""} hero=${img(heroSrc, ext.heroImageUrl)} sitemap=${img(siteMapSrc, ext.siteMapImageUrl)} render=${img(renderSrc, ext.renderElevationUrl)} brochure=${brochureState} payment=${paymentState}`,
-    );
+    // a leak means visitors would hit Storage on every view — always surface it;
+    // the all-clear line is per-project noise, so keep it behind BUILD_DEBUG
+    if (inlineLeak || DBG)
+      (inlineLeak ? console.warn : console.log)(
+        `[supabase] media ${row.name} →${inlineLeak ? " ⚠INLINE-STORAGE" : ""} hero=${img(heroSrc, ext.heroImageUrl)} sitemap=${img(siteMapSrc, ext.siteMapImageUrl)} render=${img(renderSrc, ext.renderElevationUrl)} brochure=${brochureState} payment=${paymentState}`,
+      );
   }
   // build-log record: configurations → homes, and how many carry a 2D floor plan
-  if (cfgs?.length) {
+  if (DBG && cfgs?.length) {
     const withPlan = homes.filter((h) => h.plan).length;
     console.log(`[supabase] configs ${row.name} → ${homes.length}/${cfgs.length} home(s) rendered · ${withPlan} with 2D floor plan`);
   }
@@ -910,9 +919,10 @@ export function liveProjectIntel(
 
   // parse-outcome record: pairs with the [v3-loc] presence log in supabase.ts —
   // presence 1s with zero counts here means a shape the readers don't recognise
-  console.log(
-    `[locparse] ${row.slug} pois:${pois.length} conn:${connectivity.length} infra:${infra.length} geo:${geo ? geo.nearby.length : "none"}`,
-  );
+  if (DBG)
+    console.log(
+      `[locparse] ${row.slug} pois:${pois.length} conn:${connectivity.length} infra:${infra.length} geo:${geo ? geo.nearby.length : "none"}`,
+    );
   const location: ProjectOps["location"] =
     pois.length || connectivity.length || infra.length || geo
       ? {
