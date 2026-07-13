@@ -20,7 +20,10 @@
 import { createServer } from "node:http";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
+const HERE = path.dirname(fileURLToPath(import.meta.url)); // script-dir-relative: works from repo root AND from the demo zip
 const PORT = Number(process.env.PORT || 8791);
 const SECRET = process.env.MODEL_JWT_SECRET || "dev-secret-not-for-prod"; // real: Edge Function env var
 const TTL_S = 300; // short-lived token
@@ -34,8 +37,8 @@ const GRANTS = [
 ];
 
 // ── the pieces (real: get_model_bundle(slug) via service_role) ──
-const PIECES = "db3d/pieces";
-const load = (n) => JSON.parse(readFileSync(`${PIECES}/${n}.json`, "utf8"));
+const PIECES = process.env.PIECES_DIR || path.join(HERE, "pieces");
+const load = (n) => JSON.parse(readFileSync(path.join(PIECES, `${n}.json`), "utf8"));
 function bundle(slug) {
   const site = load("site");
   if (site.slug !== slug) return null;
@@ -114,6 +117,26 @@ const server = createServer((req, res) => {
   if (req.method === "GET" && u.pathname === "/model") {
     const r = handleModel({ auth: req.headers.authorization, slug: u.searchParams.get("slug") });
     return send(r.code, r.json);
+  }
+  /* ── demo hosting: serve the IP-free engine from ./engine on the SAME
+     origin as the gate, so `node mock-api.mjs` + a browser is the whole
+     working demo. The engine still mints a token and fetches /model like
+     production — the gate is fully exercised, nothing is bypassed. ── */
+  if (req.method === "GET") {
+    if (u.pathname === "/") {
+      res.writeHead(302, { location: "/tower-engine.html?sub=buyer@demo" }); // the demo-entitled subject
+      return res.end();
+    }
+    const STATIC = process.env.STATIC_DIR || path.join(HERE, "engine");
+    const safe = path.normalize(path.join(STATIC, u.pathname));
+    if (safe.startsWith(STATIC)) {
+      try {
+        const body = readFileSync(safe);
+        const ct = { ".html": "text/html", ".js": "text/javascript", ".json": "application/json", ".png": "image/png" }[path.extname(safe)] || "application/octet-stream";
+        res.writeHead(200, { "content-type": ct });
+        return res.end(body);
+      } catch { /* fall through to 404 */ }
+    }
   }
   send(404, { error: "no-route" });
 });

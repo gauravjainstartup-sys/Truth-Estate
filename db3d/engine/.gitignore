@@ -1,3 +1,4 @@
 # local render deps / verification artifacts — regenerable, keep out of git
 three.min.js
 shot-*.png
+demo-*.png
