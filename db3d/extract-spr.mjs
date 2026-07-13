@@ -45,9 +45,12 @@ function grab(id, open) {
     }
     return out;
   }
-  // scalar expression up to the first top-level ; or newline-with-comment
+  // scalar expression up to the first top-level ; , or newline. Stopping at ','
+  // matters for comma-chained decls like `const FH=3.6, LOBBY=10.8;` — without
+  // it, FH would greedily read `3.6, LOBBY=10.8` and the comma operator yields
+  // 10.8. (None of the scalars we grab have a comma inside their RHS.)
   let out = "";
-  for (; i < src.length; i++) { const ch = src[i]; if (ch === ";" || ch === "\n") break; out += ch; }
+  for (; i < src.length; i++) { const ch = src[i]; if (ch === ";" || ch === "\n" || ch === ",") break; out += ch; }
   return out.trim();
 }
 

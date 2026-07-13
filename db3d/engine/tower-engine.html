@@ -1853,5 +1853,6 @@ let booted=false;const bootT0=performance.now();
       pol+=(1.04-pol)*0.03;radius+=(700-radius)*0.03;camApply();}}
   renderer.render(scene,camera);})();
 
+;try{window.__PARITY={topH:topH(),FLOORS:FLOORS,FH:FH,LOBBY:LOBBY,LAT:+LAT.toFixed(6),towers:towers.length,configs:Object.keys(CONFIGS).length};}catch(_){}
 })().catch(function (e) { console.error('[engine] boot failed', e); var a = document.getElementById('app'); if (a) a.innerHTML = '<p style="padding:24px;font:500 14px system-ui;color:#64707d">Unable to load the model.</p>'; });
 </script>

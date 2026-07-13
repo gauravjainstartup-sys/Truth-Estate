@@ -101,6 +101,7 @@ const html =
   `<script>${BOOT}</script>\n` +
   `<script>\n(async function () {\nconst MODEL = await window.__loadModel();\n` +
   engine +
+  `\n;try{window.__PARITY={topH:topH(),FLOORS:FLOORS,FH:FH,LOBBY:LOBBY,LAT:+LAT.toFixed(6),towers:towers.length,configs:Object.keys(CONFIGS).length};}catch(_){}` +
   `\n})().catch(function (e) { console.error('[engine] boot failed', e); var a = document.getElementById('app'); if (a) a.innerHTML = '<p style=\"padding:24px;font:500 14px system-ui;color:#64707d\">Unable to load the model.</p>'; });\n</script>` +
   tail;
 
