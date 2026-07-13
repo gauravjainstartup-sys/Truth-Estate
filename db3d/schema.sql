@@ -96,9 +96,12 @@ create table if not exists project_3d_intelligence (
   grade      text,
   facing     text,
   sub_scores jsonb,                          -- {morning,cool,vastu,view,airflow,floor}
-  reasons    jsonb,                          -- authoritative room/verdict strings
-  flags      jsonb,                          -- {lake,corner,…}
-  floor_curve jsonb,                         -- per-floor sun hours (feeds the panel charts)
+  reasons    jsonb,                          -- {overall, rooms{room:{dir,score,ideal,reason}}}
+  flags      jsonb,                          -- {lake,corner}
+  metrics    jsonb,                          -- {sun_winter_h,sun_am_h,sun_pm_h,rank,weakest_dim}
+  floor_curve jsonb,                         -- optional: per-floor sun hours. Left NULL — the
+                                             -- client recomputes it from fetched geometry using
+                                             -- public astronomy (not IP), so it need not be stored.
   computed_at timestamptz default now(),
   unique (slug, tower_id, unit)
 );

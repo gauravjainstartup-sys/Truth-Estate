@@ -74,11 +74,18 @@ here. I verify the engine end-to-end against a **local mock** of the Edge Functi
 model — same towers, same scores. The founder then runs `supabase db push` + deploys the
 functions on the real project (exact steps provided).
 
+## What ships vs what's gated (refinement)
+The only *secret* maths is the **vastu scoring** (plates → weighted composite). That is
+pre-computed and stored, so it never ships. The **sun/astronomy** maths (solar position,
+day length, shadow ray-casts) is public knowledge and NOT IP — it stays in the client and
+recomputes the sun charts from the already-fetched geometry, so panels keep working without
+storing extra derived data. Hence `floor_curve` stays NULL.
+
 ## Status
 - [x] Decompose SPR → pieces (faithful, counts verified)
 - [x] Schema + RLS deny-by-default + gated read function
-- [ ] Pre-compute intelligence (headless run of the current engine → `project_3d_intelligence`)
+- [x] Pre-compute intelligence → `intelligence.json` (16 flats, scores+reasons+ranks; scoring engine stays server-side)
 - [ ] Edge Functions: `mint-token`, `model`
-- [ ] Generic IP-free renderer + local mock parity harness
+- [ ] Generic renderer (reuse the proven engine, swap inline data → runtime fetch, strip vastu scoring) + local mock parity harness
 - [ ] Apply steps for the real Supabase project
 - [ ] (Phase 2) server-side rendering
