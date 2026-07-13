@@ -123,6 +123,8 @@ export default function ReportDeveloper({ p }: { p: ProjectIntel }) {
         </dl>
       </details>
 
+      <p className="mt-4 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">Sources: Haryana RERA track record. Independent read — not supplied by the developer.</p>
+
       {/* ── Part B · financial audit ── */}
       <div className="mt-12">
         <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Pillar I · Developer DNA — b</p>
