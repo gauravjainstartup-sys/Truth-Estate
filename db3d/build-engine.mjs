@@ -71,6 +71,56 @@ engine = swapBalanced(engine, "towers", "[");
 engine = swapBalanced(engine, "CONFIGS", "{");
 engine = swapBalanced(engine, "FLATW", "{");
 
+/* ── increment 2: strip the vastu scoring (the shipping IP) ──
+   The v2 layer (subScores/WEIGHTS/composite, line ~1790) stays: morning/cool/
+   view/vent/floor are public astronomy+geometry and the priorities sliders
+   need the six dims to recombine live. Only the VASTU derivation is secret —
+   the PLATE room offsets, the room-importance weights, and the room scoring.
+   Those go; the stored per-flat results (MODEL.intelligence) replace them. */
+function replaceFn(code, name, replacement) {
+  const re = new RegExp(`function\\s+${name}\\s*\\(`);
+  const m = re.exec(code);
+  if (!m) throw new Error(`function not found: ${name}`);
+  let i = code.indexOf("{", m.index), depth = 0, inStr = null;
+  for (; i < code.length; i++) {
+    const ch = code[i];
+    if (inStr) { if (ch === inStr && code[i - 1] !== "\\") inStr = null; continue; }
+    if (ch === '"' || ch === "'" || ch === "`") { inStr = ch; continue; }
+    if (ch === "{") depth++;
+    else if (ch === "}") { depth--; if (depth === 0) break; }
+  }
+  return code.slice(0, m.index) + replacement + code.slice(i + 1);
+}
+function mustSwap(code, re, rep, label) {
+  if (!re.test(code)) throw new Error(`pattern not found: ${label}`);
+  return code.replace(re, rep);
+}
+
+// v1 flatScore (dead after the v2 reassignment, but its formula still ships) → stub
+engine = replaceFn(engine, "flatScore", "let flatScore; /* v1 removed — v2 below reads pre-computed intelligence */");
+// v1 computeScores2 (dead after v2 reassignment) → stub
+engine = replaceFn(engine, "computeScores2", "let computeScores2; /* v1 removed — v2 below */");
+// vastuRoomScore carried the PLATE offsets (project IP) → per-flat stored lookup
+engine = replaceFn(engine, "vastuRoomScore",
+  `function vastuRoomScore(roomKey,t,u){const r=INTEL.get(t.id+'|'+u.id);const rr=r&&r.reasons&&r.reasons.rooms&&r.reasons.rooms[roomKey];
+  if(rr)return{dir:rr.dir,score:rr.score,reason:rr.reason,ideal:rr.ideal};
+  return{dir:'\\u2014',score:3,reason:'',ideal:'NE'};}`);
+// plateCfg pointed rooms at plates — plates live server-side now
+engine = replaceFn(engine, "plateCfg", "/* plateCfg removed — plates never ship */");
+// vastuFor's universal shastra tables → served by the gated API (MODEL.vastu)
+engine = replaceFn(engine, "vastuFor",
+  `function vastuFor(c){const d=(MODEL.vastu&&MODEL.vastu.direction&&MODEL.vastu.direction[c])||{s:3,n:'Workable with a considered internal layout.'};
+  return{s:d.s,n:d.n,rooms:(MODEL.vastu&&MODEL.vastu.room)||{}};}`);
+// flat-sheet call site: new signature (roomKey, t, u)
+engine = mustSwap(engine,
+  /rkeys\.map\(k=>vastuRoomScore\(k,compass,plateCfg\(t,u\),u\.mir\)\)/,
+  "rkeys.map(k=>vastuRoomScore(k,t,u))", "flat-sheet vastuRoomScore call");
+// subScores' vastu dimension: room list + WV weights + aggregation (IP) → stored value
+engine = mustSwap(engine,
+  /const rk=\(CONFIGS\[t\.cfg\]\.beds===4\)[\s\S]*?classical Shastra\s*\n/,
+  "const vastu=((INTEL.get(t.id+'|'+u.id)||{}).sub_scores||{}).vastu??60;   // pre-computed server-side — the scoring recipe never ships\n",
+  "subScores vastu block");
+
 // ── bootstrap: fetch the gated model, adapt pieces → engine shapes ──
 const BOOT = `
 window.__loadModel = async function () {
@@ -100,13 +150,28 @@ const html =
   head +
   `<script>${BOOT}</script>\n` +
   `<script>\n(async function () {\nconst MODEL = await window.__loadModel();\n` +
+  `const INTEL = new Map((MODEL.intelligence || []).map(function (r) { return [r.tower_id + '|' + r.unit, r]; }));\n` +
   engine +
-  `\n;try{window.__PARITY={topH:topH(),FLOORS:FLOORS,FH:FH,LOBBY:LOBBY,LAT:+LAT.toFixed(6),towers:towers.length,configs:Object.keys(CONFIGS).length};}catch(_){}` +
+  `\n;try{if(!scores)computeScores2();window.__PARITY={topH:topH(),FLOORS:FLOORS,FH:FH,LOBBY:LOBBY,LAT:+LAT.toFixed(6),towers:towers.length,configs:Object.keys(CONFIGS).length,` +
+  `flats:scores.flatMap(function(sc){return sc.us.map(function(o){return{t:sc.t.id,u:o.u.id,s:o.fs.s,g:o.fs.grade};});}).sort(function(a,b){return a.t.localeCompare(b.t)||a.u.localeCompare(b.u);})};}catch(_){}` +
   `\n})().catch(function (e) { console.error('[engine] boot failed', e); var a = document.getElementById('app'); if (a) a.innerHTML = '<p style=\"padding:24px;font:500 14px system-ui;color:#64707d\">Unable to load the model.</p>'; });\n</script>` +
   tail;
+
+// ── IP-leak assertions: the build FAILS if any secret still ships ──
+const LEAKS = [
+  [/const towers=\[\{id:/, "tower geometry literal"],
+  [/iw:604|iw:614/, "FLATW floor-plan trace"],
+  [/PLATE\s*=\s*\{/, "vastu PLATE offsets"],
+  [/living:0,masterBed:1,kitchen:7/, "4.5 BHK plate row"],
+  [/WV=\{entrance:3/, "room-importance weights"],
+  [/0\.35\*sunPts/, "v1 composite formula"],
+  [/kitchen:\{ideal:'SE'/, "shastra room tables (should come via API)"],
+];
+const leaked = LEAKS.filter(([re]) => re.test(html));
+if (leaked.length) throw new Error("IP LEAK in built shell: " + leaked.map(([, n]) => n).join(", "));
 
 mkdirSync("db3d/engine", { recursive: true });
 writeFileSync(OUT, html);
 console.log(`[build-engine] wrote ${OUT} · ${(html.length / 1024).toFixed(0)} KB`);
-console.log(`[build-engine] data literals swapped → MODEL.*  ·  engine deferred until gated fetch resolves`);
-console.log(`[build-engine] contains project data? ${/const towers=\[\{id:/.test(html) ? "YES (BUG)" : "no — IP-free shell"}`);
+console.log(`[build-engine] data literals swapped → MODEL.*  ·  vastu scoring → pre-computed INTEL lookups`);
+console.log(`[build-engine] IP-leak scan: ${LEAKS.length} signatures checked — none present`);

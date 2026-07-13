@@ -85,7 +85,12 @@ storing extra derived data. Hence `floor_curve` stays NULL.
 - [x] Decompose SPR → pieces (faithful, counts verified)
 - [x] Schema + RLS deny-by-default + gated read function
 - [x] Pre-compute intelligence → `intelligence.json` (16 flats, scores+reasons+ranks; scoring engine stays server-side)
-- [ ] Edge Functions: `mint-token`, `model`
-- [ ] Generic renderer (reuse the proven engine, swap inline data → runtime fetch, strip vastu scoring) + local mock parity harness
-- [ ] Apply steps for the real Supabase project
+- [x] Gated API mock (mint-token + model, Deno-portable) + gate proof 14/14
+- [x] Generic renderer increment 1 — geometry DB-driven, renders identical estate (numeric site parity asserted)
+- [x] Generic renderer increment 2 — vastu scoring stripped (PLATE, room weights, plate router, v1 formula,
+      shastra tables all out of the shell; IP-leak scan built into the build). Per-flat three-way parity
+      asserted: new engine ↔ current file ↔ stored intelligence, 16/16 exact (score + grade). Priorities
+      sliders keep working — the six dims recombine client-side; only the vastu dim arrives pre-computed.
+- [ ] Real-Supabase apply pack: Deno Edge Functions (port of the mock), data loader, exact provisioning steps
+- [ ] Founder finalizes → swap the TOWER_INTEL embed to the new engine (one line, instant rollback)
 - [ ] (Phase 2) server-side rendering

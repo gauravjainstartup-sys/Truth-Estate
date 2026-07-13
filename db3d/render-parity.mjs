@@ -2,6 +2,7 @@
    current monolithic file. Screenshots both overviews for side-by-side compare
    and reports any console/page errors from the new engine's boot. */
 import { chromium } from "/home/user/Truth-Estate/node_modules/playwright/index.mjs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 
 const CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
@@ -31,7 +32,14 @@ async function shoot(url, out, tag) {
   // numeric parity: new engine exposes window.__PARITY; the current file's globals are bare
   const parity = await page.evaluate(() => {
     if (window.__PARITY) return window.__PARITY;
-    try { return { topH: topH(), FLOORS, FH, LOBBY, LAT: +LAT.toFixed(6), towers: towers.length, configs: Object.keys(CONFIGS).length }; } catch { return null; }
+    try {
+      if (!scores) computeScores2();
+      return {
+        topH: topH(), FLOORS, FH, LOBBY, LAT: +LAT.toFixed(6), towers: towers.length, configs: Object.keys(CONFIGS).length,
+        flats: scores.flatMap((sc) => sc.us.map((o) => ({ t: sc.t.id, u: o.u.id, s: o.fs.s, g: o.fs.grade })))
+          .sort((a, b) => a.t.localeCompare(b.t) || a.u.localeCompare(b.u)),
+      };
+    } catch { return null; }
   }).catch(() => null);
   await page.close();
   console.log(`[${tag}] booted=${booted} · ${JSON.stringify(parity)} · shot→${out}${errs.length ? "\n  " + errs.slice(0, 6).join("\n  ") : "  · no errors"}`);
@@ -42,8 +50,26 @@ const a = await shoot(NEW_URL, "db3d/engine/shot-new.png", "DB-engine");
 const b = await shoot(CUR_URL, "db3d/engine/shot-current.png", "current ");
 await browser.close();
 
-const same = a.parity && b.parity && JSON.stringify(a.parity) === JSON.stringify(b.parity);
-console.log(same
-  ? `\n✓ numeric parity: identical — ${JSON.stringify(a.parity)}`
-  : `\n✗ PARITY MISMATCH\n  DB-engine: ${JSON.stringify(a.parity)}\n  current:   ${JSON.stringify(b.parity)}`);
-process.exit(a.booted && b.booted && same ? 0 : 1);
+// site-level parity (everything but the flats)
+const strip = (p) => p && Object.fromEntries(Object.entries(p).filter(([k]) => k !== "flats"));
+const siteSame = a.parity && b.parity && JSON.stringify(strip(a.parity)) === JSON.stringify(strip(b.parity));
+console.log(siteSame
+  ? `\n✓ site parity: identical — ${JSON.stringify(strip(a.parity))}`
+  : `\n✗ SITE PARITY MISMATCH\n  DB-engine: ${JSON.stringify(strip(a.parity))}\n  current:   ${JSON.stringify(strip(b.parity))}`);
+
+// per-flat parity, three-way: new engine ↔ current file ↔ stored intelligence
+const stored = JSON.parse(readFileSync("db3d/pieces/intelligence.json", "utf8"))
+  .map((r) => ({ t: r.tower_id, u: r.unit, s: r.composite, g: r.grade }))
+  .sort((x, y) => x.t.localeCompare(y.t) || x.u.localeCompare(y.u));
+const A = a.parity?.flats ?? [], B = b.parity?.flats ?? [];
+let flatsSame = A.length === 16 && B.length === 16 && stored.length === 16;
+const rows = [];
+for (let i = 0; i < Math.max(A.length, B.length, stored.length); i++) {
+  const n = A[i], c = B[i], s = stored[i];
+  const okRow = n && c && s && n.t === c.t && n.u === c.u && s.t === n.t && s.u === n.u && n.s === c.s && n.s === s.s && n.g === c.g && n.g === s.g;
+  if (!okRow) flatsSame = false;
+  rows.push(`  ${okRow ? "✓" : "✗"} ${(n ?? c ?? s)?.t}/${(n ?? c ?? s)?.u}  new=${n?.s}${n?.g ?? ""} cur=${c?.s}${c?.g ?? ""} stored=${s?.s}${s?.g ?? ""}`);
+}
+console.log(`${flatsSame ? "✓" : "✗"} per-flat parity (new ↔ current ↔ stored), ${A.length} flats:`);
+console.log(rows.join("\n"));
+process.exit(a.booted && b.booted && siteSame && flatsSame ? 0 : 1);
