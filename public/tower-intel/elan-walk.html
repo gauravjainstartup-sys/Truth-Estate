@@ -27,6 +27,16 @@
   .mmcap b{color:#8a6a1e}
   .mmcap .sm{display:block;font-weight:400;letter-spacing:.01em;text-transform:none;font-size:.6rem;color:rgba(26,26,26,.5);margin-top:3px}
   .fade{position:fixed;inset:0;background:#12140f;opacity:0;pointer-events:none;transition:opacity .17s ease;z-index:7}
+  .intro{position:fixed;inset:0;z-index:8;background:rgba(18,20,15,.5);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px;transition:opacity .4s}
+  .introcard{max-width:346px;background:#faf7f1;border-radius:16px;padding:26px 26px 22px;box-shadow:0 22px 64px rgba(0,0,0,.42)}
+  .introcard .ey{font-size:.58rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:#8a6a1e}
+  .introcard h2{margin:6px 0 0;font-family:'Playfair Display',Georgia,serif;font-size:1.42rem;font-weight:600;line-height:1.15}
+  .introcard p{margin:12px 0 12px;font-size:.82rem;color:rgba(26,26,26,.6);line-height:1.55}
+  .introcard ul{list-style:none;margin:0 0 18px;padding:0;font-size:.82rem;line-height:1.4;color:rgba(26,26,26,.82)}
+  .introcard li{display:flex;gap:10px;padding:6px 0;align-items:flex-start}
+  .introcard li .g{color:#1e6b45;font-size:1rem;line-height:1.15;flex:0 0 auto}
+  .introcard button{margin-top:4px;width:100%;appearance:none;border:none;cursor:pointer;background:#1e6b45;color:#fff;font-family:inherit;font-size:.86rem;font-weight:600;border-radius:10px;padding:12px;transition:background .15s}
+  .introcard button:hover{background:#175838}
   @media(max-width:560px){.mmap{width:150px;top:10px;right:10px;padding:7px}.mmap canvas{width:136px;height:153px}.top{padding-right:172px}}
   .load{position:fixed;inset:0;background:#e9e3d8;display:flex;align-items:center;justify-content:center;z-index:10;transition:opacity .6s;color:#5b5346;font-size:.8rem;letter-spacing:.15em;text-transform:uppercase;font-weight:600}
   /* mobile joysticks */
@@ -43,6 +53,17 @@
 <div class="room" id="roomLbl"></div>
 <div class="hint" id="hint"></div>
 <div class="fade" id="fade"></div>
+<div class="intro" id="intro"><div class="introcard">
+  <div class="ey">Truth Estate · Unit Intelligence</div>
+  <h2>Elan The Presidential<br>3 BHK · Head</h2>
+  <p>The actual home, laid out to the RERA plan and lit by real afternoon sun. Three ways to explore:</p>
+  <ul>
+    <li><span class="g">◱</span><span><b>Tap any room</b> — on the floor plan (top-right) or the 3D model — to step inside.</span></li>
+    <li><span class="g">✥</span><span><b>Drag</b> to look around · <b>scroll / pinch</b> to zoom.</span></li>
+    <li><span class="g">▷</span><span><b>Tour</b> walks you through room by room, and <b>☀</b> moves the sun.</span></li>
+  </ul>
+  <button id="introGo">Start exploring →</button>
+</div></div>
 <div class="ui dock"><div class="dockin">
   <button class="btn on" id="bOrbit"><span class="i">⟲</span> Orbit</button>
   <button class="btn" id="bWalk"><span class="i">🚶</span> Walk</button>
@@ -210,15 +231,15 @@ seg(2.5,9.6, 7.9,9.6, {doors:[[2.2,3.5]]});                // master north
 
 // rooms: rect in plan coords [x0,z0,x1,z1] + a "stand here" viewpoint [x,z,yaw,pitch]
 const ROOMS=[
-  {n:'Foyer',      r:[3.9,0,6.4,2.3],       v:[5.2,1.4,0.15,-0.02]},
-  {n:'Living',     r:[0,2.3,4.6,6.25],      v:[4.1,4.5,-Math.PI/2-0.05,-0.05]},
-  {n:'Dining',     r:[4.6,2.3,7.3,6.25],    v:[6.1,5.2,-0.55,-0.05]},
-  {n:'Kitchen',    r:[7.3,2.3,11.25,6.25],  v:[8.9,6.0,Math.PI,-0.06]},
-  {n:'Bedroom 01', r:[0,6.25,3.95,9.6],     v:[3.4,8.7,-Math.PI/2-0.25,-0.05]},
-  {n:'Bedroom 02', r:[7.3,6.25,11.25,9.6],  v:[9.6,9.2,Math.PI,-0.05]},
-  {n:'Master',     r:[2.5,9.6,7.9,13.25],   v:[3.7,10.3,0.2,-0.07]},
+  {n:'Foyer',           r:[3.9,0,6.4,2.3],       v:[5.2,1.4,0.15,-0.02]},
+  {n:'Living & Dining', r:[0,2.3,7.3,6.25],      v:[6.1,5.3,-Math.PI/2-0.22,-0.05]},
+  {n:'Kitchen',         r:[7.3,2.3,11.25,6.25],  v:[8.9,6.0,Math.PI,-0.06]},
+  {n:'Bedroom 01',      r:[0,6.25,3.95,9.6],     v:[3.4,8.7,-Math.PI/2-0.25,-0.05]},
+  {n:'Bedroom 02',      r:[7.3,6.25,11.25,9.6],  v:[9.6,9.2,Math.PI,-0.05]},
+  {n:'Master',          r:[2.5,9.6,7.9,13.25],   v:[3.7,10.3,0.2,-0.07]},
 ];
 function roomAt(px,pz){for(const rm of ROOMS){const r=rm.r;if(px>=r[0]&&px<=r[2]&&pz>=r[1]&&pz<=r[3])return rm;}return null;}
+function nearRoom(px,pz){let b=null,bd=1e9;for(const rm of ROOMS){const qx=Math.max(rm.r[0],Math.min(px,rm.r[2])),qz=Math.max(rm.r[1],Math.min(pz,rm.r[3]));const d=(px-qx)**2+(pz-qz)**2;if(d<bd){bd=d;b=rm;}}return bd<6.25?b:null;}
 // outer safety bounds so you can never walk off the floor plate (centered coords, no mesh)
 (function(){const bt=0.4,x0=-cx-DECK,x1=cx,z0=-cz,z1=cz+DECK;
   COL.push([x0-bt,z0-bt,x1+bt,z0]);COL.push([x0-bt,z1,x1+bt,z1+bt]);
@@ -227,15 +248,16 @@ function roomAt(px,pz){for(const rm of ROOMS){const r=rm.r;if(px>=r[0]&&px<=r[2]
 /* ============ furniture kit ============ */
 const F=(x,z)=>({x:x-cx,z:z-cz});
 function rug(x,z,w,d,mat){const m=new T.Mesh(new T.BoxGeometry(w,0.024,d),mat||M.rug);m.position.set(x-cx,0.013,z-cz);m.receiveShadow=true;root.add(m);}
-function sofa(x,z,ry,w){w=w||2.7;const p=F(x,z);
-  B(w,0.34,0.98,M.fabric,p.x,0.24,p.z,ry);                       // base
-  B(w,0.5,0.24,M.fabric,p.x,0.5, p.z-0.37,ry);                   // back
-  B(0.24,0.44,0.98,M.fabric,p.x-w/2+0.12,0.44,p.z,ry);          // arm L
-  B(0.24,0.44,0.98,M.fabric,p.x+w/2-0.12,0.44,p.z,ry);          // arm R
-  for(let i=-1;i<=1;i++){if(w<2.4&&i===0){}B(w/3-0.06,0.16,0.82,M.bed,p.x+i*(w/3),0.5,p.z+0.02,ry);} // seat cushions
-  // throw pillows
-  B(0.4,0.4,0.14,M.fabricD,p.x-w/2+0.5,0.62,p.z-0.2,ry);B(0.4,0.4,0.14,M.rug2,p.x+w/2-0.5,0.62,p.z-0.2,ry);
-  B(w+0.02,0.12,0.06,M.metal,p.x,0.06,p.z+0.44,ry); // base shadow gap toe
+function sofa(x,z,ry,w){w=w||2.7;const p=F(x,z);ry=ry||0;const c=Math.cos(ry),s=Math.sin(ry);
+  const P=(dx,dz)=>[p.x+dx*c-dz*s,p.z+dx*s+dz*c];let q;
+  q=P(0,0);        B(w,0.30,0.96,M.fabricD,q[0],0.24,q[1],ry);     // base (darker)
+  q=P(0,-0.36);    B(w,0.5,0.22,M.fabric,q[0],0.54,q[1],ry);       // backrest
+  q=P(-w/2+0.12,0);B(0.22,0.42,0.96,M.fabric,q[0],0.46,q[1],ry);   // arm L
+  q=P(w/2-0.12,0); B(0.22,0.42,0.96,M.fabric,q[0],0.46,q[1],ry);   // arm R
+  for(let i=-1;i<=1;i++){q=P(i*(w/3),0.05);B(w/3-0.08,0.17,0.78,M.bed,q[0],0.48,q[1],ry);} // seat cushions (light)
+  q=P(-w/2+0.55,-0.16);B(0.38,0.38,0.13,M.rug2,q[0],0.62,q[1],ry); // pillow accent
+  q=P(w/2-0.55,-0.16); B(0.38,0.38,0.13,M.fabricD,q[0],0.62,q[1],ry);
+  [[-w/2+0.2,0.38],[w/2-0.2,0.38],[-w/2+0.2,-0.38],[w/2-0.2,-0.38]].forEach(o=>{q=P(o[0],o[1]);B(0.05,0.13,0.05,M.metal,q[0],0.06,q[1],ry);}); // legs
 }
 function coffee(x,z){const p=F(x,z);B(1.2,0.06,0.62,M.wood,p.x,0.34,p.z);[[-0.52,-0.24],[0.52,-0.24],[-0.52,0.24],[0.52,0.24]].forEach(o=>B(0.05,0.32,0.05,M.metal,p.x+o[0],0.16,p.z+o[1]));
   B(0.3,0.02,0.3,M.brass,p.x+0.2,0.375,p.z);}
@@ -267,8 +289,11 @@ function bed(x,z,ry,king){const p=F(x,z);const w=king?1.9:1.5,d=2.05;
 }
 function wardrobe(x,z,ry,w){w=w||2.2;const p=F(x,z);B(0.6,CH-0.2,w,M.wall2,p.x,(CH-0.2)/2,p.z,ry);
   for(let i=0;i<Math.round(w/0.55);i++){B(0.02,CH-0.4,0.02,M.brass,p.x-0.31,1.4,p.z-w/2+0.28+i*0.55,ry);}}
-function plant(x,z,big){const p=F(x,z);const r=big?0.28:0.2;CY(r,big?0.5:0.34,M.pot,p.x,big?0.25:0.17,p.z);
-  const f=new T.Mesh(new T.SphereGeometry(big?0.55:0.36,12,10),M.leaf);f.position.set(p.x,(big?0.95:0.6),p.z);f.scale.y=1.5;f.castShadow=true;root.add(f);}
+function plant(x,z,big){const p=F(x,z);const r=big?0.24:0.17,ph=big?0.42:0.3;CY(r,ph,M.pot,p.x,ph/2,p.z);
+  CY(r*0.9,0.05,M.leaf,p.x,ph,p.z); // soil
+  const n=big?6:4,rad=big?0.2:0.15,base=ph+0.06;
+  for(let i=0;i<n;i++){const a=i/n*6.283,rr=(i%2?0.15:0.06)*(big?1.5:1);const f=new T.Mesh(new T.SphereGeometry(rad,9,7),M.leaf);
+    f.position.set(p.x+Math.cos(a)*rr,base+(i%2?0.14:0.28)*(big?1.4:1),p.z+Math.sin(a)*rr);f.scale.set(0.8,1.3,0.8);f.castShadow=true;root.add(f);}}
 function art(x,z,ry,w){w=w||1.4;const p=F(x,z);B(0.05,w*0.62,w,M.wood,p.x,1.7,p.z,ry);B(0.02,w*0.56,w-0.08,M.art,p.x+0.03,1.7,p.z,ry);}
 function lamp(x,z){const p=F(x,z);CY(0.05,1.5,M.metal,p.x,0.75,p.z);const sh=new T.Mesh(new T.CylinderGeometry(0.2,0.24,0.28,18),M.bed);sh.position.set(p.x,1.55,p.z);root.add(sh);}
 function lounger(x,z,ry){const p=F(x,z);B(0.7,0.28,1.9,M.fabric,p.x,0.28,p.z,ry);B(0.7,0.5,0.14,M.fabric,p.x,0.5,p.z-0.88,ry);}
@@ -328,11 +353,15 @@ function collide(nx,nz){const r=0.25;for(const c of COL){const px=Math.max(c[0],
 function move(fwd,strafe,dt){const sp=2.4*dt;const nx=walk.x+(Math.sin(walk.yaw)*fwd+Math.cos(walk.yaw)*strafe)*sp,nz=walk.z+(Math.cos(walk.yaw)*fwd-Math.sin(walk.yaw)*strafe)*sp;
   if(!collide(nx,walk.z))walk.x=nx;if(!collide(walk.x,nz))walk.z=nz;}
 
-/* input — drag to look (no pointer-lock, so the minimap stays tappable) */
-const cvs=renderer.domElement;let drag=false,lx=0,ly=0;
-cvs.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;cvs.setPointerCapture&&cvs.setPointerCapture(e.pointerId);});
+/* input — drag to look; click a room (orbit) to step inside. no pointer-lock, so the map stays tappable */
+const cvs=renderer.domElement;let drag=false,lx=0,ly=0,dnx=0,dny=0,moved=false;
+const _ray=new T.Raycaster(),_ndc=new T.Vector2();
+function pickRoom(clientX,clientY){const r=cvs.getBoundingClientRect();_ndc.x=((clientX-r.left)/r.width)*2-1;_ndc.y=-((clientY-r.top)/r.height)*2+1;_ray.setFromCamera(_ndc,camera);
+  const o=_ray.ray.origin,d=_ray.ray.direction;if(Math.abs(d.y)<1e-4)return null;const t=-o.y/d.y;if(t<=0)return null;return nearRoom(o.x+d.x*t+cx,o.z+d.z*t+cz);}
+cvs.addEventListener('pointerdown',e=>{drag=true;moved=false;lx=dnx=e.clientX;ly=dny=e.clientY;cvs.setPointerCapture&&cvs.setPointerCapture(e.pointerId);});
 cvs.addEventListener('pointerup',()=>{drag=false;});
-cvs.addEventListener('pointermove',e=>{if(!drag)return;const mx=e.clientX-lx,my=e.clientY-ly;lx=e.clientX;ly=e.clientY;
+cvs.addEventListener('click',e=>{if(!moved&&mode==='orbit'){const rm=pickRoom(e.clientX,e.clientY);if(rm)goRoom(rm,true);}});
+cvs.addEventListener('pointermove',e=>{if(!drag)return;const mx=e.clientX-lx,my=e.clientY-ly;if(Math.abs(e.clientX-dnx)+Math.abs(e.clientY-dny)>6)moved=true;lx=e.clientX;ly=e.clientY;
   if(mode==='orbit'){orbit.az-=mx*0.006;orbit.pol=Math.max(0.22,Math.min(1.45,orbit.pol-my*0.006));}
   else{stopTour();walk.yaw-=mx*0.006;walk.pitch=Math.max(-0.85,Math.min(0.85,walk.pitch-my*0.006));}});
 cvs.addEventListener('wheel',e=>{if(mode==='orbit')orbit.rad=Math.max(6,Math.min(30,orbit.rad+e.deltaY*0.01));e.preventDefault();},{passive:false});
@@ -388,7 +417,7 @@ const mstatic=document.createElement('canvas');mstatic.width=mmc.width;mstatic.h
   g.fillStyle='#f6f2ea';ROOMS.forEach(rm=>{const p=mmap(rm.r[0],rm.r[1]),q=mmap(rm.r[2],rm.r[3]);g.fillRect(p[0],p[1],q[0]-p[0],q[1]-p[1]);});
   SEGS.forEach(s=>{const p=mmap(s[0],s[1]),q=mmap(s[2],s[3]);g.beginPath();g.moveTo(p[0],p[1]);g.lineTo(q[0],q[1]);g.strokeStyle=s[4]?'#5f9aa4':'#2e2c28';g.lineWidth=s[4]?1.5:2.2;g.lineCap='round';g.stroke();});
   g.fillStyle='rgba(26,26,26,.55)';g.font='700 6.5px Inter,system-ui';g.textAlign='center';
-  const ab={'Bedroom 01':'BED 1','Bedroom 02':'BED 2'};
+  const ab={'Bedroom 01':'BED 1','Bedroom 02':'BED 2','Living & Dining':'LIVING · DINING'};
   ROOMS.forEach(rm=>{const c=mmap((rm.r[0]+rm.r[2])/2,(rm.r[1]+rm.r[3])/2);g.fillText((ab[rm.n]||rm.n).toUpperCase(),c[0],c[1]+2);});
   g.fillStyle='#8a6a1e';g.font='700 8px Inter';g.fillText('N',13,14);g.beginPath();g.moveTo(13,4);g.lineTo(10,9);g.lineTo(16,9);g.closePath();g.fill();
 })();
@@ -402,7 +431,7 @@ function drawMap(){mmx.clearRect(0,0,mmc.width,mmc.height);mmx.drawImage(mstatic
     curRoom=rm?rm.n:'Hallway';
   } else curRoom=null;
 }
-mmc.addEventListener('click',e=>{const r=mmc.getBoundingClientRect();const mx=(e.clientX-r.left)*mmc.width/r.width,my=(e.clientY-r.top)*mmc.height/r.height;const pp=mmInv(mx,my),rm=roomAt(pp[0],pp[1]);if(rm){stopTour();goRoom(rm,true);}});
+mmc.addEventListener('click',e=>{const r=mmc.getBoundingClientRect();const mx=(e.clientX-r.left)*mmc.width/r.width,my=(e.clientY-r.top)*mmc.height/r.height;const pp=mmInv(mx,my),rm=nearRoom(pp[0],pp[1]);if(rm){stopTour();goRoom(rm,true);}});
 
 /* ============ loop ============ */
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
@@ -422,12 +451,15 @@ loop();
 window.__view=(name)=>{const V={
   top:()=>{mode='orbit';orbit.az=-Math.PI/2;orbit.pol=0.20;orbit.rad=21;orbit.tgt.set(0,0,0);},
   iso:()=>{mode='orbit';orbit.az=-0.7;orbit.pol=0.82;orbit.rad=15.5;orbit.tgt.set(0,1.0,0);},
-  living:()=>goRoom(ROOMS[1],false),master:()=>goRoom(ROOMS[6],false),kitchen:()=>goRoom(ROOMS[3],false),bed:()=>goRoom(ROOMS[4],false),foyer:()=>goRoom(ROOMS[0],false),
+  living:()=>goRoom(ROOMS[1],false),master:()=>goRoom(ROOMS[5],false),kitchen:()=>goRoom(ROOMS[2],false),bed:()=>goRoom(ROOMS[3],false),foyer:()=>goRoom(ROOMS[0],false),
 };(V[name]||V.iso)();if(mode==='walk')applyWalk();else applyOrbit();};
 setTimeout(()=>{const l=document.getElementById('load');l.style.opacity=0;setTimeout(()=>l.remove(),700);},500);
+document.getElementById('introGo').onclick=()=>{const el=document.getElementById('intro');el.style.opacity='0';setTimeout(()=>el.style.display='none',400);};
 window.__pos=()=>[+(walk.x+cx).toFixed(2),+(walk.z+cz).toFixed(2)];
 window.__set=(px,pz,yaw)=>{mode='walk';walk.x=px-cx;walk.z=pz-cz;if(yaw!=null)walk.yaw=yaw;walk.pitch=0;};
 window.__step=(f,s,n)=>{for(let i=0;i<(n||60);i++)move(f,s,0.05);return [+(walk.x+cx).toFixed(2),+(walk.z+cz).toFixed(2)];};
+window.__state=()=>({mode,room:curRoom,pos:[+(walk.x+cx).toFixed(1),+(walk.z+cz).toFixed(1)]});
+window.__pick=(x,y)=>{const rm=pickRoom(x,y);return rm?rm.n:null;};
 window.__ready=true;
 </script>
 </body></html>
