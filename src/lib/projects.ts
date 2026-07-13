@@ -491,8 +491,30 @@ export const TOWER_INTEL: Record<string, TowerIntelMeta> = {
       idealFor: "Large families (4.5 BHK)",
     },
   },
+  "Elan The Presidential": {
+    file: "tower-intel/elan-the-presidential.html",
+    preview: "tower-intel/elan-the-presidential-preview.jpg",
+    towers: 8, // the config-detailed towers modelled today (T-1…T-6, T-14/T-15)
+    unitTypes: 6, // 3/4/5 BHK, each a head + mirror-wing plate
+    totalUnits: "760+",
+    // Mirrors the advisor's own top pick (strongest winter sun), so the teaser
+    // stays honest against what a buyer sees once the model opens.
+    sample: {
+      ref: "Tower T-6 · Line 103",
+      type: "4 BHK · lagoon-facing head",
+      sun: "8.5 h/day",
+      sunPct: 82,
+      ventilation: "Head unit · nose to the lagoon · light on 3 sides",
+      vastu: "South lagoon deck · North (Kuber) entrance",
+      idealFor: "Large families (4 BHK)",
+    },
+  },
 };
-export const towerIntelMeta = (p: ProjectIntel): TowerIntelMeta | undefined => TOWER_INTEL[p.name];
+// Exact DB-name match first (Arbour/Titanium), then a slug fallback so the
+// advisor attaches to the live page regardless of the DB name's exact casing.
+const tiSlug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+export const towerIntelMeta = (p: ProjectIntel): TowerIntelMeta | undefined =>
+  TOWER_INTEL[p.name] ?? Object.entries(TOWER_INTEL).find(([k]) => tiSlug(k) === p.slug)?.[1];
 
 /* Parse an appreciation band like "+18–25%" → its midpoint (%) */
 export function bandMid(s: string): number {
