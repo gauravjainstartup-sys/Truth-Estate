@@ -29,11 +29,16 @@ const REQUIRED = "backlog_listing_public_v3";
 const H = { apikey: KEY, Authorization: `Bearer ${KEY}` };
 
 // selects are supersets of every caller's query — the fixture reader
-// replays the file for whatever narrower query a caller makes
-const VIEWS = [
-  ["backlog_listing_public", "select=*&limit=500"],
+// replays the file for whatever narrower query a caller makes.
+// v3 is the ONLY backlog view the build reads; v2/base are pulled solely as a
+// fallback when v3 is empty (the build's fetchBacklogFull tries v3 → v2 → base),
+// so we skip those two redundant 4.5 MB pulls on every healthy build.
+const V3_Q = "select=*&limit=500";
+const FALLBACKS = [
   ["backlog_listing_public_v2", "select=*&limit=500"],
-  ["backlog_listing_public_v3", "select=*&limit=500"],
+  ["backlog_listing_public", "select=*&limit=500"],
+];
+const OTHERS = [
   ["backlog_projects", "select=*&limit=2000"],
   ["micro_market_data", "select=*&limit=200"],
   ["project_configurations", "select=*&limit=2000"],
@@ -84,31 +89,46 @@ async function headCount(view, filter) {
 await rm(OUT, { recursive: true, force: true });
 await mkdir(OUT, { recursive: true });
 
-let wrote = 0;
-let v3Rows = null;
-for (const [view, q] of VIEWS) {
-  let rows = await getJson(`${view}?${q}`);
-  /* the pipeline rewrites tables in place — make sure the sample is stable
-     before trusting it: refetch the required view until two consecutive
-     samples agree on size (up to 3 cycles) */
-  if (rows && view === REQUIRED) {
-    for (let cycle = 0; cycle < 3; cycle++) {
-      await sleep(4000);
-      const probe = await getJson(`${view}?select=id&limit=500`);
-      if (!probe || probe.length === rows.length) break;
-      console.warn(`[snapshot] ${view} UNSTABLE (${rows.length} → ${probe.length} rows) — pipeline writing, resampling`);
-      rows = (await getJson(`${view}?${q}`)) ?? rows;
-    }
-    v3Rows = rows;
-  }
-  if (!rows) {
-    console.warn(`[snapshot] ${view} FAILED — build will treat it as unavailable`);
-    continue;
-  }
+// ── egress instrumentation: byte size per view + a per-build total, so the
+//    deploy log shows exactly where the read egress goes (base64 media in
+//    project_extended_details / project_configurations is the suspect) ──
+const MB = (n) => (n / 1048576).toFixed(1);
+let totalBytes = 0, wrote = 0;
+async function snap(view, q, rows) {
+  if (rows === undefined) rows = await getJson(`${view}?${q}`);
+  if (!rows) { console.warn(`[snapshot] ${view} FAILED — build will treat it as unavailable`); return null; }
+  const bytes = Buffer.byteLength(JSON.stringify(rows));
+  totalBytes += bytes;
   await writeFile(`${OUT}/${view}.json`, JSON.stringify(rows));
-  console.log(`[snapshot] ${view} → ${rows.length} rows`);
+  console.log(`[snapshot] ${view} → ${rows.length} rows · ${MB(bytes)} MB`);
   wrote++;
+  return rows;
 }
+
+/* v3 is required — resample until its size is stable (the pipeline rewrites
+   tables in place, so a mid-write sample must not be trusted). */
+let v3Rows = await getJson(`${REQUIRED}?${V3_Q}`);
+if (v3Rows) {
+  for (let cycle = 0; cycle < 3; cycle++) {
+    await sleep(4000);
+    const probe = await getJson(`${REQUIRED}?select=id&limit=500`);
+    if (!probe || probe.length === v3Rows.length) break;
+    console.warn(`[snapshot] ${REQUIRED} UNSTABLE (${v3Rows.length} → ${probe.length} rows) — pipeline writing, resampling`);
+    v3Rows = (await getJson(`${REQUIRED}?${V3_Q}`)) ?? v3Rows;
+  }
+  await snap(REQUIRED, V3_Q, v3Rows);
+}
+// v2/base fallbacks: only when v3 is unusable — the build never reads them otherwise
+if (!v3Rows || v3Rows.length === 0) {
+  console.warn("[snapshot] v3 empty — pulling v2/base fallbacks");
+  for (const [v, q] of FALLBACKS) await snap(v, q);
+} else {
+  console.log("[snapshot] v3 ok — skipped v2/base fallbacks (~2×4.5 MB not pulled)");
+}
+// supporting + media-heavy views
+for (const [v, q] of OTHERS) await snap(v, q);
+
+console.log(`[snapshot] ⇢ DB read egress this build ≈ ${MB(totalBytes)} MB across ${wrote} view(s)`);
 
 // tracked stats read counts over projects_basic_public (HEAD + content-range)
 const tracked = await headCount("projects_basic_public", "");
@@ -129,4 +149,4 @@ if (!v3Rows || v3Rows.length === 0) {
   await rm(OUT, { recursive: true, force: true });
   process.exit(0);
 }
-console.log(`[snapshot] ${wrote}/${VIEWS.length} views + counts → ${OUT}`);
+console.log(`[snapshot] ${wrote} view(s) + counts → ${OUT}`);

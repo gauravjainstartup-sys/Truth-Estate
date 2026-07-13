@@ -84,6 +84,7 @@ function urlExt(u) {
    dropping media from the deploy. Over-cap PDFs store ONLY their cover
    (thumbOnly) so the cache never carries multi-MB files it won't ship. */
 const cacheStats = { hit: 0, fresh: 0, changed: 0, stale: 0 };
+let dlBytes = 0; // Storage egress: bytes actually pulled (not served from the .media-cache)
 const cacheTouched = new Set();
 const cKey = (u) => createHash("sha1").update(u).digest("hex").slice(0, 16);
 const cPath = (h, suffix) => path.join(CACHE_DIR, h + suffix);
@@ -137,6 +138,7 @@ async function cachedGet(u) {
   if (len > MAX_BYTES) { try { await res.body?.cancel(); } catch { /* discard */ } return { skip: `too-big (${(len / 1048576).toFixed(1)} MB)` }; }
   const buf = Buffer.from(await res.arrayBuffer());
   if (!buf.length || buf.length > MAX_BYTES) return { skip: `too-big (${(buf.length / 1048576).toFixed(1)} MB)` };
+  dlBytes += buf.length;
   cacheStats[meta ? "changed" : "fresh"]++;
   try {
     await mkdir(CACHE_DIR, { recursive: true });
@@ -393,7 +395,7 @@ try {
     if (saved) manifest.__urls = urls;
     console.log(`[materialize] url-map: ${saved}/${urlQueue.size} remote file(s) pulled same-origin`);
   }
-  console.log(`[materialize] cache: ${cacheStats.hit} unchanged (304) · ${cacheStats.fresh} new · ${cacheStats.changed} changed · ${cacheStats.stale} stale-kept`);
+  console.log(`[materialize] cache: ${cacheStats.hit} unchanged (304) · ${cacheStats.fresh} new · ${cacheStats.changed} changed · ${cacheStats.stale} stale-kept · ⇢ Storage egress ≈ ${(dlBytes / 1048576).toFixed(1)} MB pulled`);
   // drop cache entries whose URL vanished from the data — the cache tracks
   // the live media set instead of growing without bound. Only prune when this
   // run saw URLs at all: an empty fetch result must not wipe a good cache.

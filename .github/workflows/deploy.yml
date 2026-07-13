@@ -5,11 +5,13 @@ on:
     branches: [main]
   # Manual "Run workflow" button — publish the latest Supabase data on demand.
   workflow_dispatch:
-  # Hourly rebuild — the site is a static export, so this re-fetches Supabase
-  # and redeploys every hour, surfacing DB edits within the hour with no manual
-  # step. GitHub may delay scheduled runs a few minutes under load.
+  # Scheduled rebuild — the site is a static export, so this re-fetches Supabase
+  # and redeploys, surfacing DB edits with no manual step. Every 6h (not hourly):
+  # each run re-pulls the full media set (base64 in project_extended_details isn't
+  # URL-cacheable), so 24 → 4 scheduled pulls/day cuts most of the egress. Use the
+  # "Run workflow" button to publish DB edits sooner. GitHub may delay cron runs.
   schedule:
-    - cron: "0 * * * *"
+    - cron: "0 */6 * * *"
 
 permissions:
   contents: read

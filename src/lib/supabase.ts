@@ -109,8 +109,11 @@ export type LiveScoredProject = {
 };
 
 export async function fetchScoredBacklog(): Promise<LiveScoredProject[] | null> {
+  // v3 is a superset of the base view (same columns) and it's the only backlog
+  // view the build snapshots — read it so this never depends on a fixture we
+  // stopped pulling to save egress.
   const rows = await sbRows(
-    "backlog_listing_public",
+    "backlog_listing_public_v3",
     'select=name,developer,location,"microMarket","truthScore","delayRisk","delayDelta",cagr,"redFlags","matchScore",delay_chance_pct,listing_red_flags,budget,config&truthScore=not.is.null&order="truthScore".desc&limit=12',
   );
   if (!rows) return null;
