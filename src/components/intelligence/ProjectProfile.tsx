@@ -614,7 +614,7 @@ export default function ProjectProfile({
                call at the end of the report. */}
             <div className="mt-11 rounded-2xl border border-[#c9a96e]/30 bg-white/70 p-8 shadow-[0_16px_50px_rgba(0,0,0,0.04)] md:p-10">
               <Eyebrow>The short answer</Eyebrow>
-              <p className="mt-5 font-serif text-[1.4rem] font-normal leading-[1.5] md:text-[1.7rem]">{p.reason}</p>
+              <p className="mt-5 font-serif text-[1.4rem] font-normal leading-[1.5] md:text-[1.7rem]">{shortAnswer(p.reason)}</p>
               <div className="mt-6 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 border-t border-[#1a1a1a]/8 pt-5">
                 <p className="max-w-xl text-[0.86rem] font-light leading-[1.7] text-[#1a1a1a]/55">
                   <span className="font-medium text-[#1a1a1a]/70">Best suited for:</span> {investorFit(p).replace(/^Best suited for\s+/i, "")}
@@ -1066,6 +1066,22 @@ function Chapter({ n, title, framing }: { n: string; title: string; framing: str
 
 function scoreGrade(s: number) {
   return s >= 90 ? "Exceptional" : s >= 80 ? "Strong" : s >= 70 ? "Solid" : s >= 60 ? "Fair" : "Watch";
+}
+
+/* The short answer — reformat the pipeline's terse data-caption
+   ("<Reco> project. <n>% construction complete. <a>/<b> units sold.") into a
+   cleaner one-liner. Any other (prose) reason is left as-is, bar swapping a
+   raw units fraction for a percentage. */
+function shortAnswer(reason: string): string {
+  const s = (reason ?? "").trim();
+  const m = s.match(/^([A-Za-z][A-Za-z ]{2,22}?)\s+project\.\s*(\d+)%\s*construction\s*complete\.\s*(\d+)\s*\/\s*(\d+)\s*units\s*sold\.?\s*$/i);
+  if (m) {
+    const reco = m[1].trim();
+    const lead = /review/i.test(reco) ? reco : `${reco}-grade`;
+    const pct = Math.round((Number(m[3]) / Number(m[4])) * 100);
+    return `${lead}. ${m[2]}% built · ${pct}% sold (${m[3]} of ${m[4]} units).`;
+  }
+  return s.replace(/(\d+)\s*\/\s*(\d+)\s*units\s*sold/i, (_, n, t) => `${Math.round((Number(n) / Number(t)) * 100)}% sold (${n} of ${t} units)`);
 }
 
 /* ── one consistent line-icon set for the hero (replaces ad-hoc unicode glyphs) ── */
