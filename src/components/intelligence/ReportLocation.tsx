@@ -1,5 +1,23 @@
-import { type LocationGeo, type ProjectIntel } from "@/lib/projects";
+import { pillars, type LocationGeo, type PillarBand, type ProjectIntel } from "@/lib/projects";
 import LocationMap from "./LocationMap";
+
+/* grade chip — same treatment as the Developer / Anatomy pillar cards */
+type Band = PillarBand;
+const CHIP: Record<Band, string> = {
+  exceptional: "text-[#155a3a] bg-[#1e6b45]/[0.12] border-[#1e6b45]/25",
+  strong: "text-[#1c7a4c] bg-[#238c55]/[0.10] border-[#238c55]/25",
+  moderate: "text-[#8a6a1e] bg-[#9a7a2e]/[0.12] border-[#9a7a2e]/30",
+  watch: "text-[#9a4130] bg-[#b0503e]/[0.10] border-[#b0503e]/30",
+};
+const DOT: Record<Band, string> = { exceptional: "bg-[#1e6b45]", strong: "bg-[#238c55]", moderate: "bg-[#9a7a2e]", watch: "bg-[#b0503e]" };
+const LABEL: Record<Band, string> = { exceptional: "Exceptional", strong: "Strong", moderate: "Moderate", watch: "Watch" };
+function BandChip({ band }: { band: Band }) {
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.08em] ${CHIP[band]}`}>
+      <span className={`h-[6px] w-[6px] rounded-full ${DOT[band]}`} />{LABEL[band]}
+    </span>
+  );
+}
 
 /* Chapter II · Pillar II — Location Intelligence. When a project carries rich
    geo data we lead with a coordinate-accurate interactive map, a connectivity
@@ -31,14 +49,18 @@ export default function ReportLocation({ p }: { p: ProjectIntel }) {
 function GeoLayout({ p, geo }: { p: ProjectIntel; geo: LocationGeo }) {
   const c = geo.connectivity;
   const ins = geo.insights;
+  const locBand = pillars(p).find((r) => r.key === "location")?.band;
 
   return (
     <>
-      {/* the verdict — the numbers live in the pillar score; the prose is the value */}
+      {/* analyst assessment — same shape as the Developer cards: label + grade
+         chip + the verdict; the corridor supply note rides underneath, quiet */}
       {ins?.verdict && (
         <div className="mt-6 rounded-2xl border-l-2 border-[#1e6b45]/40 bg-white/50 p-6 md:p-7">
-          {ins.marketStage && <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#238c55]">{ins.marketStage}</p>}
-          <p className="mt-2.5 font-serif text-[1.2rem] leading-[1.4] md:text-[1.35rem]">{ins.verdict}</p>
+          <p className="text-[0.62rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/40">Analyst assessment</p>
+          {locBand && <div className="mt-2.5"><BandChip band={locBand} /></div>}
+          <p className="mt-3 font-serif text-[1.2rem] leading-[1.45] md:text-[1.3rem]">{ins.verdict}</p>
+          {ins.marketStage && <p className="mt-3.5 text-[0.82rem] font-light leading-[1.6] text-[#1a1a1a]/55">{ins.marketStage}</p>}
         </div>
       )}
 
