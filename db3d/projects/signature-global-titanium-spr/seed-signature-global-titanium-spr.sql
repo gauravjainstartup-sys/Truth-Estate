@@ -1,6 +1,6 @@
 -- ════════════════════════════════════════════════════════════════
 --  SEED — signature-global-titanium-spr 3D model pieces
---  Generated 2026-07-13T19:28:26.787Z by db3d/make-bundle.mjs
+--  Generated 2026-07-13T19:48:03.853Z by db3d/make-bundle.mjs
 --  Run AFTER db3d/schema.sql. Idempotent (upserts) — safe to re-run.
 --  Rows: site 1 · towers 7 · configs 2 · plates 3
 --        floorplans 5 · intelligence 16 · vastu_rules 1

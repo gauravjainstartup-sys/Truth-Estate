@@ -31,23 +31,28 @@ const ORIGIN_ALLOW = ["http://localhost:" + PORT, "http://127.0.0.1:" + PORT, "h
   ...(process.env.EXTRA_ORIGIN ? process.env.EXTRA_ORIGIN.split(",") : [])]; // parity harness serves the engine on another port
 const RATE_MAX = 5, RATE_WIN_MS = 60_000; // 5 mints / minute / subject
 
-// ── entitlement source of truth (real: SELECT from model_access_grants) ──
-const GRANTS = [
-  { slug: "signature-global-titanium-spr", subject: "buyer@demo", entitlement: "paid" },
-];
-
 // ── the pieces (real: get_model_bundle(slug) via service_role) ──
-const PIECES = process.env.PIECES_DIR || path.join(HERE, "pieces");
-const load = (n) => JSON.parse(readFileSync(path.join(PIECES, `${n}.json`), "utf8"));
-function bundle(slug) {
-  const site = load("site");
-  if (site.slug !== slug) return null;
-  return {
-    site,
-    towers: load("towers"), configs: load("configs"), plates: load("plates"),
-    floorplans: load("floorplans"), intelligence: load("intelligence"), vastu: load("vastu_rules"),
-  };
+//    one dir per project: projects/<slug>/pieces/*.json
+const PROJECTS = process.env.PROJECTS_DIR || path.join(HERE, "projects");
+function listProjects() {
+  try { return readdirSync(PROJECTS).filter((d) => { try { readFileSync(path.join(PROJECTS, d, "pieces", "site.json")); return true; } catch { return false; } }); }
+  catch { return []; }
 }
+const load = (slug, n) => JSON.parse(readFileSync(path.join(PROJECTS, slug, "pieces", `${n}.json`), "utf8"));
+function bundle(slug) {
+  try {
+    return {
+      site: load(slug, "site"),
+      towers: load(slug, "towers"), configs: load(slug, "configs"), plates: load(slug, "plates"),
+      floorplans: load(slug, "floorplans"), intelligence: load(slug, "intelligence"), vastu: load(slug, "vastu_rules"),
+    };
+  } catch { return null; }
+}
+
+// ── entitlement source of truth (real: SELECT from model_access_grants) ──
+//    DEMO semantics: buyer@demo is granted every project present on disk.
+//    Production replaces this with the model_access_grants table.
+const GRANTS = listProjects().map((slug) => ({ slug, subject: "buyer@demo", entitlement: "paid" }));
 
 // ── tiny HMAC JWT (base64url header.payload.sig) — no deps ──
 const b64u = (buf) => Buffer.from(buf).toString("base64url");
@@ -124,8 +129,10 @@ const server = createServer((req, res) => {
      production — the gate is fully exercised, nothing is bypassed. ── */
   if (req.method === "GET") {
     if (u.pathname === "/") {
-      res.writeHead(302, { location: "/tower-engine.html?sub=buyer@demo" }); // the demo-entitled subject
-      return res.end();
+      const ps = listProjects();
+      if (ps.length === 1) { res.writeHead(302, { location: `/engine-${ps[0]}.html?sub=buyer@demo` }); return res.end(); }
+      res.writeHead(200, { "content-type": "text/html" });
+      return res.end(`<body style="font:15px system-ui;padding:40px"><h3>Gated 3D models</h3><ul>${ps.map((p) => `<li><a href="/engine-${p}.html?sub=buyer@demo">${p}</a></li>`).join("")}</ul>`);
     }
     const STATIC = process.env.STATIC_DIR || path.join(HERE, "engine");
     const safe = path.normalize(path.join(STATIC, u.pathname));

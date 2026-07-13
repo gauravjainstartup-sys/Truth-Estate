@@ -1,0 +1,47 @@
+{
+  "slug": "elan-the-presidential",
+  "name": "Elan The Presidential",
+  "latitudeRad": 0.49745910156422735,
+  "latitudeDeg": 28.5023,
+  "floors": 32,
+  "floorHeightM": 3.45,
+  "lobbyHeightM": 10,
+  "northCalRad": 0,
+  "northCalDeg": 0,
+  "sunBenchmarkHours": 4,
+  "westWeight": 0.6,
+  "sunRayLenM": 1200,
+  "lake": {
+    "x": 0,
+    "z": 0
+  },
+  "scaleMPerPx": 0.55,
+  "pxOriginX": 1180,
+  "pxOriginY": 690,
+  "boundaryPx": [
+    [
+      738,
+      381
+    ],
+    [
+      1562,
+      490
+    ],
+    [
+      1762,
+      610
+    ],
+    [
+      1002,
+      981
+    ],
+    [
+      716,
+      574
+    ],
+    [
+      738,
+      381
+    ]
+  ]
+}

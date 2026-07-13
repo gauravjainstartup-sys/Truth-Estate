@@ -19,8 +19,9 @@
    ════════════════════════════════════════════════════════════════ */
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 
-const SRC = "public/tower-intel/signature-global-titanium-spr.html";
-const OUT = "db3d/engine/tower-engine.html";
+const SRC = process.argv[2] || "public/tower-intel/signature-global-titanium-spr.html";
+const SLUG = SRC.split("/").pop().replace(/\.html$/, "");
+const OUT = process.argv[3] || `db3d/engine/engine-${SLUG}.html`;
 const src = readFileSync(SRC, "utf8");
 
 // ── split at the engine <script> (the one right after three.min.js) ──
@@ -126,7 +127,7 @@ const BOOT = `
 window.__loadModel = async function () {
   const q = new URLSearchParams(location.search);
   const API = q.get('api') || location.origin;                 // Edge Function base
-  const SLUG = q.get('slug') || 'signature-global-titanium-spr';
+  const SLUG = q.get('slug') || '__PROJECT_SLUG__';
   const SUBJECT = q.get('sub') || '';                          // production: from the gated session
   const mint = await fetch(API + '/mint-token', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ slug: SLUG, subject: SUBJECT }) });
   if (!mint.ok) throw new Error('mint-token ' + mint.status);
@@ -146,9 +147,10 @@ window.__loadModel = async function () {
   };
 };`;
 
+const BOOT_FILLED = BOOT.replace("__PROJECT_SLUG__", SLUG);
 const html =
   head +
-  `<script>${BOOT}</script>\n` +
+  `<script>${BOOT_FILLED}</script>\n` +
   `<script>\n(async function () {\nconst MODEL = await window.__loadModel();\n` +
   `const INTEL = new Map((MODEL.intelligence || []).map(function (r) { return [r.tower_id + '|' + r.unit, r]; }));\n` +
   engine +
@@ -160,9 +162,9 @@ const html =
 // ── IP-leak assertions: the build FAILS if any secret still ships ──
 const LEAKS = [
   [/const towers=\[\{id:/, "tower geometry literal"],
-  [/iw:604|iw:614/, "FLATW floor-plan trace"],
+  [/\biw:\d/, "FLATW floor-plan trace"],
   [/PLATE\s*=\s*\{/, "vastu PLATE offsets"],
-  [/living:0,masterBed:1,kitchen:7/, "4.5 BHK plate row"],
+  [/living:0,masterBed:\d/, "vastu plate row"],
   [/WV=\{entrance:3/, "room-importance weights"],
   [/0\.35\*sunPts/, "v1 composite formula"],
   [/kitchen:\{ideal:'SE'/, "shastra room tables (should come via API)"],
@@ -172,6 +174,6 @@ if (leaked.length) throw new Error("IP LEAK in built shell: " + leaked.map(([, n
 
 mkdirSync("db3d/engine", { recursive: true });
 writeFileSync(OUT, html);
-console.log(`[build-engine] wrote ${OUT} · ${(html.length / 1024).toFixed(0)} KB`);
+console.log(`[build-engine] ${SLUG} → ${OUT} · ${(html.length / 1024).toFixed(0)} KB`);
 console.log(`[build-engine] data literals swapped → MODEL.*  ·  vastu scoring → pre-computed INTEL lookups`);
 console.log(`[build-engine] IP-leak scan: ${LEAKS.length} signatures checked — none present`);

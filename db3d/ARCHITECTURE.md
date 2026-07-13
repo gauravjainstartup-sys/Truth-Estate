@@ -91,6 +91,11 @@ storing extra derived data. Hence `floor_curve` stays NULL.
       shastra tables all out of the shell; IP-leak scan built into the build). Per-flat three-way parity
       asserted: new engine ↔ current file ↔ stored intelligence, 16/16 exact (score + grade). Priorities
       sliders keep working — the six dims recombine client-side; only the vastu dim arrives pre-computed.
+- [x] db3d-generate tool + skill: ONE command produces a project's whole file-set (pieces, bundle,
+      seed.sql, IP-free engine, demo zip) with the gate suite + three-way parity as built-in exit
+      criteria. Proven on SPR (lossless regression, 16/16) and Elan the Presidential (first
+      never-hand-migrated project: 8 towers · 3 configs · 9 floorplans · 24/24 flat parity).
+      Layout: db3d/projects/<slug>/ per project; engines at db3d/engine/engine-<slug>.html.
 - [ ] Real-Supabase apply pack: Deno Edge Functions (port of the mock), data loader, exact provisioning steps
 - [ ] Founder finalizes → swap the TOWER_INTEL embed to the new engine (one line, instant rollback)
 - [ ] (Phase 2) server-side rendering

@@ -1,0 +1,41 @@
+[
+  {
+    "slug": "elan-the-presidential",
+    "config": "5 BHK",
+    "beds": 5,
+    "extra": "family lounge + pooja",
+    "baths": 6,
+    "saleable": 4495,
+    "carpetSqft": 2200,
+    "balconySqft": 520,
+    "deck": "private deck",
+    "rooms": "Living/dining/family lounge · Master + dress · Bed 1–4 · Pooja · Servant · Kitchen + utility",
+    "col": "#e0b667"
+  },
+  {
+    "slug": "elan-the-presidential",
+    "config": "4 BHK",
+    "beds": 4,
+    "extra": "multipurpose + family lounge",
+    "baths": 5,
+    "saleable": 3395,
+    "carpetSqft": 1702,
+    "balconySqft": 715,
+    "deck": "private deck",
+    "rooms": "Living/dining 26'×13' · Master 18'×12' · Bed 1 & 2 · Multipurpose · Pooja · Servant · Kitchen",
+    "col": "#c9a96e"
+  },
+  {
+    "slug": "elan-the-presidential",
+    "config": "3 BHK",
+    "beds": 3,
+    "extra": "servant room",
+    "baths": 4,
+    "saleable": 2700,
+    "carpetSqft": 1352,
+    "balconySqft": 675,
+    "deck": "private deck",
+    "rooms": "Living/dining 24'×13' · Master 17'×12' · Bed 1 & 2 · Puja · Servant · Kitchen",
+    "col": "#3fa06a"
+  }
+]

@@ -1,0 +1,90 @@
+[
+  {
+    "slug": "elan-the-presidential",
+    "id": "T-6",
+    "x": -35,
+    "z": -89,
+    "rot": 0,
+    "hw": 20,
+    "hd": 8,
+    "core": 3,
+    "cfg": "4 BHK"
+  },
+  {
+    "slug": "elan-the-presidential",
+    "id": "T-5",
+    "x": 11,
+    "z": -89,
+    "rot": 0,
+    "hw": 20,
+    "hd": 8,
+    "core": 3,
+    "cfg": "4 BHK"
+  },
+  {
+    "slug": "elan-the-presidential",
+    "id": "T-4",
+    "x": 56,
+    "z": -89,
+    "rot": 0,
+    "hw": 20,
+    "hd": 8,
+    "core": 3,
+    "cfg": "4 BHK"
+  },
+  {
+    "slug": "elan-the-presidential",
+    "id": "T-3",
+    "x": 101,
+    "z": -89,
+    "rot": 0,
+    "hw": 20,
+    "hd": 8,
+    "core": 3,
+    "cfg": "4 BHK"
+  },
+  {
+    "slug": "elan-the-presidential",
+    "id": "T-2",
+    "x": 146,
+    "z": -89,
+    "rot": 0,
+    "hw": 20,
+    "hd": 8,
+    "core": 3,
+    "cfg": "3 BHK"
+  },
+  {
+    "slug": "elan-the-presidential",
+    "id": "T-1",
+    "x": 191,
+    "z": -89,
+    "rot": 0,
+    "hw": 20,
+    "hd": 8,
+    "core": 3,
+    "cfg": "3 BHK"
+  },
+  {
+    "slug": "elan-the-presidential",
+    "id": "T-15",
+    "x": 225,
+    "z": -6,
+    "rot": -2.69,
+    "hw": 22,
+    "hd": 8.5,
+    "core": 3,
+    "cfg": "5 BHK"
+  },
+  {
+    "slug": "elan-the-presidential",
+    "id": "T-14",
+    "x": 290,
+    "z": -35,
+    "rot": -2.69,
+    "hw": 22,
+    "hd": 8.5,
+    "core": 3,
+    "cfg": "5 BHK"
+  }
+]

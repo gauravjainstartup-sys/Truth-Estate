@@ -18,14 +18,16 @@
    ════════════════════════════════════════════════════════════════ */
 import { readFileSync, writeFileSync } from "node:fs";
 
-const SLUG = "signature-global-titanium-spr";
-const P = (n) => JSON.parse(readFileSync(`db3d/pieces/${n}.json`, "utf8"));
+const SLUG = process.argv[2];
+if (!SLUG) { console.error("usage: make-bundle.mjs <slug>"); process.exit(1); }
+const DIR = `db3d/projects/${SLUG}`;
+const P = (n) => JSON.parse(readFileSync(`${DIR}/pieces/${n}.json`, "utf8"));
 const site = P("site"), towers = P("towers"), configs = P("configs"), plates = P("plates"),
   floorplans = P("floorplans"), intelligence = P("intelligence"), vastu = P("vastu_rules");
 
 /* ── 1. the single-file model bundle (the gated API's response shape) ── */
 const bundle = { generated_at: new Date().toISOString(), slug: SLUG, site, towers, configs, plates, floorplans, intelligence, vastu };
-const bundlePath = `db3d/${SLUG}.model.json`;
+const bundlePath = `${DIR}/${SLUG}.model.json`;
 writeFileSync(bundlePath, JSON.stringify(bundle, null, 2));
 
 /* ── 2. seed.sql — column names match schema.sql exactly ── */
@@ -84,7 +86,7 @@ lines.push(`(1,${J(vastu.generic_offsets)},${J(vastu.direction)},${J(vastu.room)
 lines.push(`on conflict (id) do update set generic_offsets=excluded.generic_offsets,direction=excluded.direction,room=excluded.room,updated_at=now();`);
 
 lines.push(`\ncommit;`);
-const seedPath = `db3d/seed-${SLUG}.sql`;
+const seedPath = `${DIR}/seed-${SLUG}.sql`;
 writeFileSync(seedPath, lines.join("\n") + "\n");
 
 const kb = (p) => (readFileSync(p).length / 1024).toFixed(1) + " KB";

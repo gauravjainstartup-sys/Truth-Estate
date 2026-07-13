@@ -16,9 +16,10 @@
    ════════════════════════════════════════════════════════════════ */
 import { readFileSync, writeFileSync, rmSync } from "node:fs";
 
-const SLUG = "signature-global-titanium-spr";
-const RAW = "db3d/pieces/intelligence.raw.json";
-const OUT = "db3d/pieces/intelligence.json";
+const SLUG = process.argv[2];
+if (!SLUG) { console.error("usage: reshape-intelligence.mjs <slug>"); process.exit(1); }
+const RAW = `db3d/projects/${SLUG}/pieces/intelligence.raw.json`;
+const OUT = `db3d/projects/${SLUG}/pieces/intelligence.json`;
 
 const doc = JSON.parse(readFileSync(RAW, "utf8"));
 if (doc.source && !doc.source.includes(SLUG)) throw new Error(`raw is for ${doc.source}, not ${SLUG}`);

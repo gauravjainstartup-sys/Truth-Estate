@@ -1,0 +1,92 @@
+[
+  {
+    "slug": "elan-the-presidential",
+    "config": "3 BHK|103",
+    "offsets": {
+      "living": 4,
+      "masterBed": 0,
+      "kitchen": 5,
+      "bed2": 3,
+      "bed3": 7,
+      "study": 5,
+      "pooja": 4,
+      "bathroom": 1,
+      "entrance": 4
+    }
+  },
+  {
+    "slug": "elan-the-presidential",
+    "config": "4 BHK|103",
+    "offsets": {
+      "living": 4,
+      "masterBed": 0,
+      "kitchen": 2,
+      "bed2": 6,
+      "bed3": 1,
+      "study": 5,
+      "pooja": 4,
+      "bathroom": 1,
+      "entrance": 4
+    }
+  },
+  {
+    "slug": "elan-the-presidential",
+    "config": "5 BHK|103",
+    "offsets": {
+      "living": 4,
+      "masterBed": 0,
+      "kitchen": 3,
+      "bed2": 7,
+      "bed3": 1,
+      "study": 5,
+      "pooja": 4,
+      "bathroom": 6,
+      "entrance": 4
+    }
+  },
+  {
+    "slug": "elan-the-presidential",
+    "config": "3 BHK",
+    "offsets": {
+      "living": 2,
+      "masterBed": 6,
+      "kitchen": 4,
+      "bed2": 0,
+      "bed3": 5,
+      "study": 1,
+      "pooja": 3,
+      "bathroom": 7,
+      "entrance": 2
+    }
+  },
+  {
+    "slug": "elan-the-presidential",
+    "config": "4 BHK",
+    "offsets": {
+      "living": 2,
+      "masterBed": 6,
+      "kitchen": 4,
+      "bed2": 0,
+      "bed3": 5,
+      "study": 1,
+      "pooja": 3,
+      "bathroom": 7,
+      "entrance": 2
+    }
+  },
+  {
+    "slug": "elan-the-presidential",
+    "config": "5 BHK",
+    "offsets": {
+      "living": 2,
+      "masterBed": 6,
+      "kitchen": 4,
+      "bed2": 0,
+      "bed3": 5,
+      "study": 1,
+      "pooja": 3,
+      "bathroom": 7,
+      "entrance": 2
+    }
+  }
+]

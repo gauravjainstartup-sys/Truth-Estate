@@ -1,16 +1,23 @@
-/* Parity render — the DB-driven engine (fetching from the gated mock) vs the
-   current monolithic file. Screenshots both overviews for side-by-side compare
-   and reports any console/page errors from the new engine's boot. */
+/* Parity proof for one project — the DB-driven engine (served BY the running
+   mock gate, same origin) vs that project's current monolithic advisor.
+   Asserts: site numbers identical + per-flat (score, grade) identical
+   three-way: new engine ↔ current file ↔ stored intelligence.
+
+   usage: node db3d/render-parity.mjs <slug> <advisor-html>
+   expects: mock-api already listening on :8791 (generate.mjs starts it). */
 import { chromium } from "/home/user/Truth-Estate/node_modules/playwright/index.mjs";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-const CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
-const ENGINE_PORT = process.env.ENGINE_PORT || 8899;
+const SLUG = process.argv[2];
+const CUR = process.argv[3];
+if (!SLUG || !CUR) { console.error("usage: render-parity.mjs <slug> <advisor-html>"); process.exit(1); }
 const API_PORT = process.env.API_PORT || 8791;
-const NEW_URL = `http://localhost:${ENGINE_PORT}/tower-engine.html?api=http://localhost:${API_PORT}&slug=signature-global-titanium-spr&sub=buyer@demo`;
-const CUR_URL = "file://" + path.resolve("public/tower-intel/signature-global-titanium-spr.html");
+const NEW_URL = `http://localhost:${API_PORT}/engine-${SLUG}.html?sub=buyer@demo`;
+const CUR_URL = "file://" + path.resolve(CUR);
+const SHOTS = `db3d/projects/${SLUG}`;
 
+const CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 const browser = await chromium.launch({
   executablePath: CHROME,
   args: ["--no-sandbox", "--use-gl=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"],
@@ -20,16 +27,13 @@ async function shoot(url, out, tag) {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   const errs = [];
   page.on("pageerror", (e) => errs.push("PAGEERROR: " + e.message));
-  page.on("console", (m) => { if (m.type() === "error") errs.push("CONSOLE.ERR: " + m.text()); });
-  page.on("requestfailed", (r) => errs.push("REQFAIL: " + r.url() + " " + (r.failure()?.errorText || "")));
+  page.on("console", (m) => { if (m.type() === "error" && !/favicon/.test(m.text())) errs.push("CONSOLE.ERR: " + m.text()); });
   await page.goto(url, { waitUntil: "load", timeout: 60000 });
-  // both engines add body.booted ~1.5s after the overview renders
   let booted = true;
-  try { await page.waitForFunction(() => document.body.classList.contains("booted"), undefined, { timeout: 40000 }); }
+  try { await page.waitForFunction(() => document.body.classList.contains("booted"), undefined, { timeout: 60000 }); }
   catch { booted = false; }
-  await page.waitForTimeout(4200); // let the scene settle / intro camera ease to the wide overview
+  await page.waitForTimeout(4200); // intro camera ease
   await page.screenshot({ path: out });
-  // numeric parity: new engine exposes window.__PARITY; the current file's globals are bare
   const parity = await page.evaluate(() => {
     if (window.__PARITY) return window.__PARITY;
     try {
@@ -42,34 +46,33 @@ async function shoot(url, out, tag) {
     } catch { return null; }
   }).catch(() => null);
   await page.close();
-  console.log(`[${tag}] booted=${booted} · ${JSON.stringify(parity)} · shot→${out}${errs.length ? "\n  " + errs.slice(0, 6).join("\n  ") : "  · no errors"}`);
+  console.log(`[${tag}] booted=${booted} · flats=${parity?.flats?.length ?? "—"} · shot→${out}${errs.length ? "\n  " + errs.slice(0, 6).join("\n  ") : ""}`);
   return { booted, errs, parity };
 }
 
-const a = await shoot(NEW_URL, "db3d/engine/shot-new.png", "DB-engine");
-const b = await shoot(CUR_URL, "db3d/engine/shot-current.png", "current ");
+const a = await shoot(NEW_URL, `${SHOTS}/shot-new.png`, "DB-engine");
+const b = await shoot(CUR_URL, `${SHOTS}/shot-current.png`, "current ");
 await browser.close();
 
-// site-level parity (everything but the flats)
 const strip = (p) => p && Object.fromEntries(Object.entries(p).filter(([k]) => k !== "flats"));
 const siteSame = a.parity && b.parity && JSON.stringify(strip(a.parity)) === JSON.stringify(strip(b.parity));
 console.log(siteSame
-  ? `\n✓ site parity: identical — ${JSON.stringify(strip(a.parity))}`
-  : `\n✗ SITE PARITY MISMATCH\n  DB-engine: ${JSON.stringify(strip(a.parity))}\n  current:   ${JSON.stringify(strip(b.parity))}`);
+  ? `✓ site parity: identical — ${JSON.stringify(strip(a.parity))}`
+  : `✗ SITE PARITY MISMATCH\n  DB-engine: ${JSON.stringify(strip(a.parity))}\n  current:   ${JSON.stringify(strip(b.parity))}`);
 
-// per-flat parity, three-way: new engine ↔ current file ↔ stored intelligence
-const stored = JSON.parse(readFileSync("db3d/pieces/intelligence.json", "utf8"))
+const stored = JSON.parse(readFileSync(`db3d/projects/${SLUG}/pieces/intelligence.json`, "utf8"))
   .map((r) => ({ t: r.tower_id, u: r.unit, s: r.composite, g: r.grade }))
   .sort((x, y) => x.t.localeCompare(y.t) || x.u.localeCompare(y.u));
 const A = a.parity?.flats ?? [], B = b.parity?.flats ?? [];
-let flatsSame = A.length === 16 && B.length === 16 && stored.length === 16;
-const rows = [];
+const want = stored.length;
+let flatsSame = A.length === want && B.length === want && want > 0;
+const bad = [];
 for (let i = 0; i < Math.max(A.length, B.length, stored.length); i++) {
   const n = A[i], c = B[i], s = stored[i];
-  const okRow = n && c && s && n.t === c.t && n.u === c.u && s.t === n.t && s.u === n.u && n.s === c.s && n.s === s.s && n.g === c.g && n.g === s.g;
-  if (!okRow) flatsSame = false;
-  rows.push(`  ${okRow ? "✓" : "✗"} ${(n ?? c ?? s)?.t}/${(n ?? c ?? s)?.u}  new=${n?.s}${n?.g ?? ""} cur=${c?.s}${c?.g ?? ""} stored=${s?.s}${s?.g ?? ""}`);
+  const ok = n && c && s && n.t === c.t && n.u === c.u && s.t === n.t && s.u === n.u && n.s === c.s && n.s === s.s && n.g === c.g && n.g === s.g;
+  if (!ok) { flatsSame = false; bad.push(`  ✗ ${(n ?? c ?? s)?.t}/${(n ?? c ?? s)?.u} new=${n?.s}${n?.g ?? ""} cur=${c?.s}${c?.g ?? ""} stored=${s?.s}${s?.g ?? ""}`); }
 }
-console.log(`${flatsSame ? "✓" : "✗"} per-flat parity (new ↔ current ↔ stored), ${A.length} flats:`);
-console.log(rows.join("\n"));
+console.log(flatsSame
+  ? `✓ per-flat parity (new ↔ current ↔ stored): ${want}/${want} exact`
+  : `✗ PER-FLAT MISMATCH (${bad.length} of ${want}):\n${bad.slice(0, 12).join("\n")}`);
 process.exit(a.booted && b.booted && siteSame && flatsSame ? 0 : 1);
