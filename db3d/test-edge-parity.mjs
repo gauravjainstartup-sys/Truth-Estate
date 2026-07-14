@@ -59,10 +59,17 @@ function dbBundle(slug) {
 }
 
 /* ── PostgREST stub — the only network the functions touch ── */
+const grantWrites = []; // grant-entitlement inserts land here for assertions
 globalThis.fetch = async (url, init = {}) => {
   const u = new URL(String(url));
   const J = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { "content-type": "application/json" } });
   if ((init.headers || {}).apikey !== "svc-test-key") return J({ error: "bad service key" }, 401);
+  if (u.pathname === "/rest/v1/model_access_grants" && (init.method || "GET") === "POST") {
+    if (u.searchParams.get("on_conflict") !== "slug,subject,entitlement") return J({ error: "bad on_conflict" }, 400);
+    if (!/ignore-duplicates/.test((init.headers || {}).prefer || "")) return J({ error: "not idempotent" }, 400);
+    grantWrites.push(...JSON.parse(init.body));
+    return new Response(null, { status: 201 });
+  }
   if (u.pathname === "/rest/v1/model_access_grants") {
     const slug = (u.searchParams.get("slug") || "").replace(/^eq\./, "");
     const subject = (u.searchParams.get("subject") || "").replace(/^eq\./, "");
@@ -76,8 +83,10 @@ globalThis.fetch = async (url, init = {}) => {
   throw new Error("unexpected fetch " + url);
 };
 
+process.env.GRANT_ADMIN_KEY = "admin-test-key";
 const { handler: mintH } = await import("./supabase/functions/mint-token/index.ts");
 const { handler: modelH, reshapeBundle } = await import("./supabase/functions/model/index.ts");
+const { handler: grantH } = await import("./supabase/functions/grant-entitlement/index.ts");
 const gate = await import("./supabase/functions/_shared/gate.ts");
 const mock = await import("./mock-api.mjs"); // imported, not listening; same default secret
 
@@ -136,7 +145,26 @@ ok("mock-minted token verifies in the port", (await gate.verify(mock.mint(payloa
 ok("port-minted token verifies in the mock", mock.verify(await gate.mint(payload, SECRET))?.sub === "buyer@demo");
 ok("identical payload → byte-identical JWT", (await gate.mint(payload, SECRET)) === mock.mint(payload));
 
-// 7. edge shell behaviour the mock never needed
+// 7. grant-entitlement — the writer the site's unlock flows call
+const grantReq = (origin, body, extra = {}) => new Request("http://edge.local/grant-entitlement",
+  { method: "POST", headers: { ...(origin ? { origin } : {}), "content-type": "application/json", ...extra }, body: JSON.stringify(body) });
+ok("grant: bad origin → 403", (await grantH(grantReq("https://evil.com", { slug: SLUG, subject: "+919812345678", entitlement: "lead" }))).status === 403);
+ok("grant: bad slug → 400", (await grantH(grantReq(GOOD, { slug: "NOT A SLUG!!", subject: "+919812345678", entitlement: "lead" }))).status === 400);
+ok("grant: bad entitlement → 400", (await grantH(grantReq(GOOD, { slug: SLUG, subject: "+919812345678", entitlement: "root" }))).status === 400);
+const g1 = await grantH(grantReq(GOOD, { slug: SLUG, subject: "+919812345678", entitlement: "lead" }));
+ok("grant: lead write → 200 + row lands", g1.status === 200 && grantWrites.some((w) => w.slug === SLUG && w.subject === "+919812345678" && w.entitlement === "lead"), grantWrites);
+grantWrites.length = 0;
+const g2 = await grantH(grantReq(GOOD, { slug: [SLUG, "elan-the-presidential"], subject: "member@x", entitlement: "member" }));
+ok("grant: self-service 'member' clamped to 'lead' (multi-slug)", g2.status === 200 && (await g2.json()).entitlement === "lead" &&
+  grantWrites.length === 2 && grantWrites.every((w) => w.entitlement === "lead"), grantWrites);
+grantWrites.length = 0;
+const g3 = await grantH(grantReq(GOOD, { slug: SLUG, subject: "webhook@ops", entitlement: "paid" }, { "x-grant-key": "admin-test-key" }));
+ok("grant: x-grant-key holder keeps 'paid'", g3.status === 200 && grantWrites[0]?.entitlement === "paid", grantWrites);
+let last;
+for (let i = 0; i < 11; i++) last = await grantH(grantReq(GOOD, { slug: SLUG, subject: "chatty@x", entitlement: "lead" }));
+ok("grant: 11th write in a minute → 429", last.status === 429);
+
+// 8. edge shell behaviour the mock never needed
 const pre = await mintH(new Request("http://edge.local/mint-token", { method: "OPTIONS", headers: { origin: GOOD } }));
 ok("CORS preflight → 204 + origin echo", pre.status === 204 && pre.headers.get("access-control-allow-origin") === GOOD);
 const secretWas = process.env.MODEL_JWT_SECRET;

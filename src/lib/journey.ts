@@ -5,6 +5,8 @@
    for anything. Auth & returning users are simulated via localStorage.
    ════════════════════════════════════════════════════════════════ */
 
+import { grantModelAccess, modelSlugFor, resolveModelSubject } from "./modelAccess";
+
 /* The primary CTA is configurable in one place — we may rename later. */
 export const PRIMARY_CTA = "Start Your Journey";
 
@@ -665,6 +667,8 @@ export function saveLead(l: Lead): void {
   } catch {
     /* ignore */
   }
+  // a project-scoped lead is a 'lead'-tier model entitlement (no-op while dormant)
+  if (l.project) grantModelAccess(modelSlugFor(l.project), l.phone || l.email, "lead");
 }
 
 /* Buyer Office membership — global (join once, unit intelligence unlocks
@@ -687,6 +691,9 @@ export function setMember(): void {
   } catch {
     /* ignore */
   }
+  // membership unlocks everywhere → one grant per project (server clamps the tier);
+  // name → slug is the same dialect projects.ts tiSlug proves against page slugs
+  grantModelAccess(PROJECTS.map((p) => modelSlugFor(p.name)), resolveModelSubject(), "member");
 }
 
 /* A Buyer Office advisor call — complimentary (part of free membership, not
@@ -750,6 +757,8 @@ export function unlockProject(slug: string): void {
   } catch {
     /* ignore */
   }
+  // paid single-project unlock (server clamps to 'lead' until real payments carry the admin key)
+  grantModelAccess(slug, resolveModelSubject(), "paid");
 }
 
 /* ── Tower & Unit Intelligence pricing (freemium wedge) ──

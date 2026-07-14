@@ -47,7 +47,7 @@ export async function verify(token: string, secret: string): Promise<Record<stri
   if (p.length !== 3) return null;
   const sig = b64uDecode(p[2]);
   if (!sig) return null;
-  const okSig = await crypto.subtle.verify("HMAC", await hmacKey(secret, "verify"), sig, te.encode(p[0] + "." + p[1])); // constant-time
+  const okSig = await crypto.subtle.verify("HMAC", await hmacKey(secret, "verify"), sig as BufferSource, te.encode(p[0] + "." + p[1])); // constant-time
   if (!okSig) return null; // forged/tampered
   const bodyBytes = b64uDecode(p[1]);
   if (!bodyBytes) return null;

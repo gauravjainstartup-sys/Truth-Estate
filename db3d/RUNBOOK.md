@@ -10,8 +10,8 @@ Everything you paste/deploy lives in this folder:
 |---|---|
 | Schema (tables · RLS · gated read fn) | `db3d/schema.sql` |
 | Model data (idempotent upserts) | `db3d/projects/*/seed-*.sql` |
-| Edge Functions (the gate) | `db3d/supabase/functions/{mint-token,model}` |
-| Proof they match the tested mock | `node --experimental-strip-types db3d/test-edge-parity.mjs` (23/23) |
+| Edge Functions (gate + entitlement writer) | `db3d/supabase/functions/{mint-token,model,grant-entitlement}` |
+| Proof they match the tested mock | `node --experimental-strip-types db3d/test-edge-parity.mjs` (30/30) |
 
 ---
 
@@ -56,6 +56,7 @@ select jsonb_pretty(get_model_bundle('signature-global-titanium-spr')::jsonb -> 
 supabase login                       # once
 supabase link --project-ref <PROJECT_REF>
 supabase secrets set MODEL_JWT_SECRET=$(openssl rand -hex 32)
+supabase secrets set GRANT_ADMIN_KEY=$(openssl rand -hex 32)   # payment webhook / ops writes real tiers with it
 # optional: extra allowed origins beyond https://gauravjainstartup-sys.github.io
 # (custom domain, local testing) — comma-separated, no spaces:
 supabase secrets set EXTRA_ORIGIN=http://localhost:3000
@@ -73,8 +74,9 @@ keeps the pack inside `db3d/` until the swap — stage a temp copy:
 cd <repo checkout on branch claude/exciting-lamport-9x99ik>
 supabase init                                      # once; no-op if supabase/ exists
 mkdir -p supabase && cp -r db3d/supabase/functions supabase/   # temp staging (untracked)
-supabase functions deploy mint-token --no-verify-jwt
-supabase functions deploy model      --no-verify-jwt
+supabase functions deploy mint-token        --no-verify-jwt
+supabase functions deploy model             --no-verify-jwt
+supabase functions deploy grant-entitlement --no-verify-jwt
 rm -rf supabase/functions                          # keep the repo clean
 ```
 
@@ -83,11 +85,31 @@ platform's Supabase-JWT check with the stronger four-layer gate (origin
 allowlist · entitlement row · rate-limit · 5-min HMAC token). Without the
 flag, the browser would need the anon key just to reach them.
 
-## 5 · Grant someone access — SQL editor
+## 5 · Grants — automatic (the writer) + manual (SQL)
 
-`model_access_grants` is the entitlement source of truth (RLS-hidden, written
-manually for now — the automated writer from the lead/payment flow is the next
-slice):
+`model_access_grants` is the entitlement source of truth (RLS-hidden). Rows
+arrive two ways:
+
+**Automatic — the site's flows.** `src/lib/journey.ts` already calls the
+writer at all three unlock moments (lead with a project → `lead` · ₹1,499
+unlock → `paid` · membership → `member`, one row per project), through
+`src/lib/modelAccess.ts` → the `grant-entitlement` function. The function
+**clamps self-service writes to `lead`** — a static site can't hold a secret,
+so client-claimed `paid`/`member` only stick when the caller sends
+`x-grant-key: $GRANT_ADMIN_KEY` (future payment webhook / ops curl). Any tier
+is enough for mint-token, so leads can open the gated 3D the moment they leave
+a contact.
+
+The writer is **dormant until you set the gate URL at site build time**
+(GitHub Actions → repo variable, or `.env.production`):
+
+```
+NEXT_PUBLIC_MODEL_GATE_URL=https://<PROJECT_REF>.supabase.co/functions/v1
+```
+
+Until then every call is a no-op and the live site is byte-identical to today.
+
+**Manual — SQL editor** (demo subjects, comps, revokes):
 
 ```sql
 -- demo subject used by the engines' ?sub= param

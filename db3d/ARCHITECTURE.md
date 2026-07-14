@@ -96,6 +96,18 @@ storing extra derived data. Hence `floor_curve` stays NULL.
       criteria. Proven on SPR (lossless regression, 16/16) and Elan the Presidential (first
       never-hand-migrated project: 8 towers · 3 configs · 9 floorplans · 24/24 flat parity).
       Layout: db3d/projects/<slug>/ per project; engines at db3d/engine/engine-<slug>.html.
-- [ ] Real-Supabase apply pack: Deno Edge Functions (port of the mock), data loader, exact provisioning steps
+- [x] Real-Supabase apply pack: Deno Edge Functions at db3d/supabase/functions/{mint-token,model} —
+      Web-API-only port of the mock, proven by db3d/test-edge-parity.mjs (30/30 under Node
+      --experimental-strip-types): same gate matrix through the deployable handlers, byte-identical
+      JWTs, and reshapeBundle() restoring the exact pieces dialect from to_jsonb rows (tower ids,
+      carpetSqft, floorplan rails — the raw RPC would have half-broken the engine). Seeds already
+      generated per project; exact founder steps in db3d/RUNBOOK.md (schema → seeds → secrets →
+      deploy --no-verify-jwt → grants → 7-case curl proof → real-gate engine smoke via ?api=).
+- [x] Entitlement writer: grant-entitlement Edge Function + src/lib/modelAccess.ts (fire-and-forget,
+      DORMANT until NEXT_PUBLIC_MODEL_GATE_URL is set at build — live site unchanged until then).
+      journey.ts writes grants at its three unlock moments (project lead → 'lead' · ₹1,499 unlock →
+      'paid' · membership → 'member' per project); the function clamps self-service to 'lead' —
+      real tiers require x-grant-key (GRANT_ADMIN_KEY), which only the future payment webhook/ops
+      hold. UX gate untouched (founder rule).
 - [ ] Founder finalizes → swap the TOWER_INTEL embed to the new engine (one line, instant rollback)
 - [ ] (Phase 2) server-side rendering
