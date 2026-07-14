@@ -12,8 +12,8 @@
   "latitude": 28.523491,
   "longitude": 77.030529,
   "true_north_offset_deg": 90,
-  "floors": null,
-  "no_of_floors": null,
+  "floors": "G+40",
+  "no_of_floors": 40,
   "total_towers": 3,
   "scale_m_per_px": null,
 
@@ -34,8 +34,8 @@
     "latitude": 28.523491,
     "longitude": 77.030529,
     "true_north_offset_deg": 90,
-    "floors": null,
-    "no_of_floors": null,
+    "floors": "G+40",
+    "no_of_floors": 40,
     "total_towers": 3,
     "scale_m_per_px": null,
     "super_area_range": "4205 – 4655 sq ft"
