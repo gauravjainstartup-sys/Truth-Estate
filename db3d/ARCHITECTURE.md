@@ -96,6 +96,11 @@ storing extra derived data. Hence `floor_curve` stays NULL.
       criteria. Proven on SPR (lossless regression, 16/16) and Elan the Presidential (first
       never-hand-migrated project: 8 towers · 3 configs · 9 floorplans · 24/24 flat parity).
       Layout: db3d/projects/<slug>/ per project; engines at db3d/engine/engine-<slug>.html.
+      Third project through the tool: elan-the-emperor (5 towers · 2 configs · 6 plates ·
+      9 floorplans · 15/15 flat parity), the first run of the full PIPELINE.md loop — it
+      also surfaced + fixed a comment-blind literal scanner in extract-pieces.mjs +
+      build-engine.mjs (a "/* …Presidential's… */" note in a data block desynced the
+      string/bracket scan); SPR + Presidential re-extract/rebuild byte-identical.
 - [x] Real-Supabase apply pack: Deno Edge Functions at db3d/supabase/functions/{mint-token,model} —
       Web-API-only port of the mock, proven by db3d/test-edge-parity.mjs (30/30 under Node
       --experimental-strip-types): same gate matrix through the deployable handlers, byte-identical

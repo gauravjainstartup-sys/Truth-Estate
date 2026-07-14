@@ -1,0 +1,63 @@
+{
+  "slug": "elan-the-emperor",
+  "name": "Elan The Emperor",
+  "latitudeRad": 0.49744485967753116,
+  "latitudeDeg": 28.5015,
+  "floors": 38,
+  "floorHeightM": 3.45,
+  "lobbyHeightM": 10,
+  "northCalRad": 0,
+  "northCalDeg": 0,
+  "sunBenchmarkHours": 4,
+  "westWeight": 0.6,
+  "sunRayLenM": 1200,
+  "lake": {
+    "x": 0,
+    "z": 0
+  },
+  "scaleMPerPx": 0.45,
+  "pxOriginX": 590,
+  "pxOriginY": 415,
+  "boundaryPx": [
+    [
+      6,
+      6
+    ],
+    [
+      300,
+      120
+    ],
+    [
+      470,
+      175
+    ],
+    [
+      1080,
+      180
+    ],
+    [
+      1230,
+      235
+    ],
+    [
+      1360,
+      395
+    ],
+    [
+      564,
+      870
+    ],
+    [
+      207,
+      498
+    ],
+    [
+      6,
+      318
+    ],
+    [
+      6,
+      6
+    ]
+  ]
+}

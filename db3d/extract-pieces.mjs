@@ -40,8 +40,14 @@ function grab(id, open) {
     const close = open === "{" ? "}" : "]";
     let depth = 0, out = "", inStr = null;
     for (; i < src.length; i++) {
-      const ch = src[i]; out += ch;
-      if (inStr) { if (ch === inStr && src[i - 1] !== "\\") inStr = null; continue; }
+      const ch = src[i];
+      if (inStr) { out += ch; if (ch === inStr && src[i - 1] !== "\\") inStr = null; continue; }
+      // skip comments — JS ignores them, and a stray ' or ] inside one (e.g.
+      // a "/* …Presidential's T-14… */" note in the data block) must not
+      // desync the string/bracket scan. Only checked outside strings.
+      if (ch === "/" && src[i + 1] === "*") { const e = src.indexOf("*/", i + 2); i = e < 0 ? src.length : e + 1; continue; }
+      if (ch === "/" && src[i + 1] === "/") { const e = src.indexOf("\n", i + 2); i = e < 0 ? src.length : e - 1; continue; }
+      out += ch;
       if (ch === '"' || ch === "'" || ch === "`") { inStr = ch; continue; }
       if (ch === open) depth++;
       else if (ch === close) { depth--; if (depth === 0) break; }

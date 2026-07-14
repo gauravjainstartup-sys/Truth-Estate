@@ -60,6 +60,11 @@ function swapBalanced(code, name, open) {
   for (; i < code.length; i++) {
     const ch = code[i];
     if (inStr) { if (ch === inStr && code[i - 1] !== "\\") inStr = null; continue; }
+    // skip comments — a stray ' or ] inside a data-block note (e.g.
+    // "/* …Presidential's T-14… */") must not desync the scan and swallow
+    // the next literal. Only outside strings.
+    if (ch === "/" && code[i + 1] === "*") { const e = code.indexOf("*/", i + 2); i = e < 0 ? code.length : e + 1; continue; }
+    if (ch === "/" && code[i + 1] === "/") { const e = code.indexOf("\n", i + 2); i = e < 0 ? code.length : e - 1; continue; }
     if (ch === '"' || ch === "'" || ch === "`") { inStr = ch; continue; }
     if (ch === open) depth++;
     else if (ch === close) { depth--; if (depth === 0) break; }

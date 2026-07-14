@@ -1,0 +1,28 @@
+[
+  {
+    "slug": "elan-the-emperor",
+    "config": "5 BHK",
+    "beds": 5,
+    "extra": "visitor lounge + family lounge",
+    "baths": 6,
+    "saleable": 5891,
+    "carpetSqft": 3056,
+    "balconySqft": 1012,
+    "deck": "private + sky deck",
+    "rooms": "Living/dining 34'8\"×15' · Master suite + master · Bed 1-3 · Family lounge · Visitor/waiting · Servant · Kitchen",
+    "col": "#e0b667"
+  },
+  {
+    "slug": "elan-the-emperor",
+    "config": "4 BHK",
+    "beds": 4,
+    "extra": "family lounge + servant",
+    "baths": 5,
+    "saleable": 4640,
+    "carpetSqft": 2320,
+    "balconySqft": 812,
+    "deck": "wrap-around deck",
+    "rooms": "Dining/living 32'8\"×14' · Master suite + master · Bed 1 & 2 · Family lounge · Powder · Servant · Kitchen",
+    "col": "#c9a96e"
+  }
+]
