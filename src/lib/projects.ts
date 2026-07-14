@@ -509,6 +509,24 @@ export const TOWER_INTEL: Record<string, TowerIntelMeta> = {
       idealFor: "Large families (4 BHK)",
     },
   },
+  "Elan The Emperor": {
+    file: "tower-intel/elan-the-emperor.html",
+    preview: "tower-intel/elan-the-emperor-preview.jpg",
+    towers: 5, // T-10/11/12 (4 BHK) + T-16/17 (5 BHK)
+    unitTypes: 6, // 4 & 5 BHK, each a head + two mirror wings
+    totalUnits: "670+",
+    // Mirrors the advisor's own #1 pick (top composite), so the teaser stays
+    // honest against what a buyer sees once the model opens.
+    sample: {
+      ref: "Tower T-10 · Line 102",
+      type: "4 BHK · east-facing corner",
+      sun: "4.7 h/day (upper floors)",
+      sunPct: 82,
+      ventilation: "Corner line · dual-aspect cross-flow",
+      vastu: "East sunrise living · North (Kuber) entrance",
+      idealFor: "Large families (4 BHK)",
+    },
+  },
 };
 // Exact DB-name match first (Arbour/Titanium), then a slug fallback so the
 // advisor attaches to the live page regardless of the DB name's exact casing.
