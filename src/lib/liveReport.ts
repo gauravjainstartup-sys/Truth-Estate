@@ -792,33 +792,71 @@ export function liveProjectIntel(
     if (!name) continue;
     connectivity.push({ icon: "▦", name, sub: tIn(b, ["type", "class"]) ?? "business district", dist: kmLabel(b) ?? "—", tag: minLabel(b) ?? "hub" });
   }
-  const infra: NonNullable<NonNullable<ProjectOps["location"]>["infra"]> = [];
+  /* the pipeline emits taxonomy categories ("NH / Expressways / Major Roads")
+     and raw date codes ("2028-10") — normalise both so the ledger's chips
+     never wrap and its dates read like an analyst wrote them */
+  const normCat = (raw: string | null | undefined): string => {
+    const s = (raw ?? "").toLowerCase();
+    if (/metro|rrts|\brail/.test(s)) return "Metro";
+    if (/airport|aviation/.test(s)) return "Airport";
+    if (/road|expressway|highway|corridor|\bnh\b/.test(s)) return "Roads";
+    if (/office|business|commercial|sez|it park/.test(s)) return "Business";
+    if (/real estate|residential|housing|township|supply/.test(s)) return "Real estate";
+    if (/hospital|school|college|social|civic|drain|water|sewer|utilit|power/.test(s)) return "Civic";
+    const w = (raw ?? "").split(/[\s/|·]+/).filter(Boolean)[0];
+    return w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : "Infra";
+  };
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const fmtEta = (raw: string): string => {
+    const t = raw.trim();
+    let m = /^(\d{4})[-/](\d{1,2})$/.exec(t); // 2028-10 → Oct 2028
+    if (m && +m[2] >= 1 && +m[2] <= 12) return `${MONTHS[+m[2] - 1]} ${m[1]}`;
+    m = /^(\d{4})\s*(?:[-–—]|to)+\s*(?:\d{2})?(\d{2})$/.exec(t); // 2027-2028 / 2027-28 → 2027–28
+    if (m) return `${m[1]}–${m[2]}`;
+    return t || "—";
+  };
+  const etaKey = (raw: string): number => { // sortable (year·month); unknown sinks last
+    const m = /(\d{4})(?:[-/](\d{1,2}))?/.exec(raw);
+    return m ? +m[1] * 100 + (m[2] ? Math.min(+m[2], 12) : 0) : Number.MAX_SAFE_INTEGER;
+  };
+
+  const infraRaw: { sort: number; item: NonNullable<NonNullable<ProjectOps["location"]>["infra"]>[number] }[] = [];
   for (const it of asArr(row.locPlannedInfra).slice(0, 6)) {
     const title = tIn(it, ["name", "title", "project"]);
     if (!title) continue;
-    infra.push({
-      cat: tIn(it, ["category", "type", "cat"]) ?? "Infrastructure",
-      status: tIn(it, ["status"]) ?? "Under Construction",
-      title,
-      body: textAt(it, "impact.description") ?? tIn(it, ["details", "description", "body", "summary", "impact_reasoning"]) ?? "",
-      impact: /high/i.test(textAt(it, "impact.level") ?? tIn(it, ["impact", "importance"]) ?? "") ? "High" : "Medium",
-      eta: tIn(it, ["expected_completion", "timeline", "eta", "completion", "year"]) ?? "—",
+    const rawEta = tIn(it, ["expected_completion", "timeline", "eta", "completion", "year"]) ?? "—";
+    infraRaw.push({
+      sort: etaKey(rawEta),
+      item: {
+        cat: normCat(tIn(it, ["category", "type", "cat"])),
+        status: tIn(it, ["status"]) ?? "Under Construction",
+        title,
+        body: textAt(it, "impact.description") ?? tIn(it, ["details", "description", "body", "summary", "impact_reasoning"]) ?? "",
+        impact: /high/i.test(textAt(it, "impact.level") ?? tIn(it, ["impact", "importance"]) ?? "") ? "High" : "Medium",
+        eta: fmtEta(rawEta),
+      },
     });
   }
   for (const it of asArr(row.locSupplyCatalysts).slice(0, 3)) {
     const title = tIn(it, ["project_name", "name", "title", "project"]);
-    if (!title || title === row.name || infra.some((x) => x.title === title)) continue;
+    if (!title || title === row.name || infraRaw.some((x) => x.item.title === title)) continue;
     const scale = tIn(it, ["scale_indicator"]);
     const marketImpact = textAt(it, "impact_on_market.description") ?? tIn(it, ["details", "description", "body", "summary"]);
-    infra.push({
-      cat: "Real estate",
-      status: tIn(it, ["status", "stage"]) ?? "Announced",
-      title,
-      body: [scale, marketImpact].filter(Boolean).join(" — "),
-      impact: "Medium",
-      eta: tIn(it, ["expected_completion", "timeline", "eta", "completion", "year"]) ?? "—",
+    const rawEta = tIn(it, ["expected_completion", "timeline", "eta", "completion", "year"]) ?? "—";
+    infraRaw.push({
+      sort: etaKey(rawEta),
+      item: {
+        cat: "Real estate",
+        status: tIn(it, ["status", "stage"]) ?? "Announced",
+        title,
+        body: [scale, marketImpact].filter(Boolean).join(" — "),
+        impact: "Medium",
+        eta: fmtEta(rawEta),
+      },
     });
   }
+  // what lands first, first — the ledger reads as a delivery pipeline
+  const infra = infraRaw.sort((a, b) => a.sort - b.sort).map((x) => x.item);
   /* ── map-led geo layout — only when the view carries the project's own
      coordinates; POI pins keep their real lat/lng, nothing is approximated ── */
   const GEO_CAT: Record<string, "schools" | "offices" | "hospitals" | "retail"> = {

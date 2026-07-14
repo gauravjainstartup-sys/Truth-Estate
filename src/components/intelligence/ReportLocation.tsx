@@ -181,24 +181,26 @@ function Pill({ k, v, good, warn }: { k: string; v: string; good?: boolean; warn
 }
 
 /* "What's coming — funded & approved": planned infrastructure + supply
-   catalysts. ONE component for both layouts — the grid used to live only in
-   the legacy schematic, so every map-led (geo) page parsed the data but never
-   showed it. */
+   catalysts as an analyst's pipeline ledger — one hairline row per item,
+   impact + date right-aligned, sorted upstream by ETA (soonest first).
+   ONE component for both layouts; replaces the old card grid whose chips
+   tore on the pipeline's long taxonomy categories. */
 function InfraSection({ infra }: { infra: NonNullable<NonNullable<ProjectIntel["ops"]>["location"]>["infra"] }) {
   if (!infra || infra.length === 0) return null;
   return (
     <>
       <div className="mt-8 flex items-center gap-3"><span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">What&apos;s coming — funded &amp; approved</span><span className="h-px flex-1 bg-[#1a1a1a]/10" /></div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-2">
         {infra.map((it) => (
-          <div key={it.title} className="rounded-xl border border-[#1a1a1a]/8 bg-white/60 p-4">
-            <p><span className="rounded bg-[#1a1a1a] px-1.5 py-0.5 text-[0.5rem] font-medium uppercase tracking-[0.06em] text-white">{it.cat}</span><span className="ml-1.5 text-[0.5rem] uppercase tracking-[0.06em] text-[#1a1a1a]/40">{it.status}</span></p>
-            <h5 className="mt-2.5 text-[0.92rem] font-semibold leading-tight">{it.title}</h5>
-            <p className="mt-1.5 text-[0.72rem] font-light leading-[1.5] text-[#1a1a1a]/55">{it.body}</p>
-            <div className="mt-3 flex items-center justify-between border-t border-[#1a1a1a]/[0.06] pt-2.5">
-              <span className={`text-[0.7rem] font-semibold ${it.impact === "High" ? "text-[#1e6b45]" : "text-[#9a7a2e]"}`}>{it.impact === "High" ? "▲ High" : "◆ Medium"}</span>
-              <span className="font-mono text-[0.74rem] font-semibold">{it.eta}</span>
+          <div key={it.title} className="border-b border-dotted border-[#1a1a1a]/12 py-3.5 last:border-none lg:py-4">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
+              <span className="shrink-0 whitespace-nowrap rounded bg-[#1a1a1a] px-1.5 py-0.5 text-[0.5rem] font-medium uppercase tracking-[0.06em] text-white">{it.cat}</span>
+              <h5 className="min-w-0 flex-1 basis-[16rem] text-[0.92rem] font-semibold leading-tight">{it.title}</h5>
+              <span className="hidden whitespace-nowrap text-[0.56rem] uppercase tracking-[0.08em] text-[#1a1a1a]/40 sm:inline">{it.status}</span>
+              <span className={`whitespace-nowrap text-[0.7rem] font-semibold ${it.impact === "High" ? "text-[#1e6b45]" : "text-[#9a7a2e]"}`}>{it.impact === "High" ? "▲ High" : "◆ Medium"}</span>
+              <span className="w-[4.6rem] whitespace-nowrap text-right font-mono text-[0.74rem] font-semibold tabular-nums">{it.eta}</span>
             </div>
+            {it.body && <p className="mt-1 max-w-[52rem] text-[0.74rem] font-light leading-[1.55] text-[#1a1a1a]/55 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3] overflow-hidden lg:[-webkit-line-clamp:2]">{it.body}</p>}
           </div>
         ))}
       </div>
