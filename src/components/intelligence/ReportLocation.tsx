@@ -114,6 +114,11 @@ function GeoLayout({ p, geo }: { p: ProjectIntel; geo: LocationGeo }) {
         </div>
       )}
 
+      {/* what's funded & coming — planned infrastructure + supply catalysts.
+         Same cards as the legacy layout: the geo pages parse this data too and
+         must surface it (it silently dropped here until the founder caught it) */}
+      <InfraSection infra={p.ops?.location?.infra} />
+
       {/* strengths & gaps */}
       {(ins?.strengths?.length || ins?.gaps?.length) && (
         <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -172,6 +177,32 @@ function Pill({ k, v, good, warn }: { k: string; v: string; good?: boolean; warn
     <span className="inline-flex items-center gap-1.5 rounded-full border border-[#1a1a1a]/10 bg-white px-3 py-1.5 text-[0.72rem]">
       <span className="text-[#1a1a1a]/40">{k}</span> <b className={`font-medium ${tone}`}>{v}</b>
     </span>
+  );
+}
+
+/* "What's coming — funded & approved": planned infrastructure + supply
+   catalysts. ONE component for both layouts — the grid used to live only in
+   the legacy schematic, so every map-led (geo) page parsed the data but never
+   showed it. */
+function InfraSection({ infra }: { infra: NonNullable<NonNullable<ProjectIntel["ops"]>["location"]>["infra"] }) {
+  if (!infra || infra.length === 0) return null;
+  return (
+    <>
+      <div className="mt-8 flex items-center gap-3"><span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">What&apos;s coming — funded &amp; approved</span><span className="h-px flex-1 bg-[#1a1a1a]/10" /></div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {infra.map((it) => (
+          <div key={it.title} className="rounded-xl border border-[#1a1a1a]/8 bg-white/60 p-4">
+            <p><span className="rounded bg-[#1a1a1a] px-1.5 py-0.5 text-[0.5rem] font-medium uppercase tracking-[0.06em] text-white">{it.cat}</span><span className="ml-1.5 text-[0.5rem] uppercase tracking-[0.06em] text-[#1a1a1a]/40">{it.status}</span></p>
+            <h5 className="mt-2.5 text-[0.92rem] font-semibold leading-tight">{it.title}</h5>
+            <p className="mt-1.5 text-[0.72rem] font-light leading-[1.5] text-[#1a1a1a]/55">{it.body}</p>
+            <div className="mt-3 flex items-center justify-between border-t border-[#1a1a1a]/[0.06] pt-2.5">
+              <span className={`text-[0.7rem] font-semibold ${it.impact === "High" ? "text-[#1e6b45]" : "text-[#9a7a2e]"}`}>{it.impact === "High" ? "▲ High" : "◆ Medium"}</span>
+              <span className="font-mono text-[0.74rem] font-semibold">{it.eta}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -274,24 +305,7 @@ function LegacyLayout({ p, loc }: { p: ProjectIntel; loc: NonNullable<ProjectInt
         )}
       </div>
 
-      {loc?.infra && loc.infra.length > 0 && (
-        <>
-          <div className="mt-8 flex items-center gap-3"><span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">What&apos;s coming — funded &amp; approved</span><span className="h-px flex-1 bg-[#1a1a1a]/10" /></div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {loc.infra.map((it) => (
-              <div key={it.title} className="rounded-xl border border-[#1a1a1a]/8 bg-white/60 p-4">
-                <p><span className="rounded bg-[#1a1a1a] px-1.5 py-0.5 text-[0.5rem] font-medium uppercase tracking-[0.06em] text-white">{it.cat}</span><span className="ml-1.5 text-[0.5rem] uppercase tracking-[0.06em] text-[#1a1a1a]/40">{it.status}</span></p>
-                <h5 className="mt-2.5 text-[0.92rem] font-semibold leading-tight">{it.title}</h5>
-                <p className="mt-1.5 text-[0.72rem] font-light leading-[1.5] text-[#1a1a1a]/55">{it.body}</p>
-                <div className="mt-3 flex items-center justify-between border-t border-[#1a1a1a]/[0.06] pt-2.5">
-                  <span className={`text-[0.7rem] font-semibold ${it.impact === "High" ? "text-[#1e6b45]" : "text-[#9a7a2e]"}`}>{it.impact === "High" ? "▲ High" : "◆ Medium"}</span>
-                  <span className="font-mono text-[0.74rem] font-semibold">{it.eta}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+      <InfraSection infra={loc?.infra} />
 
       <p className="mt-6 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">Sources: tracked corridor transactions, GMDA / HSVP infrastructure plans &amp; developer filings. Map is schematic — positions indicative, not surveyed.</p>
     </>
