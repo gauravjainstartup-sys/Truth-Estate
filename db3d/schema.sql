@@ -156,13 +156,16 @@ language sql
 security definer
 set search_path = public
 as $$
+  -- order by id = seed insert order = the pieces order the engine was proven
+  -- against (identity columns increment in insert order; seeds insert in
+  -- pieces order). Keeps tower/floorplan ordering deterministic in production.
   select jsonb_build_object(
     'site',        (select to_jsonb(s) from project_3d_site s where s.slug = p_slug),
-    'towers',      (select coalesce(jsonb_agg(to_jsonb(t)), '[]') from project_3d_towers t where t.slug = p_slug),
-    'configs',     (select coalesce(jsonb_agg(to_jsonb(c)), '[]') from project_3d_configs c where c.slug = p_slug),
-    'plates',      (select coalesce(jsonb_agg(to_jsonb(p)), '[]') from project_3d_plates p where p.slug = p_slug),
-    'floorplans',  (select coalesce(jsonb_agg(to_jsonb(f)), '[]') from project_3d_floorplans f where f.slug = p_slug),
-    'intelligence',(select coalesce(jsonb_agg(to_jsonb(i)), '[]') from project_3d_intelligence i where i.slug = p_slug),
+    'towers',      (select coalesce(jsonb_agg(to_jsonb(t) order by t.id), '[]') from project_3d_towers t where t.slug = p_slug),
+    'configs',     (select coalesce(jsonb_agg(to_jsonb(c) order by c.id), '[]') from project_3d_configs c where c.slug = p_slug),
+    'plates',      (select coalesce(jsonb_agg(to_jsonb(p) order by p.id), '[]') from project_3d_plates p where p.slug = p_slug),
+    'floorplans',  (select coalesce(jsonb_agg(to_jsonb(f) order by f.id), '[]') from project_3d_floorplans f where f.slug = p_slug),
+    'intelligence',(select coalesce(jsonb_agg(to_jsonb(i) order by i.id), '[]') from project_3d_intelligence i where i.slug = p_slug),
     'vastu',       (select to_jsonb(v) from vastu_rules v where v.id = 1)
   );
 $$;
