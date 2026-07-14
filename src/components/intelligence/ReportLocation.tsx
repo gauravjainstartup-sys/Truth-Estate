@@ -36,7 +36,7 @@ export default function ReportLocation({ p }: { p: ProjectIntel }) {
         <div>
           <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Pillar III · Location Intelligence</p>
           <h3 className="mt-2 font-serif text-[1.7rem] font-medium leading-tight md:text-[2rem]">Will this address still be winning in 2035?</h3>
-          <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">What&apos;s here today, what&apos;s funded and coming, and how you get around.</p>
+          <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">What&apos;s funded and coming, what&apos;s on the ground today, and how you get around.</p>
         </div>
       </div>
 
@@ -64,11 +64,13 @@ function GeoLayout({ p, geo }: { p: ProjectIntel; geo: LocationGeo }) {
         </div>
       )}
 
-      {/* the interactive map */}
-      <LocationMap geo={geo} projectName={p.name} />
+      {/* the CORE EXHIBIT — the funded pipeline answers the pillar's headline
+         question, so it leads; today's ground truth follows */}
+      <InfraSection infra={p.ops?.location?.infra} />
 
-      {/* connectivity readout */}
-      <div className="mt-8 flex items-center gap-3"><span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">How you get in &amp; out</span><span className="h-px flex-1 bg-[#1a1a1a]/10" /></div>
+      {/* today: map + connectivity + last mile under one band */}
+      <div className="mt-8 flex items-center gap-3"><span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">On the ground today</span><span className="h-px flex-1 bg-[#1a1a1a]/10" /></div>
+      <LocationMap geo={geo} projectName={p.name} />
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {c.metro && (
           <ConnCard icon={<IconMetro />} title={c.metro.name} sub={c.metro.line} main={`${c.metro.km} km`} tag={`${c.metro.min} min`} />
@@ -114,12 +116,10 @@ function GeoLayout({ p, geo }: { p: ProjectIntel; geo: LocationGeo }) {
         </div>
       )}
 
-      {/* what's funded & coming — planned infrastructure + supply catalysts.
-         Same cards as the legacy layout: the geo pages parse this data too and
-         must surface it (it silently dropped here until the founder caught it) */}
-      <InfraSection infra={p.ops?.location?.infra} />
-
-      {/* strengths & gaps */}
+      {/* strengths & gaps — the balanced close */}
+      {(ins?.strengths?.length || ins?.gaps?.length) && (
+        <div className="mt-8 flex items-center gap-3"><span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">The balance</span><span className="h-px flex-1 bg-[#1a1a1a]/10" /></div>
+      )}
       {(ins?.strengths?.length || ins?.gaps?.length) && (
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           {ins?.strengths?.length ? (
@@ -145,7 +145,7 @@ function GeoLayout({ p, geo }: { p: ProjectIntel; geo: LocationGeo }) {
         </div>
       )}
 
-      <p className="mt-6 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">Sources: Google Places, GMDA / HSVP corridor data &amp; our field tracking. Pins are placed from surveyed coordinates; distances are straight-line from the project and drive times vary with traffic.</p>
+      <p className="mt-6 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">Sources: Google Places, GMDA / HSVP corridor data &amp; our field tracking. Pins are placed from surveyed coordinates; distances are straight-line from the project and drive times vary with traffic. Pipeline items are funded or approved only — announcements without budgets don&apos;t make this list.</p>
     </>
   );
 }
@@ -180,27 +180,77 @@ function Pill({ k, v, good, warn }: { k: string; v: string; good?: boolean; warn
   );
 }
 
-/* "What's coming — funded & approved": planned infrastructure + supply
-   catalysts as an analyst's pipeline ledger — one hairline row per item,
-   impact + date right-aligned, sorted upstream by ETA (soonest first).
-   ONE component for both layouts; replaces the old card grid whose chips
-   tore on the pipeline's long taxonomy categories. */
-function InfraSection({ infra }: { infra: NonNullable<NonNullable<ProjectIntel["ops"]>["location"]>["infra"] }) {
+/* "What's coming — funded & approved" — the pillar's CORE EXHIBIT: the funded
+   delivery pipeline as a year-railed timeline. Summary strip (counts + span)
+   up top, then items grouped by landing year on a spine, each row the ledger
+   line (chip · title · status · impact · month). All figures derive from the
+   already-parsed items — sorted upstream by ETA, soonest first. ONE component
+   for both layouts. */
+type InfraItems = NonNullable<NonNullable<ProjectIntel["ops"]>["location"]>["infra"];
+function InfraSection({ infra }: { infra: InfraItems }) {
   if (!infra || infra.length === 0) return null;
+  const yearOf = (e: string): string | null => /(\d{4})/.exec(e)?.[1] ?? null;
+  const endYearOf = (e: string): number | null => {
+    const m = /(\d{4})(?:–(\d{2}))?/.exec(e);
+    return m ? (m[2] ? Number(m[1].slice(0, 2) + m[2]) : Number(m[1])) : null;
+  };
+  // a row shows only what the rail doesn't already say: "Jun", "Now", "2027–28"
+  const rowEta = (it: NonNullable<InfraItems>[number]): string => {
+    if (/operational/i.test(it.status)) return "Now";
+    const y = yearOf(it.eta);
+    if (y && it.eta !== y && it.eta.endsWith(` ${y}`)) return it.eta.slice(0, -(y.length + 1));
+    return it.eta;
+  };
+  const high = infra.filter((i) => i.impact === "High").length;
+  const firstYear = infra.map((i) => yearOf(i.eta)).find(Boolean) ?? null;
+  const endYears = infra.map((i) => endYearOf(i.eta)).filter((n): n is number => n != null);
+  const lastYear = endYears.length ? Math.max(...endYears) : null;
+  const groups: { year: string; items: NonNullable<InfraItems> }[] = [];
+  for (const it of infra) {
+    const y = yearOf(it.eta) ?? "—";
+    const g = groups[groups.length - 1];
+    if (g && g.year === y) g.items.push(it);
+    else groups.push({ year: y, items: [it] });
+  }
   return (
     <>
-      <div className="mt-8 flex items-center gap-3"><span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">What&apos;s coming — funded &amp; approved</span><span className="h-px flex-1 bg-[#1a1a1a]/10" /></div>
-      <div className="mt-2">
-        {infra.map((it) => (
-          <div key={it.title} className="border-b border-dotted border-[#1a1a1a]/12 py-3.5 last:border-none lg:py-4">
-            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
-              <span className="shrink-0 whitespace-nowrap rounded bg-[#1a1a1a] px-1.5 py-0.5 text-[0.5rem] font-medium uppercase tracking-[0.06em] text-white">{it.cat}</span>
-              <h5 className="min-w-0 flex-1 basis-[16rem] text-[0.92rem] font-semibold leading-tight">{it.title}</h5>
-              <span className="hidden whitespace-nowrap text-[0.56rem] uppercase tracking-[0.08em] text-[#1a1a1a]/40 sm:inline">{it.status}</span>
-              <span className={`whitespace-nowrap text-[0.7rem] font-semibold ${it.impact === "High" ? "text-[#1e6b45]" : "text-[#9a7a2e]"}`}>{it.impact === "High" ? "▲ High" : "◆ Medium"}</span>
-              <span className="w-[4.6rem] whitespace-nowrap text-right font-mono text-[0.74rem] font-semibold tabular-nums">{it.eta}</span>
+      <div className="mt-8 flex items-center gap-3">
+        <span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">What&apos;s coming — funded &amp; approved</span>
+        <span className="whitespace-nowrap rounded-full border border-[#1e6b45]/35 px-2.5 py-1 font-mono text-[0.52rem] tracking-[0.12em] text-[#1e6b45]">THE CORE EXHIBIT</span>
+        <span className="h-px flex-1 bg-[#1a1a1a]/10" />
+      </div>
+
+      {/* the pipeline at a glance — every figure computed from the rows below */}
+      <div className="mt-3.5 flex flex-wrap gap-x-8 gap-y-3 rounded-2xl border border-[#1a1a1a]/8 bg-white/55 px-5 py-3.5">
+        <div><p className="font-serif text-[1.25rem] font-medium leading-tight">{infra.length}</p><p className="font-mono text-[0.52rem] uppercase tracking-[0.12em] text-[#1a1a1a]/45">Funded &amp; approved</p></div>
+        {high > 0 && <div><p className="font-serif text-[1.25rem] font-medium leading-tight">{high}</p><p className="font-mono text-[0.52rem] uppercase tracking-[0.12em] text-[#1a1a1a]/45">High-impact</p></div>}
+        {firstYear && <div><p className="font-serif text-[1.25rem] font-medium leading-tight">{firstYear}</p><p className="font-mono text-[0.52rem] uppercase tracking-[0.12em] text-[#1a1a1a]/45">First delivery</p></div>}
+        {lastYear && String(lastYear) !== firstYear && <div><p className="font-serif text-[1.25rem] font-medium leading-tight">{lastYear}</p><p className="font-mono text-[0.52rem] uppercase tracking-[0.12em] text-[#1a1a1a]/45">Pipeline runs to</p></div>}
+      </div>
+
+      {/* the delivery timeline — year on the spine, rows under it */}
+      <div className="mt-1.5">
+        {groups.map((g, gi) => (
+          <div key={g.year + g.items[0].title} className="grid grid-cols-[3.2rem_1fr] gap-x-3 lg:grid-cols-[4.6rem_1fr] lg:gap-x-6">
+            <div className="relative pt-[19px]">
+              <span aria-hidden className="absolute left-0 top-[25px] h-[9px] w-[9px] rounded-full bg-[#1e6b45]" />
+              {gi < groups.length - 1 && <span aria-hidden className="absolute bottom-[-6px] left-[4px] top-[40px] w-px bg-[#1a1a1a]/12" />}
+              <span className="pl-4 font-serif text-[0.98rem] font-medium lg:text-[1.25rem]">{g.year}</span>
             </div>
-            {it.body && <p className="mt-1 max-w-[52rem] text-[0.74rem] font-light leading-[1.55] text-[#1a1a1a]/55 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3] overflow-hidden lg:[-webkit-line-clamp:2]">{it.body}</p>}
+            <div className="divide-y divide-dotted divide-[#1a1a1a]/12">
+              {g.items.map((it) => (
+                <div key={it.title} className="py-3.5 lg:py-4">
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
+                    <span className="shrink-0 whitespace-nowrap rounded bg-[#1a1a1a] px-1.5 py-0.5 text-[0.5rem] font-medium uppercase tracking-[0.06em] text-white">{it.cat}</span>
+                    <h5 className="min-w-0 flex-1 basis-[14rem] text-[0.92rem] font-semibold leading-tight">{it.title}</h5>
+                    <span className="hidden whitespace-nowrap text-[0.56rem] uppercase tracking-[0.08em] text-[#1a1a1a]/40 sm:inline">{it.status}</span>
+                    <span className={`whitespace-nowrap text-[0.7rem] font-semibold ${it.impact === "High" ? "text-[#1e6b45]" : "text-[#9a7a2e]"}`}>{it.impact === "High" ? "▲ High" : "◆ Medium"}</span>
+                    <span className="w-[4.2rem] whitespace-nowrap text-right font-mono text-[0.74rem] font-semibold tabular-nums">{rowEta(it)}</span>
+                  </div>
+                  {it.body && <p className="mt-1 max-w-[52rem] text-[0.74rem] font-light leading-[1.55] text-[#1a1a1a]/55 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3] overflow-hidden lg:[-webkit-line-clamp:2]">{it.body}</p>}
+                </div>
+              ))}
+            </div>
           </div>
         ))}
       </div>
