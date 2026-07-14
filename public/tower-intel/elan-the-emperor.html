@@ -448,7 +448,7 @@
 <div id="title" class="card">
   <div class="eyebrow">Elan The Emperor · Sector 106</div>
   <h1>Sun &amp; Unit Intelligence</h1>
-  <p>5 towers · G+45 · 4 BHK (T-10 / T-11 / T-12) &amp; 5 BHK (T-16 / T-17). Click a tower, then a flat on its roof.</p>
+  <p>5 towers · G+38 · 4 BHK (T-10 / T-11 / T-12) &amp; 5 BHK (T-16 / T-17). Click a tower, then a flat on its roof.</p>
 </div>
 
 <div id="sunctl" class="card">
@@ -537,22 +537,22 @@ const T=THREE;
    ════════════════════════════════════════════════════════════════ */
 const LAT=28.501491*Math.PI/180;     // Sector 106 · 28.502307, 77.001726 (founder-confirmed)
 const FH=3.45, LOBBY=10.0;           // ~3.45 m floor-to-floor, triple-height lobby
-const FLOORS=45;                     // G+45 all towers
+const FLOORS=38;                     // G+38 all towers
 const BENCH=4.0;                     // usable-sun threshold (h)
 let   WEST_W=0.6;                    // afternoon/west sun weight vs morning
 const LAKE={x:0,z:0};                // central clubhouse dome + lagoon = site origin
 /* Tower centres (m, +x east / -z north; north-up site plan). Traced from THE
    EMPEROR's official brochure site plan (Sector 106, Dwarka Expressway) — origin =
    central lagoon, scale 0.45 m/px. West rank T-10/T-11/T-12 (4 BHK) step down the
-   NW→SE edge with noses facing E/NE across the central green; SE pair T-16/T-17
-   (5 BHK) sit south of the lagoon with noses facing N/NW into it. Every nose is the
-   lagoon-view axis; the engine resolves each tower's lake face from LAKE. */
+   NW→SE edge, all decks facing NE across the central dome/green (rot 2.356); SE pair
+   T-16/T-17 (5 BHK) sit east of the lagoon, decks facing NW into it (rot -2.356) —
+   the mirror. Every deck is the central-dome view axis. */
 const towers=[
- {id:'T10',x:-287,z: -4,rot: 1.557,hw:24,hd:8.5,core:3,cfg:'4 BHK'},
- {id:'T11',x:-253,z: 35,rot: 1.708,hw:24,hd:8.5,core:3,cfg:'4 BHK'},
- {id:'T12',x:-190,z: 80,rot: 1.970,hw:24,hd:8.5,core:3,cfg:'4 BHK'},
- {id:'T17',x:  22,z: 76,rot:-2.861,hw:26,hd:9.0,core:3,cfg:'5 BHK'},
- {id:'T16',x:  98,z: 56,rot:-2.093,hw:26,hd:9.0,core:3,cfg:'5 BHK'},
+ {id:'T10',x:-287,z: -4,rot: 2.356,hw:24,hd:8.5,core:3,cfg:'4 BHK'},
+ {id:'T11',x:-253,z: 35,rot: 2.356,hw:24,hd:8.5,core:3,cfg:'4 BHK'},
+ {id:'T12',x:-190,z: 80,rot: 2.356,hw:24,hd:8.5,core:3,cfg:'4 BHK'},
+ {id:'T17',x:  22,z: 76,rot:-2.356,hw:26,hd:9.0,core:3,cfg:'5 BHK'},
+ {id:'T16',x:  98,z: 56,rot:-2.356,hw:26,hd:9.0,core:3,cfg:'5 BHK'},
 ];
 const CONFIGS={
  '5 BHK':{beds:5,extra:'visitor lounge + family lounge',baths:6,saleable:5891,carpetSqft:3056,balconySqft:1012,deck:"private + sky deck",
@@ -722,6 +722,30 @@ towers.forEach(t=>{const h=topH();
 (function(){const a=new T.Mesh(new T.ConeGeometry(6,22,4),new T.MeshBasicMaterial({color:'#e0563f'}));a.position.set(-250,1,240);a.rotation.x=-Math.PI/2;siteGrp.add(a);
   label(-250,222,3,'N',{fs:30,scale:.6,bg:'rgba(224,86,63,.9)',fg:'#fff'});})();
 
+/* ── neighbouring towers (Elan The Presidential & adjacent phases) — grey
+   context massing, traced from the master site plan, so buyers see they're
+   hemmed in. Shown shorter (≈G+32) and undetailed; they cast shadows AND
+   occlude the sun raycast, so the intelligence is honest about view/sun
+   restrictions from the surrounding towers. Not clickable (not in towerPick). */
+const NEIGHBORS=[
+  /* north row (E–W slabs) */
+  [135,235,0],[235,235,0],[325,235,0],[435,240,0],[545,238,0],
+  [655,242,0],[770,242,0],[885,238,0],[1000,238,0],[1120,238,0],
+  /* south-central pair */
+  [565,585,0],[745,580,0],
+  /* north-east edge */
+  [1210,385,-0.5],[1290,350,-0.5],[1360,372,-0.5],
+];
+(function neighbours(){const nh=LOBBY+32*FH;
+  const gmat=new T.MeshStandardMaterial({color:'#8c8a82',roughness:.9,metalness:.03});
+  NEIGHBORS.forEach(([px,py,rot])=>{const[x,z]=PX(px,py);
+    const m=new T.Mesh(new T.BoxGeometry(40,nh,18),gmat);
+    m.position.set(x,nh/2,z);m.rotation.y=rot;m.castShadow=true;m.receiveShadow=true;
+    siteGrp.add(m);collMeshes.push(m);});
+  const[lx,lz]=PX(545,238);
+  label(lx,lz-8,nh+9,'Neighbouring towers',{fs:28,scale:.6,bg:'rgba(92,94,88,.9)',fg:'#efefec',border:'rgba(130,130,120,.6)'});
+})();
+
 /* ── solar engine (validated) ── */
 let decl=-23.45;const NORTH_CAL=0;let northOff=NORTH_CAL;/*north-up siteplan → plan north = true north*/const SUN_R=1200;
 /* vizDecl drives ONLY the sun-movement visual (default equinox); scoring stays on the winter benchmark (decl) — never coupled */
@@ -798,13 +822,13 @@ function floorChart(seriesArr){
   let g=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">`;
   for(let k=0;k<=3;k++){const yy=mt+ih*k/3;g+=`<line x1="${ml}" y1="${yy}" x2="${W-mr}" y2="${yy}" stroke="rgba(0,0,0,.06)"/><text x="${ml-4}" y="${yy+3}" fill="#9a9c95" font-size="8" font-family=ui-monospace text-anchor="end">${(maxY*(1-k/3)).toFixed(0)}h</text>`;}
   [...new Set([1,10,20,30,FLOORS].filter(f=>f<=FLOORS))].forEach(fl=>{g+=`<text x="${X(fl)}" y="${H-5}" fill="#9a9c95" font-size="8" font-family=ui-monospace text-anchor="middle">F${fl}</text>`;});
-  g+=`<line x1="${X(30)}" y1="${mt}" x2="${X(30)}" y2="${mt+ih}" stroke="rgba(224,182,103,.4)" stroke-dasharray="3 3"/><text x="${X(30)}" y="${mt+7}" fill="#c9a45e" font-size="7.5" font-family=ui-monospace text-anchor="middle">sky 30F</text>`;
+  g+=`<line x1="${X(32)}" y1="${mt}" x2="${X(32)}" y2="${mt+ih}" stroke="rgba(224,182,103,.4)" stroke-dasharray="3 3"/><text x="${X(32)}" y="${mt+7}" fill="#c9a45e" font-size="7.5" font-family=ui-monospace text-anchor="middle">sky 32F</text>`;
   seriesArr.forEach(s=>{let d='';s.curve.forEach((p,i)=>{d+=(i?'L':'M')+X(p.fl).toFixed(1)+' '+Y(p.h).toFixed(1)+' ';});
     g+=`<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" opacity=".9"/>`;});
   return g+'</svg>';}
 function bandsFor(clearFl){
   const cf=Math.max(clearFl==null?10:clearFl,10);          // full-sun floor (>=10)
-  const pLo=Math.min(Math.max(37,cf),FLOORS-3);            // premium floor, capped below the top so it never inverts
+  const pLo=Math.min(Math.max(30,cf),FLOORS-3);            // premium floor, capped below the top so it never inverts
   const pHi=Math.min(pLo+7,FLOORS-2);
   const vLo=Math.min(cf,pLo-1),vHi=Math.min(vLo+9,pLo-1);  // value band sits just below premium; never runs high->low
   return{vLo,vHi,pLo,pHi};}
@@ -814,7 +838,7 @@ function floorMatrixHTML(t,sel,mCurves,bands,clearFl){
   let head=`<div style="display:grid;grid-template-columns:36px repeat(${cols},1fr);gap:2px;margin-bottom:4px;position:sticky;top:0;background:rgba(255,255,255,.96);border-bottom:1px solid var(--line);padding:3px 0;z-index:2"><div style="font:500 8px/1 ui-monospace;color:var(--muted)">floor</div>${sel.map(r=>`<div style="text-align:center;font:700 10px/1 'Geist';color:#23272e">${r.u.id}</div>`).join('')}</div>`;
   let rows='';
   for(let fl=FLOORS;fl>=1;fl--){
-    const isSky=fl===40,inVal=fl>=bands.vLo&&fl<=bands.vHi,inPrem=fl>=bands.pLo&&fl<=bands.pHi;
+    const isSky=fl===32,inVal=fl>=bands.vLo&&fl<=bands.vHi,inPrem=fl>=bands.pLo&&fl<=bands.pHi;
     const dot=isSky?'#e0b667':inVal?'#6dbf88':inPrem?'#8fd0e8':'transparent';
     let cells='';
     sel.forEach((r,ci)=>{const h=mCurves[ci][fl-1].h;
@@ -827,7 +851,7 @@ function floorMatrixHTML(t,sel,mCurves,bands,clearFl){
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;font:500 8.5px/1 ui-monospace;color:var(--muted)">
     <span><span style="color:#6dbf88">\u25cf</span> value F${bands.vLo}\u2013${bands.vHi}</span>
     <span><span style="color:#8fd0e8">\u25cf</span> premium F${bands.pLo}\u2013${bands.pHi}</span>
-    <span><span style="color:#a67c3d">\u2605</span> sky terrace 40F</span>
+    <span><span style="color:#a67c3d">\u2605</span> sky terrace 32F</span>
     <span>brighter = more sun</span>
   </div>`;}
 
@@ -939,7 +963,7 @@ function renderIntro(){
   document.body.classList.add('ov-intro');
   document.getElementById('pEy').textContent='Sun · heat · Vastu advisor';
   document.getElementById('pName').textContent='Find your tower';
-  document.getElementById('pSub').textContent='5 towers · G+45 · lagoon-facing';
+  document.getElementById('pSub').textContent='5 towers · G+38 · lagoon-facing';
   const html=`<div class="intro-lede">Every tower and flat, scored on the five things that decide a Gurugram luxury home — <b>morning sun, summer heat, Vastu, view and floor</b> — then weighted to what <b>you</b> care about.</div>
     <div class="pacts">
       <button class="pact primary" id="actRank">★&nbsp;&nbsp;Rank towers for me</button>
@@ -1023,19 +1047,19 @@ function renderTowerPanel(){const t=selTower;document.getElementById('pClose').s
     <div style="background:rgba(0,0,0,.03);border:1px solid var(--line);border-radius:9px;padding:9px 10px">
       <div style="font:600 9px/1 ui-monospace;letter-spacing:.08em;color:var(--muted)">HIGH · F26–40</div>
       <div style="font:700 15px/1.2 'Geist';color:${bandHigh>=4?'var(--sun)':'#c07830'};margin-top:4px">${bandHigh.toFixed(1)}h</div>
-      <div style="font:500 8.5px/1.4 ui-monospace;color:#726d5c;margin-top:4px">unbroken views · sky terrace at 30F · top 2 floors: roof heat</div>
+      <div style="font:500 8.5px/1.4 ui-monospace;color:#726d5c;margin-top:4px">unbroken views · sky terrace at 32F · top 2 floors: roof heat</div>
     </div>
   </div>`;
   html+=`<div style="background:rgba(63,160,106,.07);border:1px solid rgba(63,160,106,.3);border-radius:12px;padding:11px 13px;margin-top:8px">
     <div style="font:600 9.5px/1 ui-monospace;letter-spacing:.12em;color:#8fd0e8">◆ BEST PREMIUM</div>
     <div style="font:700 14px/1.3 'Geist';color:#23272e;margin:5px 0 3px">Line ${bLn} · Floors ${bands.pLo}–${bands.pHi}</div>
-    <div style="font:500 11px/1.5 'Geist';color:#514c3e">Unbroken ${bestR.u.prim==='lake'?'lagoon':'skyline'} views, ${bandHigh.toFixed(1)}h winter sun, and the upper-floor sky terrace within a short lift ride. Floors 31–32 sit under the roof slab — slightly higher summer heat.</div>
+    <div style="font:500 11px/1.5 'Geist';color:#514c3e">Unbroken ${bestR.u.prim==='lake'?'lagoon':'skyline'} views, ${bandHigh.toFixed(1)}h winter sun, and the upper-floor sky terrace within a short lift ride. Floors 37–38 sit under the roof slab — slightly higher summer heat.</div>
   </div>`;
   html+='<div style="margin:8px 0 2px;font:500 8.5px/1.5 ui-monospace;color:#a4a69b">Score = morning 25 · cool 20 · Vastu 25 · view 15 · airflow 10 · floor 5 <span class="badge badge-est" style="font-size:8px">est</span> · bands weigh sun-by-floor + view + noise + floor-rise economics</div>';
   html+='<div class="sech">Sun through the day · top floor</div><div class="chart" id="uChart"></div><div class="clegend" id="uLeg"></div>';
   html+='<div class="note">Living-facade scoring; primary facades inferred from the 2/3-to-core layout — send the plate key to lock them.</div>';
   html+='</div></details>';
-  html+='<div class="tpspec">G+45 · '+t.cfg+' · '+CONFIGS[t.cfg].saleable.toLocaleString()+' sq ft · '+t.core+' homes per floor per line</div>';
+  html+='<div class="tpspec">G+38 · '+t.cfg+' · '+CONFIGS[t.cfg].saleable.toLocaleString()+' sq ft · '+t.core+' homes per floor per line</div>';
   const body=document.getElementById('pBody');body.innerHTML=html;body.scrollTop=0;
   body.querySelectorAll('.lc').forEach(el=>el.onclick=()=>openFlat(t,el.dataset.u));
   const vgoEl=document.getElementById('vdSee');if(vgoEl)vgoEl.onclick=e=>{e.stopPropagation();selectTower(scores[0].t.id);};
@@ -1245,7 +1269,7 @@ function bestValueFloor(t,u){const curve=floorCurve(t,u,1,0.3),cf=clearFloorOf(c
   let best=bd.vLo,bh=-1;for(let fl=bd.vLo;fl<=bd.vHi;fl++){const p=curve[fl-1];const h=p?p.h:0;if(h>bh+0.05){bh=h;best=fl;}}
   return{fl:best,cf,bd};}
 function floorTier(fl,bd,cf){
-  if(fl===30)return{k:'Sky-terrace floor',c:'#e0b667',d:'Shares the 30th-floor sky terrace &amp; sky garden.'};
+  if(fl===32)return{k:'Sky-terrace floor',c:'#e0b667',d:'Shares the 32nd-floor sky terrace &amp; sky garden.'};
   if(cf!=null&&fl<cf)return{k:'Below the winter-sun line',c:'#6b7787',d:`Neighbouring towers shadow this facade until about floor ${cf} in winter.`};
   if(fl>=bd.pLo&&fl<=bd.pHi)return{k:'Premium band',c:'#8fd0e8',d:'Top of the stack — the clearest skyline and the top of the price ladder.'};
   if(fl>=bd.vLo&&fl<=bd.vHi)return{k:'Best-value band',c:'#6dbf88',d:'Full sun clears the podium here while the price stays below the premium floors.'};
@@ -1324,7 +1348,7 @@ function openFlat(t,uid,keepFloor){
   document.getElementById('flatSheet').classList.remove('details-open');
   document.getElementById('fsEy').textContent='Flat intelligence \u00b7 '+benchShort[String(decl)];
   document.getElementById('fsName').textContent=`${t.id} \u00b7 Flat ${u.id}`;
-  document.getElementById('fsSub').textContent=`${t.cfg} \u00b7 ${cfg.saleable.toLocaleString()} sq ft saleable \u00b7 G+45 \u00b7 ${t.core}-to-core`;
+  document.getElementById('fsSub').textContent=`${t.cfg} \u00b7 ${cfg.saleable.toLocaleString()} sq ft saleable \u00b7 G+38 \u00b7 ${t.core}-to-core`;
   (function(){const gc=gradeColor(fscore.grade),gEl=document.getElementById('fsGrade');
     if(gEl){gEl.style.setProperty('--gc',gc);gEl.style.setProperty('--gp',fscore.s);
       gEl.innerHTML=`<div class="gr-s">${fscore.s}</div><div class="gr-o">/100</div><div class="gr-g" style="background:${gc}">${fscore.grade}</div>`;}
@@ -1409,7 +1433,7 @@ function openFlat(t,uid,keepFloor){
       </div>
       <div style="margin-top:8px;font:500 10.5px/1.5 'Geist';color:#64707d">${st.pmAvg>st.amAvg?`Afternoon-dominant \u2014 bright evenings but PM heat. Afternoon sun weighted ${Math.round(WEST_W*100)}% in the tower ranking.`:'Morning-dominant \u2014 the preferred pattern. Peak light before noon keeps afternoons cooler and AC load lower.'}</div>
     </div>
-    <div style="margin-top:9px;font:500 9px/1.5 ui-monospace,monospace;color:#abaea1">Living facade \u00b7 scores averaged over G+45 \u00b7 north calibrated to the site plan (T-02 living = NW)</div>`;
+    <div style="margin-top:9px;font:500 9px/1.5 ui-monospace,monospace;color:#abaea1">Living facade \u00b7 scores averaged over G+38 \u00b7 north calibrated to the site plan (T-10 living = NE)</div>`;
   /* TAB 2: METRICS */
   const mrows=[
     {icon:'&#x1F9ED;',label:'Orientation',badge:'doc',val:`<b>${compass}-facing</b> living room &amp; deck (bearing ${Math.round(b)}&deg;). ${lakeFacing?'Faces the central lagoon \u2014 the prestige view axis.':'Faces outward from the lagoon side \u2014 perimeter views.'}`,stars:null,barW:null,barC:null},
@@ -1475,7 +1499,7 @@ function openFlat(t,uid,keepFloor){
     <div style="font:500 10.5px/1.5 'Geist';color:#64707d">Carpet area as provided by the developer (RERA basis). Saleable adds balconies, structural walls and proportionate common-area loading.</div>`;})()
     ,stars:null,barW:null,barC:null},
     {icon:'&#x1F3D9;',label:'View quality',badge:'est',val:lakeFacing?'<b>Lagoon-facing.</b> Water body + clubhouse in the primary sightline \u2014 the signature view. Upper floors clear the tree canopy.':'<b>Perimeter view.</b> Faces road or boundary zone. Less premium than the lagoon side; relatively quieter on high floors.',stars:lakeFacing?5:3,barW:pct(lakeFacing?5:3,5),barC:'var(--accent)'},
-    {icon:'&#x1F3D7;',label:'Sky amenities',badge:'web',val:'Sky terrace &amp; sky garden on <b>30th floor</b>. Triple-height lobby (10.8 m). Floor-to-floor 3.6 m \u2014 ~11\u20322\u2033 clear, noticeably above the 9\u20196\u2033\u201310\u2019 norm in NCR luxury.',stars:null,barW:null,barC:null},
+    {icon:'&#x1F3D7;',label:'Sky amenities',badge:'web',val:'Sky terrace &amp; sky garden on <b>32nd floor</b>. Triple-height lobby (10.8 m). Floor-to-floor 3.6 m \u2014 ~11\u20322\u2033 clear, noticeably above the 9\u20196\u2033\u201310\u2019 norm in NCR luxury.',stars:null,barW:null,barC:null},
   ];
   document.getElementById('fp-metrics').innerHTML=mrows.map(m=>`
     <div class="mrow">

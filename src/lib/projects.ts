@@ -518,12 +518,12 @@ export const TOWER_INTEL: Record<string, TowerIntelMeta> = {
     // Mirrors the advisor's own #1 pick (top composite), so the teaser stays
     // honest against what a buyer sees once the model opens.
     sample: {
-      ref: "Tower T-10 · Line 102",
-      type: "4 BHK · east-facing corner",
-      sun: "4.7 h/day (upper floors)",
-      sunPct: 82,
+      ref: "Tower T-12 · Line 102",
+      type: "4 BHK · NE-facing corner",
+      sun: "4.6 h/day (upper floors)",
+      sunPct: 80,
       ventilation: "Corner line · dual-aspect cross-flow",
-      vastu: "East sunrise living · North (Kuber) entrance",
+      vastu: "NE sunrise living · North (Kuber) entrance",
       idealFor: "Large families (4 BHK)",
     },
   },
