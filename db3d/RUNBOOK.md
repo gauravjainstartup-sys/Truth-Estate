@@ -8,27 +8,34 @@ Everything you paste/deploy lives in this folder:
 
 | What | Where |
 |---|---|
-| Schema (tables · RLS · gated read fn) | `db3d/schema.sql` |
+| Schema (piece tables · RLS · gated read fn) | `db3d/schema.sql` |
+| Intake table (pipeline Step 1 source) | `db3d/intake/schema-intake.sql` |
 | Model data (idempotent upserts) | `db3d/projects/*/seed-*.sql` |
 | Edge Functions (gate + entitlement writer) | `db3d/supabase/functions/{mint-token,model,grant-entitlement}` |
 | Proof they match the tested mock | `node --experimental-strip-types db3d/test-edge-parity.mjs` (30/30) |
+
+The end-to-end project flow this backs is `db3d/PIPELINE.md` (intake → generate
+→ confirm → dismantle → verify → seed → serve).
 
 ---
 
 ## 1 · Schema — SQL editor
 
-Dashboard → SQL editor → paste **`db3d/schema.sql`** → Run.
+Dashboard → SQL editor → paste **`db3d/schema.sql`** → Run. Then paste
+**`db3d/intake/schema-intake.sql`** → Run (the pipeline's Step-1 intake table +
+its `service_role`-only `get_intake` / `set_intake_status`).
 
-Re-runnable (create-if-not-exists / create-or-replace). Creates the seven
-piece tables + `model_access_grants`, enables RLS on all of them with **no
-public policy** (anon/PostgREST see nothing), and creates `get_model_bundle()`
-executable **only** by `service_role`.
+Both re-runnable (create-if-not-exists / create-or-replace). schema.sql creates
+the seven piece tables + `model_access_grants`; schema-intake.sql adds
+`project_3d_intake`. RLS is on for all with **no public policy** (anon/PostgREST
+see nothing); `get_model_bundle()` / `get_intake()` are `service_role`-only.
 
 Quick check (still in SQL editor):
 
 ```sql
-select count(*) from pg_tables where tablename like 'project_3d_%';       -- 6
+select count(*) from pg_tables where tablename like 'project_3d_%';       -- 7 (6 pieces + intake)
 select has_function_privilege('anon', 'get_model_bundle(text)', 'execute'); -- f
+select has_function_privilege('anon', 'get_intake(text)', 'execute');       -- f
 ```
 
 ## 2 · Data — SQL editor

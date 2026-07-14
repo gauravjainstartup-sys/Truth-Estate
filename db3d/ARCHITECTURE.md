@@ -109,5 +109,15 @@ storing extra derived data. Hence `floor_curve` stays NULL.
       'paid' · membership → 'member' per project); the function clamps self-service to 'lead' —
       real tiers require x-grant-key (GRANT_ADMIN_KEY), which only the future payment webhook/ops
       hold. UX gate untouched (founder rule).
+- [x] Productized pipeline (db3d/PIPELINE.md): the 7-step, two-gate flow
+      intake → generate → ✋confirm → dismantle → ✋verify → seed → serve, tracked by
+      project_3d_intake.status. Step 1 is new — the project-intake skill +
+      db3d/intake/{schema-intake.sql, intake.mjs, test-intake.mjs}: one intake row
+      (add-project Phase-1 answers + asset URLs) is fetched + validated into a
+      generation brief, so the generator starts from data not an interview. Proven
+      14/14 on the Emperor backfill fixture (Tier-1 completeness + the gate catching a
+      dropped [⚠] field). Steps 2/4/6/7 are the existing add-project / db3d-generate /
+      seed / Edge-Function assets, now named + sequenced; gates 3 & 5 are founder
+      sign-offs (rendered images in chat; parity numbers at 5).
 - [ ] Founder finalizes → swap the TOWER_INTEL embed to the new engine (one line, instant rollback)
 - [ ] (Phase 2) server-side rendering

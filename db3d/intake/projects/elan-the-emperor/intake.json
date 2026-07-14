@@ -1,0 +1,46 @@
+{
+  "slug": "elan-the-emperor",
+  "name": "Elan The Emperor",
+  "status": "ready",
+  "developer": "Elan Group",
+  "city": "Gurugram",
+  "location": "Sector 106, Dwarka Expressway",
+
+  "latitude_deg": 28.501491,
+  "north_offset_deg": 0,
+  "floors": 38,
+  "floors_uniform": true,
+  "scale_m_per_px": 0.45,
+
+  "floor_height_m": null,
+  "lobby_height_m": null,
+  "core_half_width_m": null,
+  "sky_floor": null,
+  "prevailing_breeze": ["W", "NW", "N"],
+  "view_anchors": [
+    { "id": "dome", "x": 0, "z": 0, "premium": true }
+  ],
+
+  "configs": [
+    { "config": "4 BHK", "beds": 4, "baths": 5, "carpetSqft": 2320, "superSqft": 4640, "balconySqft": 812, "rooms": "family lounge + servant" },
+    { "config": "5 BHK", "beds": 5, "baths": 6, "carpetSqft": 3056, "superSqft": 5891, "balconySqft": 1012, "rooms": "visitor lounge + family lounge" }
+  ],
+
+  "tower_hints": {
+    "towerCount": 5,
+    "notes": "T-10/T-11/T-12 (4 BHK) face NE toward the central dome; T-16/T-17 (5 BHK) face NW toward the dome. Grey Elan The Presidential neighbour towers shown for view/sunlight context. G+38.",
+    "configByTower": { "T-10": "4 BHK", "T-11": "4 BHK", "T-12": "4 BHK", "T-16": "5 BHK", "T-17": "5 BHK" }
+  },
+
+  "siteplan_url": "intake-assets/elan-the-emperor/siteplan-master.webp",
+  "floorplan_urls": [
+    { "config": "4 BHK", "unit": "103", "label": "4 BHK corner (head)", "url": "tower-intel/plans/emperor-4h.webp" },
+    { "config": "4 BHK", "unit": "101", "label": "4 BHK wing 101", "url": "tower-intel/plans/emperor-4w101.webp" },
+    { "config": "4 BHK", "unit": "102", "label": "4 BHK wing 102", "url": "tower-intel/plans/emperor-4w102.webp" },
+    { "config": "5 BHK", "unit": "103", "label": "5 BHK corner (head)", "url": "tower-intel/plans/emperor-5h.webp" },
+    { "config": "5 BHK", "unit": "101", "label": "5 BHK wing 101", "url": "tower-intel/plans/emperor-5w101.webp" },
+    { "config": "5 BHK", "unit": "102", "label": "5 BHK wing 102", "url": "tower-intel/plans/emperor-5w102.webp" }
+  ],
+  "brochure_url": null,
+  "notes": "Backfilled from the already-built advisor (public/tower-intel/elan-the-emperor.html) as the first project through the intake pipeline. Dome-centred plan origin; scale 0.45 m/px."
+}
