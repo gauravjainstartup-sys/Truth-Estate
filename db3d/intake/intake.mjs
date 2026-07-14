@@ -118,7 +118,7 @@ export function brief(intake) {
   const sTag = prov.scaleDefaulted ? " (default)" : "";
   if (prov.source) L.push(`- **Source**: ${prov.source}`);
   L.push(`- **Sun**: latitude ${site.latitudeDeg}° · true-north offset ${site.northOffsetDeg}°${nTag} (CW+)`);
-  L.push(`- **Massing**: G+${site.floors}${site.floorsUniform ? " (uniform)" : " (varies — capture per tower)"} · scale ${site.scaleMPerPx} m/px${sTag}`);
+  L.push(`- **Massing**: G+${site.floors ?? "? (missing)"}${site.floorsUniform ? " (uniform)" : " (varies — capture per tower)"} · scale ${site.scaleMPerPx} m/px${sTag}`);
   L.push(`- **Defaults applied**: floor ${site.floor_height_m} m · lobby ${site.lobby_height_m} m · core ½ ${site.core_half_width_m} m · sky floor ${site.sky_floor} · breeze ${(site.prevailing_breeze || []).join("/")}`);
   if (intake.tower_hints) {
     const th = intake.tower_hints;

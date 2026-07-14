@@ -1,0 +1,53 @@
+{
+  "backlog_id": 4099,
+  "project_id": "m3m-elie-saab-113",
+  "project_name": "M3M Residences by Elie Saab",
+  "developer_name": "M3M",
+  "location": "Billionaire's Block, Smart City Delhi Airport, Dwarka Expressway, Gurugram",
+  "city": "Gurugram",
+  "project_type": "Residential",
+  "status": "active",
+  "project_extended_details_id": 8899,
+
+  "latitude": 28.523491,
+  "longitude": 77.030529,
+  "true_north_offset_deg": 90,
+  "floors": null,
+  "no_of_floors": null,
+  "total_towers": 3,
+  "scale_m_per_px": null,
+
+  "price_range_sqft": null,
+  "super_area_range": "4205 – 4655 sq ft",
+  "launch_price": null,
+  "hero_image_url": null,
+  "brochure_url": null,
+  "siteplan_image_url": "live-media/m3m-residences-by-elie-saab/site-map.webp",
+  "siteplan_3d_html": null,
+
+  "bhk_types": "4 BHK",
+  "min_super_area": 4205,
+  "max_super_area": 4655,
+
+  "typed_facts": {
+    "city": "Gurugram",
+    "latitude": 28.523491,
+    "longitude": 77.030529,
+    "true_north_offset_deg": 90,
+    "floors": null,
+    "no_of_floors": null,
+    "total_towers": 3,
+    "scale_m_per_px": null,
+    "super_area_range": "4205 – 4655 sq ft"
+  },
+  "uploaded_assets": {
+    "siteplan_image_url": "live-media/m3m-residences-by-elie-saab/site-map.webp",
+    "brochure_url": null
+  },
+
+  "configurations": [
+    { "configuration_id": 61001, "bhk_type": "4 BHK", "area_type": "4 Bedroom + Help Room", "carpet_area": null, "balcony_area": null, "super_area": 4205, "tower_name": null, "config_3d_html": null, "floor_plan_image_url": "tower-intel/plans/m3m-4205.webp" },
+    { "configuration_id": 61002, "bhk_type": "4 BHK", "area_type": "4 Bedroom + Help Room", "carpet_area": null, "balcony_area": null, "super_area": 4520, "tower_name": null, "config_3d_html": null, "floor_plan_image_url": "tower-intel/plans/m3m-4520.webp" },
+    { "configuration_id": 61003, "bhk_type": "4 BHK", "area_type": "4 Bedroom + Help Room", "carpet_area": null, "balcony_area": null, "super_area": 4655, "tower_name": null, "config_3d_html": null, "floor_plan_image_url": "tower-intel/plans/m3m-4655.webp" }
+  ]
+}

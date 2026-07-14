@@ -42,31 +42,46 @@ export function mapFeedRow(feed, overrides = {}) {
   const tf = feed.typed_facts || {}, ua = feed.uploaded_assets || {};
   const configsRaw = Array.isArray(feed.configurations) ? feed.configurations : [];
 
-  // configs: one per bhk_type (dedup across towers); first non-null areas win
-  const byType = new Map();
+  // configs keyed by bhk_type, DISAMBIGUATED by area when one bhk_type has
+  // several distinct areas (e.g. three "4 BHK" layouts 4205/4520/4655 sq ft →
+  // "4 BHK 4205" / "4 BHK 4520" / "4 BHK 4655"). A bhk_type with one area keeps
+  // the bare label ("4 BHK").
+  const areasByType = new Map();
+  for (const c of configsRaw) {
+    const t = (c.bhk_type || "").trim(); if (!t) continue;
+    const a = firstNum(c.super_area, c.carpet_area);
+    if (!areasByType.has(t)) areasByType.set(t, new Set());
+    if (a != null) areasByType.get(t).add(a);
+  }
+  const cfgKey = (c) => {
+    const t = (c.bhk_type || "").trim();
+    const a = firstNum(c.super_area, c.carpet_area);
+    return (areasByType.get(t)?.size || 0) > 1 && a != null ? `${t} ${a}` : t;
+  };
+  const byKey = new Map();
   const dupTowers = [];
   for (const c of configsRaw) {
-    const key = (c.bhk_type || "").trim();
-    if (!key) continue;
-    if (!byType.has(key)) {
-      byType.set(key, {
-        config: key, beds: bedsOf(key), baths: null,
+    const t = (c.bhk_type || "").trim(); if (!t) continue;
+    const key = cfgKey(c);
+    if (!byKey.has(key)) {
+      byKey.set(key, {
+        config: key, beds: bedsOf(t), baths: null,
         carpetSqft: firstNum(c.carpet_area), superSqft: firstNum(c.super_area), balconySqft: firstNum(c.balcony_area),
         rooms: null,
       });
     } else {
-      dupTowers.push(key); // same BHK in another tower — areas already captured
+      dupTowers.push(key); // same config in another tower — areas already captured
     }
   }
 
   // floor plans: one per configuration row that has an image (tower-scoped)
   const floorplan_urls = configsRaw
     .filter((c) => c.floor_plan_image_url)
-    .map((c) => ({ config: (c.bhk_type || "").trim(), tower: c.tower_name || null, url: c.floor_plan_image_url }));
+    .map((c) => ({ config: cfgKey(c), tower: c.tower_name || null, url: c.floor_plan_image_url }));
 
   // tower hints from the config↔tower mapping the view carries
   const configByTower = {};
-  for (const c of configsRaw) if (c.tower_name && c.bhk_type) configByTower[c.tower_name] = c.bhk_type.trim();
+  for (const c of configsRaw) if (c.tower_name && c.bhk_type) configByTower[c.tower_name] = cfgKey(c);
 
   const north = firstNum(overrides.north_offset_deg, feed.true_north_offset_deg, tf.true_north_offset_deg) ?? NORTH_DEFAULT_DEG;
   const scale = firstNum(overrides.scale_m_per_px, feed.scale_m_per_px, tf.scale_m_per_px) ?? SCALE_DEFAULT_M_PER_PX;
@@ -95,7 +110,7 @@ export function mapFeedRow(feed, overrides = {}) {
     prevailing_breeze: overrides.prevailing_breeze ?? null,
     view_anchors: overrides.view_anchors ?? null,
 
-    configs: [...byType.values()],
+    configs: [...byKey.values()],
     tower_hints: {
       towerCount: firstNum(feed.total_towers) ?? undefined,
       configByTower: Object.keys(configByTower).length ? configByTower : undefined,
