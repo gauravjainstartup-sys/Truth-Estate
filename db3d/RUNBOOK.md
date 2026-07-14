@@ -12,10 +12,16 @@ Everything you paste/deploy lives in this folder:
 | Intake table (pipeline Step 1 source) | `db3d/intake/schema-intake.sql` |
 | Model data (idempotent upserts) | `db3d/projects/*/seed-*.sql` |
 | Edge Functions (gate + entitlement writer) | `db3d/supabase/functions/{mint-token,model,grant-entitlement}` |
-| Proof they match the tested mock | `node --experimental-strip-types db3d/test-edge-parity.mjs` (30/30) |
+| Proof they match the tested mock | `node --experimental-strip-types db3d/test-edge-parity.mjs` (31/31) |
 
 The end-to-end project flow this backs is `db3d/PIPELINE.md` (intake → generate
 → confirm → dismantle → verify → seed → serve).
+
+**Before you start:** have the Supabase CLI (`supabase`), `jq`, and `openssl` on
+your PATH, and a checkout of branch `claude/exciting-lamport-9x99ik`. Do the
+steps **in order** (schema → data → secrets → deploy → grants → verify) — each
+leans on the one before. Steps 1–2 are dashboard SQL; 3–4 are the CLI; 6–7 are
+curl/browser smoke tests. Nothing here touches the live site.
 
 ---
 
@@ -33,10 +39,15 @@ see nothing); `get_model_bundle()` / `get_intake()` are `service_role`-only.
 Quick check (still in SQL editor):
 
 ```sql
-select count(*) from pg_tables where tablename like 'project_3d_%';       -- 7 (6 pieces + intake)
+select count(*) from pg_tables
+  where schemaname='public' and tablename like 'project_3d_%';              -- 7 (6 pieces + intake; 6 if you skip schema-intake)
 select has_function_privilege('anon', 'get_model_bundle(text)', 'execute'); -- f
 select has_function_privilege('anon', 'get_intake(text)', 'execute');       -- f
 ```
+
+`schema-intake.sql` backs the *generation* pipeline (Step 1 of `PIPELINE.md`);
+it is not needed just to **serve** the three existing projects, but it's cheap
+and idempotent, so applying it now keeps the DB ready for new projects.
 
 ## 2 · Data — SQL editor
 
@@ -124,7 +135,8 @@ Until then every call is a no-op and the live site is byte-identical to today.
 -- demo subject used by the engines' ?sub= param
 insert into model_access_grants (slug, subject, entitlement) values
   ('signature-global-titanium-spr', 'buyer@demo', 'paid'),
-  ('elan-the-presidential',         'buyer@demo', 'paid')
+  ('elan-the-presidential',         'buyer@demo', 'paid'),
+  ('elan-the-emperor',              'buyer@demo', 'paid')
 on conflict (slug, subject, entitlement) do nothing;
 
 -- a real buyer: their phone/email as captured by the lead flow
@@ -136,6 +148,9 @@ on conflict (slug, subject, entitlement) do nothing;
 ```
 
 ## 6 · Verify the gate — curl
+
+Needs `jq`. Every expected output below was validated against the faithful local
+mock (`db3d/mock-api.mjs`), which is byte-compatible with these functions.
 
 ```bash
 REF=<PROJECT_REF>
@@ -174,12 +189,13 @@ curl -s "$API/model?slug=elan-the-presidential" -H "authorization: Bearer $TOKEN
 for i in 1 2 3 4 5 6; do curl -s -o /dev/null -w "%{http_code} " -X POST \
   "$API/mint-token" -H "origin: $ORIGIN" -H "content-type: application/json" \
   -d "{\"slug\":\"$SLUG\",\"subject\":\"ratelimit@test\"}"; done; echo
-#   → six codes ending in 429 (mix of 403s if ratelimit@test has no grant — the
-#     rate-limiter sits BEFORE entitlement, exactly like the mock)
+#   → 403 403 403 403 403 429  — ratelimit@test has no grant, so the first five
+#     are 403 (not-entitled) and the sixth trips the limiter: the rate check sits
+#     BEFORE entitlement, exactly like the mock. (An entitled subject → 200×5 429.)
 ```
 
 All seven behave? The gate is live and byte-compatible with everything proven
-locally (`db3d/test-gate.mjs` 14/14 · `db3d/test-edge-parity.mjs` 23/23).
+locally (`db3d/test-gate.mjs` 14/14 · `db3d/test-edge-parity.mjs` 31/31).
 
 ## 7 · Point an engine at it (smoke test only — NOT the swap)
 
@@ -188,12 +204,14 @@ Open a locally served engine against the real gate:
 ```bash
 cd db3d/engine && python3 -m http.server 9000
 # allow that origin once:  supabase secrets set EXTRA_ORIGIN=http://localhost:9000
-#   (then redeploy the two functions — secrets are read at cold start)
+#   (then redeploy the functions — secrets are read at cold start)
 ```
 
 → `http://localhost:9000/engine-signature-global-titanium-spr.html?api=https://$REF.supabase.co/functions/v1&sub=buyer@demo`
 
-Full estate renders from the DB, panels live, `?sub=stranger@x` refuses. The
+(or `engine-elan-the-presidential.html` / `engine-elan-the-emperor.html` — any of
+the three.) Full estate renders from the DB, panels live, `?sub=stranger@x`
+refuses. The
 production swap itself (pointing `TOWER_INTEL` at the engine) stays a separate,
 founder-approved one-line change with instant rollback.
 
