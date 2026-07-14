@@ -124,5 +124,11 @@ storing extra derived data. Hence `floor_curve` stays NULL.
       dropped [⚠] field). Steps 2/4/6/7 are the existing add-project / db3d-generate /
       seed / Edge-Function assets, now named + sequenced; gates 3 & 5 are founder
       sign-offs (rendered images in chat; parity numbers at 5).
+- [x] Step-1 SOURCE wired to the founder's project_input_feed view (backlog_projects +
+      project_extended_details + project_configurations → typed_facts / uploaded_assets /
+      configurations[]). db3d/intake/feed.mjs maps a view row → the generation contract
+      with true-north=0° and scale=0.45 m/px defaults (override > view value > default);
+      project_3d_intake repurposed to the overrides + status companion. test-intake.mjs
+      30/30 incl. feed mapping, bhk dedup, the two defaults, and override precedence.
 - [ ] Founder finalizes → swap the TOWER_INTEL embed to the new engine (one line, instant rollback)
 - [ ] (Phase 2) server-side rendering

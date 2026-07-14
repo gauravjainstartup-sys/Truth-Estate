@@ -1,0 +1,67 @@
+{
+  "backlog_id": 4021,
+  "project_id": "elan-emperor-106",
+  "project_name": "Elan The Emperor",
+  "developer_name": "Elan Group",
+  "location": "Sector 106, Dwarka Expressway, Gurugram",
+  "city": "Sector 106, Dwarka Expressway, Gurugram",
+  "project_type": "Residential",
+  "status": "active",
+  "project_extended_details_id": 8810,
+
+  "latitude": 28.501491,
+  "longitude": 77.001726,
+  "true_north_offset_deg": null,
+  "floors": "G+38",
+  "no_of_floors": 38,
+  "total_towers": 5,
+  "scale_m_per_px": null,
+
+  "price_range_sqft": "₹13,500 – ₹16,000 / sq ft",
+  "super_area_range": "4640 – 5891 sq ft",
+  "launch_price": "₹6.2 Cr onwards",
+  "hero_image_url": "live-media/elan-the-emperor/hero.webp",
+  "hero_date": "2026-05-01",
+  "brochure_url": "live-media/elan-the-emperor/brochure.pdf",
+  "payment_plan_url": null,
+  "render_elevation_url": "live-media/elan-the-emperor/elevation.webp",
+  "siteplan_image_url": "live-media/elan-the-emperor/site-map.webp",
+  "siteplan_3d_html": null,
+
+  "bhk_types": "4 BHK | 5 BHK",
+  "min_carpet_area": 2320,
+  "max_carpet_area": 3056,
+  "min_super_area": 4640,
+  "max_super_area": 5891,
+
+  "typed_facts": {
+    "city": "Sector 106, Dwarka Expressway, Gurugram",
+    "latitude": 28.501491,
+    "longitude": 77.001726,
+    "true_north_offset_deg": null,
+    "floors": "G+38",
+    "no_of_floors": 38,
+    "total_towers": 5,
+    "scale_m_per_px": null,
+    "price_range_sqft": "₹13,500 – ₹16,000 / sq ft",
+    "super_area_range": "4640 – 5891 sq ft",
+    "launch_price": "₹6.2 Cr onwards"
+  },
+  "uploaded_assets": {
+    "hero_image_url": "live-media/elan-the-emperor/hero.webp",
+    "hero_date": "2026-05-01",
+    "brochure_url": "live-media/elan-the-emperor/brochure.pdf",
+    "payment_plan_url": null,
+    "render_elevation_url": "live-media/elan-the-emperor/elevation.webp",
+    "siteplan_image_url": "live-media/elan-the-emperor/site-map.webp",
+    "siteplan_3d_html": null
+  },
+
+  "configurations": [
+    { "configuration_id": 51001, "bhk_type": "4 BHK", "area_type": "Carpet", "carpet_area": 2320, "balcony_area": 812, "super_area": 4640, "tower_name": "T-10", "config_3d_html": null, "floor_plan_image_url": "tower-intel/plans/emperor-4h.webp" },
+    { "configuration_id": 51002, "bhk_type": "4 BHK", "area_type": "Carpet", "carpet_area": 2320, "balcony_area": 812, "super_area": 4640, "tower_name": "T-11", "config_3d_html": null, "floor_plan_image_url": "tower-intel/plans/emperor-4w101.webp" },
+    { "configuration_id": 51003, "bhk_type": "4 BHK", "area_type": "Carpet", "carpet_area": 2320, "balcony_area": 812, "super_area": 4640, "tower_name": "T-12", "config_3d_html": null, "floor_plan_image_url": "tower-intel/plans/emperor-4w102.webp" },
+    { "configuration_id": 51004, "bhk_type": "5 BHK", "area_type": "Carpet", "carpet_area": 3056, "balcony_area": 1012, "super_area": 5891, "tower_name": "T-16", "config_3d_html": null, "floor_plan_image_url": "tower-intel/plans/emperor-5h.webp" },
+    { "configuration_id": 51005, "bhk_type": "5 BHK", "area_type": "Carpet", "carpet_area": 3056, "balcony_area": 1012, "super_area": 5891, "tower_name": "T-17", "config_3d_html": null, "floor_plan_image_url": "tower-intel/plans/emperor-5w101.webp" }
+  ]
+}

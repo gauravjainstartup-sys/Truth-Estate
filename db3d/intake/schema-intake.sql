@@ -1,10 +1,16 @@
 -- ════════════════════════════════════════════════════════════════
---  PROJECT 3D INTAKE — the pipeline's STEP 1 source of truth
+--  PROJECT 3D INTAKE — the pipeline's STEP 1 OVERRIDES + STATUS table
 --
---  One row per project = everything the generator needs BEFORE it can
---  build a 3D advisor: the add-project Phase-1 intake answers (the
---  [tell]/[⚠] facts a human must provide) + the source image URLs +
---  founder geometry hints. The generator reads this instead of asking.
+--  NOTE: the primary Step-1 SOURCE is the `project_input_feed` VIEW
+--  (backlog_projects + project_extended_details + project_configurations),
+--  mapped by db3d/intake/feed.mjs. This table is the read-write COMPANION
+--  the view can't be: it holds per-project OVERRIDES the feed doesn't
+--  carry (a non-default true_north_offset_deg / scale_m_per_px — defaults
+--  are 0° and 0.45 m/px) and the pipeline STATUS state machine. A row is
+--  optional; absent = "take the feed as-is with the defaults".
+--
+--  Its columns still mirror the full add-project Phase-1 intake so a
+--  project with no feed row can also be hand-authored here end to end.
 --
 --  NOT here (by design — these are OUTPUTS the generator produces by
 --  tracing the images, not inputs): exact tower x/z/rotation, the per-

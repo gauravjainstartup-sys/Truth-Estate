@@ -12,12 +12,14 @@
    one call to get_intake(slug) via service_role (schema-intake.sql).
    Set INTAKE_DIR to point elsewhere.
    ════════════════════════════════════════════════════════════════ */
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadFeed } from "./feed.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const INTAKE_DIR = process.env.INTAKE_DIR || path.join(HERE, "projects");
+const FEED_DIR = process.env.FEED_DIR || path.join(HERE, "feed");
 
 /* Tier-2 site defaults (schema stores NULL = "use the engine default").
    Mirrors add-project's Tier-2 list + project-geometry.md. */
@@ -31,7 +33,15 @@ export const SITE_DEFAULTS = {
 
 export function loadIntake(slug, dir = INTAKE_DIR) {
   const p = path.join(dir, slug, "intake.json");
-  return JSON.parse(readFileSync(p, "utf8")); // real: get_intake(slug) via service_role
+  return JSON.parse(readFileSync(p, "utf8")); // hand-authored intake (legacy / overrides fixture)
+}
+
+/* Resolve a project to its intake contract. Primary source is the founder's
+   project_input_feed view (feed/<slug>.feed.json here; the view in production);
+   falls back to a hand-authored intake row if no feed exists for the slug. */
+export function resolveIntake(slug) {
+  if (existsSync(path.join(FEED_DIR, `${slug}.feed.json`))) return { intake: loadFeed(slug), source: "project_input_feed" };
+  return { intake: loadIntake(slug), source: "intake.json (hand-authored)" };
 }
 
 /* Validate against the Phase-1 checklist. Tier-1 = output is wrong
@@ -103,12 +113,17 @@ export function brief(intake) {
   L.push(`> Status: **${v.ready ? "READY to generate" : "BLOCKED — " + v.missing.length + " Tier-1 gap(s)"}**`);
   L.push("");
   L.push(`- **Project**: ${intake.name} · ${intake.developer || "?"} · ${intake.location || intake.city || "?"}`);
-  L.push(`- **Sun**: latitude ${site.latitudeDeg}° · true-north offset ${site.northOffsetDeg}° (CW+)`);
-  L.push(`- **Massing**: G+${site.floors}${site.floorsUniform ? " (uniform)" : " (varies — capture per tower)"} · scale ${site.scaleMPerPx} m/px`);
+  const prov = intake.__provenance || {};
+  const nTag = prov.northDefaulted ? " (default — north-up)" : "";
+  const sTag = prov.scaleDefaulted ? " (default)" : "";
+  if (prov.source) L.push(`- **Source**: ${prov.source}`);
+  L.push(`- **Sun**: latitude ${site.latitudeDeg}° · true-north offset ${site.northOffsetDeg}°${nTag} (CW+)`);
+  L.push(`- **Massing**: G+${site.floors}${site.floorsUniform ? " (uniform)" : " (varies — capture per tower)"} · scale ${site.scaleMPerPx} m/px${sTag}`);
   L.push(`- **Defaults applied**: floor ${site.floor_height_m} m · lobby ${site.lobby_height_m} m · core ½ ${site.core_half_width_m} m · sky floor ${site.sky_floor} · breeze ${(site.prevailing_breeze || []).join("/")}`);
   if (intake.tower_hints) {
-    L.push(`- **Tower hints**: ${intake.tower_hints.towerCount ?? "?"} towers — ${intake.tower_hints.notes || ""}`);
-    if (intake.tower_hints.configByTower) L.push(`  - config↔tower: ${Object.entries(intake.tower_hints.configByTower).map(([t, c]) => `${t}=${c}`).join(" · ")}`);
+    const th = intake.tower_hints;
+    L.push(`- **Tower hints**: ${th.towerCount ?? "?"} towers${th.notes ? " — " + th.notes : ""}`);
+    if (th.configByTower) L.push(`  - config↔tower: ${Object.entries(th.configByTower).map(([t, c]) => `${t}=${c}`).join(" · ")}`);
   }
   L.push("");
   L.push(`## Configs (stated — plates/facings still to trace + confirm at the vastu gate)`);
@@ -136,7 +151,8 @@ const isMain = fileURLToPath(import.meta.url) === path.resolve(process.argv[1] |
 if (isMain) {
   const slug = process.argv[2];
   if (!slug) { console.error("usage: intake.mjs <slug> [--brief-out <path>]"); process.exit(1); }
-  const intake = loadIntake(slug);
+  const { intake, source } = resolveIntake(slug);
+  console.log(`[intake] source: ${source}`);
   const v = validate(intake);
   const md = brief(intake);
   const outArg = process.argv.indexOf("--brief-out");

@@ -32,17 +32,40 @@ reads `project_3d_intake`; everything downstream reads the brief + the images.
 node db3d/intake/intake.mjs <slug>
 ```
 
-- **Source**: `db3d/intake/projects/<slug>/intake.json` (the fixture — Supabase
-  is network-blocked from the sandbox). In production this is one
-  `get_intake(slug)` call via `service_role` (`db3d/intake/schema-intake.sql`);
-  swap the loader, nothing else changes.
+- **Source (primary): the `project_input_feed` view** — the founder's view that
+  consolidates the ops pipeline (`backlog_projects` + `project_extended_details`
+  + `project_configurations`) into one row per project: `typed_facts`,
+  `uploaded_assets`, and a `configurations[]` array. `db3d/intake/feed.mjs`
+  (`mapFeedRow`) maps that row → the generation contract. Here it reads a
+  fixture mirroring the view (`db3d/intake/feed/<slug>.feed.json`, Supabase is
+  network-blocked from the sandbox); in production it's one
+  `select … from project_input_feed where project_name = $1` via `service_role`.
+- **Two site-wide defaults** the view doesn't carry (returns null): **true-north
+  offset → 0°** (north-up siteplans) and **scale → 0.45 m/px**. Precedence:
+  explicit override > view value > default; the brief flags a defaulted value.
+- **Fallback**: a hand-authored `db3d/intake/projects/<slug>/intake.json` (used
+  only if no feed row exists). `resolveIntake(slug)` picks feed first.
 - **Output**: `scratchpad/advisor/<slug>.brief.md` — the generation brief
   (project facts, resolved site with Tier-2 defaults applied, config table,
   the exact list of images to trace, and any Tier-1 gaps).
 - **Exit code**: `0` = READY (all Tier-1 present) · `2` = BLOCKED (gaps
   listed). The brief header says which.
 
-## What the intake row must carry
+## Field mapping — `project_input_feed` → the contract
+
+| view field | → contract | notes |
+|---|---|---|
+| `project_name` | `name` + `slug` (slugified) | attaches the advisor |
+| `latitude` | `latitude_deg` | from `location_insights` coords |
+| `true_north_offset_deg` | `north_offset_deg` | **null → 0°** |
+| `no_of_floors` / `floors` | `floors` | int, or max of a range/"G+38" |
+| `scale_m_per_px` | `scale_m_per_px` | **null → 0.45** |
+| `configurations[]` | `configs[]` (deduped by `bhk_type`) | `beds`=parseInt(`bhk_type`); carpet/super/balcony carried |
+| `configurations[].floor_plan_image_url` | `floorplan_urls[]` | one per tower/config row |
+| `siteplan_image_url` | `siteplan_url` | the massing trace source |
+| `total_towers` + `tower_name` | `tower_hints` | count + config↔tower |
+
+## What the row must carry (Tier-1)
 
 Mirrors `add-project` Phase 1. The validator (`validate()` in `intake.mjs`) is
 the source of truth; in short:

@@ -25,15 +25,21 @@ separate one-line change with instant rollback.
 
 **Skill:** `project-intake` · **Runs:** `node db3d/intake/intake.mjs <slug>`
 
-One row in `project_3d_intake` holds every detail a human must provide (the
-`add-project` Phase-1 answers) + the source image URLs. The skill fetches it,
-validates against the Phase-1 checklist, and emits
-`scratchpad/advisor/<slug>.brief.md` — the generation brief. READY (all Tier-1
-present) advances `draft → ready`; BLOCKED lists the exact gaps to fill.
+The **`project_input_feed` view** is the source of truth: it consolidates the
+ops pipeline (`backlog_projects` + `project_extended_details` +
+`project_configurations`) into one row per project — `typed_facts`,
+`uploaded_assets`, `configurations[]`. `db3d/intake/feed.mjs` maps that row →
+the generation contract, applying two site-wide defaults the view leaves null:
+**true-north 0°** and **scale 0.45 m/px** (override > view value > default). The
+skill validates against the `add-project` Phase-1 checklist and emits
+`scratchpad/advisor/<slug>.brief.md` — the generation brief. READY advances
+`draft → ready`; BLOCKED lists the exact gaps.
 
-*Source seam:* fixture on disk now (`db3d/intake/projects/<slug>/intake.json`);
-`get_intake(slug)` via `service_role` in production. Same mock posture as the
-rest of `db3d/` (Supabase is network-blocked from the build sandbox).
+*Source seam:* a fixture mirroring the view now (`db3d/intake/feed/<slug>.feed.json`);
+`select … from project_input_feed` via `service_role` in production. The
+`project_3d_intake` table is the optional **overrides + status** companion (a
+per-project non-default north/scale, plus the pipeline `status`), since the view
+is read-only and carries neither. Same mock posture as the rest of `db3d/`.
 
 ## Step 2 · Generate — *create the project*  → `status: generated`
 

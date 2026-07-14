@@ -45,9 +45,12 @@ select has_function_privilege('anon', 'get_model_bundle(text)', 'execute'); -- f
 select has_function_privilege('anon', 'get_intake(text)', 'execute');       -- f
 ```
 
-`schema-intake.sql` backs the *generation* pipeline (Step 1 of `PIPELINE.md`);
-it is not needed just to **serve** the three existing projects, but it's cheap
-and idempotent, so applying it now keeps the DB ready for new projects.
+`schema-intake.sql` backs the *generation* pipeline (Step 1 of `PIPELINE.md`),
+not serving — so it's optional for going live with the three existing projects,
+but cheap/idempotent. Note the actual Step-1 **source** is your
+`project_input_feed` view (already created); `project_3d_intake` is only the
+read-write overrides + status companion (per-project non-default true-north /
+scale — defaults **0°** and **0.45 m/px** — and the pipeline status).
 
 ## 2 · Data — SQL editor
 
