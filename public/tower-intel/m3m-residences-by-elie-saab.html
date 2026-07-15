@@ -786,7 +786,7 @@ function buildGreyTower(t){const hP=10.0+32*3.45,LOB=10.0,segH=hP-LOB,segY=LOB+s
 })();
 
 /* ── solar engine (validated) ── */
-let decl=-23.45;const NORTH_CAL=90*Math.PI/180;let northOff=NORTH_CAL;/*siteplan north points +x (image-right) → +90° offset to true north*/const SUN_R=1200;
+let decl=-23.45;const NORTH_CAL=-90*Math.PI/180;let northOff=NORTH_CAL;/*true north = +x (image-right); pool/deck side +z = East, expressway -z = West*/const SUN_R=1200;
 /* vizDecl drives ONLY the sun-movement visual (default equinox); scoring stays on the winter benchmark (decl) — never coupled */
 let vizDecl=0;let lastSunDir=new T.Vector3(0,1,0);const playAz0=-0.9;
 function sunTrue(h){const d=decl*Math.PI/180,H=15*(h-12)*Math.PI/180;const sa=Math.sin(LAT)*Math.sin(d)+Math.cos(LAT)*Math.cos(d)*Math.cos(H);const al=Math.asin(Math.max(-1,Math.min(1,sa)));let ca=(Math.sin(d)-Math.sin(LAT)*sa)/(Math.cos(LAT)*Math.cos(al)+1e-9);let az=Math.acos(Math.max(-1,Math.min(1,ca)));if(H>0)az=2*Math.PI-az;return{alt:al,az,up:al>0};}
