@@ -540,18 +540,18 @@ const FH=3.6, LOBBY=10.8;            // 3.6 m floor-to-floor, triple-height lobb
 const FLOORS=40;                     // G+40 all towers (founder-confirmed)
 const BENCH=4.0;                     // usable-sun threshold (h)
 let   WEST_W=0.6;                    // afternoon/west sun weight vs morning
-const LAKE={x:0,z:78};               // central lagoon/pool, south of the tower row = amenity axis
+const LAKE={x:-40,z:70};             // free-form lagoon/pool on the EAST side (image-bottom) = amenity axis
 /* Tower centres (m, +x east / +z south; PLAN frame). north offset 90° (NORTH_CAL).
    Three ES buildings (ES-3/ES-2/ES-1) in a row parallel to Dwarka Expressway (north
    edge), each a QUAD core (4 corner units around a central lift core). Per-unit config
    via `q` — corner layouts differ (4205/4520/4655). [inf] positions eyeballed from the
    site plan (no scale bar) — the render loop + Gate-3 refine spacing. */
 const towers=[
- {id:'ES-3',x:-104,z:0,rot:0,hw:23,hd:17,core:4,cfg:'4 BHK 4520',
+ {id:'ES-3',x:-52,z:-14,rot:0,hw:17,hd:13,core:4,cfg:'4 BHK 4520',
    q:{'101':'4 BHK 4520','102':'4 BHK 4205','103':'4 BHK 4655','104':'4 BHK 4520'}},
- {id:'ES-2',x:   0,z:0,rot:0,hw:23,hd:17,core:4,cfg:'4 BHK 4205',
+ {id:'ES-2',x:  0,z:-14,rot:0,hw:17,hd:13,core:4,cfg:'4 BHK 4205',
    q:{'101':'4 BHK 4205','102':'4 BHK 4205','103':'4 BHK 4655','104':'4 BHK 4655'}},
- {id:'ES-1',x: 104,z:0,rot:0,hw:23,hd:17,core:4,cfg:'4 BHK 4655',
+ {id:'ES-1',x: 52,z:-14,rot:0,hw:17,hd:13,core:4,cfg:'4 BHK 4655',
    q:{'101':'4 BHK 4205','102':'4 BHK 4520','103':'4 BHK 4520','104':'4 BHK 4655'}},
 ];
 const CONFIGS={
@@ -608,8 +608,13 @@ function poly(ptsPx,c,y,o={}){const s=new T.Shape();ptsPx.forEach((p,i)=>{const[
 /* M3M Residences by Elie Saab plot — traced from the official brochure site plan
    (pentagon: NW → NE(north edge) → E corner → S tip → W kink). plan-px via
    planpx = model_m/0.55 + (1180,690); model origin = central clubhouse oval. */
-const phase1px=[[250,235],[935,235],[935,655],[250,655],[250,235]];   // M3M plot — rectangle along Dwarka Expressway (N), pool to the S [inf: eyeballed, no scale bar]
-poly(phase1px,'#bcca9f',0.02,{em:'#000',ei:0});
+const phase1px=[[195,120],[975,120],[975,668],[195,668],[195,120]];   // M3M plot (compass N = image-right: Dwarka Expressway on the W/top edge, pool on the E/bottom) [inf: eyeballed, no scale bar]
+poly(phase1px,'#93bd64',0.02,{em:'#000',ei:0});                      // landscaped green ground
+/* amenities laid to the official site plan */
+poly([[560,205],[870,205],[870,345],[560,345]],'#adc76e',0.03);      // central lawn (between expressway & towers)
+poly([[232,205],[442,205],[442,330],[232,330]],'#b7bcc2',0.03);      // visitor parking (NW / top-left)
+poly([[845,360],[935,360],[935,498],[845,498]],'#b5654a',0.05);      // basketball court (N side / image-right)
+poly([[855,548],[945,548],[945,650],[855,650]],'#5a7fae',0.05);      // tennis / pickleball court (E-S corner)
 /* boundary wall with pillars + gate */
 (function wall(){const pts=phase1px.map(p=>PX(p[0],p[1]));
   for(let i=0;i<pts.length-1;i++){const[ax,az]=pts[i],[bx,bz]=pts[i+1];const len=Math.hypot(bx-ax,bz-az);
@@ -630,19 +635,21 @@ function road(p1,p2,w,c){const[ax,az]=PX(p1[0],p1[1]),[bx,bz]=PX(p2[0],p2[1]);co
    the south-east boundary, the main entry spine from the gate to the central
    clubhouse, a ring road just inside the wall, and internal driveways that serve
    each tower cluster. */
-road([250,208],[935,208],34,'#7a808a');   // Dwarka Expressway along the north edge
+road([150,150],[1020,150],42,'#6f757e');   // Dwarka Expressway (W / top edge)
+road([300,300],[900,300],11,'#9297a0');    // arrival drop-off drive below the expressway
 (function roads(){const c=phase1px.slice(0,-1).reduce((a,p)=>[a[0]+p[0],a[1]+p[1]],[0,0]).map(v=>v/(phase1px.length-1));
   const inset=phase1px.map(p=>[p[0]+(c[0]-p[0])*0.05,p[1]+(c[1]-p[1])*0.05]);
   for(let i=0;i<inset.length-1;i++)road(inset[i],inset[i+1],7,'#8a8f97');   // internal ring road just inside the wall
-  road([590,250],[590,600],8,'#9297a0');    // central entry spine (gate → pool axis)
-  road([360,470],[820,470],6,'#9297a0');    // cross drive linking ES-3 · ES-2 · ES-1
+  road([590,300],[590,560],8,'#9297a0');    // central entry spine (drop-off → pool axis)
+  road([440,384],[740,384],6,'#9297a0');    // cross drive linking ES-3 · ES-2 · ES-1
 })();
 function blob(cx,cy,rx,rz,seg=40){const pts=[];for(let i=0;i<seg;i++){const a=i/seg*Math.PI*2,wob=.82+.18*Math.sin(a*3+1.1)+.08*Math.cos(a*5);pts.push([cx+Math.cos(a)*rx*wob,cy+Math.sin(a)*rz*wob]);}return pts;}
-poly(blob(590,600,180,50),'#7fcfe0',0.07,{em:'#2b9fbc',ei:.14});          // central lagoon/pool, south of the tower row
-(function club(){const[cx,cz]=PX(820,600);                                   // clubhouse by the pool (SE)
-  const b=new T.Mesh(new T.BoxGeometry(42,9,22),new T.MeshStandardMaterial({color:'#e8d9b8',roughness:.7}));b.position.set(cx,4.5,cz);b.castShadow=true;siteGrp.add(b);
-  const t2=new T.Mesh(new T.BoxGeometry(16,6,16),new T.MeshStandardMaterial({color:'#efe3c6'}));t2.position.set(cx,12,cz);t2.castShadow=true;siteGrp.add(t2);
-  label(cx,cz,22,'Clubhouse',{fs:28,scale:.55,border:'rgba(214,181,102,.7)'});})();
+poly(blob(500,560,245,82),'#7fcfe0',0.07,{em:'#2b9fbc',ei:.14});          // free-form lagoon/pool (E / image-bottom)
+poly(blob(330,470,92,58,30),'#7fcfe0',0.072,{em:'#2b9fbc',ei:.13});        // pool lobe (SW arm)
+(function club(){const[cx,cz]=PX(415,455);                                   // clubhouse by the pool
+  const b=new T.Mesh(new T.BoxGeometry(30,9,18),new T.MeshStandardMaterial({color:'#e8d9b8',roughness:.7}));b.position.set(cx,4.5,cz);b.castShadow=true;siteGrp.add(b);
+  const t2=new T.Mesh(new T.BoxGeometry(12,6,12),new T.MeshStandardMaterial({color:'#efe3c6'}));t2.position.set(cx,12,cz);t2.castShadow=true;siteGrp.add(t2);
+  label(cx,cz,16,'Clubhouse',{fs:26,scale:.5,border:'rgba(214,181,102,.7)'});})();
 (function trees(){const poly2=phase1px.map(p=>PX(p[0],p[1]));
   const xs=poly2.map(p=>p[0]),zs=poly2.map(p=>p[1]);
   const minx=Math.min(...xs),maxx=Math.max(...xs),minz=Math.min(...zs),maxz=Math.max(...zs);
@@ -716,12 +723,7 @@ towers.forEach(t=>{const h=topH();
   // core strip
   const core=new T.Mesh(new T.BoxGeometry(7,h-LOBBY+1.5,4),new T.MeshStandardMaterial({color:'#312a20',roughness:.85}));
   core.position.set(t.x,LOBBY+(h-LOBBY)/2,t.z);core.rotation.y=t.rot;core.castShadow=true;siteGrp.add(core);
-  // green vertical gardens — signature cascading planters from the project render
-  [[-t.hw*0.42,1,0.74]].forEach(([gx,zs,frac])=>{
-    const gh=(h-LOBBY)*frac,gy=LOBBY+(h-LOBBY)-gh/2-(h-LOBBY)*0.03;
-    const gm=new T.Mesh(new T.BoxGeometry(3.2,gh,1.15),new T.MeshStandardMaterial({color:'#4f7d33',roughness:1,emissive:'#1a3310',emissiveIntensity:.1}));
-    const[gox,goz]=rotV(t.rot,gx,zs*(t.hd+0.35));
-    gm.position.set(t.x+gox,gy,t.z+goz);gm.rotation.y=t.rot;gm.castShadow=true;siteGrp.add(gm);});
+  // (Emperor green-garden cosmetic removed for M3M)
   // floor bands
   for(let f=8;f<FLOORS;f+=8){const ln=new T.Mesh(new T.BoxGeometry(t.hw*2+.3,.16,t.hd*2+.3),new T.MeshStandardMaterial({color:'#2e2619'}));ln.position.set(t.x,LOBBY+f*FH,t.z);ln.rotation.y=t.rot;siteGrp.add(ln);}
   // collision (whole slab)
