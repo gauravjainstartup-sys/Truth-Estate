@@ -36,6 +36,11 @@ export function loadIntake(slug, dir = INTAKE_DIR) {
   return JSON.parse(readFileSync(p, "utf8")); // hand-authored intake (legacy / overrides fixture)
 }
 
+/* True if the project has any intake source (feed fixture or hand-authored row). */
+export function intakeExists(slug) {
+  return existsSync(path.join(FEED_DIR, `${slug}.feed.json`)) || existsSync(path.join(INTAKE_DIR, slug, "intake.json"));
+}
+
 /* Resolve a project to its intake contract. Primary source is the founder's
    project_input_feed view (feed/<slug>.feed.json here; the view in production);
    falls back to a hand-authored intake row if no feed exists for the slug. */
@@ -151,6 +156,12 @@ const isMain = fileURLToPath(import.meta.url) === path.resolve(process.argv[1] |
 if (isMain) {
   const slug = process.argv[2];
   if (!slug) { console.error("usage: intake.mjs <slug> [--brief-out <path>]"); process.exit(1); }
+  if (!intakeExists(slug)) {
+    console.error(`[intake] ${slug} → BLOCKED ✗ — no intake row for this project.`);
+    console.error(`   ⛔ Not in project_input_feed (fixture db3d/intake/feed/${slug}.feed.json missing) and no hand-authored db3d/intake/projects/${slug}/intake.json.`);
+    console.error(`   → Add ${slug} to the project_input_feed view (prod) or drop its feed fixture here (see db3d/intake/feed/*.feed.json for the shape), then re-run Step 1.`);
+    process.exit(2);
+  }
   const { intake, source } = resolveIntake(slug);
   console.log(`[intake] source: ${source}`);
   const v = validate(intake);
