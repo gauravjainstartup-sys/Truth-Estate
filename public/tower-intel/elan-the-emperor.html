@@ -552,9 +552,12 @@ const towers=[
  {id:'T10',x:-190,z:  2,rot: 2.356,hw:20,hd:8.0,core:3,cfg:'4 BHK'},
  {id:'T11',x:-156,z: 41,rot: 2.356,hw:20,hd:8.0,core:3,cfg:'4 BHK'},
  {id:'T12',x:-122,z: 80,rot: 2.356,hw:20,hd:8.0,core:3,cfg:'4 BHK'},
- /* 5 BHK — tight SE row hugging Presidential's T-14/T-15 (≈45 m steps, same rot) */
- {id:'T17',x: 143,z: 30,rot:-2.69,hw:22,hd:8.5,core:3,cfg:'5 BHK'},
- {id:'T16',x: 184,z: 12,rot:-2.69,hw:22,hd:8.5,core:3,cfg:'5 BHK'},
+ /* 5 BHK — the four-tower family (T17·T16·T15·T14), one block on the east edge,
+    even ~52 m spacing to match the 4 BHK row on the west */
+ {id:'T17',x: 188,z: 68,rot:-2.69,hw:22,hd:8.5,core:3,cfg:'5 BHK'},
+ {id:'T16',x: 236,z: 47,rot:-2.69,hw:22,hd:8.5,core:3,cfg:'5 BHK'},
+ {id:'T15',x: 284,z: 26,rot:-2.69,hw:22,hd:8.5,core:3,cfg:'5 BHK'},
+ {id:'T14',x: 332,z:  5,rot:-2.69,hw:22,hd:8.5,core:3,cfg:'5 BHK'},
 ];
 const CONFIGS={
  '5 BHK':{beds:5,extra:'visitor lounge + family lounge',baths:6,saleable:5891,carpetSqft:3056,balconySqft:1012,deck:"private + sky deck",
@@ -748,8 +751,6 @@ const PRES_TOWERS=[
   {id:'T-3',x:101,z:-89,rot: 0.00,hw:20,hd:8.0},
   {id:'T-2',x:146,z:-89,rot: 0.00,hw:20,hd:8.0},
   {id:'T-1',x:191,z:-89,rot: 0.00,hw:20,hd:8.0},
-  {id:'T-15',x:225,z: -6,rot:-2.69,hw:22,hd:8.5},
-  {id:'T-14',x:290,z:-35,rot:-2.69,hw:22,hd:8.5},
 ];
 /* grey facade — same window-grid structure as towerFacade() so the head & wing
    segments read as real buildings, but monochrome grey (a neighbour, not a product) */
