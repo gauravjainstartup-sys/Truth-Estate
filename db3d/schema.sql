@@ -48,8 +48,9 @@ create table if not exists project_3d_towers (
   tower_id  text not null,                   -- 'T-7'
   x double precision, z double precision, rot double precision,
   hw double precision, hd double precision,  -- slab half-width / half-depth
-  core int not null,                         -- 2 = straight slab · 3 = L-shape w/ nose
-  cfg  text not null,                        -- config key
+  core int not null,                         -- 2 = straight slab · 3 = L-shape w/ nose · 4 = quad core
+  cfg  text not null,                        -- config key (tower default)
+  q    jsonb,                                -- core:4 only: per-corner config map {101:cfg,102:cfg,103:cfg,104:cfg}
   unique (slug, tower_id)
 );
 

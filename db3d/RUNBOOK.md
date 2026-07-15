@@ -77,6 +77,7 @@ Paste and run the seeds (order doesn't matter, safe to re-run):
 - `db3d/projects/signature-global-titanium-spr/seed-signature-global-titanium-spr.sql`
 - `db3d/projects/elan-the-presidential/seed-elan-the-presidential.sql`
 - `db3d/projects/elan-the-emperor/seed-elan-the-emperor.sql`
+- `db3d/projects/m3m-residences-by-elie-saab/seed-m3m-residences-by-elie-saab.sql`
 
 Expected rows per slug:
 
@@ -85,6 +86,7 @@ Expected rows per slug:
 | signature-global-titanium-spr | 7 | 2 | 3 | 5 | 16 |
 | elan-the-presidential | 8 | 3 | 6 | 9 | 24 |
 | elan-the-emperor | 5 | 2 | 6 | 9 | 15 |
+| m3m-residences-by-elie-saab | 3 | 3 | 6 | 0 | 12 |
 
 ```sql
 select slug, count(*) from project_3d_towers group by slug;

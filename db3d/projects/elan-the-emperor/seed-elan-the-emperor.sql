@@ -1,6 +1,6 @@
 -- ════════════════════════════════════════════════════════════════
 --  SEED — elan-the-emperor 3D model pieces
---  Generated 2026-07-14T19:09:23.621Z by db3d/make-bundle.mjs
+--  Generated 2026-07-15T04:53:11.743Z by db3d/make-bundle.mjs
 --  Run AFTER db3d/schema.sql. Idempotent (upserts) — safe to re-run.
 --  Rows: site 1 · towers 5 · configs 2 · plates 6
 --        floorplans 9 · intelligence 15 · vastu_rules 1
@@ -11,13 +11,13 @@ insert into project_3d_site (slug,name,latitude_rad,floors,floor_height_m,lobby_
 ('elan-the-emperor','Elan The Emperor',0.49744485967753116,38,3.45,10,0,4,0.6,1200,'{"x":0,"z":0}'::jsonb,0.45,590,415,'[[6,6],[300,120],[470,175],[1080,180],[1230,235],[1360,395],[564,870],[207,498],[6,318],[6,6]]'::jsonb,'[]'::jsonb)
 on conflict (slug) do update set name=excluded.name,latitude_rad=excluded.latitude_rad,floors=excluded.floors,floor_height_m=excluded.floor_height_m,lobby_height_m=excluded.lobby_height_m,north_cal_rad=excluded.north_cal_rad,sun_benchmark_h=excluded.sun_benchmark_h,west_weight=excluded.west_weight,sun_ray_len_m=excluded.sun_ray_len_m,lake=excluded.lake,scale_m_per_px=excluded.scale_m_per_px,px_origin_x=excluded.px_origin_x,px_origin_y=excluded.px_origin_y,boundary_px=excluded.boundary_px,updated_at=now();
 
-insert into project_3d_towers (slug,tower_id,x,z,rot,hw,hd,core,cfg) values
-('elan-the-emperor','T10',-190,2,2.356,20,8,3,'4 BHK'),
-('elan-the-emperor','T11',-156,41,2.356,20,8,3,'4 BHK'),
-('elan-the-emperor','T12',-122,80,2.356,20,8,3,'4 BHK'),
-('elan-the-emperor','T17',143,30,-2.69,22,8.5,3,'5 BHK'),
-('elan-the-emperor','T16',184,12,-2.69,22,8.5,3,'5 BHK')
-on conflict (slug,tower_id) do update set x=excluded.x,z=excluded.z,rot=excluded.rot,hw=excluded.hw,hd=excluded.hd,core=excluded.core,cfg=excluded.cfg;
+insert into project_3d_towers (slug,tower_id,x,z,rot,hw,hd,core,cfg,q) values
+('elan-the-emperor','T10',-190,2,2.356,20,8,3,'4 BHK',null),
+('elan-the-emperor','T11',-156,41,2.356,20,8,3,'4 BHK',null),
+('elan-the-emperor','T12',-122,80,2.356,20,8,3,'4 BHK',null),
+('elan-the-emperor','T17',143,30,-2.69,22,8.5,3,'5 BHK',null),
+('elan-the-emperor','T16',184,12,-2.69,22,8.5,3,'5 BHK',null)
+on conflict (slug,tower_id) do update set x=excluded.x,z=excluded.z,rot=excluded.rot,hw=excluded.hw,hd=excluded.hd,core=excluded.core,cfg=excluded.cfg,q=excluded.q;
 
 insert into project_3d_configs (slug,config,beds,baths,saleable,carpet_sqft,balcony_sqft,deck,rooms,extra,col) values
 ('elan-the-emperor','5 BHK',5,6,5891,3056,1012,'private + sky deck','Living/dining 34''8"×15'' · Master suite + master · Bed 1-3 · Family lounge · Visitor/waiting · Servant · Kitchen','visitor lounge + family lounge','#e0b667'),

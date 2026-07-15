@@ -130,5 +130,18 @@ storing extra derived data. Hence `floor_curve` stays NULL.
       with true-north=0° and scale=0.45 m/px defaults (override > view value > default);
       project_3d_intake repurposed to the overrides + status companion. test-intake.mjs
       30/30 incl. feed mapping, bhk dedup, the two defaults, and override precedence.
+- [x] Fourth project + first full 1→6 run FROM the feed: m3m-residences-by-elie-saab
+      (M3M Residences by Elie Saab). New massing type — core:4 QUAD core (4 corner units
+      101/102/103/104 around a central core; makeUnits + tower setup handle N/S rows,
+      quad faces, per-corner primary decks, per-unit config via t.q). Ran Step 1 (feed,
+      caught missing floors → founder gave G+40; north=90 override; 3 area-split configs)
+      → Step 2 generate (proportional towers, amenities to the site plan, pool-to-front
+      fix for the poly rotation-flip) → Gate 3 founder-approved → Step 4 dismantle
+      (3 towers · 3 configs · 6 plates · 0 floorplans (interior not traced) · 12 flats)
+      → Step 5 parity 12/12 exact → Step 6 seed. Hardened the pipeline: persisted the
+      quad per-corner config map `q` as a project_3d_towers jsonb column (schema +
+      make-bundle seed + get_model_bundle + model reshape + parity sim), caught by the
+      reshape-identity harness dropping it. All bars green: gate 14/14, edge-parity 32/32,
+      intake 30/30.
 - [ ] Founder finalizes → swap the TOWER_INTEL embed to the new engine (one line, instant rollback)
 - [ ] (Phase 2) server-side rendering

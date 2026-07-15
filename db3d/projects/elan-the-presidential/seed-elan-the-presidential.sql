@@ -1,6 +1,6 @@
 -- ════════════════════════════════════════════════════════════════
 --  SEED — elan-the-presidential 3D model pieces
---  Generated 2026-07-13T19:48:49.186Z by db3d/make-bundle.mjs
+--  Generated 2026-07-15T04:53:11.693Z by db3d/make-bundle.mjs
 --  Run AFTER db3d/schema.sql. Idempotent (upserts) — safe to re-run.
 --  Rows: site 1 · towers 8 · configs 3 · plates 6
 --        floorplans 9 · intelligence 24 · vastu_rules 1
@@ -11,16 +11,16 @@ insert into project_3d_site (slug,name,latitude_rad,floors,floor_height_m,lobby_
 ('elan-the-presidential','Elan The Presidential',0.49745910156422735,32,3.45,10,0,4,0.6,1200,'{"x":0,"z":0}'::jsonb,0.55,1180,690,'[[738,381],[1562,490],[1762,610],[1002,981],[716,574],[738,381]]'::jsonb,'[]'::jsonb)
 on conflict (slug) do update set name=excluded.name,latitude_rad=excluded.latitude_rad,floors=excluded.floors,floor_height_m=excluded.floor_height_m,lobby_height_m=excluded.lobby_height_m,north_cal_rad=excluded.north_cal_rad,sun_benchmark_h=excluded.sun_benchmark_h,west_weight=excluded.west_weight,sun_ray_len_m=excluded.sun_ray_len_m,lake=excluded.lake,scale_m_per_px=excluded.scale_m_per_px,px_origin_x=excluded.px_origin_x,px_origin_y=excluded.px_origin_y,boundary_px=excluded.boundary_px,updated_at=now();
 
-insert into project_3d_towers (slug,tower_id,x,z,rot,hw,hd,core,cfg) values
-('elan-the-presidential','T-6',-35,-89,0,20,8,3,'4 BHK'),
-('elan-the-presidential','T-5',11,-89,0,20,8,3,'4 BHK'),
-('elan-the-presidential','T-4',56,-89,0,20,8,3,'4 BHK'),
-('elan-the-presidential','T-3',101,-89,0,20,8,3,'4 BHK'),
-('elan-the-presidential','T-2',146,-89,0,20,8,3,'3 BHK'),
-('elan-the-presidential','T-1',191,-89,0,20,8,3,'3 BHK'),
-('elan-the-presidential','T-15',225,-6,-2.69,22,8.5,3,'5 BHK'),
-('elan-the-presidential','T-14',290,-35,-2.69,22,8.5,3,'5 BHK')
-on conflict (slug,tower_id) do update set x=excluded.x,z=excluded.z,rot=excluded.rot,hw=excluded.hw,hd=excluded.hd,core=excluded.core,cfg=excluded.cfg;
+insert into project_3d_towers (slug,tower_id,x,z,rot,hw,hd,core,cfg,q) values
+('elan-the-presidential','T-6',-35,-89,0,20,8,3,'4 BHK',null),
+('elan-the-presidential','T-5',11,-89,0,20,8,3,'4 BHK',null),
+('elan-the-presidential','T-4',56,-89,0,20,8,3,'4 BHK',null),
+('elan-the-presidential','T-3',101,-89,0,20,8,3,'4 BHK',null),
+('elan-the-presidential','T-2',146,-89,0,20,8,3,'3 BHK',null),
+('elan-the-presidential','T-1',191,-89,0,20,8,3,'3 BHK',null),
+('elan-the-presidential','T-15',225,-6,-2.69,22,8.5,3,'5 BHK',null),
+('elan-the-presidential','T-14',290,-35,-2.69,22,8.5,3,'5 BHK',null)
+on conflict (slug,tower_id) do update set x=excluded.x,z=excluded.z,rot=excluded.rot,hw=excluded.hw,hd=excluded.hd,core=excluded.core,cfg=excluded.cfg,q=excluded.q;
 
 insert into project_3d_configs (slug,config,beds,baths,saleable,carpet_sqft,balcony_sqft,deck,rooms,extra,col) values
 ('elan-the-presidential','5 BHK',5,6,4495,2200,520,'private deck','Living/dining/family lounge · Master + dress · Bed 1–4 · Pooja · Servant · Kitchen + utility','family lounge + pooja','#e0b667'),

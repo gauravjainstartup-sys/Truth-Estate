@@ -44,7 +44,7 @@ function dbBundle(slug) {
       sun_benchmark_h: site.sunBenchmarkHours, west_weight: site.westWeight, sun_ray_len_m: site.sunRayLenM,
       lake: site.lake, scale_m_per_px: site.scaleMPerPx, px_origin_x: site.pxOriginX, px_origin_y: site.pxOriginY,
       boundary_px: site.boundaryPx, amenities: [], updated_at: "2026-07-14T00:00:00+00:00" },
-    towers: towers.map((t) => idify({ slug: t.slug, tower_id: t.id, x: t.x, z: t.z, rot: t.rot, hw: t.hw, hd: t.hd, core: t.core, cfg: t.cfg })),
+    towers: towers.map((t) => idify({ slug: t.slug, tower_id: t.id, x: t.x, z: t.z, rot: t.rot, hw: t.hw, hd: t.hd, core: t.core, cfg: t.cfg, q: nn(t.q) })),
     configs: configs.map((c) => idify({ slug: c.slug, config: c.config, beds: nn(c.beds), baths: nn(c.baths), saleable: nn(c.saleable),
       carpet_sqft: nn(c.carpetSqft), balcony_sqft: nn(c.balconySqft), deck: nn(c.deck), rooms: nn(c.rooms), extra: nn(c.extra), col: nn(c.col) })),
     plates: plates.map((p) => idify({ slug: p.slug, config: p.config, offsets: p.offsets })),

@@ -1,0 +1,43 @@
+{
+  "slug": "m3m-residences-by-elie-saab",
+  "name": "M3M Residences by Elie Saab",
+  "latitudeRad": 0.49782883211296985,
+  "latitudeDeg": 28.5235,
+  "floors": 40,
+  "floorHeightM": 3.6,
+  "lobbyHeightM": 10.8,
+  "northCalRad": 1.5707963267948966,
+  "northCalDeg": 90,
+  "sunBenchmarkHours": 4,
+  "westWeight": 0.6,
+  "sunRayLenM": 1200,
+  "lake": {
+    "x": 0,
+    "z": 96
+  },
+  "scaleMPerPx": 0.45,
+  "pxOriginX": 590,
+  "pxOriginY": 415,
+  "boundaryPx": [
+    [
+      195,
+      162
+    ],
+    [
+      975,
+      162
+    ],
+    [
+      975,
+      710
+    ],
+    [
+      195,
+      710
+    ],
+    [
+      195,
+      162
+    ]
+  ]
+}

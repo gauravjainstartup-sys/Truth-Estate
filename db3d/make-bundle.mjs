@@ -50,10 +50,10 @@ lines.push(`\ninsert into project_3d_site (slug,name,latitude_rad,floors,floor_h
 lines.push(`(${S(site.slug)},${S(site.name)},${N(site.latitudeRad)},${N(site.floors)},${N(site.floorHeightM)},${N(site.lobbyHeightM)},${N(site.northCalRad)},${N(site.sunBenchmarkHours)},${N(site.westWeight)},${N(site.sunRayLenM)},${J(site.lake)},${N(site.scaleMPerPx)},${N(site.pxOriginX)},${N(site.pxOriginY)},${J(site.boundaryPx)},'[]'::jsonb)`);
 lines.push(`on conflict (slug) do update set name=excluded.name,latitude_rad=excluded.latitude_rad,floors=excluded.floors,floor_height_m=excluded.floor_height_m,lobby_height_m=excluded.lobby_height_m,north_cal_rad=excluded.north_cal_rad,sun_benchmark_h=excluded.sun_benchmark_h,west_weight=excluded.west_weight,sun_ray_len_m=excluded.sun_ray_len_m,lake=excluded.lake,scale_m_per_px=excluded.scale_m_per_px,px_origin_x=excluded.px_origin_x,px_origin_y=excluded.px_origin_y,boundary_px=excluded.boundary_px,updated_at=now();`);
 
-// towers (piece key `id` → column tower_id)
-lines.push(`\ninsert into project_3d_towers (slug,tower_id,x,z,rot,hw,hd,core,cfg) values`);
-lines.push(towers.map((t) => `(${S(t.slug)},${S(t.id)},${N(t.x)},${N(t.z)},${N(t.rot)},${N(t.hw)},${N(t.hd)},${N(t.core)},${S(t.cfg)})`).join(",\n"));
-lines.push(`on conflict (slug,tower_id) do update set x=excluded.x,z=excluded.z,rot=excluded.rot,hw=excluded.hw,hd=excluded.hd,core=excluded.core,cfg=excluded.cfg;`);
+// towers (piece key `id` → column tower_id; q = per-corner config map for core:4)
+lines.push(`\ninsert into project_3d_towers (slug,tower_id,x,z,rot,hw,hd,core,cfg,q) values`);
+lines.push(towers.map((t) => `(${S(t.slug)},${S(t.id)},${N(t.x)},${N(t.z)},${N(t.rot)},${N(t.hw)},${N(t.hd)},${N(t.core)},${S(t.cfg)},${t.q ? J(t.q) : "null"})`).join(",\n"));
+lines.push(`on conflict (slug,tower_id) do update set x=excluded.x,z=excluded.z,rot=excluded.rot,hw=excluded.hw,hd=excluded.hd,core=excluded.core,cfg=excluded.cfg,q=excluded.q;`);
 
 // configs
 lines.push(`\ninsert into project_3d_configs (slug,config,beds,baths,saleable,carpet_sqft,balcony_sqft,deck,rooms,extra,col) values`);

@@ -14,7 +14,8 @@
 insert into model_access_grants (slug, subject, entitlement) values
   ('signature-global-titanium-spr', 'buyer@demo', 'paid'),
   ('elan-the-presidential',         'buyer@demo', 'paid'),
-  ('elan-the-emperor',              'buyer@demo', 'paid')
+  ('elan-the-emperor',              'buyer@demo', 'paid'),
+  ('m3m-residences-by-elie-saab',   'buyer@demo', 'paid')
 on conflict (slug, subject, entitlement) do nothing;
 
 insert into project_3d_intake (slug, name, status) values
@@ -22,6 +23,12 @@ insert into project_3d_intake (slug, name, status) values
   ('elan-the-presidential',         'Elan The Presidential',         'seeded'),
   ('elan-the-emperor',              'Elan The Emperor',              'seeded')
 on conflict (slug) do update set status = excluded.status, updated_at = now();
+
+-- M3M carries a true-north override (90°): its project_input_feed row nulls
+-- true_north_offset_deg, so the override lives here (the overrides companion).
+insert into project_3d_intake (slug, name, status, north_offset_deg) values
+  ('m3m-residences-by-elie-saab', 'M3M Residences by Elie Saab', 'seeded', 90)
+on conflict (slug) do update set status = excluded.status, north_offset_deg = excluded.north_offset_deg, updated_at = now();
 
 -- verification (optional):
 --   select slug, count(*) from project_3d_towers group by slug;

@@ -40,6 +40,7 @@ export function reshapeBundle(db: Row): Row | null {
     towers: (db.towers as Row[]).map((t) => ({
       slug: t.slug, id: t.tower_id, // 'T-7' back on `id`; the bigint row id stays behind
       x: t.x, z: t.z, rot: t.rot, hw: t.hw, hd: t.hd, core: t.core, cfg: t.cfg,
+      ...(t.q != null ? { q: t.q } : {}), // core:4 per-corner config map (absent for slab/L cores)
     })),
     configs: (db.configs as Row[]).map((c) => ({
       slug: c.slug, config: c.config, beds: c.beds, baths: c.baths, saleable: c.saleable,

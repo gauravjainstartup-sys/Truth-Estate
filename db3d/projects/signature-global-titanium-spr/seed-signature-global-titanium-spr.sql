@@ -1,6 +1,6 @@
 -- ════════════════════════════════════════════════════════════════
 --  SEED — signature-global-titanium-spr 3D model pieces
---  Generated 2026-07-13T19:48:03.853Z by db3d/make-bundle.mjs
+--  Generated 2026-07-15T04:53:11.642Z by db3d/make-bundle.mjs
 --  Run AFTER db3d/schema.sql. Idempotent (upserts) — safe to re-run.
 --  Rows: site 1 · towers 7 · configs 2 · plates 3
 --        floorplans 5 · intelligence 16 · vastu_rules 1
@@ -11,15 +11,15 @@ insert into project_3d_site (slug,name,latitude_rad,floors,floor_height_m,lobby_
 ('signature-global-titanium-spr','Signature Global Titanium SPR',0.4960225734167885,40,3.6,10.8,0.4363323129985824,4,0.6,1200,'{"x":0,"z":0}'::jsonb,0.55,1180,690,'[[940,515],[1505,560],[1490,785],[1335,915],[1095,1000],[1095,1065],[965,1065],[958,790],[940,515]]'::jsonb,'[]'::jsonb)
 on conflict (slug) do update set name=excluded.name,latitude_rad=excluded.latitude_rad,floors=excluded.floors,floor_height_m=excluded.floor_height_m,lobby_height_m=excluded.lobby_height_m,north_cal_rad=excluded.north_cal_rad,sun_benchmark_h=excluded.sun_benchmark_h,west_weight=excluded.west_weight,sun_ray_len_m=excluded.sun_ray_len_m,lake=excluded.lake,scale_m_per_px=excluded.scale_m_per_px,px_origin_x=excluded.px_origin_x,px_origin_y=excluded.px_origin_y,boundary_px=excluded.boundary_px,updated_at=now();
 
-insert into project_3d_towers (slug,tower_id,x,z,rot,hw,hd,core,cfg) values
-('signature-global-titanium-spr','T-6',-93.5,-66,1.45,21,7.5,2,'4.5 BHK'),
-('signature-global-titanium-spr','T-5',-77,-2.8,1.85,21,7.5,2,'4.5 BHK'),
-('signature-global-titanium-spr','T-4',-20.9,56.1,0.06,21,7.5,2,'4.5 BHK'),
-('signature-global-titanium-spr','T-3',50.6,55,-0.06,21,7.5,2,'4.5 BHK'),
-('signature-global-titanium-spr','T-2',105.6,-8.3,1.22,21,7.5,2,'4.5 BHK'),
-('signature-global-titanium-spr','T-7',-96.3,88,1.57,24,8,3,'3.5 BHK'),
-('signature-global-titanium-spr','T-8',-96.3,144.7,1.57,24,8,3,'3.5 BHK')
-on conflict (slug,tower_id) do update set x=excluded.x,z=excluded.z,rot=excluded.rot,hw=excluded.hw,hd=excluded.hd,core=excluded.core,cfg=excluded.cfg;
+insert into project_3d_towers (slug,tower_id,x,z,rot,hw,hd,core,cfg,q) values
+('signature-global-titanium-spr','T-6',-93.5,-66,1.45,21,7.5,2,'4.5 BHK',null),
+('signature-global-titanium-spr','T-5',-77,-2.8,1.85,21,7.5,2,'4.5 BHK',null),
+('signature-global-titanium-spr','T-4',-20.9,56.1,0.06,21,7.5,2,'4.5 BHK',null),
+('signature-global-titanium-spr','T-3',50.6,55,-0.06,21,7.5,2,'4.5 BHK',null),
+('signature-global-titanium-spr','T-2',105.6,-8.3,1.22,21,7.5,2,'4.5 BHK',null),
+('signature-global-titanium-spr','T-7',-96.3,88,1.57,24,8,3,'3.5 BHK',null),
+('signature-global-titanium-spr','T-8',-96.3,144.7,1.57,24,8,3,'3.5 BHK',null)
+on conflict (slug,tower_id) do update set x=excluded.x,z=excluded.z,rot=excluded.rot,hw=excluded.hw,hd=excluded.hd,core=excluded.core,cfg=excluded.cfg,q=excluded.q;
 
 insert into project_3d_configs (slug,config,beds,baths,saleable,carpet_sqft,balcony_sqft,deck,rooms,extra,col) values
 ('signature-global-titanium-spr','4.5 BHK',4,5,3780,1972,442,'28''10" outdoor deck','Living/dining/family lounge 25''5"×21''1" · Master 16''8"×12''4" + dress · Jr-master + home office · Bed 1 & 2 · Pooja · Powder · Kitchen + utility + VRF balcony','home office + pooja','#e0b667'),

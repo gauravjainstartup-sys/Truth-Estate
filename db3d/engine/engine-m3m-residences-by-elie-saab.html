@@ -529,39 +529,52 @@
 
 <script src="three.min.js"></script>
 <script>
+window.__loadModel = async function () {
+  const q = new URLSearchParams(location.search);
+  const API = q.get('api') || location.origin;                 // Edge Function base
+  const SLUG = q.get('slug') || 'm3m-residences-by-elie-saab';
+  const SUBJECT = q.get('sub') || '';                          // production: from the gated session
+  const mint = await fetch(API + '/mint-token', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ slug: SLUG, subject: SUBJECT }) });
+  if (!mint.ok) throw new Error('mint-token ' + mint.status);
+  const { token } = await mint.json();
+  const res = await fetch(API + '/model?slug=' + encodeURIComponent(SLUG), { headers: { authorization: 'Bearer ' + token } });
+  if (!res.ok) throw new Error('model ' + res.status);
+  const b = await res.json();
+  const CONFIGS = Object.fromEntries(b.configs.map(c => [c.config, c]));
+  const FLATW = Object.fromEntries(b.floorplans.map(f => [f.key, f]));
+  return {
+    LAT: b.site.latitude_rad ?? b.site.latitudeRad, FH: b.site.floor_height_m ?? b.site.floorHeightM,
+    LOBBY: b.site.lobby_height_m ?? b.site.lobbyHeightM, FLOORS: b.site.floors,
+    BENCH: b.site.sun_benchmark_h ?? b.site.sunBenchmarkHours, WEST_W: b.site.west_weight ?? b.site.westWeight,
+    LAKE: b.site.lake, NORTH_CAL: b.site.north_cal_rad ?? b.site.northCalRad,
+    towers: b.towers, CONFIGS, FLATW,
+    intelligence: b.intelligence, plates: b.plates, vastu: b.vastu, site: b.site,
+  };
+};</script>
+<script>
+(async function () {
+const MODEL = await window.__loadModel();
+const INTEL = new Map((MODEL.intelligence || []).map(function (r) { return [r.tower_id + '|' + r.unit, r]; }));
+
 const T=THREE;
 /* ════════════════════════════════════════════════════════════════
    TITANIUM SPR — DATA (edit freely; every value marked by source)
    [doc]=read from your plan/floor plans  [web]=public listings
    [inf]=inferred from the plan image — correct me here
    ════════════════════════════════════════════════════════════════ */
-const LAT=28.523491*Math.PI/180;     // M3M Elie Saab · 28.523491, 77.030529 (founder-confirmed)
-const FH=3.6, LOBBY=10.8;            // 3.6 m floor-to-floor, triple-height lobby (defaults)
-const FLOORS=40;                     // G+40 all towers (founder-confirmed)
-const BENCH=4.0;                     // usable-sun threshold (h)
-let   WEST_W=0.6;                    // afternoon/west sun weight vs morning
-const LAKE={x:0,z:96};               // lagoon/pool directly in FRONT of the towers (East side) — the deck view axis
+const LAT=MODEL.LAT;     // M3M Elie Saab · 28.523491, 77.030529 (founder-confirmed)
+const FH=MODEL.FH, LOBBY=MODEL.LOBBY;            // 3.6 m floor-to-floor, triple-height lobby (defaults)
+const FLOORS=MODEL.FLOORS;                     // G+40 all towers (founder-confirmed)
+const BENCH=MODEL.BENCH;                     // usable-sun threshold (h)
+let WEST_W=MODEL.WEST_W;                    // afternoon/west sun weight vs morning
+const LAKE=MODEL.LAKE;               // lagoon/pool directly in FRONT of the towers (East side) — the deck view axis
 /* Tower centres (m, +x east / +z south; PLAN frame). north offset 90° (NORTH_CAL).
    Three ES buildings (ES-3/ES-2/ES-1) in a row parallel to Dwarka Expressway (north
    edge), each a QUAD core (4 corner units around a central lift core). Per-unit config
    via `q` — corner layouts differ (4205/4520/4655). [inf] positions eyeballed from the
    site plan (no scale bar) — the render loop + Gate-3 refine spacing. */
-const towers=[
- {id:'ES-3',x:-52,z:-14,rot:0,hw:17,hd:13,core:4,cfg:'4 BHK 4520',
-   q:{'101':'4 BHK 4520','102':'4 BHK 4205','103':'4 BHK 4655','104':'4 BHK 4520'}},
- {id:'ES-2',x:  0,z:-14,rot:0,hw:17,hd:13,core:4,cfg:'4 BHK 4205',
-   q:{'101':'4 BHK 4205','102':'4 BHK 4205','103':'4 BHK 4655','104':'4 BHK 4655'}},
- {id:'ES-1',x: 52,z:-14,rot:0,hw:17,hd:13,core:4,cfg:'4 BHK 4655',
-   q:{'101':'4 BHK 4205','102':'4 BHK 4520','103':'4 BHK 4520','104':'4 BHK 4655'}},
-];
-const CONFIGS={
- '4 BHK 4205':{beds:4,extra:'help room',baths:5,saleable:4205,carpetSqft:2310,balconySqft:780,deck:"wide balconies + jacuzzi",
-   rooms:'Living/dining 26\'3"×15\' · M.Bed 1 & 2 · Bed 3 & 4 · Kitchen · Servant · Help room',col:'#c9a96e'},
- '4 BHK 4520':{beds:4,extra:'help room',baths:5,saleable:4520,carpetSqft:2485,balconySqft:845,deck:"wrap-around balconies + jacuzzi",
-   rooms:'Living/dining 26\'6"×16\' · M.Bed 1 & 2 · Bed 3 & 4 · Kitchen · Servant · Help room',col:'#e0b667'},
- '4 BHK 4655':{beds:4,extra:'help room',baths:5,saleable:4655,carpetSqft:2560,balconySqft:905,deck:"wide balconies + jacuzzi",
-   rooms:'Living/dining 32\'×15\' · M.Bed 1 & 2 · Bed 3 & 4 · Kitchen · Servant · Help room',col:'#b9905a'},
-};
+const towers=MODEL.towers;
+const CONFIGS=MODEL.CONFIGS;
 /* ════════════ end data ════════════ */
 
 const renderer=new T.WebGLRenderer({antialias:true});
@@ -786,7 +799,7 @@ function buildGreyTower(t){const hP=10.0+32*3.45,LOB=10.0,segH=hP-LOB,segY=LOB+s
 })();
 
 /* ── solar engine (validated) ── */
-let decl=-23.45;const NORTH_CAL=90*Math.PI/180;let northOff=NORTH_CAL;/*siteplan north points +x (image-right) → +90° offset to true north*/const SUN_R=1200;
+let decl=-23.45;const NORTH_CAL=MODEL.NORTH_CAL;let northOff=NORTH_CAL;/*siteplan north points +x (image-right) → +90° offset to true north*/const SUN_R=1200;
 /* vizDecl drives ONLY the sun-movement visual (default equinox); scoring stays on the winter benchmark (decl) — never coupled */
 let vizDecl=0;let lastSunDir=new T.Vector3(0,1,0);const playAz0=-0.9;
 function sunTrue(h){const d=decl*Math.PI/180,H=15*(h-12)*Math.PI/180;const sa=Math.sin(LAT)*Math.sin(d)+Math.cos(LAT)*Math.cos(d)*Math.cos(H);const al=Math.asin(Math.max(-1,Math.min(1,sa)));let ca=(Math.sin(d)-Math.sin(LAT)*sa)/(Math.cos(LAT)*Math.cos(al)+1e-9);let az=Math.acos(Math.max(-1,Math.min(1,ca)));if(H>0)az=2*Math.PI-az;return{alt:al,az,up:al>0};}
@@ -895,82 +908,15 @@ function floorMatrixHTML(t,sel,mCurves,bands,clearFl){
   </div>`;}
 
 /* \u2500\u2500 composite buy score \u2500\u2500 */
-function flatScore(t,u,st){
-  const b=bearingOf(t,u.primL),c=compassOf(b),v=vastuFor(c);
-  const isEnd=u.faces.length>=3,lake=u.prim==='lake';
-  const heat=c.includes('W')?2:c==='N'?5:4;
-  const sunPts=Math.min(1,st.wtAvg/8);
-  const s=Math.round(100*(0.35*sunPts+0.20*(v.s/5)+0.20*((lake?5:3)/5)+0.15*((isEnd?5:3)/5)+0.10*(heat/5)));
-  const grade=s>=85?'A+':s>=75?'A':s>=65?'B+':s>=55?'B':'C';
-  return{s,grade,c,vs:v.s,lake,isEnd,heat};}
+let flatScore; /* v1 removed — v2 below reads pre-computed intelligence */
 function gradeColor(g){return g==='A+'?'#6dbf88':g==='A'?'#a8cf78':g==='B+'?'#e0b667':g==='B'?'#e8a84a':'#e07878';}
 
-function vastuFor(c){
-  const overall={NE:{s:5,n:'NE-facing is the most auspicious orientation \u2014 ideal for the entrance and living zone; the Ishan corner draws positive energy.'},
-    N:{s:4,n:'North-facing is highly auspicious \u2014 the Kuber (wealth) direction. Excellent for the living room and main entrance.'},
-    E:{s:4,n:'East-facing brings the sunrise energy \u2014 very good for the living room and dining where morning light is welcome.'},
-    SE:{s:3,n:'South-east is the Agni (fire) corner \u2014 ideal for the kitchen. The living zone here benefits from corrections to channel fire energy positively.'},
-    SW:{s:3,n:'South-west is the Nairutya (earth/stability) zone \u2014 the master bedroom corner. Living areas here need heavy south-west anchoring.'},
-    W:{s:3,n:'West-facing is neutral. Bedrooms in the west are acceptable; the living area can be balanced with lighter north-east furnishing.'},
-    S:{s:2,n:'South-facing needs careful planning \u2014 remedies include a heavy south wall and keeping the north-east light and open.'},
-    NW:{s:3,n:'North-west is the Vayu (air) zone \u2014 fine for guest rooms; the living area benefits from stable south-west furniture anchoring.'}};
-  const rooms={
-    kitchen:{ideal:'SE',good:['S'],ok:['NW'],bad:['NE','N','SW','W','E'],
-      reason:'Kitchen belongs in the SE (Agni corner); south works, NW is a fallback. NE or north kitchens set fire and water energies in conflict.'},
-    masterBed:{ideal:'SW',good:['S','W'],ok:['NW'],bad:['NE','N','E','SE'],
-      reason:'Master bedroom in the SW (earth zone) promotes restful sleep and stability. Sleep with head pointing south or east.'},
-    bed2:{ideal:'W',good:['S','SW'],ok:['NW','NE'],bad:['N','SE'],
-      reason:'Secondary bedrooms suit the west or south \u2014 stable, with afternoon light. NE is acceptable for unmarried children.'},
-    bed3:{ideal:'NW',good:['W','N'],ok:['NE','E'],bad:['SE','S','SW'],
-      reason:'Guest and children\u2019s rooms suit the NW (Vayu zone). Children sleep with head to the south or east; avoid the SE for kids.'},
-    living:{ideal:'NE',good:['N','E'],ok:['W','NW'],bad:['S','SE','SW'],
-      reason:'Living room in the NE or north draws prosperity; seating should face east or north. Keep the NE corner light and uncluttered.'},
-    bathroom:{ideal:'NW',good:['W'],ok:['SE'],bad:['NE','SW'],
-      reason:'Toilets belong in the NW or west. The NE (Ishan kona) must never host a wet area; SW toilets weaken household stability.'},
-    pooja:{ideal:'NE',good:['E'],ok:['N'],bad:['S','W','SW','SE'],
-      reason:'Puja room belongs in the NE (Ishan kona) \u2014 the most sacred zone. Deity faces east or west; the devotee faces east or north.'},
-    study:{ideal:'W',good:['N','E'],ok:['NE'],bad:['S','SW'],
-      reason:'Home office: west aids concentration, north (Kuber) attracts prosperity. Sit facing east or north while working.'},
-    entrance:{ideal:'NE',good:['N','E'],ok:['W','NW'],bad:['S','SW','SE'],
-      reason:'The main door is most auspicious in the NE, N or E (the Ishan–Kuber arc); W and NW are workable; S, SW and SE entries are cautioned and rely on remedies.'}};
-  return{s:(overall[c]||{s:3}).s,n:(overall[c]||{n:'Workable with a considered internal layout.'}).n,rooms};
-}
-function plateCfg(t,u){return u.id==='103' ? t.cfg+'|103' : t.cfg;}
-function vastuRoomScore(roomKey,flatFacing,cfg,endSign){
-  const compass8=['N','NE','E','SE','S','SW','W','NW'];
-  const idx=Math.max(0,compass8.indexOf(flatFacing));
-  /* Room offsets in 45° steps clockwise from the unit's lagoon-facing facade
-     (offset 0). Traced from M3M Residences by Elie Saab's own floor plans (the head
-     '|103' plate + the shared wing plate). The two physical wings mirror via
-     `mir` (endSign); the wing plates below are the +end (east) canonical form —
-     verified: all three configs normalise to the same wing plate, and it
-     reproduces the founder-confirmed north-row directions.
-     HEAD (nose faces lagoon): master AT the nose (0), living opposite (4).
-     WING (long side faces lagoon): a bedroom AT the lagoon (bed2=0), living
-     toward the core, master at the outer tip, kitchen away from the lagoon. */
-  const PLATE={
-    /* 3 BHK head — living N, master S(lagoon), kitchen NE, bed1 NW, bed2 SE, puja/entrance N, bath SW (for a south-facing north-row tower) */
-    '3 BHK|103':{living:4,masterBed:0,kitchen:5,bed2:3,bed3:7,study:5,pooja:4,bathroom:1,entrance:4},
-    /* 4 BHK head — living N, master S, kitchen W, bed1 E, bed2 SW, multipurpose/study NE, puja/entrance N */
-    '4 BHK|103':{living:4,masterBed:0,kitchen:2,bed2:6,bed3:1,study:5,pooja:4,bathroom:1,entrance:4},
-    /* 5 BHK head — master at nose, living opposite, kitchen SE, beds NW/NE/SW, puja/entrance by the core */
-    '5 BHK|103':{living:4,masterBed:0,kitchen:3,bed2:7,bed3:1,study:5,pooja:4,bathroom:6,entrance:4},
-    /* Wing (shared, +end canonical) — bedroom at the lagoon (bed2=0), living toward core (2), master at tip (6), kitchen away (4), puja NE(3), entrance by core (2), bath at far corner (7) */
-    /* baseline plates per config — refined from the real floor plans at the Phase-2 vastu gate */
-    '4 BHK 4205':{living:2,masterBed:6,kitchen:4,bed2:0,bed3:5,study:1,pooja:3,bathroom:7,entrance:2},
-    '4 BHK 4520':{living:2,masterBed:6,kitchen:4,bed2:0,bed3:5,study:1,pooja:3,bathroom:7,entrance:2},
-    '4 BHK 4655':{living:2,masterBed:6,kitchen:4,bed2:0,bed3:5,study:1,pooja:3,bathroom:7,entrance:2}};
-  const GEN={kitchen:2,masterBed:4,bed2:5,bed3:3,living:0,bathroom:2,pooja:-1,study:3};
-  const tbl=PLATE[cfg];let off;
-  if(tbl){const mir=(endSign<0)?-1:1;off=((((tbl[roomKey]||0)*mir)%8)+8)%8;}
-  else{off=(((GEN[roomKey]||0))+8)%8;}
-  const roomDir=compass8[(idx+off)%8];
-  const v=vastuFor(flatFacing);
-  if(!v.rooms[roomKey])return{dir:roomDir,score:3,reason:'',ideal:'NE'};
-  const r=v.rooms[roomKey];
-  const score=r.ideal===roomDir?5:r.good.includes(roomDir)?4:r.ok.includes(roomDir)?3:2;
-  return{dir:roomDir,score,reason:r.reason,ideal:r.ideal};
-}
+function vastuFor(c){const d=(MODEL.vastu&&MODEL.vastu.direction&&MODEL.vastu.direction[c])||{s:3,n:'Workable with a considered internal layout.'};
+  return{s:d.s,n:d.n,rooms:(MODEL.vastu&&MODEL.vastu.room)||{}};}
+/* plateCfg removed — plates never ship */
+function vastuRoomScore(roomKey,t,u){const r=INTEL.get(t.id+'|'+u.id);const rr=r&&r.reasons&&r.reasons.rooms&&r.reasons.rooms[roomKey];
+  if(rr)return{dir:rr.dir,score:rr.score,reason:rr.reason,ideal:rr.ideal};
+  return{dir:'\u2014',score:3,reason:'',ideal:'NE'};}
 function verdict(sun,vs,lake){if(vs>=4&&sun>=5)return'✓ <b>Top pick:</b> strong sun and an auspicious orientation — the flat to lead with.';
   if(sun>=6)return'✓ <b>Sun-lover\u2019s choice:</b> exceptional direct light through the winter day.';
   if(lake&&sun>=3)return'✓ <b>View + light:</b> lagoon-facing living with healthy sun — a balanced premium pick.';
@@ -981,10 +927,7 @@ function verdict(sun,vs,lake){if(vs>=4&&sun>=5)return'✓ <b>Top pick:</b> stron
 /* ── state & panels ── */
 let scores=null,selTower=null,selUnit=null,selData=null;
 const benchShort={'-23.45':'Winter','0':'Equinox','23.45':'Summer'};
-function computeScores2(){scores=towers.map(t=>{const us=t.units.map(u=>({u,st:unitStats(t,u,3,0.2)}));
-  const good=us.filter(o=>o.st.rawAvg>=BENCH).length;const best=[...us].sort((a,b)=>b.st.wtAvg-a.st.wtAvg)[0];
-  const frac=us.reduce((s,o)=>s+Math.min(1,o.st.rawAvg/BENCH),0)/us.length;
-  return{t,us,good,best,frac};}).sort((a,b)=>b.frac-a.frac||b.best.st.wtAvg-a.best.st.wtAvg);}
+let computeScores2; /* v1 removed — v2 below */
 let siteView='intro';
 function goRanking(){if(!scores)computeScores2();document.body.classList.add('ranking');buildRankDock();
   const bid=scores[0].t.id;if(!selTower||selTower.id!==bid)selectTower(bid);else updateRankDock(bid);}
@@ -1111,7 +1054,7 @@ function renderTowerPanel(){const t=selTower;document.getElementById('pClose').s
   document.getElementById('uLeg').innerHTML=curves.map(c=>`<span><i style="background:${c.color}"></i>${c.r.u.id}</span>`).join('');}
 
 /* \u2500\u2500 flat 3D dollhouse \u2500\u2500 */
-const FLATW={};   // M3M interior walls not traced yet (interior 3D "coming soon") — no stale data in the seed
+const FLATW=MODEL.FLATW;   // M3M interior walls not traced yet (interior 3D "coming soon") — no stale data in the seed
 const DECKB={"3 BHK|101":180,"3 BHK|102":180,"3 BHK|103":180,"4 BHK|101":180,"4 BHK|102":180,"4 BHK|103":180,"5 BHK|101":0,"5 BHK|102":0,"5 BHK|103":0};
 /* M3M brochure floor plans (2D) pending file upload. Interior 3D geometry not traced
    yet — the 2D plan is the source of truth; a fast-follow adds traced walls. */
@@ -1481,7 +1424,7 @@ function openFlat(t,uid,keepFloor){
     (()=>{const rkeys=cfg.beds===4
       ?['living','kitchen','masterBed','bed2','bed3','study','pooja','bathroom']
       :['living','kitchen','masterBed','bed2','bed3','bathroom'];
-    const scores=rkeys.map(k=>vastuRoomScore(k,compass,plateCfg(t,u),u.mir));
+    const scores=rkeys.map(k=>vastuRoomScore(k,t,u));
     const names=(cfg.beds===4)?{living:'Living room',kitchen:'Kitchen',masterBed:'Master bed',bed2:'Bedroom 2',bed3:'Bedroom 3 / JM',study:'Home office',pooja:'Puja room',bathroom:'Bathrooms'}:{living:'Living room',kitchen:'Kitchen',masterBed:'Master bed',bed2:'Bedroom 1',bed3:'Bedroom 2',bathroom:'Bathrooms'};
     const sc=s=>s>=5?'#6dbf88':s>=4?'#a8cf78':s>=3?'var(--gold)':s>=2?'#e07878':'#c04848';
     return`<div style="margin-bottom:10px;font:500 10.5px/1.5 'Geist';color:#64707d">${v.n}</div>
@@ -1864,10 +1807,7 @@ function subScores(t,u){
   const isEnd=u.faces.length>=3, lake=(u.prim==='lake');
   let morning=Math.round(Math.max(0,Math.min(100,(eq.amAvg/5.2)*100)));                 // usable equinox AM sun (haze-weighted) → morning light
   let cool=Math.round(Math.max(5,Math.min(98,100-heatLoad(t,u)*32)));                    // inverse of the summer solar heat-load on the living facade
-  const rk=(CONFIGS[t.cfg].beds===4)?['entrance','living','masterBed','kitchen','bed2','bed3','pooja','bathroom']:['entrance','living','masterBed','kitchen','bed2','bed3','bathroom'];
-  const WV={entrance:3,kitchen:2.5,masterBed:2,pooja:2,living:1.5,bed2:1,bed3:1,bathroom:.8,study:.6};   // classical room importance
-  const vr=rk.map(k=>({s:vastuRoomScore(k,c,plateCfg(t,u),u.mir).score,w:WV[k]||1}));
-  const vastu=Math.round((vr.reduce((a,o)=>a+o.s*o.w,0)/vr.reduce((a,o)=>a+o.w,0))/5*100);   // weighted composite, classical Shastra
+  const vastu=((INTEL.get(t.id+'|'+u.id)||{}).sub_scores||{}).vastu??60;   // pre-computed server-side — the scoring recipe never ships
   const view=viewScore(t,u);
   const vent=ventScore(t,u);
   let floor=70; try{const cf=clearFloorOf(floorCurve(t,u,2,0.25));floor=Math.round(Math.max(25,100-(cf/FLOORS)*100));}catch(e){}
@@ -1921,4 +1861,7 @@ let booted=false;const bootT0=performance.now();
       if(hm>0.14){let want=Math.atan2(hz,hx)+Math.PI;let dA=want-az;while(dA>Math.PI)dA-=2*Math.PI;while(dA<-Math.PI)dA+=2*Math.PI;az+=dA*0.05;}  /* face the sun; hold steady when it's overhead */
       pol+=(1.04-pol)*0.03;radius+=(700-radius)*0.03;camApply();}}
   renderer.render(scene,camera);})();
+
+;try{if(!scores)computeScores2();window.__PARITY={topH:topH(),FLOORS:FLOORS,FH:FH,LOBBY:LOBBY,LAT:+LAT.toFixed(6),towers:towers.length,configs:Object.keys(CONFIGS).length,flats:scores.flatMap(function(sc){return sc.us.map(function(o){return{t:sc.t.id,u:o.u.id,s:o.fs.s,g:o.fs.grade};});}).sort(function(a,b){return a.t.localeCompare(b.t)||a.u.localeCompare(b.u);})};}catch(_){}
+})().catch(function (e) { console.error('[engine] boot failed', e); var a = document.getElementById('app'); if (a) a.innerHTML = '<p style="padding:24px;font:500 14px system-ui;color:#64707d">Unable to load the model.</p>'; });
 </script>

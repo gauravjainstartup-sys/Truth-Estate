@@ -1,0 +1,41 @@
+[
+  {
+    "slug": "m3m-residences-by-elie-saab",
+    "config": "4 BHK 4205",
+    "beds": 4,
+    "extra": "help room",
+    "baths": 5,
+    "saleable": 4205,
+    "carpetSqft": 2310,
+    "balconySqft": 780,
+    "deck": "wide balconies + jacuzzi",
+    "rooms": "Living/dining 26'3\"×15' · M.Bed 1 & 2 · Bed 3 & 4 · Kitchen · Servant · Help room",
+    "col": "#c9a96e"
+  },
+  {
+    "slug": "m3m-residences-by-elie-saab",
+    "config": "4 BHK 4520",
+    "beds": 4,
+    "extra": "help room",
+    "baths": 5,
+    "saleable": 4520,
+    "carpetSqft": 2485,
+    "balconySqft": 845,
+    "deck": "wrap-around balconies + jacuzzi",
+    "rooms": "Living/dining 26'6\"×16' · M.Bed 1 & 2 · Bed 3 & 4 · Kitchen · Servant · Help room",
+    "col": "#e0b667"
+  },
+  {
+    "slug": "m3m-residences-by-elie-saab",
+    "config": "4 BHK 4655",
+    "beds": 4,
+    "extra": "help room",
+    "baths": 5,
+    "saleable": 4655,
+    "carpetSqft": 2560,
+    "balconySqft": 905,
+    "deck": "wide balconies + jacuzzi",
+    "rooms": "Living/dining 32'×15' · M.Bed 1 & 2 · Bed 3 & 4 · Kitchen · Servant · Help room",
+    "col": "#b9905a"
+  }
+]
