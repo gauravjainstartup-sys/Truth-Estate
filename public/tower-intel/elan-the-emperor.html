@@ -552,12 +552,11 @@ const towers=[
  {id:'T10',x:-190,z:  2,rot: 2.356,hw:20,hd:8.0,core:3,cfg:'4 BHK'},
  {id:'T11',x:-156,z: 41,rot: 2.356,hw:20,hd:8.0,core:3,cfg:'4 BHK'},
  {id:'T12',x:-122,z: 80,rot: 2.356,hw:20,hd:8.0,core:3,cfg:'4 BHK'},
- /* 5 BHK — the four-tower family (T17·T16·T15·T14), one block on the east edge,
-    even ~52 m spacing to match the 4 BHK row on the west */
+ /* 5 BHK — Emperor's TWO towers: the inland pair of the shared four-tower 5 BHK line
+    on the east edge. The eastern pair (T14·T15) belong to Elan The Presidential and are
+    drawn grey via PRES_TOWERS — 2 Presidential + 2 Emperor, as on the real ground. */
  {id:'T17',x: 188,z: 68,rot:-2.69,hw:22,hd:8.5,core:3,cfg:'5 BHK'},
  {id:'T16',x: 236,z: 47,rot:-2.69,hw:22,hd:8.5,core:3,cfg:'5 BHK'},
- {id:'T15',x: 284,z: 26,rot:-2.69,hw:22,hd:8.5,core:3,cfg:'5 BHK'},
- {id:'T14',x: 332,z:  5,rot:-2.69,hw:22,hd:8.5,core:3,cfg:'5 BHK'},
 ];
 const CONFIGS={
  '5 BHK':{beds:5,extra:'visitor lounge + family lounge',baths:6,saleable:5891,carpetSqft:3056,balconySqft:1012,deck:"private + sky deck",
@@ -751,6 +750,10 @@ const PRES_TOWERS=[
   {id:'T-3',x:101,z:-89,rot: 0.00,hw:20,hd:8.0},
   {id:'T-2',x:146,z:-89,rot: 0.00,hw:20,hd:8.0},
   {id:'T-1',x:191,z:-89,rot: 0.00,hw:20,hd:8.0},
+  /* Presidential's TWO 5 BHK towers — the eastern pair of the shared 5 BHK line on the
+     east edge (the inland pair T16·T17 are Emperor's, gold). Same footprint/rot as the line. */
+  {id:'T-15',x:284,z:26,rot:-2.69,hw:22,hd:8.5},
+  {id:'T-14',x:332,z: 5,rot:-2.69,hw:22,hd:8.5},
 ];
 /* grey facade — same window-grid structure as towerFacade() so the head & wing
    segments read as real buildings, but monochrome grey (a neighbour, not a product) */
@@ -782,6 +785,8 @@ function buildGreyTower(t){const hP=10.0+32*3.45,LOB=10.0,segH=hP-LOB,segY=LOB+s
   PRES_TOWERS.forEach(buildGreyTower);
   const c=PRES_TOWERS[2];
   label(c.x,c.z,10.0+32*3.45+16,'Elan The Presidential · adjacent project',{fs:30,scale:.82,bg:'rgba(92,94,88,.94)',fg:'#efefec',border:'rgba(140,140,128,.7)'});
+  /* second marker on the east 5 BHK pair so buyers see those two grey towers are Presidential's, not Emperor's */
+  label(308,15.5,10.0+32*3.45+16,'Elan The Presidential · 5 BHK',{fs:28,scale:.78,bg:'rgba(92,94,88,.94)',fg:'#efefec',border:'rgba(140,140,128,.7)'});
 })();
 /* North marker — compass rose flat on the ground (N = world -z; north-up site plan, NORTH_CAL=0) */
 (function northRose(){
