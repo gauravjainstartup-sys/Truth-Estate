@@ -781,7 +781,19 @@ function buildGreyTower(t){const hP=10.0+32*3.45,LOB=10.0,segH=hP-LOB,segY=LOB+s
 (function presidential(){
   PRES_TOWERS.forEach(buildGreyTower);
   const c=PRES_TOWERS[2];
-  label(c.x,c.z,10.0+32*3.45+9,'Elan The Presidential',{fs:28,scale:.6,bg:'rgba(92,94,88,.9)',fg:'#efefec',border:'rgba(130,130,120,.6)'});
+  label(c.x,c.z,10.0+32*3.45+16,'Elan The Presidential · adjacent project',{fs:30,scale:.82,bg:'rgba(92,94,88,.94)',fg:'#efefec',border:'rgba(140,140,128,.7)'});
+})();
+/* North marker — compass rose flat on the ground (N = world -z; north-up site plan, NORTH_CAL=0) */
+(function northRose(){
+  const cv=document.createElement('canvas');cv.width=cv.height=256;const g=cv.getContext('2d');
+  g.strokeStyle='rgba(55,65,75,.85)';g.lineWidth=7;g.beginPath();g.arc(128,128,112,0,Math.PI*2);g.stroke();
+  g.fillStyle='#b5462f';g.beginPath();g.moveTo(128,16);g.lineTo(153,133);g.lineTo(128,110);g.lineTo(103,133);g.closePath();g.fill();
+  g.fillStyle='rgba(96,106,116,.85)';g.beginPath();g.moveTo(128,240);g.lineTo(153,133);g.lineTo(128,156);g.lineTo(103,133);g.closePath();g.fill();
+  g.fillStyle='#28313c';g.font="700 48px 'Geist'";g.textAlign='center';g.textBaseline='middle';
+  g.fillText('N',128,60);g.fillText('S',128,206);g.fillText('E',208,128);g.fillText('W',48,128);
+  const tex=new T.CanvasTexture(cv);tex.anisotropy=4;
+  const m=new T.Mesh(new T.PlaneGeometry(58,58),new T.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false}));
+  m.rotation.x=-Math.PI/2;m.position.set(-212,0.6,122);m.renderOrder=60;siteGrp.add(m);
 })();
 
 /* ── solar engine (validated) ── */
