@@ -957,9 +957,11 @@ function vastuRoomScore(roomKey,flatFacing,cfg,endSign){
     '5 BHK|103':{living:4,masterBed:0,kitchen:3,bed2:7,bed3:1,study:5,pooja:4,bathroom:6,entrance:4},
     /* Wing (shared, +end canonical) — bedroom at the lagoon (bed2=0), living toward core (2), master at tip (6), kitchen away (4), puja NE(3), entrance by core (2), bath at far corner (7) */
     /* baseline plates per config — refined from the real floor plans at the Phase-2 vastu gate */
-    '4 BHK 4205':{living:2,masterBed:6,kitchen:4,bed2:0,bed3:5,study:1,pooja:3,bathroom:7,entrance:2},
-    '4 BHK 4520':{living:2,masterBed:6,kitchen:4,bed2:0,bed3:5,study:1,pooja:3,bathroom:7,entrance:2},
-    '4 BHK 4655':{living:2,masterBed:6,kitchen:4,bed2:0,bed3:5,study:1,pooja:3,bathroom:7,entrance:2}};
+    /* Traced from the M3M floor plans (offset 0 = living/deck facade, +CW). No pooja
+       room in any layout → pooja left neutral. Bedroom-4 → 'study' slot (unscored for 4-bed). */
+    '4 BHK 4205':{living:0,masterBed:1,kitchen:4,bed2:7,bed3:2,study:6,pooja:3,bathroom:4,entrance:5}, // deck-up plan: M.Bed-1 top-R, kitchen/entry back
+    '4 BHK 4520':{living:0,masterBed:7,kitchen:4,bed2:2,bed3:6,study:2,pooja:3,bathroom:4,entrance:4}, // deck-up plan: M.Bed-1 top-L
+    '4 BHK 4655':{living:0,masterBed:0,kitchen:4,bed2:2,bed3:6,study:2,pooja:3,bathroom:4,entrance:4}};// deck-down (flipped) plan: M.Bed-1 at the deck, kitchen/lift opposite
   const GEN={kitchen:2,masterBed:4,bed2:5,bed3:3,living:0,bathroom:2,pooja:-1,study:3};
   const tbl=PLATE[cfg];let off;
   if(tbl){const mir=(endSign<0)?-1:1;off=((((tbl[roomKey]||0)*mir)%8)+8)%8;}

@@ -48,45 +48,45 @@
     "slug": "m3m-residences-by-elie-saab",
     "config": "4 BHK 4205",
     "offsets": {
-      "living": 2,
-      "masterBed": 6,
+      "living": 0,
+      "masterBed": 1,
       "kitchen": 4,
-      "bed2": 0,
-      "bed3": 5,
-      "study": 1,
+      "bed2": 7,
+      "bed3": 2,
+      "study": 6,
       "pooja": 3,
-      "bathroom": 7,
-      "entrance": 2
+      "bathroom": 4,
+      "entrance": 5
     }
   },
   {
     "slug": "m3m-residences-by-elie-saab",
     "config": "4 BHK 4520",
     "offsets": {
-      "living": 2,
-      "masterBed": 6,
+      "living": 0,
+      "masterBed": 7,
       "kitchen": 4,
-      "bed2": 0,
-      "bed3": 5,
-      "study": 1,
+      "bed2": 2,
+      "bed3": 6,
+      "study": 2,
       "pooja": 3,
-      "bathroom": 7,
-      "entrance": 2
+      "bathroom": 4,
+      "entrance": 4
     }
   },
   {
     "slug": "m3m-residences-by-elie-saab",
     "config": "4 BHK 4655",
     "offsets": {
-      "living": 2,
-      "masterBed": 6,
+      "living": 0,
+      "masterBed": 0,
       "kitchen": 4,
-      "bed2": 0,
-      "bed3": 5,
-      "study": 1,
+      "bed2": 2,
+      "bed3": 6,
+      "study": 2,
       "pooja": 3,
-      "bathroom": 7,
-      "entrance": 2
+      "bathroom": 4,
+      "entrance": 4
     }
   }
 ]
