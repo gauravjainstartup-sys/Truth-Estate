@@ -555,8 +555,8 @@ const towers=[
  {id:'T-3',x:101,z:-89,rot: 0.00,hw:20,hd:8.0,core:3,cfg:'4 BHK'},
  {id:'T-2',x:146,z:-89,rot: 0.00,hw:20,hd:8.0,core:3,cfg:'3 BHK'},
  {id:'T-1',x:191,z:-89,rot: 0.00,hw:20,hd:8.0,core:3,cfg:'3 BHK'},
- {id:'T-15',x:225,z: -6,rot:-2.69,hw:22,hd:8.5,core:3,cfg:'5 BHK'},
- {id:'T-14',x:290,z:-35,rot:-2.69,hw:22,hd:8.5,core:3,cfg:'5 BHK'},
+ {id:'T-15',x:284,z: 26,rot:-2.69,hw:22,hd:8.5,core:3,cfg:'5 BHK'},
+ {id:'T-14',x:332,z:  5,rot:-2.69,hw:22,hd:8.5,core:3,cfg:'5 BHK'},
 ];
 const CONFIGS={
  '5 BHK':{beds:5,extra:'family lounge + pooja',baths:6,saleable:4495,carpetSqft:2200,balconySqft:520,deck:"private deck",
@@ -605,14 +605,14 @@ function terrainTex(){const cv=document.createElement('canvas');cv.width=cv.heig
   g.globalAlpha=1;const tex=new T.CanvasTexture(cv);tex.anisotropy=8;return tex;}
 const ground=new T.Mesh(new T.CircleGeometry(1800,64),new T.MeshStandardMaterial({map:terrainTex(),color:'#ffffff',roughness:1}));
 ground.rotation.x=-Math.PI/2;ground.position.y=-.5;ground.receiveShadow=true;scene.add(ground);
-const PX=(px,py)=>[(px-1180)*0.55,(py-690)*0.55];
+const PX=(px,py)=>[(px-590)*0.45,(py-415)*0.45];   // origin = central clubhouse DOME (shared site origin, as in Presidential), not the lagoon
 function poly(ptsPx,c,y,o={}){const s=new T.Shape();ptsPx.forEach((p,i)=>{const[q,r]=PX(p[0],p[1]);i?s.lineTo(q,r):s.moveTo(q,r);});
   const m=new T.Mesh(new T.ShapeGeometry(s),new T.MeshStandardMaterial({color:c,roughness:1,transparent:o.op!=null,opacity:o.op??1,emissive:o.em||'#000',emissiveIntensity:o.ei||0}));
   m.rotation.x=-Math.PI/2;m.position.y=y;m.receiveShadow=true;siteGrp.add(m);return m;}
-/* Elan The Presidential plot — traced from the official brochure site plan
+/* Elan The Emperor plot — traced from the official brochure site plan
    (pentagon: NW → NE(north edge) → E corner → S tip → W kink). plan-px via
    planpx = model_m/0.55 + (1180,690); model origin = central clubhouse oval. */
-const phase1px=[[738,381],[1562,490],[1762,610],[1002,981],[716,574],[738,381]];
+const phase1px=[[6,6],[300,120],[470,175],[1080,180],[1230,235],[1360,395],[564,870],[207,498],[6,318],[6,6]];
 poly(phase1px,'#bcca9f',0.02,{em:'#000',ei:0});
 poly([[1075,565],[1300,562],[1330,690],[1230,800],[1090,800],[1015,690]],'#c9c6b3',0.05);
 /* boundary wall with pillars + gate */
@@ -624,26 +624,34 @@ poly([[1075,565],[1300,562],[1330,690],[1230,800],[1090,800],[1015,690]],'#c9c6b
     for(let k=0;k<=n;k++){const px2=ax+(bx-ax)*k/n,pz=az+(bz-az)*k/n;
       const pil=new T.Mesh(new T.BoxGeometry(1.5,3.6,1.5),new T.MeshStandardMaterial({color:'#98a0af',roughness:.85}));
       pil.position.set(px2,1.8,pz);pil.castShadow=true;siteGrp.add(pil);}}
-  const[gx,gz]=PX(1150,540);const g1=new T.Mesh(new T.BoxGeometry(3,6,3),new T.MeshStandardMaterial({color:'#c8b98e'}));g1.position.set(gx-9,3,gz);siteGrp.add(g1);
+  const[gx,gz]=PX(1090,525);const g1=new T.Mesh(new T.BoxGeometry(3,6,3),new T.MeshStandardMaterial({color:'#c8b98e'}));g1.position.set(gx-9,3,gz);siteGrp.add(g1);
   const g2=g1.clone();g2.position.set(gx+9,3,gz);siteGrp.add(g2);
   const arch=new T.Mesh(new T.BoxGeometry(21,1.4,2.4),new T.MeshStandardMaterial({color:'#d6c69a'}));arch.position.set(gx,6.3,gz);siteGrp.add(arch);
   label(gx,gz-6,9,'Main gate',{fs:26,scale:.5,border:'rgba(214,181,102,.7)'});})();
 function road(p1,p2,w,c){const[ax,az]=PX(p1[0],p1[1]),[bx,bz]=PX(p2[0],p2[1]);const len=Math.hypot(bx-ax,bz-az);
   const m=new T.Mesh(new T.BoxGeometry(len,.4,w),new T.MeshStandardMaterial({color:c||'#868b93',roughness:.95}));
   m.position.set((ax+bx)/2,.2,(az+bz)/2);m.rotation.y=-Math.atan2(bz-az,bx-ax);m.receiveShadow=true;siteGrp.add(m);}
-/* SE boundary arterial (the access road along the south-east edge, per aerial) + an internal E–W spine south of the north rank */
-road([1790,620],[1020,1000],34,'#7a808a');road([1120,560],[1560,620],11);
+/* Road network copied from the master site plan: a wide approach arterial hugging
+   the south-east boundary, the main entry spine from the gate to the central
+   clubhouse, a ring road just inside the wall, and internal driveways that serve
+   each tower cluster. */
+road([1410,405],[600,915],26,'#7a808a');                     // SE approach arterial (just outside the boundary)
+(function roads(){const c=phase1px.slice(0,-1).reduce((a,p)=>[a[0]+p[0],a[1]+p[1]],[0,0]).map(v=>v/(phase1px.length-1));
+  const inset=phase1px.map(p=>[p[0]+(c[0]-p[0])*0.09,p[1]+(c[1]-p[1])*0.09]);
+  for(let i=0;i<inset.length-1;i++)road(inset[i],inset[i+1],7,'#8a8f97');   // ring road inside the wall
+  road([1090,525],[640,430],9,'#9297a0');   // main entry spine: gate → clubhouse
+  road([640,430],[300,470],7,'#9297a0');    // west drive toward the 4 BHK cluster
+  road([300,470],[300,640],7,'#9297a0');    //   …down the T-10/11/12 rank
+  road([640,430],[950,455],7,'#9297a0');    // east drive serving T-16/17
+  road([300,300],[1010,285],7,'#9297a0');   // north service road under the top rank
+})();
 function blob(cx,cy,rx,rz,seg=40){const pts=[];for(let i=0;i<seg;i++){const a=i/seg*Math.PI*2,wob=.82+.18*Math.sin(a*3+1.1)+.08*Math.cos(a*5);pts.push([cx+Math.cos(a)*rx*wob,cy+Math.sin(a)*rz*wob]);}return pts;}
-poly(blob(1180,690,120,72),'#7fcfe0',0.07,{em:'#2b9fbc',ei:.14});
-poly(blob(1258,668,34,24,28),'#8bd6e4',0.075,{em:'#2b9fbc',ei:.12});
-poly([[1035,885],[1058,885],[1058,908],[1035,908]],'#7fcfe0',0.07,{em:'#2b9fbc',ei:.12});
-(function club(){const[cx,cz]=PX(1190,610);
+poly(blob(880,390,140,78),'#7fcfe0',0.07,{em:'#2b9fbc',ei:.14});          // central lagoon
+poly(blob(958,368,42,26,28),'#8bd6e4',0.075,{em:'#2b9fbc',ei:.12});         // lagoon inlet
+(function club(){const[cx,cz]=PX(590,415);                                   // clubhouse ring (west of lagoon)
   const b=new T.Mesh(new T.BoxGeometry(42,9,22),new T.MeshStandardMaterial({color:'#e8d9b8',roughness:.7}));b.position.set(cx,4.5,cz);b.castShadow=true;siteGrp.add(b);
   const t2=new T.Mesh(new T.BoxGeometry(16,6,16),new T.MeshStandardMaterial({color:'#efe3c6'}));t2.position.set(cx,12,cz);t2.castShadow=true;siteGrp.add(t2);
-  label(cx,cz,22,'Clubhouse · A',{fs:28,scale:.55,border:'rgba(214,181,102,.7)'});})();
-(function misc(){const[nx,nz]=PX(1370,510);const n=new T.Mesh(new T.BoxGeometry(16,7,13),new T.MeshStandardMaterial({color:'#9fb6cf'}));n.position.set(nx,3.5,nz);siteGrp.add(n);
-  const[ex,ez]=PX(1448,515);const e=new T.Mesh(new T.BoxGeometry(17,8.5,14),new T.MeshStandardMaterial({color:'#8ea7c2'}));e.position.set(ex,4.25,ez);siteGrp.add(e);
-  const[sx,sz]=PX(1010,1015);const s=new T.Mesh(new T.BoxGeometry(26,.8,42),new T.MeshStandardMaterial({color:'#cf6b5a',roughness:.95}));s.position.set(sx,.4,sz);siteGrp.add(s);})();
+  label(cx,cz,22,'Clubhouse',{fs:28,scale:.55,border:'rgba(214,181,102,.7)'});})();
 (function trees(){const poly2=phase1px.map(p=>PX(p[0],p[1]));
   const xs=poly2.map(p=>p[0]),zs=poly2.map(p=>p[1]);
   const minx=Math.min(...xs),maxx=Math.max(...xs),minz=Math.min(...zs),maxz=Math.max(...zs);
@@ -728,9 +736,61 @@ towers.forEach(t=>{const h=topH();
     u.tileLabel=label(t.x+ox,t.z+oz,h+9,`Line ${String(u.id).slice(-2)}  ↑ tap`,{fs:38,scale:.72,bg:'rgba(11,18,14,.92)',border:CONFIGS[t.cfg].col,fg:'#ffffff'});u.tileLabel.visible=false;});
   t.tag=label(t.x,t.z,h+18,`${t.id} · ${t.cfg}`,{fs:46,scale:.82});
 });
-/* north compass */
-(function(){const a=new T.Mesh(new T.ConeGeometry(6,22,4),new T.MeshBasicMaterial({color:'#e0563f'}));a.position.set(-250,1,240);a.rotation.x=-Math.PI/2;siteGrp.add(a);
-  label(-250,222,3,'N',{fs:30,scale:.6,bg:'rgba(224,86,63,.9)',fg:'#fff'});})();
+/* ── neighbouring towers: the Elan The Emperor cluster, placed in the shared
+   central-dome / north-up metre frame and drawn as grey massing so buyers see the
+   view / sunlight from the adjacent phase. They cast shadows AND occlude the sun
+   raycast, so the intelligence stays honest; not clickable (not in towerPick).
+   The mirror of what the Emperor advisor shows for Presidential. */
+const EMP_TOWERS=[
+  {id:'E10',x:-190,z:  2,rot: 2.356,hw:20,hd:8.0,fl:38},   /* Emperor 4 BHK west lane (Emperor is G+38, taller than Presidential's G+32) */
+  {id:'E11',x:-156,z: 41,rot: 2.356,hw:20,hd:8.0,fl:38},
+  {id:'E12',x:-122,z: 80,rot: 2.356,hw:20,hd:8.0,fl:38},
+  {id:'E17',x: 188,z: 68,rot:-2.69,hw:22,hd:8.5,fl:38},    /* Emperor 5 BHK — inland pair of the shared east 5 BHK line */
+  {id:'E16',x: 236,z: 47,rot:-2.69,hw:22,hd:8.5,fl:38},
+];
+/* grey facade — same window-grid structure as towerFacade() so the segments read as
+   real buildings, but monochrome grey (a neighbour, not a product) */
+function greyFacade(){const W=224,H=1120,cols=5,rows=32,cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');
+  const grad=g.createLinearGradient(0,0,W,0);grad.addColorStop(0,'#82807a');grad.addColorStop(.5,'#928f88');grad.addColorStop(1,'#77746d');g.fillStyle=grad;g.fillRect(0,0,W,H);
+  const cw=W/cols,rh=H/rows;
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const x=c*cw+cw*0.15,y=r*rh+rh*0.2,ww=cw*0.7,wh=rh*0.55;
+    g.fillStyle='#666459';g.fillRect(x,y,ww,wh);
+    g.fillStyle='rgba(120,118,110,0.22)';g.fillRect(x,y+wh,ww,Math.max(1,rh*0.06));}
+  g.fillStyle='rgba(64,62,56,0.55)';for(let c=0;c<=cols;c++)g.fillRect(c*cw-1,0,2,H);
+  const tex=new T.CanvasTexture(cv);tex.anisotropy=8;return tex;}
+const GREY_FAC=greyFacade();
+/* Build one Elan The Emperor tower with the live core:3 massing (podium + two wings
+   + nose + core + floor bands), grey. Not clickable. */
+function buildGreyTower(t){const NF=t.fl||32,hP=10.0+NF*3.45,LOB=10.0,segH=hP-LOB,segY=LOB+segH/2,cw=3.5;
+  const lakeDir=[-t.x,-t.z];const nF=rotV(t.rot,0,1),nB=rotV(t.rot,0,-1);
+  const lakeZ=(nF[0]*lakeDir[0]+nF[1]*lakeDir[1])>=(nB[0]*lakeDir[0]+nB[1]*lakeDir[1])?1:-1;
+  const pod=new T.Mesh(new T.BoxGeometry(t.hw*2+6,LOB,t.hd*2+6),new T.MeshStandardMaterial({color:'#84827b',roughness:.85}));
+  pod.position.set(t.x,LOB/2,t.z);pod.rotation.y=t.rot;pod.castShadow=pod.receiveShadow=true;siteGrp.add(pod);
+  const units=[{x0:-t.hw,x1:-cw,zhw:t.hd},{x0:-t.hw*0.46,x1:t.hw*0.46,zhw:t.hd*0.95,nose:1},{x0:cw,x1:t.hw,zhw:t.hd}];
+  units.forEach((u,i)=>{const cx=(u.x0+u.x1)/2,w=u.x1-u.x0,zc=u.nose?lakeZ*(t.hd+u.zhw-1):0;
+    const m=new T.Mesh(new T.BoxGeometry(w-.4,segH,u.zhw*2),new T.MeshStandardMaterial({map:GREY_FAC,color:new T.Color('#ffffff').offsetHSL(0,0,(i-1)*.03),roughness:.72,metalness:.05}));
+    const[ox,oz]=rotV(t.rot,cx,zc);m.position.set(t.x+ox,segY,t.z+oz);m.rotation.y=t.rot;m.castShadow=m.receiveShadow=true;siteGrp.add(m);collMeshes.push(m);});
+  const core=new T.Mesh(new T.BoxGeometry(7,segH+1.5,4),new T.MeshStandardMaterial({color:'#5c5a53',roughness:.85}));
+  core.position.set(t.x,segY,t.z);core.rotation.y=t.rot;core.castShadow=true;siteGrp.add(core);
+  for(let f=8;f<NF;f+=8){const ln=new T.Mesh(new T.BoxGeometry(t.hw*2+.3,.16,t.hd*2+.3),new T.MeshStandardMaterial({color:'#514f48'}));ln.position.set(t.x,LOB+f*3.45,t.z);ln.rotation.y=t.rot;siteGrp.add(ln);}}
+(function emperorNeighbour(){
+  EMP_TOWERS.forEach(buildGreyTower);
+  label(-156,41,10.0+38*3.45+16,'Elan The Emperor · adjacent project',{fs:30,scale:.82,bg:'rgba(92,94,88,.94)',fg:'#efefec',border:'rgba(140,140,128,.7)'});
+  /* marker on the east 5 BHK pair so buyers see those two grey towers are Emperor's, not Presidential's */
+  label(212,57.5,10.0+38*3.45+16,'Elan The Emperor · 5 BHK',{fs:28,scale:.78,bg:'rgba(92,94,88,.94)',fg:'#efefec',border:'rgba(140,140,128,.7)'});
+})();
+/* North marker — compass rose flat on the ground (N = world -z; north-up site plan, NORTH_CAL=0) — matches the Emperor advisor */
+(function northRose(){
+  const cv=document.createElement('canvas');cv.width=cv.height=256;const g=cv.getContext('2d');
+  g.strokeStyle='rgba(55,65,75,.85)';g.lineWidth=7;g.beginPath();g.arc(128,128,112,0,Math.PI*2);g.stroke();
+  g.fillStyle='#b5462f';g.beginPath();g.moveTo(128,16);g.lineTo(153,133);g.lineTo(128,110);g.lineTo(103,133);g.closePath();g.fill();
+  g.fillStyle='rgba(96,106,116,.85)';g.beginPath();g.moveTo(128,240);g.lineTo(153,133);g.lineTo(128,156);g.lineTo(103,133);g.closePath();g.fill();
+  g.fillStyle='#28313c';g.font="700 48px 'Geist'";g.textAlign='center';g.textBaseline='middle';
+  g.fillText('N',128,60);g.fillText('S',128,206);g.fillText('E',208,128);g.fillText('W',48,128);
+  const tex=new T.CanvasTexture(cv);tex.anisotropy=4;
+  const m=new T.Mesh(new T.PlaneGeometry(58,58),new T.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false}));
+  m.rotation.x=-Math.PI/2;m.position.set(-212,0.6,122);m.renderOrder=60;siteGrp.add(m);
+})();
 
 /* ── solar engine (validated) ── */
 let decl=-23.45;const NORTH_CAL=0;let northOff=NORTH_CAL;/*north-up siteplan → plan north = true north*/const SUN_R=1200;
