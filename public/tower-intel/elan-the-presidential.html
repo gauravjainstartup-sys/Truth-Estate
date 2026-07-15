@@ -742,11 +742,11 @@ towers.forEach(t=>{const h=topH();
    raycast, so the intelligence stays honest; not clickable (not in towerPick).
    The mirror of what the Emperor advisor shows for Presidential. */
 const EMP_TOWERS=[
-  {id:'E10',x:-190,z:  2,rot: 2.356,hw:20,hd:8.0},   /* Emperor 4 BHK west lane */
-  {id:'E11',x:-156,z: 41,rot: 2.356,hw:20,hd:8.0},
-  {id:'E12',x:-122,z: 80,rot: 2.356,hw:20,hd:8.0},
-  {id:'E17',x: 188,z: 68,rot:-2.69,hw:22,hd:8.5},    /* Emperor 5 BHK — inland pair of the shared east 5 BHK line */
-  {id:'E16',x: 236,z: 47,rot:-2.69,hw:22,hd:8.5},
+  {id:'E10',x:-190,z:  2,rot: 2.356,hw:20,hd:8.0,fl:38},   /* Emperor 4 BHK west lane (Emperor is G+38, taller than Presidential's G+32) */
+  {id:'E11',x:-156,z: 41,rot: 2.356,hw:20,hd:8.0,fl:38},
+  {id:'E12',x:-122,z: 80,rot: 2.356,hw:20,hd:8.0,fl:38},
+  {id:'E17',x: 188,z: 68,rot:-2.69,hw:22,hd:8.5,fl:38},    /* Emperor 5 BHK — inland pair of the shared east 5 BHK line */
+  {id:'E16',x: 236,z: 47,rot:-2.69,hw:22,hd:8.5,fl:38},
 ];
 /* grey facade — same window-grid structure as towerFacade() so the segments read as
    real buildings, but monochrome grey (a neighbour, not a product) */
@@ -761,7 +761,7 @@ function greyFacade(){const W=224,H=1120,cols=5,rows=32,cv=document.createElemen
 const GREY_FAC=greyFacade();
 /* Build one Elan The Emperor tower with the live core:3 massing (podium + two wings
    + nose + core + floor bands), grey. Not clickable. */
-function buildGreyTower(t){const hP=10.0+32*3.45,LOB=10.0,segH=hP-LOB,segY=LOB+segH/2,cw=3.5;
+function buildGreyTower(t){const NF=t.fl||32,hP=10.0+NF*3.45,LOB=10.0,segH=hP-LOB,segY=LOB+segH/2,cw=3.5;
   const lakeDir=[-t.x,-t.z];const nF=rotV(t.rot,0,1),nB=rotV(t.rot,0,-1);
   const lakeZ=(nF[0]*lakeDir[0]+nF[1]*lakeDir[1])>=(nB[0]*lakeDir[0]+nB[1]*lakeDir[1])?1:-1;
   const pod=new T.Mesh(new T.BoxGeometry(t.hw*2+6,LOB,t.hd*2+6),new T.MeshStandardMaterial({color:'#84827b',roughness:.85}));
@@ -772,12 +772,12 @@ function buildGreyTower(t){const hP=10.0+32*3.45,LOB=10.0,segH=hP-LOB,segY=LOB+s
     const[ox,oz]=rotV(t.rot,cx,zc);m.position.set(t.x+ox,segY,t.z+oz);m.rotation.y=t.rot;m.castShadow=m.receiveShadow=true;siteGrp.add(m);collMeshes.push(m);});
   const core=new T.Mesh(new T.BoxGeometry(7,segH+1.5,4),new T.MeshStandardMaterial({color:'#5c5a53',roughness:.85}));
   core.position.set(t.x,segY,t.z);core.rotation.y=t.rot;core.castShadow=true;siteGrp.add(core);
-  for(let f=8;f<32;f+=8){const ln=new T.Mesh(new T.BoxGeometry(t.hw*2+.3,.16,t.hd*2+.3),new T.MeshStandardMaterial({color:'#514f48'}));ln.position.set(t.x,LOB+f*3.45,t.z);ln.rotation.y=t.rot;siteGrp.add(ln);}}
+  for(let f=8;f<NF;f+=8){const ln=new T.Mesh(new T.BoxGeometry(t.hw*2+.3,.16,t.hd*2+.3),new T.MeshStandardMaterial({color:'#514f48'}));ln.position.set(t.x,LOB+f*3.45,t.z);ln.rotation.y=t.rot;siteGrp.add(ln);}}
 (function emperorNeighbour(){
   EMP_TOWERS.forEach(buildGreyTower);
-  label(-156,41,10.0+32*3.45+16,'Elan The Emperor · adjacent project',{fs:30,scale:.82,bg:'rgba(92,94,88,.94)',fg:'#efefec',border:'rgba(140,140,128,.7)'});
+  label(-156,41,10.0+38*3.45+16,'Elan The Emperor · adjacent project',{fs:30,scale:.82,bg:'rgba(92,94,88,.94)',fg:'#efefec',border:'rgba(140,140,128,.7)'});
   /* marker on the east 5 BHK pair so buyers see those two grey towers are Emperor's, not Presidential's */
-  label(212,57.5,10.0+32*3.45+16,'Elan The Emperor · 5 BHK',{fs:28,scale:.78,bg:'rgba(92,94,88,.94)',fg:'#efefec',border:'rgba(140,140,128,.7)'});
+  label(212,57.5,10.0+38*3.45+16,'Elan The Emperor · 5 BHK',{fs:28,scale:.78,bg:'rgba(92,94,88,.94)',fg:'#efefec',border:'rgba(140,140,128,.7)'});
 })();
 /* North marker — compass rose flat on the ground (N = world -z; north-up site plan, NORTH_CAL=0) — matches the Emperor advisor */
 (function northRose(){
