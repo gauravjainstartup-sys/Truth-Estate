@@ -228,7 +228,7 @@
       }
     },
     "flags": {
-      "lake": false,
+      "lake": true,
       "corner": false
     },
     "metrics": {
@@ -311,7 +311,7 @@
       }
     },
     "flags": {
-      "lake": false,
+      "lake": true,
       "corner": false
     },
     "metrics": {
@@ -560,7 +560,7 @@
       }
     },
     "flags": {
-      "lake": false,
+      "lake": true,
       "corner": false
     },
     "metrics": {
@@ -643,7 +643,7 @@
       }
     },
     "flags": {
-      "lake": false,
+      "lake": true,
       "corner": false
     },
     "metrics": {

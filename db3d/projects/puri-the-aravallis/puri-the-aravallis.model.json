@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-16T19:06:51.941Z",
+  "generated_at": "2026-07-16T19:28:19.408Z",
   "slug": "puri-the-aravallis",
   "site": {
     "slug": "puri-the-aravallis",
@@ -5008,7 +5008,7 @@
         }
       },
       "flags": {
-        "lake": false,
+        "lake": true,
         "corner": false
       },
       "metrics": {
@@ -5091,7 +5091,7 @@
         }
       },
       "flags": {
-        "lake": false,
+        "lake": true,
         "corner": false
       },
       "metrics": {
@@ -5340,7 +5340,7 @@
         }
       },
       "flags": {
-        "lake": false,
+        "lake": true,
         "corner": false
       },
       "metrics": {
@@ -5423,7 +5423,7 @@
         }
       },
       "flags": {
-        "lake": false,
+        "lake": true,
         "corner": false
       },
       "metrics": {
