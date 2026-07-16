@@ -1,0 +1,32 @@
+[
+  {
+    "slug": "puri-the-aravallis",
+    "config": "3 BHK 2250",
+    "offsets": {
+      "living": 6,
+      "masterBed": 1,
+      "kitchen": 4,
+      "bed2": 0,
+      "bed3": 2,
+      "study": 0,
+      "pooja": 0,
+      "bathroom": 7,
+      "entrance": 5
+    }
+  },
+  {
+    "slug": "puri-the-aravallis",
+    "config": "4 BHK 2750",
+    "offsets": {
+      "living": 0,
+      "masterBed": 0,
+      "kitchen": 4,
+      "bed2": 6,
+      "bed3": 2,
+      "study": 1,
+      "pooja": 5,
+      "bathroom": 3,
+      "entrance": 4
+    }
+  }
+]

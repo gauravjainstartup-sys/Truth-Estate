@@ -1,0 +1,43 @@
+{
+  "slug": "puri-the-aravallis",
+  "name": "Puri The Aravallis",
+  "latitudeRad": 0.4958916737228889,
+  "latitudeDeg": 28.4125,
+  "floors": 42,
+  "floorHeightM": 3.6,
+  "lobbyHeightM": 10.8,
+  "northCalRad": 0,
+  "northCalDeg": 0,
+  "sunBenchmarkHours": 4,
+  "westWeight": 0.6,
+  "sunRayLenM": 1200,
+  "lake": {
+    "x": 0,
+    "z": 70
+  },
+  "scaleMPerPx": 0.45,
+  "pxOriginX": 590,
+  "pxOriginY": 415,
+  "boundaryPx": [
+    [
+      195,
+      162
+    ],
+    [
+      975,
+      162
+    ],
+    [
+      975,
+      710
+    ],
+    [
+      195,
+      710
+    ],
+    [
+      195,
+      162
+    ]
+  ]
+}

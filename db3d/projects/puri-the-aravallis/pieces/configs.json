@@ -1,0 +1,28 @@
+[
+  {
+    "slug": "puri-the-aravallis",
+    "config": "3 BHK 2250",
+    "beds": 3,
+    "extra": "servant room",
+    "baths": 3,
+    "saleable": 2250,
+    "carpetSqft": 1249.65,
+    "balconySqft": 319.24,
+    "deck": "wide balconies",
+    "rooms": "Living/dining 21×14 · Master + Bed 2 & 3 · Kitchen · Servant · 3 toilets",
+    "col": "#3fa06a"
+  },
+  {
+    "slug": "puri-the-aravallis",
+    "config": "4 BHK 2750",
+    "beds": 4,
+    "extra": "servant room",
+    "baths": 4,
+    "saleable": 2750,
+    "carpetSqft": 1627.45,
+    "balconySqft": 331.79,
+    "deck": "wide balconies",
+    "rooms": "Living/dining 22×14 · Master + Bed 2,3 & 4 · Kitchen · Servant · 4 toilets",
+    "col": "#e0b667"
+  }
+]

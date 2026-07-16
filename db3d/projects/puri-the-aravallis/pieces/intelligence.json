@@ -1,0 +1,666 @@
+[
+  {
+    "slug": "puri-the-aravallis",
+    "tower_id": "B",
+    "unit": "101",
+    "composite": 50,
+    "grade": "C",
+    "facing": "N",
+    "sub_scores": {
+      "morning": 0,
+      "cool": 50,
+      "vastu": 57,
+      "view": 75,
+      "airflow": 92,
+      "floor": 100
+    },
+    "reasons": {
+      "overall": "North-facing is highly auspicious — the Kuber (wealth) direction. Excellent for the living room and main entrance.",
+      "rooms": {
+        "entrance": {
+          "dir": "SW",
+          "score": 2,
+          "ideal": "NE",
+          "reason": "The main door is most auspicious in the NE, N or E (the Ishan–Kuber arc); W and NW are workable; S, SW and SE entries are cautioned and rely on remedies."
+        },
+        "living": {
+          "dir": "W",
+          "score": 3,
+          "ideal": "NE",
+          "reason": "Living room in the NE or north draws prosperity; seating should face east or north. Keep the NE corner light and uncluttered."
+        },
+        "masterBed": {
+          "dir": "NE",
+          "score": 2,
+          "ideal": "SW",
+          "reason": "Master bedroom in the SW (earth zone) promotes restful sleep and stability. Sleep with head pointing south or east."
+        },
+        "kitchen": {
+          "dir": "S",
+          "score": 4,
+          "ideal": "SE",
+          "reason": "Kitchen belongs in the SE (Agni corner); south works, NW is a fallback. NE or north kitchens set fire and water energies in conflict."
+        },
+        "bed2": {
+          "dir": "N",
+          "score": 2,
+          "ideal": "W",
+          "reason": "Secondary bedrooms suit the west or south — stable, with afternoon light. NE is acceptable for unmarried children."
+        },
+        "bed3": {
+          "dir": "E",
+          "score": 3,
+          "ideal": "NW",
+          "reason": "Guest and children’s rooms suit the NW (Vayu zone). Children sleep with head to the south or east; avoid the SE for kids."
+        },
+        "bathroom": {
+          "dir": "NW",
+          "score": 5,
+          "ideal": "NW",
+          "reason": "Toilets belong in the NW or west. The NE (Ishan kona) must never host a wet area; SW toilets weaken household stability."
+        }
+      }
+    },
+    "flags": {
+      "lake": false,
+      "corner": false
+    },
+    "metrics": {
+      "sun_winter_h": 0,
+      "sun_am_h": 0,
+      "sun_pm_h": 0,
+      "rank": {
+        "overall": 5,
+        "of": 8,
+        "morning": 5,
+        "cool": 5,
+        "vastu": 7,
+        "view": 5,
+        "airflow": 1,
+        "floor": 1
+      },
+      "weakest_dim": "morning"
+    }
+  },
+  {
+    "slug": "puri-the-aravallis",
+    "tower_id": "B",
+    "unit": "102",
+    "composite": 50,
+    "grade": "C",
+    "facing": "N",
+    "sub_scores": {
+      "morning": 0,
+      "cool": 50,
+      "vastu": 60,
+      "view": 75,
+      "airflow": 92,
+      "floor": 100
+    },
+    "reasons": {
+      "overall": "North-facing is highly auspicious — the Kuber (wealth) direction. Excellent for the living room and main entrance.",
+      "rooms": {
+        "entrance": {
+          "dir": "SE",
+          "score": 2,
+          "ideal": "NE",
+          "reason": "The main door is most auspicious in the NE, N or E (the Ishan–Kuber arc); W and NW are workable; S, SW and SE entries are cautioned and rely on remedies."
+        },
+        "living": {
+          "dir": "E",
+          "score": 4,
+          "ideal": "NE",
+          "reason": "Living room in the NE or north draws prosperity; seating should face east or north. Keep the NE corner light and uncluttered."
+        },
+        "masterBed": {
+          "dir": "NW",
+          "score": 3,
+          "ideal": "SW",
+          "reason": "Master bedroom in the SW (earth zone) promotes restful sleep and stability. Sleep with head pointing south or east."
+        },
+        "kitchen": {
+          "dir": "S",
+          "score": 4,
+          "ideal": "SE",
+          "reason": "Kitchen belongs in the SE (Agni corner); south works, NW is a fallback. NE or north kitchens set fire and water energies in conflict."
+        },
+        "bed2": {
+          "dir": "N",
+          "score": 2,
+          "ideal": "W",
+          "reason": "Secondary bedrooms suit the west or south — stable, with afternoon light. NE is acceptable for unmarried children."
+        },
+        "bed3": {
+          "dir": "W",
+          "score": 4,
+          "ideal": "NW",
+          "reason": "Guest and children’s rooms suit the NW (Vayu zone). Children sleep with head to the south or east; avoid the SE for kids."
+        },
+        "bathroom": {
+          "dir": "NE",
+          "score": 2,
+          "ideal": "NW",
+          "reason": "Toilets belong in the NW or west. The NE (Ishan kona) must never host a wet area; SW toilets weaken household stability."
+        }
+      }
+    },
+    "flags": {
+      "lake": false,
+      "corner": false
+    },
+    "metrics": {
+      "sun_winter_h": 0,
+      "sun_am_h": 0,
+      "sun_pm_h": 0,
+      "rank": {
+        "overall": 6,
+        "of": 8,
+        "morning": 6,
+        "cool": 6,
+        "vastu": 3,
+        "view": 6,
+        "airflow": 2,
+        "floor": 2
+      },
+      "weakest_dim": "morning"
+    }
+  },
+  {
+    "slug": "puri-the-aravallis",
+    "tower_id": "B",
+    "unit": "103",
+    "composite": 90,
+    "grade": "A+",
+    "facing": "S",
+    "sub_scores": {
+      "morning": 100,
+      "cool": 97,
+      "vastu": 70,
+      "view": 97,
+      "airflow": 86,
+      "floor": 98
+    },
+    "reasons": {
+      "overall": "South-facing needs careful planning — remedies include a heavy south wall and keeping the north-east light and open.",
+      "rooms": {
+        "entrance": {
+          "dir": "N",
+          "score": 4,
+          "ideal": "NE",
+          "reason": "The main door is most auspicious in the NE, N or E (the Ishan–Kuber arc); W and NW are workable; S, SW and SE entries are cautioned and rely on remedies."
+        },
+        "living": {
+          "dir": "S",
+          "score": 2,
+          "ideal": "NE",
+          "reason": "Living room in the NE or north draws prosperity; seating should face east or north. Keep the NE corner light and uncluttered."
+        },
+        "masterBed": {
+          "dir": "S",
+          "score": 4,
+          "ideal": "SW",
+          "reason": "Master bedroom in the SW (earth zone) promotes restful sleep and stability. Sleep with head pointing south or east."
+        },
+        "kitchen": {
+          "dir": "N",
+          "score": 2,
+          "ideal": "SE",
+          "reason": "Kitchen belongs in the SE (Agni corner); south works, NW is a fallback. NE or north kitchens set fire and water energies in conflict."
+        },
+        "bed2": {
+          "dir": "E",
+          "score": 2,
+          "ideal": "W",
+          "reason": "Secondary bedrooms suit the west or south — stable, with afternoon light. NE is acceptable for unmarried children."
+        },
+        "bed3": {
+          "dir": "W",
+          "score": 4,
+          "ideal": "NW",
+          "reason": "Guest and children’s rooms suit the NW (Vayu zone). Children sleep with head to the south or east; avoid the SE for kids."
+        },
+        "bathroom": {
+          "dir": "NW",
+          "score": 5,
+          "ideal": "NW",
+          "reason": "Toilets belong in the NW or west. The NE (Ishan kona) must never host a wet area; SW toilets weaken household stability."
+        }
+      }
+    },
+    "flags": {
+      "lake": false,
+      "corner": false
+    },
+    "metrics": {
+      "sun_winter_h": 8.580987,
+      "sun_am_h": 4.293611,
+      "sun_pm_h": 4.287375,
+      "rank": {
+        "overall": 1,
+        "of": 8,
+        "morning": 1,
+        "cool": 1,
+        "vastu": 1,
+        "view": 3,
+        "airflow": 7,
+        "floor": 5
+      },
+      "weakest_dim": "vastu"
+    }
+  },
+  {
+    "slug": "puri-the-aravallis",
+    "tower_id": "B",
+    "unit": "104",
+    "composite": 86,
+    "grade": "A+",
+    "facing": "S",
+    "sub_scores": {
+      "morning": 100,
+      "cool": 97,
+      "vastu": 60,
+      "view": 99,
+      "airflow": 92,
+      "floor": 55
+    },
+    "reasons": {
+      "overall": "South-facing needs careful planning — remedies include a heavy south wall and keeping the north-east light and open.",
+      "rooms": {
+        "entrance": {
+          "dir": "N",
+          "score": 4,
+          "ideal": "NE",
+          "reason": "The main door is most auspicious in the NE, N or E (the Ishan–Kuber arc); W and NW are workable; S, SW and SE entries are cautioned and rely on remedies."
+        },
+        "living": {
+          "dir": "S",
+          "score": 2,
+          "ideal": "NE",
+          "reason": "Living room in the NE or north draws prosperity; seating should face east or north. Keep the NE corner light and uncluttered."
+        },
+        "masterBed": {
+          "dir": "S",
+          "score": 4,
+          "ideal": "SW",
+          "reason": "Master bedroom in the SW (earth zone) promotes restful sleep and stability. Sleep with head pointing south or east."
+        },
+        "kitchen": {
+          "dir": "N",
+          "score": 2,
+          "ideal": "SE",
+          "reason": "Kitchen belongs in the SE (Agni corner); south works, NW is a fallback. NE or north kitchens set fire and water energies in conflict."
+        },
+        "bed2": {
+          "dir": "W",
+          "score": 5,
+          "ideal": "W",
+          "reason": "Secondary bedrooms suit the west or south — stable, with afternoon light. NE is acceptable for unmarried children."
+        },
+        "bed3": {
+          "dir": "E",
+          "score": 3,
+          "ideal": "NW",
+          "reason": "Guest and children’s rooms suit the NW (Vayu zone). Children sleep with head to the south or east; avoid the SE for kids."
+        },
+        "bathroom": {
+          "dir": "NE",
+          "score": 2,
+          "ideal": "NW",
+          "reason": "Toilets belong in the NW or west. The NE (Ishan kona) must never host a wet area; SW toilets weaken household stability."
+        }
+      }
+    },
+    "flags": {
+      "lake": false,
+      "corner": false
+    },
+    "metrics": {
+      "sun_winter_h": 8.580987,
+      "sun_am_h": 4.293611,
+      "sun_pm_h": 4.287375,
+      "rank": {
+        "overall": 2,
+        "of": 8,
+        "morning": 2,
+        "cool": 2,
+        "vastu": 4,
+        "view": 1,
+        "airflow": 3,
+        "floor": 7
+      },
+      "weakest_dim": "floor"
+    }
+  },
+  {
+    "slug": "puri-the-aravallis",
+    "tower_id": "A",
+    "unit": "101",
+    "composite": 50,
+    "grade": "C",
+    "facing": "N",
+    "sub_scores": {
+      "morning": 0,
+      "cool": 50,
+      "vastu": 57,
+      "view": 75,
+      "airflow": 92,
+      "floor": 100
+    },
+    "reasons": {
+      "overall": "North-facing is highly auspicious — the Kuber (wealth) direction. Excellent for the living room and main entrance.",
+      "rooms": {
+        "entrance": {
+          "dir": "SW",
+          "score": 2,
+          "ideal": "NE",
+          "reason": "The main door is most auspicious in the NE, N or E (the Ishan–Kuber arc); W and NW are workable; S, SW and SE entries are cautioned and rely on remedies."
+        },
+        "living": {
+          "dir": "W",
+          "score": 3,
+          "ideal": "NE",
+          "reason": "Living room in the NE or north draws prosperity; seating should face east or north. Keep the NE corner light and uncluttered."
+        },
+        "masterBed": {
+          "dir": "NE",
+          "score": 2,
+          "ideal": "SW",
+          "reason": "Master bedroom in the SW (earth zone) promotes restful sleep and stability. Sleep with head pointing south or east."
+        },
+        "kitchen": {
+          "dir": "S",
+          "score": 4,
+          "ideal": "SE",
+          "reason": "Kitchen belongs in the SE (Agni corner); south works, NW is a fallback. NE or north kitchens set fire and water energies in conflict."
+        },
+        "bed2": {
+          "dir": "N",
+          "score": 2,
+          "ideal": "W",
+          "reason": "Secondary bedrooms suit the west or south — stable, with afternoon light. NE is acceptable for unmarried children."
+        },
+        "bed3": {
+          "dir": "E",
+          "score": 3,
+          "ideal": "NW",
+          "reason": "Guest and children’s rooms suit the NW (Vayu zone). Children sleep with head to the south or east; avoid the SE for kids."
+        },
+        "bathroom": {
+          "dir": "NW",
+          "score": 5,
+          "ideal": "NW",
+          "reason": "Toilets belong in the NW or west. The NE (Ishan kona) must never host a wet area; SW toilets weaken household stability."
+        }
+      }
+    },
+    "flags": {
+      "lake": false,
+      "corner": false
+    },
+    "metrics": {
+      "sun_winter_h": 0,
+      "sun_am_h": 0,
+      "sun_pm_h": 0,
+      "rank": {
+        "overall": 7,
+        "of": 8,
+        "morning": 7,
+        "cool": 7,
+        "vastu": 8,
+        "view": 7,
+        "airflow": 4,
+        "floor": 3
+      },
+      "weakest_dim": "morning"
+    }
+  },
+  {
+    "slug": "puri-the-aravallis",
+    "tower_id": "A",
+    "unit": "102",
+    "composite": 50,
+    "grade": "C",
+    "facing": "N",
+    "sub_scores": {
+      "morning": 0,
+      "cool": 50,
+      "vastu": 60,
+      "view": 75,
+      "airflow": 92,
+      "floor": 100
+    },
+    "reasons": {
+      "overall": "North-facing is highly auspicious — the Kuber (wealth) direction. Excellent for the living room and main entrance.",
+      "rooms": {
+        "entrance": {
+          "dir": "SE",
+          "score": 2,
+          "ideal": "NE",
+          "reason": "The main door is most auspicious in the NE, N or E (the Ishan–Kuber arc); W and NW are workable; S, SW and SE entries are cautioned and rely on remedies."
+        },
+        "living": {
+          "dir": "E",
+          "score": 4,
+          "ideal": "NE",
+          "reason": "Living room in the NE or north draws prosperity; seating should face east or north. Keep the NE corner light and uncluttered."
+        },
+        "masterBed": {
+          "dir": "NW",
+          "score": 3,
+          "ideal": "SW",
+          "reason": "Master bedroom in the SW (earth zone) promotes restful sleep and stability. Sleep with head pointing south or east."
+        },
+        "kitchen": {
+          "dir": "S",
+          "score": 4,
+          "ideal": "SE",
+          "reason": "Kitchen belongs in the SE (Agni corner); south works, NW is a fallback. NE or north kitchens set fire and water energies in conflict."
+        },
+        "bed2": {
+          "dir": "N",
+          "score": 2,
+          "ideal": "W",
+          "reason": "Secondary bedrooms suit the west or south — stable, with afternoon light. NE is acceptable for unmarried children."
+        },
+        "bed3": {
+          "dir": "W",
+          "score": 4,
+          "ideal": "NW",
+          "reason": "Guest and children’s rooms suit the NW (Vayu zone). Children sleep with head to the south or east; avoid the SE for kids."
+        },
+        "bathroom": {
+          "dir": "NE",
+          "score": 2,
+          "ideal": "NW",
+          "reason": "Toilets belong in the NW or west. The NE (Ishan kona) must never host a wet area; SW toilets weaken household stability."
+        }
+      }
+    },
+    "flags": {
+      "lake": false,
+      "corner": false
+    },
+    "metrics": {
+      "sun_winter_h": 0,
+      "sun_am_h": 0,
+      "sun_pm_h": 0,
+      "rank": {
+        "overall": 8,
+        "of": 8,
+        "morning": 8,
+        "cool": 8,
+        "vastu": 5,
+        "view": 8,
+        "airflow": 5,
+        "floor": 4
+      },
+      "weakest_dim": "morning"
+    }
+  },
+  {
+    "slug": "puri-the-aravallis",
+    "tower_id": "A",
+    "unit": "103",
+    "composite": 80,
+    "grade": "A",
+    "facing": "S",
+    "sub_scores": {
+      "morning": 68,
+      "cool": 97,
+      "vastu": 70,
+      "view": 99,
+      "airflow": 86,
+      "floor": 55
+    },
+    "reasons": {
+      "overall": "South-facing needs careful planning — remedies include a heavy south wall and keeping the north-east light and open.",
+      "rooms": {
+        "entrance": {
+          "dir": "N",
+          "score": 4,
+          "ideal": "NE",
+          "reason": "The main door is most auspicious in the NE, N or E (the Ishan–Kuber arc); W and NW are workable; S, SW and SE entries are cautioned and rely on remedies."
+        },
+        "living": {
+          "dir": "S",
+          "score": 2,
+          "ideal": "NE",
+          "reason": "Living room in the NE or north draws prosperity; seating should face east or north. Keep the NE corner light and uncluttered."
+        },
+        "masterBed": {
+          "dir": "S",
+          "score": 4,
+          "ideal": "SW",
+          "reason": "Master bedroom in the SW (earth zone) promotes restful sleep and stability. Sleep with head pointing south or east."
+        },
+        "kitchen": {
+          "dir": "N",
+          "score": 2,
+          "ideal": "SE",
+          "reason": "Kitchen belongs in the SE (Agni corner); south works, NW is a fallback. NE or north kitchens set fire and water energies in conflict."
+        },
+        "bed2": {
+          "dir": "E",
+          "score": 2,
+          "ideal": "W",
+          "reason": "Secondary bedrooms suit the west or south — stable, with afternoon light. NE is acceptable for unmarried children."
+        },
+        "bed3": {
+          "dir": "W",
+          "score": 4,
+          "ideal": "NW",
+          "reason": "Guest and children’s rooms suit the NW (Vayu zone). Children sleep with head to the south or east; avoid the SE for kids."
+        },
+        "bathroom": {
+          "dir": "NW",
+          "score": 5,
+          "ideal": "NW",
+          "reason": "Toilets belong in the NW or west. The NE (Ishan kona) must never host a wet area; SW toilets weaken household stability."
+        }
+      }
+    },
+    "flags": {
+      "lake": false,
+      "corner": false
+    },
+    "metrics": {
+      "sun_winter_h": 8.580987,
+      "sun_am_h": 4.293611,
+      "sun_pm_h": 4.287375,
+      "rank": {
+        "overall": 4,
+        "of": 8,
+        "morning": 4,
+        "cool": 3,
+        "vastu": 2,
+        "view": 2,
+        "airflow": 8,
+        "floor": 8
+      },
+      "weakest_dim": "floor"
+    }
+  },
+  {
+    "slug": "puri-the-aravallis",
+    "tower_id": "A",
+    "unit": "104",
+    "composite": 81,
+    "grade": "A",
+    "facing": "S",
+    "sub_scores": {
+      "morning": 81,
+      "cool": 97,
+      "vastu": 60,
+      "view": 97,
+      "airflow": 92,
+      "floor": 60
+    },
+    "reasons": {
+      "overall": "South-facing needs careful planning — remedies include a heavy south wall and keeping the north-east light and open.",
+      "rooms": {
+        "entrance": {
+          "dir": "N",
+          "score": 4,
+          "ideal": "NE",
+          "reason": "The main door is most auspicious in the NE, N or E (the Ishan–Kuber arc); W and NW are workable; S, SW and SE entries are cautioned and rely on remedies."
+        },
+        "living": {
+          "dir": "S",
+          "score": 2,
+          "ideal": "NE",
+          "reason": "Living room in the NE or north draws prosperity; seating should face east or north. Keep the NE corner light and uncluttered."
+        },
+        "masterBed": {
+          "dir": "S",
+          "score": 4,
+          "ideal": "SW",
+          "reason": "Master bedroom in the SW (earth zone) promotes restful sleep and stability. Sleep with head pointing south or east."
+        },
+        "kitchen": {
+          "dir": "N",
+          "score": 2,
+          "ideal": "SE",
+          "reason": "Kitchen belongs in the SE (Agni corner); south works, NW is a fallback. NE or north kitchens set fire and water energies in conflict."
+        },
+        "bed2": {
+          "dir": "W",
+          "score": 5,
+          "ideal": "W",
+          "reason": "Secondary bedrooms suit the west or south — stable, with afternoon light. NE is acceptable for unmarried children."
+        },
+        "bed3": {
+          "dir": "E",
+          "score": 3,
+          "ideal": "NW",
+          "reason": "Guest and children’s rooms suit the NW (Vayu zone). Children sleep with head to the south or east; avoid the SE for kids."
+        },
+        "bathroom": {
+          "dir": "NE",
+          "score": 2,
+          "ideal": "NW",
+          "reason": "Toilets belong in the NW or west. The NE (Ishan kona) must never host a wet area; SW toilets weaken household stability."
+        }
+      }
+    },
+    "flags": {
+      "lake": false,
+      "corner": false
+    },
+    "metrics": {
+      "sun_winter_h": 8.580987,
+      "sun_am_h": 4.293611,
+      "sun_pm_h": 4.287375,
+      "rank": {
+        "overall": 3,
+        "of": 8,
+        "morning": 3,
+        "cool": 4,
+        "vastu": 6,
+        "view": 4,
+        "airflow": 6,
+        "floor": 6
+      },
+      "weakest_dim": "vastu"
+    }
+  }
+]

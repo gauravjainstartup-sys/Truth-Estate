@@ -121,9 +121,11 @@ engine = replaceFn(engine, "vastuFor",
 engine = mustSwap(engine,
   /rkeys\.map\(k=>vastuRoomScore\(k,compass,plateCfg\(t,u\),u\.mir\)\)/,
   "rkeys.map(k=>vastuRoomScore(k,t,u))", "flat-sheet vastuRoomScore call");
-// subScores' vastu dimension: room list + WV weights + aggregation (IP) → stored value
+// subScores' vastu dimension: room list + WV weights + aggregation (IP) → stored value.
+// CONFIGS[t.cfg] on single-config towers (titanium/presidential); CONFIGS[u.cfg||t.cfg]
+// on quad-core towers where each corner carries its own config (M3M/Puri) — accept both.
 engine = mustSwap(engine,
-  /const rk=\(CONFIGS\[t\.cfg\]\.beds===4\)[\s\S]*?classical Shastra\s*\n/,
+  /const rk=\(CONFIGS\[(?:u\.cfg\|\|)?t\.cfg\]\.beds===4\)[\s\S]*?classical Shastra\s*\n/,
   "const vastu=((INTEL.get(t.id+'|'+u.id)||{}).sub_scores||{}).vastu??60;   // pre-computed server-side — the scoring recipe never ships\n",
   "subScores vastu block");
 
