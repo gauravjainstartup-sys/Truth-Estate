@@ -527,6 +527,24 @@ export const TOWER_INTEL: Record<string, TowerIntelMeta> = {
       idealFor: "Large families (4 BHK)",
     },
   },
+  "Puri The Aravallis": {
+    file: "tower-intel/puri-the-aravallis.html",
+    preview: "tower-intel/puri-the-aravallis-preview.jpg",
+    towers: 2, // Tower A & Tower B, G+42, quad-core
+    unitTypes: 2, // 3 BHK 2250 (north) & 4 BHK 2750 (south)
+    totalUnits: "330+", // 2 towers × 42 floors × 4 corners
+    // Mirrors the advisor's own #1 pick (top composite), so the teaser stays
+    // honest against what a buyer sees once the model opens.
+    sample: {
+      ref: "Tower B · Line 103",
+      type: "4 BHK · south-facing corner",
+      sun: "10.0 h/day",
+      sunPct: 85,
+      ventilation: "Corner unit · dual-aspect cross-flow",
+      vastu: "South amenity deck · North entry (from core)",
+      idealFor: "Large families (4 BHK)",
+    },
+  },
 };
 // Exact DB-name match first (Arbour/Titanium), then a slug fallback so the
 // advisor attaches to the live page regardless of the DB name's exact casing.
