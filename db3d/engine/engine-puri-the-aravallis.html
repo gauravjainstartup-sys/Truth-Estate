@@ -448,7 +448,7 @@
 <div id="title" class="card">
   <div class="eyebrow">Puri The Aravallis · Golf Course Ext · Sector 61</div>
   <h1>Sun &amp; Unit Intelligence</h1>
-  <p>5 towers · G+38 · 4 BHK (T-10 / T-11 / T-12) &amp; 5 BHK (T-16 / T-17). Click a tower, then a flat on its roof.</p>
+  <p>2 towers · G+42 · 3 &amp; 4 BHK (Tower A / Tower B). Click a tower, then a flat on its roof.</p>
 </div>
 
 <div id="sunctl" class="card">
@@ -946,7 +946,7 @@ function renderIntro(){
   document.body.classList.add('ov-intro');
   document.getElementById('pEy').textContent='Sun · heat · Vastu advisor';
   document.getElementById('pName').textContent='Find your tower';
-  document.getElementById('pSub').textContent='5 towers · G+38 · lagoon-facing';
+  document.getElementById('pSub').textContent='2 towers · G+42 · 3 & 4 BHK';
   const html=`<div class="intro-lede">Every tower and flat, scored on the five things that decide a Gurugram luxury home — <b>morning sun, summer heat, Vastu, view and floor</b> — then weighted to what <b>you</b> care about.</div>
     <div class="pacts">
       <button class="pact primary" id="actRank">★&nbsp;&nbsp;Rank towers for me</button>
@@ -1036,13 +1036,13 @@ function renderTowerPanel(){const t=selTower;document.getElementById('pClose').s
   html+=`<div style="background:rgba(63,160,106,.07);border:1px solid rgba(63,160,106,.3);border-radius:12px;padding:11px 13px;margin-top:8px">
     <div style="font:600 9.5px/1 ui-monospace;letter-spacing:.12em;color:#8fd0e8">◆ BEST PREMIUM</div>
     <div style="font:700 14px/1.3 'Geist';color:#23272e;margin:5px 0 3px">Line ${bLn} · Floors ${bands.pLo}–${bands.pHi}</div>
-    <div style="font:500 11px/1.5 'Geist';color:#514c3e">Unbroken ${bestR.u.prim==='lake'?'lagoon':'skyline'} views, ${bandHigh.toFixed(1)}h winter sun, and the upper-floor sky terrace within a short lift ride. Floors 37–38 sit under the roof slab — slightly higher summer heat.</div>
+    <div style="font:500 11px/1.5 'Geist';color:#514c3e">Unbroken ${bestR.u.prim==='lake'?'lagoon':'skyline'} views, ${bandHigh.toFixed(1)}h winter sun, and the upper-floor sky terrace within a short lift ride. Floors 41–42 sit under the roof slab — slightly higher summer heat.</div>
   </div>`;
   html+='<div style="margin:8px 0 2px;font:500 8.5px/1.5 ui-monospace;color:#a4a69b">Score = morning 25 · cool 20 · Vastu 25 · view 15 · airflow 10 · floor 5 <span class="badge badge-est" style="font-size:8px">est</span> · bands weigh sun-by-floor + view + noise + floor-rise economics</div>';
   html+='<div class="sech">Sun through the day · top floor</div><div class="chart" id="uChart"></div><div class="clegend" id="uLeg"></div>';
   html+='<div class="note">Living-facade scoring; primary facades inferred from the 2/3-to-core layout — send the plate key to lock them.</div>';
   html+='</div></details>';
-  html+='<div class="tpspec">G+38 · '+CONFIGS[t.cfg].beds+' BHK · '+(function(){const s=[...new Set(t.units.map(u=>CONFIGS[u.cfg||t.cfg].saleable))].sort((a,b)=>a-b);return s.length>1?s[0].toLocaleString()+'–'+s[s.length-1].toLocaleString():s[0].toLocaleString();})()+' sq ft · '+t.core+' homes per floor per line</div>';
+  html+='<div class="tpspec">G+42 · '+CONFIGS[t.cfg].beds+' BHK · '+(function(){const s=[...new Set(t.units.map(u=>CONFIGS[u.cfg||t.cfg].saleable))].sort((a,b)=>a-b);return s.length>1?s[0].toLocaleString()+'–'+s[s.length-1].toLocaleString():s[0].toLocaleString();})()+' sq ft · '+t.core+' homes per floor per line</div>';
   const body=document.getElementById('pBody');body.innerHTML=html;body.scrollTop=0;
   body.querySelectorAll('.lc').forEach(el=>el.onclick=()=>openFlat(t,el.dataset.u));
   const vgoEl=document.getElementById('vdSee');if(vgoEl)vgoEl.onclick=e=>{e.stopPropagation();selectTower(scores[0].t.id);};
@@ -1054,11 +1054,11 @@ function renderTowerPanel(){const t=selTower;document.getElementById('pClose').s
   document.getElementById('uLeg').innerHTML=curves.map(c=>`<span><i style="background:${c.color}"></i>${c.r.u.id}</span>`).join('');}
 
 /* \u2500\u2500 flat 3D dollhouse \u2500\u2500 */
-const FLATW=MODEL.FLATW;   // Puri: interior walls not traced yet (interior 3D "coming soon") — fast-follow once the floor-plan files are on disk
-const DECKB={};
+const FLATW=MODEL.FLATW;   // Puri interior walls — traced from the official floor plate (3 BHK north / 4 BHK south)
+const DECKB={"3 BHK 2250|101":0,"4 BHK 2750|101":180};   // deck bearing as drawn: 3 BHK deck faces N (0), 4 BHK deck faces S (180)
 /* M3M brochure floor plans (2D) pending file upload. Interior 3D geometry not traced
    yet — the 2D plan is the source of truth; a fast-follow adds traced walls. */
-const PLANS={};   // Puri: 2D sanctioned plans pending file upload
+const PLANS={"3 BHK 2250|101":{"img":"plans/puri-3bhk.webp","tex":"plans/puri-3bhk-tex.webp"},"4 BHK 2750|101":{"img":"plans/puri-4bhk.webp","tex":"plans/puri-4bhk-tex.webp"}};   // Puri 2D sanctioned floor plans (traced webp)
 function planFor(cfgKey,uid){return PLANS[cfgKey+'|'+uid]||PLANS[cfgKey+'|101'];}
 let f3=null;
 function f3sprite(txt,scale){
@@ -1136,7 +1136,7 @@ function buildFlat3D(cfgKey,uid,bearing){
   if(f3.g){f3.sc.remove(f3.g);f3.g.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(o.material.map)o.material.map.dispose();o.material.dispose();}});f3.g=null;}
   if(f3.na){f3.sc.remove(f3.na);if(f3.na.material.map)f3.na.material.map.dispose();f3.na.material.dispose();f3.na=null;}
   const _soon=document.getElementById('fs3dSoon'),_bw=document.getElementById('fsBtnWalk');
-  const L=FLATW[cfgKey+'|'+uid]||FLATW[cfgKey+'|101'];   // M3M: traced interior walls from the official floor plans
+  const L=FLATW[cfgKey+'|'+uid]||FLATW[cfgKey+'|101'];   // Puri: traced interior walls from the official floor plate
   if(!L){if(_soon)_soon.classList.add('on');return;}   // show the coming-soon placeholder for the interactive 3D (walk-through early-access stays available)
   const g=new THREE.Group();
   const s=22/L.iw,W=L.iw*s,D=L.ih*s,WH=1.02;
@@ -1174,7 +1174,7 @@ function buildFlat3D(cfgKey,uid,bearing){
   na.position.set(0,0.5,-(Math.max(W,D)/2+2.6));f3.sc.add(na);f3.na=na;
   f3.rad=Math.max(W,D)*1.15;f3.az=-0.55;f3.pol=0.85;f3.auto=true;}
 /* walk-through: first-person mode */
-const SPAWN={};
+const SPAWN={"3 BHK 2250|101":{"x":320,"y":352,"yaw":0},"4 BHK 2750|101":{"x":320,"y":284,"yaw":0}};
 function walkCollide(x,z,r){
   const C=(f3&&f3.colliders)||[];
   for(let i=0;i<C.length;i++){const c=C[i];
@@ -1331,7 +1331,7 @@ function openFlat(t,uid,keepFloor){
   document.getElementById('flatSheet').classList.remove('details-open');
   document.getElementById('fsEy').textContent='Flat intelligence \u00b7 '+benchShort[String(decl)];
   document.getElementById('fsName').textContent=`${t.id} \u00b7 Flat ${u.id}`;
-  document.getElementById('fsSub').textContent=`${u.cfg||t.cfg} \u00b7 ${cfg.saleable.toLocaleString()} sq ft saleable \u00b7 G+38 \u00b7 ${t.core}-to-core`;
+  document.getElementById('fsSub').textContent=`${u.cfg||t.cfg} \u00b7 ${cfg.saleable.toLocaleString()} sq ft saleable \u00b7 G+42 \u00b7 ${t.core}-to-core`;
   (function(){const gc=gradeColor(fscore.grade),gEl=document.getElementById('fsGrade');
     if(gEl){gEl.style.setProperty('--gc',gc);gEl.style.setProperty('--gp',fscore.s);
       gEl.innerHTML=`<div class="gr-s">${fscore.s}</div><div class="gr-o">/100</div><div class="gr-g" style="background:${gc}">${fscore.grade}</div>`;}
@@ -1416,7 +1416,7 @@ function openFlat(t,uid,keepFloor){
       </div>
       <div style="margin-top:8px;font:500 10.5px/1.5 'Geist';color:#64707d">${st.pmAvg>st.amAvg?`Afternoon-dominant \u2014 bright evenings but PM heat. Afternoon sun weighted ${Math.round(WEST_W*100)}% in the tower ranking.`:'Morning-dominant \u2014 the preferred pattern. Peak light before noon keeps afternoons cooler and AC load lower.'}</div>
     </div>
-    <div style="margin-top:9px;font:500 9px/1.5 ui-monospace,monospace;color:#abaea1">Living facade \u00b7 scores averaged over G+38 \u00b7 north calibrated to the site plan (T-10 living = NE)</div>`;
+    <div style="margin-top:9px;font:500 9px/1.5 ui-monospace,monospace;color:#abaea1">Living facade \u00b7 scores averaged over G+42 \u00b7 north calibrated to the site plan (north-up)</div>`;
   /* TAB 2: METRICS */
   const mrows=[
     {icon:'&#x1F9ED;',label:'Orientation',badge:'doc',val:`<b>${compass}-facing</b> living room &amp; deck (bearing ${Math.round(b)}&deg;). ${lakeFacing?'Faces the central lagoon \u2014 the prestige view axis.':'Faces outward from the lagoon side \u2014 perimeter views.'}`,stars:null,barW:null,barC:null},
