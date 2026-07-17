@@ -19,7 +19,7 @@ import type { OmniIndex, OmniProject, OmniUnit } from "@/lib/omni";
 /* founder-confirmed site coordinates of the modelled projects (same set as
    the projects map — no guessed pins) */
 const COORDS: Record<string, { lat: number; lng: number }> = {
-  "m3m-residences-by-elie-saab": { lat: 28.523491, lng: 77.030529 },
+  "m3m-elie-saab": { lat: 28.523491, lng: 77.030529 },
   "elan-the-presidential": { lat: 28.502307, lng: 77.001726 },
   "elan-the-emperor": { lat: 28.501491, lng: 77.001726 },
   "birla-arika": { lat: 28.450497, lng: 77.046439 },
@@ -32,7 +32,12 @@ const ADVISORS: Record<string, string> = Object.fromEntries(
 );
 
 /* per-line intelligence extracted by the tower-intel pipeline — committed
-   under db3d/projects/<slug>/pieces; read once at build time, top lines only */
+   under db3d/projects/<slug>/pieces; read once at build time, top lines only.
+   db3d dirs are named after the advisor file; where that differs from the
+   site's DB-derived slug, the alias re-keys the units onto the site slug. */
+const SITE_SLUG: Record<string, string> = {
+  "m3m-residences-by-elie-saab": "m3m-elie-saab",
+};
 function loadUnits(): Record<string, OmniUnit[]> {
   const root = path.join(process.cwd(), "db3d", "projects");
   const out: Record<string, OmniUnit[]> = {};
@@ -46,7 +51,7 @@ function loadUnits(): Record<string, OmniUnit[]> {
         sub_scores?: { vastu?: number; view?: number };
         metrics?: { sun_winter_h?: number };
       }[];
-      out[dir] = [...rows]
+      out[SITE_SLUG[dir] ?? dir] = [...rows]
         .sort((a, b) => b.composite - a.composite)
         .slice(0, 4)
         .map((r) => ({

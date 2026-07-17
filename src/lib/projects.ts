@@ -563,6 +563,26 @@ export const TOWER_INTEL: Record<string, TowerIntelMeta> = {
       idealFor: "Large families (4 BHK)",
     },
   },
+  // DB project_name is "M3M Elie Saab" (page slug m3m-elie-saab); the db3d
+  // pipeline dir keeps the longer marketing slug m3m-residences-by-elie-saab.
+  "M3M Elie Saab": {
+    file: "tower-intel/m3m-residences-by-elie-saab.html",
+    preview: "tower-intel/m3m-residences-by-elie-saab-preview.jpg",
+    towers: 3, // ES-1/ES-2/ES-3, G+40, quad-core plates
+    unitTypes: 3, // three sanctioned 4 BHK plans — 4205 / 4520 / 4655 sq ft
+    totalUnits: "480+", // 3 towers × 40 floors × 4 lines
+    // Mirrors the advisor's own #1 pick (top composite), so the teaser stays
+    // honest against what a buyer sees once the model opens.
+    sample: {
+      ref: "Tower ES-2 · Line 103",
+      type: "4 BHK 4655 · east-facing",
+      sun: "4.1 h/day (winter · all morning)",
+      sunPct: 78,
+      ventilation: "Quad-core plate · top-3 airflow in the project",
+      vastu: "East sunrise energy · living & dining light",
+      idealFor: "Large families (4 BHK)",
+    },
+  },
 };
 // Exact DB-name match first (Arbour/Titanium), then a slug fallback so the
 // advisor attaches to the live page regardless of the DB name's exact casing.
