@@ -22,22 +22,33 @@ const MOB_ASKS = [
   "Sabse achha flat kaunsa?",
 ];
 
-type PanelState =
-  | { kind: "rows"; rows: OmniProject[] }
-  | { kind: "chips"; labels: string[]; tracked: number }
-  | { kind: "corridor"; label: string; count: number; top: OmniProject[] }
-  | { kind: "ask" }
-  | { kind: "none" };
+type Cat = "all" | "project" | "developer" | "corridor";
+const CATS: { key: Cat; label: string }[] = [
+  { key: "all", label: "Everything" },
+  { key: "project", label: "Projects" },
+  { key: "developer", label: "Developers" },
+  { key: "corridor", label: "Corridors" },
+];
+
+type Row =
+  | { kind: "project"; p: OmniProject }
+  | { kind: "corridor"; label: string; needle: string; count: number }
+  | { kind: "developer"; name: string; count: number }
+  | { kind: "chips"; labels: string[] }
+  | { kind: "ask" };
 
 export default function Hero({ index }: { index: OmniIndex }) {
-  const { open } = useJourney();
+  const { open: openJourney } = useJourney();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [open, setOpen] = useState(false); // the search terminal / sheet is engaged
   const [query, setQuery] = useState("");
-  const [live, setLive] = useState(false);
+  const [cat, setCat] = useState<Cat>("all");
   const [ghost, setGhost] = useState("");
   const stopRef = useRef(false);
+  const deskInput = useRef<HTMLInputElement>(null);
+  const mobInput = useRef<HTMLInputElement>(null);
 
-  /* ghost-typing loop; honours prefers-reduced-motion */
+  /* ── ghost-typing loop (resting only); honours reduced-motion ── */
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -53,407 +64,365 @@ export default function Hero({ index }: { index: OmniIndex }) {
       while (!cancelled) {
         if (stopRef.current) { await wait(300); continue; }
         const s = asks[i++ % asks.length];
-        for (let c = 1; c <= s.length && !cancelled && !stopRef.current; c++) {
-          setGhost(s.slice(0, c));
-          await wait(34 + Math.random() * 46);
-        }
+        for (let c = 1; c <= s.length && !cancelled && !stopRef.current; c++) { setGhost(s.slice(0, c)); await wait(34 + Math.random() * 46); }
         await wait(1700);
-        for (let c = s.length; c >= 0 && !cancelled && !stopRef.current; c--) {
-          setGhost(s.slice(0, c));
-          await wait(13);
-        }
+        for (let c = s.length; c >= 0 && !cancelled && !stopRef.current; c--) { setGhost(s.slice(0, c)); await wait(13); }
         await wait(420);
       }
     })();
     return () => { cancelled = true; };
   }, []);
 
-  /* layer 1 — the same instant index the /intelligence omnibox reads */
-  const qn = query.trim();
-  const panel: PanelState = useMemo(() => {
-    if (!qn || !live) return { kind: "none" };
-    const hits = typeahead(qn, index, 4);
-    if (hits.length) return { kind: "rows", rows: hits };
+  /* ── the index, sliced the way the terminal reads it ── */
+  const corridors = useMemo(() =>
+    AREA_ALIASES
+      .map(([, needle, label]) => ({ label, needle, count: index.projects.filter((p) => (p.location ?? "").toLowerCase().includes(needle)).length }))
+      .filter((c) => c.count > 0)
+      .sort((a, b) => b.count - a.count),
+  [index]);
+
+  const developers = useMemo(() => {
+    const m = new Map<string, { count: number; top: number }>();
+    for (const p of index.projects) {
+      if (!p.developer) continue;
+      const e = m.get(p.developer) ?? { count: 0, top: 0 };
+      e.count++; e.top = Math.max(e.top, p.score ?? 0);
+      m.set(p.developer, e);
+    }
+    return [...m.entries()].map(([name, e]) => ({ name, count: e.count, top: e.top })).sort((a, b) => b.count - a.count || b.top - a.top);
+  }, [index]);
+
+  const topProjects = useMemo(() => [...index.projects].filter((p) => p.score != null).sort((a, b) => (b.score ?? 0) - (a.score ?? 0)), [index]);
+
+  /* ── results: category-aware, empty vs typed ── */
+  const { rows, note } = useMemo<{ rows: Row[]; note: string | null }>(() => {
+    const qn = query.trim();
+    const low = qn.toLowerCase();
+    if (!qn) {
+      if (cat === "developer") return { rows: developers.slice(0, 8).map((d) => ({ kind: "developer" as const, ...d })), note: null };
+      if (cat === "corridor") return { rows: corridors.map((c) => ({ kind: "corridor" as const, ...c })), note: null };
+      if (cat === "project") return { rows: topProjects.slice(0, 8).map((p) => ({ kind: "project" as const, p })), note: "Highest Truth Scores" };
+      return { rows: corridors.slice(0, 5).map((c) => ({ kind: "corridor" as const, ...c })), note: null };
+    }
+    if (cat === "developer") {
+      const ds = developers.filter((d) => d.name.toLowerCase().includes(low));
+      return { rows: ds.map((d) => ({ kind: "developer" as const, ...d })), note: `${ds.length} developer${ds.length === 1 ? "" : "s"}` };
+    }
+    if (cat === "corridor") {
+      const cs = corridors.filter((c) => c.label.toLowerCase().includes(low) || c.needle.includes(low));
+      return { rows: cs.map((c) => ({ kind: "corridor" as const, ...c })), note: `${cs.length} corridor${cs.length === 1 ? "" : "s"}` };
+    }
+    if (cat === "project") {
+      const ps = typeahead(qn, index, 8);
+      return { rows: ps.map((p) => ({ kind: "project" as const, p })), note: `${ps.length} match${ps.length === 1 ? "" : "es"}` };
+    }
+    // all — the smart mixed read
+    const hits = typeahead(qn, index, 6);
+    if (hits.length) return { rows: hits.map((p) => ({ kind: "project" as const, p })), note: `${hits.length} match${hits.length === 1 ? "" : "es"}` };
     const parsed = qn.length >= 6 ? parseAsk(qn, index) : null;
     const chips = parsed?.chips ?? [];
-    if (chips.length >= 2)
-      return { kind: "chips", labels: chips.map((c) => c.label), tracked: index.projects.length };
-    const lc = qn.toLowerCase();
-    const alias = AREA_ALIASES.find(([re]) => re.test(lc));
+    if (chips.length >= 2) return { rows: [{ kind: "chips", labels: chips.map((c) => c.label) }], note: null };
+    const alias = AREA_ALIASES.find(([re]) => re.test(low));
     if (alias) {
       const [, needle, label] = alias;
       const projs = index.projects.filter((p) => (p.location ?? "").toLowerCase().includes(needle));
       if (projs.length)
         return {
-          kind: "corridor", label, count: projs.length,
-          top: [...projs].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, 3),
+          rows: [
+            { kind: "corridor", label, needle, count: projs.length },
+            ...[...projs].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, 3).map((p) => ({ kind: "project" as const, p })),
+          ],
+          note: null,
         };
     }
-    return { kind: "ask" };
-  }, [qn, live, index]);
+    return { rows: [{ kind: "ask" }], note: null };
+  }, [query, cat, index, corridors, developers, topProjects]);
 
+  /* ── actions ── */
   const go = (q?: string) => {
-    const ask = (q ?? qn).trim();
+    const ask = (q ?? query).trim();
     if (ask) window.location.href = `${basePath}/intelligence?q=${encodeURIComponent(ask)}`;
   };
-
-  const onFocus = () => { stopRef.current = true; setLive(true); };
-  const onBlur = () => {
-    /* delay lets a click on a suggestion land before the panel folds */
-    setTimeout(() => {
-      if (!query) { setLive(false); stopRef.current = false; }
-    }, 180);
+  const rowHref = (r: Row): string | null =>
+    r.kind === "project" ? `${basePath}/intelligence/projects/${r.p.slug}` : null;
+  const rowGo = (r: Row) => {
+    if (r.kind === "project") window.location.href = `${basePath}/intelligence/projects/${r.p.slug}`;
+    else if (r.kind === "corridor") go(r.label);
+    else if (r.kind === "developer") go(r.name);
+    else go();
   };
 
-  /* shared bits between the desktop and mobile trees */
-  const projRow = (p: OmniProject) => (
-    <a
-      key={p.slug}
-      href={`${basePath}/intelligence/projects/${p.slug}`}
-      className="flex items-center justify-between gap-3 border-b border-white/[0.06] px-[18px] py-3.5 last:border-b-0 hover:bg-white/[0.04]"
-    >
-      <span className="min-w-0">
-        <span className="font-serif text-[15.5px] leading-snug text-white/90">{p.name}</span>
+  const openSearch = () => { stopRef.current = true; setOpen(true); };
+  const closeSearch = () => { setOpen(false); if (!query) stopRef.current = false; };
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeSearch(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, query]);
+  // raise the keyboard when the mobile sheet opens
+  useEffect(() => { if (open) mobInput.current?.focus(); }, [open]);
+
+  /* ── shared renderers ── */
+  const catBar = (
+    <div className="flex gap-6 overflow-x-auto text-[13px] md:gap-9 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {CATS.map((c) => (
+        <button
+          key={c.key}
+          onClick={() => setCat(c.key)}
+          className={`flex-none pb-1.5 transition-colors ${cat === c.key ? "border-b border-[#c9a96e] text-white" : "text-white/40 hover:text-white/70"}`}
+        >
+          {c.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  const projRow = (p: OmniProject, mobile: boolean) => (
+    <>
+      <span className="min-w-0 flex-1">
+        <span className={`font-serif ${mobile ? "text-[19px]" : "text-[22px]"} leading-snug text-white/[0.93]`}>{p.name}</span>
         {p.has3D && (
-          <span className="ml-2 inline-block whitespace-nowrap rounded-sm border border-[#c9a96e]/60 px-[5px] py-[2px] align-[2px] text-[8px] font-bold tracking-[0.08em] text-[#c9a96e]">
+          <span className="ml-2 inline-block whitespace-nowrap rounded-sm border border-[#c9a96e]/60 px-[5px] py-[2px] align-[3px] text-[8px] font-bold tracking-[0.08em] text-[#c9a96e]">
             3D&nbsp;LIVE
           </span>
         )}
-        <span className="mt-[3px] block truncate text-[11px] font-light text-white/[0.38]">
+        <span className={`mt-1 block truncate ${mobile ? "text-[11.5px]" : "text-[12.5px]"} font-light text-white/40`}>
           {[p.location, p.developer].filter(Boolean).join(" · ")}
         </span>
       </span>
       {p.score != null && (
-        <span className="shrink-0 rounded bg-[#1e6b45]/30 px-[9px] py-1 font-mono text-[12.5px] font-bold text-[#b9e2c9]">
-          {p.score}
-        </span>
+        <span className={`shrink-0 rounded-md bg-[#1e6b45]/[0.28] px-[10px] py-1.5 font-mono ${mobile ? "text-[13px]" : "text-[15px]"} font-bold text-[#b9e2c9]`}>{p.score}</span>
       )}
-    </a>
+      <span className="shrink-0 text-white/30">→</span>
+    </>
   );
 
-  const suggestPanel = panel.kind !== "none" && (
-    <div className="absolute left-0 top-[calc(100%+14px)] z-30 max-h-[min(46vh,26rem)] w-full overflow-y-auto overscroll-contain rounded-[3px] border border-white/10 bg-[#0a0c0b]/[0.98] shadow-[0_24px_60px_rgba(0,0,0,0.6)] backdrop-blur-2xl [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {panel.kind === "rows" && panel.rows.map(projRow)}
-      {panel.kind === "corridor" && (
-        <>
-          <button onClick={() => go()} className="flex w-full items-center justify-between gap-3 border-b border-white/[0.06] px-[18px] py-3.5 text-left hover:bg-white/[0.04]">
-            <span>
-              <span className="mb-[3px] block text-[8.5px] font-semibold tracking-[0.2em] text-[#c9a96e]/80">CORRIDOR</span>
-              <span className="font-serif text-[15.5px] text-white/90">{panel.label}</span>
-              <span className="mt-[3px] block text-[11px] font-light text-white/[0.38]">{panel.count} tracked projects</span>
-            </span>
-            <span className="shrink-0 text-[11px] text-white/[0.35]">open the screen →</span>
-          </button>
-          {panel.top.map(projRow)}
-        </>
-      )}
-      {panel.kind === "chips" && (
-        <button onClick={() => go()} className="block w-full bg-gradient-to-r from-[#c9a96e]/10 to-transparent px-[18px] py-[13px] text-left">
-          <span className="mb-2 block text-[8.5px] font-medium uppercase tracking-[0.18em] text-white/[0.35]">
-            I&rsquo;ll search {panel.tracked} tracked projects with
-          </span>
-          <span className="flex flex-wrap items-center gap-1.5">
-            {panel.labels.map((l) => (
-              <span key={l} className="rounded-full border border-[#2f8f5b]/[0.55] bg-[#1e6b45]/[0.18] px-3 py-1 text-[11.5px] font-medium text-[#b9e2c9]">
-                {l}
+  const renderRows = (mobile: boolean) => (
+    <>
+      {note && <div className={`${mobile ? "mt-4" : "mt-11"} text-[10.5px] font-semibold uppercase tracking-[0.24em] text-white/[0.32]`}>{note}</div>}
+      <div className={mobile ? "mt-3" : "mt-3"}>
+        {rows.map((r, i) => {
+          const inner =
+            r.kind === "project" ? projRow(r.p, mobile)
+            : r.kind === "corridor" ? (
+              <>
+                <span className="min-w-0 flex-1">
+                  <span className="mb-0.5 block text-[8.5px] font-semibold tracking-[0.2em] text-[#c9a96e]/80">CORRIDOR</span>
+                  <span className={`font-serif ${mobile ? "text-[19px]" : "text-[22px]"} text-white/[0.93]`}>{r.label}</span>
+                  <span className={`mt-1 block ${mobile ? "text-[11.5px]" : "text-[12.5px]"} font-light text-white/40`}>{r.count} tracked projects</span>
+                </span>
+                <span className={`shrink-0 ${mobile ? "text-[11px]" : "text-[12.5px]"} text-white/[0.34]`}>open →</span>
+              </>
+            )
+            : r.kind === "developer" ? (
+              <>
+                <span className="min-w-0 flex-1">
+                  <span className="mb-0.5 block text-[8.5px] font-semibold tracking-[0.2em] text-[#c9a96e]/80">DEVELOPER</span>
+                  <span className={`font-serif ${mobile ? "text-[19px]" : "text-[22px]"} text-white/[0.93]`}>{r.name}</span>
+                  <span className={`mt-1 block ${mobile ? "text-[11.5px]" : "text-[12.5px]"} font-light text-white/40`}>{r.count} tracked project{r.count === 1 ? "" : "s"}</span>
+                </span>
+                <span className="shrink-0 text-white/30">→</span>
+              </>
+            )
+            : r.kind === "chips" ? (
+              <span className="min-w-0 flex-1">
+                <span className="mb-2 block text-[8.5px] font-medium uppercase tracking-[0.18em] text-white/[0.35]">I&rsquo;ll search {index.projects.length} tracked projects with</span>
+                <span className="flex flex-wrap items-center gap-1.5">
+                  {r.labels.map((l) => (
+                    <span key={l} className="rounded-full border border-[#2f8f5b]/[0.55] bg-[#1e6b45]/[0.18] px-3 py-1 text-[11.5px] font-medium text-[#b9e2c9]">{l}</span>
+                  ))}
+                  <span className="ml-1.5 text-[11.5px] text-[#c9a96e]">↵ open the answer canvas</span>
+                </span>
               </span>
-            ))}
-            <span className="ml-1.5 text-[11.5px] text-[#c9a96e]">↵ open the answer canvas</span>
-          </span>
-        </button>
-      )}
-      {panel.kind === "ask" && (
-        <button onClick={() => go()} className="flex w-full items-center gap-3 px-[18px] py-4 text-left hover:bg-white/[0.04]">
-          <span className="text-[14px] text-[#c9a96e]">✦</span>
-          <span className="font-serif text-[15.5px] italic text-white/[0.88]">Ask Truth Intelligence</span>
-          <span className="ml-auto text-[11.5px] text-[#c9a96e]">↵ Enter</span>
-        </button>
-      )}
-    </div>
+            )
+            : (
+              <>
+                <span className="text-[14px] text-[#c9a96e]">✦</span>
+                <span className="min-w-0 flex-1 font-serif text-[16px] italic text-white/[0.88]">Ask Truth Intelligence</span>
+                <span className="shrink-0 text-[11.5px] text-[#c9a96e]">↵ Enter</span>
+              </>
+            );
+          const href = rowHref(r);
+          const cls = `flex w-full items-center gap-4 border-b border-white/[0.07] ${mobile ? "py-[17px]" : "py-[18px]"} text-left transition-[padding] hover:pl-2`;
+          return href ? (
+            <a key={i} href={href} className={cls}>{inner}</a>
+          ) : (
+            <button key={i} onClick={() => rowGo(r)} className={cls}>{inner}</button>
+          );
+        })}
+      </div>
+    </>
   );
 
-  const askLine = (mobile: boolean) => (
-    <div className="relative max-w-[540px] cursor-text" onClick={(e) => (e.currentTarget.querySelector("input") as HTMLInputElement)?.focus()}>
-      {!live && (
-        <div className={`flex items-baseline overflow-hidden whitespace-nowrap font-serif italic text-white/[0.62] ${mobile ? "min-h-[36px] text-[17px]" : "min-h-[44px] text-[21px]"}`}
-          style={{ textShadow: "0 1px 14px rgba(4,6,5,0.5)" }}>
-          <span>{ghost}</span>
-          <span className={`te-caret ml-[3px] w-[1.5px] flex-none bg-[#c9a96e] ${mobile ? "h-[19px] translate-y-[3px]" : "h-6 translate-y-1"}`} />
-        </div>
-      )}
-      <input
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        onFocus={onFocus}
-        onBlur={onBlur}
-        onKeyDown={(e) => { if (e.key === "Enter") go(); }}
-        aria-label="Ask Truth Intelligence"
-        autoComplete="off"
-        className={`w-full bg-transparent font-serif italic text-white caret-[#c9a96e] outline-none ${mobile ? "text-[17px]" : "text-[21px]"} ${live ? (mobile ? "min-h-[36px]" : "min-h-[44px]") : "absolute inset-0 h-full opacity-0"}`}
-      />
-      <div className={`mt-3 h-px w-full transition-colors duration-500 ${live ? "bg-[#c9a96e]/80" : "bg-[#c9a96e]/[0.34] hover:bg-[#c9a96e]/[0.55]"}`} />
-      {suggestPanel}
+  const footStat = (
+    <div className="text-[11px] tracking-[0.03em] text-white/30">
+      <b className="font-medium text-white/55">{index.projects.length}</b> projects tracked
+      <span className="mx-2.5 text-[#c9a96e]/50">·</span>
+      <b className="font-medium text-white/55">{developers.length}</b> developers verified
+      <span className="mx-2.5 text-[#c9a96e]/50">·</span> nothing sponsored, ever
     </div>
   );
 
   return (
-    <section className="relative min-h-svh w-full overflow-hidden">
-      {/* ─── DESKTOP ─── */}
+    <section className={`teh-stage relative min-h-svh w-full overflow-hidden${open ? " open" : ""}`}>
+      {/* ═══ DESKTOP — the ask line blooms in place ═══ */}
       <div className="hidden h-svh md:block">
-        <img
-          src={`${basePath}/images/hero-desktop.jpg`}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover transition-[filter] duration-1000"
-          style={{
-            objectPosition: "center center",
-            transform: "scale(1.01) rotate(-0.15deg)",
-            filter: live
-              ? "brightness(0.48) contrast(1.08) saturate(0.9)"
-              : "brightness(0.68) contrast(1.10) saturate(1.02)",
-          }}
-        />
-
-        {/* Depth of field — verdict document stays sharp */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={`${basePath}/images/hero-desktop.jpg`} alt="" className="teh-bg absolute inset-0 h-full w-full object-cover" style={{ objectPosition: "center center" }} />
         <div
           className="absolute inset-0"
           style={{
-            backdropFilter: "blur(1.8px)",
-            WebkitBackdropFilter: "blur(1.8px)",
-            maskImage:
-              "radial-gradient(ellipse 28% 48% at 60% 50%, transparent 28%, black 100%)",
-            WebkitMaskImage:
-              "radial-gradient(ellipse 28% 48% at 60% 50%, transparent 28%, black 100%)",
+            backdropFilter: "blur(1.8px)", WebkitBackdropFilter: "blur(1.8px)",
+            maskImage: "radial-gradient(ellipse 28% 48% at 60% 50%, transparent 28%, black 100%)",
+            WebkitMaskImage: "radial-gradient(ellipse 28% 48% at 60% 50%, transparent 28%, black 100%)",
+            opacity: open ? 0 : 1, transition: "opacity 0.8s",
           }}
         />
+        <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 60% 50% at 15% 10%, rgba(255,220,170,0.025) 0%, transparent 100%)" }} />
+        <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 72% 68% at 50% 50%, transparent 42%, rgba(4,6,5,0.42) 100%)" }} />
+        <div className="teh-scrim absolute inset-0" style={{ background: "linear-gradient(to right, rgba(4,6,5,0.78) 0%, rgba(4,6,5,0.45) 22%, rgba(4,6,5,0.10) 38%, transparent 48%)" }} />
+        {/* terminal ground — the warm near-black the search sits on */}
+        <div className="teh-ground absolute inset-0" onClick={closeSearch} style={{ background: "radial-gradient(ellipse 70% 55% at 22% 0%, rgba(201,169,110,0.08) 0%, transparent 60%), rgba(6,7,6,0.55)" }} />
 
-        {/* Warm morning light */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse 60% 50% at 15% 10%, rgba(255,220,170,0.025) 0%, transparent 100%)",
-          }}
-        />
-
-        {/* Vignette */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse 72% 68% at 50% 50%, transparent 42%, rgba(4,6,5,0.42) 100%)",
-          }}
-        />
-
-        {/* Text readability */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(to right, rgba(4,6,5,0.78) 0%, rgba(4,6,5,0.45) 22%, rgba(4,6,5,0.10) 38%, transparent 48%)",
-          }}
-        />
-
-        {/* Content */}
-        <div className="relative z-10 flex h-full flex-col justify-between py-14 pl-20 lg:py-20 lg:pl-28">
-          <nav className={`animate-fade-up flex items-center pr-12 transition-opacity duration-1000 lg:pr-20 ${live ? "opacity-30" : ""}`}>
-            <Logo className="h-10 w-auto opacity-75 lg:h-[3rem]" />
-            <div className="ml-auto hidden items-center gap-12 text-[11px] font-medium tracking-[0.14em] text-white/55 lg:flex xl:gap-14">
-              <a href={`${basePath}/intelligence`} className="transition-colors duration-500 hover:text-white/90">
-                Truth Intelligence
-              </a>
-              <a href={`${basePath}/pricing`} className="transition-colors duration-500 hover:text-white/90">
-                Private Office
-              </a>
-              <a href={`${basePath}/intelligence`} className="transition-colors duration-500 hover:text-white/90">
-                Ownership Intelligence
-              </a>
-              <a
-                href={`${basePath}/nri`}
-                className="rounded-full border border-[#c9a96e]/45 bg-[#c9a96e]/[0.12] px-4 py-1.5 text-[#ecdcb0] transition-all duration-300 hover:border-[#c9a96e]/85 hover:bg-[#c9a96e]/25 hover:text-[#f6ecd0]"
-              >
-                NRI Desk
-              </a>
-            </div>
-          </nav>
-
-          <div className="relative z-20 flex max-w-2xl flex-col">
-            <p
-              className="animate-fade-up text-[11px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]"
-              style={{ animationDelay: "50ms", textShadow: "0 1px 12px rgba(4,6,5,0.5)" }}
-            >
-              The Independent Buyer&apos;s Office
-            </p>
-
-            <div style={{ height: "22px" }} />
-
-            <h1
-              className="animate-fade-up font-serif text-[3.2rem] font-bold leading-[1.1] text-white lg:text-[3.9rem]"
-              style={{ animationDelay: "100ms" }}
-            >
-              Decisions
-              <br />
-              Worth Living With.
-            </h1>
-
-            <div style={{ height: "52px" }} />
-
-            <div className="animate-fade-up" style={{ animationDelay: "300ms" }}>
-              {askLine(false)}
-            </div>
+        {/* nav */}
+        <nav className="absolute left-20 right-12 top-0 z-20 flex items-center pt-14 lg:left-28 lg:right-20 lg:pt-20">
+          <Logo className="h-10 w-auto opacity-75 lg:h-[3rem]" />
+          <div className={`ml-auto hidden items-center gap-12 text-[11px] font-medium tracking-[0.14em] text-white/55 transition-opacity duration-700 lg:flex xl:gap-14 ${open ? "pointer-events-none opacity-0" : ""}`}>
+            <a href={`${basePath}/intelligence`} className="transition-colors duration-500 hover:text-white/90">Truth Intelligence</a>
+            <a href={`${basePath}/pricing`} className="transition-colors duration-500 hover:text-white/90">Private Office</a>
+            <a href={`${basePath}/intelligence`} className="transition-colors duration-500 hover:text-white/90">Ownership Intelligence</a>
+            <a href={`${basePath}/nri`} className="rounded-full border border-[#c9a96e]/45 bg-[#c9a96e]/[0.12] px-4 py-1.5 text-[#ecdcb0] transition-all duration-300 hover:border-[#c9a96e]/85 hover:bg-[#c9a96e]/25 hover:text-[#f6ecd0]">NRI Desk</a>
           </div>
+          <button onClick={closeSearch} aria-label="Close search" className="teh-esc ml-auto grid h-11 w-11 place-items-center rounded-full border border-white/15 text-[13px] text-white/55 hover:bg-white/[0.06] hover:text-white">esc</button>
+        </nav>
 
-          {/* Operating philosophy — quietly revealed at the foot of the hero */}
-          <div className={`max-w-md transition-opacity duration-1000 ${live ? "opacity-25" : ""}`}>
-            <p className="font-serif text-[20px] font-medium leading-[1.7] tracking-[0.005em] text-[#b3aea7]">
-              Independent by design. No developer&rsquo;s rupee, ever.
-            </p>
+        {/* hero chrome — recedes on open */}
+        <div className="teh-herochrome absolute left-20 right-20 top-[36vh] z-10 lg:left-28">
+          <p className="text-[11px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]" style={{ textShadow: "0 1px 12px rgba(4,6,5,0.5)" }}>The Independent Buyer&apos;s Office</p>
+          <h1 className="mt-[22px] font-serif text-[3.2rem] font-bold leading-[1.1] text-white lg:text-[3.9rem]">Decisions<br />Worth Living With.</h1>
+        </div>
+
+        {/* terminal eyebrow — appears above the ask line */}
+        <div className="teh-tieyebrow absolute left-20 z-10 text-[10.5px] font-semibold uppercase tracking-[0.28em] text-[#c9a96e]/85 lg:left-28">Truth Intelligence</div>
+
+        {/* THE SHARED ASK LINE */}
+        <div className="teh-ask absolute left-20 right-20 z-10 lg:left-28 lg:right-28">
+          <div className="teh-inputrow relative flex items-baseline gap-4">
+            <span className="teh-mark flex-none text-[#c9a96e]/70">✦</span>
+            <div className="teh-q min-w-0 flex-1 overflow-hidden whitespace-nowrap font-serif italic leading-[1.1] text-white" style={{ textShadow: open ? "none" : "0 1px 14px rgba(4,6,5,0.5)" }}>
+              {open ? (query || <span className="text-white/[0.42]">Ask about any Gurugram project</span>) : (
+                <>{ghost}<span className="teh-caret ml-[3px] inline-block w-[2px] flex-none bg-[#c9a96e] align-baseline te-caret" /></>
+              )}
+            </div>
+            <input
+              ref={deskInput}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onFocus={openSearch}
+              onKeyDown={(e) => { if (e.key === "Enter") go(); }}
+              aria-label="Ask Truth Intelligence"
+              autoComplete="off"
+              className="absolute inset-0 h-full w-full cursor-text bg-transparent font-serif italic text-transparent caret-transparent outline-none"
+            />
           </div>
+          <div className="teh-hair mt-3.5 h-px w-full" />
+        </div>
+
+        {/* below — category tabs + results, bloom in */}
+        <div className="teh-below absolute left-20 right-20 z-10 max-h-[52vh] max-w-[900px] overflow-y-auto lg:left-28 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {catBar}
+          {renderRows(false)}
+          <div className="mt-12 pb-8">{footStat}</div>
+        </div>
+
+        {/* hero foot line */}
+        <div className="teh-foothero absolute bottom-20 left-20 z-10 max-w-md font-serif text-[20px] font-medium leading-[1.7] tracking-[0.005em] text-[#b3aea7] lg:left-28">
+          Independent by design. No developer&rsquo;s rupee, ever.
         </div>
       </div>
 
-      {/* ─── MOBILE ─── */}
-      <div className="relative h-svh md:hidden overflow-hidden">
-        <img
-          src={`${basePath}/images/hero-mobile.jpg`}
-          alt=""
-          className="absolute left-0 top-0 w-full object-cover transition-[filter] duration-1000"
-          style={{
-            /* Scale tuned so the verdict page lands in the gap between the
-               ask line and the foot quote */
-            height: "122%",
-            objectPosition: "center center",
-            filter: live
-              ? "brightness(0.44) contrast(1.1) saturate(0.92)"
-              : "brightness(0.66) contrast(1.12) saturate(1.05)",
-          }}
-        />
-
-        {/* Scrim — dark over the headline up top, lifts through the middle so
-            the verdict page reads in the gap, settles behind the foot quote */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(to bottom, rgba(4,6,5,0.92) 0%, rgba(4,6,5,0.86) 32%, rgba(4,6,5,0.74) 48%, rgba(4,6,5,0.44) 60%, rgba(4,6,5,0.20) 72%, rgba(4,6,5,0.40) 90%, rgba(4,6,5,0.72) 100%)",
-          }}
-        />
-
-        {/* Subtle edge vignette */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse 88% 82% at 50% 50%, transparent 52%, rgba(4,6,5,0.30) 100%)",
-          }}
-        />
-
-        {/* Content */}
+      {/* ═══ MOBILE — resting hero (sheet renders separately when open) ═══ */}
+      <div className="relative h-svh overflow-hidden md:hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={`${basePath}/images/hero-mobile.jpg`} alt="" className="absolute left-0 top-0 w-full object-cover" style={{ height: "122%", objectPosition: "center center", filter: "brightness(0.66) contrast(1.12) saturate(1.05)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(4,6,5,0.92) 0%, rgba(4,6,5,0.86) 32%, rgba(4,6,5,0.74) 48%, rgba(4,6,5,0.44) 60%, rgba(4,6,5,0.20) 72%, rgba(4,6,5,0.40) 90%, rgba(4,6,5,0.72) 100%)" }} />
+        <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 88% 82% at 50% 50%, transparent 52%, rgba(4,6,5,0.30) 100%)" }} />
         <div className="relative z-10 flex h-full flex-col px-7 pt-10 pb-8">
-          <nav className={`animate-fade-up flex items-center justify-between transition-opacity duration-1000 ${live ? "opacity-30" : ""}`}>
+          <nav className="flex items-center justify-between">
             <Logo className="h-9 w-auto opacity-85" />
-            <button
-              onClick={() => setMenuOpen(true)}
-              className="flex flex-col gap-[6px] p-1"
-              aria-label="Open menu"
-              aria-expanded={menuOpen}
-            >
+            <button onClick={() => setMenuOpen(true)} className="flex flex-col gap-[6px] p-1" aria-label="Open menu" aria-expanded={menuOpen}>
               <span className="block h-[1.5px] w-6 bg-white/40" />
               <span className="block h-[1.5px] w-6 bg-white/40" />
             </button>
           </nav>
-
-          <div className="relative z-20 mt-[9vh] flex flex-col">
-            <p
-              className="animate-fade-up text-[10px] font-medium uppercase tracking-[0.28em] text-[#c9a96e]"
-              style={{ animationDelay: "50ms", textShadow: "0 1px 12px rgba(4,6,5,0.6)" }}
-            >
-              The Independent Buyer&apos;s Office
-            </p>
-
+          <div className="mt-[9vh] flex flex-col">
+            <p className="text-[10px] font-medium uppercase tracking-[0.28em] text-[#c9a96e]" style={{ textShadow: "0 1px 12px rgba(4,6,5,0.6)" }}>The Independent Buyer&apos;s Office</p>
             <div style={{ height: "16px" }} />
-
-            <h1
-              className="animate-fade-up font-serif text-[2.3rem] font-bold leading-[1.16] text-white"
-              style={{ animationDelay: "100ms" }}
-            >
-              Decisions
-              <br />
-              Worth Living With.
-            </h1>
-
+            <h1 className="font-serif text-[2.3rem] font-bold leading-[1.16] text-white">Decisions<br />Worth Living With.</h1>
             <div style={{ height: "40px" }} />
-
-            <div className="animate-fade-up" style={{ animationDelay: "250ms" }}>
-              {askLine(true)}
-            </div>
+            {/* resting ask line — tap opens the full-screen sheet */}
+            <button onClick={openSearch} className="relative w-full text-left" aria-label="Open search">
+              <div className="flex items-baseline gap-3">
+                <span className="flex-none text-[16px] text-[#c9a96e]/70">✦</span>
+                <div className="min-w-0 flex-1 overflow-hidden whitespace-nowrap font-serif text-[17px] italic text-white/[0.85]" style={{ textShadow: "0 1px 14px rgba(4,6,5,0.5)" }}>
+                  {ghost}<span className="te-caret ml-[3px] inline-block h-[19px] w-[2px] flex-none translate-y-[3px] bg-[#c9a96e]" />
+                </div>
+              </div>
+              <div className="mt-3 h-px w-full bg-[#c9a96e]/[0.34]" />
+            </button>
           </div>
-
-          {/* Operating philosophy — quietly revealed at the foot of the hero */}
-          <div className={`mt-auto transition-opacity duration-1000 ${live ? "opacity-25" : ""}`}>
-            <p className="font-serif text-[17px] font-medium leading-[1.7] tracking-[0.005em] text-[#b3aea7]">
-              Independent by design. No developer&rsquo;s rupee, ever.
-            </p>
+          <div className="mt-auto font-serif text-[17px] font-medium leading-[1.7] tracking-[0.005em] text-[#b3aea7]">
+            Independent by design. No developer&rsquo;s rupee, ever.
           </div>
         </div>
       </div>
 
-      {/* ─── MOBILE MENU OVERLAY ─── */}
+      {/* ═══ MOBILE — full-screen search sheet ═══ */}
+      {open && (
+        <div className="fixed inset-0 z-[60] flex flex-col bg-[#0a0b0a] md:hidden" role="dialog" aria-modal="true" aria-label="Search">
+          <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 90% 40% at 30% 0%, rgba(201,169,110,0.08) 0%, transparent 55%)" }} />
+          <div className="relative flex items-center justify-between px-6 pt-5">
+            <Logo className="h-8 w-auto opacity-75" />
+            <button onClick={closeSearch} className="text-[13px] text-white/55">Cancel</button>
+          </div>
+          <div className="relative flex-1 overflow-y-auto px-6 pt-3.5">
+            <div className="flex items-baseline gap-3 border-b border-[#c9a96e]/[0.42] pb-4">
+              <span className="flex-none text-[16px] text-[#c9a96e]/70">✦</span>
+              <input
+                ref={mobInput}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") go(); }}
+                placeholder="Ask anything"
+                aria-label="Ask Truth Intelligence"
+                autoComplete="off"
+                className="min-w-0 flex-1 bg-transparent font-serif text-[24px] italic text-white caret-[#c9a96e] outline-none placeholder:text-white/[0.42]"
+              />
+            </div>
+            <div className="mt-5">{catBar}</div>
+            {renderRows(true)}
+            <div className="mt-6 pb-10">{footStat}</div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ MOBILE MENU OVERLAY ═══ */}
       {menuOpen && (
-        <div
-          className="fixed inset-0 z-50 flex flex-col bg-[#0a0a0a] md:hidden"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Menu"
-        >
+        <div className="fixed inset-0 z-50 flex flex-col bg-[#0a0a0a] md:hidden" role="dialog" aria-modal="true" aria-label="Menu">
           <div className="flex items-center justify-between px-7 pt-10">
             <Logo className="h-9 w-auto opacity-85" />
-            <button
-              onClick={() => setMenuOpen(false)}
-              aria-label="Close menu"
-              className="text-[11px] font-light tracking-[0.18em] text-white/50 transition-colors hover:text-white/80"
-            >
-              CLOSE
-            </button>
+            <button onClick={() => setMenuOpen(false)} aria-label="Close menu" className="text-[11px] font-light tracking-[0.18em] text-white/50 transition-colors hover:text-white/80">CLOSE</button>
           </div>
-
           <nav className="flex flex-1 flex-col justify-center gap-8 px-7">
-            <a
-              href={`${basePath}/intelligence`}
-              className="font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white"
-            >
-              Truth Intelligence
-            </a>
-            <a
-              href={`${basePath}/pricing`}
-              className="font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white"
-            >
-              Private Office
-            </a>
-            <a
-              href={`${basePath}/intelligence`}
-              className="font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white"
-            >
-              Ownership Intelligence
-            </a>
-            <a
-              href={`${basePath}/nri`}
-              className="flex items-center gap-3 font-serif text-[2rem] font-light text-[#e3c98f] transition-colors hover:text-[#f2e2b8]"
-            >
-              NRI Desk
-              <span className="text-[1.2rem] text-[#c9a96e]">&rarr;</span>
-            </a>
+            <a href={`${basePath}/intelligence`} className="font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white">Truth Intelligence</a>
+            <a href={`${basePath}/pricing`} className="font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white">Private Office</a>
+            <a href={`${basePath}/intelligence`} className="font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white">Ownership Intelligence</a>
+            <a href={`${basePath}/nri`} className="flex items-center gap-3 font-serif text-[2rem] font-light text-[#e3c98f] transition-colors hover:text-[#f2e2b8]">NRI Desk<span className="text-[1.2rem] text-[#c9a96e]">&rarr;</span></a>
           </nav>
-
           <div className="px-7 pb-12">
-            <button
-              onClick={() => {
-                setMenuOpen(false);
-                open();
-              }}
-              className="w-full rounded-sm bg-[#1e6b45] px-9 py-4 text-[13px] font-medium tracking-[0.08em] text-white transition-colors hover:bg-[#238c55]"
-            >
-              {PRIMARY_CTA}
-            </button>
+            <button onClick={() => { setMenuOpen(false); openJourney(); }} className="w-full rounded-sm bg-[#1e6b45] px-9 py-4 text-[13px] font-medium tracking-[0.08em] text-white transition-colors hover:bg-[#238c55]">{PRIMARY_CTA}</button>
           </div>
         </div>
       )}
