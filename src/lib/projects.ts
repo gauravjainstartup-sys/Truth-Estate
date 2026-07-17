@@ -545,6 +545,24 @@ export const TOWER_INTEL: Record<string, TowerIntelMeta> = {
       idealFor: "Large families (4 BHK)",
     },
   },
+  "Birla Arika": {
+    file: "tower-intel/birla-arika.html",
+    preview: "tower-intel/birla-arika-preview.jpg",
+    towers: 4, // T1/T2/T3 (4 BHK 4300) + T7 (4 BHK 4900), G+40; T4–T6 next phase
+    unitTypes: 6, // six sanctioned TYPE plates — each line has its own layout
+    totalUnits: "320+", // 3 towers × 40 floors × 2 lines + T7 × 41 × 2
+    // Mirrors the advisor's own #1 pick (top composite), so the teaser stays
+    // honest against what a buyer sees once the model opens.
+    sample: {
+      ref: "Tower T2 · Line 01",
+      type: "4 BHK 4300 (Type 1) · south-facing",
+      sun: "6.7 h/day (winter)",
+      sunPct: 84,
+      ventilation: "Corner line · light on 3 sides",
+      vastu: "South master deck · East living & entry",
+      idealFor: "Large families (4 BHK)",
+    },
+  },
 };
 // Exact DB-name match first (Arbour/Titanium), then a slug fallback so the
 // advisor attaches to the live page regardless of the DB name's exact casing.
