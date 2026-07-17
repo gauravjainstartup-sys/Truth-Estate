@@ -115,6 +115,14 @@ export default function IntelligenceWorkspace({ index = EMPTY_INDEX }: { index?:
     mainRef.current?.scrollTo(0, 0);
   };
 
+  /* deep-link handoff: /intelligence?q=… (the home hero's Enter) runs the
+     ask on arrival exactly as if it were typed into the omnibox */
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (q?.trim()) doSearch(q.trim());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const fallbackToBrief = (q: string) => {
     const r = classifyAndResearch(q);
     setView({ type: "search-result", query: q, result: r });
