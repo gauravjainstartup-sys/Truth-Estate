@@ -113,10 +113,10 @@ export default function Hero({ index }: { index: OmniIndex }) {
       className="flex items-center justify-between gap-3 border-b border-white/[0.06] px-[18px] py-3.5 last:border-b-0 hover:bg-white/[0.04]"
     >
       <span className="min-w-0">
-        <span className="font-serif text-[15.5px] text-white/90">{p.name}</span>
+        <span className="font-serif text-[15.5px] leading-snug text-white/90">{p.name}</span>
         {p.has3D && (
-          <span className="ml-2 rounded-sm border border-[#c9a96e]/60 px-[5px] py-[2px] align-[2px] text-[8px] font-bold tracking-[0.08em] text-[#c9a96e]">
-            3D LIVE
+          <span className="ml-2 inline-block whitespace-nowrap rounded-sm border border-[#c9a96e]/60 px-[5px] py-[2px] align-[2px] text-[8px] font-bold tracking-[0.08em] text-[#c9a96e]">
+            3D&nbsp;LIVE
           </span>
         )}
         <span className="mt-[3px] block truncate text-[11px] font-light text-white/[0.38]">
@@ -132,7 +132,7 @@ export default function Hero({ index }: { index: OmniIndex }) {
   );
 
   const suggestPanel = panel.kind !== "none" && (
-    <div className="absolute left-0 top-[calc(100%+14px)] z-30 w-full overflow-hidden rounded-[3px] border border-white/10 bg-[#080a09]/[0.82] shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur-2xl">
+    <div className="absolute left-0 top-[calc(100%+14px)] z-30 max-h-[min(46vh,26rem)] w-full overflow-y-auto overscroll-contain rounded-[3px] border border-white/10 bg-[#0a0c0b]/[0.98] shadow-[0_24px_60px_rgba(0,0,0,0.6)] backdrop-blur-2xl [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {panel.kind === "rows" && panel.rows.map(projRow)}
       {panel.kind === "corridor" && (
         <>
