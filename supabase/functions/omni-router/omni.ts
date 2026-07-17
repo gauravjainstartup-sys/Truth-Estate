@@ -1,3 +1,8 @@
+/* GENERATED VENDOR COPY — source of truth: src/lib/omni.ts
+   The Supabase CLI bundles only this function directory, so the pure
+   omni module is vendored here verbatim. After editing src/lib/omni.ts run:
+     cp src/lib/omni.ts supabase/functions/omni-router/omni.ts   (keep this header)
+   The offline harness (scratchpad/router/fake-run.mjs) fails if they drift. */
 /* ════════════════════════════════════════════════════════════════
    OMNI — the Truth Intelligence omnibox brain, Phase 1 (deterministic).
 
