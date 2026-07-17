@@ -20,6 +20,7 @@ import { MARKETS } from "@/lib/markets";
 import { comparePairSlug } from "@/lib/compare";
 import ProjectOptionCard from "./ProjectOptionCard";
 import {
+  mergeChips,
   parseAsk,
   screen,
   topUnits,
@@ -28,7 +29,10 @@ import {
   type OmniIndex,
   type OmniProject,
   type Parsed,
+  type Ranked,
+  type RouterAnswer,
 } from "@/lib/omni";
+import { askRouter } from "@/lib/router";
 
 const EMPTY_INDEX: OmniIndex = { projects: [], units: {}, live: false };
 
@@ -97,19 +101,21 @@ export default function IntelligenceWorkspace({ index = EMPTY_INDEX }: { index?:
     setSearchOpen(false);
     setSearchQuery("");
     setRecentSearches((h) => [q, ...h.filter((x) => x !== q)].slice(0, 6));
-    /* omnibox intent routing — deterministic, no generation:
+    /* omnibox intent routing — deterministic first:
        a bare project name navigates; a constrained or unit-level ask opens
-       the answer canvas; everything else stays a TruthGuide research brief. */
+       the answer canvas instantly. Free-text questions ALSO open the canvas
+       (Phase 2 — the Claude router reads the index in the background);
+       CanvasView falls back to the TruthGuide brief if it's unreachable. */
     const parsed = parseAsk(q, index);
     if (parsed.intent === "navigate" && parsed.project) {
       window.location.href = `${basePath}/intelligence/projects/${parsed.project.slug}`;
       return;
     }
-    if ((parsed.intent === "screen" && parsed.chips.length > 0) || parsed.intent === "units") {
-      setView({ type: "canvas", query: q, parsed });
-      mainRef.current?.scrollTo(0, 0);
-      return;
-    }
+    setView({ type: "canvas", query: q, parsed });
+    mainRef.current?.scrollTo(0, 0);
+  };
+
+  const fallbackToBrief = (q: string) => {
     const r = classifyAndResearch(q);
     setView({ type: "search-result", query: q, result: r });
     mainRef.current?.scrollTo(0, 0);
@@ -256,7 +262,7 @@ export default function IntelligenceWorkspace({ index = EMPTY_INDEX }: { index?:
         {view.type === "home" && <HomeView doSearch={doSearch} recentSearches={recentSearches} index={index} />}
         {view.type === "search-result" && <SearchResultView result={view.result} doSearch={doSearch} />}
         {view.type === "canvas" && (
-          <CanvasView key={view.query} query={view.query} parsed={view.parsed} index={index} onQuestion={doSearch} />
+          <CanvasView key={view.query} query={view.query} parsed={view.parsed} index={index} onFallback={fallbackToBrief} />
         )}
       </main>
     </div>
@@ -627,11 +633,11 @@ function SearchResultView({ result, doSearch }: { result: ResearchResult; doSear
    ════════════════════════════════════════════════════════════════ */
 type Turn = { q: string; note: string };
 
-function CanvasView({ query, parsed, index, onQuestion }: {
+function CanvasView({ query, parsed, index, onFallback }: {
   query: string;
   parsed: Parsed;
   index: OmniIndex;
-  onQuestion: (q: string) => void;
+  onFallback: (q: string) => void;
 }) {
   const [chips, setChips] = useState<Chip[]>(parsed.chips);
   const [unitsProject, setUnitsProject] = useState<OmniProject | null>(
@@ -639,16 +645,49 @@ function CanvasView({ query, parsed, index, onQuestion }: {
   );
   const [turns, setTurns] = useState<Turn[]>([]);
   const [followQ, setFollowQ] = useState("");
+  /* Phase 2 — the Claude router refines every canvas in the background.
+     For an "ask" (free text the deterministic parser couldn't structure)
+     the router IS the answer path; unreachable → TruthGuide brief. */
+  const isAsk = parsed.intent === "question" || parsed.intent === "compare";
+  const [ai, setAi] = useState<RouterAnswer | null>(null);
+  const [aiState, setAiState] = useState<"pending" | "live" | "off">("pending");
+  const aiSeq = useRef(0);
 
   const results = useMemo(() => screen(index, chips), [index, chips]);
   const units = unitsProject ? topUnits(index, unitsProject.slug, 3) : [];
 
-  // first turn note (computed once per mount; the view keys on the query)
+  const applyAnswer = (r: RouterAnswer, fresh: boolean) => {
+    setAi(r);
+    setAiState("live");
+    if (r.intent === "units" && r.projectSlug) {
+      const p = index.projects.find((x) => x.slug === r.projectSlug);
+      if (p && index.units[p.slug]?.length) setUnitsProject(p);
+    } else if (r.intent === "screen" && r.chips.length) {
+      setUnitsProject(null);
+    }
+    if (r.chips.length) setChips((prev) => mergeChips(fresh ? [] : prev, r.chips));
+    if (r.note) setTurns((t) => t.map((x, i) => (i === t.length - 1 ? { ...x, note: r.note } : x)));
+  };
+
+  const consult = (q: string, cs: Chip[], slug: string | null, fresh: boolean, fallback: boolean) => {
+    const seq = ++aiSeq.current;
+    askRouter({ q, chips: cs, project: slug }, index).then((r) => {
+      if (seq !== aiSeq.current) return; // a newer ask superseded this one
+      if (r) { applyAnswer(r, fresh); return; }
+      setAiState("off");
+      if (fallback) onFallback(q);
+    });
+  };
+
+  // first turn (the view keys on the query, so this runs once per ask)
   useEffect(() => {
-    const note = unitsProject
-      ? `Read ${(index.units[unitsProject.slug] ?? []).length} modelled lines in ${unitsProject.name} — winter-benchmark sun + room-by-room vastu.`
-      : `Screened ${index.projects.length} tracked projects → ${screen(index, parsed.chips).length} match, ranked by Truth Score${parsed.chips.some((c) => c.key === "sun") ? " + modelled winter sun" : ""}.`;
+    const note = isAsk
+      ? "Consulting Truth Intelligence — reading the tracked index…"
+      : unitsProject
+        ? `Read ${(index.units[unitsProject.slug] ?? []).length} modelled lines in ${unitsProject.name} — winter-benchmark sun + room-by-room vastu.`
+        : `Screened ${index.projects.length} tracked projects → ${screen(index, parsed.chips).length} match, ranked by Truth Score${parsed.chips.some((c) => c.key === "sun") ? " + modelled winter sun" : ""}.`;
     setTurns([{ q: query, note }]);
+    consult(query, parsed.chips, parsed.intent === "units" && parsed.project ? parsed.project.slug : null, isAsk, isAsk);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -665,31 +704,50 @@ function CanvasView({ query, parsed, index, onQuestion }: {
     const p = parseAsk(q, index);
     if (p.intent === "units" && p.project) {
       setUnitsProject(p.project);
-      setChips(p.chips.length ? p.chips : chips);
+      const next = p.chips.length ? p.chips : chips;
+      setChips(next);
       setTurns((t) => [...t, { q, note: `Switched to ${p.project!.name} — ${(index.units[p.project!.slug] ?? []).length} modelled lines read.` }]);
+      consult(q, next, p.project.slug, false, false);
       return;
     }
     if (p.chips.length > 0) {
-      const keys = new Set(p.chips.map((c) => c.key));
-      const next = [...chips.filter((c) => !keys.has(c.key)), ...p.chips];
+      const next = mergeChips(chips, p.chips);
       setUnitsProject(null);
       setChips(next);
       setTurns((t) => [...t, { q, note: `Filters updated — ${screen(index, next).length} project${screen(index, next).length === 1 ? "" : "s"} match.` }]);
+      consult(q, next, null, false, false);
       return;
     }
-    onQuestion(q); // no structure found → TruthGuide research brief
+    // no deterministic structure — the router answers in-canvas;
+    // unreachable → the ask becomes a TruthGuide research brief
+    setTurns((t) => [...t, { q, note: "Consulting Truth Intelligence…" }]);
+    consult(q, chips, unitsProject?.slug ?? null, false, true);
   };
 
   const top = results[0];
-  const verdict = unitsProject
-    ? units.length
-      ? <>The advisor&apos;s top pick in <b className="text-[#1e6b45]">{unitsProject.name}</b> is <b className="text-[#1e6b45]">{units[0].tower} · Line {units[0].unit.slice(-2)}</b> — {units[0].grade} {units[0].score}{units[0].sunWinterH != null ? <>, {units[0].sunWinterH} h winter sun</> : null}, {units[0].facing}-facing.</>
-      : <>No modelled lines for <b>{unitsProject.name}</b> yet — its 3D advisor is in production.</>
-    : top
-      ? <><b className="text-[#1e6b45]">{top.p.name}</b> leads your brief{top.p.score != null ? <> at Truth Score {top.p.score}</> : null} — {results.length} of {index.projects.length} tracked projects match.</>
-      : <>No tracked project clears every filter — remove one to widen the screen.</>;
+  /* the model's verdict (composed only from index rows) replaces the
+     deterministic sentence when it lands; an ask shows nothing until then */
+  const verdict = ai?.verdict
+    ? <>{ai.verdict}</>
+    : isAsk
+      ? null
+      : unitsProject
+        ? units.length
+          ? <>The advisor&apos;s top pick in <b className="text-[#1e6b45]">{unitsProject.name}</b> is <b className="text-[#1e6b45]">{units[0].tower} · Line {units[0].unit.slice(-2)}</b> — {units[0].grade} {units[0].score}{units[0].sunWinterH != null ? <>, {units[0].sunWinterH} h winter sun</> : null}, {units[0].facing}-facing.</>
+          : <>No modelled lines for <b>{unitsProject.name}</b> yet — its 3D advisor is in production.</>
+        : top
+          ? <><b className="text-[#1e6b45]">{top.p.name}</b> leads your brief{top.p.score != null ? <> at Truth Score {top.p.score}</> : null} — {results.length} of {index.projects.length} tracked projects match.</>
+          : <>No tracked project clears every filter — remove one to widen the screen.</>;
 
-  const mapPins = (unitsProject ? [unitsProject] : results.slice(0, 8).map((r) => r.p)).filter((p) => p.lat != null && p.lng != null);
+  /* cards: filters active → the deterministic screen; a pure ask → the
+     rows the verdict cites (refs). Same markup, same provenance. */
+  const refRanked: Ranked[] = (ai?.refs ?? [])
+    .map((s) => index.projects.find((p) => p.slug === s))
+    .filter((p): p is OmniProject => !!p)
+    .map((p) => ({ p, why: [] }));
+  const shownRanked = unitsProject ? [] : chips.length > 0 ? results.slice(0, 8) : refRanked.slice(0, 8);
+
+  const mapPins = (unitsProject ? [unitsProject] : shownRanked.map((r) => r.p)).filter((p) => p.lat != null && p.lng != null);
 
   return (
     <div className="grid min-h-full lg:grid-cols-[260px_1fr]">
@@ -704,15 +762,25 @@ function CanvasView({ query, parsed, index, onQuestion }: {
             </div>
           ))}
         </div>
-        <p className="mt-4 font-mono text-[0.6rem] font-light leading-[1.6] text-[#1a1a1a]/30">answers built from DB rows · nothing generated</p>
+        <p className="mt-4 font-mono text-[0.6rem] font-light leading-[1.6] text-[#1a1a1a]/30">
+          {aiState === "live" ? "numbers from DB rows · prose composed by claude" : "answers built from DB rows · nothing generated"}
+        </p>
       </aside>
 
       {/* ── artifacts ── */}
       <section className="relative px-5 pb-32 pt-6 md:px-8">
         <p className="mb-2 text-[9px] font-medium uppercase tracking-[0.2em] text-[#c9a96e]">
-          Answer{!unitsProject && <> · {results.length} project{results.length === 1 ? "" : "s"} match</>}
+          Answer{!unitsProject && chips.length > 0 && <> · {results.length} project{results.length === 1 ? "" : "s"} match</>}
         </p>
-        <p className="max-w-[640px] font-serif text-[1.15rem] font-light leading-[1.5] text-[#1a1a1a] md:text-[1.3rem]">{verdict}</p>
+        {isAsk && aiState === "pending" && !ai && (
+          <div className="flex max-w-[640px] items-center gap-3 rounded-xl border border-[#1a1a1a]/[0.08] bg-white px-5 py-4">
+            <span className="animate-pulse text-[#c9a96e]">✦</span>
+            <p className="font-serif text-[0.95rem] font-light text-[#1a1a1a]/45">Truth Intelligence is reading the tracked index…</p>
+          </div>
+        )}
+        {verdict && (
+          <p className="max-w-[640px] font-serif text-[1.15rem] font-light leading-[1.5] text-[#1a1a1a] md:text-[1.3rem]">{verdict}</p>
+        )}
 
         {chips.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-1.5">
@@ -757,9 +825,9 @@ function CanvasView({ query, parsed, index, onQuestion }: {
         )}
 
         {/* ranked project cards */}
-        {!unitsProject && results.length > 0 && (
+        {shownRanked.length > 0 && (
           <div className="mt-5 flex flex-col gap-2.5">
-            {results.slice(0, 8).map((r, i) => (
+            {shownRanked.map((r, i) => (
               <div key={r.p.slug} className="flex flex-col gap-3 rounded-xl border border-[#1a1a1a]/[0.08] bg-white px-4 py-3.5 sm:flex-row sm:items-center">
                 <span className="hidden w-5 shrink-0 font-mono text-[0.8rem] font-bold text-[#1a1a1a]/25 sm:block">{i + 1}</span>
                 <div className="min-w-0 flex-1">
@@ -811,6 +879,7 @@ function CanvasView({ query, parsed, index, onQuestion }: {
 
         <p className="mt-4 font-mono text-[0.62rem] font-light leading-[1.7] text-[#1a1a1a]/30">
           sources · {index.live ? "backlog_listing_public (scores, price, possession)" : "curated research desk (live view unreachable at build)"} · tower-intel per-flat intelligence (winter benchmark) · computed at publish
+          {aiState === "live" && <> · ✦ verdict composed by claude — every number from these rows</>}
         </p>
 
         {/* follow-up — docked */}
