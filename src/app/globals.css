@@ -143,3 +143,63 @@ body {
     animation: te-blink 1.1s steps(1) infinite;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   HOME HERO — the ask line blooms into a full-screen search terminal.
+   Namespaced .teh-* ; the .open class on .teh-stage drives every state.
+   ════════════════════════════════════════════════════════════════ */
+.teh-stage { --askTop: 54vh; }
+.teh-stage.open { --askTop: 23vh; }
+
+.teh-bg {
+  filter: brightness(0.66) contrast(1.1) saturate(1.02);
+  transform: scale(1.01) rotate(-0.15deg);
+  transition: filter 1s cubic-bezier(0.4, 0, 0.2, 1), transform 1.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.teh-stage.open .teh-bg {
+  filter: brightness(0.24) contrast(1.05) saturate(0.85) blur(2px);
+  transform: scale(1.06) rotate(-0.15deg);
+}
+.teh-scrim { transition: opacity 1s; }
+.teh-stage.open .teh-scrim { opacity: 0; }
+.teh-ground { opacity: 0; transition: opacity 0.9s; }
+.teh-stage.open .teh-ground { opacity: 1; }
+
+.teh-esc { opacity: 0; transform: scale(0.8); transition: 0.4s; pointer-events: none; }
+.teh-stage.open .teh-esc { opacity: 1; transform: scale(1); pointer-events: auto; }
+
+.teh-herochrome { transition: opacity 0.5s, transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+.teh-stage.open .teh-herochrome { opacity: 0; transform: translateY(-24px); pointer-events: none; }
+.teh-foothero { transition: opacity 0.45s; }
+.teh-stage.open .teh-foothero { opacity: 0; pointer-events: none; }
+
+/* absolutely-positioned so the ask line is a shared element that lifts + grows */
+.teh-tieyebrow { top: calc(var(--askTop) - 42px); opacity: 0; transition: opacity 0.5s 0.18s, top 0.7s cubic-bezier(0.4, 0, 0.2, 1); }
+.teh-stage.open .teh-tieyebrow { opacity: 1; }
+.teh-ask { top: var(--askTop); transition: top 0.7s cubic-bezier(0.4, 0, 0.2, 1); }
+.teh-inputrow { max-width: 560px; transition: max-width 0.7s cubic-bezier(0.4, 0, 0.2, 1); }
+.teh-stage.open .teh-inputrow { max-width: 900px; }
+.teh-q { font-size: 21px; transition: font-size 0.7s cubic-bezier(0.4, 0, 0.2, 1); }
+.teh-stage.open .teh-q { font-size: 40px; }
+.teh-mark { font-size: 16px; transition: font-size 0.6s; }
+.teh-stage.open .teh-mark { font-size: 22px; }
+.teh-caret { height: 22px; transform: translateY(4px); transition: height 0.6s; }
+.teh-stage.open .teh-caret { height: 38px; transform: translateY(6px); }
+.teh-hair { max-width: 560px; background: rgba(201, 169, 110, 0.34); transition: max-width 0.7s cubic-bezier(0.4, 0, 0.2, 1), background 0.5s; }
+.teh-stage.open .teh-hair { max-width: 900px; background: rgba(201, 169, 110, 0.55); }
+.teh-below {
+  top: calc(var(--askTop) + 96px); opacity: 0; transform: translateY(16px); pointer-events: none;
+  transition: opacity 0.5s 0.22s, transform 0.55s 0.22s cubic-bezier(0.4, 0, 0.2, 1), top 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.teh-stage.open .teh-below { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+@media (min-width: 1024px) {
+  .teh-ask, .teh-tieyebrow, .teh-below { left: 7rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .teh-bg, .teh-ask, .teh-q, .teh-hair, .teh-inputrow, .teh-below, .teh-herochrome,
+  .teh-tieyebrow, .teh-scrim, .teh-ground, .teh-foothero, .teh-mark, .teh-caret, .teh-esc {
+    transition-duration: 0.001s !important;
+  }
+}
