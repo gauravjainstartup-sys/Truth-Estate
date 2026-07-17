@@ -47,10 +47,17 @@ jobs:
           restore-keys: media-cache-
       - run: npm run build
         env:
-          # PDFs above this many MB are not baked into the site (GitHub Pages
-          # caps the artifact at ~1 GB) — the card keeps its build-rendered
-          # cover and the click serves the file from Supabase Storage.
-          MEDIA_PDF_CAP_MB: "10"
+          # PDFs above this many MB are NOT baked — the card keeps its
+          # build-rendered cover and the click serves the file straight from
+          # Supabase Storage, which is billed egress on every open. The only
+          # over-cap files today are 3 brochures (22–39 MB, ~95 MB total), so
+          # a QA session that opens them repeatedly can burn gigabytes of
+          # Supabase egress. Baking them (well under GitHub's 100 MB/file and
+          # ~1 GB artifact limits) moves that traffic to GitHub Pages' free
+          # bandwidth — same viewer, same-origin, zero Supabase egress. Raised
+          # 10 → 50 for that reason. Watch the artifact total if many large
+          # brochures land later; a per-file cap is not a total-size budget.
+          MEDIA_PDF_CAP_MB: "50"
           # One consistent DB sample per build: the snapshot prebuild step
           # fills .data-snapshot and every page reads it, so a build can no
           # longer race the pipeline's table rewrite into half-empty pages.
