@@ -749,10 +749,10 @@ towers.forEach(t=>{const h=topH();
   // roof tiles (hidden until tower selected)
   t.tiles=[];t.tileGrp=new T.Group();t.tileGrp.visible=false;siteGrp.add(t.tileGrp);
   t.units.forEach(u=>{const w=u.x1-u.x0;
-    const tile=new T.Mesh(new T.BoxGeometry(w-1.2,1.6,u.zhw*2-1.2),new T.MeshStandardMaterial({color:CONFIGS[t.cfg].col,emissive:CONFIGS[t.cfg].col,emissiveIntensity:.55,roughness:.3,metalness:.15}));
+    const tile=new T.Mesh(new T.BoxGeometry(w-1.2,1.6,u.zhw*2-1.2),new T.MeshStandardMaterial({color:CONFIGS[u.cfg||t.cfg].col,emissive:CONFIGS[u.cfg||t.cfg].col,emissiveIntensity:.55,roughness:.3,metalness:.15}));
     const[ox,oz]=rotV(t.rot,u.cx,u.zc);tile.position.set(t.x+ox,h+0.8,t.z+oz);tile.rotation.y=t.rot;
     tile.userData={tower:t.id,unit:u.id};t.tileGrp.add(tile);tilePick.push(tile);u.tile=tile;
-    u.tileLabel=label(t.x+ox,t.z+oz,h+9,`Line ${String(u.id).slice(-2)}  ↑ tap`,{fs:38,scale:.72,bg:'rgba(11,18,14,.92)',border:CONFIGS[t.cfg].col,fg:'#ffffff'});u.tileLabel.visible=false;});
+    u.tileLabel=label(t.x+ox,t.z+oz,h+9,`Line ${String(u.id).slice(-2)}  ↑ tap`,{fs:38,scale:.72,bg:'rgba(11,18,14,.92)',border:CONFIGS[u.cfg||t.cfg].col,fg:'#ffffff'});u.tileLabel.visible=false;});
   t.tag=label(t.x,t.z,h+18,`${t.id} · ${t.cfg}`,{fs:46,scale:.82});
 });
 /* north compass */
@@ -913,7 +913,7 @@ function gradeColor(g){return g==='A+'?'#6dbf88':g==='A'?'#a8cf78':g==='B+'?'#e0
 
 function vastuFor(c){const d=(MODEL.vastu&&MODEL.vastu.direction&&MODEL.vastu.direction[c])||{s:3,n:'Workable with a considered internal layout.'};
   return{s:d.s,n:d.n,rooms:(MODEL.vastu&&MODEL.vastu.room)||{}};}
-/* plateCfg removed — plates never ship */
+/* plateCfg removed — plates never ship */   // per-corner config -> vastu plate (quad core)
 function vastuRoomScore(roomKey,t,u){const r=INTEL.get(t.id+'|'+u.id);const rr=r&&r.reasons&&r.reasons.rooms&&r.reasons.rooms[roomKey];
   if(rr)return{dir:rr.dir,score:rr.score,reason:rr.reason,ideal:rr.ideal};
   return{dir:'\u2014',score:3,reason:'',ideal:'NE'};}
@@ -1042,7 +1042,7 @@ function renderTowerPanel(){const t=selTower;document.getElementById('pClose').s
   html+='<div class="sech">Sun through the day · top floor</div><div class="chart" id="uChart"></div><div class="clegend" id="uLeg"></div>';
   html+='<div class="note">Living-facade scoring; primary facades inferred from the 2/3-to-core layout — send the plate key to lock them.</div>';
   html+='</div></details>';
-  html+='<div class="tpspec">G+38 · '+t.cfg+' · '+CONFIGS[t.cfg].saleable.toLocaleString()+' sq ft · '+t.core+' homes per floor per line</div>';
+  html+='<div class="tpspec">G+38 · '+CONFIGS[t.cfg].beds+' BHK · '+(function(){const s=[...new Set(t.units.map(u=>CONFIGS[u.cfg||t.cfg].saleable))].sort((a,b)=>a-b);return s.length>1?s[0].toLocaleString()+'–'+s[s.length-1].toLocaleString():s[0].toLocaleString();})()+' sq ft · '+t.core+' homes per floor per line</div>';
   const body=document.getElementById('pBody');body.innerHTML=html;body.scrollTop=0;
   body.querySelectorAll('.lc').forEach(el=>el.onclick=()=>openFlat(t,el.dataset.u));
   const vgoEl=document.getElementById('vdSee');if(vgoEl)vgoEl.onclick=e=>{e.stopPropagation();selectTower(scores[0].t.id);};
@@ -1054,11 +1054,11 @@ function renderTowerPanel(){const t=selTower;document.getElementById('pClose').s
   document.getElementById('uLeg').innerHTML=curves.map(c=>`<span><i style="background:${c.color}"></i>${c.r.u.id}</span>`).join('');}
 
 /* \u2500\u2500 flat 3D dollhouse \u2500\u2500 */
-const FLATW=MODEL.FLATW;   // M3M interior walls not traced yet (interior 3D "coming soon") — no stale data in the seed
-const DECKB={"3 BHK|101":180,"3 BHK|102":180,"3 BHK|103":180,"4 BHK|101":180,"4 BHK|102":180,"4 BHK|103":180,"5 BHK|101":0,"5 BHK|102":0,"5 BHK|103":0};
+const FLATW=MODEL.FLATW;   // M3M interior walls — traced from the official floor plans (4205/4520/4655)
+const DECKB={"4 BHK 4205|101":0,"4 BHK 4520|101":0,"4 BHK 4655|101":0};
 /* M3M brochure floor plans (2D) pending file upload. Interior 3D geometry not traced
    yet — the 2D plan is the source of truth; a fast-follow adds traced walls. */
-const PLANS={};   // M3M floor-plan images pending file upload (interior stays "coming soon")
+const PLANS={"4 BHK 4205|101":{"img":"plans/m3m-4205.webp","tex":"plans/m3m-4205-tex.webp"},"4 BHK 4520|101":{"img":"plans/m3m-4520.webp","tex":"plans/m3m-4520-tex.webp"},"4 BHK 4655|101":{"img":"plans/m3m-4655.webp","tex":"plans/m3m-4655-tex.webp"}};   // M3M 2D sanctioned floor plans (traced webp)
 function planFor(cfgKey,uid){return PLANS[cfgKey+'|'+uid]||PLANS[cfgKey+'|101'];}
 let f3=null;
 function f3sprite(txt,scale){
@@ -1136,7 +1136,7 @@ function buildFlat3D(cfgKey,uid,bearing){
   if(f3.g){f3.sc.remove(f3.g);f3.g.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(o.material.map)o.material.map.dispose();o.material.dispose();}});f3.g=null;}
   if(f3.na){f3.sc.remove(f3.na);if(f3.na.material.map)f3.na.material.map.dispose();f3.na.material.dispose();f3.na=null;}
   const _soon=document.getElementById('fs3dSoon'),_bw=document.getElementById('fsBtnWalk');
-  const L=null;   // M3M: interior 3D geometry not traced yet (first pass) — a fast-follow adds the traced walls
+  const L=FLATW[cfgKey+'|'+uid]||FLATW[cfgKey+'|101'];   // M3M: traced interior walls from the official floor plans
   if(!L){if(_soon)_soon.classList.add('on');return;}   // show the coming-soon placeholder for the interactive 3D (walk-through early-access stays available)
   const g=new THREE.Group();
   const s=22/L.iw,W=L.iw*s,D=L.ih*s,WH=1.02;
@@ -1174,7 +1174,7 @@ function buildFlat3D(cfgKey,uid,bearing){
   na.position.set(0,0.5,-(Math.max(W,D)/2+2.6));f3.sc.add(na);f3.na=na;
   f3.rad=Math.max(W,D)*1.15;f3.az=-0.55;f3.pol=0.85;f3.auto=true;}
 /* walk-through: first-person mode */
-const SPAWN={"3 BHK|101":{"x":320,"y":266,"yaw":0},"3 BHK|102":{"x":320,"y":266,"yaw":0},"3 BHK|103":{"x":280,"y":415,"yaw":0},"4 BHK|101":{"x":320,"y":263,"yaw":0},"4 BHK|102":{"x":320,"y":263,"yaw":0},"4 BHK|103":{"x":280,"y":409,"yaw":0},"5 BHK|101":{"x":320,"y":213,"yaw":180},"5 BHK|102":{"x":320,"y":213,"yaw":180},"5 BHK|103":{"x":280,"y":421,"yaw":180}};
+const SPAWN={"4 BHK 4205|101":{"x":320,"y":298,"yaw":0},"4 BHK 4520|101":{"x":320,"y":294,"yaw":0},"4 BHK 4655|101":{"x":320,"y":285,"yaw":0}};
 function walkCollide(x,z,r){
   const C=(f3&&f3.colliders)||[];
   for(let i=0;i<C.length;i++){const c=C[i];
@@ -1319,7 +1319,7 @@ function sunFloorHTML(t,u,fl,oppSt){
 function openFlat(t,uid,keepFloor){
   selUnit=uid;
   const rec=((selData||[]).find(x=>x.u.id===uid))||t.units.map(u=>({u,st:unitStats(t,u,2,0.3)})).find(x=>x.u.id===uid);
-  const u=rec.u,st=rec.st,cfg=CONFIGS[t.cfg],compass=vfacing(t,u),b=((t.id==='T-7'||t.id==='T-8')?{N:0,NE:45,E:90,SE:135,S:180,SW:225,W:270,NW:315}[compass]:bearingOf(t,u.primL)),v=vastuFor(compass);
+  const u=rec.u,st=rec.st,cfg=CONFIGS[u.cfg||t.cfg],compass=vfacing(t,u),b=((t.id==='T-7'||t.id==='T-8')?{N:0,NE:45,E:90,SE:135,S:180,SW:225,W:270,NW:315}[compass]:bearingOf(t,u.primL)),v=vastuFor(compass);
   const lakeFacing=u.prim==='lake',isEnd=u.faces.length>=3;
   const sunQ=st.rawAvg<0.4?'No direct sun':st.amAvg>st.pmAvg*1.4?'Morning sun':st.pmAvg>st.amAvg*1.4?'Afternoon sun':'All-day sun';
   const sunStars=Math.max(0,Math.min(5,Math.round(st.rawAvg/2)));
@@ -1331,16 +1331,16 @@ function openFlat(t,uid,keepFloor){
   document.getElementById('flatSheet').classList.remove('details-open');
   document.getElementById('fsEy').textContent='Flat intelligence \u00b7 '+benchShort[String(decl)];
   document.getElementById('fsName').textContent=`${t.id} \u00b7 Flat ${u.id}`;
-  document.getElementById('fsSub').textContent=`${t.cfg} \u00b7 ${cfg.saleable.toLocaleString()} sq ft saleable \u00b7 G+38 \u00b7 ${t.core}-to-core`;
+  document.getElementById('fsSub').textContent=`${u.cfg||t.cfg} \u00b7 ${cfg.saleable.toLocaleString()} sq ft saleable \u00b7 G+38 \u00b7 ${t.core}-to-core`;
   (function(){const gc=gradeColor(fscore.grade),gEl=document.getElementById('fsGrade');
     if(gEl){gEl.style.setProperty('--gc',gc);gEl.style.setProperty('--gp',fscore.s);
       gEl.innerHTML=`<div class="gr-s">${fscore.s}</div><div class="gr-o">/100</div><div class="gr-g" style="background:${gc}">${fscore.grade}</div>`;}
     const vEl=document.getElementById('fsVerdict');
     if(vEl)vEl.innerHTML=`<b>${compass}-facing.</b> ${st.rawAvg>=4?`Strong winter sun (${st.rawAvg.toFixed(1)}h)`:st.rawAvg>=1.5?`Limited winter sun (${st.rawAvg.toFixed(1)}h)`:'No direct winter sun'} \u00b7 ${lakeFacing?'lagoon views':'perimeter views'} \u00b7 ${isEnd?'3-side cross-airflow':'2-side airflow'}.`;})();
-  (function(){const _pf=planFor(t.cfg,u.id),_fi=document.getElementById('fsImg'),_b2=document.getElementById('fsBtn2d');
+  (function(){const _pf=planFor(u.cfg||t.cfg,u.id),_fi=document.getElementById('fsImg'),_b2=document.getElementById('fsBtn2d');
     if(_pf&&_pf.img){if(_fi)_fi.src=_pf.img;if(_b2)_b2.style.display='';}
     else{if(_fi)_fi.removeAttribute('src');if(_b2)_b2.style.display='none';}})(); // no per-unit plan webp for this project yet — 3D is the media
-  buildFlat3D(t.cfg,u.id,b);(function(){const _c=document.querySelector('#fs3d .fs3d-cap');if(_c)_c.innerHTML='';if(f3)f3.capOrbit='';})();setFsView('2d');
+  buildFlat3D(u.cfg||t.cfg,u.id,b);(function(){const _c=document.querySelector('#fs3d .fs3d-cap');if(_c)_c.innerHTML='';if(f3)f3.capOrbit='';})();setFsView('2d');
   /* score strip */
   document.getElementById('fsCap').innerHTML=`
      <div class="fs-scorestrip">${[['\u2600 Morning',fscore.sub.morning],['\u2744 Summer cool',fscore.sub.cool],['\u262f Vastu',fscore.sub.vastu],['\u25c9 View',fscore.sub.view],['\u2248 Airflow',fscore.sub.vent],['\u25a4 Floor',fscore.sub.floor]].map(m=>`<div class="fs-sc"><span class="fs-sc-k">${m[0]}</span><span class="fs-sc-v" style="color:${scCol(m[1])}">${m[1]}</span><div class="fs-sc-bar"><div class="fs-sc-fill" style="width:${m[1]}%;background:${scCol(m[1])}"></div></div><span class="fs-sc-tag">of 100</span></div>`).join('')}

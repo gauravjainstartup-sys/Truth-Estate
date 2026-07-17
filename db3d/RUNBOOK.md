@@ -86,7 +86,7 @@ Expected rows per slug:
 | signature-global-titanium-spr | 7 | 2 | 3 | 5 | 16 |
 | elan-the-presidential | 8 | 3 | 6 | 9 | 24 |
 | elan-the-emperor | 5 | 2 | 6 | 9 | 15 |
-| m3m-residences-by-elie-saab | 3 | 3 | 6 | 0 | 12 |
+| m3m-residences-by-elie-saab | 3 | 3 | 6 | 3 | 12 |
 
 ```sql
 select slug, count(*) from project_3d_towers group by slug;
