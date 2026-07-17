@@ -148,7 +148,7 @@ body {
    HOME HERO — the ask line blooms into a full-screen search terminal.
    Namespaced .teh-* ; the .open class on .teh-stage drives every state.
    ════════════════════════════════════════════════════════════════ */
-.teh-stage { --askTop: 54vh; }
+.teh-stage { --askTop: calc(36vh + 220px); } /* anchored below the headline (fixed height) so it never collides on short viewports */
 .teh-stage.open { --askTop: 23vh; }
 
 .teh-bg {
