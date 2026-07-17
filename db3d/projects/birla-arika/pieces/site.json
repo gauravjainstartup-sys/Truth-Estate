@@ -1,0 +1,67 @@
+{
+  "slug": "birla-arika",
+  "name": "Birla Arika",
+  "latitudeRad": 0.49655484647876913,
+  "latitudeDeg": 28.4505,
+  "floors": 40,
+  "floorHeightM": 3.45,
+  "lobbyHeightM": 10,
+  "northCalRad": 0,
+  "northCalDeg": 0,
+  "sunBenchmarkHours": 4,
+  "westWeight": 0.6,
+  "sunRayLenM": 1200,
+  "lake": {
+    "x": 0,
+    "z": 0
+  },
+  "scaleMPerPx": 0.2063,
+  "pxOriginX": 985,
+  "pxOriginY": 655,
+  "boundaryPx": [
+    [
+      470,
+      118
+    ],
+    [
+      1338,
+      118
+    ],
+    [
+      1338,
+      645
+    ],
+    [
+      1988,
+      645
+    ],
+    [
+      1988,
+      1235
+    ],
+    [
+      752,
+      1235
+    ],
+    [
+      752,
+      820
+    ],
+    [
+      690,
+      820
+    ],
+    [
+      690,
+      390
+    ],
+    [
+      470,
+      390
+    ],
+    [
+      470,
+      118
+    ]
+  ]
+}

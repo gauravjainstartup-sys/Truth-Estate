@@ -1,0 +1,92 @@
+[
+  {
+    "slug": "birla-arika",
+    "config": "Type 1 · 4300",
+    "offsets": {
+      "living": 6,
+      "masterBed": 0,
+      "kitchen": 5,
+      "bed2": 3,
+      "bed3": 4,
+      "study": 6,
+      "pooja": 4,
+      "bathroom": 1,
+      "entrance": 6
+    }
+  },
+  {
+    "slug": "birla-arika",
+    "config": "Type 2 · 4300",
+    "offsets": {
+      "living": 2,
+      "masterBed": 0,
+      "kitchen": 3,
+      "bed2": 5,
+      "bed3": 4,
+      "study": 2,
+      "pooja": 4,
+      "bathroom": 7,
+      "entrance": 2
+    }
+  },
+  {
+    "slug": "birla-arika",
+    "config": "Type 3 · 4300",
+    "offsets": {
+      "living": 6,
+      "masterBed": 0,
+      "kitchen": 5,
+      "bed2": 2,
+      "bed3": 3,
+      "study": 6,
+      "pooja": 3,
+      "bathroom": 1,
+      "entrance": 6
+    }
+  },
+  {
+    "slug": "birla-arika",
+    "config": "Type 4 · 4300",
+    "offsets": {
+      "living": 2,
+      "masterBed": 0,
+      "kitchen": 3,
+      "bed2": 6,
+      "bed3": 5,
+      "study": 2,
+      "pooja": 4,
+      "bathroom": 7,
+      "entrance": 2
+    }
+  },
+  {
+    "slug": "birla-arika",
+    "config": "Type 5 · 4900",
+    "offsets": {
+      "living": 0,
+      "masterBed": 7,
+      "kitchen": 2,
+      "bed2": 5,
+      "bed3": 4,
+      "study": 0,
+      "pooja": 3,
+      "bathroom": 6,
+      "entrance": 2
+    }
+  },
+  {
+    "slug": "birla-arika",
+    "config": "Type 6 · 4900",
+    "offsets": {
+      "living": 0,
+      "masterBed": 1,
+      "kitchen": 6,
+      "bed2": 3,
+      "bed3": 4,
+      "study": 0,
+      "pooja": 5,
+      "bathroom": 2,
+      "entrance": 6
+    }
+  }
+]

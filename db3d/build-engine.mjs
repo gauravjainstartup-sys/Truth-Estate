@@ -91,6 +91,10 @@ function replaceFn(code, name, replacement) {
   for (; i < code.length; i++) {
     const ch = code[i];
     if (inStr) { if (ch === inStr && code[i - 1] !== "\\") inStr = null; continue; }
+    // skip comments — an unpaired apostrophe in a data-block note (e.g. "the
+    // line's deck facade") must not desync the scan; same guard as swapBalanced.
+    if (ch === "/" && code[i + 1] === "*") { const e = code.indexOf("*/", i + 2); i = e < 0 ? code.length : e + 1; continue; }
+    if (ch === "/" && code[i + 1] === "/") { const e = code.indexOf("\n", i + 2); i = e < 0 ? code.length : e - 1; continue; }
     if (ch === '"' || ch === "'" || ch === "`") { inStr = ch; continue; }
     if (ch === "{") depth++;
     else if (ch === "}") { depth--; if (depth === 0) break; }

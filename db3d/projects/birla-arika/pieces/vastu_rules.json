@@ -1,0 +1,194 @@
+{
+  "generic_offsets": {
+    "kitchen": 2,
+    "masterBed": 4,
+    "bed2": 5,
+    "bed3": 3,
+    "living": 0,
+    "bathroom": 2,
+    "pooja": -1,
+    "study": 3
+  },
+  "direction": {
+    "NE": {
+      "s": 5,
+      "n": "NE-facing is the most auspicious orientation — ideal for the entrance and living zone; the Ishan corner draws positive energy."
+    },
+    "N": {
+      "s": 4,
+      "n": "North-facing is highly auspicious — the Kuber (wealth) direction. Excellent for the living room and main entrance."
+    },
+    "E": {
+      "s": 4,
+      "n": "East-facing brings the sunrise energy — very good for the living room and dining where morning light is welcome."
+    },
+    "SE": {
+      "s": 3,
+      "n": "South-east is the Agni (fire) corner — ideal for the kitchen. The living zone here benefits from corrections to channel fire energy positively."
+    },
+    "SW": {
+      "s": 3,
+      "n": "South-west is the Nairutya (earth/stability) zone — the master bedroom corner. Living areas here need heavy south-west anchoring."
+    },
+    "W": {
+      "s": 3,
+      "n": "West-facing is neutral. Bedrooms in the west are acceptable; the living area can be balanced with lighter north-east furnishing."
+    },
+    "S": {
+      "s": 2,
+      "n": "South-facing needs careful planning — remedies include a heavy south wall and keeping the north-east light and open."
+    },
+    "NW": {
+      "s": 3,
+      "n": "North-west is the Vayu (air) zone — fine for guest rooms; the living area benefits from stable south-west furniture anchoring."
+    }
+  },
+  "room": {
+    "kitchen": {
+      "ideal": "SE",
+      "good": [
+        "S"
+      ],
+      "ok": [
+        "NW"
+      ],
+      "bad": [
+        "NE",
+        "N",
+        "SW",
+        "W",
+        "E"
+      ],
+      "reason": "Kitchen belongs in the SE (Agni corner); south works, NW is a fallback. NE or north kitchens set fire and water energies in conflict."
+    },
+    "masterBed": {
+      "ideal": "SW",
+      "good": [
+        "S",
+        "W"
+      ],
+      "ok": [
+        "NW"
+      ],
+      "bad": [
+        "NE",
+        "N",
+        "E",
+        "SE"
+      ],
+      "reason": "Master bedroom in the SW (earth zone) promotes restful sleep and stability. Sleep with head pointing south or east."
+    },
+    "bed2": {
+      "ideal": "W",
+      "good": [
+        "S",
+        "SW"
+      ],
+      "ok": [
+        "NW",
+        "NE"
+      ],
+      "bad": [
+        "N",
+        "SE"
+      ],
+      "reason": "Secondary bedrooms suit the west or south — stable, with afternoon light. NE is acceptable for unmarried children."
+    },
+    "bed3": {
+      "ideal": "NW",
+      "good": [
+        "W",
+        "N"
+      ],
+      "ok": [
+        "NE",
+        "E"
+      ],
+      "bad": [
+        "SE",
+        "S",
+        "SW"
+      ],
+      "reason": "Guest and children’s rooms suit the NW (Vayu zone). Children sleep with head to the south or east; avoid the SE for kids."
+    },
+    "living": {
+      "ideal": "NE",
+      "good": [
+        "N",
+        "E"
+      ],
+      "ok": [
+        "W",
+        "NW"
+      ],
+      "bad": [
+        "S",
+        "SE",
+        "SW"
+      ],
+      "reason": "Living room in the NE or north draws prosperity; seating should face east or north. Keep the NE corner light and uncluttered."
+    },
+    "bathroom": {
+      "ideal": "NW",
+      "good": [
+        "W"
+      ],
+      "ok": [
+        "SE"
+      ],
+      "bad": [
+        "NE",
+        "SW"
+      ],
+      "reason": "Toilets belong in the NW or west. The NE (Ishan kona) must never host a wet area; SW toilets weaken household stability."
+    },
+    "pooja": {
+      "ideal": "NE",
+      "good": [
+        "E"
+      ],
+      "ok": [
+        "N"
+      ],
+      "bad": [
+        "S",
+        "W",
+        "SW",
+        "SE"
+      ],
+      "reason": "Puja room belongs in the NE (Ishan kona) — the most sacred zone. Deity faces east or west; the devotee faces east or north."
+    },
+    "study": {
+      "ideal": "W",
+      "good": [
+        "N",
+        "E"
+      ],
+      "ok": [
+        "NE"
+      ],
+      "bad": [
+        "S",
+        "SW"
+      ],
+      "reason": "Home office: west aids concentration, north (Kuber) attracts prosperity. Sit facing east or north while working."
+    },
+    "entrance": {
+      "ideal": "NE",
+      "good": [
+        "N",
+        "E"
+      ],
+      "ok": [
+        "W",
+        "NW"
+      ],
+      "bad": [
+        "S",
+        "SW",
+        "SE"
+      ],
+      "reason": "The main door is most auspicious in the NE, N or E (the Ishan–Kuber arc); W and NW are workable; S, SW and SE entries are cautioned and rely on remedies."
+    }
+  }
+}
