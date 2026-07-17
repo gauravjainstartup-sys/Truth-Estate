@@ -304,7 +304,7 @@ export default function Hero({ index }: { index: OmniIndex }) {
 
           {/* Operating philosophy — quietly revealed at the foot of the hero */}
           <div className={`max-w-md transition-opacity duration-1000 ${live ? "opacity-25" : ""}`}>
-            <p className="font-serif text-[22px] italic leading-[1.7] text-[#A7A29B]">
+            <p className="font-serif text-[20px] font-medium leading-[1.7] tracking-[0.005em] text-[#b3aea7]">
               Independent by design. No developer&rsquo;s rupee, ever.
             </p>
           </div>
@@ -390,7 +390,7 @@ export default function Hero({ index }: { index: OmniIndex }) {
 
           {/* Operating philosophy — quietly revealed at the foot of the hero */}
           <div className={`mt-auto transition-opacity duration-1000 ${live ? "opacity-25" : ""}`}>
-            <p className="font-serif text-[18px] italic leading-[1.7] text-[#A7A29B]">
+            <p className="font-serif text-[17px] font-medium leading-[1.7] tracking-[0.005em] text-[#b3aea7]">
               Independent by design. No developer&rsquo;s rupee, ever.
             </p>
           </div>
