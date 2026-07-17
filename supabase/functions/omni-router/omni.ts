@@ -68,8 +68,9 @@ export type Parsed = {
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 
 /* corridor / locality aliases → substring needles matched against
-   project.location (live text). Deterministic, no geocoding. */
-const AREA_ALIASES: [RegExp, string, string][] = [
+   project.location (live text). Deterministic, no geocoding.
+   Exported: the home hero renders corridor suggestions from the same list. */
+export const AREA_ALIASES: [RegExp, string, string][] = [
   [/golf course ext|gce\b|golf course extension/, "golf course ext", "Golf Course Extension"],
   [/golf course road|gcr\b/, "golf course road", "Golf Course Road"],
   [/dwarka/, "dwarka", "Dwarka Expressway"],
