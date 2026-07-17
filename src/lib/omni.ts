@@ -1,0 +1,181 @@
+/* ════════════════════════════════════════════════════════════════
+   OMNI — the Truth Intelligence omnibox brain, Phase 1 (deterministic).
+
+   Conversational INPUT, forensic OUTPUT: this layer parses a free-text
+   ask into visible filter chips and screens the build-time project
+   index. No model, no generation — every number the canvas shows comes
+   from a DB row carried in the index. Phase 2 swaps `parseAsk` for the
+   LLM router; the chip/canvas contract stays identical.
+   ════════════════════════════════════════════════════════════════ */
+
+export type OmniUnit = {
+  tower: string;
+  unit: string;
+  config: string;
+  score: number;
+  grade: string;
+  facing: string;
+  sunWinterH: number | null;
+  vastu: number | null;
+  view: number | null;
+};
+
+export type OmniProject = {
+  slug: string;
+  name: string;
+  developer: string | null;
+  location: string | null;
+  score: number | null;
+  minPriceCr: number | null;
+  minBhk: number | null;
+  config: string | null;
+  deliveryYear: number | null;
+  redFlags: number | null;
+  delayRisk: string | null;
+  has3D: boolean;
+  advisorFile: string | null;
+  lat: number | null;
+  lng: number | null;
+};
+
+export type OmniIndex = {
+  projects: OmniProject[];
+  units: Record<string, OmniUnit[]>; // slug → top lines (modelled projects only)
+  live: boolean; // true when built from the live backlog view
+};
+
+/* ── chips: the visible, removable query state ── */
+export type Chip =
+  | { key: "bhk"; bhk: number; label: string }
+  | { key: "budget"; maxCr: number; label: string }
+  | { key: "area"; needle: string; label: string }
+  | { key: "sun"; label: string }
+  | { key: "vastu"; label: string }
+  | { key: "possession"; byYear: number; label: string }
+  | { key: "lowrisk"; label: string };
+
+export type Parsed = {
+  intent: "navigate" | "units" | "screen" | "compare" | "question";
+  chips: Chip[];
+  project?: OmniProject; // navigate / units target
+};
+
+const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+
+/* corridor / locality aliases → substring needles matched against
+   project.location (live text). Deterministic, no geocoding. */
+const AREA_ALIASES: [RegExp, string, string][] = [
+  [/golf course ext|gce\b|golf course extension/, "golf course ext", "Golf Course Extension"],
+  [/golf course road|gcr\b/, "golf course road", "Golf Course Road"],
+  [/dwarka/, "dwarka", "Dwarka Expressway"],
+  [/\bspr\b|southern peripheral/, "spr", "SPR"],
+  [/sohna/, "sohna", "Sohna"],
+  [/new gurgaon/, "new gurgaon", "New Gurgaon"],
+];
+
+export function matchProject(q: string, index: OmniIndex): OmniProject | undefined {
+  const n = norm(q);
+  if (n.length < 3) return undefined;
+  // exact name containment either way (typing a prefix of the name, or the name inside a question)
+  return (
+    index.projects.find((p) => norm(p.name) === n) ??
+    index.projects.find((p) => n.includes(norm(p.name))) ??
+    index.projects.find((p) => norm(p.name).includes(n) && n.length >= 5)
+  );
+}
+
+export function typeahead(q: string, index: OmniIndex, limit = 6): OmniProject[] {
+  const n = norm(q);
+  if (!n) return [];
+  const starts = index.projects.filter((p) => norm(p.name).startsWith(n));
+  const contains = index.projects.filter((p) => !norm(p.name).startsWith(n) && norm(p.name).includes(n));
+  return [...starts, ...contains].slice(0, limit);
+}
+
+export function parseAsk(qRaw: string, index: OmniIndex): Parsed {
+  const q = norm(qRaw);
+  const chips: Chip[] = [];
+
+  if (/\bvs\b|\bversus\b|compare/.test(q)) return { intent: "compare", chips };
+
+  const bhk = /(\d(?:\.\d)?)\s*bhk/.exec(q);
+  if (bhk) chips.push({ key: "bhk", bhk: parseFloat(bhk[1]), label: `${bhk[1]} BHK` });
+
+  const budget = /(?:under|below|upto|up to|within|max|<|≤)?\s*(?:₹|rs\.?|inr)?\s*(\d+(?:\.\d+)?)\s*(?:cr|crore)/.exec(q);
+  if (budget) chips.push({ key: "budget", maxCr: parseFloat(budget[1]), label: `≤ ₹${budget[1]} Cr` });
+
+  for (const [re, needle, label] of AREA_ALIASES) {
+    if (re.test(q)) { chips.push({ key: "area", needle, label }); break; }
+  }
+  const sector = /sector\s*(\d+[a-z]?)/.exec(q);
+  if (sector && !chips.some((c) => c.key === "area"))
+    chips.push({ key: "area", needle: `sector ${sector[1]}`, label: `Sector ${sector[1].toUpperCase()}` });
+
+  if (/morning sun|winter sun|sunlight|\bsun\b|sunny/.test(q)) chips.push({ key: "sun", label: "winter sun (modelled)" });
+  if (/vastu|vaastu/.test(q)) chips.push({ key: "vastu", label: "vastu-scored (modelled)" });
+
+  const poss = /(?:before|by|possession[^0-9]{0,12})\s*(20\d\d)/.exec(q);
+  if (poss) chips.push({ key: "possession", byYear: parseInt(poss[1], 10), label: `possession ≤ ${poss[1]}` });
+
+  if (/low risk|safe|no red flags|clean legal/.test(q)) chips.push({ key: "lowrisk", label: "low delivery risk" });
+
+  const project = matchProject(q, index);
+  const unitWords = /\b(flat|unit|line|floor|tower|which)\b|vastu|sun/.test(q);
+  if (project && unitWords && index.units[project.slug]?.length) return { intent: "units", chips, project };
+  if (project && chips.length === 0) return { intent: "navigate", chips, project };
+  if (chips.length > 0) return { intent: "screen", chips, project };
+  return { intent: "question", chips };
+}
+
+/* ── screening: filter + rank the index with visible reasons ── */
+export type Ranked = { p: OmniProject; why: { label: string; warn?: boolean }[] };
+
+export function screen(index: OmniIndex, chips: Chip[]): Ranked[] {
+  const bhk = chips.find((c) => c.key === "bhk") as Extract<Chip, { key: "bhk" }> | undefined;
+  const budget = chips.find((c) => c.key === "budget") as Extract<Chip, { key: "budget" }> | undefined;
+  const area = chips.find((c) => c.key === "area") as Extract<Chip, { key: "area" }> | undefined;
+  const poss = chips.find((c) => c.key === "possession") as Extract<Chip, { key: "possession" }> | undefined;
+  const wantSun = chips.some((c) => c.key === "sun");
+  const wantVastu = chips.some((c) => c.key === "vastu");
+  const lowRisk = chips.some((c) => c.key === "lowrisk");
+
+  const out: Ranked[] = [];
+  for (const p of index.projects) {
+    if (bhk != null) {
+      // config text like "3 | 4" / "3, 4 BHK" or minBhk number — match either
+      const inConfig = p.config ? p.config.toLowerCase().includes(String(bhk.bhk)) : false;
+      const minOk = p.minBhk != null && p.minBhk <= bhk.bhk;
+      if (!inConfig && !minOk) continue;
+    }
+    if (budget && p.minPriceCr != null && p.minPriceCr > budget.maxCr) continue;
+    if (area && !(p.location ?? "").toLowerCase().includes(area.needle)) continue;
+    if (poss && p.deliveryYear != null && p.deliveryYear > poss.byYear) continue;
+    if (lowRisk && (p.redFlags ?? 0) > 0) continue;
+
+    const units = index.units[p.slug] ?? [];
+    const bestSun = units.length ? Math.max(...units.map((u) => u.sunWinterH ?? 0)) : null;
+    if (wantSun && units.length && (bestSun ?? 0) < 2) continue; // modelled and provably sun-starved
+
+    const why: Ranked["why"] = [];
+    if (p.score != null) why.push({ label: `Truth Score ${p.score}` });
+    if (p.config) why.push({ label: p.config.includes("BHK") ? p.config : `${p.config} BHK` });
+    if (p.minPriceCr != null) why.push({ label: `from ₹${p.minPriceCr} Cr` });
+    if (p.deliveryYear != null) why.push({ label: `possession ${p.deliveryYear}` });
+    if (wantSun && bestSun != null) why.push({ label: `best line ${bestSun.toFixed(1)}h winter sun` });
+    if (wantVastu && units.length) why.push({ label: "room-by-room vastu modelled" });
+    if ((p.redFlags ?? 0) > 0) why.push({ label: `${p.redFlags} red flag${p.redFlags === 1 ? "" : "s"}`, warn: true });
+    if (p.delayRisk && /high|elevated/i.test(p.delayRisk)) why.push({ label: `delay risk ${p.delayRisk.toLowerCase()}`, warn: true });
+
+    // rank: score first; a sun ask nudges modelled sunny projects up
+    const rank = (p.score ?? 0) + (wantSun && bestSun != null ? Math.min(bestSun, 10) : 0) + (p.has3D ? 2 : 0);
+    out.push({ p, why });
+    (out[out.length - 1] as Ranked & { rank?: number }).rank = rank;
+  }
+  out.sort((a, b) => ((b as Ranked & { rank?: number }).rank ?? 0) - ((a as Ranked & { rank?: number }).rank ?? 0));
+  return out;
+}
+
+/* top lines for a modelled project, already sorted by composite in the index */
+export function topUnits(index: OmniIndex, slug: string, n = 3): OmniUnit[] {
+  return (index.units[slug] ?? []).slice(0, n);
+}

@@ -19,6 +19,18 @@ import { DEVELOPERS } from "@/lib/developers";
 import { MARKETS } from "@/lib/markets";
 import { comparePairSlug } from "@/lib/compare";
 import ProjectOptionCard from "./ProjectOptionCard";
+import {
+  parseAsk,
+  screen,
+  topUnits,
+  typeahead,
+  type Chip,
+  type OmniIndex,
+  type OmniProject,
+  type Parsed,
+} from "@/lib/omni";
+
+const EMPTY_INDEX: OmniIndex = { projects: [], units: {}, live: false };
 
 /* ════════════════════════════════════════════════════════════════
    VIEW TYPES — the workspace is the research desk: the home surface
@@ -27,7 +39,8 @@ import ProjectOptionCard from "./ProjectOptionCard";
    ════════════════════════════════════════════════════════════════ */
 type View =
   | { type: "home" }
-  | { type: "search-result"; query: string; result: ResearchResult };
+  | { type: "search-result"; query: string; result: ResearchResult }
+  | { type: "canvas"; query: string; parsed: Parsed };
 
 /* Resolve an entity name to its real routed page. */
 function entityHref(name: string): { kind: "project" | "developer" | "market"; slug: string; href: string } | null {
@@ -65,7 +78,7 @@ const INVESTMENT_THEMES = [
 /* ════════════════════════════════════════════════════════════════
    INTELLIGENCE WORKSPACE — main export
    ════════════════════════════════════════════════════════════════ */
-export default function IntelligenceWorkspace() {
+export default function IntelligenceWorkspace({ index = EMPTY_INDEX }: { index?: OmniIndex }) {
   const [view, setView] = useState<View>({ type: "home" });
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -84,6 +97,19 @@ export default function IntelligenceWorkspace() {
     setSearchOpen(false);
     setSearchQuery("");
     setRecentSearches((h) => [q, ...h.filter((x) => x !== q)].slice(0, 6));
+    /* omnibox intent routing — deterministic, no generation:
+       a bare project name navigates; a constrained or unit-level ask opens
+       the answer canvas; everything else stays a TruthGuide research brief. */
+    const parsed = parseAsk(q, index);
+    if (parsed.intent === "navigate" && parsed.project) {
+      window.location.href = `${basePath}/intelligence/projects/${parsed.project.slug}`;
+      return;
+    }
+    if ((parsed.intent === "screen" && parsed.chips.length > 0) || parsed.intent === "units") {
+      setView({ type: "canvas", query: q, parsed });
+      mainRef.current?.scrollTo(0, 0);
+      return;
+    }
     const r = classifyAndResearch(q);
     setView({ type: "search-result", query: q, result: r });
     mainRef.current?.scrollTo(0, 0);
@@ -227,8 +253,11 @@ export default function IntelligenceWorkspace() {
 
       {/* ── Main content — full width; catalogues live on their own routes ── */}
       <main ref={mainRef} className="min-h-0 flex-1 overflow-y-auto">
-        {view.type === "home" && <HomeView doSearch={doSearch} recentSearches={recentSearches} />}
+        {view.type === "home" && <HomeView doSearch={doSearch} recentSearches={recentSearches} index={index} />}
         {view.type === "search-result" && <SearchResultView result={view.result} doSearch={doSearch} />}
+        {view.type === "canvas" && (
+          <CanvasView key={view.query} query={view.query} parsed={view.parsed} index={index} onQuestion={doSearch} />
+        )}
       </main>
     </div>
   );
@@ -237,7 +266,7 @@ export default function IntelligenceWorkspace() {
 /* ════════════════════════════════════════════════════════════════
    HOME VIEW
    ════════════════════════════════════════════════════════════════ */
-function HomeView({ doSearch, recentSearches }: { doSearch: (q: string) => void; recentSearches: string[] }) {
+function HomeView({ doSearch, recentSearches, index }: { doSearch: (q: string) => void; recentSearches: string[]; index: OmniIndex }) {
   const [query, setQuery] = useState("");
   const [phIdx, setPhIdx] = useState(0);
   const [phFade, setPhFade] = useState(true);
@@ -255,6 +284,12 @@ function HomeView({ doSearch, recentSearches }: { doSearch: (q: string) => void;
 
   const sorted = useMemo(() => [...PROJECTS].sort((a, b) => b.truthScore - a.truthScore), []);
 
+  /* layer 1 — instant, local, deterministic */
+  const hits = useMemo(() => typeahead(query, index, 5), [query, index]);
+  const parsed = useMemo(() => (query.trim().length >= 6 ? parseAsk(query, index) : null), [query, index]);
+  const showAsk = parsed != null && parsed.chips.length > 0;
+  const trackedCount = index.projects.length;
+
   return (
     <div className="px-6 pb-24 md:px-12 lg:px-16">
       {/* Hero */}
@@ -263,8 +298,13 @@ function HomeView({ doSearch, recentSearches }: { doSearch: (q: string) => void;
           Truth Intelligence
         </p>
         <h1 className="mx-auto max-w-[600px] font-serif text-[2.2rem] font-medium leading-[1.12] text-[#1a1a1a] md:text-[3rem]">
-          Independent research for India&apos;s biggest real estate decisions.
+          {trackedCount > 0
+            ? `Ask anything about ${trackedCount} tracked projects.`
+            : "Independent research for India's biggest real estate decisions."}
         </h1>
+        <p className="mx-auto mt-4 max-w-[520px] text-[0.86rem] font-light leading-[1.7] text-[#1a1a1a]/40">
+          Independent research for India&apos;s biggest real estate decisions — every answer built from evidence, down to the exact flat.
+        </p>
       </div>
 
       {/* Universal search */}
@@ -296,6 +336,51 @@ function HomeView({ doSearch, recentSearches }: { doSearch: (q: string) => void;
             <svg className="h-3.5 w-3.5 transition-transform duration-300 group-hover/arrow:translate-x-[3px] md:h-4 md:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </button>
         </div>
+        {/* Layer 1 — instant results + the ask-preview (deterministic, <100 ms) */}
+        {(hits.length > 0 || showAsk) && query.trim() !== "" && (
+          <div className="mt-2 overflow-hidden rounded-2xl border border-[#1a1a1a]/[0.08] bg-white shadow-xl shadow-black/[0.06]">
+            {showAsk && parsed && (
+              <div className="border-b border-[#1a1a1a]/[0.05] bg-gradient-to-r from-[#c9a96e]/[0.08] to-transparent px-5 py-3.5">
+                <p className="mb-2 text-[8.5px] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/35">
+                  I&apos;ll search {trackedCount} projects with
+                </p>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {parsed.chips.map((c) => (
+                    <span key={c.key + c.label} className="rounded-full border border-[#1e6b45]/30 bg-[#1e6b45]/[0.06] px-3 py-1 text-[0.72rem] font-medium text-[#1e6b45]">
+                      {c.label}
+                    </span>
+                  ))}
+                  <button onClick={() => doSearch(query)}
+                    className="ml-1 text-[0.74rem] font-medium text-[#c9a96e] transition-colors hover:text-[#a8863f]">
+                    ✦ Enter — open the answer canvas
+                  </button>
+                </div>
+              </div>
+            )}
+            {hits.map((p) => (
+              <div key={p.slug} className="flex items-center justify-between gap-3 border-b border-[#1a1a1a]/[0.04] px-5 py-3 last:border-b-0">
+                <a href={`${basePath}/intelligence/projects/${p.slug}`} className="min-w-0 flex-1">
+                  <span className="font-serif text-[0.95rem] font-medium text-[#1a1a1a]">{p.name}</span>
+                  {p.has3D && (
+                    <span className="ml-2 rounded border border-[#c9a96e]/60 px-1.5 py-0.5 text-[8px] font-bold tracking-[0.08em] text-[#c9a96e]">3D LIVE</span>
+                  )}
+                  <span className="mt-0.5 block truncate text-[0.72rem] font-light text-[#1a1a1a]/35">
+                    {[p.location, p.developer].filter(Boolean).join(" · ")}
+                  </span>
+                </a>
+                <div className="flex shrink-0 items-center gap-2">
+                  {p.score != null && <span className="rounded-md bg-[#1e6b45]/[0.08] px-2 py-1 font-mono text-[0.78rem] font-bold text-[#1e6b45]">{p.score}</span>}
+                  <a href={`${basePath}/intelligence/projects/${p.slug}`}
+                    className="rounded-md border border-[#1e6b45]/35 px-2.5 py-1 text-[0.68rem] font-medium text-[#1e6b45]">Report</a>
+                  {p.advisorFile && (
+                    <a href={`${basePath}/${p.advisorFile}`}
+                      className="rounded-md bg-[#1e6b45] px-2.5 py-1 text-[0.68rem] font-medium text-white">3D</a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
         {recentSearches.length > 0 && (
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 px-1">
             <span className="text-[0.62rem] font-light uppercase tracking-[0.18em] text-[#1a1a1a]/25">Recent</span>
@@ -312,7 +397,7 @@ function HomeView({ doSearch, recentSearches }: { doSearch: (q: string) => void;
       {/* Browse Intelligence */}
       <div className="mx-auto max-w-[1000px]">
         <SectionLabel>Browse Intelligence</SectionLabel>
-        <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <BrowseTile
             title="Projects"
             sub="Independent intelligence on every residential project."
@@ -332,6 +417,11 @@ function HomeView({ doSearch, recentSearches }: { doSearch: (q: string) => void;
             title="Compare"
             sub="Compare any projects, developers, or markets."
             href={`${basePath}/intelligence/compare`}
+          />
+          <BrowseTile
+            title="Map"
+            sub="Modelled towers pinned at their exact sites."
+            href={`${basePath}/tower-intel/projects-map.html`}
           />
         </div>
 
@@ -524,6 +614,221 @@ function SearchResultView({ result, doSearch }: { result: ResearchResult; doSear
         )}
       </div>
       <BottomCTA />
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ANSWER CANVAS — conversational input, forensic output. Artifacts
+   centre-stage, the conversation as a thin rail; follow-ups MUTATE
+   the canvas (merge chips, re-rank) instead of appending prose.
+   Deterministic Phase 1: every number is a row from the build-time
+   index; nothing is generated.
+   ════════════════════════════════════════════════════════════════ */
+type Turn = { q: string; note: string };
+
+function CanvasView({ query, parsed, index, onQuestion }: {
+  query: string;
+  parsed: Parsed;
+  index: OmniIndex;
+  onQuestion: (q: string) => void;
+}) {
+  const [chips, setChips] = useState<Chip[]>(parsed.chips);
+  const [unitsProject, setUnitsProject] = useState<OmniProject | null>(
+    parsed.intent === "units" && parsed.project ? parsed.project : null,
+  );
+  const [turns, setTurns] = useState<Turn[]>([]);
+  const [followQ, setFollowQ] = useState("");
+
+  const results = useMemo(() => screen(index, chips), [index, chips]);
+  const units = unitsProject ? topUnits(index, unitsProject.slug, 3) : [];
+
+  // first turn note (computed once per mount; the view keys on the query)
+  useEffect(() => {
+    const note = unitsProject
+      ? `Read ${(index.units[unitsProject.slug] ?? []).length} modelled lines in ${unitsProject.name} — winter-benchmark sun + room-by-room vastu.`
+      : `Screened ${index.projects.length} tracked projects → ${screen(index, parsed.chips).length} match, ranked by Truth Score${parsed.chips.some((c) => c.key === "sun") ? " + modelled winter sun" : ""}.`;
+    setTurns([{ q: query, note }]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const removeChip = (c: Chip) => {
+    const next = chips.filter((x) => !(x.key === c.key && x.label === c.label));
+    setChips(next);
+    setTurns((t) => [...t, { q: `× ${c.label}`, note: `Filter removed — ${screen(index, next).length} project${screen(index, next).length === 1 ? "" : "s"} now match.` }]);
+  };
+
+  const follow = () => {
+    const q = followQ.trim();
+    if (!q) return;
+    setFollowQ("");
+    const p = parseAsk(q, index);
+    if (p.intent === "units" && p.project) {
+      setUnitsProject(p.project);
+      setChips(p.chips.length ? p.chips : chips);
+      setTurns((t) => [...t, { q, note: `Switched to ${p.project!.name} — ${(index.units[p.project!.slug] ?? []).length} modelled lines read.` }]);
+      return;
+    }
+    if (p.chips.length > 0) {
+      const keys = new Set(p.chips.map((c) => c.key));
+      const next = [...chips.filter((c) => !keys.has(c.key)), ...p.chips];
+      setUnitsProject(null);
+      setChips(next);
+      setTurns((t) => [...t, { q, note: `Filters updated — ${screen(index, next).length} project${screen(index, next).length === 1 ? "" : "s"} match.` }]);
+      return;
+    }
+    onQuestion(q); // no structure found → TruthGuide research brief
+  };
+
+  const top = results[0];
+  const verdict = unitsProject
+    ? units.length
+      ? <>The advisor&apos;s top pick in <b className="text-[#1e6b45]">{unitsProject.name}</b> is <b className="text-[#1e6b45]">{units[0].tower} · Line {units[0].unit.slice(-2)}</b> — {units[0].grade} {units[0].score}{units[0].sunWinterH != null ? <>, {units[0].sunWinterH} h winter sun</> : null}, {units[0].facing}-facing.</>
+      : <>No modelled lines for <b>{unitsProject.name}</b> yet — its 3D advisor is in production.</>
+    : top
+      ? <><b className="text-[#1e6b45]">{top.p.name}</b> leads your brief{top.p.score != null ? <> at Truth Score {top.p.score}</> : null} — {results.length} of {index.projects.length} tracked projects match.</>
+      : <>No tracked project clears every filter — remove one to widen the screen.</>;
+
+  const mapPins = (unitsProject ? [unitsProject] : results.slice(0, 8).map((r) => r.p)).filter((p) => p.lat != null && p.lng != null);
+
+  return (
+    <div className="grid min-h-full lg:grid-cols-[260px_1fr]">
+      {/* ── conversation rail ── */}
+      <aside className="border-b border-[#1a1a1a]/[0.06] bg-[#efe9dd] px-5 py-5 lg:border-b-0 lg:border-r">
+        <p className="mb-3 text-[8.5px] font-medium uppercase tracking-[0.22em] text-[#1a1a1a]/30">Conversation</p>
+        <div className="flex flex-col gap-3">
+          {turns.map((t, i) => (
+            <div key={i}>
+              <div className="rounded-xl rounded-bl-sm border border-[#1a1a1a]/[0.06] bg-white px-3.5 py-2.5 text-[0.8rem] font-light leading-[1.5] text-[#1a1a1a]">{t.q}</div>
+              <p className="mt-1.5 px-1 text-[0.72rem] font-light leading-[1.55] text-[#1a1a1a]/50">{t.note}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-4 font-mono text-[0.6rem] font-light leading-[1.6] text-[#1a1a1a]/30">answers built from DB rows · nothing generated</p>
+      </aside>
+
+      {/* ── artifacts ── */}
+      <section className="relative px-5 pb-32 pt-6 md:px-8">
+        <p className="mb-2 text-[9px] font-medium uppercase tracking-[0.2em] text-[#c9a96e]">
+          Answer{!unitsProject && <> · {results.length} project{results.length === 1 ? "" : "s"} match</>}
+        </p>
+        <p className="max-w-[640px] font-serif text-[1.15rem] font-light leading-[1.5] text-[#1a1a1a] md:text-[1.3rem]">{verdict}</p>
+
+        {chips.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-1.5">
+            {chips.map((c) => (
+              <button key={c.key + c.label} onClick={() => removeChip(c)}
+                className="group rounded-full border border-[#1e6b45]/30 bg-[#1e6b45]/[0.06] px-3 py-1.5 text-[0.74rem] font-medium text-[#1e6b45]">
+                {c.label} <span className="ml-1 opacity-45 group-hover:opacity-100">×</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* unit cards — the per-flat moat */}
+        {unitsProject && units.length > 0 && (
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            {units.map((u) => (
+              <div key={u.tower + u.unit} className="rounded-xl border border-[#1a1a1a]/[0.08] bg-white p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[0.9rem] font-bold text-[#1a1a1a]">{u.tower} · Line {u.unit.slice(-2)}</span>
+                  <span className={`rounded-md px-1.5 py-0.5 font-mono text-[0.72rem] font-bold text-white ${u.grade.startsWith("A") ? "bg-[#3fa06a]" : u.grade.startsWith("B") ? "bg-[#c9a96e]" : "bg-[#a8a29a]"}`}>
+                    {u.grade} {u.score}
+                  </span>
+                </div>
+                <p className="mt-1 text-[0.7rem] font-light text-[#1a1a1a]/40">{u.facing}-facing</p>
+                <div className="mt-3 grid grid-cols-3 gap-1.5">
+                  {[["Winter sun", u.sunWinterH != null ? `${u.sunWinterH}h` : "—"], ["Vastu", u.vastu ?? "—"], ["View", u.view ?? "—"]].map(([k, v]) => (
+                    <div key={String(k)} className="rounded-lg border border-[#1a1a1a]/[0.05] bg-[#faf7f0] px-1.5 py-2 text-center">
+                      <p className="text-[7.5px] font-medium uppercase tracking-[0.08em] text-[#1a1a1a]/35">{k}</p>
+                      <p className="mt-1 font-mono text-[0.82rem] font-bold text-[#1a1a1a]">{v}</p>
+                    </div>
+                  ))}
+                </div>
+                {unitsProject.advisorFile && (
+                  <a href={`${basePath}/${unitsProject.advisorFile}`}
+                    className="mt-3 block rounded-lg bg-[#1e6b45] py-2 text-center text-[0.72rem] font-bold text-white">
+                    Open in 3D — dollhouse + walk-through
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ranked project cards */}
+        {!unitsProject && results.length > 0 && (
+          <div className="mt-5 flex flex-col gap-2.5">
+            {results.slice(0, 8).map((r, i) => (
+              <div key={r.p.slug} className="flex flex-col gap-3 rounded-xl border border-[#1a1a1a]/[0.08] bg-white px-4 py-3.5 sm:flex-row sm:items-center">
+                <span className="hidden w-5 shrink-0 font-mono text-[0.8rem] font-bold text-[#1a1a1a]/25 sm:block">{i + 1}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-serif text-[1rem] font-medium text-[#1a1a1a]">{r.p.name}</p>
+                  {r.p.location && <p className="text-[0.72rem] font-light text-[#1a1a1a]/40">{r.p.location}</p>}
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {r.why.map((w) => (
+                      <span key={w.label} className={`rounded-md px-1.5 py-0.5 text-[0.64rem] font-medium ${w.warn ? "bg-[#c9a96e]/[0.14] text-[#8a6d1f]" : "bg-[#1e6b45]/[0.07] text-[#1e6b45]"}`}>
+                        {w.label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-3">
+                  {r.p.score != null && (
+                    <span className="font-mono text-[1.3rem] font-bold text-[#1e6b45]">{r.p.score}</span>
+                  )}
+                  <div className="flex flex-col gap-1.5">
+                    {r.p.advisorFile && (
+                      <a href={`${basePath}/${r.p.advisorFile}`} className="rounded-md bg-[#1e6b45] px-3 py-1.5 text-center text-[0.66rem] font-bold text-white">Open 3D advisor</a>
+                    )}
+                    <a href={`${basePath}/intelligence/projects/${r.p.slug}`} className="rounded-md border border-[#1e6b45]/35 px-3 py-1.5 text-center text-[0.66rem] font-medium text-[#1e6b45]">Full report</a>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* map strip — matches with confirmed coordinates */}
+        {mapPins.length > 0 && (
+          <a href={`${basePath}/tower-intel/projects-map.html`}
+            className="relative mt-4 block h-[110px] overflow-hidden rounded-xl border border-[#1a1a1a]/[0.08] bg-[#e8e6df]">
+            {(() => {
+              const lats = mapPins.map((p) => p.lat!), lngs = mapPins.map((p) => p.lng!);
+              const la = Math.min(...lats), lb = Math.max(...lats), ga = Math.min(...lngs), gb = Math.max(...lngs);
+              const X = (g: number) => 8 + ((gb - ga ? (g - ga) / (gb - ga) : 0.5) * 78);
+              const Y = (l: number) => 14 + ((lb - la ? (lb - l) / (lb - la) : 0.5) * 58);
+              return mapPins.map((p) => (
+                <span key={p.slug}>
+                  <span className="absolute h-2.5 w-2.5 rounded-full border-2 border-white bg-[#1e6b45] shadow" style={{ left: `${X(p.lng!)}%`, top: `${Y(p.lat!)}%` }} />
+                  <span className="absolute rounded bg-[#111814]/90 px-1.5 py-0.5 font-mono text-[8px] font-semibold text-[#f4efe4]" style={{ left: `${X(p.lng!) + 1.5}%`, top: `${Y(p.lat!) + 10}%` }}>{p.name}</span>
+                </span>
+              ));
+            })()}
+            <span className="absolute bottom-2 right-3 font-mono text-[8.5px] text-[#1a1a1a]/40">exact sites · open full map →</span>
+          </a>
+        )}
+
+        <p className="mt-4 font-mono text-[0.62rem] font-light leading-[1.7] text-[#1a1a1a]/30">
+          sources · {index.live ? "backlog_listing_public (scores, price, possession)" : "curated research desk (live view unreachable at build)"} · tower-intel per-flat intelligence (winter benchmark) · computed at publish
+        </p>
+
+        {/* follow-up — docked */}
+        <div className="absolute inset-x-5 bottom-5 flex items-center gap-3 rounded-xl border border-[#1a1a1a]/[0.08] bg-white px-4 py-3 shadow-lg shadow-black/[0.06] md:inset-x-8">
+          <span className="text-[#c9a96e]">✦</span>
+          <input
+            value={followQ}
+            onChange={(e) => setFollowQ(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") follow(); }}
+            placeholder="Follow up — “only ready-to-move”, “which flat in Birla Arika”…"
+            className="flex-1 bg-transparent font-serif text-[0.95rem] font-light text-[#1a1a1a] outline-none placeholder:text-[#1a1a1a]/25"
+          />
+          <button onClick={follow} aria-label="Ask"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1e6b45] text-white">
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </section>
     </div>
   );
 }
