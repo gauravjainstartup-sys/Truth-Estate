@@ -276,7 +276,7 @@ export default function Hero({ index }: { index: OmniIndex }) {
             </div>
           </nav>
 
-          <div className="flex max-w-2xl flex-col">
+          <div className="relative z-20 flex max-w-2xl flex-col">
             <p
               className="animate-fade-up text-[11px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]"
               style={{ animationDelay: "50ms", textShadow: "0 1px 12px rgba(4,6,5,0.5)" }}
@@ -362,7 +362,7 @@ export default function Hero({ index }: { index: OmniIndex }) {
             </button>
           </nav>
 
-          <div className="mt-[9vh] flex flex-col">
+          <div className="relative z-20 mt-[9vh] flex flex-col">
             <p
               className="animate-fade-up text-[10px] font-medium uppercase tracking-[0.28em] text-[#c9a96e]"
               style={{ animationDelay: "50ms", textShadow: "0 1px 12px rgba(4,6,5,0.6)" }}
