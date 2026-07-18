@@ -15,6 +15,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Logo from "../Logo";
+import { useJourney } from "../journey/JourneyProvider";
 import { saveLead, setMember } from "@/lib/journey";
 
 const basePath = "/Truth-Estate";
@@ -34,6 +35,7 @@ const FIELD =
   "w-full rounded-md border border-[#1a1a1a]/[0.16] bg-white px-4 py-3 text-[0.95rem] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#1a1a1a]/35 focus:border-[#c9a96e]";
 
 export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
+  const { open: openOnboarding } = useJourney(); // the brief journey doubles as onboarding
   const [step, setStep] = useState<"contact" | "otp">("contact");
   const [name, setName] = useState("");
   const [dial, setDial] = useState("+91");
@@ -76,7 +78,9 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
     if (!otpComplete) { setErr(`Enter the ${OTP_LEN}-digit code.`); return; }
     saveLead({ name: name.trim(), email: "", phone: `${dial} ${num}`.trim(), intent: "buyer-office", createdAt: Date.now() });
     setMember();
-    onSignedIn();
+    onSignedIn();          // reveal the office (dashboard) behind…
+    openOnboarding();      // …the onboarding brief. For now everyone onboards
+                           // after sign-in; closing it lands in the dashboard.
   }
 
   const brand = (
@@ -154,7 +158,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
               </p>
 
               <p className="mt-6 border-t border-[#1a1a1a]/10 pt-4 text-[0.8rem] text-[#1a1a1a]/50">
-                New to Truth Estate? <a href={`${basePath}/`} className="font-medium text-[#1e6b45] hover:underline">Start your brief &rarr;</a>
+                New to Truth Estate? <button type="button" onClick={() => openOnboarding()} className="font-medium text-[#1e6b45] hover:underline">Start your brief &rarr;</button>
               </p>
             </form>
           ) : (
