@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import JourneyModal from "./JourneyModal";
 import TruthGuideBubble from "./TruthGuideBubble";
 import { loadAccount, type Account, type Intent } from "@/lib/journey";
@@ -19,6 +20,10 @@ export default function JourneyProvider({ children }: { children: React.ReactNod
   const [isOpen, setIsOpen] = useState(false);
   const [intent, setIntent] = useState<Intent | undefined>(undefined);
   const [account, setAccount] = useState<Account | null>(null);
+  // The Private Office is a focused, signed-in surface (and its sign-in gate):
+  // keep the public "Challenge our read" advisor bubble off it.
+  const pathname = usePathname();
+  const inOffice = pathname?.startsWith("/office") ?? false;
 
   const open = (i?: Intent) => {
     setIntent(i);
@@ -41,7 +46,7 @@ export default function JourneyProvider({ children }: { children: React.ReactNod
   return (
     <JourneyContext.Provider value={{ open, close, isOpen }}>
       {children}
-      <TruthGuideBubble />
+      {!inOffice && <TruthGuideBubble />}
       {isOpen && <JourneyModal initialIntent={intent} account={account} onClose={close} />}
     </JourneyContext.Provider>
   );
