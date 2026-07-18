@@ -253,3 +253,6 @@ body {
    document on the right so it stays framed; the left gradient carries the text. */
 .teh2-img { object-position: center center; }
 @media (min-width: 768px) { .teh2-img { object-position: 64% center; } }
+
+/* Homepage hero (v2) — scroll cue nudge (only under motion-safe via the utility) */
+@keyframes teh2-nudge { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(4px); } }

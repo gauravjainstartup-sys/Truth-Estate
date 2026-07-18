@@ -14,7 +14,7 @@
    consultation / custom-report enquiry — the buyer lead path.
    ──────────────────────────────────────────────────────────────────────── */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Logo from "./Logo";
 import { useConsultation } from "./consultation/ConsultationProvider";
 import { typeahead, type OmniIndex } from "@/lib/omni";
@@ -33,6 +33,15 @@ export default function Hero({ index }: { index: OmniIndex }) {
   const { openConsult } = useConsultation();
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  // Shorter placeholder on phones so it never truncates; full copy on desktop.
+  const [placeholder, setPlaceholder] = useState("Search any Gurugram project");
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const apply = () => setPlaceholder(mq.matches ? "Search any project" : "Search any Gurugram project");
+    const id = requestAnimationFrame(apply);
+    mq.addEventListener("change", apply);
+    return () => { cancelAnimationFrame(id); mq.removeEventListener("change", apply); };
+  }, []);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +78,7 @@ export default function Hero({ index }: { index: OmniIndex }) {
       <div className="absolute inset-0 hidden md:block" aria-hidden="true"
         style={{ background: "linear-gradient(90deg, rgba(10,8,5,0.92) 0%, rgba(10,8,5,0.75) 35%, rgba(10,8,5,0.15) 62%, rgba(10,8,5,0) 100%)" }} />
       <div className="absolute inset-0 md:hidden" aria-hidden="true"
-        style={{ background: "linear-gradient(180deg, rgba(10,8,5,0.88) 0%, rgba(10,8,5,0.60) 40%, rgba(10,8,5,0) 70%)" }} />
+        style={{ background: "linear-gradient(180deg, rgba(10,8,5,0.90) 0%, rgba(10,8,5,0.78) 30%, rgba(10,8,5,0.55) 48%, rgba(10,8,5,0.25) 62%, rgba(10,8,5,0) 80%)" }} />
       {/* header scrim — keeps nav legible over the lamp at any width */}
       <div className="absolute inset-x-0 top-0 z-20 hidden h-32 md:block" aria-hidden="true"
         style={{ background: "linear-gradient(180deg, rgba(10,8,5,0.55) 0%, rgba(10,8,5,0) 100%)" }} />
@@ -96,36 +105,36 @@ export default function Hero({ index }: { index: OmniIndex }) {
 
       {/* ── content column ── */}
       <div className="relative z-10 mx-auto flex h-full max-w-7xl items-start px-6 pt-28 pb-16 md:items-center md:px-10 md:pt-7 md:pb-7 lg:px-16">
-        <div className="w-full max-w-[380px] md:max-w-[46%]">
+        <div className="w-full max-w-[380px] md:max-w-[46%] md:-translate-y-12">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#c9a24b]">The Independent Buyer&rsquo;s Office</p>
-          <h1 className="mt-5 font-serif font-semibold leading-[1.04] tracking-[-0.01em] text-[#f6f1e8]" style={{ fontSize: "clamp(2.125rem, 6vw, 3.5rem)" }}>
+          <h1 className="mt-3 font-serif font-semibold leading-[1.05] tracking-[-0.01em] text-[#f6f1e8] text-[2.125rem] md:mt-4 md:text-[clamp(2.75rem,4vw,3.5rem)]">
             Decisions worth<br />living with.
           </h1>
-          <p className="mt-4 text-[15px] leading-relaxed text-[#b3aa9e] md:text-[17px]">
+          <p className="mt-3 text-[15px] leading-snug text-[#b3aa9e] md:text-[16px]">
             Built for buyers. Never paid by builders.
           </p>
 
           {/* search — a real, submitting input */}
-          <form onSubmit={submit} className="mt-8 flex h-14 w-full max-w-[420px] overflow-hidden rounded-lg ring-1 ring-transparent transition-shadow duration-150 focus-within:ring-[#c9a24b]/70">
+          <form onSubmit={submit} className="mt-5 flex h-[50px] w-full max-w-[420px] rounded-lg ring-1 ring-transparent transition-shadow duration-150 focus-within:ring-[#c9a24b]/70 md:mt-6 md:h-[52px]">
             <label htmlFor="hero-search" className="sr-only">Search any Gurugram project</label>
-            <div className="flex flex-1 items-center gap-3 bg-[#efe9dc] pl-4">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7a6f56" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="M20 20l-4.7-4.7" /></svg>
+            <div className="flex flex-1 items-center gap-2 rounded-l-lg bg-[#efe9dc] pl-3 md:gap-3 md:pl-4">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7a6f56" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true" className="shrink-0"><circle cx="10.5" cy="10.5" r="6.5" /><path d="M20 20l-4.7-4.7" /></svg>
               <input
                 id="hero-search"
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search any Gurugram project"
-                className="h-full w-full bg-transparent text-[15.5px] text-[#2a2318] placeholder:text-[#7a6f56] focus:outline-none"
+                placeholder={placeholder}
+                className="h-full w-full min-w-0 bg-transparent pr-2 text-[13px] text-[#2a2318] placeholder:text-[#7a6f56] focus:outline-none min-[360px]:text-[15px]"
               />
             </div>
-            <button type="submit" className="shrink-0 bg-[#2f6b4f] px-6 text-[14.5px] font-medium text-[#f6f1e8] transition-colors duration-150 hover:bg-[#285c44]">
+            <button type="submit" className="shrink-0 rounded-r-lg bg-[#2f6b4f] px-4 text-[13px] font-medium text-[#f6f1e8] transition-colors duration-150 hover:bg-[#285c44] min-[360px]:text-[15px] md:px-5">
               Get verdict
             </button>
           </form>
 
           {/* trust chips — one row */}
-          <ul className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] tracking-[0.02em] text-[#9a9287]">
+          <ul className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] tracking-[0.02em] text-[#9a9287] md:mt-5">
             {CHIPS.map((c, i) => (
               <li key={c} className="flex items-center gap-4">
                 {i > 0 && <span className="h-3 w-px bg-[#c9a24b]/30" aria-hidden="true" />}
@@ -136,6 +145,14 @@ export default function Hero({ index }: { index: OmniIndex }) {
             ))}
           </ul>
         </div>
+      </div>
+
+      {/* ── scroll cue (desktop) — understated; no bounce under reduced-motion ── */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-6 z-10 hidden justify-center md:flex" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8f887d" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"
+          className="opacity-50 motion-safe:animate-[teh2-nudge_2.6s_ease-in-out_infinite]">
+          <path d="M6 9l6 6 6-6" />
+        </svg>
       </div>
 
       {/* ── mobile menu ── */}
