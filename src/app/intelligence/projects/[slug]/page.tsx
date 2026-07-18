@@ -80,8 +80,11 @@ function lookupKey<T>(
 /* A fully-populated SAMPLE file — the curated DLF Arbour dossier (all media:
    brochure, site map, payment plan, floor plans, construction, USPs) hosted at
    a distinct slug so it can sit beside the sparse live-… pipeline file as a
-   "this is what a complete file looks like" reference. */
-const SAMPLE_SLUG = "sample-dlf-the-arbour";
+   "this is what a complete file looks like" reference. It renders with the
+   `sample` flag: watermarked "sample read" and never paywalled — the free
+   showcase reached from the locked report's "check a sample read" CTA. */
+const SAMPLE_SLUG = "sample-read";
+const SAMPLE_LEGACY = "sample-dlf-the-arbour"; // the old address → redirect stub
 function sampleIntel() {
   const base = projectBySlug("dlf-arbour");
   return base ? { ...base, slug: SAMPLE_SLUG, name: "DLF The Arbour" } : undefined;
@@ -148,7 +151,7 @@ export async function generateStaticParams() {
   const stubs = (rows ?? []).map((r) => ({ slug: `live-${r.slug}` }));
   for (const s of Object.keys(RETIRED_CURATED)) if (!liveSlugSet.has(s)) stubs.push({ slug: s });
   console.log(`[urls] project pages:${live.length} · legacy stubs:${stubs.length} · +sample`);
-  return [...live, ...stubs, { slug: SAMPLE_SLUG }];
+  return [...live, ...stubs, { slug: SAMPLE_SLUG }, { slug: SAMPLE_LEGACY }];
 }
 
 export const dynamicParams = false;
@@ -157,9 +160,16 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   if (slug === SAMPLE_SLUG) {
     return {
-      title: "DLF The Arbour (Sample) — Project Intelligence | Truth Estate",
+      title: "Sample read — Project Intelligence | Truth Estate",
       description:
-        "A fully-populated sample project file — brochure, site map, payment plan and floor plans — on the standard Truth Estate report layout.",
+        "A fully-populated sample project read — every forensic pillar, the price journey, ROI model and verdict — on the standard Truth Estate report layout. Watermarked as a sample.",
+      robots: { index: false, follow: false },
+      alternates: { canonical: `/intelligence/projects/${SAMPLE_SLUG}` },
+    };
+  }
+  if (slug === SAMPLE_LEGACY) {
+    return {
+      title: "Sample read — Truth Estate",
       robots: { index: false, follow: false },
       alternates: { canonical: `/intelligence/projects/${SAMPLE_SLUG}` },
     };
@@ -186,6 +196,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  // the old sample address redirects to the clean /sample-read
+  if (slug === SAMPLE_LEGACY) return <LegacyStub href={`${BASE}/intelligence/projects/${SAMPLE_SLUG}`} />;
   const p = slug === SAMPLE_SLUG ? sampleIntel() : undefined;
 
   if (!p) {
@@ -260,8 +272,9 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(breadcrumb)} />
       <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(productLd)} />
       <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(faqLd)} />
-      {/* the sample dossier ranks against the same live set as real pages */}
-      <ProjectProfile p={{ ...p, trackedRank: trackedRankOf(p.truthScore, await liveScores()) }} />
+      {/* the sample dossier ranks against the same live set as real pages;
+         `sample` renders it watermarked and never paywalled */}
+      <ProjectProfile p={{ ...p, trackedRank: trackedRankOf(p.truthScore, await liveScores()) }} sample />
     </>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { priceJourney, roiModel, fmtPsf, type ProjectIntel } from "@/lib/projects";
-import { hasFullAccess } from "@/lib/journey";
+import { hasReadAccess } from "@/lib/journey";
 import { openUnitIntel } from "./TowerIntel";
 
 /* Chapter III — "Will it make money?"
@@ -28,10 +28,12 @@ function xirrAnnual(cf: number[]): number {
   return (Math.pow(1 + rm, 12) - 1) * 100;
 }
 
-export default function ReportPrice({ p }: { p: ProjectIntel }) {
+export default function ReportPrice({ p, sample = false }: { p: ProjectIntel; sample?: boolean }) {
   const journey = priceJourney(p);
   const roi = roiModel(p);
-  const [unlocked] = useState(() => (typeof window !== "undefined" ? hasFullAccess(p.slug) : false));
+  // The projection is part of the paid read — any read entitlement (₹999 up)
+  // unlocks it. The watermarked sample read always shows it.
+  const [unlocked] = useState(() => sample || (typeof window !== "undefined" ? hasReadAccess(p.slug) : false));
 
   /* ── calculator state ── */
   const psfMid = journey ? journey.mid : p.psf?.avg ?? 18000;

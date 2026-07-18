@@ -774,6 +774,92 @@ export function hasFullAccess(slug: string): boolean {
   return isMember() || isUnlocked(slug);
 }
 
+/* ════════════════════════════════════════════════════════════════
+   ACCESS & PACKAGES (v2) — the paid-content model.
+
+   Registration (signed in) is free and opens the Private Office but
+   unlocks no reads. Content access is bought:
+     • read    ₹999    — one project's full read (no 3D)
+     • read3d  ₹1,499  — one project's read + its Sun & Vastu 3D
+     • all     ₹9,999  — every read + every 3D (+ 2 on-demand)
+   Custom packages (and any Deal-Room mandate fee) are set after the
+   first free advisor call — never a fixed number on the site.
+
+   Front-end simulation: entitlements live in localStorage and are
+   wiped by the hard-refresh reset like everything else. Real access
+   will be server-verified after Razorpay; this is the demo seam. */
+
+export type PackageId = "read" | "read3d" | "all";
+export type Package = { id: PackageId; label: string; inr: number; scope: "project" | "site"; includes3D: boolean; blurb: string };
+export const PACKAGES: Package[] = [
+  { id: "read", label: "Full Read", inr: 999, scope: "project", includes3D: false, blurb: "This project's complete forensic read — every pillar, the price journey, ROI model and verdict." },
+  { id: "read3d", label: "Read + Sun & Vastu 3D", inr: 1499, scope: "project", includes3D: true, blurb: "The full read plus the interactive Sun & Vastu 3D advisor for this project." },
+  { id: "all", label: "All-Access", inr: 9999, scope: "site", includes3D: true, blurb: "Every read and every 3D across the site — plus 2 on-demand project reports & 3Ds." },
+];
+export const packageById = (id: PackageId): Package => PACKAGES.find((p) => p.id === id) ?? PACKAGES[0];
+export const READ_FROM_INR = 999;
+
+const SIGNED_IN_KEY = "truthEstate.signedIn";
+const ACCESS_KEY = "truthEstate.access";
+type AccessState = { all: boolean; reads: string[]; threeD: string[] };
+
+function loadAccess(): AccessState {
+  if (typeof window === "undefined") return { all: false, reads: [], threeD: [] };
+  try {
+    const raw = window.localStorage.getItem(ACCESS_KEY);
+    const a = raw ? (JSON.parse(raw) as Partial<AccessState>) : {};
+    return { all: !!a.all, reads: a.reads ?? [], threeD: a.threeD ?? [] };
+  } catch {
+    return { all: false, reads: [], threeD: [] };
+  }
+}
+function saveAccess(a: AccessState): void {
+  if (typeof window === "undefined") return;
+  try { window.localStorage.setItem(ACCESS_KEY, JSON.stringify(a)); } catch { /* ignore */ }
+}
+
+/* Registration / session — opens the Private Office; unlocks no content. */
+export function isSignedIn(): boolean {
+  if (typeof window === "undefined") return false;
+  try { return window.localStorage.getItem(SIGNED_IN_KEY) === "1" || isMember(); } catch { return false; }
+}
+export function setSignedIn(): void {
+  if (typeof window === "undefined") return;
+  try { window.localStorage.setItem(SIGNED_IN_KEY, "1"); } catch { /* ignore */ }
+}
+
+/* Paid-content checks — the single source of truth for the report + 3D gates. */
+export function hasReadAccess(slug: string): boolean {
+  if (typeof window === "undefined") return false;
+  const a = loadAccess();
+  return a.all || a.reads.includes(slug) || a.threeD.includes(slug) || isMember();
+}
+export function has3DAccess(slug: string): boolean {
+  if (typeof window === "undefined") return false;
+  const a = loadAccess();
+  return a.all || a.threeD.includes(slug) || isMember();
+}
+export function isAllAccess(): boolean {
+  if (typeof window === "undefined") return false;
+  return loadAccess().all || isMember();
+}
+
+/* Grant entitlements after a (dummy) successful payment. */
+export function grantPackage(pkg: PackageId, slug?: string): void {
+  const a = loadAccess();
+  if (pkg === "all") {
+    a.all = true;
+  } else if (slug) {
+    if (!a.reads.includes(slug)) a.reads.push(slug);
+    if (pkg === "read3d" && !a.threeD.includes(slug)) a.threeD.push(slug);
+  }
+  saveAccess(a);
+  setSignedIn();
+  // fire-and-forget backend entitlement (dormant until the gate URL is set)
+  if (pkg === "all") grantModelAccess(PROJECTS.map((p) => modelSlugFor(p.name)), resolveModelSubject(), "member");
+  else if (slug) grantModelAccess(slug, resolveModelSubject(), "paid");
+}
+
 /* Full demo reset — wipe every truthEstate.* key (account, brief, membership,
    unlocks, leads, office) so the browser behaves like a first-time visitor. */
 export function clearAllDemoData(): void {

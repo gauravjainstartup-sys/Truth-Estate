@@ -4,16 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import {
   saveLead, saveBuyData, loadBuyData, emptyBuyData,
   loadMemberCall, saveMemberCall, type MemberCall,
-  PROJECT_UNLOCK_INR, MEMBERSHIP_INR,
+  PROJECT_UNLOCK_INR, packageById,
 } from "@/lib/journey";
 import { CONSULT_DAYS, CONSULT_DAYPARTS, CONSULT_FORMATS, advisorFor } from "@/lib/consultation";
 
 /* THE BUYER OFFICE — the member surface for a project's unit intelligence.
    Freemium: the live 3D + a sample unit are free; the full per-unit verdict
-   is paid (₹1,499 for one project, or the ₹11,000 membership — unlimited +
-   advisory, with the single fee credited). Projects without a 3D yet keep a
-   free "register interest" flow. Payment is a front-end simulation. Ships
-   light by default; pass theme="dark" for the dark-luxe variant. */
+   is paid (₹1,499 for one project — the read + 3D — or ₹9,999 All-Access:
+   every read + every 3D, with the single fee credited). Projects without a 3D
+   yet keep a free "register interest" flow. Payment is a front-end simulation.
+   Ships light by default; pass theme="dark" for the dark-luxe variant. */
 
 const BUDGETS = [
   { label: "Under ₹3 Cr", cr: 2 }, { label: "₹3–5 Cr", cr: 4 }, { label: "₹5–8 Cr", cr: 6 },
@@ -36,6 +36,8 @@ const CAPS: { icon: IconName; t: string; d: string }[] = [
 const emailOk = (e: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 const advisor = advisorFor("advice");
+// The all-access price (₹9,999) — the single project plan stays ₹1,499 (read + 3D).
+const ALL_INR = packageById("all").inr;
 
 type Plan = "single" | "membership";
 type Step = "intro" | "req" | "verify" | "plans" | "pay" | "done" | "schedule" | "booked" | "home";
@@ -173,7 +175,7 @@ export default function BuyerOfficeGate({
   const hasIntro = start === "intro";
   const stepTotal = hasIntro ? 3 : 2;
   const stepNo = step === "intro" ? 1 : step === "req" ? (hasIntro ? 2 : 1) : step === "verify" ? (hasIntro ? 3 : 2) : 0;
-  const amount = plan === "single" ? PROJECT_UNLOCK_INR : MEMBERSHIP_INR;
+  const amount = plan === "single" ? PROJECT_UNLOCK_INR : ALL_INR;
   const contactValid = name.trim() !== "" && (method === "email" ? emailOk(email) : numValid);
   const cardValid = card.replace(/\D/g, "").length >= 12 && exp.length >= 4 && cvv.length >= 3;
 
@@ -350,10 +352,10 @@ export default function BuyerOfficeGate({
               <div className="mt-6 flex flex-col gap-3">
                 <PlanCard t={t} on={plan === "single"} onClick={() => setPlan("single")}
                   title="This project" price={inr(PROJECT_UNLOCK_INR)} unit="one-time"
-                  desc={`Every unit in ${project}, fully graded — yours to keep.`} />
+                  desc={`The full read + Sun & Vastu 3D for ${project} — every unit graded, yours to keep.`} />
                 <PlanCard t={t} on={plan === "membership"} onClick={() => setPlan("membership")}
-                  title="Buyer Office membership" price={inr(MEMBERSHIP_INR)} unit="all projects" badge="Best value"
-                  desc="Every project, unlimited — plus your 45-min advisory consultation. We credit your ₹1,499 if you start with one." />
+                  title="All-Access" price={inr(ALL_INR)} unit="whole site" badge="Best value"
+                  desc="Every read and every 3D across the site — plus 2 on-demand reports & 3Ds, and your 45-min advisory call. We credit your ₹1,499 if you start with one project." />
               </div>
               <button onClick={() => setStep("pay")} className={`mt-6 ${primaryBtn}`}>Continue · {inr(amount)}</button>
               <button onClick={onSeeUnitIntel} className={`mt-3 ${backLink}`}>← Keep exploring free</button>
@@ -363,8 +365,8 @@ export default function BuyerOfficeGate({
               <h2 className={`font-serif text-[1.7rem] font-medium leading-[1.12] ${t.h2}`}>Checkout.</h2>
               <div className={`mt-4 flex items-center justify-between rounded-xl border p-4 ${t.card}`}>
                 <div className="min-w-0">
-                  <p className={`text-[0.9rem] font-medium ${t.capTitle}`}>{plan === "single" ? project : "Buyer Office membership"}</p>
-                  <p className={`text-[0.76rem] font-light ${t.capDesc}`}>{plan === "single" ? "Full Sun & Vastu 3D · one project" : "Unlimited projects + advisory"}</p>
+                  <p className={`text-[0.9rem] font-medium ${t.capTitle}`}>{plan === "single" ? project : "All-Access"}</p>
+                  <p className={`text-[0.76rem] font-light ${t.capDesc}`}>{plan === "single" ? "Full read + Sun & Vastu 3D · one project" : "Every read + every 3D · whole site"}</p>
                 </div>
                 <p className={`shrink-0 font-mono text-[1.15rem] font-medium ${t.h2}`}>{inr(amount)}</p>
               </div>
@@ -393,7 +395,7 @@ export default function BuyerOfficeGate({
               {err && <p className={`mt-2.5 text-[0.78rem] ${t.err}`}>{err}</p>}
               <button disabled={paying} className={`mt-5 ${primaryBtn} disabled:opacity-60`}>{paying ? "Processing…" : `Pay ${inr(amount)}`}</button>
               <button type="button" onClick={() => setStep("plans")} className={`mt-3.5 ${backLink}`}>← Back to plans</button>
-              <p className={`mt-4 text-center text-[0.68rem] font-light leading-[1.5] ${t.fine}`}>🔒 Front-end demo — no real card is charged. {plan === "single" ? "Fee credited if you upgrade to membership." : "Includes your advisory consultation."}</p>
+              <p className={`mt-4 text-center text-[0.68rem] font-light leading-[1.5] ${t.fine}`}>🔒 Front-end demo — no real card is charged. {plan === "single" ? "Fee credited if you upgrade to All-Access." : "Includes your advisory consultation."}</p>
             </form>
           ) : step === "done" ? (
             <div className="text-center">

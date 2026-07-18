@@ -4,7 +4,7 @@ import { useState } from "react";
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import { useConsultation } from "../consultation/ConsultationProvider";
-import { PRIMARY_CTA } from "@/lib/journey";
+import { PRIMARY_CTA, PACKAGES, type Package } from "@/lib/journey";
 import {
   CONSULT_FEE,
   CONSULT_FEE_ORIGINAL,
@@ -14,6 +14,22 @@ import {
 } from "@/lib/consultation";
 
 const basePath = "/Truth-Estate";
+
+/* The included-features matrix for a report/3D package card — ₹999 excludes
+   the 3D (a dash), ₹1,499 adds it, ₹9,999 opens the whole site. */
+function featureLines(pkg: Package): { t: string; on: boolean }[] {
+  const lines: { t: string; on: boolean }[] = [
+    { t: "Complete forensic read", on: true },
+    { t: "Interactive Sun & Vastu 3D", on: pkg.includes3D },
+  ];
+  if (pkg.scope === "site") {
+    lines.push({ t: "Every read & every 3D on the site", on: true });
+    lines.push({ t: "2 on-demand project reports & 3Ds", on: true });
+  } else {
+    lines.push({ t: "One project", on: true });
+  }
+  return lines;
+}
 
 /* ── Engagement models ── */
 const MODELS: {
@@ -426,84 +442,122 @@ export default function Pricing() {
           </div>
         </section>
 
-        {/* ── SECTION 5 · PRICING ── */}
+        {/* ── SECTION 5 · REPORT & 3D PACKAGES ── */}
         <section className="px-6 pb-[10vh] md:px-12 md:pb-[14vh]">
-          <div className="mx-auto max-w-3xl">
-            <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]">
-              Pricing
+          <div className="mx-auto max-w-5xl">
+            <p className="text-center text-[10px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]">
+              Report &amp; 3D Access
             </p>
-            <h2 className="mt-6 font-serif text-[1.6rem] font-semibold leading-[1.25] text-[#1a1a1a] md:text-[2.2rem]">
-              Transparent engagement, transparent pricing.
+            <h2 className="mt-6 text-center font-serif text-[1.6rem] font-semibold leading-[1.25] text-[#1a1a1a] md:text-[2.2rem]">
+              One-time pricing. No subscription.
             </h2>
+            <p className="mx-auto mt-5 max-w-xl text-center text-[0.92rem] font-light leading-[1.8] text-[#1a1a1a]/40">
+              Unlock a project&apos;s complete forensic read — every pillar, the
+              price journey, our ROI model and the verdict. Register once, then
+              pay for exactly what you need.
+            </p>
 
-            <div className="mt-12 space-y-0">
-              {/* Truth Intelligence */}
-              <div className="border-b border-[#1a1a1a]/6 py-8">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-baseline sm:justify-between">
-                  <div>
-                    <h3 className="font-serif text-[1.1rem] font-semibold text-[#1a1a1a]/75">
-                      Truth Intelligence
-                    </h3>
-                    <p className="mt-2 text-[0.85rem] font-light text-[#1a1a1a]/35">
-                      Published research and TruthGuide are accessible to
-                      every buyer. Premium intelligence features require a
-                      subscription.
-                    </p>
-                  </div>
-                  <div className="shrink-0 sm:text-right">
-                    <p className="font-serif text-[1.1rem] font-medium text-[#1a1a1a]/60">
-                      Free to explore
-                    </p>
-                    <p className="mt-1 text-[0.78rem] font-light text-[#1a1a1a]/25">
-                      Premium features coming soon
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Private Office */}
-              <div className="border-b border-[#1a1a1a]/6 py-8">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-baseline sm:justify-between">
-                  <div>
-                    <h3 className="font-serif text-[1.1rem] font-semibold text-[#1a1a1a]/75">
-                      Private Office
-                    </h3>
-                    <p className="mt-2 text-[0.85rem] font-light text-[#1a1a1a]/35">
-                      A dedicated decision workspace with personal Match
-                      Scores, Buyer Briefs, and advisor collaboration.
-                      Begins with a free first consultation.
-                    </p>
-                  </div>
-                  <div className="shrink-0 rounded-sm border border-[#c9a96e]/15 bg-[#c9a96e]/5 px-4 py-2 sm:text-right">
-                    <p className="text-[0.78rem] font-light text-[#c9a96e]/60">
-                      Pricing to be announced
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Independent Representation */}
-              <div className="py-8">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-baseline sm:justify-between">
-                  <div>
-                    <h3 className="font-serif text-[1.1rem] font-semibold text-[#1a1a1a]/75">
-                      Independent Representation
-                    </h3>
-                    <p className="mt-2 text-[0.85rem] font-light text-[#1a1a1a]/35">
-                      Custom advisory engagement scoped to your property
-                      journey. Pricing is determined after understanding
-                      your requirements.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => openConsult({ sourceKind: "homepage" })}
-                    className="shrink-0 self-start text-[0.85rem] font-light text-[#1a1a1a]/50 underline decoration-[#1a1a1a]/15 underline-offset-4 transition-colors hover:text-[#1a1a1a]/80 sm:self-auto"
+            <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-3">
+              {PACKAGES.map((pkg) => {
+                const featured = pkg.id === "read3d";
+                return (
+                  <div
+                    key={pkg.id}
+                    className={`flex flex-col rounded-sm p-8 ${
+                      featured
+                        ? "border border-[#c9a96e]/30 bg-white shadow-sm md:-my-2"
+                        : "border border-[#1a1a1a]/6 bg-[#F5F0E8]"
+                    }`}
                   >
-                    Contact Us
-                  </button>
-                </div>
+                    {featured ? (
+                      <span className="mb-4 self-start rounded-full bg-[#1e6b45]/[0.08] px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-[#1e6b45]">
+                        Most popular
+                      </span>
+                    ) : pkg.id === "all" ? (
+                      <span className="mb-4 self-start text-[10px] font-medium uppercase tracking-[0.25em] text-[#c9a96e]">
+                        Best value
+                      </span>
+                    ) : (
+                      <span className="mb-4 self-start text-[10px] font-medium uppercase tracking-[0.25em] text-[#1a1a1a]/25">
+                        Entry
+                      </span>
+                    )}
+                    <h3 className="font-serif text-[1.25rem] font-semibold text-[#1a1a1a]">
+                      {pkg.label}
+                    </h3>
+                    <p className="mt-4 flex items-baseline gap-1.5">
+                      <span className="font-serif text-[2.4rem] font-semibold leading-none text-[#1a1a1a]">
+                        {inr(pkg.inr)}
+                      </span>
+                      <span className="text-[0.8rem] font-light text-[#1a1a1a]/35">
+                        {pkg.scope === "site" ? "/ whole site" : "/ project"}
+                      </span>
+                    </p>
+                    <ul className="mt-6 flex-1 space-y-2.5">
+                      {featureLines(pkg).map((f) => (
+                        <li
+                          key={f.t}
+                          className={`flex gap-2.5 text-[0.85rem] font-light leading-[1.5] ${
+                            f.on ? "text-[#1a1a1a]/60" : "text-[#1a1a1a]/30"
+                          }`}
+                        >
+                          <span className={`mt-[0.05em] shrink-0 ${f.on ? "text-[#1e6b45]" : "text-[#1a1a1a]/25"}`}>
+                            {f.on ? "✓" : "—"}
+                          </span>
+                          {f.t}
+                        </li>
+                      ))}
+                    </ul>
+                    <a
+                      href={`${basePath}/intelligence/projects`}
+                      className={`mt-8 w-full rounded-sm py-3.5 text-center text-[13px] font-medium tracking-[0.06em] transition-all duration-500 ${
+                        featured
+                          ? "bg-[#1e6b45] text-white shadow-sm hover:bg-[#238c55]"
+                          : "border border-[#1a1a1a]/10 text-[#1a1a1a]/55 hover:border-[#1a1a1a]/20 hover:text-[#1a1a1a]/80"
+                      }`}
+                    >
+                      Browse projects &rarr;
+                    </a>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* custom packages + deal room — the two things priced only after the call */}
+            <div className="mt-8 grid gap-6 md:grid-cols-2">
+              <div className="rounded-sm border border-[#1a1a1a]/8 bg-white/50 p-7">
+                <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#c9a96e]">
+                  Beyond these three
+                </p>
+                <h3 className="mt-3 font-serif text-[1.15rem] font-semibold text-[#1a1a1a]/80">
+                  Custom packages
+                </h3>
+                <p className="mt-2.5 text-[0.86rem] font-light leading-[1.7] text-[#1a1a1a]/45">
+                  These are the only predefined packages. Anything else —
+                  bundles, more on-demand reports, a portfolio review — is shaped
+                  on your first free advisor call, around what you actually need.
+                </p>
+              </div>
+              <div className="rounded-sm border border-[#1a1a1a]/8 bg-white/50 p-7">
+                <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#c9a96e]">
+                  Deal Room
+                </p>
+                <h3 className="mt-3 font-serif text-[1.15rem] font-semibold text-[#1a1a1a]/80">
+                  Mandate fee
+                </h3>
+                <p className="mt-2.5 text-[0.86rem] font-light leading-[1.7] text-[#1a1a1a]/45">
+                  For end-to-end negotiation and representation, the Deal Room
+                  mandate fee is set once your requirements and mandate are
+                  frozen — discussed only after your first call, never a number
+                  we guess up front.
+                </p>
               </div>
             </div>
+
+            <p className="mt-8 text-center text-[0.78rem] font-light text-[#1a1a1a]/35">
+              Register, then pay once — no subscription. Payments are processed
+              securely via Razorpay.
+            </p>
           </div>
         </section>
 

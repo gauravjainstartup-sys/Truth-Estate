@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import { useConsultation } from "../consultation/ConsultationProvider";
-import { loadBuyData, hasPreferences, deriveDNA, clearAllDemoData, saveLead } from "@/lib/journey";
+import { loadBuyData, hasPreferences, deriveDNA, clearAllDemoData, saveLead, hasReadAccess } from "@/lib/journey";
 import type { ConsultProfileChip } from "@/lib/consultation";
 import { TAG_CHIP } from "@/lib/heroSearch";
 import type { ScoreTag } from "@/lib/omni";
@@ -23,6 +23,8 @@ import {
 } from "@/lib/projects";
 import MatchScore from "./MatchScore";
 import TowerIntel, { openUnitIntel } from "./TowerIntel";
+import UnlockModal from "./UnlockModal";
+import LockedReport from "./LockedReport";
 import ReportAnatomy from "./ReportAnatomy";
 import ReportDeveloper from "./ReportDeveloper";
 import ReportConstruction from "./ReportConstruction";
@@ -44,6 +46,12 @@ const basePath = "/Truth-Estate";
 /* media paths are repo-relative for the flagship files; pipeline rows may
    carry absolute (storage) URLs — pass those through untouched */
 const asset = (s: string) => (/^(https?:\/\/|data:)/i.test(s) ? s : `${basePath}/${s}`);
+
+/* The "sample read" watermark text — repeated so the oversized rotated layer
+   tiles it diagonally across the whole dummy report (a pure-DOM watermark:
+   Chromium doesn't render SVG <text> when the SVG is a CSS background-image,
+   so DOM text is the reliable path). */
+const SAMPLE_WATERMARK_TEXT = Array.from({ length: 400 }, () => "SAMPLE READ").join(" · ");
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return <p className="text-[11px] font-medium uppercase tracking-[0.34em] text-[#c9a96e]">{children}</p>;
@@ -209,6 +217,7 @@ function configsDisplay(list: string[]): string {
 export default function ProjectProfile({
   p,
   embedded = false,
+  sample = false,
   onClose,
   onBack,
   onConsult,
@@ -219,6 +228,8 @@ export default function ProjectProfile({
   /* When rendered inside the journey modal: drop the page chrome, keep the
      reader in the flow, and route actions back to the journey. */
   embedded?: boolean;
+  /* The watermarked sample read — never paywalled. */
+  sample?: boolean;
   onClose?: () => void;
   onBack?: () => void;
   onConsult?: () => void;
@@ -228,6 +239,17 @@ export default function ProjectProfile({
   const { open } = useJourney();
   const { openConsult } = useConsultation();
   const router = useRouter();
+  // ── Paywall (north metric: paid customers). Reads are paid: a guest sees the
+  // free chapters (fundamentals + score anatomy); everything from Chapter II ·
+  // Pillar I (Developer DNA) down is masked until they register and buy a read.
+  // The watermarked sample read is never locked. Access is re-checked client-
+  // side on mount, so a paid reader unmasks after prerender (backend-verified
+  // for real later; the demo session resets on hard refresh by design).
+  const [readAccess, setReadAccess] = useState(false);
+  const [unlockOpen, setUnlockOpen] = useState(false);
+  useEffect(() => { setReadAccess(hasReadAccess(p.slug)); }, [p.slug]);
+  const locked = !sample && !readAccess;
+  const SAMPLE_HREF = `${basePath}/intelligence/projects/sample-read`;
   // "Get Independent Advice" from a report is about THIS project — open the
   // consultation with the project as its source (the advisor preps for it),
   // and if the visitor already shared a brief (Match Score / Buyer Office),
@@ -271,6 +293,9 @@ export default function ProjectProfile({
 
   const con = ops?.construction;
 
+  // The free chapters a guest always sees; when locked, every other section
+  // collapses to a single "Unlock full read" jump.
+  const FREE_IDS = new Set(["match", "vitals", "masterplan", "homes", "tower-intel", "documents", "anatomy"]);
   const toc = [
     { id: "match", label: "Match score", show: true },
     { id: "vitals", label: "Vitals", show: true },
@@ -288,7 +313,9 @@ export default function ProjectProfile({
     { id: "verdict", label: "The verdict", show: true },
     { id: "strengths", label: "Strengths & watch-outs", show: p.strengths.length > 0 || p.watchouts.length > 0 },
     { id: "faqs", label: "Straight answers", show: faqs.length > 0 },
-  ].filter((t) => t.show);
+  ]
+    .filter((t) => t.show && (!locked || FREE_IDS.has(t.id)))
+    .concat(locked ? [{ id: "unlock", label: "Unlock full read", show: true }] : []);
 
   /* Sequential section numbers — only counts sections that actually render,
      so hidden modules never leave a gap in the sequence. */
@@ -341,6 +368,13 @@ export default function ProjectProfile({
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => { window.removeEventListener("scroll", onScroll); if (raf) cancelAnimationFrame(raf); };
   }, [embedded, tocKey]);
+  // Mobile: tuck the header on first paint so the hero owns the full first
+  // screen. The direction-aware scroll logic above brings it back on the
+  // first upward scroll (and hides it again on the way down).
+  useEffect(() => {
+    if (embedded || typeof window === "undefined") return;
+    if (window.matchMedia("(max-width: 767px)").matches) setHideHdr(true);
+  }, [embedded]);
   const jumpTo = (id: string) => {
     setActive(id);
     const el = typeof document !== "undefined" ? document.getElementById(id) : null;
@@ -795,6 +829,15 @@ export default function ProjectProfile({
               <ReportAnatomy p={p} />
             </div>
 
+            {/* ── The paywall boundary. From Chapter II · Pillar I (Developer DNA)
+               down, a guest sees the LockedReport (unlock card + redacted teaser)
+               in place of the analysis; a paid reader sees everything. ── */}
+            {locked ? (
+              <div id="unlock" className="scroll-mt-24">
+                <LockedReport projectName={p.name} onUnlock={() => setUnlockOpen(true)} sampleHref={SAMPLE_HREF} />
+              </div>
+            ) : (
+            <>
             {/* Pillar I · Developer DNA — track record + financial audit */}
             {dev && (
               <div id="developer" className="mt-16 scroll-mt-24 border-t border-[#1a1a1a]/8 pt-12 md:mt-20">
@@ -833,7 +876,7 @@ export default function ProjectProfile({
             {/* Price dynamics + projection + ROI calculator */}
             {roi && (
               <div id="roi" className="scroll-mt-24">
-                <ReportPrice p={p} />
+                <ReportPrice p={p} sample={sample} />
               </div>
             )}
 
@@ -920,6 +963,8 @@ export default function ProjectProfile({
             <section id="alternatives" className="scroll-mt-24">
               <ReportExplore p={p} embedded={embedded} onSelect={onSelectAlternative} />
             </section>
+            </>
+            )}
 
             {/* The Independent Desk on mobile — the desktop rail is hidden below
                xl, so the founder gets a face here, right before the CTA. */}
@@ -1027,6 +1072,35 @@ export default function ProjectProfile({
             )}
           </div>
         </div>
+      )}
+
+      {/* Unlock (register → pay) — the conversion surface for a locked read */}
+      {unlockOpen && (
+        <UnlockModal
+          open
+          slug={p.slug}
+          projectName={p.name}
+          onClose={() => setUnlockOpen(false)}
+          onUnlocked={() => setReadAccess(hasReadAccess(p.slug))}
+        />
+      )}
+
+      {/* Sample read — a faint diagonal tiled watermark + a persistent badge so
+          the dummy report can never be mistaken for a paid one. */}
+      {sample && (
+        <>
+          <div aria-hidden className="pointer-events-none fixed inset-0 z-[120] overflow-hidden">
+            <div
+              className="absolute left-1/2 top-1/2 select-none text-center font-serif text-[1.4rem] font-bold uppercase leading-[4.5rem] tracking-[0.35em] text-[#1a1a1a]"
+              style={{ width: "200vmax", height: "200vmax", transform: "translate(-50%, -50%) rotate(-28deg)", opacity: 0.07, wordSpacing: "1.5rem" }}
+            >
+              {SAMPLE_WATERMARK_TEXT}
+            </div>
+          </div>
+          <div aria-hidden className="pointer-events-none fixed left-1/2 top-3 z-[45] -translate-x-1/2">
+            <span className="rounded-full border border-[#9a7a2e]/40 bg-[#F5F0E8]/90 px-3.5 py-1.5 text-[0.6rem] font-bold uppercase tracking-[0.22em] text-[#9a7a2e] shadow-sm backdrop-blur-sm">Sample read</span>
+          </div>
+        </>
       )}
     </div>
   );
