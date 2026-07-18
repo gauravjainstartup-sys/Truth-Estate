@@ -20,6 +20,11 @@ export type OmniUnit = {
   view: number | null;
 };
 
+/* Three-way buyer verdict shown as a dropdown chip (derived from the Truth
+   Score at build time — see verdictFromScore). Distinct from the richer
+   Proceed/Wait/Watch/Avoid recommendation on the full report. */
+export type Verdict3 = "Proceed" | "Caution" | "Avoid";
+
 export type OmniProject = {
   slug: string;
   name: string;
@@ -36,7 +41,19 @@ export type OmniProject = {
   advisorFile: string | null;
   lat: number | null;
   lng: number | null;
+  /* derived at build time for the hero search dropdown */
+  verdict: Verdict3 | null; // from the Truth Score
+  sources: number | null; // count of populated forensic modules on the row
 };
+
+/* Truth Score → the three-way dropdown verdict. Thresholds are deliberately
+   simple and tunable; every score itself still comes from a pipeline row. */
+export function verdictFromScore(score: number | null | undefined): Verdict3 | null {
+  if (score == null || !Number.isFinite(score)) return null;
+  if (score >= 80) return "Proceed";
+  if (score >= 65) return "Caution";
+  return "Avoid";
+}
 
 export type OmniIndex = {
   projects: OmniProject[];

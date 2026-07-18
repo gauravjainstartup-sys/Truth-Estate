@@ -14,7 +14,8 @@ import path from "node:path";
 import { fetchBacklogFull } from "@/lib/supabase";
 import { PROJECTS } from "@/lib/journey";
 import { projectSlug, TOWER_INTEL } from "@/lib/projects";
-import type { OmniIndex, OmniProject, OmniUnit } from "@/lib/omni";
+import { verdictFromScore, type OmniIndex, type OmniProject, type OmniUnit } from "@/lib/omni";
+import type { LiveBacklogFull } from "@/lib/supabase";
 
 /* founder-confirmed site coordinates of the modelled projects (same set as
    the projects map — no guessed pins) */
@@ -77,6 +78,35 @@ const yearOf = (s: string | null | undefined): number | null => {
   return m ? parseInt(m[0], 10) : null;
 };
 
+/* "Sources" for the hero dropdown = how many independent forensic modules the
+   pipeline has actually assembled for a project. Every count is real: each area
+   contributes 1 only when the row carries evidence for it, so the number never
+   outruns the data (naturally lands ~5–12 on a fully-worked project, lower on a
+   thin one). Not shown at all when zero. */
+const hasVal = (v: unknown): boolean => {
+  if (v == null || v === "") return false;
+  if (Array.isArray(v)) return v.length > 0;
+  if (typeof v === "object") return Object.keys(v as object).length > 0;
+  return true;
+};
+function countSources(r: LiveBacklogFull): number {
+  const areas: boolean[] = [
+    hasVal(r.modTrackRecord) || hasVal(r.devTotal),                                   // developer track record
+    hasVal(r.modFinancial) || hasVal(r.finLeverage) || hasVal(r.devFinancialBand),    // financials
+    hasVal(r.modConstruction) || hasVal(r.constructionProgressPct) || hasVal(r.paceScore), // construction pace
+    hasVal(r.modLegal) || hasVal(r.legalHeadline) || hasVal(r.legalScore),            // legal & compliance
+    hasVal(r.locVerdict) || hasVal(r.locKeyStrengths),                                // location intelligence
+    hasVal(r.modRiskIntel) || hasVal(r.riskVerdictCleaned),                           // risk intelligence
+    hasVal(r.uspCards) || hasVal(r.brandedStatus),                                    // USPs / x-factors
+    hasVal(r.reraId) || hasVal(r.reraUrl),                                            // RERA registration
+    hasVal(r.salesVelocityPct) || hasVal(r.demandScore) || hasVal(r.totalUnits),      // sales & demand
+    hasVal(r.avgCostSqft),                                                            // corridor pricing
+    hasVal(r.roiIdealCagr) || hasVal(r.roiActualCagr) || hasVal(r.adjustedRoi),       // ROI model
+    hasVal(r.predictedDeliveryDate) || hasVal(r.chancesOfDelayPct) || hasVal(r.delayRisk), // delivery prediction
+  ];
+  return areas.reduce((n, ok) => n + (ok ? 1 : 0), 0);
+}
+
 /* the modelled projects must exist in the index whatever the data source —
    unit-level asks ("which flat in …") resolve against them */
 function ensureModelled(projects: OmniProject[]): OmniProject[] {
@@ -90,6 +120,7 @@ function ensureModelled(projects: OmniProject[]): OmniProject[] {
       config: null, deliveryYear: null, redFlags: null, delayRisk: null,
       has3D: true, advisorFile: meta.file,
       lat: COORDS[slug]?.lat ?? null, lng: COORDS[slug]?.lng ?? null,
+      verdict: null, sources: null,
     });
   }
   return projects;
@@ -115,6 +146,8 @@ export async function buildIndex(): Promise<OmniIndex> {
       advisorFile: ADVISORS[r.slug] ?? null,
       lat: COORDS[r.slug]?.lat ?? null,
       lng: COORDS[r.slug]?.lng ?? null,
+      verdict: verdictFromScore(r.truthScore),
+      sources: countSources(r) || null,
     }));
     return { projects: ensureModelled(projects), units, live: true };
   }
@@ -137,6 +170,8 @@ export async function buildIndex(): Promise<OmniIndex> {
       advisorFile: ADVISORS[slug] ?? null,
       lat: COORDS[slug]?.lat ?? null,
       lng: COORDS[slug]?.lng ?? null,
+      verdict: verdictFromScore(p.truthScore ?? null),
+      sources: null, // curated desk fallback carries no module payloads
     };
   });
   return { projects: ensureModelled(projects), units, live: false };
