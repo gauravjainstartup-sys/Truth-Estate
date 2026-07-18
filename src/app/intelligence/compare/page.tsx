@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import CompareIndex from "@/components/intelligence/CompareIndex";
+import { fetchBacklogFull } from "@/lib/supabase";
+import { scoredProjectOptions } from "@/lib/compare";
 
 export const metadata: Metadata = {
   title: "Compare — Truth Estate Intelligence",
@@ -7,6 +9,10 @@ export const metadata: Metadata = {
     "Compare any two Gurugram projects, developers or markets side by side on the same independent evidence — Truth Score anatomy, delivery, financial signals, pricing and outlook. No sponsored winner.",
 };
 
-export default function Page() {
-  return <CompareIndex />;
+/* The project picker + comparisons run on the live tracked set (fetched once
+   per build); developers & markets come from the curated registries. */
+export default async function Page() {
+  const rows = await fetchBacklogFull();
+  const projectOptions = scoredProjectOptions(rows);
+  return <CompareIndex projectOptions={projectOptions} />;
 }
