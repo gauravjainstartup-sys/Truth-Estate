@@ -99,7 +99,7 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
           <div className="relative h-32 w-full shrink-0 overflow-hidden rounded-xl sm:h-24 sm:w-44">
             {meta ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={`${basePath}/${meta.preview}`} alt={`${project.name} — 3D sun & unit advisor`} className="h-full w-full object-cover" />
+              <img src={`${basePath}/${meta.preview}`} alt={`${project.name} — Sun & Vastu 3D`} className="h-full w-full object-cover" />
             ) : (
               <div className="relative flex h-full w-full items-center justify-center bg-gradient-to-br from-[#123d2e] to-[#0B1F1A]">
                 <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(circle at 62% 30%, rgba(224,182,103,0.18), transparent 62%)" }} />
@@ -110,13 +110,13 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
           </div>
           <div className="min-w-0 flex-1">
             <p className="flex items-center gap-2 text-[0.62rem] font-medium uppercase tracking-[0.2em] text-[#e0b667]">
-              <span aria-hidden>▦</span> {access ? "Your Buyer Office" : <>Deep intelligence{meta ? " · live 3D" : ""}</>}
+              <span aria-hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5"><path d="M12 2 21 7v10l-9 5-9-5V7z" /><path d="M3 7l9 5 9-5M12 12v10" /></svg></span> {access ? "Your Buyer Office" : "Deep intelligence"}
             </p>
-            <p className="mt-2 font-serif text-[1.45rem] leading-[1.15] md:text-[1.6rem]">Tower &amp; Unit Intelligence</p>
+            <p className="mt-2 font-serif text-[1.45rem] leading-[1.15] md:text-[1.6rem]">Sun &amp; Vastu 3D</p>
             <p className="mt-2 text-[0.85rem] font-light leading-[1.6] text-white/55">
               {access ? (
                 meta ? (
-                  <>You&apos;re unlocked — open your 3D advisor any time, or schedule your advisor call.</>
+                  <>You&apos;re unlocked — open your Sun &amp; Vastu 3D any time, or schedule your advisor call.</>
                 ) : (
                   <>You&apos;re in. Enter your office to schedule your advisor call and track your intelligence.</>
                 )
@@ -133,7 +133,7 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
             </button>
           ) : (
             <button onClick={() => (meta ? setModal(true) : openGate("intro"))} className="shrink-0 rounded-sm bg-[#e0b667] px-6 py-3.5 text-[0.84rem] font-semibold tracking-[0.02em] text-[#1a1206] transition-colors hover:bg-[#f0cd85]">
-              {meta ? "Explore the live 3D →" : "See what's inside →"}
+              {meta ? "Explore the Sun & Vastu 3D →" : "See what's inside →"}
             </button>
           )}
         </div>

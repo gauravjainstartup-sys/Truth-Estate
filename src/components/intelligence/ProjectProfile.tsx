@@ -276,7 +276,7 @@ export default function ProjectProfile({
     { id: "vitals", label: "Vitals", show: true },
     { id: "masterplan", label: "Masterplan", show: !!ops?.media?.masterplan },
     { id: "homes", label: "Homes & floor plans", show: (ops?.homes?.length ?? 0) > 0 },
-    { id: "tower-intel", label: "Tower & unit intel", show: true },
+    { id: "tower-intel", label: "Sun & Vastu 3D", show: true },
     { id: "documents", label: "Brochure & payment plan", show: true },
     { id: "anatomy", label: "Truth Score anatomy", show: true },
     { id: "developer", label: "Developer DNA", show: !!dev },
@@ -464,7 +464,7 @@ export default function ProjectProfile({
               {/* one quiet way to explore the product first — a line, not a billboard */}
               <button onClick={() => jumpTo("tower-intel")} className="group mt-4 flex w-full items-center gap-2.5 px-1 text-left text-[0.72rem] font-light text-[#1a1a1a]/50 transition-colors hover:text-[#1a1a1a]/80">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" className="h-4 w-4 shrink-0 text-[#9a7a2e]" aria-hidden><path d="M12 2 21 7v10l-9 5-9-5V7z" /><path d="M3 7l9 5 9-5M12 12v10" /></svg>
-                Rather explore first? <span className="font-medium text-[#1a1a1a]/75 group-hover:text-[#1e6b45]">Walk the live 3D →</span>
+                Rather explore first? <span className="font-medium text-[#1a1a1a]/75 group-hover:text-[#1e6b45]">Walk the Sun &amp; Vastu 3D →</span>
               </button>
             </aside>
           )}
@@ -952,7 +952,7 @@ export default function ProjectProfile({
                 </div>
                 <div className="mt-7 grid gap-3 md:grid-cols-2">
                   <ActionCell tone="primary" icon="●" title="Get Independent Advice" desc="45-min advisor call · free" onClick={consult} />
-                  <ActionCell tone="secondary" icon="▦" title="See Unit Intelligence" desc="3D sun & unit model · ₹1,499 a project" onClick={openUnitIntel} />
+                  <ActionCell tone="secondary" icon={<IconCube className="h-[0.95rem] w-[0.95rem]" />} title="Sun & Vastu 3D" desc="3D sun & unit model · ₹1,499 a project" onClick={openUnitIntel} />
                 </div>
                 <p className="mt-6 flex items-center gap-2 border-t border-white/10 pt-4 text-[0.72rem] font-light text-white/40">
                   <span className="text-[#B29668]" aria-hidden>◆</span> We represent only you — never the developer.
@@ -1036,7 +1036,7 @@ function Chip({ children }: { children: React.ReactNode }) {
   return <span className="rounded-full border border-[#1a1a1a]/12 bg-white/50 px-3 py-1 text-[0.66rem] font-medium tracking-[0.02em] text-[#1a1a1a]/55">{children}</span>;
 }
 
-function ActionCell({ tone, icon, title, desc, onClick }: { tone: "primary" | "secondary" | "ghost"; icon: string; title: string; desc: string; onClick: () => void }) {
+function ActionCell({ tone, icon, title, desc, onClick }: { tone: "primary" | "secondary" | "ghost"; icon: React.ReactNode; title: string; desc: string; onClick: () => void }) {
   const box =
     tone === "primary" ? "bg-[#1e6b45] hover:bg-[#238c55]"
     : tone === "secondary" ? "border border-white/15 bg-white/[0.03] hover:border-[#46c2ff]/60"

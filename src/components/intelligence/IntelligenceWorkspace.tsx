@@ -376,7 +376,7 @@ function HomeView({ doSearch, recentSearches, index }: { doSearch: (q: string) =
                 <a href={`${basePath}/intelligence/projects/${p.slug}`} className="min-w-0 flex-1">
                   <span className="font-serif text-[0.95rem] font-medium text-[#1a1a1a]">{p.name}</span>
                   {p.has3D && (
-                    <span className="ml-2 rounded border border-[#c9a96e]/60 px-1.5 py-0.5 text-[8px] font-bold tracking-[0.08em] text-[#c9a96e]">3D LIVE</span>
+                    <span className="ml-2 inline-flex items-center gap-1 rounded border border-[#c9a96e]/60 px-1.5 py-0.5 text-[8px] font-bold tracking-[0.08em] text-[#c9a96e]"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-2 w-2"><path d="M12 2 21 7v10l-9 5-9-5V7z" /><path d="M3 7l9 5 9-5M12 12v10" /></svg>SUN &amp; VASTU</span>
                   )}
                   <span className="mt-0.5 block truncate text-[0.72rem] font-light text-[#1a1a1a]/35">
                     {[p.location, p.developer].filter(Boolean).join(" · ")}
@@ -742,7 +742,7 @@ function CanvasView({ query, parsed, index, onFallback }: {
       : unitsProject
         ? units.length
           ? <>The advisor&apos;s top pick in <b className="text-[#1e6b45]">{unitsProject.name}</b> is <b className="text-[#1e6b45]">{units[0].tower} · Line {units[0].unit.slice(-2)}</b> — {units[0].grade} {units[0].score}{units[0].sunWinterH != null ? <>, {units[0].sunWinterH} h winter sun</> : null}, {units[0].facing}-facing.</>
-          : <>No modelled lines for <b>{unitsProject.name}</b> yet — its 3D advisor is in production.</>
+          : <>No modelled lines for <b>{unitsProject.name}</b> yet — its Sun &amp; Vastu 3D is in production.</>
         : top
           ? <><b className="text-[#1e6b45]">{top.p.name}</b> leads your brief{top.p.score != null ? <> at Truth Score {top.p.score}</> : null} — {results.length} of {index.projects.length} tracked projects match.</>
           : <>No tracked project clears every filter — remove one to widen the screen.</>;
@@ -855,7 +855,7 @@ function CanvasView({ query, parsed, index, onFallback }: {
                   )}
                   <div className="flex flex-col gap-1.5">
                     {r.p.advisorFile && (
-                      <a href={`${basePath}/${r.p.advisorFile}`} className="rounded-md bg-[#1e6b45] px-3 py-1.5 text-center text-[0.66rem] font-bold text-white">Open 3D advisor</a>
+                      <a href={`${basePath}/${r.p.advisorFile}`} className="rounded-md bg-[#1e6b45] px-3 py-1.5 text-center text-[0.66rem] font-bold text-white">Open Sun &amp; Vastu 3D</a>
                     )}
                     <a href={`${basePath}/intelligence/projects/${r.p.slug}`} className="rounded-md border border-[#1e6b45]/35 px-3 py-1.5 text-center text-[0.66rem] font-medium text-[#1e6b45]">Full report</a>
                   </div>

@@ -253,7 +253,7 @@ export default function BuyerOfficeGate({
         <div className="relative flex items-start justify-between gap-4 px-7 pt-6">
           <div>
             <div className="flex items-center gap-2.5">
-              <span className={`flex h-6 w-6 items-center justify-center rounded-[5px] border text-[0.7rem] ${t.badge}`}>▦</span>
+              <span className={`flex h-6 w-6 items-center justify-center rounded-[5px] border ${t.badge}`}><Icon name="cube" /></span>
               <span className={`font-mono text-[0.62rem] font-medium uppercase tracking-[0.24em] ${t.eyebrow}`}>The Buyer Office</span>
             </div>
             {joinFlow && (
@@ -283,7 +283,7 @@ export default function BuyerOfficeGate({
                   </div>
                 ))}
               </div>
-              <button onClick={() => setStep("req")} className={`mt-7 ${primaryBtn}`}>Request Unit Intelligence</button>
+              <button onClick={() => setStep("req")} className={`mt-7 ${primaryBtn}`}>Request Sun &amp; Vastu 3D</button>
               <p className={`mt-3 text-center text-[0.72rem] font-light ${t.fine}`}>{project}&apos;s 3D model is in production — join and we&apos;ll bring it to you first.</p>
             </>
           ) : step === "req" ? (
@@ -364,7 +364,7 @@ export default function BuyerOfficeGate({
               <div className={`mt-4 flex items-center justify-between rounded-xl border p-4 ${t.card}`}>
                 <div className="min-w-0">
                   <p className={`text-[0.9rem] font-medium ${t.capTitle}`}>{plan === "single" ? project : "Buyer Office membership"}</p>
-                  <p className={`text-[0.76rem] font-light ${t.capDesc}`}>{plan === "single" ? "Full unit intelligence · one project" : "Unlimited projects + advisory"}</p>
+                  <p className={`text-[0.76rem] font-light ${t.capDesc}`}>{plan === "single" ? "Full Sun & Vastu 3D · one project" : "Unlimited projects + advisory"}</p>
                 </div>
                 <p className={`shrink-0 font-mono text-[1.15rem] font-medium ${t.h2}`}>{inr(amount)}</p>
               </div>
@@ -402,11 +402,11 @@ export default function BuyerOfficeGate({
               <h2 className={`mt-2 font-serif text-[1.7rem] font-medium leading-[1.12] ${t.h2}`}>{outcome === "unlocked" ? "It's yours." : "You're in — we're on it."}</h2>
               <p className={`mx-auto mt-3 max-w-[360px] text-[0.88rem] font-light leading-[1.65] ${t.body}`}>
                 {outcome === "unlocked"
-                  ? <>You&apos;ve unlocked {project}&apos;s full unit intelligence — every unit graded, yours to keep. Your advisor can walk you through it whenever you like.</>
-                  : <>Your brief is with our advisory desk. We&apos;ll come back with {project}&apos;s unit intelligence and an independent read — our opinion, never a builder&apos;s pitch.</>}
+                  ? <>You&apos;ve unlocked {project}&apos;s full Sun &amp; Vastu 3D — every unit graded, yours to keep. Your advisor can walk you through it whenever you like.</>
+                  : <>Your brief is with our advisory desk. We&apos;ll come back with {project}&apos;s Sun &amp; Vastu 3D and an independent read — our opinion, never a builder&apos;s pitch.</>}
               </p>
               <div className="mt-7 flex flex-col gap-3 text-left">
-                {has3D && outcome === "unlocked" && <button onClick={onSeeUnitIntel} className={primaryBtn}>See your unit intelligence →</button>}
+                {has3D && outcome === "unlocked" && <button onClick={onSeeUnitIntel} className={primaryBtn}>See your Sun &amp; Vastu 3D →</button>}
                 <button onClick={() => goSchedule("done")} className={has3D && outcome === "unlocked" ? outlineBtn : primaryBtn}>Schedule a call with your advisor</button>
               </div>
               <button onClick={onClose} className={`mt-4 ${backLink}`}>Back to the report</button>
@@ -419,14 +419,14 @@ export default function BuyerOfficeGate({
               <div className={`mt-6 rounded-xl border p-5 ${t.card}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className={`text-[0.94rem] font-medium ${t.capTitle}`}>Tower &amp; Unit Intelligence</p>
+                    <p className={`text-[0.94rem] font-medium ${t.capTitle}`}>Sun &amp; Vastu 3D</p>
                     <p className={`mt-1 text-[0.8rem] font-light leading-[1.5] ${t.capDesc}`}>
                       {has3D ? "Unlocked — open any tower for unit-level intel." : "In production — your advisor will walk you through it as it comes online."}
                     </p>
                   </div>
                   <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[0.6rem] font-medium uppercase tracking-[0.1em] ${t.crest}`}>{access ? "Unlocked" : "Joined"}</span>
                 </div>
-                {has3D && <button onClick={onSeeUnitIntel} className={`mt-4 ${primaryBtn}`}>Open the live 3D →</button>}
+                {has3D && <button onClick={onSeeUnitIntel} className={`mt-4 ${primaryBtn}`}>Open the Sun &amp; Vastu 3D →</button>}
               </div>
               <p className={`mt-7 mb-2.5 font-mono text-[0.6rem] font-medium uppercase tracking-[0.16em] ${t.groupLabel}`}>Your advisor call</p>
               {call ? (
@@ -438,7 +438,7 @@ export default function BuyerOfficeGate({
                 <div className={`rounded-xl border border-dashed p-5 text-center ${t.dashed}`}>
                   <p className={`text-[0.92rem] font-medium ${t.h2}`}>No call scheduled yet.</p>
                   <p className={`mx-auto mt-1.5 max-w-[320px] text-[0.8rem] font-light leading-[1.55] ${t.body}`}>
-                    Book a complimentary 45-minute call — your advisor walks you through your unit intelligence and pressure-tests the decision. No pitch, no pressure.
+                    Book a complimentary 45-minute call — your advisor walks you through your Sun &amp; Vastu 3D and pressure-tests the decision. No pitch, no pressure.
                   </p>
                   <button onClick={() => goSchedule("home")} className={`mt-4 ${primaryBtn}`}>Schedule your advisor call →</button>
                 </div>
@@ -487,7 +487,7 @@ export default function BuyerOfficeGate({
               <p className={`mx-auto mt-3 max-w-[340px] text-[0.86rem] font-light leading-[1.6] ${t.body}`}>We&apos;ll send a calendar invite and a reminder before it. Your advisor arrives prepared on {project}.</p>
               {call && <div className="mt-6 text-left"><CallCard t={t} call={call} /></div>}
               <div className="mt-6 flex flex-col gap-3 text-left">
-                {has3D && access && <button onClick={onSeeUnitIntel} className={primaryBtn}>See your unit intelligence →</button>}
+                {has3D && access && <button onClick={onSeeUnitIntel} className={primaryBtn}>See your Sun &amp; Vastu 3D →</button>}
                 <button onClick={onClose} className={has3D && access ? backLink : primaryBtn}>Back to the report</button>
               </div>
             </div>
@@ -561,7 +561,7 @@ function Icon({ name }: { name: IconName }) {
   const p = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   const big = { ...p, width: 24, height: 24, strokeWidth: 1.7 };
   switch (name) {
-    case "cube": return <svg {...p}><path d="M12 2 3 7v10l9 5 9-5V7z" /><path d="M3 7l9 5 9-5M12 12v10" /></svg>;
+    case "cube": return <svg {...p}><path d="M12 2 21 7v10l-9 5-9-5V7z" /><path d="M3 7l9 5 9-5M12 12v10" /></svg>;
     case "sun": return <svg {...p}><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19" /></svg>;
     case "compass": return <svg {...p}><circle cx="12" cy="12" r="9" /><path d="m15.5 8.5-2 5-5 2 2-5z" /></svg>;
     case "light": return <svg {...p}><rect x="4" y="3" width="16" height="18" rx="1" /><path d="M4 12h16M20 3 4 21" /></svg>;

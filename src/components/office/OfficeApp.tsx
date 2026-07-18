@@ -469,7 +469,7 @@ function CuratedIntel({ curation, paid, onActivate }: { curation: Curation; paid
 
       <div className="grid gap-4 md:grid-cols-2">
         <IntelCard title="Independent Project Report" meta={`${curation.report.pages}-page report`} teasers={curation.report.teasers} paid={paid} />
-        <IntelCard title="Tower & Unit Intelligence" meta={curation.unit.tags.join(" · ")} teasers={curation.unit.teasers} paid={paid} />
+        <IntelCard title="Sun & Vastu 3D" meta={curation.unit.tags.join(" · ")} teasers={curation.unit.teasers} paid={paid} />
       </div>
 
       {curation.deal && (
