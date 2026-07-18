@@ -49,6 +49,13 @@ public/live-media/
 .data-snapshot/
 # extracted advisor intelligence + local render artifacts (regenerable output)
 /scratchpad/
+# db3d local render/debug artifacts (regenerable — before/after shots, demos, vendored libs)
+db3d/**/shot-current.png
+db3d/**/shot-new.png
+db3d/**/*-sidebyside.png
+db3d/**/demo-*.png
+db3d/**/*-3D-demo.zip
+db3d/engine/three.min.js
 
 # generated at build by scripts/copy-pdf-worker.mjs
 public/pdf.worker.min.js
