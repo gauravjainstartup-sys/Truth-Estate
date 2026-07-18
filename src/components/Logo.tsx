@@ -18,70 +18,31 @@ export default function Logo({
       <line x1="4" y1="38" x2="64" y2="38" stroke={color} strokeWidth="1.8" />
       <circle cx="34" cy="38" r="3" fill="#c9a96e" />
 
-      {/* Text via foreignObject for correct CSS font */}
-      <foreignObject x="78" y="0" width="340" height="80">
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            height: "100%",
-            paddingTop: "2px",
-          }}
-        >
-          <span
-            style={{
-              fontFamily: "var(--font-playfair), Georgia, serif",
-              fontSize: "42px",
-              fontWeight: 500,
-              letterSpacing: "18px",
-              lineHeight: 1,
-              color: color,
-            }}
-          >
-            TRUTH
-          </span>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              marginTop: "5px",
-            }}
-          >
-            <span
-              style={{
-                display: "block",
-                width: "35px",
-                height: "1px",
-                background: "#c9a96e",
-                flexShrink: 0,
-              }}
-            />
-            <span
-              style={{
-                fontFamily: "var(--font-playfair), Georgia, serif",
-                fontSize: "14px",
-                fontWeight: 400,
-                letterSpacing: "14px",
-                lineHeight: 1,
-                color: color,
-              }}
-            >
-              ESTATE
-            </span>
-            <span
-              style={{
-                display: "block",
-                width: "35px",
-                height: "1px",
-                background: "#c9a96e",
-                flexShrink: 0,
-              }}
-            />
-          </div>
-        </div>
-      </foreignObject>
+      {/* Wordmark as native SVG text — true vector, stays sharp at any size / DPI
+         (the previous foreignObject HTML was rasterised at 420×80 and upscaled,
+         which is what made it look soft). Playfair via the app font variable. */}
+      <text
+        x="78" y="45"
+        fill={color}
+        style={{ fontFamily: "var(--font-playfair), Georgia, serif", fontWeight: 500 }}
+        fontSize="42"
+        letterSpacing="18"
+      >
+        TRUTH
+      </text>
+
+      {/* ESTATE row: rule · ESTATE · rule (left-aligned under TRUTH) */}
+      <line x1="78" y1="63" x2="113" y2="63" stroke="#c9a96e" strokeWidth="1" />
+      <text
+        x="121" y="68"
+        fill={color}
+        style={{ fontFamily: "var(--font-playfair), Georgia, serif", fontWeight: 400 }}
+        fontSize="14"
+        letterSpacing="14"
+      >
+        ESTATE
+      </text>
+      <line x1="262" y1="63" x2="297" y2="63" stroke="#c9a96e" strokeWidth="1" />
     </svg>
   );
 }
