@@ -356,9 +356,14 @@ export default function Hero({ index }: { index: OmniIndex }) {
           <div className="mt-12 pb-8">{footStat}</div>
         </div>
 
-        {/* hero foot line */}
-        <div className="teh-foothero absolute bottom-20 left-20 z-10 max-w-md font-serif text-[20px] font-medium leading-[1.7] tracking-[0.005em] text-[#b3aea7] lg:left-28">
-          Independent by design. No developer&rsquo;s rupee, ever.
+        {/* hero foot line — credential plaque with a mildly shimmering border */}
+        <div className="teh-foothero absolute bottom-20 left-20 z-10 lg:left-28">
+          <div className="te-foot-plaque max-w-md">
+            <span className="shrink-0 text-[10px] text-[#e7cf95]" aria-hidden="true">&#9670;</span>
+            <span className="font-serif text-[19px] font-medium leading-[1.5] tracking-[0.005em] text-[#d3cdc3]">
+              Independent by design. No developer&rsquo;s rupee, ever.
+            </span>
+          </div>
         </div>
       </div>
 
@@ -392,8 +397,13 @@ export default function Hero({ index }: { index: OmniIndex }) {
               <div className="mt-3 h-px w-full bg-[#c9a96e]/[0.34]" />
             </button>
           </div>
-          <div className="mt-auto font-serif text-[17px] font-medium leading-[1.7] tracking-[0.005em] text-[#b3aea7]">
-            Independent by design. No developer&rsquo;s rupee, ever.
+          <div className="mt-auto">
+            <div className="te-foot-plaque max-w-[19rem] !gap-3 !px-5 !py-3.5">
+              <span className="shrink-0 text-[9px] text-[#e7cf95]" aria-hidden="true">&#9670;</span>
+              <span className="font-serif text-[15px] font-medium leading-[1.45] tracking-[0.005em] text-[#d3cdc3]">
+                Independent by design. No developer&rsquo;s rupee, ever.
+              </span>
+            </div>
           </div>
         </div>
       </div>
