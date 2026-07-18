@@ -20,10 +20,17 @@ export type OmniUnit = {
   view: number | null;
 };
 
-/* Three-way buyer verdict shown as a dropdown chip (derived from the Truth
-   Score at build time — see verdictFromScore). Distinct from the richer
-   Proceed/Wait/Watch/Avoid recommendation on the full report. */
+/* Three-way buyer verdict (legacy field, still emitted in the index for the
+   omni-router; the hero dropdown now shows the canonical Truth Score tag). */
 export type Verdict3 = "Proceed" | "Caution" | "Avoid";
+
+/* The canonical Truth Score tag — identical banding to scoreGrade() on the
+   project report, so the hero chip and the report never disagree. */
+export type ScoreTag = "Exceptional" | "Strong" | "Solid" | "Fair" | "Watch";
+export function scoreTag(score: number | null | undefined): ScoreTag | null {
+  if (score == null || !Number.isFinite(score)) return null;
+  return score >= 90 ? "Exceptional" : score >= 80 ? "Strong" : score >= 70 ? "Solid" : score >= 60 ? "Fair" : "Watch";
+}
 
 export type OmniProject = {
   slug: string;
@@ -42,8 +49,9 @@ export type OmniProject = {
   lat: number | null;
   lng: number | null;
   /* derived at build time for the hero search dropdown */
-  verdict: Verdict3 | null; // from the Truth Score
+  verdict: Verdict3 | null; // legacy (omni-router); chip now derives scoreTag from `score`
   sources: number | null; // count of populated forensic modules on the row
+  updatedAt: string | null; // last-updated date (QPR → legal → registration) for latest-first ordering
 };
 
 /* Truth Score → the three-way dropdown verdict. Thresholds are deliberately

@@ -9,7 +9,7 @@
    (except the explicitly-named storage helpers).
    ════════════════════════════════════════════════════════════════ */
 
-import { AREA_ALIASES, type OmniProject, type Verdict3 } from "@/lib/omni";
+import { AREA_ALIASES, scoreTag, type OmniProject, type ScoreTag } from "@/lib/omni";
 
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 
@@ -119,6 +119,16 @@ export function coveredCountLabel(projects: OmniProject[]): string {
 
 const weight = (p: OmniProject) => (p.score ?? 0) + (p.has3D ? 4 : 0);
 const devKey = (p: OmniProject) => (p.developer ?? p.name).toLowerCase().trim();
+/* parse the last-updated date to a sortable ms; unknown/unparseable → 0 (sinks last) */
+const updatedTime = (p: OmniProject) => {
+  if (!p.updatedAt) return 0;
+  const t = Date.parse(p.updatedAt);
+  return Number.isNaN(t) ? 0 : t;
+};
+const nonGreenTag = (p: OmniProject) => {
+  const t = scoreTag(p.score);
+  return t === "Fair" || t === "Watch";
+};
 
 /* top by Truth Score (3D-modelled nudged up); falls back to any projects so a
    list is never empty even before scores land. Used for typed-state padding. */
@@ -129,50 +139,34 @@ export function topSearched(projects: OmniProject[], n = 6): OmniProject[] {
 }
 
 /* ── the DEFAULT (nothing-typed) list ──
-   Independence is the brand, so the resting list must not be dominated by one
-   builder. Round-robin across developers (≤2 each), preferring breadth, and
-   guarantee at least one non-Proceed verdict in the visible set when the data
-   has one. This shaping applies ONLY to the default state — once the user
-   types, ranking is pure relevance (fuzzySearch). */
+   Latest-updated first (freshest intelligence leads), capped at ≤2 projects per
+   developer so no single builder dominates the resting list — independence is
+   the brand. As a light safety net we keep at least one non-green tag
+   (Fair/Watch) visible when the data has one, so the resting state never reads
+   as all-endorsement. This shaping applies ONLY to the default state — once the
+   user types, ranking is pure relevance (fuzzySearch). */
 export function defaultList(projects: OmniProject[], limit: number): OmniProject[] {
   if (limit <= 0) return [];
   const covered = coveredProjects(projects);
   const pool = covered.length ? covered : projects;
 
-  // group by developer, each group internally strongest-first
-  const groups = new Map<string, OmniProject[]>();
-  for (const p of [...pool].sort((a, b) => weight(b) - weight(a))) {
-    const k = devKey(p);
-    const g = groups.get(k);
-    if (g) g.push(p); else groups.set(k, [p]);
-  }
-  // developers ordered by their strongest project
-  const devs = [...groups.values()].sort((a, b) => weight(b[0]) - weight(a[0]));
+  // newest-updated first; ties (and undated rows) fall back to Truth Score
+  const sorted = [...pool].sort((a, b) => updatedTime(b) - updatedTime(a) || weight(b) - weight(a));
 
-  // round-robin: one per developer, then a second — never a third (≤2 each)
   const out: OmniProject[] = [];
-  for (let round = 0; round < 2 && out.length < limit; round++) {
-    for (const g of devs) {
-      if (out.length >= limit) break;
-      if (g[round]) out.push(g[round]);
-    }
+  const counts = new Map<string, number>();
+  for (const p of sorted) {
+    if (out.length >= limit) break;
+    const k = devKey(p);
+    if ((counts.get(k) ?? 0) >= 2) continue; // ≤2 per developer
+    counts.set(k, (counts.get(k) ?? 0) + 1);
+    out.push(p);
   }
 
-  // ensure at least one non-Proceed verdict is visible (best-effort; only if the
-  // data has one). Swap it in over an over-represented developer's slot.
-  if (out.length && !out.some((p) => p.verdict && p.verdict !== "Proceed")) {
-    const alt = pool
-      .filter((p) => p.verdict && p.verdict !== "Proceed" && !out.includes(p))
-      .sort((a, b) => weight(b) - weight(a))[0];
-    if (alt) {
-      const counts = new Map<string, number>();
-      out.forEach((p) => counts.set(devKey(p), (counts.get(devKey(p)) ?? 0) + 1));
-      let idx = out.length - 1;
-      for (let i = out.length - 1; i >= 0; i--) {
-        if ((counts.get(devKey(out[i])) ?? 0) >= 2) { idx = i; break; }
-      }
-      out[idx] = alt;
-    }
+  // keep at least one non-green tag in view (only if one exists and isn't already shown)
+  if (out.length && !out.some(nonGreenTag)) {
+    const alt = sorted.find((p) => nonGreenTag(p) && !out.includes(p));
+    if (alt) out[out.length - 1] = alt;
   }
   return out.slice(0, limit);
 }
@@ -211,11 +205,14 @@ export function rowMeta(p: OmniProject): string {
   return parts.join(" · ");
 }
 
-/* verdict chip colours (spec-defined) */
-export const VERDICT_CHIP: Record<Verdict3, { text: string; border: string }> = {
-  Proceed: { text: "#245c3f", border: "#7fae94" },
-  Caution: { text: "#8a4b1c", border: "#c39a70" },
-  Avoid: { text: "#8a2b1c", border: "#c37070" },
+/* Truth Score tag chip colours — the SAME three approved chip colours mapped
+   onto the five tags: green (Exceptional/Strong/Solid), amber (Fair), red (Watch). */
+export const TAG_CHIP: Record<ScoreTag, { text: string; border: string }> = {
+  Exceptional: { text: "#245c3f", border: "#7fae94" },
+  Strong: { text: "#245c3f", border: "#7fae94" },
+  Solid: { text: "#245c3f", border: "#7fae94" },
+  Fair: { text: "#8a4b1c", border: "#c39a70" },
+  Watch: { text: "#8a2b1c", border: "#c37070" },
 };
 
 /* ── localStorage seams (truthEstate.* prefix, per site convention: cleared on
