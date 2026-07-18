@@ -7,6 +7,8 @@ import { useJourney } from "../journey/JourneyProvider";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import { loadBuyData, hasPreferences, deriveDNA, clearAllDemoData, saveLead } from "@/lib/journey";
 import type { ConsultProfileChip } from "@/lib/consultation";
+import { TAG_CHIP } from "@/lib/heroSearch";
+import type { ScoreTag } from "@/lib/omni";
 import {
   fmtPsf,
   developerOf,
@@ -265,6 +267,7 @@ export default function ProjectProfile({
     ? `Under construction · handover ${ops.possession}`
     : undefined;
   const heroImage = ops?.media?.heroImage;
+  const has3D = !!towerIntelMeta(p)?.file;
 
   const con = ops?.construction;
 
@@ -531,6 +534,13 @@ export default function ProjectProfile({
                       {/* credential chips — on xl they stay with the identity column;
                          on stacked layouts they move down with the score group */}
                       <div className="mt-6 hidden items-center gap-2 xl:flex xl:flex-wrap">
+                        {has3D && (
+                          <button type="button" onClick={openUnitIntel} aria-label="Open the 3D Sun & Vastu advisor"
+                            className="group inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[#d8b978]/45 bg-[#d8b978]/[0.15] px-3.5 py-1.5 text-[0.7rem] font-medium text-[#f4e9cd] backdrop-blur-sm transition-colors hover:bg-[#d8b978]/25">
+                            <IconCube className="text-[#f0d492]" />Sun &amp; Vastu
+                            <span aria-hidden className="inline-block text-[#f0d492] transition-transform group-hover:translate-x-0.5">↗</span>
+                          </button>
+                        )}
                         {ctx.corridorRank > 0 && (
                         <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[0.7rem] font-medium text-white/85 backdrop-blur-sm">
                           <IconAward className="text-[#d8b978]" /> #{ctx.corridorRank} of {ctx.corridorCount} in {p.marketShort}
@@ -552,6 +562,13 @@ export default function ProjectProfile({
                        one-line provenance gather at the base of the canvas */}
                     <div className="mt-auto w-full xl:mt-0 xl:w-auto">
                     <div className="mb-4 flex items-center gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:hidden">
+                      {has3D && (
+                        <button type="button" onClick={openUnitIntel} aria-label="Open the 3D Sun & Vastu advisor"
+                          className="group inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[#d8b978]/45 bg-[#d8b978]/[0.15] px-3.5 py-1.5 text-[0.7rem] font-medium text-[#f4e9cd] backdrop-blur-sm transition-colors hover:bg-[#d8b978]/25">
+                          <IconCube className="text-[#f0d492]" />Sun &amp; Vastu
+                          <span aria-hidden className="inline-block text-[#f0d492] transition-transform group-hover:translate-x-0.5">↗</span>
+                        </button>
+                      )}
                       {ctx.corridorRank > 0 && (
                       <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[0.7rem] font-medium text-white/85 backdrop-blur-sm">
                         <IconAward className="text-[#d8b978]" /> #{ctx.corridorRank} of {ctx.corridorCount} in {p.marketShort}
@@ -571,9 +588,9 @@ export default function ProjectProfile({
                         <span className="ml-1.5 font-mono text-[0.95rem] text-[#1a1a1a]/30">/100</span>
                       </p>
                       <p className="mt-2">
-                        {/* the score's own grade word — the analyst's action call
-                           ('Watchlist' etc.) stays in the Anatomy section + verdict */}
-                        <span className="text-[0.62rem] font-bold uppercase tracking-[0.12em] text-[#1e6b45]">{scoreGrade(p.truthScore)}</span>
+                        {/* the score's grade as the canonical band pill — same
+                           treatment as the search-result cards (band-coloured) */}
+                        <ScoreGradePill score={p.truthScore} />
                       </p>
                       <div className="mt-2.5 flex w-full gap-[3px]">
                         {Array.from({ length: 10 }).map((_, idx) => (
@@ -1064,8 +1081,20 @@ function Chapter({ n, title, framing }: { n: string; title: string; framing: str
   );
 }
 
-function scoreGrade(s: number) {
+function scoreGrade(s: number): ScoreTag {
   return s >= 90 ? "Exceptional" : s >= 80 ? "Strong" : s >= 70 ? "Solid" : s >= 60 ? "Fair" : "Watch";
+}
+
+/* The Truth Score's band as a pill — same treatment as the search-result cards
+   (outlined, band-coloured via TAG_CHIP) so the hero and search surfaces match. */
+function ScoreGradePill({ score }: { score: number }) {
+  const g = scoreGrade(score);
+  const s = TAG_CHIP[g];
+  return (
+    <span className="inline-block rounded-[11px] px-2 py-[3px] text-[10.5px] font-medium leading-none" style={{ color: s.text, border: `0.5px solid ${s.border}` }}>
+      {g}
+    </span>
+  );
 }
 
 /* The short answer — reformat the pipeline's terse data-caption
@@ -1103,6 +1132,9 @@ function IconAward({ className = "" }: { className?: string }) {
 }
 function IconBuilding({ className = "" }: { className?: string }) {
   return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={`${ICN} ${className}`} aria-hidden><path d="M4 21V5.5A1.5 1.5 0 0 1 5.5 4h6A1.5 1.5 0 0 1 13 5.5V21" /><path d="M13 10h5.5A1.5 1.5 0 0 1 20 11.5V21" /><path d="M3 21h18M7 8h2M7 12h2M7 16h2M16 14h1M16 17.5h1" /></svg>);
+}
+function IconCube({ className = "" }: { className?: string }) {
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={`${ICN} ${className}`} aria-hidden><path d="M12 2 21 7v10l-9 5-9-5V7z" /><path d="M3 7l9 5 9-5M12 12v10" /></svg>);
 }
 function IconTrendUp({ className = "" }: { className?: string }) {
   return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={`${ICN} ${className}`} aria-hidden><path d="M3 16.5 9 10.5l3.5 3.5L21 5.5" /><path d="M15 5.5h6v6" /></svg>);
