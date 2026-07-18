@@ -5,13 +5,14 @@ on:
     branches: [main]
   # Manual "Run workflow" button — publish the latest Supabase data on demand.
   workflow_dispatch:
-  # Scheduled rebuild — the site is a static export, so this re-fetches Supabase
-  # and redeploys, surfacing DB edits with no manual step. Every 6h (not hourly):
-  # each run re-pulls the full media set (base64 in project_extended_details isn't
-  # URL-cacheable), so 24 → 4 scheduled pulls/day cuts most of the egress. Use the
-  # "Run workflow" button to publish DB edits sooner. GitHub may delay cron runs.
+  # Scheduled DATA refresh — the site is a static export, so this re-fetches
+  # Supabase and redeploys, surfacing DB edits with no manual step. Only the
+  # schedule and the manual "Run workflow" button re-pull the DB/media snapshot
+  # (SNAPSHOT_REFRESH=1 below); ordinary code pushes reuse the cached snapshot
+  # and cost ZERO Supabase egress. Once a day is plenty for data freshness —
+  # use "Run workflow" to publish a DB edit sooner. GitHub may delay cron runs.
   schedule:
-    - cron: "0 */6 * * *"
+    - cron: "0 3 * * *"
 
 permissions:
   contents: read
@@ -45,8 +46,20 @@ jobs:
           path: .media-cache
           key: media-cache-${{ github.run_id }}
           restore-keys: media-cache-
+      # Data snapshot cache — carries the last DB/media pull across builds so a
+      # code push reuses it (zero Supabase egress). Only a schedule / manual run
+      # refreshes it (SNAPSHOT_REFRESH below).
+      - uses: actions/cache@v4
+        with:
+          path: .data-snapshot
+          key: data-snapshot-${{ github.run_id }}
+          restore-keys: data-snapshot-
       - run: npm run build
         env:
+          # Re-pull the Supabase snapshot ONLY on a scheduled data refresh or the
+          # manual "Run workflow" button — code pushes reuse the cached snapshot
+          # and never touch Supabase. This is the egress fix.
+          SNAPSHOT_REFRESH: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '1' || '' }}
           # PDFs above this many MB are NOT baked — the card keeps its
           # build-rendered cover and the click serves the file straight from
           # Supabase Storage, which is billed egress on every open. The only
