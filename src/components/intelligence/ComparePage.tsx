@@ -14,6 +14,17 @@ const winHigher = (a: number, b: number): Win => (a === b ? undefined : a > b ? 
 const winLower = (a: number, b: number): Win => (a === b ? undefined : a < b ? "a" : "b");
 type Win = "a" | "b" | undefined;
 
+/* Live rows can carry a single-point ticket ([lo, lo]) or none — render a clean
+   single value / dash rather than "₹5–5 Cr" or "₹0–0 Cr". Curated ranges are
+   unaffected. */
+const ticketLabel = (p: ProjectIntel): string => {
+  const [lo, hi] = p.budget;
+  if (!lo && !hi) return "—";
+  return lo === hi ? `₹${lo} Cr` : `₹${lo}–${hi} Cr`;
+};
+/* first positioning tag, with a graceful fallback when a live row has none */
+const tagOf = (p: ProjectIntel): string => p.tags[0]?.toLowerCase() ?? "its fundamentals";
+
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return <p className="text-[11px] font-medium uppercase tracking-[0.34em] text-[#c9a96e]">{children}</p>;
 }
@@ -207,8 +218,8 @@ function ProjectCompare({ r }: { r: Extract<ResolvedCompare, { kind: "project" }
         <Eyebrow>Our read</Eyebrow>
         <p className="mt-5 font-serif text-[1.3rem] font-normal leading-[1.5] md:text-[1.6rem]">
           {a.truthScore === b.truthScore
-            ? `Line-ball on the headline score (${a.truthScore} each) — the choice comes down to ${a.tags[0]?.toLowerCase()} versus ${b.tags[0]?.toLowerCase()}.`
-            : `${winner.name} leads on our score (${winner.truthScore} vs ${other.truthScore}). ${winner.reason}${premiumClause} ${other.name} still earns its place on ${other.tags[0]?.toLowerCase()}.`}
+            ? `Line-ball on the headline score (${a.truthScore} each) — the choice comes down to ${tagOf(a)} versus ${tagOf(b)}.`
+            : `${winner.name} leads on our score (${winner.truthScore} vs ${other.truthScore}).${winner.reason ? ` ${winner.reason}` : ""}${premiumClause} ${other.name} still earns its place on ${tagOf(other)}.`}
         </p>
       </div>
 
@@ -219,7 +230,7 @@ function ProjectCompare({ r }: { r: Extract<ResolvedCompare, { kind: "project" }
           <ProjectHead p={b} />
         </div>
 
-        <Row label="Ticket" a={`₹${a.budget[0]}–${a.budget[1]} Cr`} b={`₹${b.budget[0]}–${b.budget[1]} Cr`} />
+        <Row label="Ticket" a={ticketLabel(a)} b={ticketLabel(b)} />
         <Row label="Developer" a={a.developer} b={b.developer} />
         <Row label="Corridor" a={a.marketShort} b={b.marketShort} />
       </div>
@@ -273,12 +284,14 @@ function ProjectCompare({ r }: { r: Extract<ResolvedCompare, { kind: "project" }
         ))}
       </Section>
 
-      <Section title="Strengths">
-        <div className="mt-2 grid gap-5 md:grid-cols-2">
-          <StrengthCol name={a.name} items={a.strengths} />
-          <StrengthCol name={b.name} items={b.strengths} />
-        </div>
-      </Section>
+      {(a.strengths.length > 0 || b.strengths.length > 0) && (
+        <Section title="Strengths">
+          <div className="mt-2 grid gap-5 md:grid-cols-2">
+            {a.strengths.length > 0 && <StrengthCol name={a.name} items={a.strengths} />}
+            {b.strengths.length > 0 && <StrengthCol name={b.name} items={b.strengths} />}
+          </div>
+        </Section>
+      )}
     </>
   );
 }

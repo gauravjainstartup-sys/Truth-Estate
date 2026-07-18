@@ -3,30 +3,62 @@
 import { useState } from "react";
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
-import { COMPARE_OPTIONS, POPULAR_COMPARISONS, comparePairSlug, type CompareKind } from "@/lib/compare";
-import { projectBySlug } from "@/lib/projects";
+import {
+  COMPARE_OPTIONS,
+  POPULAR_COMPARISONS,
+  comparePairSlug,
+  type CompareKind,
+  type ProjectCompareOption,
+} from "@/lib/compare";
 
 const basePath = "/Truth-Estate";
 
 const KIND_LABEL: Record<CompareKind, string> = { project: "Projects", developer: "Developers", market: "Markets" };
 
-export default function CompareIndex() {
+type PopularEntry = { label: string; pair: string; kind: CompareKind; scores?: [number, number] };
+
+export default function CompareIndex({ projectOptions }: { projectOptions: ProjectCompareOption[] }) {
   const { open } = useJourney();
-  const [kind, setKind] = useState<CompareKind>("project");
-  const opts = COMPARE_OPTIONS[kind];
-  const [a, setA] = useState(opts[0].slug);
-  const [b, setB] = useState(opts[1].slug);
+
+  // real projects (live scored set) + curated developer/market registries
+  const OPTS: Record<CompareKind, { slug: string; name: string }[]> = {
+    project: projectOptions,
+    developer: COMPARE_OPTIONS.developer,
+    market: COMPARE_OPTIONS.market,
+  };
+  // start on Projects when we have a live set to compare; else fall back
+  const initialKind: CompareKind = projectOptions.length >= 2 ? "project" : "developer";
+
+  const [kind, setKind] = useState<CompareKind>(initialKind);
+  const opts = OPTS[kind];
+  const [a, setA] = useState(OPTS[initialKind][0]?.slug ?? "");
+  const [b, setB] = useState(OPTS[initialKind][1]?.slug ?? "");
 
   const switchKind = (k: CompareKind) => {
     setKind(k);
-    setA(COMPARE_OPTIONS[k][0].slug);
-    setB(COMPARE_OPTIONS[k][1].slug);
+    setA(OPTS[k][0]?.slug ?? "");
+    setB(OPTS[k][1]?.slug ?? "");
   };
 
   const go = () => {
-    if (a === b) return;
+    if (!a || !b || a === b) return;
     window.location.href = `${basePath}/intelligence/compare/${comparePairSlug(a, b)}`;
   };
+
+  // popular project pairs come from the top of the live scored set; the
+  // developer/market ones are curated. Both are real — no sample data.
+  const popularProjects: PopularEntry[] = [[0, 1], [2, 3], [0, 2]]
+    .filter(([i, j]) => projectOptions[i] && projectOptions[j])
+    .map(([i, j]) => {
+      const [x, y] = [projectOptions[i], projectOptions[j]];
+      return {
+        label: `${x.name} vs ${y.name}`,
+        pair: comparePairSlug(x.slug, y.slug),
+        kind: "project" as const,
+        scores: [x.score, y.score] as [number, number],
+      };
+    });
+  const popular: PopularEntry[] = [...popularProjects, ...POPULAR_COMPARISONS].slice(0, 6);
 
   return (
     <div className="min-h-svh bg-[#F5F0E8] text-[#1a1a1a]">
@@ -39,20 +71,22 @@ export default function CompareIndex() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-5xl px-6 pb-[14vh] pt-[7vh] md:px-10">
+      <div className="mx-auto max-w-5xl px-6 pb-[14vh] pt-6 md:px-10 md:pt-[7vh]">
         <div className="flex items-center gap-2 text-[0.74rem] font-light text-[#1a1a1a]/35">
           <a href={`${basePath}/intelligence`} className="transition-colors hover:text-[#1a1a1a]/70">Intelligence</a>
           <span className="text-[#1a1a1a]/20">/</span><span className="text-[#1a1a1a]/55">Compare</span>
         </div>
 
-        <p className="mt-8 text-[11px] font-medium uppercase tracking-[0.34em] text-[#c9a96e]">Comparative Intelligence</p>
-        <h1 className="mt-5 max-w-2xl font-serif text-[2.6rem] font-medium leading-[1.04] tracking-[-0.02em] md:text-[4rem]">Compare anything, side by side.</h1>
-        <p className="mt-6 max-w-2xl text-[1rem] font-light leading-[1.85] text-[#1a1a1a]/60 md:text-[1.05rem]">
-          Two projects, two developers or two markets — measured on the same evidence. Score anatomy against score anatomy, delivery against delivery, price against price. No spin, no sponsored winner.
+        <p className="mt-6 text-[11px] font-medium uppercase tracking-[0.34em] text-[#c9a96e] md:mt-8">Comparative Intelligence</p>
+        <h1 className="mt-3 max-w-2xl font-serif text-[2rem] font-medium leading-[1.05] tracking-[-0.02em] md:mt-5 md:text-[4rem]">Compare anything, side by side.</h1>
+        <p className="mt-4 max-w-2xl text-[0.92rem] font-light leading-[1.6] text-[#1a1a1a]/60 md:mt-6 md:text-[1.05rem] md:leading-[1.85]">
+          {/* a tight one-liner on mobile keeps the picker in the first screen; the full intro shows from md up */}
+          <span className="md:hidden">Two projects, developers or markets — measured on the same evidence. No spin, no sponsored winner.</span>
+          <span className="hidden md:inline">Two projects, two developers or two markets — measured on the same evidence. Score anatomy against score anatomy, delivery against delivery, price against price. No spin, no sponsored winner.</span>
         </p>
 
         {/* Picker */}
-        <div className="mt-10 rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-7 md:p-9">
+        <div className="mt-6 rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-5 md:mt-10 md:p-9">
           <div className="flex flex-wrap gap-2">
             {(Object.keys(KIND_LABEL) as CompareKind[]).map((k) => (
               <button key={k} onClick={() => switchKind(k)}
@@ -62,14 +96,14 @@ export default function CompareIndex() {
             ))}
           </div>
 
-          <div className="mt-6 grid items-end gap-4 sm:grid-cols-[1fr_auto_1fr]">
+          <div className="mt-5 grid items-end gap-4 sm:grid-cols-[1fr_auto_1fr] md:mt-6">
             <Select label="First" value={a} onChange={setA} opts={opts} />
             <span className="hidden pb-3 text-center font-serif text-[1.1rem] text-[#1a1a1a]/25 sm:block">vs</span>
             <Select label="Second" value={b} onChange={setB} opts={opts} />
           </div>
 
-          <div className="mt-6 flex items-center gap-4">
-            <button onClick={go} disabled={a === b}
+          <div className="mt-5 flex items-center gap-4 md:mt-6">
+            <button onClick={go} disabled={!a || !b || a === b}
               className="rounded-sm bg-[#1e6b45] px-8 py-3 text-[0.8rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] disabled:opacity-30">
               Compare &rarr;
             </button>
@@ -78,35 +112,28 @@ export default function CompareIndex() {
         </div>
 
         {/* Popular */}
-        <h2 className="mt-16 font-serif text-[1.6rem] font-medium tracking-[-0.01em] md:text-[2rem]">Popular comparisons</h2>
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          {POPULAR_COMPARISONS.map((c) => {
-            // project pairs carry their scores — the evidence shows before the
-            // click, ordered to match the names in the label
-            const scores = c.kind === "project"
-              ? c.pair.split("-vs-")
-                  .map((s) => projectBySlug(s.replace(/^sample-/, "")))
-                  .filter((p): p is NonNullable<typeof p> => p != null)
-                  .sort((x, y) => c.label.indexOf(x.name) - c.label.indexOf(y.name))
-                  .map((p) => p.truthScore)
-              : [];
-            return (
-              <a key={c.pair} href={`${basePath}/intelligence/compare/${c.pair}`}
-                className="group flex items-center justify-between gap-4 rounded-xl border border-[#1a1a1a]/8 bg-white/55 px-6 py-4 transition-all duration-300 hover:border-[#c9a96e]/40 hover:bg-white/80">
-                <div className="min-w-0">
-                  <span className="font-serif text-[1.02rem] font-light text-[#1a1a1a]/75">{c.label}</span>
-                  <span className="ml-3 font-mono text-[0.58rem] uppercase tracking-[0.12em] text-[#1a1a1a]/30">{KIND_LABEL[c.kind].slice(0, -1)}</span>
-                </div>
-                <span className="flex shrink-0 items-center gap-3">
-                  {scores.length === 2 && (
-                    <span className="font-mono text-[0.72rem] tabular-nums text-[#1e6b45]">{scores[0]} · {scores[1]}</span>
-                  )}
-                  <span className="text-[#1a1a1a]/20 transition-transform duration-300 group-hover:translate-x-1">→</span>
-                </span>
-              </a>
-            );
-          })}
-        </div>
+        {popular.length > 0 && (
+          <>
+            <h2 className="mt-16 font-serif text-[1.6rem] font-medium tracking-[-0.01em] md:text-[2rem]">Popular comparisons</h2>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              {popular.map((c) => (
+                <a key={c.pair} href={`${basePath}/intelligence/compare/${c.pair}`}
+                  className="group flex items-center justify-between gap-4 rounded-xl border border-[#1a1a1a]/8 bg-white/55 px-6 py-4 transition-all duration-300 hover:border-[#c9a96e]/40 hover:bg-white/80">
+                  <div className="min-w-0">
+                    <span className="font-serif text-[1.02rem] font-light text-[#1a1a1a]/75">{c.label}</span>
+                    <span className="ml-3 font-mono text-[0.58rem] uppercase tracking-[0.12em] text-[#1a1a1a]/30">{KIND_LABEL[c.kind].slice(0, -1)}</span>
+                  </div>
+                  <span className="flex shrink-0 items-center gap-3">
+                    {c.scores && (
+                      <span className="font-mono text-[0.72rem] tabular-nums text-[#1e6b45]">{c.scores[0]} · {c.scores[1]}</span>
+                    )}
+                    <span className="text-[#1a1a1a]/20 transition-transform duration-300 group-hover:translate-x-1">→</span>
+                  </span>
+                </a>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
