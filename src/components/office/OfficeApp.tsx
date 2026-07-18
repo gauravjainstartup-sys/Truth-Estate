@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import Logo from "../Logo";
 import SignIn from "./SignIn";
-import { isMember, clearAllDemoData } from "@/lib/journey";
+import { isSignedIn, clearAllDemoData } from "@/lib/journey";
 import { projectByName } from "@/lib/projects";
 import ProjectOptionCard from "../intelligence/ProjectOptionCard";
 import {
@@ -60,7 +60,7 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
      layout), so a reloaded visitor lands on the sign-in screen; the office
      only loads — and only seeds its demo — once they're signed in. */
   useEffect(() => {
-    const m = isMember();
+    const m = isSignedIn();
     setAuthed(m);
     if (m) setState(loadOffice());
   }, []);

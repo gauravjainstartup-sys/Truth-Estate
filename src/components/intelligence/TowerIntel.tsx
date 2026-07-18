@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { hasFullAccess, unlockProject, setMember, saveLead } from "@/lib/journey";
+import { has3DAccess, grantPackage, saveLead } from "@/lib/journey";
 import BuyerOfficeGate from "./BuyerOfficeGate";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import type { ProjectIntel, TowerIntelMeta } from "@/lib/projects";
@@ -30,14 +30,14 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
   const { openConsult } = useConsultation();
 
   useEffect(() => {
-    setAccess(hasFullAccess(slug));
+    setAccess(has3DAccess(slug));
   }, [slug]);
 
   // hero pill / final-card CTA — 3D projects open the live model (free to
   // explore + a free sample; the full verdict is paid); others open the
   // Buyer Office (home once paid, otherwise the free register flow).
   useEffect(() => {
-    const h = () => (has3D ? setModal(true) : openGate(hasFullAccess(slug) ? "home" : "intro"));
+    const h = () => (has3D ? setModal(true) : openGate(has3DAccess(slug) ? "home" : "intro"));
     window.addEventListener(UNIT_INTEL_EVENT, h);
     return () => window.removeEventListener(UNIT_INTEL_EVENT, h);
   }, [has3D, slug]);
@@ -53,7 +53,7 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
     const onMsg = (e: MessageEvent) => {
       const d = e.data;
       if (!d || typeof d !== "object") return;
-      if (d.type === "te-ready" && hasFullAccess(slug)) postPaid();
+      if (d.type === "te-ready" && has3DAccess(slug)) postPaid();
       if (d.type === "te-pay") openGate("plans");
       // "Talk to an advisor" from a unit — close the model and open the consult flow with the unit as source.
       if (d.type === "te-consult") { setModal(false); openConsult({ source: project.name, sourceKind: "project", intent: "buy" }); }
@@ -74,11 +74,13 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
     return () => { document.body.style.overflow = prev; };
   }, [modal]);
 
-  // Payment succeeded in the gate (simulated). Record the entitlement and, if
-  // the 3D is already open (a dive-in), unlock it so the tapped tower opens.
+  // Payment succeeded in the gate (simulated). Record the entitlement under the
+  // v2 package model — the single project plan is ₹1,499 (read + 3D), the
+  // membership is all-access — then, if the 3D is already open (a dive-in),
+  // unlock it so the tapped tower opens.
   function onPaid(plan: Plan) {
-    if (plan === "membership") setMember();
-    else unlockProject(slug);
+    if (plan === "membership") grantPackage("all");
+    else grantPackage("read3d", slug);
     setAccess(true);
     if (has3D && modal) postPaid();
   }
@@ -156,7 +158,7 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
             ref={iframeRef}
             src={src}
             title={`${project.name} — Tower & Unit Intelligence`}
-            onLoad={() => { if (hasFullAccess(slug)) postPaid(); }}
+            onLoad={() => { if (has3DAccess(slug)) postPaid(); }}
             className="min-h-0 flex-1 border-0"
           />
         </div>

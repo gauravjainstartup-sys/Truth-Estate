@@ -16,7 +16,7 @@
 import { useEffect, useRef, useState } from "react";
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
-import { saveLead, setMember } from "@/lib/journey";
+import { saveLead, setSignedIn } from "@/lib/journey";
 
 const basePath = "/Truth-Estate";
 
@@ -77,7 +77,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
     e.preventDefault();
     if (!otpComplete) { setErr(`Enter the ${OTP_LEN}-digit code.`); return; }
     saveLead({ name: name.trim(), email: "", phone: `${dial} ${num}`.trim(), intent: "buyer-office", createdAt: Date.now() });
-    setMember();
+    setSignedIn();         // registration only — opens the office, unlocks no reads
     onSignedIn();          // reveal the office (dashboard) behind…
     openOnboarding();      // …the onboarding brief. For now everyone onboards
                            // after sign-in; closing it lands in the dashboard.
