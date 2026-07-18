@@ -102,24 +102,79 @@ export function highlightName(name: string, query: string): NameSegment[] {
   return segs;
 }
 
-/* covered = we hold a Truth Score for it; the number the footer rounds down. */
+/* scored = we hold a Truth Score for it (so it can show a verdict chip). */
 export function coveredProjects(projects: OmniProject[]): OmniProject[] {
   return projects.filter((p) => p.score != null);
 }
 
+/* The footer count is every project a buyer can actually pull up — the whole
+   searchable index, not only the scored ones — rounded down to the nearest ten.
+   Fully dynamic: it tracks the live index size (100+ on production), never a
+   hardcoded figure. */
 export function coveredCountLabel(projects: OmniProject[]): string {
-  const n = coveredProjects(projects).length;
+  const n = projects.length;
   const floored = Math.max(10, Math.floor(n / 10) * 10);
   return `${floored}+ Gurugram projects covered`;
 }
 
-/* top by Truth Score (3D-modelled nudged up); falls back to any projects so the
-   default panel is never empty even before scores land. */
+const weight = (p: OmniProject) => (p.score ?? 0) + (p.has3D ? 4 : 0);
+const devKey = (p: OmniProject) => (p.developer ?? p.name).toLowerCase().trim();
+
+/* top by Truth Score (3D-modelled nudged up); falls back to any projects so a
+   list is never empty even before scores land. Used for typed-state padding. */
 export function topSearched(projects: OmniProject[], n = 6): OmniProject[] {
   const covered = coveredProjects(projects);
   const base = covered.length ? covered : projects;
-  const weight = (p: OmniProject) => (p.score ?? 0) + (p.has3D ? 4 : 0);
   return [...base].sort((a, b) => weight(b) - weight(a)).slice(0, n);
+}
+
+/* ── the DEFAULT (nothing-typed) list ──
+   Independence is the brand, so the resting list must not be dominated by one
+   builder. Round-robin across developers (≤2 each), preferring breadth, and
+   guarantee at least one non-Proceed verdict in the visible set when the data
+   has one. This shaping applies ONLY to the default state — once the user
+   types, ranking is pure relevance (fuzzySearch). */
+export function defaultList(projects: OmniProject[], limit: number): OmniProject[] {
+  if (limit <= 0) return [];
+  const covered = coveredProjects(projects);
+  const pool = covered.length ? covered : projects;
+
+  // group by developer, each group internally strongest-first
+  const groups = new Map<string, OmniProject[]>();
+  for (const p of [...pool].sort((a, b) => weight(b) - weight(a))) {
+    const k = devKey(p);
+    const g = groups.get(k);
+    if (g) g.push(p); else groups.set(k, [p]);
+  }
+  // developers ordered by their strongest project
+  const devs = [...groups.values()].sort((a, b) => weight(b[0]) - weight(a[0]));
+
+  // round-robin: one per developer, then a second — never a third (≤2 each)
+  const out: OmniProject[] = [];
+  for (let round = 0; round < 2 && out.length < limit; round++) {
+    for (const g of devs) {
+      if (out.length >= limit) break;
+      if (g[round]) out.push(g[round]);
+    }
+  }
+
+  // ensure at least one non-Proceed verdict is visible (best-effort; only if the
+  // data has one). Swap it in over an over-represented developer's slot.
+  if (out.length && !out.some((p) => p.verdict && p.verdict !== "Proceed")) {
+    const alt = pool
+      .filter((p) => p.verdict && p.verdict !== "Proceed" && !out.includes(p))
+      .sort((a, b) => weight(b) - weight(a))[0];
+    if (alt) {
+      const counts = new Map<string, number>();
+      out.forEach((p) => counts.set(devKey(p), (counts.get(devKey(p)) ?? 0) + 1));
+      let idx = out.length - 1;
+      for (let i = out.length - 1; i >= 0; i--) {
+        if ((counts.get(devKey(out[i])) ?? 0) >= 2) { idx = i; break; }
+      }
+      out[idx] = alt;
+    }
+  }
+  return out.slice(0, limit);
 }
 
 /* projects covered near the query — resolved via corridor/sector aliases; pads
