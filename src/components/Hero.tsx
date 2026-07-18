@@ -53,22 +53,30 @@ export default function Hero({ index }: { index: OmniIndex }) {
 
   return (
     <section className="teh2 relative w-full overflow-hidden bg-[#14110d]" style={{ height: "100svh", maxHeight: "900px", minHeight: "560px" }}>
-      {/* ── background photograph (decorative) ── */}
-      <picture>
-        <source media="(max-width:767px)" type="image/avif" srcSet={`${IMG}/new-hero-mobile.avif`} />
-        <source media="(max-width:767px)" type="image/webp" srcSet={`${IMG}/new-hero-mobile.webp`} />
-        <source media="(max-width:767px)" srcSet={`${IMG}/new-hero-mobile.jpg`} />
-        <source type="image/avif" srcSet={`${IMG}/new-hero-desktop.avif`} />
-        <source type="image/webp" srcSet={`${IMG}/new-hero-desktop.webp`} />
-        <img src={`${IMG}/new-hero-desktop.jpg`} alt="" aria-hidden="true" fetchPriority="high"
-          className="teh2-img absolute inset-0 h-full w-full object-cover" />
-      </picture>
+      {/* ── framed stage — the photo and its legibility overlays share the SAME
+           max-w-7xl frame as the header and content below, so on wide screens
+           the image is contained to that width (equal margins on both sides)
+           instead of bleeding to the right edge. Below max-w-7xl (phones and
+           tablets) the frame is the full viewport, so the image still fills the
+           screen. The section's #14110d shows in the margins on wide screens. ── */}
+      <div className="absolute inset-0 mx-auto max-w-7xl overflow-hidden">
+        {/* background photograph (decorative) */}
+        <picture>
+          <source media="(max-width:767px)" type="image/avif" srcSet={`${IMG}/new-hero-mobile.avif`} />
+          <source media="(max-width:767px)" type="image/webp" srcSet={`${IMG}/new-hero-mobile.webp`} />
+          <source media="(max-width:767px)" srcSet={`${IMG}/new-hero-mobile.jpg`} />
+          <source type="image/avif" srcSet={`${IMG}/new-hero-desktop.avif`} />
+          <source type="image/webp" srcSet={`${IMG}/new-hero-desktop.webp`} />
+          <img src={`${IMG}/new-hero-desktop.jpg`} alt="" aria-hidden="true" fetchPriority="high"
+            className="teh2-img absolute inset-0 h-full w-full object-cover" />
+        </picture>
 
-      {/* ── legibility overlays (text never depends on the photo) ── */}
-      <div className="absolute inset-0 hidden md:block" aria-hidden="true"
-        style={{ background: "linear-gradient(90deg, rgba(10,8,5,0.92) 0%, rgba(10,8,5,0.75) 35%, rgba(10,8,5,0.15) 62%, rgba(10,8,5,0) 100%)" }} />
-      <div className="absolute inset-0 md:hidden" aria-hidden="true"
-        style={{ background: "linear-gradient(180deg, rgba(10,8,5,0.90) 0%, rgba(10,8,5,0.78) 30%, rgba(10,8,5,0.55) 48%, rgba(10,8,5,0.25) 62%, rgba(10,8,5,0) 80%)" }} />
+        {/* legibility overlays (text never depends on the photo) */}
+        <div className="absolute inset-0 hidden md:block" aria-hidden="true"
+          style={{ background: "linear-gradient(90deg, rgba(10,8,5,0.92) 0%, rgba(10,8,5,0.75) 35%, rgba(10,8,5,0.15) 62%, rgba(10,8,5,0) 100%)" }} />
+        <div className="absolute inset-0 md:hidden" aria-hidden="true"
+          style={{ background: "linear-gradient(180deg, rgba(10,8,5,0.90) 0%, rgba(10,8,5,0.78) 30%, rgba(10,8,5,0.55) 48%, rgba(10,8,5,0.25) 62%, rgba(10,8,5,0) 80%)" }} />
+      </div>
       {/* header scrim — keeps nav legible over the lamp at any width */}
       <div className="absolute inset-x-0 top-0 z-20 hidden h-32 md:block" aria-hidden="true"
         style={{ background: "linear-gradient(180deg, rgba(10,8,5,0.55) 0%, rgba(10,8,5,0) 100%)" }} />
