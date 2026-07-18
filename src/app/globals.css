@@ -247,3 +247,9 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .te-foot-plaque::before { animation: none; }
 }
+
+/* Homepage hero (v2) — keep the empty dark zone of the photo behind the text.
+   Mobile: full height shown, centred. Desktop: nudge toward the verdict
+   document on the right so it stays framed; the left gradient carries the text. */
+.teh2-img { object-position: center center; }
+@media (min-width: 768px) { .teh2-img { object-position: 64% center; } }

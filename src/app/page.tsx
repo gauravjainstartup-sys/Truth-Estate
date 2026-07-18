@@ -9,6 +9,9 @@ export default async function Home() {
   const index = await buildIndex();
   return (
     <>
+      {/* Preload the above-the-fold hero image per breakpoint (LCP). */}
+      <link rel="preload" as="image" href="/Truth-Estate/images/new-hero-desktop.webp" type="image/webp" media="(min-width: 768px)" />
+      <link rel="preload" as="image" href="/Truth-Estate/images/new-hero-mobile.webp" type="image/webp" media="(max-width: 767px)" />
       <main>
         <Hero index={index} />
         <StorySection />
