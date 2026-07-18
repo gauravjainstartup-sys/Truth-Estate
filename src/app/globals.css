@@ -203,3 +203,19 @@ body {
     transition-duration: 0.001s !important;
   }
 }
+
+/* Sun & Vastu — time-of-day scrubber thumb (appearance-none hides the native
+   thumb; restore a small gold knob on both engines) */
+.teh-sun-range { -webkit-appearance: none; appearance: none; outline: none; }
+.teh-sun-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  height: 18px; width: 18px; border-radius: 9999px;
+  background: #ffd777; border: 2px solid #1a1509;
+  box-shadow: 0 0 10px rgba(246, 182, 75, 0.6); cursor: pointer;
+}
+.teh-sun-range::-moz-range-thumb {
+  height: 16px; width: 16px; border-radius: 9999px;
+  background: #ffd777; border: 2px solid #1a1509;
+  box-shadow: 0 0 10px rgba(246, 182, 75, 0.6); cursor: pointer;
+}
+.teh-sun-range::-moz-range-track { background: transparent; }

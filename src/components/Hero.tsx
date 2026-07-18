@@ -296,7 +296,7 @@ export default function Hero({ index }: { index: OmniIndex }) {
           <div className={`ml-auto hidden items-center gap-10 text-[12px] font-medium tracking-[0.14em] text-white/55 transition-opacity duration-700 lg:flex xl:gap-12 ${open ? "pointer-events-none opacity-0" : ""}`}>
             <a href={`${basePath}/intelligence`} className="transition-colors duration-500 hover:text-white/90">Truth Intelligence</a>
             <a href={`${basePath}/pricing`} className="transition-colors duration-500 hover:text-white/90">Private Office</a>
-            <a href={`${basePath}/intelligence`} className="flex items-center gap-1.5 transition-colors duration-500 hover:text-white/90">
+            <a href={`${basePath}/sun-vastu`} className="flex items-center gap-1.5 transition-colors duration-500 hover:text-white/90">
               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#c9a96e" strokeWidth="1.6" strokeLinecap="round" className="shrink-0" aria-hidden="true">
                 <circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4" />
               </svg>
@@ -427,7 +427,7 @@ export default function Hero({ index }: { index: OmniIndex }) {
           <nav className="flex flex-1 flex-col justify-center gap-8 px-7">
             <a href={`${basePath}/intelligence`} className="font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white">Truth Intelligence</a>
             <a href={`${basePath}/pricing`} className="font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white">Private Office</a>
-            <a href={`${basePath}/intelligence`} className="flex items-center gap-3 font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white">
+            <a href={`${basePath}/sun-vastu`} className="flex items-center gap-3 font-serif text-[2rem] font-light text-white/80 transition-colors hover:text-white">
               <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#c9a96e" strokeWidth="1.6" strokeLinecap="round" className="shrink-0" aria-hidden="true">
                 <circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4" />
               </svg>
