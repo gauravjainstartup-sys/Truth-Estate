@@ -934,7 +934,7 @@ export default function ProjectProfile({
                   <p className="mt-2 text-[0.88rem] font-light text-white/55">Get an independent read — the right price, the right stack, the honest risks — before you commit.</p>
                 </div>
                 <div className="mt-7 grid gap-3 md:grid-cols-2">
-                  <ActionCell tone="primary" icon="●" title="Get Independent Advice" desc="45-min advisor call · fee refundable" onClick={consult} />
+                  <ActionCell tone="primary" icon="●" title="Get Independent Advice" desc="45-min advisor call · free" onClick={consult} />
                   <ActionCell tone="secondary" icon="▦" title="See Unit Intelligence" desc="3D sun & unit model · ₹1,499 a project" onClick={openUnitIntel} />
                 </div>
                 <p className="mt-6 flex items-center gap-2 border-t border-white/10 pt-4 text-[0.72rem] font-light text-white/40">

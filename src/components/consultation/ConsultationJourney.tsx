@@ -10,7 +10,7 @@ import {
   CONSULT_FEE,
   CONSULT_FEE_ORIGINAL,
   CONSULT_FEE_DISCOUNT_LABEL,
-  CONSULT_FEE_REFUND_NOTE,
+  CONSULT_FEE_NOTE,
   inr,
   CONSULT_FORMATS,
   CONSULT_OUTCOMES,
@@ -693,7 +693,7 @@ function ScheduleCard({
       >
         {CONSULT_FEE != null ? `Book your consultation · ${inr(CONSULT_FEE)} →` : "Book your consultation →"}
       </button>
-      <p className="mt-3 text-center text-[0.74rem] font-light text-[#1a1a1a]/45">{CONSULT_FEE_REFUND_NOTE}</p>
+      <p className="mt-3 text-center text-[0.74rem] font-light text-[#1a1a1a]/45">{CONSULT_FEE_NOTE}</p>
     </div>
   );
 }
@@ -847,7 +847,7 @@ function PaymentStep({ booking, onPaid }: { booking: ConsultBooking; onPaid: () 
         </div>
         <p className="mt-3 flex items-start gap-2 text-[0.76rem] font-light leading-relaxed text-[#1a1a1a]/45">
           <span className="mt-[0.15em] text-[#1e6b45]">&#10003;</span>
-          {CONSULT_FEE_REFUND_NOTE}
+          {CONSULT_FEE_NOTE}
         </p>
       </div>
 

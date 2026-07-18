@@ -115,7 +115,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "How does Truth Estate stay independent — and what does it cost me?",
-    a: "Our advice isn't for sale — no developer can buy a recommendation or a better Truth Score, and we will tell you to walk away when that is the right call. We are transparent about how we are compensated: we charge for the consultation itself, so our only job in that conversation is to tell you the truth rather than sell you a deal — and if you go on to close with us, that fee is refunded from the developer's referral on a primary sale, or set openly with both sides on a resale. You are never pushed to transact; you go ahead with us only if you see the value, and you will always know exactly how we are paid, in writing, before anything begins.",
+    a: "Our advice isn't for sale — no developer can buy a recommendation or a better Truth Score, and we will tell you to walk away when that is the right call. Your first consultation is free: we understand your requirement in depth, explain exactly how we'd represent you, and prepare a quotation tailored to your case. We are paid one way only — a flat fee you agree to pay us to represent you — and we take no brokerage, referral or promotion money from any developer or seller, ever. We begin only once the scope and the fee are mutually agreed, in writing; you are never pushed to transact, and you go ahead with us only if you see the value.",
   },
   {
     q: "Is this legal, tax or investment advice?",
@@ -214,7 +214,7 @@ export default function NRIDesk() {
               <span>Australia</span>
             </div>
             <p className="mt-4 text-[0.9rem] font-light text-[#1a1a1a]/50">
-              Our advice isn&apos;t for sale · Full fee transparency · You proceed only if you see the value.
+              Our advice isn&apos;t for sale · Free first consultation · You proceed only if you see the value.
             </p>
           </div>
         </div>
@@ -276,8 +276,8 @@ export default function NRIDesk() {
           </div>
 
           <PullQuote>
-            We charge for the consultation so we owe you only the truth — nothing else. Go ahead with us and that fee is
-            refunded. Our recommendation was never for sale to begin with.
+            Your first consultation is free — we owe you only the truth. We prepare a quote for your case, and represent
+            you only once it&apos;s mutually agreed. Our recommendation was never for sale to begin with.
           </PullQuote>
         </div>
       </section>
@@ -404,7 +404,7 @@ export default function NRIDesk() {
             </button>
           </div>
           <p className="mt-8 font-mono text-[0.66rem] uppercase tracking-[0.16em] text-white/35">
-            Advice that isn&apos;t for sale · Consultation fee refunded if you proceed · No pressure, ever
+            Advice that isn&apos;t for sale · Free first consultation · No pressure, ever
           </p>
         </div>
       </section>

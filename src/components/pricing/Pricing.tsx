@@ -9,7 +9,7 @@ import {
   CONSULT_FEE,
   CONSULT_FEE_ORIGINAL,
   CONSULT_FEE_DISCOUNT_LABEL,
-  CONSULT_FEE_REFUND_NOTE,
+  CONSULT_FEE_NOTE,
   inr,
 } from "@/lib/consultation";
 
@@ -51,7 +51,7 @@ const MODELS: {
       "Research Workspace",
       "Documents",
       "Advisor Collaboration",
-      "Refundable First Consultation",
+      "Free First Consultation",
     ],
     cta: PRIMARY_CTA,
     action: "journey",
@@ -80,7 +80,7 @@ const FLOW = [
   { step: "Research", detail: "Explore detailed analysis, Truth Scores, and TruthGuide." },
   { step: "Compare", detail: "Evaluate projects side by side against your priorities." },
   { step: "Create Private Office", detail: "Build your personal decision workspace." },
-  { step: "Independent Consultation", detail: "One honest conversation about your goals — the fee is refunded if you go ahead with us." },
+  { step: "Independent Consultation", detail: "A free, in-depth call — we learn your case, explain how we'd proceed, and send a quotation tailored to you." },
   { step: "Independent Representation", detail: "Dedicated advisory from discovery to decision, if you choose." },
 ];
 
@@ -88,11 +88,11 @@ const FLOW = [
 const FAQS = [
   {
     q: "Can developers influence Truth Estate’s recommendations?",
-    a: "No. No developer can pay for a higher Truth Score, a recommendation, or placement — our research runs on evidence alone. We earn a referral fee only after you complete a purchase: from the developer on a primary sale, or agreed openly with both sides on a resale. It is always disclosed, and it never changes what we tell you. Our recommendation is not for sale.",
+    a: "No — and no developer ever pays us a rupee. We take no brokerage, referral or promotion money from any developer or seller, ever. Our only revenue is a flat fee you agree to pay us to represent you. That is exactly why no developer can buy a higher Truth Score, a recommendation, or placement — the only person who ever pays us is you, so our recommendation is simply not for sale.",
   },
   {
-    q: "How does the consultation fee work?",
-    a: "We charge a fee for your first consultation — deliberately. Because you are paying for that hour, our only job in it is to tell you the truth, not to sell you anything. If you decide to proceed with us, the fee is refunded from our referral. There is no sales pressure and no obligation to continue.",
+    q: "How does the first consultation work?",
+    a: "It's free. We use it to understand your requirement in depth, explain exactly how we'd represent you, and prepare a quotation tailored to your case. It's a standalone conversation with no obligation and no sales pressure — we begin only once you've agreed to the scope and the flat fee.",
   },
   {
     q: "Do I need a Private Office?",
@@ -372,44 +372,48 @@ export default function Pricing() {
             </h2>
 
             <div className="mt-8 space-y-5 text-[0.92rem] font-light leading-[1.85] text-[#1a1a1a]/50 md:text-[1rem]">
-              <p>Your first consultation carries a fee — deliberately.</p>
+              <p>Your first consultation is free.</p>
               <p>
-                We&apos;ll understand your goals. Review your shortlisted
-                opportunities. Answer your questions. Help you decide whether
-                additional support would genuinely add value.
+                We&apos;ll understand your requirement in depth, review your
+                shortlisted opportunities, answer your questions, and explain
+                exactly how we&apos;d represent you.
               </p>
               <p>
-                Charging for that hour is what keeps us honest: our only job in
-                it is to tell you the truth. Proceed with us and the fee is
-                refunded from our referral. No sales pressure, no obligation.
+                Then we prepare a quotation tailored to your case — and we
+                represent you only once the scope and the flat fee are mutually
+                agreed. No sales pressure, no obligation, and never a rupee from
+                any developer.
               </p>
             </div>
 
-            {CONSULT_FEE != null && (
-              <div className="mt-10 inline-flex flex-col rounded-sm border border-[#c9a96e]/25 bg-white/60 px-7 py-6">
-                <div className="flex items-baseline gap-3">
-                  {CONSULT_FEE_ORIGINAL != null && CONSULT_FEE_ORIGINAL > CONSULT_FEE && (
-                    <span className="font-serif text-[1.1rem] font-light text-[#1a1a1a]/35 line-through">
-                      {inr(CONSULT_FEE_ORIGINAL)}
-                    </span>
-                  )}
-                  <span className="font-serif text-[2.1rem] font-semibold leading-none text-[#1a1a1a]">
-                    {inr(CONSULT_FEE)}
+            <div className="mt-10 inline-flex flex-col rounded-sm border border-[#c9a96e]/25 bg-white/60 px-7 py-6">
+              <div className="flex items-baseline gap-3">
+                {CONSULT_FEE != null && CONSULT_FEE_ORIGINAL != null && CONSULT_FEE_ORIGINAL > CONSULT_FEE && (
+                  <span className="font-serif text-[1.1rem] font-light text-[#1a1a1a]/35 line-through">
+                    {inr(CONSULT_FEE_ORIGINAL)}
                   </span>
-                  {CONSULT_FEE_ORIGINAL != null && CONSULT_FEE_ORIGINAL > CONSULT_FEE && (
-                    <span className="rounded-full bg-[#1e6b45]/[0.08] px-3 py-1 text-[0.68rem] font-medium tracking-[0.02em] text-[#1e6b45]">
-                      {CONSULT_FEE_DISCOUNT_LABEL}
-                    </span>
-                  )}
-                </div>
-                <p className="mt-3 flex items-center gap-1.5 text-[0.82rem] font-light text-[#1a1a1a]/50">
-                  <span className="text-[#1e6b45]">&#10003;</span> {CONSULT_FEE_REFUND_NOTE}
-                </p>
-                <p className="mt-1 text-[0.78rem] font-light text-[#1a1a1a]/35">
-                  45-minute independent consultation · secure Stripe checkout.
-                </p>
+                )}
+                <span className="font-serif text-[2.1rem] font-semibold leading-none text-[#1a1a1a]">
+                  {CONSULT_FEE != null ? inr(CONSULT_FEE) : "Free"}
+                </span>
+                {CONSULT_FEE == null && (
+                  <span className="rounded-full bg-[#1e6b45]/[0.08] px-3 py-1 text-[0.68rem] font-medium tracking-[0.02em] text-[#1e6b45]">
+                    First consultation
+                  </span>
+                )}
+                {CONSULT_FEE != null && CONSULT_FEE_ORIGINAL != null && CONSULT_FEE_ORIGINAL > CONSULT_FEE && (
+                  <span className="rounded-full bg-[#1e6b45]/[0.08] px-3 py-1 text-[0.68rem] font-medium tracking-[0.02em] text-[#1e6b45]">
+                    {CONSULT_FEE_DISCOUNT_LABEL}
+                  </span>
+                )}
               </div>
-            )}
+              <p className="mt-3 flex items-center gap-1.5 text-[0.82rem] font-light text-[#1a1a1a]/50">
+                <span className="text-[#1e6b45]">&#10003;</span> {CONSULT_FEE_NOTE}
+              </p>
+              <p className="mt-1 text-[0.78rem] font-light text-[#1a1a1a]/35">
+                45-minute independent consultation · we quote your case, then represent you once it&rsquo;s agreed.
+              </p>
+            </div>
 
             <div>
               <button
@@ -467,7 +471,7 @@ export default function Pricing() {
                     <p className="mt-2 text-[0.85rem] font-light text-[#1a1a1a]/35">
                       A dedicated decision workspace with personal Match
                       Scores, Buyer Briefs, and advisor collaboration.
-                      Includes a refundable first consultation.
+                      Begins with a free first consultation.
                     </p>
                   </div>
                   <div className="shrink-0 rounded-sm border border-[#c9a96e]/15 bg-[#c9a96e]/5 px-4 py-2 sm:text-right">
