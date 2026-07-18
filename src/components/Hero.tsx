@@ -68,16 +68,17 @@ export default function Hero({ index }: { index: OmniIndex }) {
         style={{ background: "linear-gradient(90deg, rgba(10,8,5,0.92) 0%, rgba(10,8,5,0.75) 35%, rgba(10,8,5,0.15) 62%, rgba(10,8,5,0) 100%)" }} />
       <div className="absolute inset-0 md:hidden" aria-hidden="true"
         style={{ background: "linear-gradient(180deg, rgba(10,8,5,0.90) 0%, rgba(10,8,5,0.78) 30%, rgba(10,8,5,0.55) 48%, rgba(10,8,5,0.25) 62%, rgba(10,8,5,0) 80%)" }} />
-      {/* header scrim — keeps nav legible over the lamp at any width */}
-      <div className="absolute inset-x-0 top-0 z-20 hidden h-32 md:block" aria-hidden="true"
-        style={{ background: "linear-gradient(180deg, rgba(10,8,5,0.55) 0%, rgba(10,8,5,0) 100%)" }} />
+      {/* header scrim — keeps nav legible over the bright lamp; darker + taller
+         so the top-right lamp glow can't wash out the nav */}
+      <div className="absolute inset-x-0 top-0 z-20 hidden h-40 md:block" aria-hidden="true"
+        style={{ background: "linear-gradient(180deg, rgba(10,8,5,0.82) 0%, rgba(10,8,5,0.42) 42%, rgba(10,8,5,0) 100%)" }} />
 
       {/* ── header ── */}
       <header className="absolute inset-x-0 top-0 z-30">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 md:px-10 md:py-7 lg:px-16">
           <a href={`${basePath}/`} aria-label="Truth Estate — home"><Logo className="h-9 w-auto md:h-10" /></a>
           {/* desktop nav */}
-          <nav className="hidden items-center gap-7 text-[13.5px] font-medium tracking-[0.01em] text-[#f6f1e8]/82 min-[900px]:flex xl:gap-9">
+          <nav className="hidden items-center gap-7 text-[13.5px] font-medium tracking-[0.01em] text-[#f6f1e8]/90 [text-shadow:0_1px_2px_rgba(6,4,2,0.6),0_1px_14px_rgba(6,4,2,0.9)] min-[900px]:flex xl:gap-9">
             {NAV.map((n) => (
               <a key={n.href} href={n.href} className="flex items-center gap-1.5 transition-colors duration-150 hover:text-[#f6f1e8]">
                 <n.Icon className="h-[15px] w-[15px] shrink-0 opacity-80" />{n.label}
