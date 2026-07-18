@@ -1,0 +1,66 @@
+name: R2 copy (one-shot, manual)
+
+# One-off: copy Supabase Storage (bucket project_assets) → Cloudflare R2
+# (bucket truth-estate-media), running rclone in the cloud so you need no local
+# tools. Manual only — never runs on its own. Add the repo secrets listed below,
+# then Actions → "R2 copy (one-shot, manual)" → Run workflow.
+#
+# Required repository secrets (Settings → Secrets and variables → Actions):
+#   SUPABASE_REGION      e.g. ap-south-1   (Supabase → Project Settings → Storage → S3 Connection)
+#   SUPABASE_S3_KEY      Supabase S3 access key id      (same panel → New access key)
+#   SUPABASE_S3_SECRET   Supabase S3 secret access key
+#   R2_ACCOUNT_ID        Cloudflare R2 account id       (R2 overview, right side)
+#   R2_ACCESS_KEY        R2 API token access key id     (R2 → Manage R2 API Tokens → Create, Object R/W)
+#   R2_SECRET            R2 API token secret access key
+
+on:
+  workflow_dispatch:
+    inputs:
+      dryrun:
+        description: "List only, do not copy (true/false)"
+        default: "false"
+
+permissions:
+  contents: read
+
+jobs:
+  copy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install rclone
+        run: curl -fsSL https://rclone.org/install.sh | sudo bash
+
+      - name: Write rclone config
+        run: |
+          mkdir -p ~/.config/rclone
+          cat > ~/.config/rclone/rclone.conf <<EOF
+          [supa]
+          type = s3
+          provider = Other
+          endpoint = https://lyetvabfgaidvqrbmaoy.storage.supabase.co/storage/v1/s3
+          region = ${{ secrets.SUPABASE_REGION }}
+          access_key_id = ${{ secrets.SUPABASE_S3_KEY }}
+          secret_access_key = ${{ secrets.SUPABASE_S3_SECRET }}
+          force_path_style = true
+          acl = private
+
+          [r2]
+          type = s3
+          provider = Cloudflare
+          endpoint = https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+          region = auto
+          access_key_id = ${{ secrets.R2_ACCESS_KEY }}
+          secret_access_key = ${{ secrets.R2_SECRET }}
+          acl = private
+          EOF
+
+      - name: Show source listing (sanity check)
+        run: rclone lsd supa:project_assets && rclone size supa:project_assets
+
+      - name: Copy Supabase → R2
+        if: ${{ github.event.inputs.dryrun != 'true' }}
+        run: rclone copy supa:project_assets r2:truth-estate-media --progress --transfers 8 --s3-no-check-bucket
+
+      - name: Verify destination
+        if: ${{ github.event.inputs.dryrun != 'true' }}
+        run: rclone size r2:truth-estate-media
