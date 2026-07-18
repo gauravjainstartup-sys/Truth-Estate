@@ -19,7 +19,7 @@
    back to fetching directly.
    ════════════════════════════════════════════════════════════════ */
 
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 
 const SUPABASE_URL = process.env.SNAPSHOT_SUPABASE_URL || "https://lyetvabfgaidvqrbmaoy.supabase.co";
 const KEY =
@@ -49,6 +49,28 @@ const fixtures = process.env.SUPABASE_FIXTURES;
 if (fixtures && fixtures !== OUT) {
   console.log(`[snapshot] SUPABASE_FIXTURES preset (${fixtures}) — snapshot skipped`);
   process.exit(0);
+}
+
+/* ── Reuse the cached snapshot on code deploys — the egress fix ──
+   A code push doesn't change the DB, so it doesn't need a fresh sample. When a
+   usable snapshot has been restored from the CI cache and this run wasn't asked
+   to refresh (SNAPSHOT_REFRESH=1, set only by the schedule and the manual "Run
+   workflow" button), keep it and pull NOTHING — a code deploy then costs zero
+   Supabase egress. A refresh run, or a missing/empty cache, falls through and
+   pulls fresh as before (REQUIRE_SNAPSHOT still guards an empty result). */
+async function cachedSnapshotRows() {
+  try {
+    const rows = JSON.parse(await readFile(`${OUT}/${REQUIRED}.json`, "utf8"));
+    return Array.isArray(rows) && rows.length > 0 ? rows.length : 0;
+  } catch { return 0; }
+}
+if (process.env.SNAPSHOT_REFRESH !== "1") {
+  const n = await cachedSnapshotRows();
+  if (n > 0) {
+    console.log(`[snapshot] reusing cached ${OUT} (${n} ${REQUIRED} rows) — code deploy, no DB pull, zero Supabase egress. Schedule / "Run workflow" (SNAPSHOT_REFRESH=1) re-pulls.`);
+    process.exit(0);
+  }
+  console.log(`[snapshot] no usable cache — pulling a fresh snapshot this run`);
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
