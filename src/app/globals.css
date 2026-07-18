@@ -219,3 +219,31 @@ body {
   box-shadow: 0 0 10px rgba(246, 182, 75, 0.6); cursor: pointer;
 }
 .teh-sun-range::-moz-range-track { background: transparent; }
+
+/* Hero foot-line — "credential plaque": a hairline rounded container whose
+   border carries a soft gold light travelling slowly around it (a conic
+   gradient rotated via the registered --mka angle, masked to the 1px edge).
+   Very mild by design — the sheen is low-opacity and the loop is slow. */
+@property --mka { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.te-foot-plaque {
+  position: relative; display: inline-flex; align-items: center; gap: 14px;
+  padding: 15px 24px; border-radius: 14px; background: rgba(255, 255, 255, 0.025);
+}
+.te-foot-plaque::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px;
+  background: conic-gradient(from var(--mka),
+    rgba(201, 169, 110, 0.10), rgba(201, 169, 110, 0.38),
+    rgba(255, 226, 150, 0.95), rgba(201, 169, 110, 0.38), rgba(201, 169, 110, 0.10));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: te-foot-spin 7s linear infinite; pointer-events: none;
+}
+@keyframes te-foot-spin { to { --mka: 360deg; } }
+/* Fallback for engines without @property: a static hairline border. */
+@supports not (background: conic-gradient(from var(--mka), #000, #000)) {
+  .te-foot-plaque { border: 1px solid rgba(201, 169, 110, 0.28); }
+  .te-foot-plaque::before { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .te-foot-plaque::before { animation: none; }
+}
