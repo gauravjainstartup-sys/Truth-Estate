@@ -25,6 +25,14 @@ const ticketLabel = (p: ProjectIntel): string => {
 /* first positioning tag, with a graceful fallback when a live row has none */
 const tagOf = (p: ProjectIntel): string => p.tags[0]?.toLowerCase() ?? "its fundamentals";
 
+/* PSF in one consistent "K" language across the row — a whole number when it
+   lands on one, else one decimal (20000 → "20", 19500 → "19.5"); wrapped as
+   ₹…K by the caller so a range reads "₹20K–22K", never "₹20,000–22.0k". */
+const kNum = (v: number): string => {
+  const k = v / 1000;
+  return Number.isInteger(k) ? `${k}` : k.toFixed(1);
+};
+
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return <p className="text-[11px] font-medium uppercase tracking-[0.34em] text-[#c9a96e]">{children}</p>;
 }
@@ -80,7 +88,9 @@ function Section({ title, children, note }: { title: string; children: React.Rea
         <span className="h-px flex-1 bg-[#1a1a1a]/10" />
       </div>
       {note && <p className="mt-2 text-[0.68rem] font-light leading-[1.5] text-[#1a1a1a]/45">{note}</p>}
-      <div className="mt-2">{children}</div>
+      {/* the section header rule is the divider — drop the first row's own top
+         border so a section break shows one line, not two */}
+      <div className="mt-2 [&>*:first-child]:border-t-0">{children}</div>
     </section>
   );
 }
@@ -237,10 +247,10 @@ function ProjectCompare({ r }: { r: Extract<ResolvedCompare, { kind: "project" }
 
       <Section title="The money">
         <Row label="Price today"
-          a={ja ? `${fmtPsf(ja.currentLow)}–${(ja.currentHigh / 1000).toFixed(1)}k` : a.psf ? `${fmtPsf(a.psf.avg)} avg` : "—"}
-          b={jb ? `${fmtPsf(jb.currentLow)}–${(jb.currentHigh / 1000).toFixed(1)}k` : b.psf ? `${fmtPsf(b.psf.avg)} avg` : "—"}
-          subA={ja ? `from ${fmtPsf(ja.launchPsf)} at launch` : undefined}
-          subB={jb ? `from ${fmtPsf(jb.launchPsf)} at launch` : undefined} />
+          a={ja ? `₹${kNum(ja.currentLow)}K–${kNum(ja.currentHigh)}K` : a.psf ? `₹${kNum(a.psf.avg)}K avg` : "—"}
+          b={jb ? `₹${kNum(jb.currentLow)}K–${kNum(jb.currentHigh)}K` : b.psf ? `₹${kNum(b.psf.avg)}K avg` : "—"}
+          subA={ja ? `from ₹${kNum(ja.launchPsf)}K at launch` : undefined}
+          subB={jb ? `from ₹${kNum(jb.launchPsf)}K at launch` : undefined} />
         <Row label="Premium since launch"
           a={ja ? `+${ja.premiumPct}%` : "—"} b={jb ? `+${jb.premiumPct}%` : "—"}
           subA={ja ? `over ${ja.years} yrs` : undefined} subB={jb ? `over ${jb.years} yrs` : undefined}
