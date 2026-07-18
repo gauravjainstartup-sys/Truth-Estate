@@ -40,13 +40,27 @@ function IconGlobe({ className }: IconProps) { // globe — NRI / overseas
 function IconUser({ className }: IconProps) { // person — sign in
   return <svg className={className} {...svgBase}><circle cx="12" cy="8.5" r="3.3" /><path d="M5.5 20a6.5 6.5 0 0 1 13 0" /></svg>;
 }
+/* ── trust-chip marks — one distinct gold glyph per promise ── */
+function IconShield({ className }: IconProps) { // shield + check — independent, on the buyer's side
+  return <svg className={className} {...svgBase}><path d="M12 3l7 2.6v5.4c0 4.3-2.9 7.4-7 8.9-4.1-1.5-7-4.6-7-8.9V5.6z" /><path d="M9 12l2 2 4-4.2" /></svg>;
+}
+function IconTag({ className }: IconProps) { // price tag — best deal, secured
+  return <svg className={className} {...svgBase}><path d="M20.6 13.4 12 22l-8.6-8.6a3 3 0 0 1 0-4.2l4.8-4.8a3 3 0 0 1 2.1-.9H16a4 4 0 0 1 4 4v4.5a3 3 0 0 1-.9 2.1z" /><circle cx="15.5" cy="8.5" r="1.3" /></svg>;
+}
+function IconRupee({ className }: IconProps) { // rupee coin — flat, fixed fee
+  return <svg className={className} {...svgBase}><circle cx="12" cy="12" r="9" /><path d="M9.5 8.2h5M9.5 11h5M13.6 8.2c0 2.6-1.9 3-4.1 3l3.9 4.6" /></svg>;
+}
 
 const NAV = [
   { label: "Compare", href: `${basePath}/intelligence/compare`, Icon: IconCompare },
   { label: "Deal Room", href: `${basePath}/deal-room`, Icon: IconDealRoom },
   { label: "Sun & Vastu 3D", href: `${basePath}/sun-vastu`, Icon: IconCube },
 ];
-const CHIPS = ["No brokerage", "No developer bias", "Fixed fee"];
+const CHIPS = [
+  { label: "Zero Brokerage, No Bias", Icon: IconShield },
+  { label: "Best Deal, on Record", Icon: IconTag },
+  { label: "Fixed Representation Fee", Icon: IconRupee },
+];
 
 export default function Hero({ index }: { index: OmniIndex }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -115,14 +129,13 @@ export default function Hero({ index }: { index: OmniIndex }) {
             <HeroSearch index={index} />
           </div>
 
-          {/* trust chips — one row */}
-          <ul className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] tracking-[0.02em] text-[#9a9287] md:mt-5">
-            {CHIPS.map((c, i) => (
-              <li key={c} className="flex items-center gap-4">
-                {i > 0 && <span className="h-3 w-px bg-[#c9a24b]/30" aria-hidden="true" />}
-                <span className="flex items-center gap-1.5">
-                  <span className="text-[#a07d2c]" aria-hidden="true">&#9670;</span>{c}
-                </span>
+          {/* trust chips — stacked one-per-line on mobile; an inline, wrapping
+             row on desktop. Each promise carries its own distinct gold glyph;
+             no dividers (the narrow hero column can't hold them on one line). */}
+          <ul className="mt-4 flex flex-col items-start gap-y-3 text-[11px] tracking-[0.02em] text-[#9a9287] md:mt-5 md:flex-row md:flex-wrap md:items-center md:gap-x-[18px] md:gap-y-2.5">
+            {CHIPS.map((c) => (
+              <li key={c.label} className="flex items-center gap-1.5">
+                <c.Icon className="h-3.5 w-3.5 shrink-0 text-[#c9a24b] md:h-4 md:w-4" />{c.label}
               </li>
             ))}
           </ul>
