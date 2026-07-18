@@ -14,10 +14,10 @@
    consultation / custom-report enquiry — the buyer lead path.
    ──────────────────────────────────────────────────────────────────────── */
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Logo from "./Logo";
-import { useConsultation } from "./consultation/ConsultationProvider";
-import { typeahead, type OmniIndex } from "@/lib/omni";
+import HeroSearch from "./HeroSearch";
+import type { OmniIndex } from "@/lib/omni";
 
 const basePath = "/Truth-Estate";
 const IMG = `${basePath}/images`;
@@ -30,36 +30,7 @@ const NAV = [
 const CHIPS = ["No brokerage", "No developer bias", "Fixed fee"];
 
 export default function Hero({ index }: { index: OmniIndex }) {
-  const { openConsult } = useConsultation();
-  const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
-  // Shorter placeholder on phones so it never truncates; full copy on desktop.
-  const [placeholder, setPlaceholder] = useState("Search any Gurugram project");
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    const apply = () => setPlaceholder(mq.matches ? "Search any project" : "Search any Gurugram project");
-    const id = requestAnimationFrame(apply);
-    mq.addEventListener("change", apply);
-    return () => { cancelAnimationFrame(id); mq.removeEventListener("change", apply); };
-  }, []);
-
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const q = query.trim();
-    if (!q) return;
-    const hit = typeahead(q, index, 1).length > 0;
-    if (hit) {
-      // Known project / corridor / developer → resolve on the intelligence workspace.
-      window.location.href = `${basePath}/intelligence?q=${encodeURIComponent(q)}`;
-    } else {
-      // MISS — the project isn't in our database yet. Route to the free
-      // consultation, carrying what they searched for so the advisor arrives
-      // prepared, and we can turn it into a custom-report enquiry.
-      // TODO: when a dedicated "request a custom report" page exists, route
-      // there instead of the consultation modal for the not-found path.
-      openConsult({ sourceKind: "homepage", source: q });
-    }
-  };
 
   return (
     <section className="teh2 relative w-full overflow-hidden bg-[#14110d]" style={{ height: "100svh", maxHeight: "900px", minHeight: "560px" }}>
@@ -114,24 +85,10 @@ export default function Hero({ index }: { index: OmniIndex }) {
             Built for buyers. Never paid by builders.
           </p>
 
-          {/* search — a real, submitting input */}
-          <form onSubmit={submit} className="mt-5 flex h-[50px] w-full max-w-[420px] rounded-lg ring-1 ring-transparent transition-shadow duration-150 focus-within:ring-[#c9a24b]/70 md:mt-6 md:h-[52px]">
-            <label htmlFor="hero-search" className="sr-only">Search any Gurugram project</label>
-            <div className="flex flex-1 items-center gap-2 rounded-l-lg bg-[#efe9dc] pl-3 md:gap-3 md:pl-4">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7a6f56" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true" className="shrink-0"><circle cx="10.5" cy="10.5" r="6.5" /><path d="M20 20l-4.7-4.7" /></svg>
-              <input
-                id="hero-search"
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={placeholder}
-                className="h-full w-full min-w-0 bg-transparent pr-2 text-[13px] text-[#2a2318] placeholder:text-[#7a6f56] focus:outline-none min-[360px]:text-[15px]"
-              />
-            </div>
-            <button type="submit" className="shrink-0 rounded-r-lg bg-[#2f6b4f] px-4 text-[13px] font-medium text-[#f6f1e8] transition-colors duration-150 hover:bg-[#285c44] min-[360px]:text-[15px] md:px-5">
-              Get verdict
-            </button>
-          </form>
+          {/* search — a real, submitting input with a results dropdown */}
+          <div className="mt-5 md:mt-6">
+            <HeroSearch index={index} />
+          </div>
 
           {/* trust chips — one row */}
           <ul className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] tracking-[0.02em] text-[#9a9287] md:mt-5">
