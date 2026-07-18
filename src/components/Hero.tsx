@@ -293,7 +293,7 @@ export default function Hero({ index }: { index: OmniIndex }) {
             separate absolutely-positioned control, so it never shifts links) */}
         <nav className="absolute left-20 right-12 top-0 z-20 flex items-center pt-14 lg:left-28 lg:right-20 lg:pt-20">
           <Logo className="h-10 w-auto opacity-75 lg:h-[3rem]" />
-          <div className={`ml-auto hidden items-center gap-10 text-[11px] font-medium tracking-[0.14em] text-white/55 transition-opacity duration-700 lg:flex xl:gap-12 ${open ? "pointer-events-none opacity-0" : ""}`}>
+          <div className={`ml-auto hidden items-center gap-10 text-[12px] font-medium tracking-[0.14em] text-white/55 transition-opacity duration-700 lg:flex xl:gap-12 ${open ? "pointer-events-none opacity-0" : ""}`}>
             <a href={`${basePath}/intelligence`} className="transition-colors duration-500 hover:text-white/90">Truth Intelligence</a>
             <a href={`${basePath}/pricing`} className="transition-colors duration-500 hover:text-white/90">Private Office</a>
             <a href={`${basePath}/intelligence`} className="flex items-center gap-1.5 transition-colors duration-500 hover:text-white/90">
