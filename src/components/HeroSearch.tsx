@@ -20,10 +20,10 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useConsultation } from "./consultation/ConsultationProvider";
-import type { OmniIndex, OmniProject, Verdict3 } from "@/lib/omni";
+import { scoreTag, type OmniIndex, type OmniProject, type ScoreTag } from "@/lib/omni";
 import {
   fuzzySearch, highlightName, defaultList, coveredNearby, coveredCountLabel,
-  rowMeta, VERDICT_CHIP, getRecentSlugs, pushRecentSlug, pushDemand,
+  rowMeta, TAG_CHIP, getRecentSlugs, pushRecentSlug, pushDemand,
 } from "@/lib/heroSearch";
 
 const basePath = "/Truth-Estate";
@@ -34,14 +34,15 @@ type NavItem =
   | { kind: "project"; p: OmniProject }
   | { kind: "action"; action: "report" | "prioritise" };
 
-function VerdictChip({ v }: { v: Verdict3 }) {
-  const s = VERDICT_CHIP[v];
+/* Truth Score chip — the score number, then the canonical tag pill (layout B). */
+function ScoreTagChip({ score, tag }: { score: number; tag: ScoreTag }) {
+  const s = TAG_CHIP[tag];
   return (
-    <span
-      className="shrink-0 rounded-[11px] px-2 py-[3px] text-[10.5px] font-medium leading-none"
-      style={{ color: s.text, border: `0.5px solid ${s.border}` }}
-    >
-      {v}
+    <span className="flex shrink-0 items-center gap-2" style={{ color: s.text }}>
+      <b className="text-[13px] font-bold tabular-nums leading-none">{score}</b>
+      <span className="rounded-[11px] px-2 py-[3px] text-[10.5px] font-medium leading-none" style={{ border: `0.5px solid ${s.border}` }}>
+        {tag}
+      </span>
     </span>
   );
 }
@@ -225,7 +226,7 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
           </span>
           {meta && <span className="mt-0.5 block truncate text-[11px] text-[#7c7364]">{meta}</span>}
         </span>
-        {p.verdict && <VerdictChip v={p.verdict} />}
+        {p.score != null && scoreTag(p.score) && <ScoreTagChip score={p.score} tag={scoreTag(p.score)!} />}
       </li>
     );
   };

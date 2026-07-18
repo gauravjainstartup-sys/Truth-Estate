@@ -120,7 +120,7 @@ function ensureModelled(projects: OmniProject[]): OmniProject[] {
       config: null, deliveryYear: null, redFlags: null, delayRisk: null,
       has3D: true, advisorFile: meta.file,
       lat: COORDS[slug]?.lat ?? null, lng: COORDS[slug]?.lng ?? null,
-      verdict: null, sources: null,
+      verdict: null, sources: null, updatedAt: null,
     });
   }
   return projects;
@@ -148,6 +148,7 @@ export async function buildIndex(): Promise<OmniIndex> {
       lng: COORDS[r.slug]?.lng ?? null,
       verdict: verdictFromScore(r.truthScore),
       sources: countSources(r) || null,
+      updatedAt: r.lastQprDate ?? r.legalLastUpdated ?? r.registrationDate ?? null,
     }));
     return { projects: ensureModelled(projects), units, live: true };
   }
@@ -172,6 +173,7 @@ export async function buildIndex(): Promise<OmniIndex> {
       lng: COORDS[slug]?.lng ?? null,
       verdict: verdictFromScore(p.truthScore ?? null),
       sources: null, // curated desk fallback carries no module payloads
+      updatedAt: null,
     };
   });
   return { projects: ensureModelled(projects), units, live: false };
