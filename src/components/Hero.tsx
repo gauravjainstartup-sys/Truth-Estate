@@ -53,7 +53,10 @@ export default function Hero({ index }: { index: OmniIndex }) {
 
   return (
     <section className="teh2 relative w-full overflow-hidden bg-[#14110d]" style={{ height: "100svh", maxHeight: "900px", minHeight: "560px" }}>
-      {/* ── background photograph (decorative) ── */}
+      {/* ── background photograph (decorative) — on wide (xl) screens it takes
+           the left 80% and eases into the dark ground on the right (see the
+           right-fade below), pulling the composition left so the lamp/verdict
+           clears the right edge. Full-bleed below xl (phones, tablets, laptops). ── */}
       <picture>
         <source media="(max-width:767px)" type="image/avif" srcSet={`${IMG}/new-hero-mobile.avif`} />
         <source media="(max-width:767px)" type="image/webp" srcSet={`${IMG}/new-hero-mobile.webp`} />
@@ -61,7 +64,7 @@ export default function Hero({ index }: { index: OmniIndex }) {
         <source type="image/avif" srcSet={`${IMG}/new-hero-desktop.avif`} />
         <source type="image/webp" srcSet={`${IMG}/new-hero-desktop.webp`} />
         <img src={`${IMG}/new-hero-desktop.jpg`} alt="" aria-hidden="true" fetchPriority="high"
-          className="teh2-img absolute inset-0 h-full w-full object-cover" />
+          className="teh2-img absolute left-0 top-0 h-full w-full object-cover xl:w-[80%]" />
       </picture>
 
       {/* ── legibility overlays (text never depends on the photo) ── */}
@@ -69,6 +72,10 @@ export default function Hero({ index }: { index: OmniIndex }) {
         style={{ background: "linear-gradient(90deg, rgba(10,8,5,0.92) 0%, rgba(10,8,5,0.75) 35%, rgba(10,8,5,0.15) 62%, rgba(10,8,5,0) 100%)" }} />
       <div className="absolute inset-0 md:hidden" aria-hidden="true"
         style={{ background: "linear-gradient(180deg, rgba(10,8,5,0.90) 0%, rgba(10,8,5,0.78) 30%, rgba(10,8,5,0.55) 48%, rgba(10,8,5,0.25) 62%, rgba(10,8,5,0) 80%)" }} />
+      {/* right-fade — eases the photo's right edge into the dark ground so the
+         composition sits left with open space on the right (wide screens only) */}
+      <div className="absolute inset-0 hidden xl:block" aria-hidden="true"
+        style={{ background: "linear-gradient(90deg, rgba(20,17,13,0) 60%, rgba(20,17,13,0.5) 74%, #14110d 82%)" }} />
       {/* header scrim — keeps nav legible over the lamp at any width */}
       <div className="absolute inset-x-0 top-0 z-20 hidden h-32 md:block" aria-hidden="true"
         style={{ background: "linear-gradient(180deg, rgba(10,8,5,0.55) 0%, rgba(10,8,5,0) 100%)" }} />
