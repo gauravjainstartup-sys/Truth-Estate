@@ -2,7 +2,7 @@
 
 import Logo from "../Logo";
 import { useConsultation } from "../consultation/ConsultationProvider";
-import { CONSULT_FEE, CONSULT_FEE_REFUND_NOTE, inr } from "@/lib/consultation";
+import { CONSULT_FEE, CONSULT_FEE_NOTE, inr } from "@/lib/consultation";
 
 const basePath = "/Truth-Estate";
 const PRICE = CONSULT_FEE ?? 9999;
@@ -219,10 +219,10 @@ export default function PremiumBuyerOffice() {
 
             {/* The reveal */}
             <div className="mt-14 text-center">
-              <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]">Yours for</p>
-              <p className="mt-3 font-serif text-[clamp(3.4rem,13vw,6rem)] font-semibold leading-none text-[#1a1a1a]">{inr(PRICE)}</p>
+              <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]">{CONSULT_FEE != null ? "Yours for" : "First consultation"}</p>
+              <p className="mt-3 font-serif text-[clamp(3.4rem,13vw,6rem)] font-semibold leading-none text-[#1a1a1a]">{CONSULT_FEE != null ? inr(PRICE) : "Free"}</p>
               <p className="mx-auto mt-6 flex max-w-md items-center justify-center gap-1.5 text-[0.85rem] font-light text-[#1a1a1a]/50">
-                <span className="text-[#1e6b45]">&#10003;</span> {CONSULT_FEE_REFUND_NOTE}
+                <span className="text-[#1e6b45]">&#10003;</span> {CONSULT_FEE_NOTE}
               </p>
               <p className="mx-auto mt-6 max-w-lg font-serif text-[1.2rem] font-medium italic leading-[1.4] text-[#1a1a1a]/70 md:text-[1.35rem]">
                 You&rsquo;re not buying consultancy. You&rsquo;re appointing a Buyer&rsquo;s Office.

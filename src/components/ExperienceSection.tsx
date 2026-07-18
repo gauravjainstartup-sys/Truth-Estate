@@ -1219,13 +1219,14 @@ const faqs: { q: string; a: React.ReactNode }[] = [
     q: "How do you make money?",
     a: (
       <>
-        We earn through advisory and independent representation fees&mdash;paid
-        by the buyer for working in their interest. We do not earn from pushing
-        a specific project.
+        One way only: a flat fee, paid by you&mdash;the buyer&mdash;to
+        represent your interest. After a free first consultation we send a
+        quotation tailored to your case, and we begin only once you&rsquo;ve
+        agreed to it.
         <br /><br />
-        If referral arrangements with developers ever exist, they are fully
-        disclosed and do not influence our recommendations. Our advice stays
-        independent regardless of commercial structure.
+        We take no brokerage, referral or promotion money from any developer or
+        seller, ever. Our fee doesn&rsquo;t move with the price you pay, so we
+        gain only from the right decision for you.
       </>
     ),
   },
@@ -1256,15 +1257,15 @@ const faqs: { q: string; a: React.ReactNode }[] = [
     ),
   },
   {
-    q: "Do you accept commissions from developers?",
+    q: "Do you take any money from developers?",
     a: (
       <>
-        Transparency matters more than positioning. Our primary revenue comes
-        from advisory fees paid by buyers. Where any developer arrangement
-        exists, it is disclosed before you make a decision.
+        No&mdash;never. Not a commission, not a referral, not promotion money.
+        Our entire revenue is the flat fee you agree to pay us to represent you.
         <br /><br />
-        Our recommendation does not change based on who pays what. If it ever
-        did, we would not be worth trusting.
+        That single line is what lets us sit on your side of the table without a
+        conflict. Our recommendation never changes based on who pays what&mdash;because
+        only you ever do. If it were otherwise, we would not be worth trusting.
       </>
     ),
   },

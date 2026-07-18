@@ -72,15 +72,17 @@ export const CONSULT_PILLARS = [
 ];
 
 /* ── Consultation framing ──
-   The first consultation is a paid, refundable engagement. We charge for it
-   deliberately — so our only job in that conversation is to tell you the
-   truth — and refund it from our referral when you proceed with us.
-   Set CONSULT_FEE to null to make it complimentary again; the payment step
-   is skipped automatically when there is no fee. */
-export const CONSULT_FEE: number | null = 9999;
-export const CONSULT_FEE_ORIGINAL: number | null = 19999; // list price, struck through
-export const CONSULT_FEE_DISCOUNT_LABEL = "50% inaugural offer";
-export const CONSULT_FEE_REFUND_NOTE = "Refunded in full from our referral when you proceed with us.";
+   The first consultation is free. We use it to understand the buyer's
+   requirement in depth, explain exactly how we'd represent them, and prepare
+   a quotation tailored to their case — representation begins only once the
+   scope and the flat fee are mutually agreed. CONSULT_FEE is null, so the
+   payment step is skipped automatically; set a number to reintroduce a paid
+   consultation. Our only revenue is that buyer-paid flat fee — never a rupee
+   from any developer. */
+export const CONSULT_FEE: number | null = null;
+export const CONSULT_FEE_ORIGINAL: number | null = null; // struck list price (paid mode only)
+export const CONSULT_FEE_DISCOUNT_LABEL = "50% inaugural offer"; // shown only in paid mode
+export const CONSULT_FEE_NOTE = "Free — we quote your case before anything begins.";
 export const CONSULT_DURATION = "45 Minute Consultation";
 export const CONSULT_HEADLINE = "Your First Consultation";
 
