@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import Logo from "../Logo";
+import SignIn from "./SignIn";
+import { isMember, clearAllDemoData } from "@/lib/journey";
 import { projectByName } from "@/lib/projects";
 import ProjectOptionCard from "../intelligence/ProjectOptionCard";
 import {
@@ -49,15 +51,23 @@ import {
    THE PRIVATE OFFICE — routed client portal (Phase 1)
    ════════════════════════════════════════════════════════════════ */
 export default function OfficeApp({ section }: { section: SectionKey }) {
+  const [authed, setAuthed] = useState<boolean | null>(null);
   const [state, setState] = useState<OfficeState | null>(null);
   const [navOpen, setNavOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const [celebrate, setCelebrate] = useState<string | null>(null);
-  useEffect(() => setState(loadOffice()), []);
+  /* Gate the office behind sign-in. A hard refresh wipes the session (root
+     layout), so a reloaded visitor lands on the sign-in screen; the office
+     only loads — and only seeds its demo — once they're signed in. */
+  useEffect(() => {
+    const m = isMember();
+    setAuthed(m);
+    if (m) setState(loadOffice());
+  }, []);
 
-  if (!state) {
-    return <div className="min-h-svh bg-[#F5F0E8]" />;
-  }
+  if (authed === null) return <div className="min-h-svh bg-[#F5F0E8]" />;
+  if (!authed) return <SignIn onSignedIn={() => { setAuthed(true); setState(loadOffice()); }} />;
+  if (!state) return <div className="min-h-svh bg-[#F5F0E8]" />;
 
   const active = state.threads.find((t) => t.id === state.activeId) ?? state.threads[0];
 
@@ -117,6 +127,12 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
           <Link href="/" className="mt-6 px-3.5 text-[11px] font-light tracking-[0.16em] text-[#1a1a1a]/40 transition-colors hover:text-[#1a1a1a]">
             ← Back to site
           </Link>
+          <button
+            onClick={() => { clearAllDemoData(); setState(null); setAuthed(false); setNavOpen(false); }}
+            className="mt-2 px-3.5 text-left text-[11px] font-light tracking-[0.16em] text-[#1a1a1a]/40 transition-colors hover:text-[#1a1a1a]"
+          >
+            Sign out
+          </button>
         </nav>
       </aside>
 
