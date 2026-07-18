@@ -1,14 +1,16 @@
 "use client";
 
 /* ────────────────────────────────────────────────────────────────────────
-   Sign-in — the gate to the Private Office.
+   Sign-in — the gate to the Private Office (also the registration entry).
 
    A logged-out visitor (including anyone who has just hard-refreshed, which
    wipes the simulated session) lands here instead of the office. Verifying
-   sets membership (setMember) and reveals the office. Reuses the same
-   name + phone/email + 6-digit OTP contract as the Buyer Office join gate;
-   the OTP is a working dummy today (any 6 digits), with the MSG91 seam wired
-   for real SMS later.
+   sets membership (setMember) and reveals the office.
+
+   Mobile-only auth: Indian numbers (+91) get an SMS code, international
+   numbers a WhatsApp code — the copy reflects the channel. The OTP is a
+   working dummy today (any 4 digits), with the MSG91 seam wired for real
+   SMS/WhatsApp later.
    ──────────────────────────────────────────────────────────────────────── */
 
 import { useEffect, useRef, useState } from "react";
@@ -21,12 +23,12 @@ const DIAL = [
   { code: "+91", flag: "🇮🇳" }, { code: "+971", flag: "🇦🇪" }, { code: "+1", flag: "🇺🇸" },
   { code: "+44", flag: "🇬🇧" }, { code: "+65", flag: "🇸🇬" }, { code: "+61", flag: "🇦🇺" },
 ];
-const emailOk = (e: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
 const TICKS = [
   "Zero brokerage · fixed fee",
   "Independent, on-record advice",
   "Your negotiation, tracked end-to-end",
 ];
+const OTP_LEN = 4;
 
 const FIELD =
   "w-full rounded-md border border-[#1a1a1a]/[0.16] bg-white px-4 py-3 text-[0.95rem] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#1a1a1a]/35 focus:border-[#c9a96e]";
@@ -34,19 +36,18 @@ const FIELD =
 export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
   const [step, setStep] = useState<"contact" | "otp">("contact");
   const [name, setName] = useState("");
-  const [method, setMethod] = useState<"phone" | "email">("phone");
   const [dial, setDial] = useState("+91");
   const [num, setNum] = useState("");
-  const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [otp, setOtp] = useState<string[]>(Array(OTP_LEN).fill(""));
   const [err, setErr] = useState("");
   const [resendIn, setResendIn] = useState(0);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const isIndia = dial === "+91";
+  const channel = isIndia ? "SMS" : "WhatsApp";
   const numValid = num.replace(/\D/g, "").length >= (isIndia ? 10 : 6);
   const otpComplete = otp.every((d) => d !== "");
-  const sentTo = method === "email" ? email.trim() : `${dial} ${num.trim()}`;
+  const sentTo = `${dial} ${num.trim()}`;
 
   useEffect(() => {
     if (resendIn <= 0) return;
@@ -56,8 +57,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
 
   function sendCode() {
     if (!name.trim()) { setErr("Please enter your name."); return; }
-    if (method === "phone" && !numValid) { setErr("Enter a valid mobile number."); return; }
-    if (method === "email" && !emailOk(email)) { setErr("Enter a valid email address."); return; }
+    if (!numValid) { setErr("Enter a valid mobile number."); return; }
     setErr(""); setStep("otp"); setResendIn(24);
     requestAnimationFrame(() => otpRefs.current[0]?.focus());
   }
@@ -65,7 +65,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
   const setOtpDigit = (i: number, v: string) => {
     const digit = v.replace(/\D/g, "").slice(-1);
     setOtp((o) => { const n = [...o]; n[i] = digit; return n; });
-    if (digit && i < 5) otpRefs.current[i + 1]?.focus();
+    if (digit && i < OTP_LEN - 1) otpRefs.current[i + 1]?.focus();
   };
   const onOtpKey = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Backspace" && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus();
@@ -73,14 +73,8 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
 
   function verify(e: React.FormEvent) {
     e.preventDefault();
-    if (!otpComplete) { setErr("Enter the 6-digit code."); return; }
-    saveLead({
-      name: name.trim(),
-      email: method === "email" ? email.trim() : "",
-      phone: method === "phone" ? `${dial} ${num}`.trim() : undefined,
-      intent: "buyer-office",
-      createdAt: Date.now(),
-    });
+    if (!otpComplete) { setErr(`Enter the ${OTP_LEN}-digit code.`); return; }
+    saveLead({ name: name.trim(), email: "", phone: `${dial} ${num}`.trim(), intent: "buyer-office", createdAt: Date.now() });
     setMember();
     onSignedIn();
   }
@@ -134,42 +128,30 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
                 <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Rohan Mehta" autoComplete="name" className={`mt-2 ${FIELD}`} />
               </label>
 
-              <div className="mt-4">
-                <span className="text-[0.64rem] font-semibold uppercase tracking-[0.12em] text-[#1a1a1a]/45">Verify with</span>
-                <div className="mt-2 inline-flex rounded-lg bg-[#1a1a1a]/[0.05] p-1">
-                  {(["phone", "email"] as const).map((m) => (
-                    <button key={m} type="button" onClick={() => { setMethod(m); setErr(""); }}
-                      className={`rounded-md px-4 py-1.5 text-[0.8rem] font-medium capitalize transition-colors ${method === m ? "bg-white text-[#1a1a1a] shadow-sm" : "text-[#1a1a1a]/50 hover:text-[#1a1a1a]/75"}`}>
-                      {m}
-                    </button>
-                  ))}
+              <label className="mt-4 block">
+                <span className="text-[0.64rem] font-semibold uppercase tracking-[0.12em] text-[#1a1a1a]/45">Mobile number</span>
+                <div className="mt-2 flex gap-2">
+                  <select value={dial} onChange={(e) => setDial(e.target.value)} aria-label="Country code"
+                    className="rounded-md border border-[#1a1a1a]/[0.16] bg-white px-3 py-3 text-[0.95rem] text-[#1a1a1a] outline-none transition-colors focus:border-[#c9a96e]">
+                    {DIAL.map((d) => <option key={d.code} value={d.code}>{d.flag} {d.code}</option>)}
+                  </select>
+                  <input value={num} onChange={(e) => setNum(e.target.value)} inputMode="numeric" placeholder="98xxxxxx21" autoComplete="tel-national" className={`flex-1 ${FIELD}`} />
                 </div>
-              </div>
-
-              {method === "phone" ? (
-                <label className="mt-4 block">
-                  <span className="text-[0.64rem] font-semibold uppercase tracking-[0.12em] text-[#1a1a1a]/45">Mobile number</span>
-                  <div className="mt-2 flex gap-2">
-                    <select value={dial} onChange={(e) => setDial(e.target.value)} aria-label="Country code"
-                      className="rounded-md border border-[#1a1a1a]/[0.16] bg-white px-3 py-3 text-[0.95rem] text-[#1a1a1a] outline-none transition-colors focus:border-[#c9a96e]">
-                      {DIAL.map((d) => <option key={d.code} value={d.code}>{d.flag} {d.code}</option>)}
-                    </select>
-                    <input value={num} onChange={(e) => setNum(e.target.value)} inputMode="numeric" placeholder="98xxxxxx21" autoComplete="tel-national" className={`flex-1 ${FIELD}`} />
-                  </div>
-                </label>
-              ) : (
-                <label className="mt-4 block">
-                  <span className="text-[0.64rem] font-semibold uppercase tracking-[0.12em] text-[#1a1a1a]/45">Email address</span>
-                  <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" inputMode="email" placeholder="you@example.com" autoComplete="email" className={`mt-2 ${FIELD}`} />
-                </label>
-              )}
+              </label>
 
               {err && <p className="mt-3 text-[0.8rem] text-[#b3402a]">{err}</p>}
 
               <button type="submit" className="mt-6 w-full rounded-md bg-[#1e6b45] px-4 py-3 text-[0.9rem] font-medium tracking-[0.02em] text-white transition-colors hover:bg-[#238c55]">
                 Send code &rarr;
               </button>
-              <p className="mt-3 text-[0.75rem] leading-relaxed text-[#1a1a1a]/40">We&rsquo;ll {method === "phone" ? "text" : "email"} you a 6-digit code to confirm it&rsquo;s you.</p>
+              <p className="mt-3 text-[0.75rem] leading-relaxed text-[#1a1a1a]/40">
+                We&rsquo;ll send a {OTP_LEN}-digit code {isIndia ? "by SMS" : "on WhatsApp"} to confirm it&rsquo;s you.
+              </p>
+              <p className="mt-2 text-[0.72rem] leading-relaxed text-[#1a1a1a]/40">
+                By continuing you agree to our{" "}
+                <a href={`${basePath}/terms`} className="underline decoration-[#1a1a1a]/25 underline-offset-2 hover:text-[#1a1a1a]/70">Terms</a>{" "}and{" "}
+                <a href={`${basePath}/privacy`} className="underline decoration-[#1a1a1a]/25 underline-offset-2 hover:text-[#1a1a1a]/70">Privacy Policy</a>.
+              </p>
 
               <p className="mt-6 border-t border-[#1a1a1a]/10 pt-4 text-[0.8rem] text-[#1a1a1a]/50">
                 New to Truth Estate? <a href={`${basePath}/`} className="font-medium text-[#1e6b45] hover:underline">Start your brief &rarr;</a>
@@ -179,16 +161,16 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
             <form onSubmit={verify}>
               <h1 className="mt-2.5 font-serif text-[1.9rem] font-semibold leading-[1.1] tracking-[-0.01em] md:text-[2rem]">Enter the code</h1>
               <p className="mt-2 text-[0.85rem] text-[#1a1a1a]/55">
-                Sent to <span className="font-medium text-[#1a1a1a]">{sentTo}</span>{" · "}
-                <button type="button" onClick={() => { setStep("contact"); setOtp(["", "", "", "", "", ""]); setErr(""); }} className="font-medium text-[#9a7a2e] hover:underline">Change</button>
+                Sent to <span className="font-medium text-[#1a1a1a]">{sentTo}</span> via {channel}{" · "}
+                <button type="button" onClick={() => { setStep("contact"); setOtp(Array(OTP_LEN).fill("")); setErr(""); }} className="font-medium text-[#9a7a2e] hover:underline">Change</button>
               </p>
 
-              <div className="mt-5 flex gap-2.5">
+              <div className="mt-5 flex gap-3">
                 {otp.map((d, i) => (
                   <input key={i} ref={(el) => { otpRefs.current[i] = el; }} value={d}
                     onChange={(e) => setOtpDigit(i, e.target.value)} onKeyDown={(e) => onOtpKey(i, e)}
                     inputMode="numeric" maxLength={1} aria-label={`Digit ${i + 1}`}
-                    className="h-14 w-full rounded-lg border border-[#1a1a1a]/[0.18] bg-white text-center font-serif text-[1.4rem] text-[#1a1a1a] outline-none transition-colors focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/20" />
+                    className="h-14 w-14 rounded-lg border border-[#1a1a1a]/[0.18] bg-white text-center font-serif text-[1.5rem] text-[#1a1a1a] outline-none transition-colors focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/20" />
                 ))}
               </div>
 
@@ -203,7 +185,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
                   ? <span className="text-[#1a1a1a]/40">Resend in 0:{String(resendIn).padStart(2, "0")}</span>
                   : <button type="button" onClick={() => setResendIn(24)} className="font-medium text-[#9a7a2e] hover:underline">Resend code</button>}
               </p>
-              <p className="mt-4 text-[0.72rem] text-[#1a1a1a]/35">Demo: any 6-digit code opens the office.</p>
+              <p className="mt-4 text-[0.72rem] text-[#1a1a1a]/35">Demo: any {OTP_LEN}-digit code opens the office.</p>
             </form>
           )}
         </div>
