@@ -20,7 +20,7 @@ const PILLARS: Pillar[] = [
   },
   {
     n: "02",
-    name: "Unit Intelligence",
+    name: "Sun & Vastu 3D",
     outcome: "Don't just buy the right project. Buy the right apartment.",
     body: "Proprietary intelligence identifies the best tower, floor and unit for your specific requirements.",
     includes: ["Morning sunlight analysis", "Cross ventilation", "Vastu assessment", "View analysis", "Future obstruction prediction", "Heat gain", "Privacy & noise", "Resale potential", "Floor recommendations"],
@@ -74,7 +74,7 @@ const PILLARS: Pillar[] = [
 /* ── The value stack ── */
 const VALUE_STACK: [string, string][] = [
   ["Buyer Advisory", "₹15,000"],
-  ["Unit Intelligence", "₹20,000"],
+  ["Sun & Vastu 3D", "₹20,000"],
   ["Commercial Negotiation", "₹25,000"],
   ["Site Visits & Coordination", "₹10,000"],
   ["Documentation Support", "₹10,000"],
