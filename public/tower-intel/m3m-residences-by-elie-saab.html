@@ -462,6 +462,22 @@
 #fs3d.cinema .fs-sunbar{left:50%;right:auto;transform:translateX(-50%);width:calc(100% - 28px);max-width:720px;bottom:24px}
 #fs3d.cinema .fs-expand{top:16px;right:16px;width:38px;height:38px;font-size:16px}
 body.sun-cinema{overflow:hidden}
+/* cinema overlay chrome — the immersive default on mobile */
+#fs3d .fs-cine-head,#fs3d .fs-cine-story{display:none}
+#fs3d.cinema .fs-cine-head{display:flex;position:absolute;top:0;left:0;right:0;z-index:7;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 14px 26px;background:linear-gradient(180deg,rgba(20,15,6,.34),transparent);pointer-events:none}
+#fs3d.cinema #fsCineName{font:600 15.5px/1.25 'Playfair Display',Georgia,serif;color:#fff;text-shadow:0 1px 10px rgba(0,0,0,.4);max-width:58%}
+.fs-cine-actions{display:flex;align-items:center;gap:8px;pointer-events:auto}
+.fs-cine-actions button{border:0;cursor:pointer;font-family:'Geist',sans-serif}
+#fsCineDetails{background:rgba(255,255,255,.9);color:#23272e;font:600 11.5px/1 'Geist';padding:9px 13px;border-radius:20px}
+#fsCineClose{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.9);color:#23272e;font-size:14px;display:grid;place-items:center}
+#fs3d.cinema .fs-cine-story{display:block;position:absolute;left:50%;transform:translateX(-50%);bottom:96px;z-index:6;width:calc(100% - 32px);max-width:560px;text-align:center;font:500 13.5px/1.45 'Geist',sans-serif;color:#fff;text-shadow:0 1px 12px rgba(0,0,0,.5)}
+#fs3d.cinema .fs-cine-story b{color:#ffd98a;font-weight:600}
+#fs3d.cinema .fs-sunbar{bottom:18px}
+#fs3d.cinema .fs-expand{display:none}   /* in cinema the header chrome handles exit/close */
+@media(max-width:760px){
+  #fs3d.cinema .fs-cine-story{bottom:104px}
+  #fs3d.cinema .fs-sunbar{bottom:16px}
+}
 </style>
 <div id="app"></div>
 
@@ -550,6 +566,8 @@ body.sun-cinema{overflow:hidden}
             <div class="fs-sunseason" id="fsSunSeason"><button data-s="-23.45">Winter</button><button data-s="0" class="on">Equinox</button><button data-s="23.45">Summer</button></div>
           </div>
           <button id="fsExpand" class="fs-expand" aria-label="Expand to full screen">⛶</button>
+          <div id="fsCineHead" class="fs-cine-head"><span id="fsCineName"></span><span class="fs-cine-actions"><button id="fsCineDetails">Details ▾</button><button id="fsCineClose" aria-label="Close">✕</button></span></div>
+          <div id="fsCineStory" class="fs-cine-story"></div>
         </div>
         <div class="fs-imgwrap"><img id="fsImg" src="" alt="Floor plan"></div>
         <div id="fsWalk" class="fs-walk">
@@ -1244,7 +1262,10 @@ function initFlat3D(){
   /* expand the 3D + sun to a full-screen "sun cinema" */
   (function(){const exp=document.getElementById('fsExpand');
     const setCine=on=>{const d3=document.getElementById('fs3d');if(!d3)return;d3.classList.toggle('cinema',on);document.body.classList.toggle('sun-cinema',on);if(exp)exp.textContent=on?'✕':'⛶';requestAnimationFrame(()=>{f3resize();if(f3)f3setSun(f3.sunFrac);});};
+    if(f3)f3.setCine=setCine;                                   // openFlat auto-enters this on mobile → immersive by default
     if(exp)exp.onclick=()=>setCine(!document.getElementById('fs3d').classList.contains('cinema'));
+    const det=document.getElementById('fsCineDetails');if(det)det.onclick=()=>{f3.playing=false;setCine(false);};   // exit immersive → detail view
+    const cx=document.getElementById('fsCineClose');if(cx)cx.onclick=()=>{setCine(false);const c=document.getElementById('fsClose');if(c)c.click();};   // close the unit
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElementById('fs3d').classList.contains('cinema')){setCine(false);e.stopImmediatePropagation();}},true);})();
   (function(){var ph=document.getElementById('fsWalkPhone'),fm=document.getElementById('fsWalkForm');if(!ph||!fm)return;
     ph.addEventListener('input',function(){this.value=this.value.replace(/\D/g,'').slice(0,10);});
@@ -1410,14 +1431,24 @@ function renderSunRooms(){
     `<div class="sun-rooms-foot">Play or drag the timeline on the model — watch the light move room to room.</div>`;
 }
 function f3updateLit(h){
-  if(!f3||!f3.roomsData)return;const box=document.getElementById('sunRooms');if(!box||!box.firstChild)return;
+  if(!f3||!f3.roomsData)return;
   const _sd=decl;decl=f3.season;const[sr,ss]=dayB();decl=_sd;const span=(ss-sr)||1;
-  const nowPct=Math.max(0,Math.min(100,(h-sr)/span*100));let litN=0;
-  f3.roomsData.forEach(r=>{const row=document.getElementById('sr-'+r.key);if(!row)return;
-    const lit=litAt(r.dir,f3.curAz||0,f3.curAlt||-1);row.classList.toggle('lit',lit);if(lit)litN++;
-    const nw=row.querySelector('.snow');if(nw)nw.style.left=nowPct+'%';});
+  const nowPct=Math.max(0,Math.min(100,(h-sr)/span*100));
+  const litLabels=[];
+  f3.roomsData.forEach(r=>{
+    const lit=litAt(r.dir,f3.curAz||0,f3.curAlt||-1);if(lit)litLabels.push(r.label);
+    const row=document.getElementById('sr-'+r.key);if(row){row.classList.toggle('lit',lit);const nw=row.querySelector('.snow');if(nw)nw.style.left=nowPct+'%';}
+  });
+  const litN=litLabels.length;
   const nowEl=document.getElementById('sunNow');
   if(nowEl)nowEl.innerHTML=(f3.curAlt>0.03)?`<b>${litN}</b> room${litN===1?'':'s'} in sun now`:`sun below horizon`;
+  const st=document.getElementById('fsCineStory');
+  if(st){const hd=((h%24)+24)%24;
+    const phase=hd<7.6?'Early morning':hd<11.4?'Morning':hd<13.2?'Midday':hd<16.8?'Afternoon':hd<18.8?'Evening':'Dusk';
+    if(f3.curAlt<=0.03)st.innerHTML=`The sun is below the horizon — no direct light right now.`;
+    else if(litN===0)st.innerHTML=`<b>${phase}</b> — no room catches direct sun at this hour.`;
+    else{const names=litLabels.slice(0,3).join(', ').replace(/, ([^,]*)$/,' &amp; $1');
+      st.innerHTML=`<b>${phase}</b> — sun in the <b>${names}</b>.`;}}
 }
 function f3tick(){if(!f3||!f3.active)return;
   if(f3.playing){f3.sunFrac+=0.0016;if(f3.sunFrac>1)f3.sunFrac=0;f3setSun(f3.sunFrac);}
@@ -1615,7 +1646,11 @@ function openFlat(t,uid,keepFloor){
   if(f3){const _rk=cfg.beds===4?['living','masterBed','kitchen','bed2','bed3','study']:['living','masterBed','kitchen','bed2','bed3'];
     const _nm={living:'Living',masterBed:'Master bed',kitchen:'Kitchen',bed2:'Bedroom 2',bed3:'Bedroom 3',study:'Home office'};
     f3.roomsData=_rk.map(k=>({key:k,label:_nm[k],dir:vastuRoomScore(k,compass,plateCfg(t,u),u.mir).dir}));
-    renderSunRooms();f3setSun(f3.sunFrac);}
+    const _cn=document.getElementById('fsCineName');if(_cn)_cn.textContent=(document.getElementById('fsName')||{}).textContent||'';
+    renderSunRooms();f3setSun(f3.sunFrac);
+    /* mobile: land straight in the immersive sun stage, gently auto-playing the day */
+    if(f3.setCine&&window.matchMedia&&window.matchMedia('(max-width:760px)').matches&&!document.getElementById('fs3dSoon').classList.contains('on')){
+      f3.setCine(true);f3.playing=true;const _p=document.getElementById('fsSunPlay');if(_p)_p.textContent='❚❚';}}
   /* TAB 2: METRICS */
   const mrows=[
     {icon:'&#x1F9ED;',label:'Orientation',badge:'doc',val:`<b>${compass}-facing</b> living room &amp; deck (bearing ${Math.round(b)}&deg;). ${lakeFacing?'Faces the central lagoon \u2014 the prestige view axis.':'Faces outward from the lagoon side \u2014 perimeter views.'}`,stars:null,barW:null,barC:null},
