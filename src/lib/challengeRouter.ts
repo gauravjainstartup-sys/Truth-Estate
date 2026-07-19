@@ -17,7 +17,7 @@
    null → deterministic fallback. The wall is enforced on BOTH paths.
    ════════════════════════════════════════════════════════════════ */
 import type { ProjectIntel } from "@/lib/projects";
-import type { ChallengeAnswer } from "@/lib/challengeChat";
+import { buildChallengeContext, type ChallengeAnswer } from "@/lib/challengeChat";
 
 const ROUTER_URL =
   typeof process !== "undefined" ? process.env.NEXT_PUBLIC_CHALLENGE_ROUTER_URL : undefined;
@@ -30,19 +30,22 @@ export async function askChallengeRemote(
 ): Promise<ChallengeAnswer | null> {
   if (!ROUTER_URL) return null; // Phase 1 — no remote brain wired yet
   try {
+    // The wall is enforced at assembly: a locked visitor's context carries
+    // NO paid content, so paid findings never reach the server or Gemini.
+    const context = buildChallengeContext(p, locked);
     const res = await fetch(ROUTER_URL, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ slug: p.slug, name: p.name, question, locked, history }),
-      signal: AbortSignal.timeout(12000),
+      body: JSON.stringify({ question, locked, history: history.slice(-8), context }),
+      signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { ok?: boolean; text?: string; gate?: boolean };
     if (!data?.ok || typeof data.text !== "string") return null;
-    // the server is the source of truth on the wall, but never trust it to
-    // OPEN a gate the client knows must be shut: a locked visitor's paid
-    // answer stays gated regardless of what the model returned.
-    return { text: data.text, gate: Boolean(data.gate) };
+    // Client is authoritative on the wall: never let the server OPEN a gate
+    // that must stay shut. A locked, paid-topic question stays gated even if
+    // the model's own flag says otherwise.
+    return { text: data.text, gate: locked ? Boolean(data.gate) : false };
   } catch {
     return null; // network / timeout / abort → deterministic fallback
   }

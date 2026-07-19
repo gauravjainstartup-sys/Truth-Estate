@@ -63,13 +63,16 @@ export default function ChallengeChat({
     setInput("");
     setMsgs((m) => [...m, { id: msgId(), role: "user", text: q }]);
     setTyping(true);
-    // Gemini seam → deterministic fallback (both enforce the same wall)
+    // The deterministic engine decides the WALL (gate) and is the fallback;
+    // Gemini, when wired, only upgrades the prose. So the paywall can never
+    // drift on the model's whim — a locked paid question stays gated.
+    const det = answerChallenge(p, q, locked);
     const history = msgs.map((m) => ({ role: m.role, text: m.text }));
     const remote = await askChallengeRemote(p, q, locked, history).catch(() => null);
-    const ans = remote ?? answerChallenge(p, q, locked);
+    const text = remote?.text ?? det.text;
     await new Promise((r) => setTimeout(r, 480)); // brief "thinking"
     setTyping(false);
-    setMsgs((m) => [...m, { id: msgId(), role: "bot", text: ans.text, gate: ans.gate }]);
+    setMsgs((m) => [...m, { id: msgId(), role: "bot", text, gate: det.gate }]);
   }
 
   if (!open) return null;

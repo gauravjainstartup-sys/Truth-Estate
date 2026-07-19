@@ -237,6 +237,82 @@ export function answerChallenge(p: ProjectIntel, question: string, locked: boole
 
 const pct = (w: number) => `${Math.round(w * 100)}%`;
 
+/* ── knowledge context for the Gemini router ─────────────────────────
+   The wall lives here, not just in the prompt: publicKnowledge is always
+   safe to send; paidKnowledge is assembled ONLY when the visitor is
+   unlocked (the client already holds this data at that point) and is null
+   otherwise, so a locked visitor's paid findings never leave the browser.
+   paidTopics are just LABELS — enough for the model to tease + gate without
+   any paid content. The Edge Function feeds Gemini exactly what it's given. */
+export type ChallengeContext = {
+  slug: string;
+  name: string;
+  publicKnowledge: string;
+  paidKnowledge: string | null;
+  paidTopics: string[];
+};
+
+export const PAID_TOPICS = [
+  "The buy / no-buy verdict for the buyer's budget & risk",
+  "The 5-year ROI and CAGR projection",
+  "The developer's full delivery and financial record",
+  "The title / RERA / litigation read",
+  "The specific red flags to clear before signing",
+  "The deep, pillar-by-pillar audit behind each grade",
+];
+
+export function buildChallengeContext(p: ProjectIntel, locked: boolean): ChallengeContext {
+  const dev = developerOf(p);
+  const market = marketOf(p);
+  const roi = roiModel(p);
+  const ctx = rankContext(p);
+  const o = p.ops;
+  const grade = gradeOf(p.truthScore);
+  const psf = psfLabel(p);
+
+  const vitals = [
+    o?.units && `${o.units.toLocaleString("en-IN")} units`,
+    o?.towers && `${o.towers} towers`,
+    o?.floors && `${o.floors} floors`,
+    o?.landAcres && `${o.landAcres} acres`,
+    o?.density && `${o.density}/acre`,
+    p.sizeBand && `homes ${p.sizeBand}`,
+    o?.launch && `launched ${o.launch}`,
+    o?.possession && `RERA possession ${o.possession}`,
+    o?.reraId && `RERA ${o.reraId}`,
+  ].filter(Boolean).join(" · ");
+
+  const pubPillars = pillars(p)
+    .map((r) => `- ${r.label}: ${r.score.toFixed(1)}/10 (${r.band}) — ${r.why}`)
+    .join("\n");
+
+  const publicKnowledge = [
+    `PROJECT: ${p.name} by ${p.developer}, ${p.marketShort} corridor.`,
+    `TRUTH SCORE: ${p.truthScore}/100 ("${grade}")${ctx.topPct <= 25 ? `, top ${ctx.topPct}% of tracked projects` : `, ranks ${ctx.rank} of ${ctx.total} tracked`}.`,
+    `TICKET: ${ticketLabel(p)}${psf ? ` · corridor ${psf}` : ""}.`,
+    vitals && `VITALS: ${vitals}.`,
+    `PILLAR SUMMARY (weights: location 26%, developer 25%, construction 22%, legal 15%, USPs 12%):\n${pubPillars}`,
+    `METHODOLOGY: Truth Estate is buyer-side only — no inventory, no developer commission, no paid placement. The score is a weighted composite of five pillars, re-scored quarterly; no builder can pay to move it.`,
+  ].filter(Boolean).join("\n");
+
+  if (locked) return { slug: p.slug, name: p.name, publicKnowledge, paidKnowledge: null, paidTopics: PAID_TOPICS };
+
+  const paid: string[] = [];
+  if (dev) paid.push(`DEVELOPER RECORD: ${p.developer} — ${dev.performance.delivered} of ${dev.performance.launched} launched projects delivered, ${dev.performance.onTimePct}% on-time, ~${dev.performance.avgDelayMonths} months' average slippage. ${dev.finNote} ${dev.verdict}`);
+  if (o?.construction) { const c = o.construction; paid.push(`CONSTRUCTION: ${c.actualPct}% built vs ${c.expectedPct}% expected, ${c.absorptionPct}% sold. Execution-adjusted handover ${c.predictedDate} vs RERA ${c.reraDate}.`); }
+  if (market) paid.push(`LOCATION/MARKET: ${market.verdict} Tracked 3-yr appreciation ${market.appreciation3Y}. ${market.futureTrend}`);
+  paid.push(`LEGAL: ${p.liveLegal?.headline ? `${p.liveLegal.headline}${p.liveLegal.keyFlags?.length ? ` Key flags: ${p.liveLegal.keyFlags.slice(0, 3).join("; ")}.` : ""}` : `Developer legal signal: ${p.anatomy.legal}${o?.reraId ? `; project RERA-registered (${o.reraId})` : ""}. Nothing critical outstanding on our current read.`}`);
+  if (roi) paid.push(`ROI MODEL: ${roi.horizonYears}-yr projection anchored to corridor 3-yr appreciation of ${roi.corridor3Y} — ~${roi.benchCagr}% CAGR at benchmark, ~${roi.adjCagr}% execution-adjusted; ${ticketLabel(p)} entry models to ~₹${roi.adjValueCr} Cr. Modelled, not guaranteed.`);
+  paid.push(`PRICING VERDICT: ${p.reason} Pricing & value graded ${p.anatomy.pricing}.`);
+  if (p.watchouts?.length) paid.push(`RED FLAGS / WATCHOUTS: ${p.watchouts.join("; ")}.`);
+  if (p.ops?.usps?.length) paid.push(`USPs: ${p.ops.usps.map((u) => u.title).join("; ")}.`);
+  if (p.strengths?.length) paid.push(`STRENGTHS: ${p.strengths.join("; ")}.`);
+  const faqs = projectFaqs(p).map((f) => `Q: ${f.q}\nA: ${f.a}`).join("\n");
+  if (faqs) paid.push(`FAQs:\n${faqs}`);
+
+  return { slug: p.slug, name: p.name, publicKnowledge, paidKnowledge: paid.join("\n"), paidTopics: PAID_TOPICS };
+}
+
 /* stable id for a message */
 let n = 0;
 export const msgId = () => `m${Date.now().toString(36)}${(n++).toString(36)}`;
