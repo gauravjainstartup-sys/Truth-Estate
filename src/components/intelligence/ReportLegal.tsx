@@ -149,7 +149,7 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
                       <h5 className="text-[1.05rem] font-semibold leading-tight">{c.title}</h5>
                       <p className="mt-1 text-[0.64rem] font-medium uppercase tracking-[0.08em] text-[#1a1a1a]/40">{c.court}</p>
                     </div>
-                    <div className="flex shrink-0 flex-wrap gap-1.5">
+                    <div className="flex max-w-full shrink-0 flex-wrap gap-1.5">
                       <Chip>Status: {c.status}</Chip>
                       {caseScope === "developer" && <Chip>Relevance: {c.relevance}</Chip>}
                       <Chip hi>Impact: {c.impact}</Chip>
