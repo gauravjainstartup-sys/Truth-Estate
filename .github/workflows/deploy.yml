@@ -78,6 +78,10 @@ jobs:
           # the previous deploy stays live instead of shipping a gutted site.
           SUPABASE_FIXTURES: ".data-snapshot"
           REQUIRE_SNAPSHOT: "1"
+          # Google Maps JS key (referrer-locked to this site; safe in the
+          # client bundle by design). Absent secret → the location maps
+          # build with the free OSM fallback instead — never a broken map.
+          NEXT_PUBLIC_GMAPS_KEY: ${{ secrets.GMAPS_KEY }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: out
