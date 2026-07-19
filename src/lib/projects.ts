@@ -587,7 +587,9 @@ export const TOWER_INTEL: Record<string, TowerIntelMeta> = {
 };
 // Exact DB-name match first (Arbour/Titanium), then a slug fallback so the
 // advisor attaches to the live page regardless of the DB name's exact casing.
-const tiSlug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+// Exported so the projects-geo layer can flag 3D-enabled projects from the
+// same registry — sun pins on the maps light up automatically as advisors ship.
+export const tiSlug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 export const towerIntelMeta = (p: ProjectIntel): TowerIntelMeta | undefined =>
   TOWER_INTEL[p.name] ?? Object.entries(TOWER_INTEL).find(([k]) => tiSlug(k) === p.slug)?.[1];
 
