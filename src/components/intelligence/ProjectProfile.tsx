@@ -1129,6 +1129,7 @@ export default function ProjectProfile({
           slug={p.slug}
           projectName={p.name}
           focus3D={unlockFocus3D}
+          has3DModel={has3D}
           onClose={() => { setUnlockOpen(false); setUnlockFocus3D(false); }}
           onUnlocked={() => { setReadAccess(hasReadAccess(p.slug)); setThreeDAccess(has3DAccess(p.slug)); }}
         />
