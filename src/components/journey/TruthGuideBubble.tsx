@@ -10,7 +10,10 @@ import { useJourney } from "./JourneyProvider";
 export default function TruthGuideBubble() {
   const { open, isOpen } = useJourney();
   const pathname = usePathname();
-  if (isOpen || pathname?.startsWith("/investors")) return null;
+  // Project detail pages render their own project-scoped "Challenge our read"
+  // (ProjectProfile) — suppress the generic site-wide bubble there so there's
+  // one, project-aware entry rather than two competing ones.
+  if (isOpen || pathname?.startsWith("/investors") || pathname?.startsWith("/intelligence/projects/")) return null;
   return (
     <button
       onClick={() => open("research")}

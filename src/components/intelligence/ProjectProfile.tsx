@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Logo from "../Logo";
-import { useJourney } from "../journey/JourneyProvider";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import { loadBuyData, hasPreferences, deriveDNA, clearAllDemoData, saveLead, hasReadAccess } from "@/lib/journey";
 import type { ConsultProfileChip } from "@/lib/consultation";
@@ -26,6 +25,7 @@ import TowerIntel, { openUnitIntel } from "./TowerIntel";
 import UnlockModal from "./UnlockModal";
 import LockedReport from "./LockedReport";
 import UnlockDesk from "./UnlockDesk";
+import ChallengeChat from "./ChallengeChat";
 import ReportAnatomy from "./ReportAnatomy";
 import ReportDeveloper from "./ReportDeveloper";
 import ReportConstruction from "./ReportConstruction";
@@ -237,7 +237,6 @@ export default function ProjectProfile({
   onChallenge?: () => void;
   onSelectAlternative?: (name: string) => void;
 }) {
-  const { open } = useJourney();
   const { openConsult } = useConsultation();
   const router = useRouter();
   // ── Paywall (north metric: paid customers). Reads are paid: a guest sees the
@@ -248,6 +247,7 @@ export default function ProjectProfile({
   // for real later; the demo session resets on hard refresh by design).
   const [readAccess, setReadAccess] = useState(false);
   const [unlockOpen, setUnlockOpen] = useState(false);
+  const [challengeOpen, setChallengeOpen] = useState(false);
   useEffect(() => { setReadAccess(hasReadAccess(p.slug)); }, [p.slug]);
   const locked = !sample && !readAccess;
   const SAMPLE_HREF = `${basePath}/intelligence/projects/sample-read`;
@@ -270,7 +270,9 @@ export default function ProjectProfile({
     }
     openConsult({ source: p.name, sourceKind: "project", ...(profile ? { intent: "buy" as const, profile } : {}) });
   });
-  const challenge = onChallenge ?? (() => open("research"));
+  // standalone project pages open the project-scoped, paywall-aware chat;
+  // embedded (the shortlist workspace) keeps its in-journey truthguide step.
+  const challenge = onChallenge ?? (() => setChallengeOpen(true));
 
   // The page's primary CTA swaps by lock state: a locked read leads with the
   // sale ("Get Full Read" → unlock modal); once unlocked it leads with the
@@ -1127,6 +1129,34 @@ export default function ProjectProfile({
           onClose={() => setUnlockOpen(false)}
           onUnlocked={() => setReadAccess(hasReadAccess(p.slug))}
         />
+      )}
+
+      {/* "Challenge our read" — the project-scoped, paywall-aware advisor.
+         Answers public facts freely; teases + gates paid findings when locked. */}
+      <ChallengeChat
+        p={p}
+        open={challengeOpen}
+        onClose={() => setChallengeOpen(false)}
+        locked={locked}
+        onUnlock={() => setUnlockOpen(true)}
+      />
+
+      {/* Floating "Challenge our read" — standalone pages only, the single
+         project-scoped entry (the site-wide TruthGuide bubble is suppressed on
+         project pages). On mobile it rides just above the sticky primary CTA,
+         kept visually subordinate to it; on desktop it's the corner pill. */}
+      {!embedded && !challengeOpen && (
+        <button
+          onClick={challenge}
+          aria-label={`Challenge our read on ${p.name}`}
+          className="group fixed bottom-[76px] right-4 z-40 flex items-center gap-2.5 rounded-full border border-[#c9a96e]/30 bg-[#0a0a0a]/95 py-2 pl-2 pr-4 text-white shadow-[0_18px_44px_-14px_rgba(0,0,0,0.7)] backdrop-blur transition-all duration-300 hover:border-[#c9a96e]/60 md:bottom-5 md:right-5 md:gap-3 md:py-2.5 md:pl-2.5 md:pr-5"
+        >
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1e6b45] text-[0.9rem] transition-transform duration-300 group-hover:scale-105 md:h-9 md:w-9 md:text-[0.95rem]">◆</span>
+          <span className="text-left leading-tight">
+            <span className="hidden text-[0.58rem] font-medium uppercase tracking-[0.16em] text-[#c9a96e] md:block">TruthGuide</span>
+            <span className="block text-[0.78rem] font-medium md:text-[0.82rem]">Challenge our read &rarr;</span>
+          </span>
+        </button>
       )}
 
       {/* Sample read — a faint diagonal tiled watermark + a persistent badge so
