@@ -250,6 +250,7 @@ export default function ProjectProfile({
   useEffect(() => { setReadAccess(hasReadAccess(p.slug)); }, [p.slug]);
   const locked = !sample && !readAccess;
   const SAMPLE_HREF = `${basePath}/intelligence/projects/sample-read`;
+  const lockedTicket = p.budget[0] === p.budget[1] ? (p.budget[0] ? `₹${p.budget[0]} Cr+` : "") : `₹${p.budget[0]}–${p.budget[1]} Cr`;
   // "Get Independent Advice" from a report is about THIS project — open the
   // consultation with the project as its source (the advisor preps for it),
   // and if the visitor already shared a brief (Match Score / Buyer Office),
@@ -359,14 +360,17 @@ export default function ProjectProfile({
     const check = () => {
       raf = 0;
       const el = document.getElementById(firstId);
-      setShowStrip(el ? el.getBoundingClientRect().top <= 140 : window.scrollY > 480);
-      // direction-aware chrome: the first downward movement tucks the
-      // header away, any scroll back up brings it straight back. The
-      // tiny y-guard only absorbs iOS rubber-band bounce at the top.
+      const past = el ? el.getBoundingClientRect().top <= 140 : window.scrollY > 480;
+      setShowStrip(past);
+      // direction-aware chrome: scrolling down tucks the header away, scrolling
+      // up brings it back. On the mobile overlay header, while the hero still
+      // owns the screen we keep it tucked — otherwise a scroll-up to the top
+      // slides it down over the project name (the "stuck at the title" bug).
       const y = window.scrollY;
       const d = y - lastY;
       if (Math.abs(d) > 2) {
-        setHideHdr(d > 0 && y > 24);
+        const overlay = window.innerWidth < 640;
+        setHideHdr(overlay && !past ? true : d > 0 && y > 24);
         lastY = y;
       }
     };
@@ -685,9 +689,15 @@ export default function ProjectProfile({
                 <p className="max-w-xl text-[0.86rem] font-light leading-[1.7] text-[#1a1a1a]/55">
                   <span className="font-medium text-[#1a1a1a]/70">Best suited for:</span> {investorFit(p).replace(/^Best suited for\s+/i, "")}
                 </p>
-                <a href="#verdict" className="shrink-0 text-[0.78rem] font-semibold text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]">
-                  Your personalised verdict ↓
-                </a>
+                {locked ? (
+                  <button onClick={() => setUnlockOpen(true)} className="shrink-0 text-[0.78rem] font-semibold text-[#1e6b45] transition-colors hover:text-[#238c55]">
+                    🔒 Unlock your verdict →
+                  </button>
+                ) : (
+                  <a href="#verdict" className="shrink-0 text-[0.78rem] font-semibold text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]">
+                    Your personalised verdict ↓
+                  </a>
+                )}
               </div>
             </div>
 
@@ -841,7 +851,7 @@ export default function ProjectProfile({
 
             {/* Truth Score anatomy — the composition spine */}
             <div id="anatomy" className="scroll-mt-24">
-              <ReportAnatomy p={p} />
+              <ReportAnatomy p={p} locked={locked} onUnlock={() => setUnlockOpen(true)} />
             </div>
 
             {/* ── The paywall boundary. From Chapter II · Pillar I (Developer DNA)
@@ -849,7 +859,7 @@ export default function ProjectProfile({
                in place of the analysis; a paid reader sees everything. ── */}
             {locked ? (
               <div id="unlock" className="scroll-mt-24">
-                <LockedReport projectName={p.name} onUnlock={() => setUnlockOpen(true)} sampleHref={SAMPLE_HREF} />
+                <LockedReport projectName={p.name} truthScore={p.truthScore} grade={scoreGrade(p.truthScore)} ticket={lockedTicket} onUnlock={() => setUnlockOpen(true)} sampleHref={SAMPLE_HREF} />
               </div>
             ) : (
             <>
@@ -1020,8 +1030,9 @@ export default function ProjectProfile({
               </div>
             </div>
 
-            {/* Rate · report an error · share */}
-            <ReportFeedback slug={p.slug} name={p.name} />
+            {/* Rate · report an error · share — only once the reader actually has
+               the read; nobody rates or shares a locked report. */}
+            {!locked && <ReportFeedback slug={p.slug} name={p.name} />}
 
             <p className="mt-8 text-[0.72rem] font-light leading-[1.7] text-[#1a1a1a]/35">
               Independent assessment by Truth Estate. No developer can pay for a higher Truth Score or to appear here. The Truth Score, Match Score and any recommendation are our own evidence-based <span className="italic">opinions</span> as of {reviewed} — not a guarantee of performance, safety, appreciation or returns, and not investment, legal or financial advice. Ticket and price bands, ROI projections and delivery estimates are tracked or modelled figures that vary by tower, floor and stack. The decision, and its risks, are yours; we are not liable for the performance of any project. Verify specifics independently and see our{" "}

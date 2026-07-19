@@ -1,77 +1,114 @@
 "use client";
 
 /* ────────────────────────────────────────────────────────────────────────
-   LockedReport — what a guest sees in place of the paid analysis.
-
-   Shown from Chapter II · Pillar 1 (Developer DNA) down when the reader has
-   no read access. A prominent unlock card (primary conversion surface) sits
-   above a blurred, redacted teaser of every locked section — so the depth is
-   visible, the intel is not.
+   LockedReport — the conversion surface a guest hits from Chapter II · Pillar I
+   down. NOT a dead-end. It:
+     • names exactly what's behind the wall (curiosity-gap FOMO), each row a
+       tap-to-unlock;
+     • anchors the ₹999 price against the ticket at stake;
+     • ties the *visible* Truth Score to the locked detail ("why only X?").
    ──────────────────────────────────────────────────────────────────────── */
 
 import { READ_FROM_INR } from "@/lib/journey";
 
-const SECTIONS = [
-  { k: "Pillar I", t: "Developer DNA — track record & financial audit" },
-  { k: "Pillar II", t: "Construction & Sales — build pace vs the RERA clock" },
-  { k: "Pillar III", t: "Location Intelligence — connectivity, infra & catalysts" },
-  { k: "Pillar IV", t: "Legal & Compliance — title, RERA & litigation signals" },
-  { k: "Pillar V", t: "Project USPs — the edge that actually holds value" },
-  { k: "Chapter III", t: "Price journey & our ROI model" },
-  { k: "Chapter IV", t: "The Verdict — read for your situation" },
-  { k: "FAQs", t: "Straight answers to the questions that decide it" },
+/* Each locked section framed as the burning question it answers — the pull is
+   the question, not a data dump. Generic-but-true (no fabricated findings). */
+const LOCKED: { k: string; t: string; hook: string }[] = [
+  { k: "Pillar I", t: "Developer DNA", hook: "Has this builder delivered on time before — and can its balance sheet finish the job?" },
+  { k: "Pillar II", t: "Construction & sales", hook: "On pace for its RERA date, or quietly slipping? Build-vs-promise, in numbers." },
+  { k: "Pillar III", t: "Location intelligence", hook: "The metro, roads and catalysts that will actually move this price." },
+  { k: "Pillar IV", t: "Legal & compliance", hook: "Title, RERA and litigation signals we'd want cleared before you sign." },
+  { k: "Pillar V", t: "Project USPs", hook: "Which claims hold real value — and which are just brochure gloss." },
+  { k: "Chapter III", t: "Price & ROI model", hook: "The exact 5-year CAGR we project — and whether it beats the corridor." },
+  { k: "Chapter IV", t: "The verdict", hook: "Should you buy it? Our tailored call for your budget, timeline and risk." },
+  { k: "FAQs", t: "Straight answers", hook: "Blunt answers to the questions that actually decide the cheque." },
 ];
 
+const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+
 export default function LockedReport({
-  projectName, onUnlock, sampleHref,
+  projectName, truthScore = 0, grade = "", ticket = "", onUnlock, sampleHref,
 }: {
   projectName: string;
+  truthScore?: number;
+  grade?: string;
+  ticket?: string;
   onUnlock: () => void;
   sampleHref: string;
 }) {
+  const lost = Math.max(0, 100 - Math.round(truthScore));
   return (
     <div className="mt-14 border-t border-[#1a1a1a]/8 pt-12">
-      {/* unlock card — the primary conversion surface */}
-      <div className="mx-auto max-w-lg rounded-2xl border border-[#c9a96e]/40 bg-white/70 p-7 text-center shadow-[0_24px_60px_-24px_rgba(60,42,10,0.30)] md:p-9">
-        <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-[#1e6b45]/10 text-[#1e6b45]">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
+      {/* ── the pitch ── */}
+      <div className="mx-auto max-w-xl text-center">
+        <span className="inline-flex items-center gap-2 rounded-full border border-[#b0503e]/30 bg-[#b0503e]/[0.06] px-3.5 py-1.5 text-[0.6rem] font-bold uppercase tracking-[0.16em] text-[#b0503e]">
+          <Lock className="h-3 w-3" /> The part that decides it is locked
         </span>
-        <p className="mt-4 text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#9a7a2e]">The full read is locked</p>
-        <h3 className="mt-2 font-serif text-[1.6rem] font-semibold leading-tight text-[#1a1a1a] md:text-[1.9rem]">Unlock the complete read</h3>
-        <p className="mt-2.5 text-[0.9rem] leading-relaxed text-[#1a1a1a]/60">
-          You&rsquo;re seeing the basics. The full read opens all five forensic pillars, the price journey, our ROI model, the legal audit and the verdict on {projectName}.
-        </p>
-        <button onClick={onUnlock} className="mt-6 w-full rounded-md bg-[#1e6b45] px-5 py-3.5 text-[0.92rem] font-semibold tracking-[0.01em] text-white transition-colors hover:bg-[#238c55]">
-          Unlock Full Read — from ₹{READ_FROM_INR.toLocaleString("en-IN")} →
+        <h3 className="mt-5 text-balance font-serif text-[1.95rem] font-semibold leading-[1.1] text-[#1a1a1a] md:text-[2.5rem]">
+          {ticket ? <>Don&rsquo;t stake {ticket} on a brochure.</> : <>Don&rsquo;t buy on a brochure.</>}
+        </h3>
+        {truthScore > 0 && (
+          <p className="mt-4 text-[0.98rem] leading-relaxed text-[#1a1a1a]/65">
+            {projectName} scored <b className="font-semibold text-[#1a1a1a]">{Math.round(truthScore)}/100</b>
+            {grade ? <> — &ldquo;{grade}&rdquo;</> : null}. The full read shows exactly what cost it the other{" "}
+            <b className="font-semibold text-[#b0503e]">{lost} points</b> — and whether that&rsquo;s a dealbreaker for you.
+          </p>
+        )}
+        <button
+          onClick={onUnlock}
+          className="group mt-7 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#1e6b45] px-6 py-4 text-[1rem] font-semibold tracking-[0.01em] text-white shadow-[0_18px_40px_-16px_rgba(30,107,69,0.6)] transition-all hover:bg-[#238c55] sm:w-auto sm:px-10"
+        >
+          Get the full read — from {inr(READ_FROM_INR)}
+          <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
         </button>
-        <a href={sampleHref} className="mt-3 inline-flex items-center gap-1 text-[0.85rem] font-medium text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]">
-          Check a sample read →
+        <p className="mt-3.5 text-[0.82rem] leading-relaxed text-[#1a1a1a]/55">
+          {ticket
+            ? <>That&rsquo;s a rounding error on {ticket} — one missed red flag costs a great deal more.</>
+            : <>One missed red flag costs a great deal more than the read.</>}
+        </p>
+        <a href={sampleHref} className="mt-4 inline-block text-[0.82rem] font-semibold text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]">
+          See a full sample read first →
         </a>
-        <p className="mt-5 border-t border-[#1a1a1a]/10 pt-4 text-[0.72rem] leading-relaxed text-[#1a1a1a]/45">
+      </div>
+
+      {/* ── what's behind the wall — every row taps to unlock ── */}
+      <div className="mx-auto mt-11 max-w-2xl">
+        <p className="text-center text-[0.62rem] font-bold uppercase tracking-[0.22em] text-[#1a1a1a]/40">What you&rsquo;re not seeing</p>
+        <div className="mt-5 divide-y divide-[#1a1a1a]/8 overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-white/55">
+          {LOCKED.map((s) => (
+            <button
+              key={s.t}
+              onClick={onUnlock}
+              className="group flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-[#1e6b45]/[0.05] md:px-6"
+            >
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#1a1a1a]/[0.05] text-[#9a7a2e] transition-colors group-hover:bg-[#1e6b45]/10 group-hover:text-[#1e6b45]">
+                <Lock className="h-3.5 w-3.5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                  <span className="font-mono text-[0.55rem] uppercase tracking-[0.18em] text-[#c9a96e]">{s.k}</span>
+                  <span className="font-serif text-[1.05rem] font-medium text-[#1a1a1a]">{s.t}</span>
+                </span>
+                <span className="mt-0.5 block text-[0.82rem] font-light leading-snug text-[#1a1a1a]/55">{s.hook}</span>
+              </span>
+              <span aria-hidden className="shrink-0 text-[0.72rem] font-semibold text-[#1e6b45] opacity-60 transition-opacity group-hover:opacity-100">
+                Unlock →
+              </span>
+            </button>
+          ))}
+        </div>
+        <p className="mt-5 text-center text-[0.72rem] leading-relaxed text-[#1a1a1a]/45">
           Register, then pay once — no subscription. Custom packages are shaped on your first free advisor call.
         </p>
       </div>
-
-      {/* redacted teaser — every locked section, masked (decorative) */}
-      <div aria-hidden="true" className="relative mt-10 select-none">
-        <p className="text-center text-[0.62rem] font-medium uppercase tracking-[0.24em] text-[#1a1a1a]/35">Inside the full read</p>
-        <div className="pointer-events-none mt-5 space-y-8 blur-[3px]" style={{ maskImage: "linear-gradient(#000 55%, transparent)", WebkitMaskImage: "linear-gradient(#000 55%, transparent)", maxHeight: 460, overflow: "hidden" }}>
-          {SECTIONS.map((s) => (
-            <div key={s.t}>
-              <div className="flex items-center gap-2.5">
-                <span className="grid h-4 w-4 place-items-center rounded-full bg-[#1a1a1a]/10 text-[0.5rem] text-[#1a1a1a]/40">🔒</span>
-                <span className="font-mono text-[0.6rem] uppercase tracking-[0.22em] text-[#c9a96e]">{s.k}</span>
-                <span className="text-[1rem] font-medium text-[#1a1a1a]/60">{s.t}</span>
-              </div>
-              <div className="mt-3 space-y-2 pl-6.5">
-                <div className="h-3 w-full rounded bg-[#1a1a1a]/[0.07]" />
-                <div className="h-3 w-[90%] rounded bg-[#1a1a1a]/[0.07]" />
-                <div className="h-3 w-[72%] rounded bg-[#1a1a1a]/[0.07]" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
+  );
+}
+
+function Lock({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </svg>
   );
 }
