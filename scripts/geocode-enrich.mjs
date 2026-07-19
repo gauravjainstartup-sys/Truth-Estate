@@ -28,7 +28,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 
 const DIR = process.env.SNAPSHOT_DIR || ".data-snapshot";
-const CACHE = "scripts/geocode-cache.json";
+const CACHE = `${DIR}/geocode-cache.json`; // lives beside the snapshot → rides the CI cache across builds; resets naturally on a snapshot refresh
 const VIEWS = ["backlog_listing_public_v3", "backlog_listing_public_v2"];
 const POI_KEYS = ["hospitals", "schools_colleges", "office_spaces", "malls_shopping"];
 const UA = "TruthEstate/1.0 (buyer-side location map; contact gauravjainstartup@gmail.com)";
@@ -53,6 +53,11 @@ const errlog = []; // first few provider errors — shipped in the stats file so
 let mock = null;
 if (process.env.GEOCODE_FIXTURE) { try { mock = JSON.parse(await readFile(process.env.GEOCODE_FIXTURE, "utf8")); } catch { mock = null; } }
 
+/* founder-verified project coordinates (normalized project_name → {lat,lng}).
+   Seeds beat geocoding; upstream row coords beat both. */
+let SEED = {};
+try { SEED = JSON.parse(await readFile("scripts/geocode-seed.json", "utf8")); } catch { SEED = {}; }
+
 async function geocode(query) {
   const key = norm(query);
   if (!key) return null;
@@ -75,7 +80,7 @@ async function geocode(query) {
       await sleep(1100); // fair use: ≤ 1 req/sec
       calls++;
       const res = await fetch(p.url, { headers: { "User-Agent": UA, "Accept-Language": "en" }, signal: AbortSignal.timeout(10000) });
-      if (res.ok) { out = p.parse(await res.json()); answered = true; break; }
+      if (res.ok) { out = p.parse(await res.json()); answered = true; if (out) break; continue; } // a clean "no match" falls through to the next provider
       errlog.length < 8 && errlog.push(`${p.name}:${res.status}`);
     } catch (e) { errlog.length < 8 && errlog.push(`${p.name}:${String(e?.cause?.code || e?.name || e).slice(0, 40)}`); }
   }
@@ -85,16 +90,23 @@ async function geocode(query) {
   return out;
 }
 
-const stats = { rows: 0, centers: 0, pois: 0, rejected: 0 };
+const stats = { rows: 0, centers: 0, seeded: 0, pois: 0, rejected: 0 };
 
 async function enrichRow(row) {
   const locality = row.micro_market || row.locality || row.sector || row.sub_micromarket || row.address || row.city || "Gurugram";
   const pname = row.project_name || row.name || row.project || row.title || "";
-  // 1) project centre
+  // 1) project centre — upstream row coords ▸ founder seed ▸ name geocode ▸ locality geocode
   let center = num(row.latitude) != null && num(row.longitude) != null ? { lat: num(row.latitude), lng: num(row.longitude) } : null;
   if (!inBox(center)) {
-    const g = await geocode(`${pname}, ${locality}, Gurugram, Haryana, India`);
-    if (inBox(g)) { center = g; row.latitude = g.lat; row.longitude = g.lng; stats.centers++; }
+    const s = SEED[norm(pname)];
+    if (inBox(s)) { center = s; stats.seeded++; }
+    else {
+      let g = await geocode(`${pname}, ${locality}, Gurugram, Haryana, India`);
+      // project names rarely exist in OSM — fall back to the locality (sector) itself
+      if (!inBox(g) && locality && norm(locality) !== "gurugram") g = await geocode(`${locality}, Gurugram, Haryana, India`);
+      if (inBox(g)) center = g;
+    }
+    if (inBox(center)) { row.latitude = center.lat; row.longitude = center.lng; stats.centers++; }
   }
   if (!inBox(center)) return; // no trustworthy centre → don't risk unvalidated POI pins
   // 2) POIs — only those missing coords
