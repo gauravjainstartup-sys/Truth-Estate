@@ -570,7 +570,7 @@ body.sun-cinema{overflow:hidden}
             <button id="fsSunPlay" class="fs-sunplay" aria-label="Play the day">▶</button>
             <div class="fs-suntime"><span id="fsSunClock">12:00</span><span id="fsSunPhase">midday</span></div>
             <input id="fsSunRange" class="fs-sunrange" type="range" min="0" max="1" step="0.001" value="0.42" aria-label="Time of day">
-            <div class="fs-sunseason" id="fsSunSeason"><button data-s="-23.45">Winter</button><button data-s="0" class="on">Equinox</button><button data-s="23.45">Summer</button></div>
+            <div class="fs-sunseason" id="fsSunSeason"><button data-s="-23.45" class="on">Winter</button><button data-s="0">Equinox</button><button data-s="23.45">Summer</button></div>
           </div>
           <button id="fsExpand" class="fs-expand" aria-label="Expand to full screen">⛶</button>
           <div id="fsCineHead" class="fs-cine-head"><span id="fsCineName"></span><span class="fs-cine-actions"><button id="fsCineDetails">Details ▾</button><button id="fsCineClose" aria-label="Close">✕</button></span></div>
@@ -1241,7 +1241,7 @@ function initFlat3D(){
   const _sgTex=(function(){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');const g=x.createRadialGradient(64,64,4,64,64,64);g.addColorStop(0,'rgba(255,244,214,.95)');g.addColorStop(.35,'rgba(255,206,120,.55)');g.addColorStop(.7,'rgba(255,182,92,.14)');g.addColorStop(1,'rgba(255,170,80,0)');x.fillStyle=g;x.fillRect(0,0,128,128);return new THREE.CanvasTexture(c);})();
   const sunGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:_sgTex,transparent:true,depthWrite:false,depthTest:false,fog:false,opacity:.9}));sunGlow.scale.set(30,30,1);sc.add(sunGlow);
   f3={r,sc,cam,g:null,na:null,active:false,az:-0.7,pol:0.95,rad:26,auto:true,drag:false,lx:0,ly:0,
-      sun3,amb,hemi,sunDisc,sunGlow,sunFrac:0.42,playing:false,season:0,bearing:0,curSunAz:180,curAlt:0,rooms:null,updateLit:null};
+      sun3,amb,hemi,sunDisc,sunGlow,sunFrac:0.42,playing:false,season:-23.45,bearing:0,curSunAz:180,curAlt:0,rooms:null,updateLit:null};
   const el=r.domElement;
   el.addEventListener('pointerdown',e=>{f3.drag=true;f3.auto=false;f3.lx=e.clientX;f3.ly=e.clientY;
     if(f3.walk&&f3.walk.on&&e.pointerType==='touch'){const rc=el.getBoundingClientRect();
@@ -1312,7 +1312,7 @@ function buildFlat3D(cfgKey,uid,bearing){
   if(!L){if(_soon)_soon.classList.add('on');return;}   // show the coming-soon placeholder for the interactive 3D (walk-through early-access stays available)
   if(_soon)_soon.classList.remove('on');               // a real model exists → clear any stale placeholder
   const g=new THREE.Group();
-  const s=22/L.iw,W=L.iw*s,D=L.ih*s,WH=1.02;
+  const s=22/L.iw,W=L.iw*s,D=L.ih*s,WH=1.5;   // taller walls → longer, clearer shadows so the sun's effect reads
   f3.dims={W,D,s};
   f3.colliders=L.walls.concat(L.rails||[]).map(r=>[r[0]*s-W/2,r[1]*s-D/2,(r[0]+r[2])*s-W/2,(r[1]+r[3])*s-D/2]);
   const sp0=SPAWN[cfgKey+'|'+uid]||SPAWN[cfgKey+'|101'];f3.spawn=sp0?{x:sp0.x*s-W/2,z:sp0.y*s-D/2,yaw:sp0.yaw}:null;
@@ -1343,7 +1343,7 @@ function buildFlat3D(cfgKey,uid,bearing){
     rinst.instanceMatrix.needsUpdate=true;rinst.castShadow=true;g.add(rinst);f3.railsMesh=rinst;}
   /* floating room labels so buyers can read the rooms in 3D (added to the group so they rotate with the plan) */
   const _lbl=roomLabelsFor(cfgKey,uid);
-  if(_lbl)_lbl.forEach(([nm,fx,fy])=>{const sp=f3sprite(nm,0.8);sp.position.set((fx-0.5)*W,1.5,(fy-0.5)*D);sp.material.depthTest=false;sp.renderOrder=4;g.add(sp);});
+  if(_lbl)_lbl.forEach(([nm,fx,fy])=>{const sp=f3sprite(nm,0.8);sp.position.set((fx-0.5)*W,2.0,(fy-0.5)*D);sp.material.depthTest=false;sp.renderOrder=4;g.add(sp);});
   g.rotation.y=((DECKB[cfgKey+'|'+uid]!=null?DECKB[cfgKey+'|'+uid]:DECKB[cfgKey+'|101'])-bearing)*Math.PI/180;
   f3.sc.add(g);f3.g=g;
   f3.na=null;   // floating "N \u2191" label replaced by the fixed corner compass
@@ -1421,10 +1421,10 @@ function f3setSun(fr){
   if(f3.sunDisc){f3.sunDisc.visible=upVis;f3.sunDisc.position.copy(realDir).multiplyScalar(92);f3.sunDisc.scale.setScalar(1+0.6*near);}
   if(f3.sunGlow){f3.sunGlow.visible=upVis;f3.sunGlow.position.copy(realDir).multiplyScalar(90);const gs=30*(1+0.8*near);f3.sunGlow.scale.set(gs,gs,1);}
   f3.curSunAz=s.az*180/Math.PI;
-  f3.sun3.intensity=s.alt>0?(0.30+1.85*Math.pow(day,0.9)):0.0;
+  f3.sun3.intensity=s.alt>0?(0.35+2.15*Math.pow(day,0.9)):0.0;
   f3.sun3.color.copy(new THREE.Color('#ff8a34').lerp(new THREE.Color('#fff4da'),Math.min(1,day*1.3)));
-  if(f3.amb)f3.amb.intensity=0.22+0.16*day;      // lower fill → shaded rooms read darker, crisper "which room is lit"
-  if(f3.hemi)f3.hemi.intensity=0.15+0.20*day;
+  if(f3.amb)f3.amb.intensity=0.12+0.10*day;      // low fill → shaded rooms read genuinely darker so sun quality shows
+  if(f3.hemi)f3.hemi.intensity=0.10+0.13*day;
   const hd=((h%24)+24)%24;
   const cl=document.getElementById('fsSunClock');if(cl)cl.textContent=fmt(hd);
   const ph=document.getElementById('fsSunPhase');
