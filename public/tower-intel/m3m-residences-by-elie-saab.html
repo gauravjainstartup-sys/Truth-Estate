@@ -2103,10 +2103,10 @@ document.getElementById('fsClose').onclick=()=>closeFlat(false);
 /* tile pulse state */
 let tileT=0;
 function pulseTiles(){tileT+=0.04;const ei=0.45+0.35*Math.sin(tileT);towers.forEach(t=>{if(t.tileGrp.visible)t.tileGrp.children.forEach(m=>{if(m.material&&m.material.emissiveIntensity!==undefined)m.material.emissiveIntensity=ei;});});}
-let radius=520,az=-0.9,pol=0.8,camTween=null;
+let radius=980,az=-1.06,pol=0.5,camTween=null;let userFollow=false;   // opens wide & high (establishing shot); eases to rest on boot
 function camApply(){pol=Math.max(.1,Math.min(1.5,pol));radius=Math.max(60,Math.min(2200,radius));camera.position.set(target.x+radius*Math.sin(pol)*Math.cos(az),target.y+radius*Math.cos(pol),target.z+radius*Math.sin(pol)*Math.sin(az));camera.lookAt(target);}
 camApply();
-function flyTo(tx,ty,tz,rad,polr,azr){camTween={t0:performance.now(),dur:800,f:{x:target.x,y:target.y,z:target.z,r:radius,p:pol,a:az},t:{x:tx,y:ty,z:tz,r:rad,p:polr,a:azr!=null?azr:az}};}
+function flyTo(tx,ty,tz,rad,polr,azr,dur){camTween={t0:performance.now(),dur:dur||800,f:{x:target.x,y:target.y,z:target.z,r:radius,p:pol,a:az},t:{x:tx,y:ty,z:tz,r:rad,p:polr,a:azr!=null?azr:az}};}
 function camStep(){if(!camTween)return;const k=Math.min(1,(performance.now()-camTween.t0)/camTween.dur),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2,a=camTween.f,b=camTween.t;target.set(a.x+(b.x-a.x)*e,a.y+(b.y-a.y)*e,a.z+(b.z-a.z)*e);radius=a.r+(b.r-a.r)*e;pol=a.p+(b.p-a.p)*e;az=a.a+(b.a-a.a)*e;camApply();if(k>=1)camTween=null;}
 let hintLabelSprite=null;
 function selectTower(id){const t=towers.find(x=>x.id===id);if(!t)return;selTower=t;if(document.body.classList.contains('ranking'))updateRankDock(id);document.body.classList.remove('ov-intro');document.body.classList.remove('panel-min');document.body.classList.add('tower-open');document.getElementById('pMin').textContent='–';
@@ -2197,7 +2197,7 @@ function setTime(fr){const _sd=decl;decl=vizDecl;                             //
   const c2=document.getElementById('pbClock');if(c2)c2.textContent=fmt(hd);
   const p2=document.getElementById('pbPhase');if(p2)p2.textContent=phTxt;
   decl=_sd;}
-const timeEl=document.getElementById('time');let playing=false,playT=0.5;
+const timeEl=document.getElementById('time');let playing=false,playT=5/24;   // the day opens at 5 AM (dawn), not midday
 timeEl.addEventListener('input',()=>{playing=false;document.getElementById('play').textContent='▶';setTime(parseFloat(timeEl.value));});
 document.getElementById('play').addEventListener('click',()=>{playing=!playing;document.getElementById('play').textContent=playing?'❚❚':'▶';});
 document.getElementById('bench').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setSeason(b.dataset.d);});   /* visual sun path only — scoring benchmark (winter) untouched */
@@ -2206,7 +2206,7 @@ document.getElementById('bench').addEventListener('click',e=>{const b=e.target.c
 function syncPlayUI(){const t=playing?'❚❚':'▶';const a=document.getElementById('play');if(a)a.textContent=t;const b=document.getElementById('pbPlay');if(b)b.textContent=t;}
 function syncSeasonUI(){['bench','pbBench'].forEach(id=>{const el=document.getElementById(id);if(!el)return;[...el.children].forEach(bt=>bt.classList.toggle('on',parseFloat(bt.dataset.d)===vizDecl));});}
 function setSeason(d){vizDecl=parseFloat(d);sunArcKey='';syncSeasonUI();setTime(playT);}
-function enterPlay(){document.body.classList.add('playing');playing=true;syncPlayUI();const r=document.getElementById('pbTime');if(r)r.value=playT;}
+function enterPlay(){document.body.classList.add('playing');playing=true;userFollow=true;syncPlayUI();const r=document.getElementById('pbTime');if(r)r.value=playT;}
 function exitPlay(){document.body.classList.remove('playing');playing=false;syncPlayUI();}
 document.getElementById('sunToggle').onclick=enterPlay;
 document.getElementById('sunClose').onclick=()=>{document.body.classList.remove('sun-open');exitPlay();};
@@ -2316,13 +2316,16 @@ computeScores2=function(){scores=towers.map(t=>{
 })();
 /* ═══════════ end Stage 2 ═══════════ */
 
-(function init(){setTime(0.5);renderOverview();})();
+(function init(){setTime(5/24);renderOverview();})();
 let booted=false;const bootT0=performance.now();
 (function loop(){requestAnimationFrame(loop);camStep();pulseTiles();f3tick();sunpTick();
   if(!booted){booted=true;const wait=Math.max(0,1500-(performance.now()-bootT0));
-    setTimeout(()=>{document.body.classList.add('booted');setTimeout(()=>{const b=document.getElementById('boot');if(b)b.remove();},700);},wait);}
-  if(playing){playT+=(lastSunDir.y<-0.12?0.0021:0.0006);if(playT>1)playT-=1;timeEl.value=playT;const _pr=document.getElementById('pbTime');if(_pr)_pr.value=playT;setTime(playT);   /* slow, watchable day; only deep night fast-forwards */
-    if(!selTower&&!camTween){const hx=lastSunDir.x,hz=lastSunDir.z,hm=Math.hypot(hx,hz);
+    setTimeout(()=>{document.body.classList.add('booted');
+      flyTo(0,40,20,700,1.0,-1.06,2600);                                  // cinematic settle from the wide establishing shot
+      playing=true;document.body.classList.add('playing');syncPlayUI();   // auto-play the day from 5 AM (camera stays calm — sun-follow only on user Play)
+      setTimeout(()=>{const b=document.getElementById('boot');if(b)b.remove();},700);},wait);}
+  if(playing){playT+=(lastSunDir.y<-0.04?0.006:0.0006);if(playT>1)playT-=1;timeEl.value=playT;const _pr=document.getElementById('pbTime');if(_pr)_pr.value=playT;setTime(playT);   /* night + pre-dawn fast-forward to the golden sunrise, then a slow watchable day */
+    if(userFollow&&!selTower&&!camTween){const hx=lastSunDir.x,hz=lastSunDir.z,hm=Math.hypot(hx,hz);
       if(hm>0.14){let want=Math.atan2(hz,hx)+Math.PI;let dA=want-az;while(dA>Math.PI)dA-=2*Math.PI;while(dA<-Math.PI)dA+=2*Math.PI;az+=dA*0.05;}  /* face the sun; hold steady when it's overhead */
       pol+=(1.04-pol)*0.03;radius+=(700-radius)*0.03;camApply();}}
   renderer.render(scene,camera);})();
