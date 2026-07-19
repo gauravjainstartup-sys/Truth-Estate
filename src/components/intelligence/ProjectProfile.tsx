@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Logo from "../Logo";
 import { useConsultation } from "../consultation/ConsultationProvider";
-import { loadBuyData, hasPreferences, deriveDNA, clearAllDemoData, saveLead, hasReadAccess } from "@/lib/journey";
+import { loadBuyData, hasPreferences, deriveDNA, clearAllDemoData, saveLead, hasReadAccess, has3DAccess } from "@/lib/journey";
 import type { ConsultProfileChip } from "@/lib/consultation";
 import { TAG_CHIP } from "@/lib/heroSearch";
 import type { ScoreTag } from "@/lib/omni";
@@ -247,8 +247,10 @@ export default function ProjectProfile({
   // for real later; the demo session resets on hard refresh by design).
   const [readAccess, setReadAccess] = useState(false);
   const [unlockOpen, setUnlockOpen] = useState(false);
+  const [unlockFocus3D, setUnlockFocus3D] = useState(false);
+  const [threeDAccess, setThreeDAccess] = useState(false);
   const [challengeOpen, setChallengeOpen] = useState(false);
-  useEffect(() => { setReadAccess(hasReadAccess(p.slug)); }, [p.slug]);
+  useEffect(() => { setReadAccess(hasReadAccess(p.slug)); setThreeDAccess(has3DAccess(p.slug)); }, [p.slug]);
   const locked = !sample && !readAccess;
   const SAMPLE_HREF = `${basePath}/intelligence/projects/sample-read`;
   const lockedTicket = p.budget[0] === p.budget[1] ? (p.budget[0] ? `₹${p.budget[0]} Cr+` : "") : `₹${p.budget[0]}–${p.budget[1]} Cr`;
@@ -1126,8 +1128,9 @@ export default function ProjectProfile({
           open
           slug={p.slug}
           projectName={p.name}
-          onClose={() => setUnlockOpen(false)}
-          onUnlocked={() => setReadAccess(hasReadAccess(p.slug))}
+          focus3D={unlockFocus3D}
+          onClose={() => { setUnlockOpen(false); setUnlockFocus3D(false); }}
+          onUnlocked={() => { setReadAccess(hasReadAccess(p.slug)); setThreeDAccess(has3DAccess(p.slug)); }}
         />
       )}
 
@@ -1138,7 +1141,10 @@ export default function ProjectProfile({
         open={challengeOpen}
         onClose={() => setChallengeOpen(false)}
         locked={locked}
-        onUnlock={() => setUnlockOpen(true)}
+        onUnlock={() => { setUnlockFocus3D(false); setUnlockOpen(true); }}
+        has3DModel={has3D}
+        has3DAccess={threeDAccess}
+        onUnlock3D={() => { setUnlockFocus3D(true); setUnlockOpen(true); }}
       />
 
       {/* Floating "Challenge our read" — standalone pages only, the single

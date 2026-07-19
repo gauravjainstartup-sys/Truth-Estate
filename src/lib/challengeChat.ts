@@ -28,15 +28,21 @@ import {
   marketOf,
   rankContext,
 } from "@/lib/projects";
-import { AREA_ALIASES, type OmniIndex } from "@/lib/omni";
-import { READ_FROM_INR } from "@/lib/journey";
+import { AREA_ALIASES, type OmniIndex, type OmniUnit } from "@/lib/omni";
+import { READ_FROM_INR, PROJECT_UNLOCK_INR } from "@/lib/journey";
 
 export type ChatRole = "user" | "bot";
-export type ChatMsg = { id: string; role: ChatRole; text: string; gate?: boolean };
-export type ChallengeAnswer = { text: string; gate: boolean };
+/* the gate a bot message carries: the ₹999 read, the ₹1,499 Sun & Vastu 3D, or none */
+export type Gate = "read" | "3d" | null;
+export type ChatMsg = { id: string; role: ChatRole; text: string; gate?: Gate };
+export type ChallengeAnswer = { text: string; gate: Gate };
 /* a corridor rival for in-chat head-to-heads — public scoreboard only
    (name + Truth Score); the deep audit stays behind each project's own read */
 export type Peer = { name: string; score: number; sameCorridor: boolean };
+/* per-unit Sun/Vastu intelligence — the ₹1,499 3D tier (has3DAccess only) */
+export type UnitIntel = OmniUnit;
+/* access the chat needs to gate correctly */
+export type ChatAccess = { has3DModel: boolean; has3DAccess: boolean };
 
 const BASE_PATH = "/Truth-Estate";
 
@@ -47,29 +53,33 @@ function corridorKey(loc: string | null | undefined): string | null {
   return hit ? hit[1] : null;
 }
 
-/* Fetch the public project index and derive this project's closest rivals —
-   same corridor first (top by score), else the top-scored tracked projects.
-   Scores are public (shown on every report hero), so this is free-tier safe.
-   Cached per session; any failure → [] (the chat simply skips named peers). */
-let peerCache: Record<string, Peer[]> | undefined;
-export async function loadCorridorPeers(p: ProjectIntel): Promise<Peer[]> {
-  peerCache ??= {};
-  if (peerCache[p.slug]) return peerCache[p.slug];
+/* One fetch of the public project index → this project's closest rivals
+   (same corridor first, else top-scored) AND its per-unit Sun/Vastu lines.
+   Scores/peer names are public; the unit lines are only SURFACED to a 3D-access
+   visitor (the caller gates that). Cached per session; failure → empty. */
+let omniCache: OmniIndex | null | undefined;
+async function fetchOmni(): Promise<OmniIndex | null> {
+  if (omniCache !== undefined) return omniCache;
   try {
     const res = await fetch(`${BASE_PATH}/omni-index.json`, { signal: AbortSignal.timeout(8000) });
-    if (!res.ok) return [];
-    const idx = (await res.json()) as OmniIndex;
-    const me = idx.projects.find((x) => x.slug === p.slug);
-    const myKey = corridorKey(me?.location) ?? corridorKey(p.market) ?? corridorKey(p.marketShort);
-    const scored = idx.projects.filter((x) => x.slug !== p.slug && typeof x.score === "number" && (x.score ?? 0) > 0);
-    const same = myKey ? scored.filter((x) => corridorKey(x.location) === myKey) : [];
-    const pool = (same.length >= 2 ? same : scored).sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, 3);
-    const peers = pool.map((x) => ({ name: x.name, score: Math.round(x.score ?? 0), sameCorridor: !!myKey && corridorKey(x.location) === myKey }));
-    peerCache[p.slug] = peers;
-    return peers;
+    omniCache = res.ok ? ((await res.json()) as OmniIndex) : null;
   } catch {
-    return [];
+    omniCache = null;
   }
+  return omniCache;
+}
+
+export async function loadChatData(p: ProjectIntel): Promise<{ peers: Peer[]; units: UnitIntel[] }> {
+  const idx = await fetchOmni();
+  if (!idx) return { peers: [], units: [] };
+  const me = idx.projects.find((x) => x.slug === p.slug);
+  const myKey = corridorKey(me?.location) ?? corridorKey(p.market) ?? corridorKey(p.marketShort);
+  const scored = idx.projects.filter((x) => x.slug !== p.slug && typeof x.score === "number" && (x.score ?? 0) > 0);
+  const same = myKey ? scored.filter((x) => corridorKey(x.location) === myKey) : [];
+  const pool = (same.length >= 2 ? same : scored).sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, 3);
+  const peers = pool.map((x) => ({ name: x.name, score: Math.round(x.score ?? 0), sameCorridor: !!myKey && corridorKey(x.location) === myKey }));
+  const units = idx.units?.[p.slug] ?? [];
+  return { peers, units };
 }
 
 function peerLine(p: ProjectIntel, peers: Peer[]): string {
@@ -123,7 +133,7 @@ export function openingLine(p: ProjectIntel, locked: boolean): string {
 /* ── intent detection ──────────────────────────────────────────── */
 type Intent =
   | "verdict" | "risk" | "roi" | "price" | "developer" | "construction" | "legal"
-  | "location" | "score" | "compare" | "vitals" | "usps" | "method"
+  | "location" | "score" | "compare" | "sunvastu" | "vitals" | "usps" | "method"
   | "greeting" | "unknown";
 
 const has = (q: string, ...w: string[]) => w.some((x) => q.includes(x));
@@ -136,6 +146,8 @@ function classify(q: string): Intent {
   // compare wins over incidental location/price words ("compare to nearby",
   // "better value than X") — but NOT over "should I buy A over B" (verdict, above)
   if (has(n, "compare", "vs ", "versus", "better than", "worse than", "alternative", "other project", "other projects", "instead of")) return "compare";
+  // Sun/daylight/Vastu/ventilation/facing = the ₹1,499 Sun & Vastu 3D tier
+  if (has(n, "sunlight", "daylight", "vastu", "ventilat", "facing", "airflow", "air flow", "natural light", "brightness", "cross vent", "morning sun", "which floor", "east-facing", "north-facing", "west-facing", "south-facing", " sun ", "sun?", "sunny")) return "sunvastu";
   if (has(n, "roi", "return", "appreciat", "cagr", "growth", "profit", "resale", "capital", "rental yield", "yield")) return "roi";
   if (has(n, "worth it", "overpriced", "expensive", "too costly", "value for money", "price fair", "fairly priced", "cheap", "premium")) return "price";
   if (has(n, "developer", "builder", "who is", "who's the", "track record", "delivered", "reputation", "trust the", "on time", "delay")) {
@@ -155,7 +167,14 @@ function classify(q: string): Intent {
 }
 
 /* ── the answer builder. `locked` gates the paid topics. ─────────── */
-export function answerChallenge(p: ProjectIntel, question: string, locked: boolean, peers: Peer[] = []): ChallengeAnswer {
+export function answerChallenge(
+  p: ProjectIntel,
+  question: string,
+  locked: boolean,
+  peers: Peer[] = [],
+  access: ChatAccess = { has3DModel: false, has3DAccess: false },
+  units: UnitIntel[] = [],
+): ChallengeAnswer {
   const intent = classify(question);
   const dev = developerOf(p);
   const market = marketOf(p);
@@ -165,10 +184,27 @@ export function answerChallenge(p: ProjectIntel, question: string, locked: boole
   const ticket = ticketLabel(p);
   const psf = psfLabel(p);
 
-  const gate = (text: string): ChallengeAnswer => ({ text, gate: true });
-  const open = (text: string): ChallengeAnswer => ({ text, gate: false });
+  const gate = (text: string): ChallengeAnswer => ({ text, gate: "read" }); // ₹999 read wall
+  const gate3D = (text: string): ChallengeAnswer => ({ text, gate: "3d" }); // ₹1,499 Sun & Vastu 3D wall
+  const open = (text: string): ChallengeAnswer => ({ text, gate: null });
 
   switch (intent) {
+    case "sunvastu": {
+      // Sun / daylight / Vastu / ventilation = the ₹1,499 Sun & Vastu 3D tier,
+      // a SEPARATE gate from the ₹999 read. Even a read-only buyer hits it.
+      if (!access.has3DModel)
+        return open(`${p.name}'s Sun & Vastu 3D model isn't live yet — it's in production, so I can't grade daylight or Vastu per unit for it right now. Everything else about the project I can answer.`);
+      if (!access.has3DAccess)
+        return gate3D(`Great question — and it's exactly what the Sun & Vastu 3D model answers: every unit's daylight hours (summer→winter), a Vastu score with room-by-room reasoning, and cross-ventilation. It's a separate layer from the read${access.has3DModel ? " and it's built for this project" : ""}.`);
+      // 3D-unlocked → answer from the per-unit intelligence
+      if (units.length) {
+        const top = [...units].sort((a, b) => (b.sunWinterH ?? 0) - (a.sunWinterH ?? 0)).slice(0, 3);
+        const lines = top.map((u) => `${u.tower}-${u.unit} (${u.config}, ${u.facing}): ~${u.sunWinterH ?? "?"}h winter sun, Vastu ${u.vastu ?? "?"}/10`).join("; ");
+        return open(`From the 3D model, the best-lit units here: ${lines}. Ask me about a specific tower, floor or facing and I'll pull its sun and Vastu read.`);
+      }
+      return open(`You're in — the Sun & Vastu 3D model grades every unit's daylight, Vastu and ventilation. Tell me the tower and unit (or facing) you're weighing and I'll pull its read.`);
+    }
+
     case "greeting":
       return open(`Hi — I'm TruthGuide, the independent read on ${p.name}. Push me on anything: the score, the risks, the price, the builder, whether it's worth ${ticket}. What's on your mind?`);
 
@@ -315,7 +351,13 @@ export const PAID_TOPICS = [
   "The deep, pillar-by-pillar audit behind each grade",
 ];
 
-export function buildChallengeContext(p: ProjectIntel, locked: boolean, peers: Peer[] = []): ChallengeContext {
+export function buildChallengeContext(
+  p: ProjectIntel,
+  locked: boolean,
+  peers: Peer[] = [],
+  access: ChatAccess = { has3DModel: false, has3DAccess: false },
+  units: UnitIntel[] = [],
+): ChallengeContext {
   const dev = developerOf(p);
   const market = marketOf(p);
   const roi = roiModel(p);
@@ -347,6 +389,7 @@ export function buildChallengeContext(p: ProjectIntel, locked: boolean, peers: P
     vitals && `VITALS: ${vitals}.`,
     `PILLAR SUMMARY (weights: location 26%, developer 25%, construction 22%, legal 15%, USPs 12%):\n${pubPillars}`,
     `COMPARISON: Truth Estate DOES compare projects — buyers can line up any two side-by-side in the Compare tool, and the full read carries a ranked side-by-side vs the closest alternatives. This project ranks ${ctx.topPct <= 25 ? `in the top ${ctx.topPct}%` : `#${ctx.rank} of ${ctx.total}`} of all tracked projects${market ? ` and #${ctx.corridorRank} in the ${p.marketShort} corridor` : ""}.${peers.length ? ` ${peerLine(p, peers)} (These peer names + Truth Scores are the PUBLIC scoreboard — use them for a head-to-head. You may say how ${p.name} ranks vs them by score.)` : ""} You hold only the SCORE-level scoreboard for other projects (name + Truth Score), NOT their deep audit/verdict/ROI — for those, point the buyer to that project's own read or the Compare tool. NEVER say Truth Estate doesn't compare.`,
+    `SUN & VASTU: Per-unit sunlight/daylight hours, Vastu scores with room-by-room reasoning, and cross-ventilation are the "Sun & Vastu 3D" model — a SEPARATE ₹${PROJECT_UNLOCK_INR.toLocaleString("en-IN")} tier, NOT part of the ₹999 read. ${access.has3DModel ? `It is available for ${p.name}.` : `Its 3D model is still in production for ${p.name}.`}${!access.has3DAccess ? ` This visitor has NOT unlocked it — if they ask about sun/daylight/Vastu/ventilation/facing, describe what the 3D model covers and point them to it; do NOT give per-unit specifics.` : ""}`,
     `METHODOLOGY: Truth Estate is buyer-side only — no inventory, no developer commission, no paid placement. The score is a weighted composite of five pillars, re-scored quarterly; no builder can pay to move it.`,
   ].filter(Boolean).join("\n");
 
@@ -365,6 +408,14 @@ export function buildChallengeContext(p: ProjectIntel, locked: boolean, peers: P
   const faqs = projectFaqs(p).map((f) => `Q: ${f.q}\nA: ${f.a}`).join("\n");
   if (faqs) paid.push(`FAQs:\n${faqs}`);
 
+  // Per-unit Sun/Vastu is the ₹1,499 3D tier — include it ONLY for a 3D-access
+  // visitor (a ₹999 read-only buyer is NOT unlocked here, so it never leaks).
+  if (access.has3DAccess && units.length) {
+    const top = [...units].sort((a, b) => (b.sunWinterH ?? 0) - (a.sunWinterH ?? 0)).slice(0, 8);
+    const lines = top.map((u) => `${u.tower}-${u.unit} (${u.config}, ${u.facing}): ~${u.sunWinterH ?? "?"}h winter sun, Vastu ${u.vastu ?? "?"}/10, view ${u.view ?? "?"}/10, overall ${u.grade}`).join("\n");
+    paid.push(`SUN & VASTU 3D (visitor HAS unlocked this — answer per-unit fully):\n${lines}`);
+  }
+
   return { slug: p.slug, name: p.name, publicKnowledge, paidKnowledge: paid.join("\n"), paidTopics: PAID_TOPICS };
 }
 
@@ -372,5 +423,6 @@ export function buildChallengeContext(p: ProjectIntel, locked: boolean, peers: P
 let n = 0;
 export const msgId = () => `m${Date.now().toString(36)}${(n++).toString(36)}`;
 
-/* the gate CTA copy, shared with the UI */
+/* the gate CTA copy, shared with the UI — one per gate kind */
 export const GATE_CTA = `Unlock the full read — ${inr(READ_FROM_INR)}`;
+export const GATE_CTA_3D = `Unlock Sun & Vastu 3D — ${inr(PROJECT_UNLOCK_INR)}`;

@@ -17,43 +17,51 @@ import {
   answerChallenge,
   openingChips,
   openingLine,
-  loadCorridorPeers,
+  loadChatData,
   msgId,
   GATE_CTA,
+  GATE_CTA_3D,
   type ChatMsg,
   type Peer,
+  type UnitIntel,
 } from "@/lib/challengeChat";
 
 export default function ChallengeChat({
-  p, open, onClose, locked, onUnlock,
+  p, open, onClose, locked, onUnlock, has3DModel, has3DAccess, onUnlock3D,
 }: {
   p: ProjectIntel;
   open: boolean;
   onClose: () => void;
   locked: boolean;
   onUnlock: () => void;
+  has3DModel: boolean;
+  has3DAccess: boolean;
+  onUnlock3D: () => void;
 }) {
   const [msgs, setMsgs] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [peers, setPeers] = useState<Peer[]>([]);
+  const [units, setUnits] = useState<UnitIntel[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const prevLocked = useRef(locked);
   const chips = openingChips(p);
+  const access = { has3DModel, has3DAccess };
 
   // keep the thread pinned to the newest message
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [msgs, typing]);
 
-  // focus the input when the panel opens; load corridor rivals in the
-  // background (public scoreboard — names + Truth Scores) for head-to-heads
+  // focus the input when the panel opens; load corridor rivals + per-unit
+  // Sun/Vastu lines in the background (public scoreboard + 3D data)
   useEffect(() => {
     if (!open) return;
     setTimeout(() => inputRef.current?.focus(), 350);
-    if (peers.length === 0) loadCorridorPeers(p).then(setPeers).catch(() => {});
-  }, [open, p, peers.length]);
+    if (!loaded) loadChatData(p).then(({ peers: pr, units: u }) => { setPeers(pr); setUnits(u); setLoaded(true); }).catch(() => {});
+  }, [open, p, loaded]);
 
   // when the visitor unlocks mid-conversation, celebrate + invite the deep ask
   useEffect(() => {
@@ -72,9 +80,9 @@ export default function ChallengeChat({
     // The deterministic engine decides the WALL (gate) and is the fallback;
     // Gemini, when wired, only upgrades the prose. So the paywall can never
     // drift on the model's whim — a locked paid question stays gated.
-    const det = answerChallenge(p, q, locked, peers);
+    const det = answerChallenge(p, q, locked, peers, access, units);
     const history = msgs.map((m) => ({ role: m.role, text: m.text }));
-    const remote = await askChallengeRemote(p, q, locked, history, peers).catch(() => null);
+    const remote = await askChallengeRemote(p, q, locked, history, peers, access, units).catch(() => null);
     const text = remote?.text ?? det.text;
     await new Promise((r) => setTimeout(r, 480)); // brief "thinking"
     setTyping(false);
@@ -132,10 +140,10 @@ export default function ChallengeChat({
                 <Bubble>{m.text}</Bubble>
                 {m.gate && (
                   <button
-                    onClick={onUnlock}
+                    onClick={m.gate === "3d" ? onUnlock3D : onUnlock}
                     className="group mt-2.5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#1e6b45] px-4 py-3 text-[0.82rem] font-semibold text-white transition-colors hover:bg-[#238c55]"
                   >
-                    🔒 {GATE_CTA}
+                    🔒 {m.gate === "3d" ? GATE_CTA_3D : GATE_CTA}
                     <span aria-hidden className="inline-block transition-transform group-hover:translate-x-0.5">→</span>
                   </button>
                 )}
