@@ -706,19 +706,26 @@ function label(x,z,y,text,opt={}){const fs=opt.fs||36,pad=14,cv=document.createE
   const s=(opt.scale||.5);sp.scale.set(W*s*.05,H*s*.05,1);sp.position.set(x,y,z);sp.renderOrder=999;siteGrp.add(sp);return sp;}
 
 /* ── ground, boundary wall, roads, lagoon, amenities ── */
-/* natural terrain: soft procedural earth/dry-grass mottling on the surrounding ground */
-function terrainTex(){const cv=document.createElement('canvas');cv.width=cv.height=1024;const g=cv.getContext('2d');
-  g.fillStyle='#c3c096';g.fillRect(0,0,1024,1024);
-  const patch=(x,y,r,col,a)=>{const rg=g.createRadialGradient(x,y,0,x,y,r);rg.addColorStop(0,col);rg.addColorStop(1,'rgba(0,0,0,0)');g.globalAlpha=a;g.fillStyle=rg;g.beginPath();g.arc(x,y,r,0,7);g.fill();};
-  const big=['#b7c48c','#a9ba80','#cabf90','#c6b183','#bfc79a','#d0c69c'];      // large fields — dry grass + earth
-  for(let i=0;i<24;i++)patch(Math.random()*1024,Math.random()*1024,300+Math.random()*280,big[(Math.random()*big.length)|0],.10+Math.random()*.12);
-  const med=['#b3bd86','#ccc8a1','#c8bd8b','#c2b184','#bec896'];
-  for(let i=0;i<230;i++)patch(Math.random()*1024,Math.random()*1024,70+Math.random()*150,med[(Math.random()*med.length)|0],.07+Math.random()*.12);
-  const fine=['#aeb87f','#d0cca6','#c9bd8a','#b9c08f'];
-  for(let i=0;i<540;i++)patch(Math.random()*1024,Math.random()*1024,14+Math.random()*46,fine[(Math.random()*fine.length)|0],.05+Math.random()*.10);
-  g.globalAlpha=1;const tex=new T.CanvasTexture(cv);tex.anisotropy=8;return tex;}
-const ground=new T.Mesh(new T.CircleGeometry(1800,64),new T.MeshStandardMaterial({map:terrainTex(),color:'#ffffff',roughness:1}));
+/* the ground is our own map — same coordinate-accurate cartography as the
+   report's LocationMap: sage map-paper, a faint locality grid, concentric
+   distance rings around the site, and a soft gold halo under the plot. */
+function mapGroundTex(){const S=2048,cv=document.createElement('canvas');cv.width=cv.height=S;const g=cv.getContext('2d');const cx=S/2,cy=S/2,rFull=S/2;
+  const lg=g.createRadialGradient(cx,cy*0.86,0,cx,cy,rFull);lg.addColorStop(0,'#eef2ea');lg.addColorStop(1,'#e3e8dd');g.fillStyle=lg;g.fillRect(0,0,S,S);
+  g.strokeStyle='rgba(26,26,26,0.05)';g.lineWidth=2;for(let i=0;i<=16;i++){const p=i/16*S;g.beginPath();g.moveTo(p,0);g.lineTo(p,S);g.stroke();g.beginPath();g.moveTo(0,p);g.lineTo(S,p);g.stroke();}
+  const mpp=1800/rFull;const rings=[250,500,750,1000,1500];   // metres from the site (~1 unit ≈ 1 m)
+  rings.forEach(m=>{const rp=m/mpp;if(rp>rFull-8)return;
+    g.setLineDash([7,12]);g.strokeStyle='rgba(26,26,26,0.22)';g.lineWidth=3;g.beginPath();g.arc(cx,cy,rp,0,7);g.stroke();g.setLineDash([]);});
+  const hg=g.createRadialGradient(cx,cy,0,cx,cy,rFull*0.17);hg.addColorStop(0,'rgba(178,150,104,0.30)');hg.addColorStop(1,'rgba(178,150,104,0)');g.fillStyle=hg;g.beginPath();g.arc(cx,cy,rFull*0.17,0,7);g.fill();
+  const tex=new T.CanvasTexture(cv);tex.anisotropy=8;return tex;}
+const ground=new T.Mesh(new T.CircleGeometry(1800,64),new T.MeshStandardMaterial({map:mapGroundTex(),color:'#ffffff',roughness:1}));
 ground.rotation.x=-Math.PI/2;ground.position.y=-.5;ground.receiveShadow=true;scene.add(ground);
+/* true-north compass on the map — scene +x = north, +z = east (NORTH_CAL) */
+label(830,0,6,'N',{fs:38,scale:.72,bg:'rgba(255,255,255,.9)',fg:'#0B1F1A',border:'rgba(178,150,104,.75)'});
+label(0,830,6,'E',{fs:26,scale:.5,bg:'rgba(255,255,255,.72)',fg:'#5a5648',border:'rgba(178,150,104,.42)'});
+label(-830,0,6,'S',{fs:26,scale:.5,bg:'rgba(255,255,255,.72)',fg:'#5a5648',border:'rgba(178,150,104,.42)'});
+label(0,-830,6,'W',{fs:26,scale:.5,bg:'rgba(255,255,255,.72)',fg:'#5a5648',border:'rgba(178,150,104,.42)'});
+/* distance-ring labels as upright billboards (NE of the site, clear of the N mark) */
+[[250,'250 m'],[500,'500 m'],[1000,'1 km']].forEach(([r,t])=>{const b=0.7;label(r*Math.cos(b),r*Math.sin(b),4,t,{fs:22,scale:.42,bg:'rgba(255,255,255,.7)',fg:'#6b6656',border:'rgba(178,150,104,.32)'});});
 const PX=(px,py)=>[(px-590)*0.45,(py-415)*0.45];   // origin = central clubhouse DOME (shared site origin, as in Presidential), not the lagoon
 function poly(ptsPx,c,y,o={}){const s=new T.Shape();ptsPx.forEach((p,i)=>{const[q,r]=PX(p[0],p[1]);i?s.lineTo(q,r):s.moveTo(q,r);});
   const m=new T.Mesh(new T.ShapeGeometry(s),new T.MeshStandardMaterial({color:c,roughness:1,transparent:o.op!=null,opacity:o.op??1,emissive:o.em||'#000',emissiveIntensity:o.ei||0}));
