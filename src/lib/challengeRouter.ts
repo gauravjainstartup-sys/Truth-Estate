@@ -10,7 +10,7 @@
    this function or Gemini. The client stays authoritative on the gate.
    ════════════════════════════════════════════════════════════════ */
 import type { ProjectIntel } from "@/lib/projects";
-import { buildChallengeContext, type ChallengeAnswer, type Peer } from "@/lib/challengeChat";
+import { buildChallengeContext, type ChallengeAnswer, type Peer, type ChatAccess, type UnitIntel } from "@/lib/challengeChat";
 
 const DEFAULT_URL = "https://lyetvabfgaidvqrbmaoy.supabase.co/functions/v1/challenge-router";
 /* public anon key (same as src/lib/supabase.ts — RLS is the boundary);
@@ -36,11 +36,14 @@ export async function askChallengeRemote(
   locked: boolean,
   history: { role: "user" | "bot"; text: string }[] = [],
   peers: Peer[] = [],
+  access: ChatAccess = { has3DModel: false, has3DAccess: false },
+  units: UnitIntel[] = [],
 ): Promise<ChallengeAnswer | null> {
   try {
-    // The wall is enforced at assembly: a locked visitor's context carries
-    // NO paid content, so paid findings never reach the server or Gemini.
-    const context = buildChallengeContext(p, locked, peers);
+    // The wall is enforced at assembly: a locked visitor's context carries no
+    // paid content, and per-unit Sun/Vastu only rides along for a 3D-access
+    // visitor — so neither leaks to the server or Gemini.
+    const context = buildChallengeContext(p, locked, peers, access, units);
     const res = await fetch(routerUrl(), {
       method: "POST",
       headers: {
@@ -52,11 +55,12 @@ export async function askChallengeRemote(
       signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) return null;
-    const data = (await res.json()) as { ok?: boolean; text?: string; gate?: boolean };
+    const data = (await res.json()) as { ok?: boolean; text?: string };
     if (!data?.ok || typeof data.text !== "string") return null;
-    // Client is authoritative on the wall: never let the server OPEN a gate
-    // that must stay shut. A locked paid-topic question stays gated.
-    return { text: data.text, gate: locked ? Boolean(data.gate) : false };
+    // Only the model's PROSE is used; the chat decides the gate kind from its
+    // own deterministic classification (client-authoritative wall), so we
+    // return gate:null here and let the caller apply det.gate.
+    return { text: data.text, gate: null };
   } catch {
     return null; // network / timeout / abort → deterministic fallback
   }
