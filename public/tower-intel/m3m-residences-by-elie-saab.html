@@ -230,6 +230,17 @@
   .fs-panels{flex:1;overflow-y:auto}
   .fs-panel{display:none;padding:18px 20px 24px}
   .fs-panel.on{display:block}
+  /* considered reveal — the unit's data arrives, it doesn't pop */
+  @keyframes fsIn{from{opacity:0;transform:scale(.986)}to{opacity:1;transform:none}}
+  @keyframes scIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+  @keyframes barGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+  @keyframes panelIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  body.flat-open #flatSheet{animation:fsIn .5s cubic-bezier(.2,.7,.2,1)}
+  .fs-sc{opacity:0;animation:scIn .5s cubic-bezier(.2,.7,.2,1) forwards}
+  .fs-sc:nth-child(1){animation-delay:.14s}.fs-sc:nth-child(2){animation-delay:.22s}.fs-sc:nth-child(3){animation-delay:.30s}.fs-sc:nth-child(4){animation-delay:.38s}
+  .fs-sc-fill{transform-origin:left;animation:barGrow .9s .34s cubic-bezier(.2,.7,.2,1) both}
+  .fs-panel.on{animation:panelIn .34s ease}
+  @media(prefers-reduced-motion:reduce){body.flat-open #flatSheet,.fs-sc,.fs-sc-fill,.fs-panel.on{animation:none!important;opacity:1!important;transform:none!important}}
   /* sun tab */
   .sun-hero{display:flex;align-items:flex-end;gap:16px;margin-bottom:14px;padding:14px 16px;background:rgba(255,206,99,.08);border:1px solid rgba(255,206,99,.3);border-radius:13px}
   .sun-big{font:700 42px/1 'Geist';color:var(--sun)}
@@ -1791,8 +1802,11 @@ function openFlat(t,uid,keepFloor){
   document.getElementById('fsName').textContent=`${t.id} \u00b7 Flat ${u.id}`;
   document.getElementById('fsSub').textContent=`${u.cfg||t.cfg} \u00b7 ${cfg.saleable.toLocaleString()} sq ft saleable \u00b7 G+38 \u00b7 ${t.core}-to-core`;
   (function(){const gc=gradeColor(fscore.grade),gEl=document.getElementById('fsGrade');
-    if(gEl){gEl.style.setProperty('--gc',gc);gEl.style.setProperty('--gp',fscore.s);
-      gEl.innerHTML=`<div class="gr-s">${fscore.s}</div><div class="gr-o">/100</div><div class="gr-g" style="background:${gc}">${fscore.grade}</div>`;}
+    if(gEl){gEl.style.setProperty('--gc',gc);gEl.style.setProperty('--gp',0);
+      gEl.innerHTML=`<div class="gr-s">0</div><div class="gr-o">/100</div><div class="gr-g" style="background:${gc}">${fscore.grade}</div>`;
+      (function(){const sEl=gEl.querySelector('.gr-s'),to=fscore.s,t0=performance.now(),dur=760,rm=matchMedia('(prefers-reduced-motion:reduce)').matches;
+        if(rm){gEl.style.setProperty('--gp',to);if(sEl)sEl.textContent=to;return;}
+        (function st(now){const k=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-k,3),v=Math.round(e*to);gEl.style.setProperty('--gp',v);if(sEl)sEl.textContent=v;if(k<1)requestAnimationFrame(st);})(performance.now());})();}
     const vEl=document.getElementById('fsVerdict');
     if(vEl)vEl.innerHTML=`<b>${compass}-facing.</b> ${st.rawAvg>=4?`Strong winter sun (${st.rawAvg.toFixed(1)}h)`:st.rawAvg>=1.5?`Limited winter sun (${st.rawAvg.toFixed(1)}h)`:'No direct winter sun'} \u00b7 ${lakeFacing?'lagoon views':'perimeter views'} \u00b7 ${isEnd?'3-side cross-airflow':'2-side airflow'}.`;})();
   (function(){const _pf=planFor(u.cfg||t.cfg,u.id),_fi=document.getElementById('fsImg'),_b2=document.getElementById('fsBtn2d');
