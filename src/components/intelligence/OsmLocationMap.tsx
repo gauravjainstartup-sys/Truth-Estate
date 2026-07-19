@@ -32,6 +32,7 @@ export default function OsmLocationMap({ geo, projectName, slug }: { geo: Locati
   const liveLayerRef = useRef<LayerGroup | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [ready, setReady] = useState(false);
+  const [tilesDead, setTilesDead] = useState(false);
 
   /* build the map once */
   useEffect(() => {
@@ -41,10 +42,28 @@ export default function OsmLocationMap({ geo, projectName, slug }: { geo: Locati
       if (disposed || !holderRef.current || mapRef.current) return;
       const map = L.map(holderRef.current, { center: [geo.center.lat, geo.center.lng], zoom: 14, scrollWheelZoom: false, attributionControl: true });
       map.attributionControl.setPrefix(false);
-      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      }).addTo(map);
+      /* free tile providers, tried in order — some networks/blockers refuse a
+         given tile host, so on repeated tile errors (with zero successes) the
+         map hops to the next provider instead of showing a blank ground */
+      const PROVIDERS: { url: string; attribution: string; options?: Record<string, unknown> }[] = [
+        { url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' },
+        { url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          options: { subdomains: "abcd" } },
+        { url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+          attribution: "Tiles &copy; Esri" },
+      ];
+      let pi = 0;
+      const mountTiles = () => {
+        const p = PROVIDERS[pi]; if (!p) { setTilesDead(true); return; }
+        let ok = false, bad = 0;
+        const layer = L.tileLayer(p.url, { maxZoom: 19, attribution: p.attribution, ...(p.options ?? {}) });
+        layer.on("tileload", () => { ok = true; setTilesDead(false); });
+        layer.on("tileerror", () => { if (ok) return; if (++bad >= 3) { layer.remove(); pi++; mountTiles(); } });
+        layer.addTo(map);
+      };
+      mountTiles();
 
       /* subject project — brand pin */
       const pin = L.divIcon({
@@ -161,6 +180,11 @@ export default function OsmLocationMap({ geo, projectName, slug }: { geo: Locati
         <div className="pointer-events-none absolute bottom-2.5 left-2.5 z-[500] rounded-full border border-[#1a1a1a]/10 bg-white/90 px-3 py-1.5 text-[0.66rem] text-[#5f594e] shadow-sm backdrop-blur">
           <b className="text-[#1a1a1a]">{projectName}</b> · pins from verified coordinates
         </div>
+        {tilesDead && (
+          <div className="pointer-events-none absolute left-1/2 top-3 z-[500] -translate-x-1/2 rounded-full border border-[#1a1a1a]/10 bg-white/95 px-4 py-2 text-[0.7rem] font-medium text-[#7a5c1e] shadow-sm">
+            Street imagery is being blocked on this network — pin positions remain exact.
+          </div>
+        )}
       </div>
     </div>
   );
