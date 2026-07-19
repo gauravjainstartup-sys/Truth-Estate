@@ -43,9 +43,11 @@ const distKm = (a, b) => Math.hypot((b.lat - a.lat) * 111.32, (b.lng - a.lng) * 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const MAX = +(process.env.GEOCODE_MAX || 500); // cap live lookups per build so a fresh snapshot can't blow CI time; the rest fill in on later builds (enriched snapshot is cached)
+const BUDGET_MS = +(process.env.GEOCODE_BUDGET_MS || 240000); // hard wall-clock ceiling (4 min) — a slow/blocked Nominatim can never hang the build
+const DEADLINE = Date.now() + BUDGET_MS;
 let cache = {};
 try { cache = JSON.parse(await readFile(CACHE, "utf8")); } catch { cache = {}; }
-let cacheDirty = false, calls = 0;
+let cacheDirty = false, calls = 0, fails = 0, dead = false; // circuit-breaker: after repeated failures assume the network's blocked and stop calling
 
 let mock = null;
 if (process.env.GEOCODE_FIXTURE) { try { mock = JSON.parse(await readFile(process.env.GEOCODE_FIXTURE, "utf8")); } catch { mock = null; } }
@@ -58,16 +60,19 @@ async function geocode(query) {
     for (const [frag, c] of Object.entries(mock)) if (key.includes(norm(frag))) return c;
     return null;
   }
-  if (calls >= MAX) return null; // over the per-build budget — leave for a later build, don't cache the miss
-  let out = null;
+  if (dead || calls >= MAX || Date.now() > DEADLINE) return null; // circuit-open / over budget / past deadline — skip, don't cache a non-answer
+  let out = null, errored = false;
   try {
     await sleep(1100); // Nominatim: ≤ 1 req/sec
     calls++;
     const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=in&q=${encodeURIComponent(query)}`;
-    const res = await fetch(url, { headers: { "User-Agent": UA, "Accept-Language": "en" }, signal: AbortSignal.timeout(15000) });
+    const res = await fetch(url, { headers: { "User-Agent": UA, "Accept-Language": "en" }, signal: AbortSignal.timeout(10000) });
     if (res.ok) { const a = await res.json(); if (Array.isArray(a) && a[0]) out = { lat: +a[0].lat, lng: +a[0].lon }; }
-  } catch { /* fail-soft */ }
-  cache[key] = out; cacheDirty = true;
+    else errored = true;
+  } catch { errored = true; }
+  if (errored) { if (++fails >= 6) { dead = true; console.warn("[geocode] network unreachable — circuit open; remaining lookups skipped this build"); } return null; }
+  fails = 0;                      // a clean round-trip (even an empty result) resets the breaker
+  cache[key] = out; cacheDirty = true; // cache only genuine answers (hit or real empty) so known-misses aren't re-tried
   return out;
 }
 
