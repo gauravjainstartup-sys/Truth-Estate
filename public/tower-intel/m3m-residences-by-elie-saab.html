@@ -212,7 +212,7 @@
   .fs-cta-secondary{background:rgba(0,0,0,.03);border-color:var(--line);color:var(--text)}
   .fs-cta-secondary:hover{border-color:var(--gold)}
   .fs-right .fs-panels{overflow:visible;flex:none}
-  .fs-scorestrip{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--line);flex:0 0 auto}
+  .fs-scorestrip{display:grid;grid-template-columns:repeat(2,1fr);gap:0;border-top:1px solid var(--line);flex:0 0 auto}
   .fs-sc{display:flex;flex-direction:column;align-items:center;padding:10px 6px;gap:4px;border-right:1px solid var(--line)}
   .fs-sc:last-child{border-right:none}
   .fs-sc-k{font:600 9px/1 ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -418,6 +418,50 @@
   #pbClose{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--surf);cursor:pointer;color:var(--text);flex:0 0 auto;font-size:12px}
   #pbClose:hover{border-color:var(--gold)}
   @media (max-width:700px){#playbar{flex-wrap:wrap;gap:10px;padding:11px 12px}.pb-mid{order:5;flex-basis:100%}.pb-clock{min-width:64px}}
+/* ── unit sun scrubber (overlaid on the 3D dollhouse, video-player style) ── */
+.fs-sunbar{position:absolute;left:10px;right:10px;bottom:10px;z-index:5;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:13px;background:rgba(255,253,247,.86);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);box-shadow:0 8px 26px -10px rgba(60,45,10,.34)}
+.fs-sunbar[hidden]{display:none}
+.fs-sunplay{flex:0 0 auto;width:32px;height:32px;border-radius:50%;border:0;cursor:pointer;background:var(--gold);color:#0b120e;font-size:12px;display:grid;place-items:center;transition:background .15s,transform .12s}
+.fs-sunplay:hover{transform:scale(1.06)}
+.fs-suntime{flex:0 0 auto;display:flex;flex-direction:column;line-height:1.05;min-width:56px}
+.fs-suntime #fsSunClock{font:700 14px/1 'Geist',sans-serif;color:var(--text);font-variant-numeric:tabular-nums}
+.fs-suntime #fsSunPhase{font:600 8.5px/1 ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-top:3px}
+.fs-sunrange{flex:1;min-width:60px;-webkit-appearance:none;appearance:none;height:5px;border-radius:4px;background:linear-gradient(90deg,#2a3350 0%,#ffce63 42%,#ff8a34 72%,#2a3350 100%);cursor:pointer}
+.fs-sunrange::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid var(--gold);box-shadow:0 1px 5px rgba(0,0,0,.3);cursor:pointer}
+.fs-sunrange::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid var(--gold);cursor:pointer}
+.fs-sunseason{flex:0 0 auto;display:flex;gap:2px;padding:2px;border-radius:9px;background:rgba(0,0,0,.05)}
+.fs-sunseason button{border:0;background:transparent;color:var(--muted);font:600 9.5px/1 'Geist',sans-serif;padding:6px 8px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.fs-sunseason button.on{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+@media(max-width:760px){
+  .fs-sunbar{left:8px;right:8px;bottom:50px;gap:7px;padding:7px 8px}
+  .fs-sunseason button{padding:5px 6px;font-size:9px}
+  .fs-suntime{min-width:46px}
+}
+/* ── per-room sun readout (Sun tab, live-synced to the scrubber) ── */
+.sun-rooms{margin-top:12px}
+.sun-rooms-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:9px}
+.sun-rooms-now{font:600 10px/1 'Geist',sans-serif;color:var(--muted)}
+.sun-rooms-now b{color:#a6720f;font-size:12.5px}
+.sun-rooms-list{display:flex;flex-direction:column;gap:5px}
+.srow{display:grid;grid-template-columns:86px 1fr 64px;align-items:center;gap:9px;padding:4px 6px;border-radius:8px;transition:background .2s}
+.srow.lit{background:rgba(255,206,99,.16)}
+.sroom{font:600 11px/1.15 'Geist',sans-serif;color:#5a5648;display:flex;flex-direction:column;gap:1px}
+.sroom i{font:600 8px/1.3 ui-monospace,monospace;font-style:normal;letter-spacing:.06em;color:#a4a69b}
+.srow.lit .sroom{color:#23272e}
+.strack{position:relative;height:7px;border-radius:4px;background:rgba(0,0,0,.06)}
+.sfill{position:absolute;top:0;height:7px;border-radius:4px;background:linear-gradient(90deg,#ffce63,#f0972f);opacity:.45;transition:opacity .2s}
+.srow.lit .sfill{opacity:1}
+.snow{position:absolute;top:-3px;width:2px;height:13px;border-radius:2px;background:#23272e;transform:translateX(-1px);transition:left .1s linear}
+.stime{font:600 9px/1.2 ui-monospace,monospace;color:#a4a69b;text-align:right;font-variant-numeric:tabular-nums}
+.srow.lit .stime{color:#a6720f}
+.sun-rooms-foot{margin-top:10px;font:500 9.5px/1.45 'Geist',sans-serif;color:#a4a69b}
+/* ── full-screen sun cinema ── */
+.fs-expand{position:absolute;top:9px;right:9px;z-index:6;width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:rgba(255,253,247,.86);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#5a5648;font-size:13px;cursor:pointer;display:grid;place-items:center;transition:border-color .15s,transform .12s}
+.fs-expand:hover{border-color:var(--gold);transform:scale(1.06)}
+#fs3d.cinema{position:fixed;inset:0;z-index:130;margin:0;border-radius:0;border:0;box-shadow:none}
+#fs3d.cinema .fs-sunbar{left:50%;right:auto;transform:translateX(-50%);width:calc(100% - 28px);max-width:720px;bottom:24px}
+#fs3d.cinema .fs-expand{top:16px;right:16px;width:38px;height:38px;font-size:16px}
+body.sun-cinema{overflow:hidden}
 </style>
 <div id="app"></div>
 
@@ -498,7 +542,15 @@
       <div id="fsFloor" class="fs-floor"></div>
       <div class="fs-media">
         <div class="fs-viewtabs"><button id="fsBtn2d" class="on">▤ 2D plan</button><button id="fsBtn3d">◧ 3D model</button><button id="fsBtnWalk">⛶ Walk-through</button></div>
-        <div id="fs3d"><div class="fs3d-cap"></div><div id="fs3dSoon" class="fs3d-soon">Interior 3D walk-through<span>coming soon for this project</span></div></div>
+        <div id="fs3d"><div class="fs3d-cap"></div><div id="fs3dSoon" class="fs3d-soon">Interior 3D walk-through<span>coming soon for this project</span></div>
+          <div id="fsSunBar" class="fs-sunbar" hidden>
+            <button id="fsSunPlay" class="fs-sunplay" aria-label="Play the day">▶</button>
+            <div class="fs-suntime"><span id="fsSunClock">12:00</span><span id="fsSunPhase">midday</span></div>
+            <input id="fsSunRange" class="fs-sunrange" type="range" min="0" max="1" step="0.001" value="0.42" aria-label="Time of day">
+            <div class="fs-sunseason" id="fsSunSeason"><button data-s="-23.45">Winter</button><button data-s="0" class="on">Equinox</button><button data-s="23.45">Summer</button></div>
+          </div>
+          <button id="fsExpand" class="fs-expand" aria-label="Expand to full screen">⛶</button>
+        </div>
         <div class="fs-imgwrap"><img id="fsImg" src="" alt="Floor plan"></div>
         <div id="fsWalk" class="fs-walk">
           <div class="wk-ico">▶</div>
@@ -1136,13 +1188,22 @@ function initFlat3D(){
   const box=document.getElementById('fs3d');
   const r=new THREE.WebGLRenderer({antialias:true,alpha:true});
   r.setPixelRatio(Math.min(devicePixelRatio,2));
+  r.shadowMap.enabled=true;r.shadowMap.type=THREE.PCFSoftShadowMap;   // real cast shadows for the sun sweep
+  r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=1.0;   // filmic roll-off so full sun stays readable, not blown out
   box.insertBefore(r.domElement,box.firstChild);
   const sc=new THREE.Scene();
   const cam=new THREE.PerspectiveCamera(46,1,0.1,300);
-  sc.add(new THREE.AmbientLight(0xffffff,.78));
-  const dl=new THREE.DirectionalLight(0xfff2d8,.85);dl.position.set(18,26,10);sc.add(dl);
-  const d2=new THREE.DirectionalLight(0x88aaff,.22);d2.position.set(-14,18,-12);sc.add(d2);
-  f3={r,sc,cam,g:null,na:null,active:false,az:-0.7,pol:0.95,rad:26,auto:true,drag:false,lx:0,ly:0};
+  const amb=new THREE.AmbientLight(0xffffff,.42);sc.add(amb);
+  const hemi=new THREE.HemisphereLight(0xcfe0ff,0xcaa878,.34);sc.add(hemi);
+  /* the sun — a single shadow-casting directional light driven by the solar
+     model (f3setSun); shadows sweep the plan as time advances */
+  const sun3=new THREE.DirectionalLight(0xfff2d0,1.2);sun3.castShadow=true;
+  sun3.shadow.mapSize.set(2048,2048);sun3.shadow.bias=-0.0006;sun3.shadow.normalBias=0.03;
+  {const sh=sun3.shadow.camera;sh.near=1;sh.far=160;sh.left=sh.bottom=-24;sh.right=sh.top=24;}
+  sc.add(sun3);sc.add(sun3.target);
+  const fill=new THREE.DirectionalLight(0x9fb8ff,.12);fill.position.set(-16,13,-12);sc.add(fill);   // cool sky bounce
+  f3={r,sc,cam,g:null,na:null,active:false,az:-0.7,pol:0.95,rad:26,auto:true,drag:false,lx:0,ly:0,
+      sun3,amb,hemi,sunFrac:0.42,playing:false,season:0,bearing:0,rooms:null,updateLit:null};
   const el=r.domElement;
   el.addEventListener('pointerdown',e=>{f3.drag=true;f3.auto=false;f3.lx=e.clientX;f3.ly=e.clientY;
     if(f3.walk&&f3.walk.on&&e.pointerType==='touch'){const rc=el.getBoundingClientRect();
@@ -1174,6 +1235,17 @@ function initFlat3D(){
   document.getElementById('fsBtnWalk').onclick=()=>setFsView('walk');
   document.getElementById('fsBtn3d').onclick=()=>setFsView('3d');
   document.getElementById('fsBtn2d').onclick=()=>setFsView('2d');
+  /* sun scrubber: play / scrub time / season */
+  (function(){const play=document.getElementById('fsSunPlay'),rng=document.getElementById('fsSunRange'),seas=document.getElementById('fsSunSeason');
+    if(play)play.onclick=()=>{f3.playing=!f3.playing;play.textContent=f3.playing?'❚❚':'▶';};
+    if(rng)rng.addEventListener('input',()=>{f3.playing=false;if(play)play.textContent='▶';f3setSun(parseFloat(rng.value));});
+    if(seas)seas.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+      [...seas.children].forEach(x=>x.classList.toggle('on',x===b));f3.season=parseFloat(b.dataset.s);renderSunRooms();f3setSun(f3.sunFrac);});})();
+  /* expand the 3D + sun to a full-screen "sun cinema" */
+  (function(){const exp=document.getElementById('fsExpand');
+    const setCine=on=>{const d3=document.getElementById('fs3d');if(!d3)return;d3.classList.toggle('cinema',on);document.body.classList.toggle('sun-cinema',on);if(exp)exp.textContent=on?'✕':'⛶';requestAnimationFrame(()=>{f3resize();if(f3)f3setSun(f3.sunFrac);});};
+    if(exp)exp.onclick=()=>setCine(!document.getElementById('fs3d').classList.contains('cinema'));
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElementById('fs3d').classList.contains('cinema')){setCine(false);e.stopImmediatePropagation();}},true);})();
   (function(){var ph=document.getElementById('fsWalkPhone'),fm=document.getElementById('fsWalkForm');if(!ph||!fm)return;
     ph.addEventListener('input',function(){this.value=this.value.replace(/\D/g,'').slice(0,10);});
     fm.addEventListener('submit',function(e){e.preventDefault();if(!ph.checkValidity()){ph.reportValidity();return;}
@@ -1197,17 +1269,18 @@ function buildFlat3D(cfgKey,uid,bearing){
   const _soon=document.getElementById('fs3dSoon'),_bw=document.getElementById('fsBtnWalk');
   const L=FLATW[cfgKey+'|'+uid]||FLATW[cfgKey+'|101'];   // M3M: traced interior walls from the official floor plans
   if(!L){if(_soon)_soon.classList.add('on');return;}   // show the coming-soon placeholder for the interactive 3D (walk-through early-access stays available)
+  if(_soon)_soon.classList.remove('on');               // a real model exists → clear any stale placeholder
   const g=new THREE.Group();
   const s=22/L.iw,W=L.iw*s,D=L.ih*s,WH=1.02;
   f3.dims={W,D,s};
   f3.colliders=L.walls.concat(L.rails||[]).map(r=>[r[0]*s-W/2,r[1]*s-D/2,(r[0]+r[2])*s-W/2,(r[1]+r[3])*s-D/2]);
   const sp0=SPAWN[cfgKey+'|'+uid]||SPAWN[cfgKey+'|101'];f3.spawn=sp0?{x:sp0.x*s-W/2,z:sp0.y*s-D/2,yaw:sp0.yaw}:null;
   const base=new THREE.Mesh(new THREE.BoxGeometry(W+0.6,0.12,D+0.6),new THREE.MeshStandardMaterial({color:0xe8e2d4,roughness:.95}));
-  base.position.y=-0.09;g.add(base);
+  base.position.y=-0.09;base.receiveShadow=true;g.add(base);
   const tex=new THREE.TextureLoader().load(planFor(cfgKey,uid).tex);
   tex.anisotropy=f3.r.capabilities.getMaxAnisotropy();
-  const plane=new THREE.Mesh(new THREE.PlaneGeometry(W,D),new THREE.MeshBasicMaterial({map:tex}));
-  plane.rotation.x=-Math.PI/2;plane.position.y=0.005;g.add(plane);
+  const plane=new THREE.Mesh(new THREE.PlaneGeometry(W,D),new THREE.MeshLambertMaterial({map:tex}));   // Lambert so the floor plan takes the sun & shadow
+  plane.rotation.x=-Math.PI/2;plane.position.y=0.005;plane.receiveShadow=true;g.add(plane);
   const wallMat=new THREE.MeshStandardMaterial({color:0xd6ccb6,roughness:.8,metalness:.05});
   const inst=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),wallMat,L.walls.length);
   const M=new THREE.Matrix4();
@@ -1215,7 +1288,7 @@ function buildFlat3D(cfgKey,uid,bearing){
     M.makeScale(r[2]*s,WH,r[3]*s);
     M.setPosition((r[0]+r[2]/2)*s-W/2,WH/2+0.01,(r[1]+r[3]/2)*s-D/2);
     inst.setMatrixAt(i,M);});
-  inst.instanceMatrix.needsUpdate=true;g.add(inst);
+  inst.instanceMatrix.needsUpdate=true;inst.castShadow=true;inst.receiveShadow=true;g.add(inst);
   f3.wallsMesh=inst;f3.railsMesh=null;
   if(L.rails&&L.rails.length){
     const RH=0.34;
@@ -1226,12 +1299,15 @@ function buildFlat3D(cfgKey,uid,bearing){
       RM.makeScale(r[2]*s,RH,r[3]*s);
       RM.setPosition((r[0]+r[2]/2)*s-W/2,RH/2+0.01,(r[1]+r[3]/2)*s-D/2);
       rinst.setMatrixAt(i,RM);});
-    rinst.instanceMatrix.needsUpdate=true;g.add(rinst);f3.railsMesh=rinst;}
+    rinst.instanceMatrix.needsUpdate=true;rinst.castShadow=true;g.add(rinst);f3.railsMesh=rinst;}
   g.rotation.y=((DECKB[cfgKey+'|'+uid]!=null?DECKB[cfgKey+'|'+uid]:DECKB[cfgKey+'|101'])-bearing)*Math.PI/180;
   f3.sc.add(g);f3.g=g;
   const na=f3sprite('N \u2191',0.95);
   na.position.set(0,0.5,-(Math.max(W,D)/2+2.6));f3.sc.add(na);f3.na=na;
-  f3.rad=Math.max(W,D)*1.15;f3.az=-0.55;f3.pol=0.85;f3.auto=true;}
+  f3.rad=Math.max(W,D)*1.15;f3.az=-0.55;f3.pol=0.85;f3.auto=true;
+  f3.bearing=bearing;
+  {const R=Math.max(W,D)/2+5,sh=f3.sun3.shadow.camera;sh.left=sh.bottom=-R;sh.right=sh.top=R;sh.updateProjectionMatrix();}
+  if(typeof f3setSun==='function')f3setSun(f3.sunFrac);}
 /* walk-through: first-person mode */
 const SPAWN={"4 BHK 4205|101":{"x":320,"y":298,"yaw":0},"4 BHK 4520|101":{"x":320,"y":294,"yaw":0},"4 BHK 4655|101":{"x":320,"y":285,"yaw":0}};
 function walkCollide(x,z,r){
@@ -1264,17 +1340,87 @@ function exitWalk(){
 function setFsView(v){
   const b3=document.getElementById('fsBtn3d'),b2=document.getElementById('fsBtn2d'),bw=document.getElementById('fsBtnWalk');
   const d3=document.getElementById('fs3d'),iw=document.querySelector('.fs-imgwrap'),wk=document.getElementById('fsWalk');
+  const sb=document.getElementById('fsSunBar'),soon=document.getElementById('fs3dSoon');
   [b3,b2,bw].forEach(b=>b&&b.classList.remove('on'));
   if(f3&&f3.walk)exitWalk();
   if(wk)wk.style.display='none';
+  if(sb)sb.hidden=true;                                  // sun scrubber lives only in the 3D model view
+  if(f3)f3.playing=false;{const _pl=document.getElementById('fsSunPlay');if(_pl)_pl.textContent='▶';}
   if(v==='walk'){d3.style.display='none';iw.style.display='none';if(wk)wk.style.display='flex';bw.classList.add('on');if(f3)f3.active=false;return;}
   if(v==='2d'){d3.style.display='none';iw.style.display='flex';b2.classList.add('on');if(f3)f3.active=false;return;}
   d3.style.display='block';iw.style.display='none';
   b3.classList.add('on');
+  if(sb&&!(soon&&soon.classList.contains('on')))sb.hidden=false;   // show only when a real 3D model exists
   if(f3){f3.active=true;requestAnimationFrame(f3resize);}
   const cap=document.querySelector('#fs3d .fs3d-cap');
   if(cap&&f3&&f3.capOrbit)cap.innerHTML=f3.capOrbit;}
+/* ── unit sun: drive the dollhouse's shadow-casting light from the solar
+   model, so the sun sweep + shadows match the flat's real orientation ── */
+function f3setSun(fr){
+  if(!f3||!f3.sun3)return;
+  f3.sunFrac=fr;
+  const _sd=decl;decl=f3.season;                 // the sweep uses the chosen season; scoring benchmark restored below
+  const[sr,ss]=dayB();
+  const h=sr+(ss-sr)*fr;                          // slider spans sunrise→sunset
+  const s=sunTrue(h);
+  decl=_sd;
+  f3.curAz=s.az;f3.curAlt=s.alt;
+  const up=Math.max(0,s.alt),day=Math.min(1,up/0.5);
+  /* direction toward the sun in the dollhouse frame (N=-z, E=+x, up=+y) —
+     the group is already rotated to the flat's true bearing, so real azimuth
+     lights it as reality would */
+  const dir=new THREE.Vector3(Math.cos(s.alt)*Math.sin(s.az),Math.max(0.03,Math.sin(s.alt)),-Math.cos(s.alt)*Math.cos(s.az)).normalize();
+  f3.sun3.position.copy(dir).multiplyScalar(72);
+  f3.sun3.target.position.set(0,0,0);f3.sun3.target.updateMatrixWorld();
+  f3.sun3.intensity=s.alt>0?(0.30+1.85*Math.pow(day,0.9)):0.0;
+  f3.sun3.color.copy(new THREE.Color('#ff8a34').lerp(new THREE.Color('#fff4da'),Math.min(1,day*1.3)));
+  if(f3.amb)f3.amb.intensity=0.22+0.16*day;      // lower fill → shaded rooms read darker, crisper "which room is lit"
+  if(f3.hemi)f3.hemi.intensity=0.15+0.20*day;
+  const hd=((h%24)+24)%24;
+  const cl=document.getElementById('fsSunClock');if(cl)cl.textContent=fmt(hd);
+  const ph=document.getElementById('fsSunPhase');
+  if(ph)ph.textContent=hd<7.4?'sunrise':hd<11.4?'morning':hd<12.8?'midday':hd<16.6?'afternoon':hd<18.6?'evening':'dusk';
+  const rg=document.getElementById('fsSunRange');if(rg&&document.activeElement!==rg&&Math.abs(parseFloat(rg.value)-fr)>0.003)rg.value=fr;
+  f3updateLit(h);
+}
+/* ── per-room sun: when each room catches direct sun, from the same room
+   compass directions the Vastu read uses. Facing-based (the 3D shadows show
+   the true occlusion); this is the "which room, what time" answer in words. ── */
+const ROOM_AZ={N:0,NE:45,E:90,SE:135,S:180,SW:225,W:270,NW:315};
+function angDiff(a,b){let d=Math.abs(a-b)%360;return d>180?360-d:d;}
+function fmtT(h){const a=Math.floor(h),m=Math.round((h-a)*60);const ap=a<12?'am':'pm';let hh=a%12;if(hh===0)hh=12;return hh+(m?':'+String(m).padStart(2,'0'):'')+ap;}
+function roomSunWindow(dir,seasonDecl){
+  const _sd=decl;decl=seasonDecl;const[sr,ss]=dayB();
+  const rn=ROOM_AZ[dir]||0;let first=null,last=null,hrs=0;const step=0.1;
+  for(let h=sr;h<=ss;h+=step){const s=sunTrue(h);if(s.alt<=0.03)continue;
+    if(angDiff(s.az*180/Math.PI,rn)<78){if(first===null)first=h;last=h;hrs+=step;}}
+  decl=_sd;return{first,last,hrs,sr,ss};
+}
+function litAt(dir,az,alt){if(alt<=0.03)return false;return angDiff(az*180/Math.PI,ROOM_AZ[dir]||0)<78;}
+function renderSunRooms(){
+  const box=document.getElementById('sunRooms');if(!box||!f3||!f3.roomsData)return;
+  const rows=f3.roomsData.map(r=>{
+    const w=roomSunWindow(r.dir,f3.season),span=(w.ss-w.sr)||1,has=w.first!=null&&w.hrs>0.2;
+    const L=has?((w.first-w.sr)/span*100):0,W=has?((w.last-w.first)/span*100):0;
+    return`<div class="srow" id="sr-${r.key}"><span class="sroom">${r.label}<i>${r.dir}</i></span>`+
+      `<span class="strack"><b class="sfill" style="left:${L.toFixed(1)}%;width:${Math.max(W,has?4:0).toFixed(1)}%"></b><b class="snow"></b></span>`+
+      `<span class="stime">${has?fmtT(w.first)+'–'+fmtT(w.last):'no direct'}</span></div>`;}).join('');
+  box.innerHTML=`<div class="sun-rooms-head"><span class="sun-chart-title">Sun through the home</span><span class="sun-rooms-now" id="sunNow">—</span></div>`+
+    `<div class="sun-rooms-list">${rows}</div>`+
+    `<div class="sun-rooms-foot">Play or drag the timeline on the model — watch the light move room to room.</div>`;
+}
+function f3updateLit(h){
+  if(!f3||!f3.roomsData)return;const box=document.getElementById('sunRooms');if(!box||!box.firstChild)return;
+  const _sd=decl;decl=f3.season;const[sr,ss]=dayB();decl=_sd;const span=(ss-sr)||1;
+  const nowPct=Math.max(0,Math.min(100,(h-sr)/span*100));let litN=0;
+  f3.roomsData.forEach(r=>{const row=document.getElementById('sr-'+r.key);if(!row)return;
+    const lit=litAt(r.dir,f3.curAz||0,f3.curAlt||-1);row.classList.toggle('lit',lit);if(lit)litN++;
+    const nw=row.querySelector('.snow');if(nw)nw.style.left=nowPct+'%';});
+  const nowEl=document.getElementById('sunNow');
+  if(nowEl)nowEl.innerHTML=(f3.curAlt>0.03)?`<b>${litN}</b> room${litN===1?'':'s'} in sun now`:`sun below horizon`;
+}
 function f3tick(){if(!f3||!f3.active)return;
+  if(f3.playing){f3.sunFrac+=0.0016;if(f3.sunFrac>1)f3.sunFrac=0;f3setSun(f3.sunFrac);}
   if(f3.walk&&f3.walk.on){
     const w=f3.walk,K=w.keys,R=0.22;
     let f=(K['w']||K['arrowup'])?1:(K['s']||K['arrowdown'])?-1:0;
@@ -1355,13 +1501,7 @@ function sunFloorHTML(t,u,fl,oppSt){
       <div style="font-size:16px;line-height:1.2">☁</div>
       <div style="font:500 11px/1.55 'Geist';color:#64707d">No direct <b style="color:#4a4638">${seasonL.toLowerCase()}</b> sun reaches the ${compass}-facing living deck on floor ${fl}${cfClause(t,u,fl)}. ${oppSt&&oppSt.rawAvg>0.4?`The opposite (bedroom) facade still catches ~${oppSt.rawAvg.toFixed(1)}h, and it opens up in the other seasons.`:'It opens up along the equinox and summer sun paths — switch the season above.'}</div>
     </div>`}
-    <div class="sun-chart-title" style="margin:12px 0 7px">Hours by floor</div>
-    ${floorSamples.map(({fl:f,h,sel})=>`
-      <div class="floor-row"${sel?' style="background:rgba(255,206,99,.06);border-radius:7px;margin:6px -8px;padding:2px 8px"':''}>
-        <span class="floor-lbl"${sel?' style="color:var(--sun)"':''}>Floor ${f}${sel?' ←':''}</span>
-        <div class="floor-bar"><div class="floor-fill" style="width:${pct(h,maxFH)};background:${sunColor(h)}"></div></div>
-        <span class="floor-val">${h.toFixed(1)}h</span>
-      </div>`).join('')}
+    <div id="sunRooms" class="sun-rooms"></div>
     <div style="margin-top:12px;padding:10px 12px;background:rgba(0,0,0,.02);border:1px solid var(--line);border-radius:9px">
       <div class="sun-chart-title" style="margin-bottom:7px">AM · PM balance</div>
       <div style="height:8px;border-radius:4px;overflow:hidden;display:flex">
@@ -1399,10 +1539,11 @@ function openFlat(t,uid,keepFloor){
   (function(){const _pf=planFor(u.cfg||t.cfg,u.id),_fi=document.getElementById('fsImg'),_b2=document.getElementById('fsBtn2d');
     if(_pf&&_pf.img){if(_fi)_fi.src=_pf.img;if(_b2)_b2.style.display='';}
     else{if(_fi)_fi.removeAttribute('src');if(_b2)_b2.style.display='none';}})(); // no per-unit plan webp for this project yet — 3D is the media
-  buildFlat3D(u.cfg||t.cfg,u.id,b);(function(){const _c=document.querySelector('#fs3d .fs3d-cap');if(_c)_c.innerHTML='';if(f3)f3.capOrbit='';})();setFsView('2d');
+  buildFlat3D(u.cfg||t.cfg,u.id,b);(function(){const _c=document.querySelector('#fs3d .fs3d-cap');if(_c)_c.innerHTML='';if(f3)f3.capOrbit='';})();
+  setFsView(document.getElementById('fs3dSoon').classList.contains('on')?'2d':'3d');   // lead with the 3D sun view when a model exists
   /* score strip */
   document.getElementById('fsCap').innerHTML=`
-     <div class="fs-scorestrip">${[['\u2600 Morning',fscore.sub.morning],['\u2744 Summer cool',fscore.sub.cool],['\u262f Vastu',fscore.sub.vastu],['\u25c9 View',fscore.sub.view],['\u2248 Airflow',fscore.sub.vent],['\u25a4 Floor',fscore.sub.floor]].map(m=>`<div class="fs-sc"><span class="fs-sc-k">${m[0]}</span><span class="fs-sc-v" style="color:${scCol(m[1])}">${m[1]}</span><div class="fs-sc-bar"><div class="fs-sc-fill" style="width:${m[1]}%;background:${scCol(m[1])}"></div></div><span class="fs-sc-tag">of 100</span></div>`).join('')}
+     <div class="fs-scorestrip">${[['\u2600 Morning',fscore.sub.morning],['\u2744 Summer cool',fscore.sub.cool],['\u262f Vastu',fscore.sub.vastu],['\u2248 Airflow',fscore.sub.vent]].map(m=>`<div class="fs-sc"><span class="fs-sc-k">${m[0]}</span><span class="fs-sc-v" style="color:${scCol(m[1])}">${m[1]}</span><div class="fs-sc-bar"><div class="fs-sc-fill" style="width:${m[1]}%;background:${scCol(m[1])}"></div></div><span class="fs-sc-tag">of 100</span></div>`).join('')}
     </div>`;
   /* tabs */
   const R=document.getElementById('fsIntel');
@@ -1456,13 +1597,7 @@ function openFlat(t,uid,keepFloor){
         <path d="${dp}" fill="none" stroke="#ffce63" stroke-width="2" stroke-linejoin="round"/>
       </svg>
     </div>
-    <div class="sun-chart-title" style="margin:12px 0 7px">Hours by floor</div>
-    ${floorSamples.map(({fl,h})=>`
-      <div class="floor-row">
-        <span class="floor-lbl">Floor ${fl}</span>
-        <div class="floor-bar"><div class="floor-fill" style="width:${pct(h,maxFH)};background:${sunColor(h)}"></div></div>
-        <span class="floor-val">${h.toFixed(1)}h</span>
-      </div>`).join('')}
+    <div id="sunRooms" class="sun-rooms"></div>
     <div style="margin-top:12px;padding:10px 12px;background:rgba(0,0,0,.02);border:1px solid var(--line);border-radius:9px">
       <div class="sun-chart-title" style="margin-bottom:7px">AM &middot; PM balance</div>
       <div style="height:8px;border-radius:4px;overflow:hidden;display:flex">
@@ -1476,6 +1611,11 @@ function openFlat(t,uid,keepFloor){
       <div style="margin-top:8px;font:500 10.5px/1.5 'Geist';color:#64707d">${st.pmAvg>st.amAvg?`Afternoon-dominant \u2014 bright evenings but PM heat. Afternoon sun weighted ${Math.round(WEST_W*100)}% in the tower ranking.`:'Morning-dominant \u2014 the preferred pattern. Peak light before noon keeps afternoons cooler and AC load lower.'}</div>
     </div>
     <div style="margin-top:9px;font:500 9px/1.5 ui-monospace,monospace;color:#abaea1">Living facade \u00b7 scores averaged over G+38 \u00b7 north calibrated to the site plan (T-10 living = NE)</div>`;
+  /* per-room sun readout \u2014 lives in the Sun tab, live-synced to the 3D scrubber */
+  if(f3){const _rk=cfg.beds===4?['living','masterBed','kitchen','bed2','bed3','study']:['living','masterBed','kitchen','bed2','bed3'];
+    const _nm={living:'Living',masterBed:'Master bed',kitchen:'Kitchen',bed2:'Bedroom 2',bed3:'Bedroom 3',study:'Home office'};
+    f3.roomsData=_rk.map(k=>({key:k,label:_nm[k],dir:vastuRoomScore(k,compass,plateCfg(t,u),u.mir).dir}));
+    renderSunRooms();f3setSun(f3.sunFrac);}
   /* TAB 2: METRICS */
   const mrows=[
     {icon:'&#x1F9ED;',label:'Orientation',badge:'doc',val:`<b>${compass}-facing</b> living room &amp; deck (bearing ${Math.round(b)}&deg;). ${lakeFacing?'Faces the central lagoon \u2014 the prestige view axis.':'Faces outward from the lagoon side \u2014 perimeter views.'}`,stars:null,barW:null,barC:null},
@@ -1683,6 +1823,7 @@ function openFlat(t,uid,keepFloor){
     const hint=document.getElementById('ffHint');
     if(hint)hint.innerHTML=`<b style="color:${tier.c}">${tier.k}</b> · ${tier.d} <span style="color:#9a9c95">— ${fsun.h>0.05?fsun.h.toFixed(1)+'h '+season+' sun':'no direct '+season+' sun at this floor'}.</span>`;
     const sp=document.getElementById('fp-sun');if(sp)sp.innerHTML=sunFloorHTML(t,u,fl,oppSt);
+    renderSunRooms();if(f3&&f3.roomsData)f3setSun(f3.sunFrac);
     const wu=document.getElementById('fsWalkUnit');if(wu)wu.textContent=flatNo;
   }
   const ffR=document.getElementById('ffRange');if(ffR)ffR.oninput=e=>paintFloor(+e.target.value);
