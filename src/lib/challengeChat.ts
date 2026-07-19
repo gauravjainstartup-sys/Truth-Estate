@@ -28,11 +28,56 @@ import {
   marketOf,
   rankContext,
 } from "@/lib/projects";
+import { AREA_ALIASES, type OmniIndex } from "@/lib/omni";
 import { READ_FROM_INR } from "@/lib/journey";
 
 export type ChatRole = "user" | "bot";
 export type ChatMsg = { id: string; role: ChatRole; text: string; gate?: boolean };
 export type ChallengeAnswer = { text: string; gate: boolean };
+/* a corridor rival for in-chat head-to-heads — public scoreboard only
+   (name + Truth Score); the deep audit stays behind each project's own read */
+export type Peer = { name: string; score: number; sameCorridor: boolean };
+
+const BASE_PATH = "/Truth-Estate";
+
+/* which corridor a free-text location belongs to (reuses the omni aliases) */
+function corridorKey(loc: string | null | undefined): string | null {
+  if (!loc) return null;
+  const hit = AREA_ALIASES.find(([re]) => re.test(loc.toLowerCase()));
+  return hit ? hit[1] : null;
+}
+
+/* Fetch the public project index and derive this project's closest rivals —
+   same corridor first (top by score), else the top-scored tracked projects.
+   Scores are public (shown on every report hero), so this is free-tier safe.
+   Cached per session; any failure → [] (the chat simply skips named peers). */
+let peerCache: Record<string, Peer[]> | undefined;
+export async function loadCorridorPeers(p: ProjectIntel): Promise<Peer[]> {
+  peerCache ??= {};
+  if (peerCache[p.slug]) return peerCache[p.slug];
+  try {
+    const res = await fetch(`${BASE_PATH}/omni-index.json`, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return [];
+    const idx = (await res.json()) as OmniIndex;
+    const me = idx.projects.find((x) => x.slug === p.slug);
+    const myKey = corridorKey(me?.location) ?? corridorKey(p.market) ?? corridorKey(p.marketShort);
+    const scored = idx.projects.filter((x) => x.slug !== p.slug && typeof x.score === "number" && (x.score ?? 0) > 0);
+    const same = myKey ? scored.filter((x) => corridorKey(x.location) === myKey) : [];
+    const pool = (same.length >= 2 ? same : scored).sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, 3);
+    const peers = pool.map((x) => ({ name: x.name, score: Math.round(x.score ?? 0), sameCorridor: !!myKey && corridorKey(x.location) === myKey }));
+    peerCache[p.slug] = peers;
+    return peers;
+  } catch {
+    return [];
+  }
+}
+
+function peerLine(p: ProjectIntel, peers: Peer[]): string {
+  if (!peers.length) return "";
+  const named = peers.map((r) => `${r.name} (${r.score})`).join(", ");
+  const scope = peers.every((r) => r.sameCorridor) ? `the ${p.marketShort} corridor` : "the projects we track";
+  return `Closest rivals in ${scope}: ${named}. ${p.name} scores ${p.truthScore}.`;
+}
 
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 export const gradeOf = (s: number) =>
@@ -88,6 +133,9 @@ function classify(q: string): Intent {
   if (has(n, "hi", "hello", "hey", "thanks", "thank you", "namaste") && n.length < 16) return "greeting";
   if (has(n, "should i buy", "worth buying", "do you recommend", "verdict", "good buy", "go for it", "should i invest", "would you buy")) return "verdict";
   if (has(n, "risk", "red flag", "red-flag", "watch out", "watchout", "concern", "downside", "worst", "catch", "problem", "issue", "what's wrong", "whats wrong")) return "risk";
+  // compare wins over incidental location/price words ("compare to nearby",
+  // "better value than X") — but NOT over "should I buy A over B" (verdict, above)
+  if (has(n, "compare", "vs ", "versus", "better than", "worse than", "alternative", "other project", "other projects", "instead of")) return "compare";
   if (has(n, "roi", "return", "appreciat", "cagr", "growth", "profit", "resale", "capital", "rental yield", "yield")) return "roi";
   if (has(n, "worth it", "overpriced", "expensive", "too costly", "value for money", "price fair", "fairly priced", "cheap", "premium")) return "price";
   if (has(n, "developer", "builder", "who is", "who's the", "track record", "delivered", "reputation", "trust the", "on time", "delay")) {
@@ -100,7 +148,6 @@ function classify(q: string): Intent {
   if (has(n, "location", "connectivity", "metro", "road", "highway", "area", "corridor", "nearby", "distance", "airport", "office", "school")) return "location";
   if (has(n, "price", "psf", "per sq", "rate", "cost", "budget", "how much")) return "price";
   if (has(n, "truth score", "score fair", "why ", "rating", "how did you", "how do you score", "is the score", "inflated")) return "score";
-  if (has(n, "compare", "vs ", "versus", "better than", "alternative", "other project", "instead")) return "compare";
   if (has(n, "unit", "tower", "floor", "size", "sq ft", "sqft", "config", "bhk", "acre", "density", "launch", "how many")) return "vitals";
   if (has(n, "usp", "amenit", "feature", "special", "spec", "clubhouse", "facilit")) return "usps";
   if (has(n, "how do you work", "independent", "commission", "biased", "bias", "who are you", "trust you", "how are you", "methodology", "who pays")) return "method";
@@ -108,7 +155,7 @@ function classify(q: string): Intent {
 }
 
 /* ── the answer builder. `locked` gates the paid topics. ─────────── */
-export function answerChallenge(p: ProjectIntel, question: string, locked: boolean): ChallengeAnswer {
+export function answerChallenge(p: ProjectIntel, question: string, locked: boolean, peers: Peer[] = []): ChallengeAnswer {
   const intent = classify(question);
   const dev = developerOf(p);
   const market = marketOf(p);
@@ -218,11 +265,14 @@ export function answerChallenge(p: ProjectIntel, question: string, locked: boole
       return open(`On our read ${p.name} is a ${p.truthScore >= 80 ? "strong" : p.truthScore >= 65 ? "qualified" : "cautious"} ${p.truthScore}/100 ("${grade}"). ${p.reason} The one thing we'd pressure-test for your situation: ${p.watchouts?.[0] ?? "your timeline vs the possession date"}. Want to talk it through with an advisor? That call comes with your read.`);
 
     case "compare": {
-      // We DO compare — never wall this off. Give the rank, point to the free
-      // Compare tool, softly note the read's tailored side-by-side.
+      // We DO compare — never wall this off. Name the corridor rivals at the
+      // scoreboard level (public), point to the free Compare tool, softly note
+      // the read's deeper side-by-side. The pillar-by-pillar "why" + the "which
+      // should YOU buy" verdict live behind the read (the verdict intent gates).
       const rankLine = ctx.topPct <= 25 ? `top ${ctx.topPct}% of the projects we track` : `#${ctx.rank} of ${ctx.total} tracked`;
       const corr = market ? `, and ${ctx.corridorRank <= 2 ? "among the strongest" : "mid-pack"} in the ${p.marketShort} corridor` : "";
-      return open(`Yes — comparing is exactly what we do. ${p.name} ranks ${rankLine}${corr}. You can line up any two projects side by side in our Compare tool, and ${locked ? "the full read carries a ranked side-by-side against the closest alternatives to your brief" : "I can walk you through how it stacks up against a specific rival"}. Which project do you want it measured against?`);
+      const rivals = peers.length ? ` ${peerLine(p, peers)}` : "";
+      return open(`Yes — comparing is exactly what we do. ${p.name} ranks ${rankLine}${corr}.${rivals} You can line up any two side by side in our Compare tool, and ${locked ? "the full read carries the pillar-by-pillar split and which is the better buy for your brief" : "I can walk you through how it stacks up"}. Which one do you want it measured against?`);
     }
 
     case "usps":
@@ -265,7 +315,7 @@ export const PAID_TOPICS = [
   "The deep, pillar-by-pillar audit behind each grade",
 ];
 
-export function buildChallengeContext(p: ProjectIntel, locked: boolean): ChallengeContext {
+export function buildChallengeContext(p: ProjectIntel, locked: boolean, peers: Peer[] = []): ChallengeContext {
   const dev = developerOf(p);
   const market = marketOf(p);
   const roi = roiModel(p);
@@ -296,7 +346,7 @@ export function buildChallengeContext(p: ProjectIntel, locked: boolean): Challen
     `TICKET: ${ticketLabel(p)}${psf ? ` · corridor ${psf}` : ""}.`,
     vitals && `VITALS: ${vitals}.`,
     `PILLAR SUMMARY (weights: location 26%, developer 25%, construction 22%, legal 15%, USPs 12%):\n${pubPillars}`,
-    `COMPARISON: Truth Estate DOES compare projects — buyers can line up any two side-by-side in the Compare tool, and the full read carries a ranked side-by-side vs the closest alternatives. This project ranks ${ctx.topPct <= 25 ? `in the top ${ctx.topPct}%` : `#${ctx.rank} of ${ctx.total}`} of all tracked projects${market ? ` and #${ctx.corridorRank} in the ${p.marketShort} corridor` : ""}. You do NOT hold other named projects' detailed data in this chat, so for a specific head-to-head, point the buyer to the Compare tool or the read — NEVER say Truth Estate doesn't compare.`,
+    `COMPARISON: Truth Estate DOES compare projects — buyers can line up any two side-by-side in the Compare tool, and the full read carries a ranked side-by-side vs the closest alternatives. This project ranks ${ctx.topPct <= 25 ? `in the top ${ctx.topPct}%` : `#${ctx.rank} of ${ctx.total}`} of all tracked projects${market ? ` and #${ctx.corridorRank} in the ${p.marketShort} corridor` : ""}.${peers.length ? ` ${peerLine(p, peers)} (These peer names + Truth Scores are the PUBLIC scoreboard — use them for a head-to-head. You may say how ${p.name} ranks vs them by score.)` : ""} You hold only the SCORE-level scoreboard for other projects (name + Truth Score), NOT their deep audit/verdict/ROI — for those, point the buyer to that project's own read or the Compare tool. NEVER say Truth Estate doesn't compare.`,
     `METHODOLOGY: Truth Estate is buyer-side only — no inventory, no developer commission, no paid placement. The score is a weighted composite of five pillars, re-scored quarterly; no builder can pay to move it.`,
   ].filter(Boolean).join("\n");
 
