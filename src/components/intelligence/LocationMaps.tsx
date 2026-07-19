@@ -4,6 +4,9 @@ import { useState } from "react";
 import type { LocationGeo } from "@/lib/projects";
 import LocationMap from "./LocationMap";
 import OsmLocationMap from "./OsmLocationMap";
+import GmapLocationMap from "./GmapLocationMap";
+
+const HAS_GMAPS = !!process.env.NEXT_PUBLIC_GMAPS_KEY; // baked at build; GmapLocationMap still runtime-falls-back to OSM on load failure
 
 /* Two views of the same verified coordinates: the real street map (OSM —
    founder req: project + POIs + live projects + expand) and the distance
@@ -18,7 +21,9 @@ export default function LocationMaps({ geo, projectName, slug }: { geo: Location
         <button className={tab(view === "street")} onClick={() => setView("street")}>Street map</button>
         <button className={tab(view === "radar")} onClick={() => setView("radar")}>Distance radar</button>
       </div>
-      {view === "street" ? <OsmLocationMap geo={geo} projectName={projectName} slug={slug} /> : <LocationMap geo={geo} projectName={projectName} />}
+      {view === "street"
+        ? (HAS_GMAPS ? <GmapLocationMap geo={geo} projectName={projectName} slug={slug} /> : <OsmLocationMap geo={geo} projectName={projectName} slug={slug} />)
+        : <LocationMap geo={geo} projectName={projectName} />}
     </div>
   );
 }
