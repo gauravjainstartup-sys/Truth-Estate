@@ -13,7 +13,7 @@ const BAND: Record<PillarBand, { chip: string; dot: string; seg: string; text: s
 };
 const BAND_LABEL: Record<PillarBand, string> = { exceptional: "Exceptional", strong: "Strong", moderate: "Moderate", watch: "Watch this" };
 
-export default function ReportAnatomy({ p }: { p: ProjectIntel }) {
+export default function ReportAnatomy({ p, locked = false, onUnlock }: { p: ProjectIntel; locked?: boolean; onUnlock?: () => void }) {
   const rows = pillars(p);
   const ctx = rankContext(p);
   const grade = p.truthScore >= 90 ? "Exceptional" : p.truthScore >= 80 ? "Strong" : p.truthScore >= 70 ? "Solid" : p.truthScore >= 60 ? "Fair" : "Watch";
@@ -62,7 +62,7 @@ export default function ReportAnatomy({ p }: { p: ProjectIntel }) {
         </div>
 
         <div className="mt-6 border-t border-[#1a1a1a]/10">
-          {rows.map((r) => <PillarRow key={r.key} r={r} weak={r.key === weakest.key && r.band === "watch"} />)}
+          {rows.map((r) => <PillarRow key={r.key} r={r} weak={r.key === weakest.key && r.band === "watch"} locked={locked} onUnlock={onUnlock} />)}
         </div>
 
         <p className="mt-5 text-[0.8rem] font-light leading-[1.6] text-[#1a1a1a]/55">
@@ -77,10 +77,11 @@ export default function ReportAnatomy({ p }: { p: ProjectIntel }) {
   );
 }
 
-function PillarRow({ r, weak }: { r: Pillar; weak: boolean }) {
+function PillarRow({ r, weak, locked = false, onUnlock }: { r: Pillar; weak: boolean; locked?: boolean; onUnlock?: () => void }) {
   const b = BAND[r.band];
-  return (
-    <a href={`#${r.anchor}`} className={`group relative grid grid-cols-[24px_minmax(0,1fr)_auto] items-center gap-4 border-b border-[#1a1a1a]/10 py-4 ${weak ? "-mx-3.5 rounded-lg bg-[#b0503e]/[0.04] px-3.5" : ""}`}>
+  const cls = `group relative grid w-full grid-cols-[24px_minmax(0,1fr)_auto] items-center gap-4 border-b border-[#1a1a1a]/10 py-4 text-left ${weak ? "-mx-3.5 rounded-lg bg-[#b0503e]/[0.04] px-3.5" : ""}`;
+  const inner = (
+    <>
       {weak && <span className="absolute left-0 top-3.5 bottom-3.5 w-[3px] rounded bg-[#b0503e]" />}
       <span className="flex justify-center" aria-hidden>{pillarIcon(r.key, r.band === "watch" ? "#b0503e" : "#9a7a2e")}</span>
       <div className="min-w-0">
@@ -98,10 +99,17 @@ function PillarRow({ r, weak }: { r: Pillar; weak: boolean }) {
           <span className={`h-[6px] w-[6px] rounded-full ${b.dot}`} />{BAND_LABEL[r.band]}
         </span>
         <span className={`font-mono text-[1.5rem] font-medium leading-none ${b.text}`}>{r.score.toFixed(1)}<span className="text-[0.7rem] text-[#1a1a1a]/35">/10</span></span>
-        <span className={`text-[0.68rem] ${r.band === "watch" ? "text-[#c56a56]" : "text-[#9a7a2e]"}`}>Read the audit →</span>
+        <span className={`inline-flex items-center gap-1 text-[0.68rem] ${locked ? "font-semibold text-[#1e6b45]" : r.band === "watch" ? "text-[#c56a56]" : "text-[#9a7a2e]"}`}>
+          {locked ? <>🔒 Unlock to read &rarr;</> : <>Read the audit &rarr;</>}
+        </span>
       </div>
-    </a>
+    </>
   );
+  // Locked: the row drives the sale (the deep-dive it points to is paywalled);
+  // unlocked: it jumps to the pillar's audit section.
+  return locked
+    ? <button type="button" onClick={onUnlock} className={cls}>{inner}</button>
+    : <a href={`#${r.anchor}`} className={cls}>{inner}</a>;
 }
 
 /* One consistent line-icon set for the five pillars (replaces ad-hoc glyphs). */
