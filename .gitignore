@@ -59,3 +59,4 @@ db3d/engine/three.min.js
 
 # generated at build by scripts/copy-pdf-worker.mjs
 public/pdf.worker.min.js
+public/geocode-stats.json
