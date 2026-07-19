@@ -217,9 +217,13 @@ export function answerChallenge(p: ProjectIntel, question: string, locked: boole
       if (locked) return gate(`The honest answer is the whole point of the read. ${p.name} scores ${p.truthScore}/100 ("${grade}")${ctx.topPct <= 25 ? `, top ${ctx.topPct}% of what we track` : ""} — but "should *you* buy it" depends on your budget, timeline and risk appetite, and our tailored call for exactly that is inside the read (a free advisor call is included).`);
       return open(`On our read ${p.name} is a ${p.truthScore >= 80 ? "strong" : p.truthScore >= 65 ? "qualified" : "cautious"} ${p.truthScore}/100 ("${grade}"). ${p.reason} The one thing we'd pressure-test for your situation: ${p.watchouts?.[0] ?? "your timeline vs the possession date"}. Want to talk it through with an advisor? That call comes with your read.`);
 
-    case "compare":
-      if (locked) return gate(`${p.name} ranks ${ctx.topPct <= 25 ? `in the top ${ctx.topPct}%` : `#${ctx.rank} of ${ctx.total}`} of the projects we track. The side-by-side against the closest alternatives on your brief — where it wins and where it loses — is in the read, and our Compare tool.`);
-      return open(`${p.name} ranks ${ctx.topPct <= 25 ? `top ${ctx.topPct}%` : `#${ctx.rank} of ${ctx.total}`} of the projects we track${market ? `, and it's ${ctx.corridorRank <= 2 ? "one of the strongest" : "mid-pack"} in the ${p.marketShort} corridor` : ""}. Tell me which project you're weighing it against and I'll give you the honest split.`);
+    case "compare": {
+      // We DO compare — never wall this off. Give the rank, point to the free
+      // Compare tool, softly note the read's tailored side-by-side.
+      const rankLine = ctx.topPct <= 25 ? `top ${ctx.topPct}% of the projects we track` : `#${ctx.rank} of ${ctx.total} tracked`;
+      const corr = market ? `, and ${ctx.corridorRank <= 2 ? "among the strongest" : "mid-pack"} in the ${p.marketShort} corridor` : "";
+      return open(`Yes — comparing is exactly what we do. ${p.name} ranks ${rankLine}${corr}. You can line up any two projects side by side in our Compare tool, and ${locked ? "the full read carries a ranked side-by-side against the closest alternatives to your brief" : "I can walk you through how it stacks up against a specific rival"}. Which project do you want it measured against?`);
+    }
 
     case "usps":
       if (locked) return gate(`${pillarTease(p, "usps")} Which claims hold real value and which are just brochure gloss — that read is inside the file.`);
@@ -292,6 +296,7 @@ export function buildChallengeContext(p: ProjectIntel, locked: boolean): Challen
     `TICKET: ${ticketLabel(p)}${psf ? ` · corridor ${psf}` : ""}.`,
     vitals && `VITALS: ${vitals}.`,
     `PILLAR SUMMARY (weights: location 26%, developer 25%, construction 22%, legal 15%, USPs 12%):\n${pubPillars}`,
+    `COMPARISON: Truth Estate DOES compare projects — buyers can line up any two side-by-side in the Compare tool, and the full read carries a ranked side-by-side vs the closest alternatives. This project ranks ${ctx.topPct <= 25 ? `in the top ${ctx.topPct}%` : `#${ctx.rank} of ${ctx.total}`} of all tracked projects${market ? ` and #${ctx.corridorRank} in the ${p.marketShort} corridor` : ""}. You do NOT hold other named projects' detailed data in this chat, so for a specific head-to-head, point the buyer to the Compare tool or the read — NEVER say Truth Estate doesn't compare.`,
     `METHODOLOGY: Truth Estate is buyer-side only — no inventory, no developer commission, no paid placement. The score is a weighted composite of five pillars, re-scored quarterly; no builder can pay to move it.`,
   ].filter(Boolean).join("\n");
 
