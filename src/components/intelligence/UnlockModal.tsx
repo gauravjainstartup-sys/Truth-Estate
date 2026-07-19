@@ -142,7 +142,7 @@ export default function UnlockModal({
                         onChange={(e) => setOtpDigit(i, e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Backspace" && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus(); }}
                         inputMode="numeric" maxLength={1} aria-label={`Digit ${i + 1}`}
-                        className="h-14 flex-1 rounded-lg border border-[#1a1a1a]/[0.18] bg-white text-center font-serif text-[1.4rem] text-[#1a1a1a] outline-none focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/20" />
+                        className="h-14 min-w-0 flex-1 rounded-lg border border-[#1a1a1a]/[0.18] bg-white text-center font-serif text-[1.4rem] text-[#1a1a1a] outline-none focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/20" />
                     ))}
                   </div>
                   <p className="mt-3 text-[0.72rem] text-[#1a1a1a]/35">Demo: any {OTP_LEN}-digit code works.</p>
