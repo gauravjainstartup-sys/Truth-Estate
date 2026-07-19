@@ -270,6 +270,13 @@ export default function ProjectProfile({
   });
   const challenge = onChallenge ?? (() => open("research"));
 
+  // The page's primary CTA swaps by lock state: a locked read leads with the
+  // sale ("Get Full Read" → unlock modal); once unlocked it leads with the
+  // free advisor call.
+  const primaryCta = locked
+    ? { label: "Get Full Read", onClick: () => setUnlockOpen(true) }
+    : { label: "Get Independent Advice", onClick: consult };
+
   const dev = developerOf(p);
   const market = marketOf(p);
   // Pillar III mounts for a curated market dossier OR live location data —
@@ -415,8 +422,8 @@ export default function ProjectProfile({
             <>
               <Logo color="#1a1a1a" className="h-7 w-auto opacity-80" />
               <div className="ml-auto flex items-center gap-5 md:gap-6">
-                <button onClick={consult} className="hidden rounded-sm bg-[#1e6b45] px-4 py-2 text-[0.72rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] md:inline-block">
-                  Get Independent Advice
+                <button onClick={primaryCta.onClick} className="hidden rounded-sm bg-[#1e6b45] px-4 py-2 text-[0.72rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] md:inline-block">
+                  {primaryCta.label}
                 </button>
                 <button onClick={onClose} aria-label="Close" className="text-[11px] font-light tracking-[0.18em] text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a]">
                   CLOSE
@@ -427,8 +434,8 @@ export default function ProjectProfile({
             <>
               <a href={basePath} aria-label="Home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
               <SearchPalette className="ml-auto" />
-              <button onClick={consult} className="hidden rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.74rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] md:inline-block md:px-5">
-                Get Independent Advice
+              <button onClick={primaryCta.onClick} className="hidden rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.74rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] md:inline-block md:px-5">
+                {primaryCta.label}
               </button>
               {/* Mobile: a BACK affordance mirroring the embedded CLOSE — same
                  quiet treatment, right-aligned. Returns to wherever the reader
@@ -1004,7 +1011,7 @@ export default function ProjectProfile({
                   <p className="mt-2 text-[0.88rem] font-light text-white/55">Get an independent read — the right price, the right stack, the honest risks — before you commit.</p>
                 </div>
                 <div className="mt-7 grid gap-3 md:grid-cols-2">
-                  <ActionCell tone="primary" icon="●" title="Get Independent Advice" desc="45-min advisor call · free" onClick={consult} />
+                  <ActionCell tone="primary" icon="●" title={primaryCta.label} desc={locked ? "The full report · from ₹999" : "45-min advisor call · free"} onClick={primaryCta.onClick} />
                   <ActionCell tone="secondary" icon={<IconCube className="h-[0.95rem] w-[0.95rem]" />} title="Sun & Vastu 3D" desc="3D sun & unit model · ₹1,499 a project" onClick={openUnitIntel} />
                 </div>
                 <p className="mt-6 flex items-center gap-2 border-t border-white/10 pt-4 text-[0.72rem] font-light text-white/40">
@@ -1026,13 +1033,16 @@ export default function ProjectProfile({
         </div>
       </div>
 
-      {/* Mobile: a single, clean primary CTA — with the founder's face beside
-          it, so the advice reads as a person, not a form. */}
+      {/* Mobile: a single, clean primary CTA. When unlocked, the founder's face
+          rides beside the advisor call (advice reads as a person); when locked,
+          a clean full-width "Get Full Read" drives the sale. */}
       <div className="sticky bottom-0 z-40 flex items-center gap-3 border-t border-[#1a1a1a]/10 bg-[#F5F0E8]/95 px-6 py-3 backdrop-blur md:hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={`${basePath}/images/founder-gaurav.webp`} alt="Gaurav Jain — Founder, Truth Estate" className="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-[#B29668]/50" />
-        <button onClick={consult} className="flex-1 rounded-sm bg-[#1e6b45] px-5 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
-          Get Independent Advice
+        {!locked && (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={`${basePath}/images/founder-gaurav.webp`} alt="Gaurav Jain — Founder, Truth Estate" className="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-[#B29668]/50" />
+        )}
+        <button onClick={primaryCta.onClick} className="flex-1 rounded-sm bg-[#1e6b45] px-5 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
+          {primaryCta.label}
         </button>
       </div>
 
