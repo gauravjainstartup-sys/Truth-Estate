@@ -584,6 +584,27 @@ export const TOWER_INTEL: Record<string, TowerIntelMeta> = {
       idealFor: "Large families (4 BHK)",
     },
   },
+  // DB project_name "DLF Privana North" (page slug dlf-privana-north). Six G+50
+  // quad-core point towers, single 4 BHK + servant plate; blue-glass massing with
+  // curved sail crowns matching the render. Interior floor-plan / 3D layer is a
+  // fast-follow (not yet traced) — the advisor leads with the sun-path sim.
+  "DLF Privana North": {
+    file: "tower-intel/dlf-privana-north.html",
+    preview: "tower-intel/dlf-privana-north-preview.jpg",
+    towers: 6, // A–F, G+50, quad-core point towers (4 units/floor around a central core)
+    unitTypes: 4, // one 4 BHK + servant plate, 4 lines per floor (each a different orientation)
+    totalUnits: "1,200+", // 6 towers × 50 floors × 4 lines
+    // Mirrors the advisor's own #1 composite pick, so the teaser stays honest.
+    sample: {
+      ref: "Tower C · Line 01",
+      type: "4 BHK + servant · south-facing",
+      sun: "7.3 h/day (winter)",
+      sunPct: 85,
+      ventilation: "Quad-core point tower · 2-side airflow",
+      vastu: "South living & deck · all-day winter sun",
+      idealFor: "Sun-first buyers & large families (4 BHK)",
+    },
+  },
 };
 // Exact DB-name match first (Arbour/Titanium), then a slug fallback so the
 // advisor attaches to the live page regardless of the DB name's exact casing.
