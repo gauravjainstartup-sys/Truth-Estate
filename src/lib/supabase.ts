@@ -335,6 +335,7 @@ export type LiveBacklogFull = {
   /* project coordinates — power the map-led Location layout */
   latitude: number | null;
   longitude: number | null;
+  geoProvenance: string | null; // build-time coordinate-trust audit: verified|consistent|approximate|suspect|none
   // ids of duplicate rows collapsed into this one (same slug) — so the
   // extended-details / configuration join can still find media & vitals that
   // were filed against the dropped row's id
@@ -500,6 +501,7 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
       avgCostSqft: n(r.avg_cost_sqft),
       latitude: n(r.latitude),
       longitude: n(r.longitude),
+      geoProvenance: s(r.geo_provenance),
     });
   }
   /* Two view rows can slugify to the same page (a duplicate/enriched pair, or

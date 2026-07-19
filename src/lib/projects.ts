@@ -145,6 +145,7 @@ export type GeoPoi = {
 };
 export type LocationGeo = {
   center: { lat: number; lng: number };
+  provenance?: string; // coordinate trust: verified | consistent | approximate (suspect never builds geo)
   radiusKm?: number; // map extent, default 2
   nearby: GeoPoi[];
   connectivity: {
