@@ -378,5 +378,13 @@
  "m3m elie saab": {
   "lat": 28.5238182742523,
   "lng": 77.03060112536599
+ },
+ "elan the emperor": {
+  "lat": 28.502,
+  "lng": 77.0015
+ },
+ "elan the presidential": {
+  "lat": 28.5025,
+  "lng": 77.001
  }
 }
