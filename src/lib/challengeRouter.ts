@@ -10,7 +10,7 @@
    this function or Gemini. The client stays authoritative on the gate.
    ════════════════════════════════════════════════════════════════ */
 import type { ProjectIntel } from "@/lib/projects";
-import { buildChallengeContext, type ChallengeAnswer } from "@/lib/challengeChat";
+import { buildChallengeContext, type ChallengeAnswer, type Peer } from "@/lib/challengeChat";
 
 const DEFAULT_URL = "https://lyetvabfgaidvqrbmaoy.supabase.co/functions/v1/challenge-router";
 /* public anon key (same as src/lib/supabase.ts — RLS is the boundary);
@@ -35,11 +35,12 @@ export async function askChallengeRemote(
   question: string,
   locked: boolean,
   history: { role: "user" | "bot"; text: string }[] = [],
+  peers: Peer[] = [],
 ): Promise<ChallengeAnswer | null> {
   try {
     // The wall is enforced at assembly: a locked visitor's context carries
     // NO paid content, so paid findings never reach the server or Gemini.
-    const context = buildChallengeContext(p, locked);
+    const context = buildChallengeContext(p, locked, peers);
     const res = await fetch(routerUrl(), {
       method: "POST",
       headers: {

@@ -17,9 +17,11 @@ import {
   answerChallenge,
   openingChips,
   openingLine,
+  loadCorridorPeers,
   msgId,
   GATE_CTA,
   type ChatMsg,
+  type Peer,
 } from "@/lib/challengeChat";
 
 export default function ChallengeChat({
@@ -34,6 +36,7 @@ export default function ChallengeChat({
   const [msgs, setMsgs] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
+  const [peers, setPeers] = useState<Peer[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const prevLocked = useRef(locked);
@@ -44,10 +47,13 @@ export default function ChallengeChat({
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [msgs, typing]);
 
-  // focus the input when the panel opens
+  // focus the input when the panel opens; load corridor rivals in the
+  // background (public scoreboard — names + Truth Scores) for head-to-heads
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 350);
-  }, [open]);
+    if (!open) return;
+    setTimeout(() => inputRef.current?.focus(), 350);
+    if (peers.length === 0) loadCorridorPeers(p).then(setPeers).catch(() => {});
+  }, [open, p, peers.length]);
 
   // when the visitor unlocks mid-conversation, celebrate + invite the deep ask
   useEffect(() => {
@@ -66,9 +72,9 @@ export default function ChallengeChat({
     // The deterministic engine decides the WALL (gate) and is the fallback;
     // Gemini, when wired, only upgrades the prose. So the paywall can never
     // drift on the model's whim — a locked paid question stays gated.
-    const det = answerChallenge(p, q, locked);
+    const det = answerChallenge(p, q, locked, peers);
     const history = msgs.map((m) => ({ role: m.role, text: m.text }));
-    const remote = await askChallengeRemote(p, q, locked, history).catch(() => null);
+    const remote = await askChallengeRemote(p, q, locked, history, peers).catch(() => null);
     const text = remote?.text ?? det.text;
     await new Promise((r) => setTimeout(r, 480)); // brief "thinking"
     setTyping(false);
