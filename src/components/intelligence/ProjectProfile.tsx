@@ -25,6 +25,7 @@ import MatchScore from "./MatchScore";
 import TowerIntel, { openUnitIntel } from "./TowerIntel";
 import UnlockModal from "./UnlockModal";
 import LockedReport from "./LockedReport";
+import UnlockDesk from "./UnlockDesk";
 import ReportAnatomy from "./ReportAnatomy";
 import ReportDeveloper from "./ReportDeveloper";
 import ReportConstruction from "./ReportConstruction";
@@ -476,6 +477,10 @@ export default function ProjectProfile({
               Advice is the product; the deep layer is one quiet line, not a billboard. */}
           {!embedded && (
             <aside className="hidden self-start xl:col-start-2 xl:row-start-2 xl:sticky xl:top-[132px] xl:block">
+              {locked ? (
+                <UnlockDesk onUnlock={() => setUnlockOpen(true)} sampleHref={SAMPLE_HREF} />
+              ) : (
+              <>
               <div className="rounded-2xl border border-[#1a1a1a]/10 bg-[#FBF8F2] p-6">
                 <div className="flex items-center gap-3">
                   {/* the human is the seal — the real founder, not a badge */}
@@ -519,6 +524,8 @@ export default function ProjectProfile({
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" className="h-4 w-4 shrink-0 text-[#9a7a2e]" aria-hidden><path d="M12 2 21 7v10l-9 5-9-5V7z" /><path d="M3 7l9 5 9-5M12 12v10" /></svg>
                 Rather explore first? <span className="font-medium text-[#1a1a1a]/75 group-hover:text-[#1e6b45]">Walk the Sun &amp; Vastu 3D →</span>
               </button>
+              </>
+              )}
             </aside>
           )}
 
@@ -992,7 +999,14 @@ export default function ProjectProfile({
             )}
 
             {/* The Independent Desk on mobile — the desktop rail is hidden below
-               xl, so the founder gets a face here, right before the CTA. */}
+               xl, so the founder gets a face here, right before the CTA. When
+               locked, the free-call block would leak conversions, so it becomes
+               the price-forward UnlockDesk instead. */}
+            {locked ? (
+              <div className="mt-12 xl:hidden">
+                <UnlockDesk onUnlock={() => setUnlockOpen(true)} sampleHref={SAMPLE_HREF} />
+              </div>
+            ) : (
             <div className="mt-12 rounded-2xl border border-[#1a1a1a]/10 bg-[#FBF8F2] p-6 xl:hidden">
               <div className="flex items-center gap-3.5">
                 {/* the human is the seal — the real founder, not a badge */}
@@ -1010,6 +1024,7 @@ export default function ProjectProfile({
               </button>
               <p className="mt-4 border-t border-[#1a1a1a]/8 pt-3.5 text-[0.64rem] font-light leading-[1.5] text-[#1a1a1a]/40">Every file crosses the founder&apos;s desk before it ships. Independent — no inventory, no builder commission.</p>
             </div>
+            )}
 
             {/* CTA — three actions, weighted */}
             <div className="relative mt-14 overflow-hidden rounded-2xl bg-[#0B1F1A] p-8 text-white md:p-10">

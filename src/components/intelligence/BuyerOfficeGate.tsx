@@ -247,12 +247,12 @@ export default function BuyerOfficeGate({
   return (
     <div className="fixed inset-0 z-[130] flex items-end justify-center md:items-center md:p-6">
       <div className={`absolute inset-0 ${t.backdrop} backdrop-blur-md transition-opacity duration-300 ${show ? "opacity-100" : "opacity-0"}`} onClick={onClose} />
-      <div data-bo-sheet className={`relative z-10 flex max-h-[94vh] w-full flex-col overflow-hidden rounded-t-[20px] border transition-all duration-300 md:max-h-[90vh] md:max-w-[480px] md:rounded-[20px] ${t.sheet} ${show ? "translate-y-0 opacity-100 md:scale-100" : "translate-y-full opacity-0 md:translate-y-0 md:scale-[0.97]"}`}>
+      <div data-bo-sheet className={`relative z-10 flex max-h-[92svh] w-full flex-col overflow-hidden rounded-t-[20px] border transition-all duration-300 md:max-h-[90svh] md:max-w-[480px] md:rounded-[20px] ${t.sheet} ${show ? "translate-y-0 opacity-100 md:scale-100" : "translate-y-full opacity-0 md:translate-y-0 md:scale-[0.97]"}`}>
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: t.hairline }} />
         <div className="pointer-events-none absolute -top-24 left-1/2 h-48 w-72 -translate-x-1/2 rounded-full" style={{ background: t.glow, filter: "blur(30px)" }} />
 
         {/* Header */}
-        <div className="relative flex items-start justify-between gap-4 px-7 pt-6">
+        <div className="relative flex shrink-0 items-start justify-between gap-4 px-7 pt-6">
           <div>
             <div className="flex items-center gap-2.5">
               <span className={`flex h-6 w-6 items-center justify-center rounded-[5px] border ${t.badge}`}><Icon name="cube" /></span>
@@ -269,7 +269,7 @@ export default function BuyerOfficeGate({
           <button onClick={onClose} aria-label="Close" className={`-mr-1 -mt-1 flex h-8 w-8 items-center justify-center rounded-full transition-colors ${t.close}`}>✕</button>
         </div>
 
-        <div className="relative overflow-y-auto px-7 pb-7 pt-4">
+        <div className="relative min-h-0 flex-1 overflow-y-auto px-7 pb-7 pt-4">
           {step === "intro" ? (
             <>
               <h2 className={`font-serif text-[1.7rem] font-medium leading-[1.1] ${t.h2}`}>The layer that decides <span className={`italic ${t.accent}`}>which</span> home.</h2>
