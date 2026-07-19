@@ -159,7 +159,7 @@ export default function UnlockModal({
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#1a1206]/50 p-0 backdrop-blur-sm sm:items-center sm:p-6" onClick={onClose}>
       <div
-        className="relative flex max-h-[92svh] w-full max-w-[560px] flex-col overflow-hidden rounded-t-2xl bg-[#F5F0E8] text-[#1a1a1a] shadow-[0_-20px_60px_rgba(0,0,0,0.35)] sm:rounded-2xl"
+        className={`relative flex max-h-[92svh] w-full flex-col overflow-hidden rounded-t-2xl bg-[#F5F0E8] text-[#1a1a1a] shadow-[0_-20px_60px_rgba(0,0,0,0.35)] sm:rounded-2xl ${step === "plans" && cards.length > 1 ? "max-w-[560px] lg:max-w-[1000px]" : "max-w-[560px]"}`}
         onClick={(e) => e.stopPropagation()}
       >
         <button onClick={onClose} aria-label="Close"
@@ -221,14 +221,15 @@ export default function UnlockModal({
                 {credit > 0 ? <>You&rsquo;ve already paid {inr(credit)} on this project — upgrades below are the difference only.</> : <>Choose your access. One-time, no subscription.</>}
               </p>
 
-              {/* the value ladder */}
-              <div className="mt-5 space-y-3">
+              {/* the value ladder — stacked on mobile, side-by-side on desktop
+                 for at-a-glance comparison (columns match the card count) */}
+              <div className={`mt-5 grid items-stretch gap-3 ${cards.length >= 3 ? "lg:grid-cols-3" : cards.length === 2 ? "lg:grid-cols-2" : ""}`}>
                 {cards.map((c) => {
                   const recommended = c.id === "read3d";
                   const amount = amountFor(c.id);
                   const build3d = c.id === "read3d" && !has3DModel;
                   return (
-                    <div key={c.id} className={`rounded-2xl border bg-white/70 p-4 ${recommended ? "border-[#1e6b45] ring-1 ring-[#1e6b45]/25" : "border-[#1a1a1a]/12"}`}>
+                    <div key={c.id} className={`flex h-full flex-col rounded-2xl border bg-white/70 p-4 ${recommended ? "border-[#1e6b45] ring-1 ring-[#1e6b45]/25" : "border-[#1a1a1a]/12"}`}>
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
@@ -263,19 +264,20 @@ export default function UnlockModal({
                         ))}
                       </ul>
 
-                      {expanded === c.id && (
-                        <p className="mt-3 rounded-lg bg-[#1a1a1a]/[0.03] px-3.5 py-3 text-[0.76rem] leading-relaxed text-[#1a1a1a]/60">{c.more}</p>
-                      )}
-
-                      <div className="mt-3.5 flex items-center gap-3">
+                      {/* CTA pinned to the card bottom so prices/buttons line up
+                         across columns; the accordion opens below it */}
+                      <div className="mt-auto pt-4">
                         <button onClick={() => choose(c.id)}
-                          className={`flex-1 rounded-lg px-4 py-3 text-[0.85rem] font-semibold transition-colors ${recommended ? "bg-[#1e6b45] text-white hover:bg-[#238c55]" : "border border-[#1e6b45]/40 text-[#1e6b45] hover:bg-[#1e6b45]/[0.06]"}`}>
+                          className={`w-full rounded-lg px-4 py-3 text-[0.85rem] font-semibold transition-colors ${recommended ? "bg-[#1e6b45] text-white hover:bg-[#238c55]" : "border border-[#1e6b45]/40 text-[#1e6b45] hover:bg-[#1e6b45]/[0.06]"}`}>
                           {ctaLabel(c.id)} — {inr(amount)} →
                         </button>
                         <button onClick={() => setExpanded(expanded === c.id ? null : c.id)}
-                          className="shrink-0 text-[0.74rem] font-medium text-[#1a1a1a]/45 underline decoration-[#1a1a1a]/20 underline-offset-2 transition-colors hover:text-[#1a1a1a]/75">
+                          className="mt-2 w-full text-center text-[0.74rem] font-medium text-[#1a1a1a]/45 underline decoration-[#1a1a1a]/20 underline-offset-2 transition-colors hover:text-[#1a1a1a]/75">
                           {expanded === c.id ? "Less" : "Know more"}
                         </button>
+                        {expanded === c.id && (
+                          <p className="mt-3 rounded-lg bg-[#1a1a1a]/[0.03] px-3.5 py-3 text-[0.76rem] leading-relaxed text-[#1a1a1a]/60">{c.more}</p>
+                        )}
                       </div>
                     </div>
                   );
