@@ -1,0 +1,63 @@
+/* ════════════════════════════════════════════════════════════════
+   CHALLENGE-ROUTER — Supabase Edge Function (Deno).
+
+   Powers "Challenge our read" with Gemini, grounded ONLY in the access-
+   scoped context the client sends. Stateless: the browser assembles the
+   knowledge (public always; paid ONLY when the visitor is unlocked — see
+   src/lib/challengeChat.ts buildChallengeContext), so paid findings never
+   sit in any public file and a locked visitor's paid content never reaches
+   this function.
+
+   POST { question, locked, history?, context } → { ok:true, text, gate }
+                                               |  { ok:false }  (client
+                                                  falls back to its built-in
+                                                  deterministic answer)
+
+   The pure logic lives in core.ts (so the offline harness can exercise it
+   under Node). This file only wires Deno.serve / env / CORS around it.
+
+   Deploy (see README.md):
+     supabase functions deploy challenge-router --no-verify-jwt
+     supabase secrets set GEMINI_API_KEY=<AI Studio key>
+     # optional: supabase secrets set GEMINI_MODEL=gemini-2.5-flash
+   ════════════════════════════════════════════════════════════════ */
+import { routeChallenge, type Body, type FetchLike } from "./core.ts";
+
+const MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
+
+const ALLOW_ORIGIN = [
+  /^https:\/\/gauravjainstartup-sys\.github\.io$/,
+  /^http:\/\/localhost(:\d+)?$/,
+  /^http:\/\/127\.0\.0\.1(:\d+)?$/,
+];
+
+function corsHeaders(origin: string | null): Record<string, string> {
+  const ok = origin != null && ALLOW_ORIGIN.some((re) => re.test(origin));
+  return {
+    "Access-Control-Allow-Origin": ok ? origin! : "https://gauravjainstartup-sys.github.io",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
+    "Access-Control-Max-Age": "86400",
+    Vary: "Origin",
+  };
+}
+
+Deno.serve(async (req: Request) => {
+  const cors = corsHeaders(req.headers.get("origin"));
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
+  const headers = { ...cors, "content-type": "application/json" };
+  if (req.method !== "POST") return new Response(JSON.stringify({ ok: false }), { status: 200, headers });
+
+  try {
+    const body = (await req.json()) as Body;
+    const answer = await routeChallenge(body, {
+      apiKey: Deno.env.get("GEMINI_API_KEY"),
+      model: MODEL,
+      fetchImpl: fetch as unknown as FetchLike,
+    });
+    return new Response(JSON.stringify(answer), { status: 200, headers });
+  } catch (e) {
+    console.error("[challenge-router]", e instanceof Error ? e.message : e);
+    return new Response(JSON.stringify({ ok: false }), { status: 200, headers });
+  }
+});
