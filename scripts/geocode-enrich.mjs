@@ -91,6 +91,9 @@ async function geocode(query) {
 }
 
 const stats = { rows: 0, centers: 0, seeded: 0, pois: 0, rejected: 0 };
+const audit = []; // per-project coordinate provenance + consistency — shipped as /geo-audit.json
+const slugify = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+const median = (a) => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 
 async function enrichRow(row) {
   const locality = row.micro_market || row.locality || row.sector || row.sub_micromarket || row.address || row.city || "Gurugram";
@@ -99,34 +102,63 @@ async function enrichRow(row) {
   let center = num(row.latitude) != null && num(row.longitude) != null ? { lat: num(row.latitude), lng: num(row.longitude) } : null;
   if (!inBox(center)) {
     const s = SEED[norm(pname)];
-    if (inBox(s)) { center = s; stats.seeded++; }
+    if (inBox(s)) { center = s; row.geo_source = "seed"; stats.seeded++; }
     else {
       let g = await geocode(`${pname}, ${locality}, Gurugram, Haryana, India`);
+      if (inBox(g)) { center = g; row.geo_source = "geocode_name"; }
       // project names rarely exist in OSM — fall back to the locality (sector) itself
-      if (!inBox(g) && locality && norm(locality) !== "gurugram") g = await geocode(`${locality}, Gurugram, Haryana, India`);
-      if (inBox(g)) center = g;
+      else if (locality && norm(locality) !== "gurugram") {
+        g = await geocode(`${locality}, Gurugram, Haryana, India`);
+        if (inBox(g)) { center = g; row.geo_source = "geocode_locality"; }
+      }
     }
     if (inBox(center)) { row.latitude = center.lat; row.longitude = center.lng; stats.centers++; }
   }
-  if (!inBox(center)) return; // no trustworthy centre → don't risk unvalidated POI pins
-  // 2) POIs — only those missing coords
+  // 2) POIs — only those missing coords (only when the centre is trustworthy enough to validate against)
   const raw = row.location_hyperlocal_poi_density;
   const poi = parseObj(raw);
-  if (!poi || typeof poi !== "object") return;
-  for (const k of POI_KEYS) {
-    const arr = Array.isArray(poi[k]) ? poi[k] : [];
-    for (const it of arr) {
-      if (!it || typeof it !== "object") continue;
-      if (num(it.latitude) != null && num(it.longitude) != null) continue; // respect existing / upstream coords
-      const name = it.name || it.title; if (!name) continue;
-      const g = await geocode(`${name}, ${locality}, Gurugram, Haryana, India`);
-      if (!inBox(g)) { stats.rejected++; continue; }
-      const stated = num(it.distance_km);
-      if (stated != null && Math.abs(distKm(center, g) - stated) > Math.max(1.2, stated * 0.6)) { stats.rejected++; continue; }
-      it.latitude = g.lat; it.longitude = g.lng; stats.pois++;
+  if (inBox(center) && poi && typeof poi === "object") {
+    for (const k of POI_KEYS) {
+      const arr = Array.isArray(poi[k]) ? poi[k] : [];
+      for (const it of arr) {
+        if (!it || typeof it !== "object") continue;
+        if (num(it.latitude) != null && num(it.longitude) != null) continue; // respect existing / upstream coords
+        const name = it.name || it.title; if (!name) continue;
+        const g = await geocode(`${name}, ${locality}, Gurugram, Haryana, India`);
+        if (!inBox(g)) { stats.rejected++; continue; }
+        const stated = num(it.distance_km);
+        if (stated != null && Math.abs(distKm(center, g) - stated) > Math.max(1.2, stated * 0.6)) { stats.rejected++; continue; }
+        it.latitude = g.lat; it.longitude = g.lng; stats.pois++;
+      }
     }
+    row.location_hyperlocal_poi_density = typeof raw === "string" ? JSON.stringify(poi) : poi;
   }
-  row.location_hyperlocal_poi_density = typeof raw === "string" ? JSON.stringify(poi) : poi;
+  /* 3) AUDIT — classify the centre so nothing unverified is ever shown as exact.
+     Cross-check: each POI carries a pipeline-stated distance_km AND coordinates;
+     if the centre is right, computed ≈ stated for most of them. A wrong centre
+     disagrees with ALL of its own POIs systematically. */
+  const errs = [];
+  if (inBox(center) && poi && typeof poi === "object")
+    for (const k of POI_KEYS)
+      for (const it of (Array.isArray(poi[k]) ? poi[k] : [])) {
+        if (!it || typeof it !== "object") continue;
+        const la = num(it.latitude), ln = num(it.longitude), st = num(it.distance_km);
+        if (la == null || ln == null || st == null) continue;
+        errs.push(Math.abs(distKm(center, { lat: la, lng: ln }) - st));
+      }
+  const medErr = median(errs), checked = errs.length, enough = checked >= 3;
+  const src = SEED[norm(pname)] ? "seed" : (row.geo_source || (inBox(center) ? "upstream" : "none"));
+  let prov;
+  if (!inBox(center)) prov = "none";
+  else if (src === "seed") prov = "verified";                      // founder-confirmed — authoritative
+  else if (enough && medErr > 1.0) prov = "suspect";               // contradicts its own POI distances
+  else if (src === "upstream" && enough) prov = "consistent";      // exact coords, cross-check passed
+  else prov = "approximate";                                       // sector-level or unverifiable exact
+  row.geo_provenance = prov;
+  audit.push({ slug: slugify(pname), name: pname, provenance: prov, source: src,
+    ...(inBox(center) ? { lat: center.lat, lng: center.lng } : {}),
+    checked, ...(medErr != null ? { medErrKm: Math.round(medErr * 100) / 100 } : {}),
+    ...(locality ? { locality } : {}) });
 }
 
 for (const view of VIEWS) {
@@ -144,4 +176,14 @@ console.log(`[geocode] done · rows:${stats.rows} centres+${stats.centers} pois+
 /* stats ride the exported site at /geocode-stats.json — CI-log-free diagnosis */
 try {
   await writeFile("public/geocode-stats.json", JSON.stringify({ at: new Date().toISOString(), ...stats, calls, circuitOpen: dead, errors: errlog }));
+} catch { /* non-fatal */ }
+/* the coordinate-trust audit ships at /geo-audit.json (feeds the review page) */
+try {
+  const seen = new Set(); const uniq = audit.filter((a) => a.slug && !seen.has(a.slug) && seen.add(a.slug));
+  const summary = {};
+  for (const a of uniq) summary[a.provenance] = (summary[a.provenance] ?? 0) + 1;
+  const order = { suspect: 0, none: 1, approximate: 2, consistent: 3, verified: 4 };
+  uniq.sort((a, b) => (order[a.provenance] ?? 9) - (order[b.provenance] ?? 9) || a.name.localeCompare(b.name));
+  await writeFile("public/geo-audit.json", JSON.stringify({ at: new Date().toISOString(), summary, projects: uniq }));
+  console.log(`[geocode] audit → ${JSON.stringify(summary)}`);
 } catch { /* non-fatal */ }

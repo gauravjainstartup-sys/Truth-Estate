@@ -21,7 +21,7 @@ const CAT: Record<GeoCat, { label: string; color: string }> = {
 };
 const CAT_ORDER: GeoCat[] = ["schools", "offices", "hospitals", "retail", "projects"];
 
-type LiveProject = { n: string; s: string; lat: number; lng: number; ts?: number; m?: string };
+type LiveProject = { n: string; s: string; lat: number; lng: number; ts?: number; m?: string; pv?: string };
 
 export default function OsmLocationMap({ geo, projectName, slug }: { geo: LocationGeo; projectName: string; slug: string }) {
   const holderRef = useRef<HTMLDivElement>(null);
@@ -65,15 +65,25 @@ export default function OsmLocationMap({ geo, projectName, slug }: { geo: Locati
       };
       mountTiles();
 
-      /* subject project — brand pin */
-      const pin = L.divIcon({
-        className: "",
-        html: `<div style="position:relative;width:34px;height:44px">
-          <svg width="34" height="44" viewBox="0 0 34 44"><path d="M17 1C8 1 1 8 1 17c0 11 16 26 16 26s16-15 16-26C33 8 26 1 17 1Z" fill="#0B1F1A" stroke="#B29668" stroke-width="2"/><circle cx="17" cy="17" r="5.5" fill="#B29668"/></svg></div>`,
-        iconSize: [34, 44], iconAnchor: [17, 43], popupAnchor: [0, -40],
-      });
-      L.marker([geo.center.lat, geo.center.lng], { icon: pin, zIndexOffset: 1000 })
-        .addTo(map).bindPopup(`<b>${projectName}</b><br/>the property under review`);
+      /* subject project — exact pin only when the coordinate has earned it;
+         an approximate (sector-level) centre draws as a soft area circle so
+         the map never presents an unverified point as a precise plot */
+      const approx = geo.provenance === "approximate";
+      if (approx) {
+        L.circle([geo.center.lat, geo.center.lng], { radius: 650, color: "#B29668", weight: 2, dashArray: "6 8", fillColor: "#B29668", fillOpacity: 0.14 })
+          .addTo(map).bindPopup(`<b>${projectName}</b><br/>sector-level position — exact plot pending verification`);
+        L.marker([geo.center.lat, geo.center.lng], { zIndexOffset: 1000, icon: L.divIcon({ className: "", html: `<span style="display:block;width:13px;height:13px;border-radius:50%;background:#B29668;border:2.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.4)"></span>`, iconSize: [13, 13], iconAnchor: [6.5, 6.5], popupAnchor: [0, -8] }) })
+          .addTo(map).bindPopup(`<b>${projectName}</b><br/>sector-level position — exact plot pending verification`);
+      } else {
+        const pin = L.divIcon({
+          className: "",
+          html: `<div style="position:relative;width:34px;height:44px">
+            <svg width="34" height="44" viewBox="0 0 34 44"><path d="M17 1C8 1 1 8 1 17c0 11 16 26 16 26s16-15 16-26C33 8 26 1 17 1Z" fill="#0B1F1A" stroke="#B29668" stroke-width="2"/><circle cx="17" cy="17" r="5.5" fill="#B29668"/></svg></div>`,
+          iconSize: [34, 44], iconAnchor: [17, 43], popupAnchor: [0, -40],
+        });
+        L.marker([geo.center.lat, geo.center.lng], { icon: pin, zIndexOffset: 1000 })
+          .addTo(map).bindPopup(`<b>${projectName}</b><br/>the property under review`);
+      }
 
       /* backend POIs, one toggleable layer per category */
       const dot = (color: string) => L.divIcon({
@@ -97,16 +107,18 @@ export default function OsmLocationMap({ geo, projectName, slug }: { geo: Locati
         const res = await fetch(`${basePath}/projects-geo.json`);
         if (res.ok) {
           const data = (await res.json()) as { projects: LiveProject[] };
-          const sq = L.divIcon({
+          /* solid diamond = verified/consistent coordinate; hollow = sector-level */
+          const sq = (exact: boolean) => L.divIcon({
             className: "",
-            html: `<span style="display:block;width:13px;height:13px;transform:rotate(45deg);background:#B29668;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></span>`,
+            html: `<span style="display:block;width:13px;height:13px;transform:rotate(45deg);background:${exact ? "#B29668" : "transparent"};border:${exact ? "2px solid #fff" : "2.5px solid #B29668"};box-shadow:0 1px 4px rgba(0,0,0,.35)"></span>`,
             iconSize: [13, 13], iconAnchor: [6.5, 6.5], popupAnchor: [0, -8],
           });
           for (const lp of data.projects ?? []) {
             if (lp.s === slug) continue;
-            L.marker([lp.lat, lp.lng], { icon: sq })
+            const exact = lp.pv === "verified" || lp.pv === "consistent";
+            L.marker([lp.lat, lp.lng], { icon: sq(exact) })
               .addTo(liveLayer)
-              .bindPopup(`<b>${lp.n}</b>${lp.m ? `<br/>${lp.m}` : ""}${lp.ts != null ? `<br/>Truth Score ${lp.ts}` : ""}<br/><a href="${basePath}/intelligence/projects/${lp.s}/">Open report →</a>`);
+              .bindPopup(`<b>${lp.n}</b>${lp.m ? `<br/>${lp.m}` : ""}${lp.ts != null ? `<br/>Truth Score ${lp.ts}` : ""}${exact ? "" : "<br/><i>sector-level position</i>"}<br/><a href="${basePath}/intelligence/projects/${lp.s}/">Open report →</a>`);
           }
         }
       } catch { /* the layer is optional — the map stands without it */ }
@@ -178,7 +190,7 @@ export default function OsmLocationMap({ geo, projectName, slug }: { geo: Locati
       <div className={`relative overflow-hidden rounded-2xl border border-[#1a1a1a]/10 ${expanded ? "min-h-0 flex-1" : ""}`}>
         <div ref={holderRef} className={expanded ? "h-full w-full" : "h-[380px] w-full md:h-[440px]"} style={{ filter: "saturate(0.72) contrast(0.97)" }} />
         <div className="pointer-events-none absolute bottom-2.5 left-2.5 z-[500] rounded-full border border-[#1a1a1a]/10 bg-white/90 px-3 py-1.5 text-[0.66rem] text-[#5f594e] shadow-sm backdrop-blur">
-          <b className="text-[#1a1a1a]">{projectName}</b> · pins from verified coordinates
+          <b className="text-[#1a1a1a]">{projectName}</b>{geo.provenance === "approximate" ? " · sector-level position" : " · pins from verified coordinates"}
         </div>
         {tilesDead && (
           <div className="pointer-events-none absolute left-1/2 top-3 z-[500] -translate-x-1/2 rounded-full border border-[#1a1a1a]/10 bg-white/95 px-4 py-2 text-[0.7rem] font-medium text-[#7a5c1e] shadow-sm">

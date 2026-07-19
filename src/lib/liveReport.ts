@@ -864,8 +864,11 @@ export function liveProjectIntel(
   };
   const centerLat = row.latitude, centerLng = row.longitude;
   const centerOk = centerLat != null && centerLng != null && Math.abs(centerLat) <= 90 && Math.abs(centerLng) <= 180 && (centerLat !== 0 || centerLng !== 0);
+  // coordinate-trust gate: a centre that contradicts its own POI distances
+  // (audit → "suspect") must never be drawn as a position — schematic instead
+  const geoTrusted = row.geoProvenance !== "suspect";
   let geo: NonNullable<ProjectOps["location"]>["geo"];
-  if (centerOk) {
+  if (centerOk && geoTrusted) {
     const nearby: NonNullable<NonNullable<ProjectOps["location"]>["geo"]>["nearby"] = [];
     let maxKm = 0;
     for (const [key, cat] of Object.entries(GEO_CAT)) {
@@ -926,6 +929,7 @@ export function liveProjectIntel(
     const insightsGaps = strList(row.locConnConstraints).concat(strList(row.locRisks)).slice(0, 4);
     geo = {
       center: { lat: centerLat!, lng: centerLng! },
+      ...(row.geoProvenance ? { provenance: row.geoProvenance } : {}),
       radiusKm: Math.min(4, Math.max(1.5, Math.ceil(maxKm * 2) / 2)),
       nearby,
       connectivity: {

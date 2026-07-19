@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Coordinate review · Truth Estate</title>
+<style>
+  :root{--ink:#1a1a1a;--gold:#B29668;--navy:#0B1F1A;--bg:#f4f0e8;--line:rgba(26,26,26,.1)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,system-ui,"Segoe UI",sans-serif;padding:28px 20px 80px}
+  .wrap{max-width:1080px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:rgba(26,26,26,.55);font-size:13px;margin-bottom:18px}
+  .sum{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 13px;font-size:12px;font-weight:600;cursor:pointer}
+  .chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  th,td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--line);font-size:12.5px;vertical-align:middle}
+  th{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:rgba(26,26,26,.45);background:rgba(26,26,26,.02)}
+  .b{display:inline-block;border-radius:5px;padding:2px 8px;font-size:10.5px;font-weight:700;color:#fff}
+  .b.verified{background:#2f8f5b}.b.consistent{background:#3f74a6}.b.approximate{background:#bf942f}.b.suspect{background:#c0533e}.b.none{background:#8a8a8a}
+  a{color:#3f74a6;text-decoration:none}a:hover{text-decoration:underline}
+  .nm{font-weight:600;max-width:230px}
+  input[type=text]{width:170px;border:1px solid var(--line);border-radius:7px;padding:5px 8px;font:12px ui-monospace,monospace}
+  button.ok{border:1px solid var(--gold);background:rgba(178,150,104,.12);color:#7a5c1e;border-radius:7px;padding:5px 10px;font-size:11.5px;font-weight:700;cursor:pointer}
+  button.ok.done{background:var(--gold);color:#fff}
+  #out{width:100%;min-height:120px;margin-top:14px;border:1px solid var(--line);border-radius:10px;padding:12px;font:12px ui-monospace,monospace;background:#fff}
+  .foot{margin-top:10px;font-size:12px;color:rgba(26,26,26,.55)}
+  .err{color:#c0533e;font-weight:600}
+  .stat{font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Coordinate review</h1>
+  <div class="sub">Every live project's coordinate, its provenance, and its consistency against the pipeline's own POI distances. Open each in Google Maps; confirm the good ones, paste corrections for the wrong ones. The seed JSON below becomes the permanent, founder-verified registry.</div>
+  <div class="sum" id="sum"></div>
+  <table>
+    <thead><tr><th>Project</th><th>Provenance</th><th>Checked</th><th>Median err</th><th>Locality</th><th>Verify</th><th>Confirm / fix (lat, lng)</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <h3 style="margin:22px 0 6px;font-size:14px">Seed registry additions</h3>
+  <div class="foot">✓ Confirm uses the current coordinate; or paste "lat, lng" (right-click a spot in Google Maps → click the coordinates to copy) then ✓. Send this JSON back and it becomes authoritative for those projects.</div>
+  <textarea id="out" readonly>{}</textarea>
+</div>
+<script>
+(async function(){
+  const seeds={};
+  const norm=s=>String(s||"").toLowerCase().replace(/\s+/g," ").trim();
+  let data;
+  try{ data=await (await fetch("geo-audit.json?x="+Date.now())).json(); }
+  catch(e){ document.getElementById("rows").innerHTML='<tr><td colspan="7" class="err">Could not load geo-audit.json — run a deploy first.</td></tr>'; return; }
+  const P=data.projects||[];
+  const sumEl=document.getElementById("sum");
+  const order=["suspect","none","approximate","consistent","verified"];
+  const active=new Set(order);
+  const chips=[["all","All "+P.length]].concat(order.map(k=>[k,k+" "+(data.summary?.[k]||0)]));
+  sumEl.innerHTML=chips.map(([k,l])=>`<span class="chip on" data-k="${k}">${l}</span>`).join("");
+  sumEl.onclick=e=>{const c=e.target.closest(".chip");if(!c)return;const k=c.dataset.k;
+    if(k==="all"){order.forEach(x=>active.add(x));}
+    else{active.has(k)&&active.size===order.length?(order.forEach(x=>active.delete(x)),active.add(k)):(active.has(k)?active.delete(k):active.add(k));}
+    [...sumEl.children].forEach(ch=>ch.classList.toggle("on",ch.dataset.k==="all"?active.size===order.length:active.has(ch.dataset.k)));
+    render();};
+  const out=document.getElementById("out");
+  const sync=()=>{out.value=JSON.stringify(seeds,null,2);};
+  function render(){
+    const tb=document.getElementById("rows");
+    tb.innerHTML=P.filter(p=>active.has(p.provenance)).map((p,i)=>{
+      const has=p.lat!=null;
+      const g=has?`https://www.google.com/maps?q=${p.lat},${p.lng}&z=17`:`https://www.google.com/maps/search/${encodeURIComponent(p.name+" Gurugram")}`;
+      const o=has?`https://www.openstreetmap.org/?mlat=${p.lat}&mlon=${p.lng}#map=16/${p.lat}/${p.lng}`:null;
+      return `<tr>
+        <td class="nm">${p.name}<br><a href="intelligence/projects/${p.slug}/" target="_blank" style="font-weight:400;font-size:11px">report ↗</a></td>
+        <td><span class="b ${p.provenance}">${p.provenance}</span></td>
+        <td class="stat">${p.checked??0} POIs</td>
+        <td class="stat">${p.medErrKm!=null?p.medErrKm+" km":"—"}</td>
+        <td>${p.locality||"—"}</td>
+        <td><a href="${g}" target="_blank">Google Maps ↗</a>${o?` · <a href="${o}" target="_blank">OSM ↗</a>`:""}</td>
+        <td><input type="text" id="fx-${i}" placeholder="${has?p.lat.toFixed(6)+", "+p.lng.toFixed(6):"lat, lng"}">
+            <button class="ok" data-i="${i}" data-n="${encodeURIComponent(p.name)}" data-lat="${p.lat??""}" data-lng="${p.lng??""}">✓</button></td>
+      </tr>`;}).join("");
+    tb.onclick=e=>{const b=e.target.closest("button.ok");if(!b)return;
+      const name=decodeURIComponent(b.dataset.n);
+      const t=document.getElementById("fx-"+b.dataset.i).value.trim();
+      let lat,lng;
+      if(t){const m=t.match(/(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)/);if(!m){alert("Paste as: lat, lng");return;}lat=+m[1];lng=+m[2];}
+      else if(b.dataset.lat){lat=+b.dataset.lat;lng=+b.dataset.lng;}
+      else{alert("No coordinate to confirm — paste one from Google Maps.");return;}
+      if(!(lat>27.5&&lat<29.5&&lng>76&&lng<78)){alert("That doesn't look like a Gurugram coordinate (lat "+lat+", lng "+lng+")");return;}
+      seeds[norm(name)]={lat,lng};b.classList.add("done");b.textContent="✓ added";sync();};
+  }
+  render();sync();
+})();
+</script>
+</body>
+</html>
