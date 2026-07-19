@@ -7,6 +7,9 @@ import { useConsultation } from "../consultation/ConsultationProvider";
 import type { ProjectIntel, TowerIntelMeta } from "@/lib/projects";
 
 const basePath = "/Truth-Estate";
+/* Cache-bust for the embedded advisor HTML — bump whenever a tower-intel/*.html
+   advisor changes so mobile Safari refetches instead of serving the stale iframe. */
+const ADVISOR_V = "20260719";
 
 /* A page-wide event so any "See Unit Intelligence" CTA (hero, final card)
    can trigger the module without prop-drilling. */
@@ -91,7 +94,7 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
     if (has3D && !modal) setModal(true); // fresh open; onLoad posts entitlement
   }
 
-  const src = meta?.file ? `${basePath}/${meta.file}` : undefined;
+  const src = meta?.file ? `${basePath}/${meta.file}?v=${ADVISOR_V}` : undefined;
 
   return (
     <>
