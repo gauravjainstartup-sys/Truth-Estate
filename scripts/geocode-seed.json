@@ -1,3 +1,382 @@
 {
-  "m3m elie saab": { "lat": 28.523491, "lng": 77.030529 }
+ "ashiana anmol phase - 3": {
+  "lat": 28.28711224249928,
+  "lng": 77.06961713522657
+ },
+ "ashiana mulberry phase - 2": {
+  "lat": 28.27193067093831,
+  "lng": 77.06621215087797
+ },
+ "birla arika phase - 2": {
+  "lat": 28.450629,
+  "lng": 77.046529
+ },
+ "birla pravaah": {
+  "lat": 28.403967713035204,
+  "lng": 77.01898199329932
+ },
+ "central park bignonia towers": {
+  "lat": 28.287046783357333,
+  "lng": 77.07837302224561
+ },
+ "godrej samaris": {
+  "lat": 28.434271882844957,
+  "lng": 77.09958441067103
+ },
+ "signature global sarvam": {
+  "lat": 28.44488042928202,
+  "lng": 76.9679839660364
+ },
+ "sobha crescent phase - 1": {
+  "lat": 28.40683076245222,
+  "lng": 77.11502340266064
+ },
+ "ashiana mulberry phase - 4": {
+  "lat": 28.271782228255784,
+  "lng": 77.0662320443646
+ },
+ "m3m antalya hills phase - 1": {
+  "lat": 28.357342100822247,
+  "lng": 76.9727665673557
+ },
+ "max estate 361": {
+  "lat": 28.420739,
+  "lng": 76.96688
+ },
+ "ashiana aaroham phase - 1": {
+  "lat": 28.365869728823437,
+  "lng": 76.96198639575867
+ },
+ "ashiana aaroham phase - 2": {
+  "lat": 28.365869728823437,
+  "lng": 76.96198639575867
+ },
+ "ashiana amarah phase - 1 & 1a": {
+  "lat": 28.41449087842521,
+  "lng": 76.92596027935107
+ },
+ "ashiana amarah phase - 2": {
+  "lat": 28.41449087842521,
+  "lng": 76.92596027935107
+ },
+ "ashiana amarah phase - 3 & 3a": {
+  "lat": 28.41449087842521,
+  "lng": 76.92596027935107
+ },
+ "ashiana amarah phase - 4": {
+  "lat": 28.41449087842521,
+  "lng": 76.92596027935107
+ },
+ "ashiana amarah phase - 5": {
+  "lat": 28.41449087842521,
+  "lng": 76.92596027935107
+ },
+ "birla arika": {
+  "lat": 28.451476,
+  "lng": 77.045507
+ },
+ "birla navya - anaika": {
+  "lat": 28.393165701101132,
+  "lng": 77.08684259402506
+ },
+ "birla navya - avik (phase-2)": {
+  "lat": 28.39314100103454,
+  "lng": 77.08681933771149
+ },
+ "birla navya avik phase - 1": {
+  "lat": 28.39314100103454,
+  "lng": 77.08681933771149
+ },
+ "delphine central park estates phase - 1": {
+  "lat": 28.475896754695047,
+  "lng": 76.98370441452346
+ },
+ "delphine central park estates phase - 2": {
+  "lat": 28.475896754695047,
+  "lng": 76.98370441452346
+ },
+ "delphine central park estates phase - 3": {
+  "lat": 28.475896754695047,
+  "lng": 76.98370441452346
+ },
+ "dlf gardencity enclave phase - 1": {
+  "lat": 28.418792850889464,
+  "lng": 76.92983999956623
+ },
+ "dlf gardencity enclave phase - 2": {
+  "lat": 28.418792850889464,
+  "lng": 76.92983999956623
+ },
+ "dlf privana north": {
+  "lat": 28.386092323913886,
+  "lng": 76.99310601222984
+ },
+ "dlf privana south": {
+  "lat": 28.379895,
+  "lng": 76.989896
+ },
+ "dlf privana west": {
+  "lat": 28.384994,
+  "lng": 76.989763
+ },
+ "dlf the arbour": {
+  "lat": 28.397814,
+  "lng": 77.082547
+ },
+ "dlf the dahlias": {
+  "lat": 28.449803554107138,
+  "lng": 77.10418679750032
+ },
+ "elan the statement": {
+  "lat": 28.409098547260413,
+  "lng": 77.04321389669815
+ },
+ "emaar amaris": {
+  "lat": 28.415379986930226,
+  "lng": 77.08367306436622
+ },
+ "emaar serenity hills phase - 1": {
+  "lat": 28.39682958490288,
+  "lng": 76.9467014855594
+ },
+ "emaar serenity hills phase - 2": {
+  "lat": 28.399467253772354,
+  "lng": 76.9484500809576
+ },
+ "emaar the 88": {
+  "lat": 28.522776,
+  "lng": 77.020801
+ },
+ "emaar urban ascent": {
+  "lat": 28.521985710812704,
+  "lng": 77.02148713758066
+ },
+ "emaar urban oasis - phase 1 & 2": {
+  "lat": 28.405480436389777,
+  "lng": 77.07863944212706
+ },
+ "emaar urban oasis phase - 4": {
+  "lat": 28.405480436389777,
+  "lng": 77.07863944212706
+ },
+ "experion nova / windchants phase - c": {
+  "lat": 28.517176717851818,
+  "lng": 77.01464761384005
+ },
+ "experion the trillion": {
+  "lat": 28.427019814705563,
+  "lng": 77.03437172417118
+ },
+ "godrej air phase - 1": {
+  "lat": 28.406776138777392,
+  "lng": 76.95112533144997
+ },
+ "godrej air phase - 2": {
+  "lat": 28.406776138777392,
+  "lng": 76.95112533144997
+ },
+ "godrej air phase - 3": {
+  "lat": 28.406776138777392,
+  "lng": 76.95112533144997
+ },
+ "godrej alira": {
+  "lat": 28.441923233402772,
+  "lng": 77.04415628248807
+ },
+ "godrej aria & 101 phase - 3": {
+  "lat": 28.359425305451424,
+  "lng": 76.97169323468079
+ },
+ "godrej aristocrat": {
+  "lat": 28.408508712803016,
+  "lng": 77.05111764328716
+ },
+ "godrej astra": {
+  "lat": 28.43269347412117,
+  "lng": 77.10625165924054
+ },
+ "godrej habitat": {
+  "lat": 28.484235698712563,
+  "lng": 77.01418839987377
+ },
+ "godrej meridien grandeur phase - 2": {
+  "lat": 28.50665351670437,
+  "lng": 76.99030074973538
+ },
+ "godrej meridien grandeur phase - 3": {
+  "lat": 28.50665351670437,
+  "lng": 76.99030074973538
+ },
+ "godrej miraya": {
+  "lat": 28.450593631187374,
+  "lng": 77.08854202874143
+ },
+ "godrej sora": {
+  "lat": 28.436899873810468,
+  "lng": 77.09767073719932
+ },
+ "godrej vrikshya": {
+  "lat": 28.495127715582758,
+  "lng": 76.97512443850101
+ },
+ "godrej zenith": {
+  "lat": 28.41303408782899,
+  "lng": 76.95246864262913
+ },
+ "m3m altitude": {
+  "lat": 28.39868372079878,
+  "lng": 77.06925095789153
+ },
+ "m3m capital": {
+  "lat": 28.525967756403606,
+  "lng": 77.02730295493694
+ },
+ "m3m capital phase - 2": {
+  "lat": 28.525967756403606,
+  "lng": 77.02730295493694
+ },
+ "m3m crown phase - 1": {
+  "lat": 28.523670226530502,
+  "lng": 77.03245418058569
+ },
+ "m3m golf hills phase - 1": {
+  "lat": 28.378993552249746,
+  "lng": 76.99333646070227
+ },
+ "m3m golf hills phase - 2": {
+  "lat": 28.378993552249746,
+  "lng": 76.99333646070227
+ },
+ "m3m mansion phase - 1": {
+  "lat": 28.52263659083466,
+  "lng": 77.02549895294968
+ },
+ "m3m mansion phase - 2": {
+  "lat": 28.52263659083466,
+  "lng": 77.02549895294968
+ },
+ "m3m opus at m3m merlin": {
+  "lat": 28.38924660169202,
+  "lng": 77.05967516861851
+ },
+ "m3m trump towers - 1": {
+  "lat": 28.40040184030756,
+  "lng": 77.07209790522548
+ },
+ "max estate 360": {
+  "lat": 28.421483594761323,
+  "lng": 76.96799163086399
+ },
+ "oberoi realty 360 north": {
+  "lat": 28.41636573808814,
+  "lng": 77.10432433613668
+ },
+ "puri diplomatic residences": {
+  "lat": 28.519421653478243,
+  "lng": 77.02778842983855
+ },
+ "puri the aravallis": {
+  "lat": 28.40346298716073,
+  "lng": 77.10061422503493
+ },
+ "signature global cloverdale spr": {
+  "lat": 28.412695191490698,
+  "lng": 77.02337498670089
+ },
+ "signature global titanium spr": {
+  "lat": 28.411817069276008,
+  "lng": 77.02432886656835
+ },
+ "signature global de-luxe dxp": {
+  "lat": 28.450652035727774,
+  "lng": 76.96248375970599
+ },
+ "signature global tonino lamborghini residences": {
+  "lat": 28.40861844169323,
+  "lng": 77.02600330998871
+ },
+ "signature global twin tower dxp": {
+  "lat": 28.415188519629663,
+  "lng": 76.9617702072042
+ },
+ "smartworld one dxp": {
+  "lat": 28.529752222588,
+  "lng": 77.02884428620112
+ },
+ "smartworld one dxp phase - 2": {
+  "lat": 28.529752222588,
+  "lng": 77.02884428620112
+ },
+ "smartworld sky arc": {
+  "lat": 28.400251715713523,
+  "lng": 77.04089364203382
+ },
+ "smartworld the edition": {
+  "lat": 28.399800105323884,
+  "lng": 77.05740081558706
+ },
+ "smartworld trump residences": {
+  "lat": 28.400635493575024,
+  "lng": 77.04168370461765
+ },
+ "sobha altus": {
+  "lat": 28.50483223489145,
+  "lng": 77.0042912670347
+ },
+ "sobha aranya phase-1": {
+  "lat": 28.372706150855638,
+  "lng": 76.95632945553993
+ },
+ "sobha city phase - 5": {
+  "lat": 28.517003151375185,
+  "lng": 76.99597908538256
+ },
+ "sobha city phase - 6": {
+  "lat": 28.517003151375185,
+  "lng": 76.99597908538256
+ },
+ "tulip crimson": {
+  "lat": 28.397735431588455,
+  "lng": 77.01594627225431
+ },
+ "tulip melrose": {
+  "lat": 28.394948655874412,
+  "lng": 77.01586160870328
+ },
+ "tulip monsella": {
+  "lat": 28.435082301592562,
+  "lng": 77.10355846534465
+ },
+ "tulip yellow": {
+  "lat": 28.393605086220237,
+  "lng": 77.03536545513664
+ },
+ "whiteland aspen one": {
+  "lat": 28.395087301728996,
+  "lng": 76.98939335702508
+ },
+ "whiteland blissville phase - 2": {
+  "lat": 28.394613710382288,
+  "lng": 76.99293987070679
+ },
+ "whiteland blissville phase - 3": {
+  "lat": 28.394613710382288,
+  "lng": 76.99293987070679
+ },
+ "whiteland the aspen": {
+  "lat": 28.39496445220264,
+  "lng": 76.98935610338583
+ },
+ "whiteland urban resort / westin residences phase - 1": {
+  "lat": 28.484586110797398,
+  "lng": 76.98447959714103
+ },
+ "whiteland urban resort / westin residences phase - 2": {
+  "lat": 28.484586110797398,
+  "lng": 76.98447959714103
+ },
+ "m3m elie saab": {
+  "lat": 28.5238182742523,
+  "lng": 77.03060112536599
+ }
 }
