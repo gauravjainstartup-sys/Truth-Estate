@@ -32,8 +32,8 @@ const CACHE = `${DIR}/geocode-cache.json`; // lives beside the snapshot → ride
 const VIEWS = ["backlog_listing_public_v3", "backlog_listing_public_v2"];
 const POI_KEYS = ["hospitals", "schools_colleges", "office_spaces", "malls_shopping"];
 const UA = "TruthEstate/1.0 (buyer-side location map; contact gauravjainstartup@gmail.com)";
-// Gurugram sanity box — reject any geocode that lands outside it
-const BOX = { latLo: 28.30, latHi: 28.65, lngLo: 76.80, lngHi: 77.25 };
+// Gurugram sanity box (incl. the Sohna belt to the south) — reject any geocode outside it
+const BOX = { latLo: 28.18, latHi: 28.65, lngLo: 76.80, lngHi: 77.25 };
 
 const norm = (s) => String(s || "").toLowerCase().replace(/\s+/g, " ").trim();
 const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : v != null && v !== "" && Number.isFinite(+v) ? +v : null);
@@ -98,19 +98,20 @@ const median = (a) => { if (!a.length) return null; const s = [...a].sort((x, y)
 async function enrichRow(row) {
   const locality = row.micro_market || row.locality || row.sector || row.sub_micromarket || row.address || row.city || "Gurugram";
   const pname = row.project_name || row.name || row.project || row.title || "";
-  // 1) project centre — upstream row coords ▸ founder seed ▸ name geocode ▸ locality geocode
+  // 1) project centre — founder seed OVERRIDES everything (each entry was
+  //    eyeballed on Google Maps); then upstream row coords; then geocoding
   let center = num(row.latitude) != null && num(row.longitude) != null ? { lat: num(row.latitude), lng: num(row.longitude) } : null;
-  if (!inBox(center)) {
-    const s = SEED[norm(pname)];
-    if (inBox(s)) { center = s; row.geo_source = "seed"; stats.seeded++; }
-    else {
-      let g = await geocode(`${pname}, ${locality}, Gurugram, Haryana, India`);
-      if (inBox(g)) { center = g; row.geo_source = "geocode_name"; }
-      // project names rarely exist in OSM — fall back to the locality (sector) itself
-      else if (locality && norm(locality) !== "gurugram") {
-        g = await geocode(`${locality}, Gurugram, Haryana, India`);
-        if (inBox(g)) { center = g; row.geo_source = "geocode_locality"; }
-      }
+  const seed = SEED[norm(pname)];
+  if (inBox(seed)) {
+    if (!center || distKm(center, seed) > 0.005) { row.latitude = seed.lat; row.longitude = seed.lng; stats.centers++; }
+    center = seed; row.geo_source = "seed"; stats.seeded++;
+  } else if (!inBox(center)) {
+    let g = await geocode(`${pname}, ${locality}, Gurugram, Haryana, India`);
+    if (inBox(g)) { center = g; row.geo_source = "geocode_name"; }
+    // project names rarely exist in OSM — fall back to the locality (sector) itself
+    else if (locality && norm(locality) !== "gurugram") {
+      g = await geocode(`${locality}, Gurugram, Haryana, India`);
+      if (inBox(g)) { center = g; row.geo_source = "geocode_locality"; }
     }
     if (inBox(center)) { row.latitude = center.lat; row.longitude = center.lng; stats.centers++; }
   }
