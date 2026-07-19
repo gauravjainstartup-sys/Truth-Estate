@@ -373,7 +373,10 @@ export default function ProjectProfile({
   // first upward scroll (and hides it again on the way down).
   useEffect(() => {
     if (embedded || typeof window === "undefined") return;
-    if (window.matchMedia("(max-width: 767px)").matches) setHideHdr(true);
+    // below sm the hero bleeds edge-to-edge and the header is a fixed overlay,
+    // so start hidden — the hero owns the top of the screen (matches the sm
+    // breakpoint where the header switches back to sticky and reserves space).
+    if (window.matchMedia("(max-width: 639px)").matches) setHideHdr(true);
   }, [embedded]);
   const jumpTo = (id: string) => {
     setActive(id);
@@ -401,7 +404,12 @@ export default function ProjectProfile({
 
   return (
     <div className={`${embedded ? "h-full overflow-y-auto" : "min-h-svh"} bg-[#F5F0E8] text-[#1a1a1a]`}>
-      <header className={`sticky top-0 z-40 border-b border-[#1a1a1a]/6 bg-[#F5F0E8]/90 backdrop-blur-sm transition-transform duration-200 ease-out ${hideHdr ? "-translate-y-full" : "translate-y-0"}`}>
+      {/* Standalone mobile: the header is a fixed OVERLAY (out of flow) so the
+         hero bleeds to the very top of the viewport — hiding it leaves no gap,
+         it just isn't there until a scroll-up slides it in over the hero.
+         Desktop stays sticky (reserves its space); the journey modal stays
+         sticky too (a fixed header would escape the modal's own scroll). */}
+      <header className={`${embedded ? "sticky" : "fixed inset-x-0 sm:sticky"} top-0 z-40 border-b border-[#1a1a1a]/6 bg-[#F5F0E8]/90 backdrop-blur-sm transition-transform duration-200 ease-out ${hideHdr ? "-translate-y-full" : "translate-y-0"}`}>
         <div className={`mx-auto flex ${embedded ? "max-w-6xl" : "max-w-7xl"} items-center gap-4 px-6 py-4 md:px-10`}>
           {embedded ? (
             <>
