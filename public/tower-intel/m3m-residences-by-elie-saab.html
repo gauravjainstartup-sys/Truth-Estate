@@ -485,6 +485,34 @@ body.sun-cinema{overflow:hidden}
   #fs3d.cinema .fs-sunbar{bottom:16px}
   #fs3d.cinema .fs-compass{bottom:92px;left:14px}
 }
+/* ── 2D Sun-path stage: the landing-page sun simulation on the real unit plan ── */
+.fs-sun{flex:1;min-height:0;display:none;position:relative;margin:10px 18px 4px;border:1px solid rgba(60,48,28,.5);border-radius:14px;overflow:hidden;background:radial-gradient(130% 120% at 50% -8%,#2a2115 0%,#181109 52%,#0c0906 100%);box-shadow:inset 0 1px 0 rgba(255,220,150,.06),inset 0 -30px 60px rgba(0,0,0,.4)}
+.fs-sun canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.fsun-clock{position:absolute;left:16px;top:14px;z-index:4;display:flex;align-items:baseline;gap:9px;pointer-events:none}
+.fsun-clock #fsunTime{font:700 30px/1 'Playfair Display',Georgia,serif;color:#f6d68a;font-variant-numeric:tabular-nums;text-shadow:0 2px 14px rgba(0,0,0,.55)}
+.fsun-clock #fsunPhase{font:600 10px/1 ui-monospace,monospace;letter-spacing:.24em;text-transform:uppercase;color:#c9a96e}
+.fsun-cap{position:absolute;left:16px;right:16px;bottom:64px;z-index:4;text-align:center;pointer-events:none;text-shadow:0 1px 10px rgba(0,0,0,.7)}
+.fsun-cap #fsunName{display:none}
+.fsun-cap #fsunLit{font:italic 500 13px/1.45 'Geist',sans-serif;color:#e9dcc0}
+.fsun-cap #fsunLit b{color:#ffd98a;font-style:normal;font-weight:600}
+.fsun-bar{position:absolute;left:12px;right:12px;bottom:12px;z-index:5;display:flex;align-items:center;gap:10px;padding:8px 11px;border-radius:13px;background:rgba(14,10,5,.62);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);border:1px solid rgba(255,235,200,.14)}
+.fsun-bar .fs-sunseason{background:rgba(255,255,255,.06)}
+.fsun-bar .fs-sunseason button{color:#c7bca6}
+.fsun-bar .fs-sunseason button.on{background:#f0d493;color:#1a1206;box-shadow:none}
+.fsun-cineclose{display:none;position:absolute;top:13px;right:13px;z-index:7;width:34px;height:34px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(16,12,5,.55);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);color:#fff;font-size:14px;cursor:pointer}
+.fs-sun.cinema{position:fixed;inset:0;z-index:130;margin:0;border-radius:0;border:0;box-shadow:none}
+.fs-sun.cinema .fsun-clock{left:22px;top:20px}
+.fs-sun.cinema .fsun-clock #fsunTime{font-size:38px}
+.fs-sun.cinema .fsun-cap #fsunName{display:block;font:600 15.5px/1.3 'Playfair Display',Georgia,serif;color:#fff;margin-bottom:5px}
+.fs-sun.cinema .fsun-cap{bottom:78px}
+.fs-sun.cinema .fsun-bar{left:50%;right:auto;transform:translateX(-50%);width:calc(100% - 28px);max-width:640px;bottom:22px}
+.fs-sun.cinema .fs-expand{display:none}
+.fs-sun.cinema .fsun-cineclose{display:grid;place-items:center}
+@media(max-width:760px){
+  .fsun-clock #fsunTime{font-size:26px}
+  .fsun-cap{bottom:60px}
+  .fs-sun.cinema .fsun-cap{bottom:74px}
+}
 </style>
 <div id="app"></div>
 
@@ -564,7 +592,7 @@ body.sun-cinema{overflow:hidden}
     <div class="fs-left">
       <div id="fsFloor" class="fs-floor"></div>
       <div class="fs-media">
-        <div class="fs-viewtabs"><button id="fsBtn2d" class="on">▤ 2D plan</button><button id="fsBtn3d">◧ 3D model</button><button id="fsBtnWalk">⛶ Walk-through</button></div>
+        <div class="fs-viewtabs"><button id="fsBtnSun" class="on">☀ Sun path</button><button id="fsBtn3d">◧ 3D model</button><button id="fsBtn2d">▤ 2D plan</button><button id="fsBtnWalk">⛶ Walk-through</button></div>
         <div id="fs3d"><div class="fs3d-cap"></div><div id="fs3dSoon" class="fs3d-soon">Interior 3D walk-through<span>coming soon for this project</span></div>
           <div id="fsSunBar" class="fs-sunbar" hidden>
             <button id="fsSunPlay" class="fs-sunplay" aria-label="Play the day">▶</button>
@@ -576,6 +604,18 @@ body.sun-cinema{overflow:hidden}
           <div id="fsCineHead" class="fs-cine-head"><span id="fsCineName"></span><span class="fs-cine-actions"><button id="fsCineDetails">Details ▾</button><button id="fsCineClose" aria-label="Close">✕</button></span></div>
           <div id="fsCineStory" class="fs-cine-story"></div>
           <div id="fsCompass" class="fs-compass"><span class="fsc-n">N</span><i class="fsc-needle" id="fscNeedle"></i><i class="fsc-sun" id="fscSun"></i></div>
+        </div>
+        <div id="fsSun" class="fs-sun">
+          <canvas id="fsSunCanvas"></canvas>
+          <div class="fsun-clock"><span id="fsunTime">07:00</span><span id="fsunPhase">morning</span></div>
+          <div class="fsun-cap" id="fsunCap"><b id="fsunName"></b><span id="fsunLit">—</span></div>
+          <button id="fsunExpand" class="fs-expand" aria-label="Expand to full screen">⛶</button>
+          <button id="fsunCineClose" class="fsun-cineclose" aria-label="Close">✕</button>
+          <div class="fsun-bar">
+            <button id="fsunPlay" class="fs-sunplay" aria-label="Play the day">❚❚</button>
+            <input id="fsunRange" class="fs-sunrange" type="range" min="0" max="1" step="0.001" value="0.24" aria-label="Time of day">
+            <div class="fs-sunseason" id="fsunSeason"><button data-s="-23.45" class="on">Winter</button><button data-s="0">Equinox</button><button data-s="23.45">Summer</button></div>
+          </div>
         </div>
         <div class="fs-imgwrap"><img id="fsImg" src="" alt="Floor plan"></div>
         <div id="fsWalk" class="fs-walk">
@@ -1273,12 +1313,14 @@ function initFlat3D(){
   document.getElementById('fsBtnWalk').onclick=()=>setFsView('walk');
   document.getElementById('fsBtn3d').onclick=()=>setFsView('3d');
   document.getElementById('fsBtn2d').onclick=()=>setFsView('2d');
+  {const bs=document.getElementById('fsBtnSun');if(bs)bs.onclick=()=>setFsView('sun');}
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){const su=document.getElementById('fsSun');if(su&&su.classList.contains('cinema')){sunpCine(false);e.stopImmediatePropagation();}}},true);
   /* sun scrubber: play / scrub time / season */
   (function(){const play=document.getElementById('fsSunPlay'),rng=document.getElementById('fsSunRange'),seas=document.getElementById('fsSunSeason');
     if(play)play.onclick=()=>{f3.playing=!f3.playing;play.textContent=f3.playing?'❚❚':'▶';};
     if(rng)rng.addEventListener('input',()=>{f3.playing=false;if(play)play.textContent='▶';f3setSun(parseFloat(rng.value));});
     if(seas)seas.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
-      [...seas.children].forEach(x=>x.classList.toggle('on',x===b));f3.season=parseFloat(b.dataset.s);renderSunRooms();f3setSun(f3.sunFrac);});})();
+      setSunSeason(parseFloat(b.dataset.s));f3setSun(f3.sunFrac);});})();
   /* expand the 3D + sun to a full-screen "sun cinema" */
   (function(){const exp=document.getElementById('fsExpand');
     const setCine=on=>{const d3=document.getElementById('fs3d');if(!d3)return;d3.classList.toggle('cinema',on);document.body.classList.toggle('sun-cinema',on);if(exp)exp.textContent=on?'✕':'⛶';requestAnimationFrame(()=>{f3resize();if(f3)f3setSun(f3.sunFrac);});};
@@ -1381,14 +1423,17 @@ function exitWalk(){
   f3.cam.fov=f3.walk.savedFov;f3.cam.updateProjectionMatrix();
   f3.walk=null;}
 function setFsView(v){
-  const b3=document.getElementById('fsBtn3d'),b2=document.getElementById('fsBtn2d'),bw=document.getElementById('fsBtnWalk');
-  const d3=document.getElementById('fs3d'),iw=document.querySelector('.fs-imgwrap'),wk=document.getElementById('fsWalk');
+  const b3=document.getElementById('fsBtn3d'),b2=document.getElementById('fsBtn2d'),bw=document.getElementById('fsBtnWalk'),bs=document.getElementById('fsBtnSun');
+  const d3=document.getElementById('fs3d'),iw=document.querySelector('.fs-imgwrap'),wk=document.getElementById('fsWalk'),su=document.getElementById('fsSun');
   const sb=document.getElementById('fsSunBar'),soon=document.getElementById('fs3dSoon');
-  [b3,b2,bw].forEach(b=>b&&b.classList.remove('on'));
+  [b3,b2,bw,bs].forEach(b=>b&&b.classList.remove('on'));
   if(f3&&f3.walk)exitWalk();
   if(wk)wk.style.display='none';
   if(sb)sb.hidden=true;                                  // sun scrubber lives only in the 3D model view
   if(f3)f3.playing=false;{const _pl=document.getElementById('fsSunPlay');if(_pl)_pl.textContent='▶';}
+  if(v!=='sun'&&su&&su.classList.contains('cinema')){su.classList.remove('cinema');document.body.classList.remove('sun-cinema');}
+  if(su)su.style.display='none';SUNP.active=false;SUNP.playing=false;{const _sp=document.getElementById('fsunPlay');if(_sp)_sp.textContent='▶';}
+  if(v==='sun'){d3.style.display='none';iw.style.display='none';if(su)su.style.display='block';if(bs)bs.classList.add('on');if(f3)f3.active=false;SUNP.active=true;requestAnimationFrame(sunpResize);return;}
   if(v==='walk'){d3.style.display='none';iw.style.display='none';if(wk)wk.style.display='flex';bw.classList.add('on');if(f3)f3.active=false;return;}
   if(v==='2d'){d3.style.display='none';iw.style.display='flex';b2.classList.add('on');if(f3)f3.active=false;return;}
   d3.style.display='block';iw.style.display='none';
@@ -1478,6 +1523,150 @@ function f3updateLit(h){
     else{const names=litLabels.slice(0,3).join(', ').replace(/, ([^,]*)$/,' &amp; $1');
       st.innerHTML=`<b>${phase}</b> — sun in the <b>${names}</b>.`;}}
 }
+/* ══ 2D SUN-PATH SIM ══════════════════════════════════════════════════
+   The Sun & Vastu landing-page simulation, driven by this unit's real
+   floor plan: a top-down plate, the sun tracking its true arc for the
+   chosen season, and each room warming to gold the instant it takes
+   direct sun. Room bearings come from the plan geometry rotated to the
+   flat's true orientation, so an east unit and a west unit light up in a
+   visibly different order. ── */
+const SUNP={cv:null,ctx:null,ro:null,img:null,imgKey:'',rooms:[],theta:0,frac:0.24,season:-23.45,
+  playing:false,active:false,dpr:1,W:0,H:0,name:'',litNames:[],alt:0,az:0};
+function sunpInit(){
+  if(SUNP.cv)return;
+  SUNP.cv=document.getElementById('fsSunCanvas');if(!SUNP.cv)return;
+  SUNP.ctx=SUNP.cv.getContext('2d');
+  const box=document.getElementById('fsSun');
+  try{SUNP.ro=new ResizeObserver(()=>sunpResize());SUNP.ro.observe(box);}catch(_){window.addEventListener('resize',sunpResize);}
+  document.getElementById('fsunPlay').onclick=()=>sunpPlay(!SUNP.playing);
+  const rg=document.getElementById('fsunRange');
+  rg.oninput=e=>{SUNP.frac=parseFloat(e.target.value);sunpPlay(false);sunpApply();};
+  document.querySelectorAll('#fsunSeason button').forEach(b=>b.onclick=()=>{setSunSeason(parseFloat(b.dataset.s));sunpApply();});
+  const exp=document.getElementById('fsunExpand');if(exp)exp.onclick=()=>sunpCine(true);
+  const cc=document.getElementById('fsunCineClose');if(cc)cc.onclick=()=>sunpCine(false);
+  sunpResize();
+}
+function sunpCine(on){const el=document.getElementById('fsSun');if(!el)return;
+  el.classList.toggle('cinema',on);document.body.classList.toggle('sun-cinema',on);
+  requestAnimationFrame(()=>sunpResize());}
+function sunpResize(){
+  if(!SUNP.cv)return;const box=document.getElementById('fsSun');
+  const w=box.clientWidth,h=box.clientHeight;if(w<10||h<10)return;
+  SUNP.dpr=Math.min(devicePixelRatio||1,2);SUNP.W=w;SUNP.H=h;
+  SUNP.cv.width=Math.round(w*SUNP.dpr);SUNP.cv.height=Math.round(h*SUNP.dpr);
+  SUNP.cv.style.width=w+'px';SUNP.cv.style.height=h+'px';
+  SUNP.ctx.setTransform(SUNP.dpr,0,0,SUNP.dpr,0,0);
+  sunpDraw();
+}
+function sunpOpen(cfgKey,uid,bearing){
+  sunpInit();
+  const pf=planFor(cfgKey,uid);const key=cfgKey+'|'+uid;
+  if(pf&&pf.img&&SUNP.imgKey!==key){SUNP.img=null;SUNP.imgKey=key;const im=new Image();im.onload=()=>{if(SUNP.imgKey===key){SUNP.img=im;sunpDraw();}};im.src=pf.img;}
+  const deckb=(DECKB[key]!=null?DECKB[key]:DECKB[cfgKey+'|101'])||0;
+  SUNP.theta=(deckb-bearing)*Math.PI/180;
+  const lbl=roomLabelsFor(cfgKey,uid)||[];
+  SUNP.rooms=lbl.map(([nm,fx,fy])=>{
+    const ox=fx-0.5,oz=fy-0.5,ct=Math.cos(SUNP.theta),stt=Math.sin(SUNP.theta);
+    const wx=ox*ct+oz*stt,wz=-ox*stt+oz*ct;               // plan-local → true compass frame (matches the 3D group rotation)
+    const bear=(Math.atan2(wx,-wz)*180/Math.PI+360)%360;  // room's outward bearing (0=N, 90=E)
+    return{nm,fx,fy,bear,oct:sunpOctant(bear),lit:false,glow:0};});
+  SUNP.name=((document.getElementById('fsName')||{}).textContent)||'';
+  const nEl=document.getElementById('fsunName');if(nEl)nEl.textContent=SUNP.name;
+  SUNP.frac=0.22;sunpApply();sunpPlay(true);   // open on a low morning sun, then play the day
+}
+function sunpOctant(deg){const O=['N','NE','E','SE','S','SW','W','NW'];return O[Math.round(((deg%360)+360)%360/45)%8];}
+function sunpPlay(on){SUNP.playing=on;const b=document.getElementById('fsunPlay');if(b)b.textContent=on?'❚❚':'▶';}
+function sunpApply(){
+  const _sd=decl;decl=SUNP.season;const[sr,ss]=dayB();
+  const h=sr+(ss-sr)*SUNP.frac;const s=sunTrue(h);decl=_sd;
+  SUNP.alt=s.alt;SUNP.az=(s.az*180/Math.PI+360)%360;
+  const lit=[];
+  SUNP.rooms.forEach(r=>{const ad=angDiff(r.bear,SUNP.az);
+    r.lit=litAt(r.oct,s.az,s.alt);                        // same lit engine as the Sun list + 3D story → all consistent
+    r.glow=s.alt>0.03?Math.max(0,Math.cos(ad*Math.PI/180)):0;
+    if(r.lit)lit.push(r.nm);});
+  SUNP.litNames=lit;
+  const hd=((h%24)+24)%24;
+  const tEl=document.getElementById('fsunTime');if(tEl)tEl.textContent=fmt(hd);
+  const pEl=document.getElementById('fsunPhase');if(pEl)pEl.textContent=hd<7.4?'sunrise':hd<11.4?'morning':hd<12.8?'midday':hd<16.6?'afternoon':hd<18.6?'evening':'dusk';
+  const lEl=document.getElementById('fsunLit');
+  if(lEl){if(s.alt<=0.03)lEl.textContent='sun below the horizon';
+    else if(!lit.length)lEl.textContent='low sun — soft, indirect light';
+    else{const names=lit.slice(0,3).join(' · ');lEl.innerHTML='<b>'+names+'</b> in direct sun';}}
+  const rg=document.getElementById('fsunRange');if(rg&&document.activeElement!==rg&&Math.abs(parseFloat(rg.value)-SUNP.frac)>0.003)rg.value=SUNP.frac;
+  /* keep the right-column "Sun through the home" list live-synced to the sim scrubber */
+  if(f3&&f3.roomsData){f3.season=SUNP.season;f3.curAz=s.az;f3.curAlt=s.alt;f3updateLit(h);}
+  sunpDraw();
+}
+/* one season for the whole sun experience — the 2D sim, the 3D model and the
+   room list all read it, and both season pill rows stay in lock-step */
+function setSunSeason(dc){
+  SUNP.season=dc;if(f3)f3.season=dc;
+  ['fsunSeason','fsSunSeason'].forEach(id=>{const el=document.getElementById(id);if(el)[...el.children].forEach(x=>x.classList.toggle('on',parseFloat(x.dataset.s)===dc));});
+  if(f3&&f3.roomsData)renderSunRooms();
+}
+function sunpDraw(){
+  const ctx=SUNP.ctx;if(!ctx)return;const w=SUNP.W,h=SUNP.H;if(w<10||h<10)return;
+  ctx.clearRect(0,0,w,h);
+  /* fit the biggest plate whose sun-orbit (max-half + gap) still clears the
+     clock (top) and control bar (bottom) — sun rides just outside the plan */
+  const topR=54,botR=62,sideR=18,gap=Math.min(w,h)*0.11;
+  const availW=w-sideR*2,availH=h-topR-botR;
+  let aspect=(SUNP.img&&SUNP.img.width)?SUNP.img.width/SUNP.img.height:1;
+  const box=Math.max(80,Math.min(availW,availH)-2*gap);
+  let pw,ph;if(aspect>=1){pw=box;ph=box/aspect;}else{ph=box;pw=box*aspect;}
+  const cx=w/2,cy=topR+availH/2;
+  const px=cx-pw/2,py=cy-ph/2,pcx=cx,pcy=cy;
+  const Rrim=Math.max(pw,ph)/2+gap;
+  const az=SUNP.az*Math.PI/180,alt=Math.max(0,SUNP.alt),up=SUNP.alt>0.01;
+  const day=Math.min(1,alt/0.9);const th=SUNP.theta;
+  const dirScreen=b=>({x:Math.sin(b+th),y:-Math.cos(b+th)});
+  /* the sun's daily track — a dotted arc from sunrise to sunset */
+  const _sd=decl;decl=SUNP.season;const[sr,ss]=dayB();
+  ctx.beginPath();let started=false;
+  for(let hh=sr;hh<=ss+0.001;hh+=(ss-sr)/72){const s2=sunTrue(hh);if(s2.alt<=0)continue;const d=dirScreen(s2.az);const x=pcx+d.x*Rrim,y=pcy+d.y*Rrim;if(!started){ctx.moveTo(x,y);started=true;}else ctx.lineTo(x,y);}
+  decl=_sd;
+  ctx.strokeStyle='rgba(201,169,110,0.32)';ctx.lineWidth=1.2;ctx.setLineDash([2,6]);ctx.stroke();ctx.setLineDash([]);
+  const sd=dirScreen(az),sunX=pcx+sd.x*Rrim,sunY=pcy+sd.y*Rrim;
+  /* warm rays sweeping the plate */
+  if(up){ctx.save();ctx.globalCompositeOperation='lighter';const perp={x:-sd.y,y:sd.x};
+    for(let i=-2;i<=2;i++){const ox=perp.x*i*pw*0.13,oy=perp.y*i*pw*0.13;
+      const g=ctx.createLinearGradient(sunX,sunY,pcx+ox,pcy+oy);
+      g.addColorStop(0,'rgba(255,206,120,'+(0.05+day*0.13).toFixed(3)+')');g.addColorStop(1,'rgba(255,206,120,0)');
+      ctx.strokeStyle=g;ctx.lineWidth=pw*0.1;ctx.beginPath();ctx.moveTo(sunX,sunY);ctx.lineTo(pcx+ox,pcy+oy);ctx.stroke();}
+    ctx.restore();}
+  /* the plate — the real plan, sat into the night stage */
+  ctx.save();ctx.shadowColor='rgba(0,0,0,0.55)';ctx.shadowBlur=30;ctx.shadowOffsetY=9;
+  ctx.fillStyle='#15110b';ctx.fillRect(px,py,pw,ph);ctx.restore();
+  if(SUNP.img){ctx.save();ctx.globalAlpha=0.86;ctx.drawImage(SUNP.img,px,py,pw,ph);
+    ctx.globalCompositeOperation='multiply';ctx.fillStyle='rgba(96,84,64,0.5)';ctx.fillRect(px,py,pw,ph);
+    ctx.restore();}
+  /* room glows + upright labels */
+  SUNP.rooms.forEach(r=>{const rx=px+r.fx*pw,ry=py+r.fy*ph,gl=r.glow||0;
+    if(up&&gl>0.12){const rad=Math.min(pw,ph)*0.24*(0.6+0.5*gl),a=Math.min(0.85,(0.12+gl*0.72)*(0.42+0.58*day));
+      const g=ctx.createRadialGradient(rx,ry,0,rx,ry,rad);
+      g.addColorStop(0,'rgba(255,197,92,'+a.toFixed(3)+')');g.addColorStop(0.6,'rgba(255,171,66,'+(a*0.34).toFixed(3)+')');g.addColorStop(1,'rgba(255,171,66,0)');
+      ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;ctx.beginPath();ctx.arc(rx,ry,rad,0,7);ctx.fill();ctx.restore();}
+    const fsz=Math.max(9,Math.round(Math.min(pw,ph)*0.033));
+    ctx.font='600 '+fsz+"px 'Geist',system-ui,sans-serif";ctx.textAlign='center';ctx.textBaseline='middle';
+    const tw=ctx.measureText(r.nm).width;
+    ctx.fillStyle=r.lit?'rgba(34,22,8,0.6)':'rgba(8,6,4,0.55)';
+    ctx.fillRect(rx-tw/2-5,ry-fsz*0.72,tw+10,fsz*1.5);
+    ctx.fillStyle=r.lit?'#ffe6ac':'rgba(240,235,225,0.82)';ctx.fillText(r.nm,rx,ry+0.5);});
+  ctx.strokeStyle='rgba(201,169,110,0.42)';ctx.lineWidth=1.5;ctx.strokeRect(px,py,pw,ph);
+  /* the sun disc */
+  if(up){const warmK=1-day;
+    const halo=ctx.createRadialGradient(sunX,sunY,0,sunX,sunY,30+day*24);
+    halo.addColorStop(0,'rgba(255,220,140,0.62)');halo.addColorStop(0.5,'rgba(246,182,75,0.2)');halo.addColorStop(1,'rgba(246,182,75,0)');
+    ctx.fillStyle=halo;ctx.beginPath();ctx.arc(sunX,sunY,30+day*24,0,7);ctx.fill();
+    ctx.fillStyle='rgb(255,'+Math.round(216-warmK*46)+','+Math.round(130-warmK*44)+')';
+    ctx.beginPath();ctx.arc(sunX,sunY,7+day*3,0,7);ctx.fill();}
+  /* N compass mark — points to true north */
+  const nd=dirScreen(0),nR=Rrim*0.9,nx=pcx+nd.x*nR,ny=pcy+nd.y*nR;
+  ctx.strokeStyle='rgba(201,169,110,0.5)';ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(nx-nd.x*15,ny-nd.y*15);ctx.lineTo(nx-nd.x*7,ny-nd.y*7);ctx.stroke();
+  ctx.fillStyle='rgba(214,182,120,0.95)';ctx.font="700 11px ui-monospace,monospace";ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('N',nx,ny);
+}
+function sunpTick(){if(!SUNP.active||!SUNP.playing)return;SUNP.frac+=0.0018;if(SUNP.frac>1)SUNP.frac=0;sunpApply();}
 function f3tick(){if(!f3||!f3.active)return;
   if(f3.playing){f3.sunFrac+=0.0016;if(f3.sunFrac>1)f3.sunFrac=0;f3setSun(f3.sunFrac);}
   if(f3.walk&&f3.walk.on){
@@ -1603,7 +1792,9 @@ function openFlat(t,uid,keepFloor){
     if(_pf&&_pf.img){if(_fi)_fi.src=_pf.img;if(_b2)_b2.style.display='';}
     else{if(_fi)_fi.removeAttribute('src');if(_b2)_b2.style.display='none';}})(); // no per-unit plan webp for this project yet — 3D is the media
   buildFlat3D(u.cfg||t.cfg,u.id,b);(function(){const _c=document.querySelector('#fs3d .fs3d-cap');if(_c)_c.innerHTML='';if(f3)f3.capOrbit='';})();
-  setFsView(document.getElementById('fs3dSoon').classList.contains('on')?'2d':'3d');   // lead with the 3D sun view when a model exists
+  sunpOpen(u.cfg||t.cfg,u.id,b);
+  {const _hasPlan=(planFor(u.cfg||t.cfg,u.id)||{}).img,_has3d=!!(FLATW[(u.cfg||t.cfg)+'|'+u.id]||FLATW[(u.cfg||t.cfg)+'|101']);
+   setFsView(_hasPlan?'sun':(_has3d?'3d':'2d'));}   // lead with the 2D sun-path sim on the real plan
   /* score strip */
   document.getElementById('fsCap').innerHTML=`
      <div class="fs-scorestrip">${[['\u2600 Morning',fscore.sub.morning],['\u2744 Summer cool',fscore.sub.cool],['\u262f Vastu',fscore.sub.vastu],['\u2248 Airflow',fscore.sub.vent]].map(m=>`<div class="fs-sc"><span class="fs-sc-k">${m[0]}</span><span class="fs-sc-v" style="color:${scCol(m[1])}">${m[1]}</span><div class="fs-sc-bar"><div class="fs-sc-fill" style="width:${m[1]}%;background:${scCol(m[1])}"></div></div><span class="fs-sc-tag">of 100</span></div>`).join('')}
@@ -1677,12 +1868,16 @@ function openFlat(t,uid,keepFloor){
   /* per-room sun readout \u2014 lives in the Sun tab, live-synced to the 3D scrubber */
   if(f3){const _rk=cfg.beds===4?['living','masterBed','kitchen','bed2','bed3','study']:['living','masterBed','kitchen','bed2','bed3'];
     const _nm={living:'Living',masterBed:'Master bed',kitchen:'Kitchen',bed2:'Bedroom 2',bed3:'Bedroom 3',study:'Home office'};
-    f3.roomsData=_rk.map(k=>({key:k,label:_nm[k],dir:vastuRoomScore(k,compass,plateCfg(t,u),u.mir).dir}));
+    /* the per-room sun readout shares the 2D sim's real-plan geometry so the list,
+       the 3D story and the sun-path sim all name the same rooms in the same order */
+    f3.roomsData=(SUNP.rooms&&SUNP.rooms.length)
+      ?SUNP.rooms.map(r=>({key:r.nm.toLowerCase().replace(/[^a-z0-9]+/g,'-'),label:r.nm,dir:r.oct}))
+      :_rk.map(k=>({key:k,label:_nm[k],dir:vastuRoomScore(k,compass,plateCfg(t,u),u.mir).dir}));
     const _cn=document.getElementById('fsCineName');if(_cn)_cn.textContent=(document.getElementById('fsName')||{}).textContent||'';
-    renderSunRooms();f3setSun(f3.sunFrac);
-    /* mobile: land straight in the immersive sun stage, gently auto-playing the day */
-    if(f3.setCine&&window.matchMedia&&window.matchMedia('(max-width:760px)').matches&&!document.getElementById('fs3dSoon').classList.contains('on')){
-      f3.setCine(true);f3.playing=true;const _p=document.getElementById('fsSunPlay');if(_p)_p.textContent='❚❚';}}
+    renderSunRooms();f3setSun(f3.sunFrac);}
+  /* mobile: land straight in the immersive 2D sun stage, auto-playing the day */
+  if(window.matchMedia&&window.matchMedia('(max-width:760px)').matches&&(planFor(u.cfg||t.cfg,u.id)||{}).img){
+    sunpCine(true);sunpPlay(true);}
   /* TAB 2: METRICS */
   const mrows=[
     {icon:'&#x1F9ED;',label:'Orientation',badge:'doc',val:`<b>${compass}-facing</b> living room &amp; deck (bearing ${Math.round(b)}&deg;). ${lakeFacing?'Faces the central lagoon \u2014 the prestige view axis.':'Faces outward from the lagoon side \u2014 perimeter views.'}`,stars:null,barW:null,barC:null},
@@ -2123,7 +2318,7 @@ computeScores2=function(){scores=towers.map(t=>{
 
 (function init(){setTime(0.5);renderOverview();})();
 let booted=false;const bootT0=performance.now();
-(function loop(){requestAnimationFrame(loop);camStep();pulseTiles();f3tick();
+(function loop(){requestAnimationFrame(loop);camStep();pulseTiles();f3tick();sunpTick();
   if(!booted){booted=true;const wait=Math.max(0,1500-(performance.now()-bootT0));
     setTimeout(()=>{document.body.classList.add('booted');setTimeout(()=>{const b=document.getElementById('boot');if(b)b.remove();},700);},wait);}
   if(playing){playT+=(lastSunDir.y<-0.12?0.0021:0.0006);if(playT>1)playT-=1;timeEl.value=playT;const _pr=document.getElementById('pbTime');if(_pr)_pr.value=playT;setTime(playT);   /* slow, watchable day; only deep night fast-forwards */
