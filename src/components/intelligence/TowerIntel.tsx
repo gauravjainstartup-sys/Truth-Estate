@@ -9,7 +9,7 @@ import type { ProjectIntel, TowerIntelMeta } from "@/lib/projects";
 const basePath = "/Truth-Estate";
 /* Cache-bust for the embedded advisor HTML — bump whenever a tower-intel/*.html
    advisor changes so mobile Safari refetches instead of serving the stale iframe. */
-const ADVISOR_V = "20260719d";
+const ADVISOR_V = "20260719e";
 
 /* A page-wide event so any "See Unit Intelligence" CTA (hero, final card)
    can trigger the module without prop-drilling. */
