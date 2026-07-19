@@ -149,7 +149,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
                 Send code &rarr;
               </button>
               <p className="mt-3 text-[0.75rem] leading-relaxed text-[#1a1a1a]/40">
-                We&rsquo;ll send a {OTP_LEN}-digit code {isIndia ? "by SMS" : "on WhatsApp"} to confirm it&rsquo;s you.
+                We&rsquo;ll send a {OTP_LEN}-digit code {isIndia ? "by SMS" : "on WhatsApp"}{" "}to confirm it&rsquo;s you.
               </p>
               <p className="mt-2 text-[0.72rem] leading-relaxed text-[#1a1a1a]/40">
                 By continuing you agree to our{" "}

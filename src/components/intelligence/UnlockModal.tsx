@@ -135,7 +135,7 @@ export default function UnlockModal({
                 </>
               ) : (
                 <div className="mt-5">
-                  <p className="text-[0.85rem] text-[#1a1a1a]/55">Code sent to <span className="font-medium text-[#1a1a1a]">{dial} {num}</span> via {isIndia ? "SMS" : "WhatsApp"} · <button type="button" onClick={() => { setSent(false); setOtp(Array(OTP_LEN).fill("")); }} className="font-medium text-[#9a7a2e] hover:underline">Change</button></p>
+                  <p className="text-[0.85rem] text-[#1a1a1a]/55">Code sent to <span className="font-medium text-[#1a1a1a]">{dial} {num}</span> via {isIndia ? "SMS" : "WhatsApp"}{" · "}<button type="button" onClick={() => { setSent(false); setOtp(Array(OTP_LEN).fill("")); }} className="font-medium text-[#9a7a2e] hover:underline">Change</button></p>
                   <div className="mt-4 flex gap-3">
                     {otp.map((d, i) => (
                       <input key={i} ref={(el) => { otpRefs.current[i] = el; }} value={d}
