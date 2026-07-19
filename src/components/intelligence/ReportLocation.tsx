@@ -1,5 +1,5 @@
 import { pillars, type LocationGeo, type PillarBand, type ProjectIntel } from "@/lib/projects";
-import LocationMap from "./LocationMap";
+import LocationMaps from "./LocationMaps";
 
 /* grade chip — same treatment as the Developer / Anatomy pillar cards */
 type Band = PillarBand;
@@ -70,7 +70,7 @@ function GeoLayout({ p, geo }: { p: ProjectIntel; geo: LocationGeo }) {
 
       {/* today: map + connectivity + last mile under one band */}
       <div className="mt-8 flex items-center gap-3"><span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">On the ground today</span><span className="h-px flex-1 bg-[#1a1a1a]/10" /></div>
-      <LocationMap geo={geo} projectName={p.name} />
+      <LocationMaps geo={geo} projectName={p.name} slug={p.slug} />
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {c.metro && (
           <ConnCard icon={<IconMetro />} title={c.metro.name} sub={c.metro.line} main={`${c.metro.km} km`} tag={`${c.metro.min} min`} />
