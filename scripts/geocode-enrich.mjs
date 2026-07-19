@@ -48,6 +48,7 @@ const DEADLINE = Date.now() + BUDGET_MS;
 let cache = {};
 try { cache = JSON.parse(await readFile(CACHE, "utf8")); } catch { cache = {}; }
 let cacheDirty = false, calls = 0, fails = 0, dead = false; // circuit-breaker: after repeated failures assume the network's blocked and stop calling
+const errlog = []; // first few provider errors — shipped in the stats file so a CI failure is diagnosable from the live site
 
 let mock = null;
 if (process.env.GEOCODE_FIXTURE) { try { mock = JSON.parse(await readFile(process.env.GEOCODE_FIXTURE, "utf8")); } catch { mock = null; } }
@@ -61,16 +62,24 @@ async function geocode(query) {
     return null;
   }
   if (dead || calls >= MAX || Date.now() > DEADLINE) return null; // circuit-open / over budget / past deadline — skip, don't cache a non-answer
-  let out = null, errored = false;
-  try {
-    await sleep(1100); // Nominatim: ≤ 1 req/sec
-    calls++;
-    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=in&q=${encodeURIComponent(query)}`;
-    const res = await fetch(url, { headers: { "User-Agent": UA, "Accept-Language": "en" }, signal: AbortSignal.timeout(10000) });
-    if (res.ok) { const a = await res.json(); if (Array.isArray(a) && a[0]) out = { lat: +a[0].lat, lng: +a[0].lon }; }
-    else errored = true;
-  } catch { errored = true; }
-  if (errored) { if (++fails >= 6) { dead = true; console.warn("[geocode] network unreachable — circuit open; remaining lookups skipped this build"); } return null; }
+  // provider chain: Nominatim (policy-blocks many CI ranges) → Photon/komoot (key-free, CI-tolerant)
+  const providers = [
+    { name: "nominatim", url: `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=in&q=${encodeURIComponent(query)}`,
+      parse: (a) => (Array.isArray(a) && a[0] ? { lat: +a[0].lat, lng: +a[0].lon } : null) },
+    { name: "photon", url: `https://photon.komoot.io/api/?limit=1&lat=28.45&lon=77.05&q=${encodeURIComponent(query)}`,
+      parse: (a) => { const c = a?.features?.[0]?.geometry?.coordinates; return Array.isArray(c) ? { lat: +c[1], lng: +c[0] } : null; } },
+  ];
+  let out = null, answered = false;
+  for (const p of providers) {
+    try {
+      await sleep(1100); // fair use: ≤ 1 req/sec
+      calls++;
+      const res = await fetch(p.url, { headers: { "User-Agent": UA, "Accept-Language": "en" }, signal: AbortSignal.timeout(10000) });
+      if (res.ok) { out = p.parse(await res.json()); answered = true; break; }
+      errlog.length < 8 && errlog.push(`${p.name}:${res.status}`);
+    } catch (e) { errlog.length < 8 && errlog.push(`${p.name}:${String(e?.cause?.code || e?.name || e).slice(0, 40)}`); }
+  }
+  if (!answered) { if (++fails >= 6) { dead = true; console.warn("[geocode] all providers unreachable — circuit open; remaining lookups skipped this build"); } return null; }
   fails = 0;                      // a clean round-trip (even an empty result) resets the breaker
   cache[key] = out; cacheDirty = true; // cache only genuine answers (hit or real empty) so known-misses aren't re-tried
   return out;
@@ -120,3 +129,7 @@ for (const view of VIEWS) {
 }
 if (cacheDirty) { try { await writeFile(CACHE, JSON.stringify(cache)); } catch { /* non-fatal */ } }
 console.log(`[geocode] done · rows:${stats.rows} centres+${stats.centers} pois+${stats.pois} rejected:${stats.rejected} network-calls:${calls}`);
+/* stats ride the exported site at /geocode-stats.json — CI-log-free diagnosis */
+try {
+  await writeFile("public/geocode-stats.json", JSON.stringify({ at: new Date().toISOString(), ...stats, calls, circuitOpen: dead, errors: errlog }));
+} catch { /* non-fatal */ }
