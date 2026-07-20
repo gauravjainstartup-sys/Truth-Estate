@@ -22,9 +22,42 @@
      supabase secrets set GEMINI_API_KEY=<AI Studio key>
      # optional: supabase secrets set GEMINI_MODEL=gemini-2.5-flash
    ════════════════════════════════════════════════════════════════ */
-import { rerankShortlist, type Body, type FetchLike } from "./core.ts";
+import { rerankShortlist, type Body, type FetchLike, type RerankAnswer } from "./core.ts";
 
 const MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
+
+/* Persist the onboarding brief (fire-and-forget) so we have a queryable record
+   of what buyers actually ask for — the founder's "do you store these queries?"
+   The insert uses the service-role key Supabase injects into every function, so
+   it bypasses RLS; the table (see README.md) has RLS on with no policies, so
+   nothing else can touch it. A logging failure NEVER affects the re-rank
+   response — we swallow it. Requires a one-time `shortlist_log` table. */
+function logBrief(body: Body, answer: RerankAnswer): Promise<void> {
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !key || !body?.brief) return Promise.resolve();
+  const entry = {
+    brief: body.brief,
+    candidate_slugs: (body.candidates ?? []).map((c) => c?.slug).filter(Boolean),
+    ranked_slugs: answer.ok ? answer.ranked.map((r) => r.slug) : [],
+    model_ok: answer.ok,
+  };
+  return fetch(`${url}/rest/v1/shortlist_log`, {
+    method: "POST",
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      "content-type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify(entry),
+    signal: AbortSignal.timeout(3000),
+  })
+    .then(async (res) => {
+      if (!res.ok) console.error(`[shortlist-rerank] log HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
+    })
+    .catch((e) => console.error("[shortlist-rerank] log failed:", e instanceof Error ? e.message : e));
+}
 
 const ALLOW_ORIGIN = [
   /^https:\/\/gauravjainstartup-sys\.github\.io$/,
@@ -56,6 +89,12 @@ Deno.serve(async (req: Request) => {
       model: MODEL,
       fetchImpl: fetch as unknown as FetchLike,
     });
+    // Record the brief without holding the response: waitUntil keeps the
+    // instance alive for the insert after we've replied; if it isn't available
+    // we still fire best-effort. Logging can never delay or fail the re-rank.
+    const logging = logBrief(body, answer);
+    const runtime = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime;
+    if (typeof runtime?.waitUntil === "function") runtime.waitUntil(logging);
     return new Response(JSON.stringify(answer), { status: 200, headers });
   } catch (e) {
     console.error("[shortlist-rerank]", e instanceof Error ? e.message : e);

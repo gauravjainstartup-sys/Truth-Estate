@@ -370,6 +370,33 @@ export function corridorKey(s: string): string {
 
 const sameCorridor = (a: string, b: string): boolean => corridorKey(a) === corridorKey(b);
 
+/* ── Configuration matching ──
+   A buyer's config chip ("3 BHK", "Penthouse", "Duplex", "1 BHK / Studio")
+   against a project's offered configs. Tolerant of how the live pipeline
+   files unit types: a BHK chip matches on the BHK *number*, so "4 BHK" also
+   accepts "4 BHK+" or "4 BHK Premium" but never bleeds into "3.5 BHK"; the
+   named types (Penthouse, Duplex, Studio) match as a case-insensitive
+   substring. This is what lets configuration act as a real must-have (the
+   gate in rankCore) without a formatting mismatch wrongly excluding a home
+   the buyer actually wants. NOTE: it can only recognise a Penthouse/Duplex
+   if the catalog's config string literally carries that word — today the
+   tracked universe derives configs from the backlog `config` summary (plain
+   "N BHK"), so those two chips only bite once the pipeline tags unit types. */
+const bhkNumber = (s: string): string | null => {
+  const m = s.toLowerCase().match(/(\d(?:\.\d)?)\s*bhk/);
+  return m ? m[1] : null;
+};
+export const configMatches = (chip: string, cfg: string): boolean => {
+  const w = chip.toLowerCase();
+  const c = cfg.toLowerCase();
+  if (w.includes("penthouse")) return c.includes("penthouse");
+  if (w.includes("duplex")) return c.includes("duplex");
+  if (w.includes("studio")) return c.includes("studio") || bhkNumber(cfg) === "1";
+  const n = bhkNumber(chip);
+  if (n) return bhkNumber(cfg) === n;
+  return c === w;
+};
+
 /* ── Scoring ──
    rankCore ranks ANY catalog whose items carry the fields the heuristic
    reads (Rankable) — the hand-curated mock PROJECTS, or the live tracked
@@ -388,10 +415,17 @@ export type Rankable = {
 export type Scored = Project & { matchPct: number };
 
 export function rankCore<T extends Rankable>(items: readonly T[], d: BuyData): (T & { matchPct: number })[] {
-  const wantsConfig = (p: T) =>
-    d.configs.length === 0 ||
-    d.configs.includes("Flexible") ||
-    p.configs.some((c) => d.configs.includes(c));
+  const wantsConfig = (p: T) => {
+    if (d.configs.length === 0 || d.configs.includes("Flexible")) return true;
+    // Only the configs the catalog actually knows for this project — "NA" is
+    // the adapter's "no unit data yet", not a real type. Exclude a project only
+    // when its KNOWN configs miss what the buyer asked for; when we hold no
+    // config data at all, give it the benefit of the doubt rather than dropping
+    // a possible match on a field the pipeline hasn't populated for it.
+    const known = p.configs.filter((c) => c && c.toUpperCase() !== "NA");
+    if (known.length === 0) return true;
+    return d.configs.some((chip) => known.some((cfg) => configMatches(chip, cfg)));
+  };
 
   /* Affordability gate — a recommendation the buyer cannot afford is not a
      recommendation. Anything whose ENTRY price sits more than ₹2 Cr above the
@@ -405,7 +439,20 @@ export function rankCore<T extends Rankable>(items: readonly T[], d: BuyData): (
      claims budget fit for anything outside the band. */
   const ceiling = d.budgetCr >= 21 ? Infinity : d.budgetCr + 2;
   const affordable = items.filter((p) => p.budget[0] <= ceiling);
-  const pool = affordable.length ? affordable : items;
+  const affordablePool = affordable.length ? affordable : items;
+
+  /* Configuration gate — when the buyer names concrete home types, a project
+     that cannot offer ANY of them is not a match however well it scores on
+     corridor or price (the founder's "duplex penthouse is a MUST" case: a soft
+     +18 nudge let a non-matching project still surface). Filter to the ones
+     that can. Same safety valve as the affordability gate: if it would empty
+     the pool — the buyer stayed Flexible, or the catalog doesn't yet tag the
+     requested type — fall back rather than dead-end, so we never gate on a
+     field the pipeline may not populate. wantsConfig already encodes the
+     "flexible / no preference" no-op, so this is inert unless a real config
+     was asked for. */
+  const cfgMatched = affordablePool.filter(wantsConfig);
+  const pool = cfgMatched.length ? cfgMatched : affordablePool;
 
   const raw = pool
     .map((p) => {

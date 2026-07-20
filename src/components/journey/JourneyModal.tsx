@@ -10,7 +10,9 @@ import ShortlistCore from "../shortlist/ShortlistCore";
 import FocusOffRamp from "../FocusOffRamp";
 import { projectByName } from "@/lib/projects";
 import { rankProjectsIntel } from "@/lib/shortlist";
+import type { RankedIntel } from "@/lib/shortlist";
 import { useMatchCatalog } from "@/lib/useMatchCatalog";
+import { useAiRerank } from "@/lib/useAiRerank";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import type { ConsultIntent, ConsultProfileChip } from "@/lib/consultation";
 import {
@@ -372,6 +374,10 @@ const INTENT_STEP: Record<Intent, Step> = {
   research: "research",
 };
 
+// Stable empty deterministic-ranking reference: passed to useAiRerank when the
+// live catalog isn't in play, so its effect deps don't churn on every render.
+const NO_DET: RankedIntel[] = [];
+
 export default function JourneyModal({
   initialIntent,
   account,
@@ -431,9 +437,22 @@ export default function JourneyModal({
   // The in-modal shortlist ranks the SAME live catalog as /shortlist (falling
   // back to the mock set until it loads, or if the backend is unreachable), so
   // the "N scanned" funnel and the reasoning count are the real universe.
-  const allScored = useMemo<Scored[]>(
-    () => (catalog ? rankProjectsIntel(buy, catalog) : rankProjects(buy)),
+  const detLive = useMemo<RankedIntel[]>(
+    () => (catalog ? rankProjectsIntel(buy, catalog) : NO_DET),
     [buy, catalog],
+  );
+  // AI re-rank (Path 2) — same Gemini pass /shortlist uses, but fired ONCE the
+  // buyer commits to the shortlist, never per keystroke: `buy` is handed to the
+  // hook only at the processing/shortlist steps, so the paid call happens after
+  // the form is done, not on every chip toggle. The 4.2 s processing screen
+  // fully covers the ≤3 s re-rank, so cards never shuffle after reveal, and any
+  // failure/timeout leaves the deterministic order (the permanent fallback).
+  // Live catalog only — the mock fallback carries no slugs to send.
+  const readyToRank = step === "processing" || step === "shortlist";
+  const { recs: rerankedLive } = useAiRerank(readyToRank ? buy : null, detLive);
+  const allScored = useMemo<Scored[]>(
+    () => (catalog ? rerankedLive : rankProjects(buy)),
+    [catalog, rerankedLive, buy],
   );
   const recs = useMemo(() => allScored.slice(0, 3), [allScored]);
   const dna = useMemo(() => deriveDNA(buy), [buy]);
