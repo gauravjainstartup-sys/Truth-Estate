@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { MARKETS, marketBySlug } from "@/lib/markets";
 import MarketProfile from "@/components/intelligence/MarketProfile";
+import { fetchTrackedOverview } from "@/lib/supabase";
+import { corridorKey } from "@/lib/journey";
 import { breadcrumbLd, ldJson } from "@/lib/seo";
 
 export function generateStaticParams() {
@@ -25,6 +27,8 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const m = marketBySlug(slug);
   if (!m) notFound();
 
+  const overview = await fetchTrackedOverview();
+
   const breadcrumb = breadcrumbLd([
     { name: "Home", path: "" },
     { name: "Intelligence", path: "/intelligence" },
@@ -35,7 +39,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(breadcrumb)} />
-      <MarketProfile m={m} />
+      <MarketProfile m={m} count={overview?.byCorridor[corridorKey(m.name)]} />
     </>
   );
 }
