@@ -592,7 +592,151 @@ body.sun-cinema{overflow:hidden}
 
 <div id="hint" class="card"><b>Drag</b> orbit · <b>Scroll</b> zoom · <b>Click</b> a tower → its roof → a flat</div>
 
-<div id="flatSheet">
+<style>
+/* ══════════════════════════════════════════════════════════════════
+   SOLINDEX — scientific-instrument skin for the Flat Intelligence sheet.
+   Token-scoped: redefining the theme vars flips the whole sheet to the
+   blueprint palette; the rest are surgical overrides for hardcoded
+   light-only colours so nothing goes invisible on the dark ground. ── */
+#flatSheet.sx{
+  --paper:#0f1320; --ink:#182036; --ivory:#141a2b;
+  --surf:rgba(255,255,255,.035); --surf2:rgba(255,255,255,.06); --line2:rgba(255,255,255,.08);
+  --line:#232b44; --text:#e7ebf4; --muted:#8790a6;
+  --gold:#f5b942; --sun:#f5b942; --accent:#57c8ea; --teal:#57c8ea;
+  color:var(--text);
+  background:
+    linear-gradient(rgba(120,140,200,.05) 1px,transparent 1px) 0 0/100% 32px,
+    linear-gradient(90deg,rgba(120,140,200,.05) 1px,transparent 1px) 0 0/32px 100%,
+    radial-gradient(120% 70% at 50% -8%,#1a2338 0%,#0f1320 60%);
+  backdrop-filter:blur(8px);
+}
+/* header — instrument eyebrow with a live pulse */
+#flatSheet.sx .fs-top{border-bottom:1px solid var(--line)}
+#flatSheet.sx .fs-title .fe{color:var(--gold);display:inline-flex;align-items:center;gap:7px}
+#flatSheet.sx .fs-title .fe::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px var(--gold);animation:sxpulse 2.4s infinite}
+@keyframes sxpulse{0%,100%{opacity:1}50%{opacity:.35}}
+#flatSheet.sx .fs-title h2{color:var(--text)}
+#flatSheet.sx #fsBack,#flatSheet.sx #fsClose{background:var(--surf);border-color:var(--line);color:var(--text)}
+#flatSheet.sx #fsBack:hover,#flatSheet.sx #fsClose:hover{border-color:var(--gold)}
+#flatSheet.sx .fs-left{background:transparent}
+#flatSheet.sx .fs-right{background:transparent}
+/* view tabs → segmented instrument control */
+#flatSheet.sx .fs-viewtabs button{background:var(--surf);border-color:var(--line);color:var(--muted)}
+#flatSheet.sx .fs-viewtabs button.on{background:var(--gold);border-color:var(--gold);color:#241800}
+/* media frames → dark blueprint panels */
+#flatSheet.sx #fs3d,#flatSheet.sx .fs-imgwrap{
+  background:linear-gradient(180deg,#131829,#0e1220);
+  border-color:var(--line);box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+#flatSheet.sx #fsImg{background:#f4f2ec;box-shadow:0 8px 26px rgba(0,0,0,.5)}
+#flatSheet.sx .fs3d-cap{background:rgba(12,16,26,.72);color:var(--muted)}
+#flatSheet.sx .fs3d-soon{color:var(--muted)}
+#flatSheet.sx .fs3d-soon span{color:var(--faint,#565f78)}
+#flatSheet.sx #fsCompass{filter:hue-rotate(0)}
+/* floor selector */
+#flatSheet.sx .fs-floor{background:var(--surf);border-color:var(--line)}
+#flatSheet.sx .fs-floor .ffttl,#flatSheet.sx .fs-floor .ff-lines-lab{color:var(--gold)}
+#flatSheet.sx .fs-floor .ffnow b{color:var(--text)}
+#flatSheet.sx .fs-floor .ffhint{color:var(--muted)}
+#flatSheet.sx .fs-floor .ff-line{background:var(--surf2);border-color:var(--line)}
+#flatSheet.sx .fs-floor .ff-line .fl-no{color:var(--text)}
+#flatSheet.sx .fs-floor .ff-line.on{background:linear-gradient(180deg,rgba(245,185,66,.16),transparent);border-color:var(--gold)}
+#flatSheet.sx .fs-floor .ff-line.on .fl-no{color:var(--text)}
+#flatSheet.sx .fs-floor .ff-line.on .fl-face{color:var(--sun)}
+/* verdict + score ring */
+#flatSheet.sx .fs-idband{background:transparent;border-color:var(--line)}
+#flatSheet.sx .fs-verdict{color:var(--muted)}
+#flatSheet.sx .fs-verdict b{color:var(--text)}
+/* sub-score strip */
+#flatSheet.sx .fs-scorestrip{border-color:var(--line)}
+#flatSheet.sx .fs-sc{border-color:var(--line)}
+#flatSheet.sx .fs-sc-v{color:var(--text)}
+#flatSheet.sx .fs-sc-bar{background:rgba(255,255,255,.1)}
+/* tabs */
+#flatSheet.sx .fs-tabs{background:transparent;border-color:var(--line)}
+#flatSheet.sx .fs-tab.on{color:var(--gold);border-color:var(--gold)}
+/* sun tab */
+#flatSheet.sx .sun-hero{background:rgba(245,185,66,.1);border-color:rgba(245,185,66,.32)}
+#flatSheet.sx .sun-qual{color:var(--text)}
+#flatSheet.sx .sun-chart-wrap{background:var(--surf);border-color:var(--line)}
+#flatSheet.sx .floor-bar{background:rgba(255,255,255,.08)}
+/* metric rows */
+#flatSheet.sx .mrow{border-color:var(--line)}
+#flatSheet.sx .mrow-label{color:var(--text)}
+#flatSheet.sx .mrow-val{color:var(--muted)}
+#flatSheet.sx .mrow-val b{color:var(--text)}
+#flatSheet.sx .mrow-bar{background:rgba(255,255,255,.08)}
+#flatSheet.sx .badge-est{background:rgba(255,255,255,.08);color:var(--muted)}
+#flatSheet.sx .mrow-stars .dim{color:rgba(255,255,255,.16)}
+/* rooms tab */
+#flatSheet.sx .room-card{background:var(--surf);border-color:var(--line)}
+#flatSheet.sx .room-name{color:var(--text)}
+#flatSheet.sx .room-tag{background:rgba(87,200,234,.14);color:var(--teal)}
+#flatSheet.sx .room-special{background:rgba(245,185,66,.08);border-color:rgba(245,185,66,.28)}
+/* verdict tab */
+#flatSheet.sx .verdict-hero{background:linear-gradient(135deg,rgba(87,200,234,.1),rgba(87,200,234,.03));border-color:rgba(87,200,234,.3)}
+#flatSheet.sx .verdict-text{color:var(--muted)}
+#flatSheet.sx .verdict-text b{color:var(--text)}
+#flatSheet.sx .pc-item{color:var(--muted);border-color:var(--line)}
+#flatSheet.sx .buyer-tag{border-color:var(--line);color:var(--muted)}
+#flatSheet.sx .buyer-tag.on{border-color:var(--gold);color:var(--sun);background:rgba(245,185,66,.12)}
+/* sun-rooms gantt (renderSunRooms output) */
+#flatSheet.sx .sun-rooms-now{color:var(--good,#67d6a0)}
+/* CTA */
+#flatSheet.sx .fs-cta{border-color:var(--line)}
+#flatSheet.sx .fs-cta-primary{background:linear-gradient(180deg,#ffd27a,var(--sun));border-color:var(--sun);color:#241800}
+#flatSheet.sx .fs-cta-secondary{background:var(--surf);border-color:var(--line);color:var(--text)}
+/* walk-through */
+#flatSheet.sx .fs-walk .wk-phone{background:var(--surf2);border-color:var(--line)}
+#flatSheet.sx .fs-walk .wk-phone input{color:var(--text)}
+/* mobile chrome that assumed a light ground */
+@media(max-width:840px){
+  #flatSheet.sx .fs-viewtabs{background:rgba(12,16,26,.9);border-color:var(--line)}
+  #flatSheet.sx .fs-cta{background:rgba(12,16,26,.92);border-color:var(--line)}
+}
+/* score breakdown — radar + weighted ledger */
+#flatSheet.sx .fs-radarcard{padding:15px 16px 15px;border-top:1px solid var(--line)}
+#flatSheet.sx .fs-gradering{display:none}   /* the radar card now owns the score — no separate ring */
+#flatSheet.sx .fsr-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+#flatSheet.sx .fsr-h{font:600 10px/1 ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text)}
+#flatSheet.sx .fsr-sub{font:500 8.5px/1 ui-monospace,monospace;letter-spacing:.04em;color:var(--gold);margin-top:5px}
+#flatSheet.sx .fsr-comp{display:flex;align-items:center;gap:9px}
+#flatSheet.sx .fsr-comp b{font:600 33px/1 'Geist',system-ui,sans-serif;letter-spacing:-.01em;color:var(--text)}
+#flatSheet.sx .fsr-comp span{font:500 12px/1 ui-monospace,monospace;color:var(--muted)}
+#flatSheet.sx .fsr-comp i{font:700 13px/1 'Geist',system-ui,sans-serif;font-style:normal;color:#241800;border-radius:6px;padding:3px 9px}
+#flatSheet.sx .fsr-svg{width:100%;max-width:300px;display:block;margin:4px auto 0}
+#flatSheet.sx .fsr-l{font:500 9px/1 ui-monospace,monospace;fill:var(--muted);letter-spacing:.02em}
+#flatSheet.sx .fsr-v{font:600 10px/1 'Geist',system-ui,sans-serif;fill:var(--text)}
+#flatSheet.sx .fsr-legend{display:flex;justify-content:center;gap:16px;font:500 9px/1 ui-monospace,monospace;color:#525b74;margin:0 0 13px;letter-spacing:.04em}
+#flatSheet.sx .fsr-legend span{display:inline-flex;align-items:center;gap:5px}
+#flatSheet.sx .fsr-legend i{width:9px;height:9px;border-radius:2px}
+#flatSheet.sx .fs-ledger{border:1px solid var(--line);border-radius:11px;overflow:hidden}
+#flatSheet.sx .fsl-row{display:grid;grid-template-columns:80px 1fr 46px 38px;gap:9px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line)}
+#flatSheet.sx .fsl-row:last-of-type{border-bottom:0}
+#flatSheet.sx .fsl-k{font:600 10.5px/1.15 'Geist',system-ui,sans-serif;color:var(--text)}
+#flatSheet.sx .fsl-k i{display:block;font-style:normal;font:500 8px/1.2 ui-monospace,monospace;color:#525b74;margin-top:2px;letter-spacing:.02em}
+#flatSheet.sx .fsl-t{height:6px;border-radius:9px;background:var(--line);overflow:hidden;position:relative}
+#flatSheet.sx .fsl-t i{position:absolute;left:0;top:0;bottom:0;border-radius:9px}
+#flatSheet.sx .fsl-w{font:500 9.5px/1 ui-monospace,monospace;color:var(--muted);text-align:right}
+#flatSheet.sx .fsl-p{font:700 13px/1 'Geist',system-ui,sans-serif;text-align:right}
+#flatSheet.sx .fsl-tot{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surf2)}
+#flatSheet.sx .fsl-tot span{font:600 10px/1 ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+#flatSheet.sx .fsl-tot b{font:700 18px/1 'Geist',system-ui,sans-serif;color:var(--text)}
+#flatSheet.sx .fsl-tot b span{font-size:11px;color:var(--muted);font-weight:400;letter-spacing:0;text-transform:none}
+#flatSheet.sx .fsr-note{font:500 10px/1.5 'Geist',system-ui,sans-serif;color:var(--muted);margin-top:11px;padding-left:15px;position:relative}
+#flatSheet.sx .fsr-note::before{content:"";position:absolute;left:0;top:4px;width:7px;height:7px;border-radius:2px;background:var(--warn,#f5a04a)}
+#flatSheet.sx .fsr-note b{color:var(--text)}
+/* floor-index bars — an obvious control that doubles as a sun-by-floor chart */
+#flatSheet.sx .fs-floor .ff-bars{display:flex;align-items:flex-end;gap:2px;height:84px;padding:8px 8px 0;border:1px solid var(--line);border-radius:11px;background:#141a2b;position:relative;cursor:pointer;margin:12px 0 6px;touch-action:none;outline:none}
+#flatSheet.sx .fs-floor .ff-bars:focus-visible{border-color:var(--gold)}
+#flatSheet.sx .fs-floor .ff-bar{flex:1;border-radius:2px 2px 0 0;min-height:5px;position:relative;transition:background .1s}
+#flatSheet.sx .fs-floor .ff-bar.cur{box-shadow:0 0 0 1.5px #57c8ea,0 0 10px #57c8ea;z-index:3}
+#flatSheet.sx .fs-floor .ff-bar.cur::after{content:attr(data-lbl);position:absolute;left:50%;top:-18px;transform:translateX(-50%);font:700 10.5px/1 'Geist',system-ui,sans-serif;color:#57c8ea;white-space:nowrap;pointer-events:none}
+#flatSheet.sx .fs-floor .ff-sunline{position:absolute;top:0;bottom:0;width:0;border-left:1.5px dashed rgba(245,185,66,.6);z-index:2;pointer-events:none}
+#flatSheet.sx .fs-floor .ff-sunline span{position:absolute;top:2px;left:5px;font:600 8px/1 ui-monospace,monospace;color:#ffd27a;white-space:nowrap}
+#flatSheet.sx .fs-floor .ffscale{color:#525b74}
+#flatSheet.sx .fs-floor .ffbest{color:var(--sun)}
+</style>
+<div id="flatSheet" class="sx">
   <div class="fs-top">
     <div class="fs-title"><div class="fe" id="fsEy">Flat intelligence</div><h2 id="fsName">—</h2><span class="fsub" id="fsSub"></span></div>
     <div class="fs-sp"></div>
@@ -1783,6 +1927,39 @@ function sunFloorHTML(t,u,fl,oppSt){
     </div>
     <div style="margin-top:9px;font:500 9px/1.5 ui-monospace,monospace;color:#abaea1">Living facade · sun computed for floor ${fl} · north calibrated to the site plan</div>`;
 }
+/* Score breakdown — a 6-factor radar (the flat's "shape" at a glance) plus a
+   weighted ledger that shows every factor's sub-score × weight = points, rolling
+   up to the composite. Replaces the old 4-tile strip, which hid View & Floor. */
+const SCORE_FACT=[['morning','Morning sun','equinox AM',25],['cool','Summer cool','heat-load inv.',20],['vastu','Vastu','per-room',25],['view','View','outlook + corner',15],['vent','Airflow','aspect + breeze',10],['floor','Floor','clear-sun floor',5]];
+function scoreBreakdownHTML(fscore){
+  const sub=fscore.sub||{},N=6,cx=132,cy=118,R=72;
+  const pt=(i,r)=>{const a=-Math.PI/2+i*2*Math.PI/N;return[cx+r*Math.cos(a),cy+r*Math.sin(a)];};
+  let g='';
+  [0.25,0.5,0.75,1].forEach(rr=>{let ps=[];for(let i=0;i<N;i++){const p=pt(i,R*rr);ps.push(p[0].toFixed(1)+','+p[1].toFixed(1));}
+    g+=`<polygon points="${ps.join(' ')}" fill="none" stroke="${rr===1?'#2c3452':'rgba(120,140,200,.10)'}" stroke-width="1"/>`;});
+  for(let i=0;i<N;i++){const o=pt(i,R);g+=`<line x1="${cx}" y1="${cy}" x2="${o[0].toFixed(1)}" y2="${o[1].toFixed(1)}" stroke="rgba(120,140,200,.10)"/>`;
+    const lp=pt(i,R+14),vp=pt(i,R+30),anc=Math.abs(lp[0]-cx)<6?'middle':(lp[0]>cx?'start':'end');
+    g+=`<text class="fsr-l" x="${lp[0].toFixed(1)}" y="${(lp[1]+3).toFixed(1)}" text-anchor="${anc}">${SCORE_FACT[i][1].split(' ')[0]}</text>`;
+    g+=`<text class="fsr-v" x="${vp[0].toFixed(1)}" y="${(vp[1]+3).toFixed(1)}" text-anchor="${anc}">${sub[SCORE_FACT[i][0]]||0}</text>`;}
+  let bp=[];for(let i=0;i<N;i++){const p=pt(i,R*0.6);bp.push(p[0].toFixed(1)+','+p[1].toFixed(1));}
+  g+=`<polygon points="${bp.join(' ')}" fill="none" stroke="#525b74" stroke-width="1" stroke-dasharray="3 3"/>`;
+  let vv=[];for(let i=0;i<N;i++){const p=pt(i,R*(sub[SCORE_FACT[i][0]]||0)/100);vv.push(p[0].toFixed(1)+','+p[1].toFixed(1));}
+  g+=`<polygon points="${vv.join(' ')}" fill="rgba(245,185,66,.18)" stroke="#f5b942" stroke-width="2" stroke-linejoin="round"/>`;
+  for(let i=0;i<N;i++){const p=pt(i,R*(sub[SCORE_FACT[i][0]]||0)/100);g+=`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3" fill="#ffd27a"/>`;}
+  let rows='';SCORE_FACT.forEach(f=>{const v=sub[f[0]]||0,pts=f[3]*v/100,col=scCol(v);
+    rows+=`<div class="fsl-row"><span class="fsl-k">${f[1]}<i>${f[2]}</i></span><span class="fsl-t"><i style="width:${v}%;background:${col}"></i></span><span class="fsl-w">${v} ×${f[3]}%</span><span class="fsl-p" style="color:${col}">${pts.toFixed(1)}</span></div>`;});
+  const gaps=SCORE_FACT.map(f=>({lab:f[1],lost:f[3]*(100-(sub[f[0]]||0))/100})).sort((a,b)=>b.lost-a.lost);
+  const short=100-fscore.s,note=`<b>${short} pts short of 100</b> — mostly ${gaps[0].lab.replace(' sun','')}${gaps[1].lost>4?' &amp; '+gaps[1].lab.replace(' cool',''):''}.`;
+  return `<div class="fs-radarcard">
+    <div class="fsr-top">
+      <div><div class="fsr-h">Livability score</div><div class="fsr-sub">6 factors · weighted</div></div>
+      <div class="fsr-comp"><b>${fscore.s}</b><span>/100</span><i style="background:${gradeColor(fscore.grade)}">${fscore.grade}</i></div>
+    </div>
+    <svg class="fsr-svg" viewBox="0 0 264 246">${g}</svg>
+    <div class="fsr-legend"><span><i style="background:#f5b942"></i>this flat</span><span><i style="background:#525b74"></i>benchmark 60</span></div>
+    <div class="fs-ledger">${rows}<div class="fsl-tot"><span>Composite</span><b>${fscore.s}<span> / 100</span></b></div></div>
+    <div class="fsr-note">${note}</div>
+  </div>`;}
 function openFlat(t,uid,keepFloor){
   selUnit=uid;
   const rec=((selData||[]).find(x=>x.u.id===uid))||t.units.map(u=>({u,st:unitStats(t,u,2,0.3)})).find(x=>x.u.id===uid);
@@ -1814,10 +1991,8 @@ function openFlat(t,uid,keepFloor){
   sunpOpen(u.cfg||t.cfg,u.id,b);
   {const _hasPlan=(planFor(u.cfg||t.cfg,u.id)||{}).img,_has3d=!!(FLATW[(u.cfg||t.cfg)+'|'+u.id]||FLATW[(u.cfg||t.cfg)+'|101']);
    setFsView(_hasPlan?'sun':(_has3d?'3d':'2d'));}   // lead with the 2D sun-path sim on the real plan
-  /* score strip */
-  document.getElementById('fsCap').innerHTML=`
-     <div class="fs-scorestrip">${[['\u2600 Morning',fscore.sub.morning],['\u2744 Summer cool',fscore.sub.cool],['\u262f Vastu',fscore.sub.vastu],['\u2248 Airflow',fscore.sub.vent]].map(m=>`<div class="fs-sc"><span class="fs-sc-k">${m[0]}</span><span class="fs-sc-v" style="color:${scCol(m[1])}">${m[1]}</span><div class="fs-sc-bar"><div class="fs-sc-fill" style="width:${m[1]}%;background:${scCol(m[1])}"></div></div><span class="fs-sc-tag">of 100</span></div>`).join('')}
-    </div>`;
+  /* score breakdown: 6-factor radar + weighted ledger (all factors visible + the roll-up) */
+  document.getElementById('fsCap').innerHTML=scoreBreakdownHTML(fscore);
   /* tabs */
   const R=document.getElementById('fsIntel');
   R.innerHTML=`
@@ -2088,21 +2263,38 @@ function openFlat(t,uid,keepFloor){
   selFloor=Math.max(1,Math.min(FLOORS,selFloor||bv.fl));
   const ffEl=document.getElementById('fsFloor');
   const linesHTML=t.units.slice().sort((a,b)=>(parseInt(String(a.id).slice(-2),10)||0)-(parseInt(String(b.id).slice(-2),10)||0)).map(u2=>{const ln=('0'+(parseInt(String(u2.id).slice(-2),10)||0)).slice(-2);return `<button class="ff-line${u2.id===u.id?' on':''}" data-uid="${u2.id}"><span class="fl-no">${ln}</span><span class="fl-face">${vfacing(t,u2)}</span></button>`;}).join('');
+  /* floor-index bars: one bar per floor, height = winter sun, coloured by band —
+     an obvious control that doubles as a sun-by-floor chart (replaces the thin slider). */
+  const _fc=floorCurve(t,u,1,0.3),_mH=Math.max(0.5,..._fc.map(p=>p.h));
+  const _bCol=(f,h)=>(f>=bd.pLo&&f<=bd.pHi)?'rgba(87,200,234,.5)':(f>=bd.vLo&&f<=bd.vHi)?'rgba(103,214,160,.62)':(cf!=null&&f>=cf)?'rgba(245,185,66,.45)':'#2c3450';
+  let _bars='';for(let f=1;f<=FLOORS;f++){const h=(_fc[f-1]||{h:0}).h;_bars+=`<div class="ff-bar" data-fl="${f}" style="height:${(5+h/_mH*72).toFixed(0)}px;background:${_bCol(f,h)}"></div>`;}
+  const _slp=cf!=null?((cf-0.5)/FLOORS*100).toFixed(1):null;
   if(ffEl){ffEl.innerHTML=`
     <div class="ff-lines"><span class="ff-lines-lab">Line</span><div class="ff-lineseg">${linesHTML}</div></div>
-    <div class="ffhead"><span class="ffttl">Choose your floor</span><span class="ffnow">Floor <b id="ffCur">${selFloor}</b> of ${FLOORS}</span></div>
-    <input type="range" id="ffRange" min="1" max="${FLOORS}" step="1" value="${selFloor}">
-    <div class="ffscale"><span>01</span><span class="ffbest">◎ best value · ${bv.fl}</span><span>${FLOORS}</span></div>
+    <div class="ffhead"><span class="ffttl">Choose your floor</span><span class="ffnow">Floor <b id="ffCur">${selFloor}</b> of ${FLOORS}<span id="ffSunH"></span></span></div>
+    <div class="ff-bars" id="ffBars" role="slider" aria-label="Floor" aria-valuemin="1" aria-valuemax="${FLOORS}" aria-valuenow="${selFloor}" tabindex="0">${_bars}${_slp!=null?`<div class="ff-sunline" style="left:${_slp}%"><span>full sun ↑</span></div>`:''}</div>
+    <div class="ffscale"><span>F1</span><span class="ffbest">◎ best value · F${bv.fl}</span><span>F${FLOORS}</span></div>
     <div class="ffhint" id="ffHint"></div>`;
-    ffEl.querySelectorAll('.ff-line').forEach(bt=>bt.onclick=()=>{const nu=bt.dataset.uid;if(nu!==u.id)openFlat(t,nu,true);});}
+    ffEl.querySelectorAll('.ff-line').forEach(bt=>bt.onclick=()=>{const nu=bt.dataset.uid;if(nu!==u.id)openFlat(t,nu,true);});
+    const _bx=document.getElementById('ffBars');
+    if(_bx){const _pick=cx=>{const r=_bx.getBoundingClientRect();paintFloor(Math.round((cx-r.left)/r.width*(FLOORS-1))+1);};let _dg=false;
+      _bx.addEventListener('pointerdown',e=>{_dg=true;try{_bx.setPointerCapture(e.pointerId);}catch(_){}_pick(e.clientX);});
+      _bx.addEventListener('pointermove',e=>{if(_dg)_pick(e.clientX);});
+      _bx.addEventListener('pointerup',()=>{_dg=false;});_bx.addEventListener('pointercancel',()=>{_dg=false;});
+      _bx.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowUp'){paintFloor(selFloor+1);e.preventDefault();}else if(e.key==='ArrowLeft'||e.key==='ArrowDown'){paintFloor(selFloor-1);e.preventDefault();}});}
+  }
   function paintFloor(fl){
     fl=Math.max(1,Math.min(FLOORS,fl|0));selFloor=fl;
     const flatNo=`${fl}${lineNum}`;
     document.getElementById('fsName').textContent=`${t.id} · ${flatNo}`;
     const cur=document.getElementById('ffCur');if(cur)cur.textContent=fl;
     const tier=floorTier(fl,bd,cf),fsun=floorSun(t,u,fl),season=benchShort[String(decl)].toLowerCase();
+    const bx=document.getElementById('ffBars');
+    if(bx){bx.setAttribute('aria-valuenow',fl);bx.querySelectorAll('.ff-bar').forEach(b=>{b.classList.remove('cur');b.removeAttribute('data-lbl');});
+      const cb=bx.querySelector('.ff-bar[data-fl="'+fl+'"]');if(cb){cb.classList.add('cur');cb.setAttribute('data-lbl','F'+fl);}}
+    const sh=document.getElementById('ffSunH');if(sh)sh.innerHTML=` · <b style="color:#f5b942;font-weight:600">${fsun.h>0.05?fsun.h.toFixed(1)+'h':'no'}</b> <span style="color:#8790a6">${season} sun</span>`;
     const hint=document.getElementById('ffHint');
-    if(hint)hint.innerHTML=`<b style="color:${tier.c}">${tier.k}</b> · ${tier.d} <span style="color:#9a9c95">— ${fsun.h>0.05?fsun.h.toFixed(1)+'h '+season+' sun':'no direct '+season+' sun at this floor'}.</span>`;
+    if(hint)hint.innerHTML=`<b style="color:${tier.c}">${tier.k}</b> · ${tier.d} <span style="color:#8790a6">— ${fsun.h>0.05?fsun.h.toFixed(1)+'h '+season+' sun':'no direct '+season+' sun at this floor'}.</span>`;
     const sp=document.getElementById('fp-sun');if(sp)sp.innerHTML=sunFloorHTML(t,u,fl,oppSt);
     renderSunRooms();if(f3&&f3.roomsData)f3setSun(f3.sunFrac);
     const wu=document.getElementById('fsWalkUnit');if(wu)wu.textContent=flatNo;
