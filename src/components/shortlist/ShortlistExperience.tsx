@@ -76,6 +76,7 @@ export default function ShortlistExperience() {
             buy={buy}
             dna={dna}
             recs={recs}
+            scannedCount={catalog.length}
             onRefine={() => open("buy")}
             onConsult={() => open()}
             onVerifiedChange={setVerified}
