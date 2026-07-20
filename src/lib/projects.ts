@@ -586,8 +586,11 @@ export const TOWER_INTEL: Record<string, TowerIntelMeta> = {
   },
   // DB project_name "DLF Privana North" (page slug dlf-privana-north). Six G+50
   // quad-core point towers, single 4 BHK + servant plate; blue-glass massing with
-  // curved sail crowns matching the render. Interior floor-plan / 3D layer is a
-  // fast-follow (not yet traced) — the advisor leads with the sun-path sim.
+  // flat modern crowns. Tower footprints traced to the official DLF siteplan; the
+  // interior 3D + 2D floor-plan layer is built from the sanctioned 4 BHK + SR plan
+  // (traced walls + floor-plan textures). The tightened arc has no south-facing
+  // decks — units face E/NE/SW/W, so winter sun is morning/afternoon (~4 h), not
+  // all-day. The advisor leads with the interactive 3D + sun-path sim.
   "DLF Privana North": {
     file: "tower-intel/dlf-privana-north.html",
     preview: "tower-intel/dlf-privana-north-preview.jpg",
@@ -596,13 +599,13 @@ export const TOWER_INTEL: Record<string, TowerIntelMeta> = {
     totalUnits: "1,200+", // 6 towers × 50 floors × 4 lines
     // Mirrors the advisor's own #1 composite pick, so the teaser stays honest.
     sample: {
-      ref: "Tower C · Line 01",
-      type: "4 BHK + servant · south-facing",
-      sun: "7.3 h/day (winter)",
-      sunPct: 85,
+      ref: "Tower F · Line 03",
+      type: "4 BHK + servant · east-facing",
+      sun: "4.4 h/day (winter)",
+      sunPct: 51,
       ventilation: "Quad-core point tower · 2-side airflow",
-      vastu: "South living & deck · all-day winter sun",
-      idealFor: "Sun-first buyers & large families (4 BHK)",
+      vastu: "East living & deck · morning winter sun",
+      idealFor: "Morning-sun & vastu-first buyers (4 BHK)",
     },
   },
 };
