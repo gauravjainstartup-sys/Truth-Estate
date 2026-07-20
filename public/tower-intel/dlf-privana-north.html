@@ -1814,6 +1814,13 @@ function openFlat(t,uid,keepFloor){
   selUnit=uid;
   const rec=((selData||[]).find(x=>x.u.id===uid))||t.units.map(u=>({u,st:unitStats(t,u,2,0.3)})).find(x=>x.u.id===uid);
   const u=rec.u,st=rec.st,cfg=CONFIGS[u.cfg||t.cfg],compass=vfacing(t,u),b=((t.id==='T-7'||t.id==='T-8')?{N:0,NE:45,E:90,SE:135,S:180,SW:225,W:270,NW:315}[compass]:bearingOf(t,u.primL)),v=vastuFor(compass);
+  /* The plan tile is always unit 103's plate; the other quad lines reuse it mirrored.
+     So the plate's world orientation for the sun-sim & 3D must come from the BASE plate
+     face (103, primL [0,1]) for ALL four lines — the mirror encodes each line's real
+     facing. Lines 1 & 2 carry primL [0,-1] (the opposite face), which is 180° off and
+     would swing the sun to the wrong side of the plate. Facing labels/scores still use
+     the true per-unit primL above. */
+  const planB=(t.core===4)?bearingOf(t,[0,1]):b;
   const lakeFacing=u.prim==='lake',isEnd=u.faces.length>=3;
   const sunQ=st.rawAvg<0.4?'No direct sun':st.amAvg>st.pmAvg*1.4?'Morning sun':st.pmAvg>st.amAvg*1.4?'Afternoon sun':'All-day sun';
   const sunStars=Math.max(0,Math.min(5,Math.round(st.rawAvg/2)));
@@ -1839,8 +1846,8 @@ function openFlat(t,uid,keepFloor){
     if(_pf&&_pf.img){if(_fi){_fi.src=_pf.img;_fi.style.display='';}if(_b2)_b2.style.display='';}
     else{if(_fi){_fi.removeAttribute('src');_fi.style.display='none';}if(_b2)_b2.style.display='none';}   // no plan webp yet → no broken img
     if(_b3)_b3.style.display=_has3d?'':'none';if(_bw)_bw.style.display=_has3d?'':'none';                  // interior 3D/walk are a fast-follow; hide until assets exist
-    if(_has3d){buildFlat3D(cfgK,u.id,b);const _c=document.querySelector('#fs3d .fs3d-cap');if(_c)_c.innerHTML='';if(f3)f3.capOrbit='';}
-    sunpOpen(cfgK,u.id,b);
+    if(_has3d){buildFlat3D(cfgK,u.id,planB);const _c=document.querySelector('#fs3d .fs3d-cap');if(_c)_c.innerHTML='';if(f3)f3.capOrbit='';}
+    sunpOpen(cfgK,u.id,planB);
     setFsView((_pf&&_pf.img)?'sun':(_has3d?'3d':'sun'));   // lead with the sun-path sim (works without any interior asset)
   })();
   /* score strip */
