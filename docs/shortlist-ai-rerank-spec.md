@@ -1,10 +1,18 @@
 # Shortlist AI Re-rank — Spec (Path 2)
 
-**Status: spec only — nothing here is built.** The shortlist today is a
-deterministic weighted-sum ranking (`rankCore` in `src/lib/journey.ts`) over the
-live catalog, with a hard affordability gate. This document specifies the
-optional AI layer on top of it, so it can be built without re-deriving the
-decisions.
+**Status: BUILT — on the Gemini seam (founder call), awaiting function deploy.**
+Implementation: `supabase/functions/shortlist-rerank/` (Edge Function, offline
+harness, README with deploy steps) + `src/lib/rerank.ts` / `src/lib/useAiRerank.ts`
+(client bridge + hook) wired into the standalone `/shortlist`. Vendor changed
+from the Claude draft below to **Gemini** (`gemini-2.5-flash`, `GEMINI_API_KEY`
+— the same secret challenge-router uses); the architecture, contract, and
+guardrails shipped exactly as specified. The in-modal journey shortlist stays
+deterministic for now. Until `supabase functions deploy shortlist-rerank` runs,
+the client fails fast and the deterministic order renders — the site never
+waits on an undeployed function beyond the 3 s bound.
+
+The shortlist under it is a deterministic weighted-sum ranking (`rankCore` in
+`src/lib/journey.ts`) over the live catalog, with a hard affordability gate.
 
 ## Architecture — deterministic proposes, Claude disposes
 
