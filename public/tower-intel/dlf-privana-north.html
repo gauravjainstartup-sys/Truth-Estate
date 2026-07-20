@@ -781,13 +781,17 @@ const collMeshes=[],towerPick=[],tilePick=[];
 /* dark-bronze facade with a lit-window grid — matches the project render */
 function towerFacade(t){const W=224,H=1120,cols=(t.core===2?6:5),rows=FLOORS,cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');
   let s=((t.x*131+t.z*17+9)>>>0)||7;const rnd=()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;};
-  /* DLF Privana North render palette: cool blue-grey glass, horizontal balcony bands */
-  const grad=g.createLinearGradient(0,0,W,0);grad.addColorStop(0,'#42586d');grad.addColorStop(.5,'#59708a');grad.addColorStop(1,'#3a4c5e');g.fillStyle=grad;g.fillRect(0,0,W,H);
+  /* Modern curtain-wall glass — cool light blue with a top-lit vertical sheen,
+     slim mullions for the slim-tower read, sparse warm-lit windows for a calm feel */
+  const base=g.createLinearGradient(0,0,0,H);base.addColorStop(0,'#b0c2d3');base.addColorStop(.5,'#839bb0');base.addColorStop(1,'#6d859b');g.fillStyle=base;g.fillRect(0,0,W,H);
   const cw=W/cols,rh=H/rows;
-  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const x=c*cw+cw*0.15,y=r*rh+rh*0.2,ww=cw*0.7,wh=rh*0.55,q=rnd();
-    g.fillStyle=q<0.14?'#e6eef4':(q<0.58?'#3d5064':'#45596e');g.fillRect(x,y,ww,wh);
-    g.fillStyle='rgba(198,214,228,0.18)';g.fillRect(x,y+wh,ww,Math.max(1,rh*0.06));}
-  g.fillStyle='rgba(20,30,44,0.5)';for(let c=0;c<=cols;c++)g.fillRect(c*cw-1,0,2,H);
+  for(let c=0;c<cols;c++){const gx=g.createLinearGradient(c*cw,0,(c+1)*cw,0);
+    gx.addColorStop(0,'rgba(255,255,255,0.16)');gx.addColorStop(.5,'rgba(120,150,175,0)');gx.addColorStop(1,'rgba(28,42,56,0.18)');
+    g.fillStyle=gx;g.fillRect(c*cw,0,cw,H);}
+  g.fillStyle='rgba(36,52,68,0.26)';for(let r=0;r<=rows;r++)g.fillRect(0,r*rh-1,W,1.4);           // slim floor spandrels
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){if(rnd()<0.11){const x=c*cw+cw*0.16,y=r*rh+rh*0.22;
+    g.fillStyle='rgba(242,232,206,0.5)';g.fillRect(x,y,cw*0.68,rh*0.5);}}                          // sparse warm lights
+  g.fillStyle='rgba(228,238,247,0.5)';for(let c=0;c<=cols;c++)g.fillRect(c*cw-0.8,0,1.6,H);        // bright vertical mullions
   const tex=new T.CanvasTexture(cv);tex.anisotropy=8;return tex;}
 function makeUnits(t){const cw=3.5; // half core width along slab
   if(t.core===2)return[
@@ -831,7 +835,7 @@ towers.forEach(t=>{const h=topH();
   // unit segments (full height, colored by config)
   const facMap=towerFacade(t);
   t.units.forEach((u,i)=>{const w=u.x1-u.x0;
-    const m=new T.Mesh(new T.BoxGeometry(w-.4,h-LOBBY,u.zhw*2),new T.MeshStandardMaterial({map:facMap,color:new T.Color('#ffffff').offsetHSL(0,0,(i-1)*.03),roughness:.62,metalness:.18}));
+    const m=new T.Mesh(new T.BoxGeometry(w-.4,h-LOBBY,u.zhw*2),new T.MeshStandardMaterial({map:facMap,color:new T.Color('#ffffff').offsetHSL(0,0,(i-1)*.03),roughness:.34,metalness:.42}));
     const[ox,oz]=rotV(t.rot,u.cx,u.zc);
     m.position.set(t.x+ox,LOBBY+(h-LOBBY)/2,t.z+oz);m.rotation.y=t.rot;m.castShadow=m.receiveShadow=true;siteGrp.add(m);u.mesh=m;u.baseCol=m.material.color.clone();
     if(u.nose){m.userData.tower=t.id;towerPick.push(m);}});
@@ -840,13 +844,18 @@ towers.forEach(t=>{const h=topH();
   core.position.set(t.x,LOBBY+(h-LOBBY)/2,t.z);core.rotation.y=t.rot;core.castShadow=true;siteGrp.add(core);
   // floor bands (glass-mullion blue-grey, every 8 floors)
   for(let f=8;f<FLOORS;f+=8){const ln=new T.Mesh(new T.BoxGeometry(t.hw*2+.3,.16,t.hd*2+.3),new T.MeshStandardMaterial({color:'#46586a'}));ln.position.set(t.x,LOBBY+f*FH,t.z);ln.rotation.y=t.rot;siteGrp.add(ln);}
-  // curved sail crown — the render's signature curved top. The box engine renders it
-  // as a shallow glass dome cap (purely cosmetic; sun/vastu scoring uses the footprint).
-  const crownMat=new T.MeshStandardMaterial({color:'#54697e',roughness:.3,metalness:.55,emissive:'#26333f',emissiveIntensity:.3});
-  const dome=new T.Mesh(new T.SphereGeometry(1,24,12,0,Math.PI*2,0,Math.PI*0.5),crownMat);
-  dome.scale.set(t.hw*1.0,t.hd*0.85,t.hd*1.0);dome.position.set(t.x,h,t.z);dome.rotation.y=t.rot;dome.castShadow=true;
-  dome.raycast=function(){};t.dome=dome;   // never intercept roof-tile taps; hidden while its tower is selected
-  siteGrp.add(dome);
+  // flat modern crown — a clean parapet cap (no dome, founder request). A slim
+  // glass amenity band sits a floor below the flat roofline for a modern high-rise
+  // finish. Grouped as t.dome so it still hides while its tower is selected and
+  // never intercepts roof-tile taps.
+  const crown=new T.Group();crown.position.set(t.x,0,t.z);crown.rotation.y=t.rot;
+  const parMat=new T.MeshStandardMaterial({color:'#2f4256',roughness:.55,metalness:.35});
+  const par=new T.Mesh(new T.BoxGeometry(t.hw*2+0.5,2.2,t.hd*2+0.5),parMat);
+  par.position.set(0,h+1.0,0);par.castShadow=true;par.raycast=function(){};crown.add(par);
+  const bandMat=new T.MeshStandardMaterial({color:'#8fb4cf',roughness:.15,metalness:.6,emissive:'#3a556b',emissiveIntensity:.35});
+  const band=new T.Mesh(new T.BoxGeometry(t.hw*2+0.7,FH*1.4,t.hd*2+0.7),bandMat);
+  band.position.set(0,h-FH*1.4,0);band.castShadow=true;band.raycast=function(){};crown.add(band);
+  t.dome=crown;siteGrp.add(crown);
   // collision (whole slab)
   const coll=new T.Mesh(new T.BoxGeometry(t.hw*2,h-LOBBY,t.hd*2),new T.MeshBasicMaterial({visible:false}));
   coll.position.set(t.x,LOBBY+(h-LOBBY)/2,t.z);coll.rotation.y=t.rot;coll.userData.tower=t.id;siteGrp.add(coll);collMeshes.push(coll);towerPick.push(coll);
