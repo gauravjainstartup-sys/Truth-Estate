@@ -393,7 +393,21 @@ export function rankCore<T extends Rankable>(items: readonly T[], d: BuyData): (
     d.configs.includes("Flexible") ||
     p.configs.some((c) => d.configs.includes(c));
 
-  const raw = items
+  /* Affordability gate — a recommendation the buyer cannot afford is not a
+     recommendation. Anything whose ENTRY price sits more than ₹2 Cr above the
+     stated budget is excluded BEFORE ranking (the same +2 Cr stretch the budget
+     band below already tolerates), so corridor fit can no longer surface a
+     ₹9 Cr project against a ₹5 Cr brief. Cheaper than budget stays in — the
+     buyer can afford it — and simply ranks through the normal decay. 21 means
+     "₹20 Cr+": no ceiling. If the gate would empty the list outright (a very
+     low budget against a premium-only universe), rank the full set instead —
+     an honest "closest there is" beats a dead end, and the card copy never
+     claims budget fit for anything outside the band. */
+  const ceiling = d.budgetCr >= 21 ? Infinity : d.budgetCr + 2;
+  const affordable = items.filter((p) => p.budget[0] <= ceiling);
+  const pool = affordable.length ? affordable : items;
+
+  const raw = pool
     .map((p) => {
       let s = 0;
 
