@@ -122,3 +122,60 @@ Actions tab (event: `repository_dispatch`); ~3–4 min later the edit is live.
   a rebuild (Contents: write on one repo), nothing else.
 - **Cost:** one Actions run + one Supabase snapshot per (debounced) change —
   code pushes and page views stay at zero Supabase egress.
+
+## Troubleshooting — nothing deployed after a DB edit
+
+pg_net is **asynchronous**: the trigger calls `net.http_post(...)`, which returns a
+request id *immediately* and sends the HTTP call from a background worker a few
+seconds later. So the SQL editor saying **"Success. No rows returned"** tells you
+nothing — the truth is in pg_net's response log. **This one query is the whole
+diagnostic:**
+
+```sql
+select id, status_code, content, error_msg, created
+from net._http_response order by created desc limit 5;
+```
+
+Read `status_code` on the newest row (its `id` matches the number `net.http_post`
+returned):
+
+| `status_code` | `content` | Meaning → fix |
+|---|---|---|
+| **200** | `{"ok":true,"dispatched":true}` | Success. A `repository_dispatch` "Deploy to GitHub Pages" run appears in Actions within seconds. |
+| **202** | `{"dispatched":false,...debounced}` | **Not an error** — a rebuild fired within `PUBLISH_DEBOUNCE_SEC` (90 s) and covers this edit. |
+| **401** | `{"error":"unauthorized"}` | Secret mismatch: the `x-publish-secret` the **trigger** sends ≠ `PUBLISH_HOOK_SECRET` on the **function** (or the function secret isn't set). Fix: set the *same* value in both places (see isolation test below). |
+| **502** | `{"github_status":403,...\"Resource not accessible by personal access token\"}` | The GitHub PAT lacks permission. It needs **Contents: Read and write** — see the gotcha below. Also confirm repo access includes `Truth-Estate`, and if the owner is an org, the token is org-approved. |
+| **502** | `{"github_status":401}` | PAT is invalid or expired — regenerate it and re-set `GH_DISPATCH_TOKEN`. |
+| *(no new row)* / `status_code` null + `error_msg` | — | pg_net never sent it: extension not enabled, wrong URL, or network. Read `error_msg`. |
+
+### Isolate which side owns a 401
+
+To tell "trigger sends the wrong secret" apart from "function has the wrong
+secret," call the function **directly** from the SQL editor with a value you
+*know*, bypassing the trigger:
+
+```sql
+select net.http_post(
+  url     := 'https://<project-ref>.functions.supabase.co/publish-deploy',
+  headers := jsonb_build_object('Content-Type','application/json','x-publish-secret','A_VALUE_YOU_KNOW'),
+  body    := '{}'::jsonb
+);
+-- wait ~15s, then:
+select id, status_code, content from net._http_response order by created desc limit 1;
+```
+
+Set `PUBLISH_HOOK_SECRET` to `A_VALUE_YOU_KNOW` first. If this still 401s, the
+secret isn't reaching the function (wrong project linked, or set in the wrong
+place — it must be **Edge Functions → Secrets**, not Vault). Once this returns
+200, re-point the trigger's `notify_publish_deploy()` header at the same value.
+
+### Two gotchas that bit us setting this up
+
+1. **`supabase …` / `curl …` are terminal commands, not SQL.** Pasting them into
+   the SQL editor throws `syntax error at or near "supabase"`. Use the **Dashboard
+   UI** for secrets (Edge Functions → Secrets) and the SQL editor only for SQL.
+2. **The dispatch API needs `Contents: Read and write` — nothing else.** On the
+   fine-grained PAT permission list, "Repository advisories: Read and write" looks
+   plausible and is easy to pick by mistake; it yields the `403 "Resource not
+   accessible by personal access token"` above. The only permission that matters
+   here is **Contents** (write).
