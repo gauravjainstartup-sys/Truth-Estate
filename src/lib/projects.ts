@@ -591,8 +591,9 @@ export const TOWER_INTEL: Record<string, TowerIntelMeta> = {
   // model's metric frame); the ground is the real parcel polygon traced from the
   // official siteplan and georeferenced to those coords. Interior 3D + 2D floor-
   // plan layer is built from the sanctioned 4 BHK + SR plan (traced walls +
-  // textures). The arc has no south-facing decks — units face E/NE/SW/W, so winter
-  // sun is morning/afternoon (~4 h), not all-day. Advisor leads with the 3D + sun sim.
+  // textures). Each tower's rotation is measured from the siteplan footprint
+  // (min-area-rect detection); units face E/NE/NW/SE/SW/W around the arc, and the
+  // SE-facing lines catch all-day winter sun (~8 h, grade A). Advisor leads with 3D + sun sim.
   "DLF Privana North": {
     file: "tower-intel/dlf-privana-north.html",
     preview: "tower-intel/dlf-privana-north-preview.jpg",
@@ -601,13 +602,13 @@ export const TOWER_INTEL: Record<string, TowerIntelMeta> = {
     totalUnits: "1,200+", // 6 towers × 50 floors × 4 lines
     // Mirrors the advisor's own #1 composite pick, so the teaser stays honest.
     sample: {
-      ref: "Tower F · Line 03",
-      type: "4 BHK + servant · east-facing",
-      sun: "4.4 h/day (winter)",
-      sunPct: 51,
+      ref: "Tower B · Line 03",
+      type: "4 BHK + servant · south-east facing",
+      sun: "8.2 h/day (winter)",
+      sunPct: 92,
       ventilation: "Quad-core point tower · 2-side airflow",
-      vastu: "East living & deck · morning winter sun",
-      idealFor: "Morning-sun & vastu-first buyers (4 BHK)",
+      vastu: "SE living & deck · all-day winter sun",
+      idealFor: "Sun-first buyers & large families (4 BHK)",
     },
   },
 };
