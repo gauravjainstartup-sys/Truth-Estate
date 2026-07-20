@@ -5,12 +5,18 @@ on:
     branches: [main]
   # Manual "Run workflow" button — publish the latest Supabase data on demand.
   workflow_dispatch:
+  # Near-real-time publish: Supabase Database Webhook → the `publish-deploy`
+  # Edge Function → this repository_dispatch. A DB edit rebuilds the site with
+  # fresh data (SNAPSHOT_REFRESH=1) in ~3–4 min, no manual step. The Edge
+  # Function debounces bursts so a bulk pipeline rewrite is one rebuild, not many.
+  repository_dispatch:
+    types: [supabase-data-changed]
   # Scheduled DATA refresh — the site is a static export, so this re-fetches
-  # Supabase and redeploys, surfacing DB edits with no manual step. Only the
-  # schedule and the manual "Run workflow" button re-pull the DB/media snapshot
-  # (SNAPSHOT_REFRESH=1 below); ordinary code pushes reuse the cached snapshot
-  # and cost ZERO Supabase egress. Once a day is plenty for data freshness —
-  # use "Run workflow" to publish a DB edit sooner. GitHub may delay cron runs.
+  # Supabase and redeploys, surfacing DB edits with no manual step. The schedule,
+  # the manual "Run workflow" button, AND the repository_dispatch webhook re-pull
+  # the DB/media snapshot (SNAPSHOT_REFRESH=1 below); ordinary code pushes reuse
+  # the cached snapshot and cost ZERO Supabase egress. The daily cron is the
+  # backstop so nothing is ever more than a day stale. GitHub may delay cron runs.
   schedule:
     - cron: "0 3 * * *"
 
@@ -59,7 +65,7 @@ jobs:
           # Re-pull the Supabase snapshot ONLY on a scheduled data refresh or the
           # manual "Run workflow" button — code pushes reuse the cached snapshot
           # and never touch Supabase. This is the egress fix.
-          SNAPSHOT_REFRESH: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '1' || '' }}
+          SNAPSHOT_REFRESH: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'repository_dispatch') && '1' || '' }}
           # PDFs above this many MB are NOT baked — the card keeps its
           # build-rendered cover and the click serves the file straight from
           # Supabase Storage, which is billed egress on every open. The only
