@@ -11,6 +11,7 @@
 
 import type { LiveBacklogFull, LiveConfiguration, LiveExtendedDetails } from "./supabase";
 import { MARKETS } from "./markets";
+import { corridorKey } from "./journey";
 import type { DeveloperIntel, FinKey, FinRating, LegalCase } from "./developers";
 import { developerSlugOf, type ProjectIntel, type ProjectOps, type RoiModel, type ScoreInputKey } from "./projects";
 import mediaManifest from "./live-media.manifest.json";
@@ -473,7 +474,15 @@ export function liveProjectIntel(
       : ["NA"];
 
   const marketName = row.microMarket ?? row.location ?? "Gurugram";
-  const market = MARKETS.find((m) => m.name === marketName);
+  // Exact name first, then a corridor-key match so the live pipeline's own
+  // corridor naming ("…Extension (GCRE)", "Southern Peripheral Road (SPR
+  // Corridor)", "Sohna Road") resolves to its MARKETS entry — which lights up
+  // the corridor psf band, the short "GCE / SPR / Sohna" label, and the
+  // corridor-relative value/luxury signals. Display text (market: marketName)
+  // is left as the pipeline filed it.
+  const market =
+    MARKETS.find((m) => m.name === marketName) ??
+    MARKETS.find((m) => corridorKey(m.name) === corridorKey(marketName));
   const range = psfRange(ext?.priceRangeSqft ?? null);
 
   /* Hero ticket = the lowest psf we can cite × the smallest super area on
@@ -604,9 +613,8 @@ export function liveProjectIntel(
   // investment axis
   if ((row.expectedCagrNum ?? 0) >= 12 || (row.roiIdealCagr ?? 0) >= 12) tags.push("Capital Appreciation");
   if (/High Momentum/i.test(row.sectionTag ?? "")) tags.push("Construction Progress");
-  // value — a strong ROI read (buying right; the corridor-relative psf test can't
-  // fire here because live market names don't match the MARKETS vocabulary)
-  if (bandRating(bands.roi) === "strong") tags.push("Value Buying");
+  // value — a strong ROI read, or an average psf below the corridor midpoint
+  if (bandRating(bands.roi) === "strong" || (market != null && row.avgCostSqft != null && row.avgCostSqft < market.psf.avg)) tags.push("Value Buying");
   // early-entry — still early in the build, before the price ladder climbs
   if (row.constructionProgressPct != null && row.constructionProgressPct <= 25) tags.push("Early-Entry Pricing");
   // low-density / green — sparse density or generous open area on record
@@ -615,8 +623,9 @@ export function liveProjectIntel(
   if ((carpetEff != null && carpetEff >= 0.68) || usp(/layout|floor ?plan|efficien|spacious/)) tags.push("Layouts");
   // amenities & wellness — USP-stated
   if (usp(/amenit|wellness|clubhouse|\bclub\b|\bspa\b|\bpool\b|\bgym\b|sports|landscap/)) tags.push("Amenities & Wellness");
-  // luxury lifestyle — USP-stated (bare "premium" is too common to trust as a signal)
-  if (usp(/luxur|ultra-?luxur|signature living|bespoke|exclusiv|palatial/)) tags.push("Luxury Lifestyle");
+  // luxury lifestyle — priced at/above the corridor ceiling, or USP-stated
+  // (bare "premium" is too common a word to trust as a signal)
+  if ((market != null && row.avgCostSqft != null && row.avgCostSqft >= market.psf.high) || usp(/luxur|ultra-?luxur|signature living|bespoke|exclusiv|palatial/)) tags.push("Luxury Lifestyle");
   // construction quality — USP-stated build / finish
   if (usp(/build quality|construction quality|\bfinish\b|specification|craftsman|imported fitting/)) tags.push("Construction Quality");
   // vaastu — USP-stated
