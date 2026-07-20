@@ -695,8 +695,14 @@ body.sun-cinema{overflow:hidden}
 }
 /* score breakdown — radar + weighted ledger */
 #flatSheet.sx .fs-radarcard{padding:15px 16px 15px;border-top:1px solid var(--line)}
-#flatSheet.sx .fsr-h{font:600 9px/1 ui-monospace,monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px}
-#flatSheet.sx .fsr-h span{color:var(--gold);letter-spacing:.03em;text-transform:none;font-weight:500}
+#flatSheet.sx .fs-gradering{display:none}   /* the radar card now owns the score — no separate ring */
+#flatSheet.sx .fsr-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+#flatSheet.sx .fsr-h{font:600 10px/1 ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text)}
+#flatSheet.sx .fsr-sub{font:500 8.5px/1 ui-monospace,monospace;letter-spacing:.04em;color:var(--gold);margin-top:5px}
+#flatSheet.sx .fsr-comp{display:flex;align-items:center;gap:9px}
+#flatSheet.sx .fsr-comp b{font:600 33px/1 'Geist',system-ui,sans-serif;letter-spacing:-.01em;color:var(--text)}
+#flatSheet.sx .fsr-comp span{font:500 12px/1 ui-monospace,monospace;color:var(--muted)}
+#flatSheet.sx .fsr-comp i{font:700 13px/1 'Geist',system-ui,sans-serif;font-style:normal;color:#241800;border-radius:6px;padding:3px 9px}
 #flatSheet.sx .fsr-svg{width:100%;max-width:300px;display:block;margin:4px auto 0}
 #flatSheet.sx .fsr-l{font:500 9px/1 ui-monospace,monospace;fill:var(--muted);letter-spacing:.02em}
 #flatSheet.sx .fsr-v{font:600 10px/1 'Geist',system-ui,sans-serif;fill:var(--text)}
@@ -1962,7 +1968,10 @@ function scoreBreakdownHTML(fscore){
   const gaps=SCORE_FACT.map(f=>({lab:f[1],lost:f[3]*(100-(sub[f[0]]||0))/100})).sort((a,b)=>b.lost-a.lost);
   const short=100-fscore.s,note=`<b>${short} pts short of 100</b> — mostly ${gaps[0].lab.replace(' sun','')}${gaps[1].lost>4?' &amp; '+gaps[1].lab.replace(' cool',''):''}.`;
   return `<div class="fs-radarcard">
-    <div class="fsr-h">Score breakdown <span>6 factors · weighted</span></div>
+    <div class="fsr-top">
+      <div><div class="fsr-h">Livability score</div><div class="fsr-sub">6 factors · weighted</div></div>
+      <div class="fsr-comp"><b>${fscore.s}</b><span>/100</span><i style="background:${gradeColor(fscore.grade)}">${fscore.grade}</i></div>
+    </div>
     <svg class="fsr-svg" viewBox="0 0 264 246">${g}</svg>
     <div class="fsr-legend"><span><i style="background:#f5b942"></i>this flat</span><span><i style="background:#525b74"></i>benchmark 60</span></div>
     <div class="fs-ledger">${rows}<div class="fsl-tot"><span>Composite</span><b>${fscore.s}<span> / 100</span></b></div></div>
