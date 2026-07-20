@@ -48,6 +48,7 @@ export type BuyData = {
   configs: string[];
   timeline: string | null;
   priorities: string[]; // up to 3
+  notes?: string; // free-text: "in your own words" on the last onboarding step
 };
 
 export const emptyBuyData: BuyData = {
@@ -58,6 +59,7 @@ export const emptyBuyData: BuyData = {
   configs: [],
   timeline: null,
   priorities: [],
+  notes: "",
 };
 
 /* ── Option vocabularies (configurable) ── */
