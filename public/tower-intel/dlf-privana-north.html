@@ -693,6 +693,32 @@ body.sun-cinema{overflow:hidden}
   #flatSheet.sx .fs-viewtabs{background:rgba(12,16,26,.9);border-color:var(--line)}
   #flatSheet.sx .fs-cta{background:rgba(12,16,26,.92);border-color:var(--line)}
 }
+/* score breakdown — radar + weighted ledger */
+#flatSheet.sx .fs-radarcard{padding:15px 16px 15px;border-top:1px solid var(--line)}
+#flatSheet.sx .fsr-h{font:600 9px/1 ui-monospace,monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px}
+#flatSheet.sx .fsr-h span{color:var(--gold);letter-spacing:.03em;text-transform:none;font-weight:500}
+#flatSheet.sx .fsr-svg{width:100%;max-width:300px;display:block;margin:4px auto 0}
+#flatSheet.sx .fsr-l{font:500 9px/1 ui-monospace,monospace;fill:var(--muted);letter-spacing:.02em}
+#flatSheet.sx .fsr-v{font:600 10px/1 'Geist',system-ui,sans-serif;fill:var(--text)}
+#flatSheet.sx .fsr-legend{display:flex;justify-content:center;gap:16px;font:500 9px/1 ui-monospace,monospace;color:#525b74;margin:0 0 13px;letter-spacing:.04em}
+#flatSheet.sx .fsr-legend span{display:inline-flex;align-items:center;gap:5px}
+#flatSheet.sx .fsr-legend i{width:9px;height:9px;border-radius:2px}
+#flatSheet.sx .fs-ledger{border:1px solid var(--line);border-radius:11px;overflow:hidden}
+#flatSheet.sx .fsl-row{display:grid;grid-template-columns:80px 1fr 46px 38px;gap:9px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line)}
+#flatSheet.sx .fsl-row:last-of-type{border-bottom:0}
+#flatSheet.sx .fsl-k{font:600 10.5px/1.15 'Geist',system-ui,sans-serif;color:var(--text)}
+#flatSheet.sx .fsl-k i{display:block;font-style:normal;font:500 8px/1.2 ui-monospace,monospace;color:#525b74;margin-top:2px;letter-spacing:.02em}
+#flatSheet.sx .fsl-t{height:6px;border-radius:9px;background:var(--line);overflow:hidden;position:relative}
+#flatSheet.sx .fsl-t i{position:absolute;left:0;top:0;bottom:0;border-radius:9px}
+#flatSheet.sx .fsl-w{font:500 9.5px/1 ui-monospace,monospace;color:var(--muted);text-align:right}
+#flatSheet.sx .fsl-p{font:700 13px/1 'Geist',system-ui,sans-serif;text-align:right}
+#flatSheet.sx .fsl-tot{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surf2)}
+#flatSheet.sx .fsl-tot span{font:600 10px/1 ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+#flatSheet.sx .fsl-tot b{font:700 18px/1 'Geist',system-ui,sans-serif;color:var(--text)}
+#flatSheet.sx .fsl-tot b span{font-size:11px;color:var(--muted);font-weight:400;letter-spacing:0;text-transform:none}
+#flatSheet.sx .fsr-note{font:500 10px/1.5 'Geist',system-ui,sans-serif;color:var(--muted);margin-top:11px;padding-left:15px;position:relative}
+#flatSheet.sx .fsr-note::before{content:"";position:absolute;left:0;top:4px;width:7px;height:7px;border-radius:2px;background:var(--warn,#f5a04a)}
+#flatSheet.sx .fsr-note b{color:var(--text)}
 </style>
 <div id="flatSheet" class="sx">
   <div class="fs-top">
@@ -1912,6 +1938,36 @@ function sunFloorHTML(t,u,fl,oppSt){
     </div>
     <div style="margin-top:9px;font:500 9px/1.5 ui-monospace,monospace;color:#abaea1">Living facade · sun computed for floor ${fl} · north calibrated to the site plan</div>`;
 }
+/* Score breakdown — a 6-factor radar (the flat's "shape" at a glance) plus a
+   weighted ledger that shows every factor's sub-score × weight = points, rolling
+   up to the composite. Replaces the old 4-tile strip, which hid View & Floor. */
+const SCORE_FACT=[['morning','Morning sun','equinox AM',25],['cool','Summer cool','heat-load inv.',20],['vastu','Vastu','per-room',25],['view','View','outlook + corner',15],['vent','Airflow','aspect + breeze',10],['floor','Floor','clear-sun floor',5]];
+function scoreBreakdownHTML(fscore){
+  const sub=fscore.sub||{},N=6,cx=132,cy=118,R=72;
+  const pt=(i,r)=>{const a=-Math.PI/2+i*2*Math.PI/N;return[cx+r*Math.cos(a),cy+r*Math.sin(a)];};
+  let g='';
+  [0.25,0.5,0.75,1].forEach(rr=>{let ps=[];for(let i=0;i<N;i++){const p=pt(i,R*rr);ps.push(p[0].toFixed(1)+','+p[1].toFixed(1));}
+    g+=`<polygon points="${ps.join(' ')}" fill="none" stroke="${rr===1?'#2c3452':'rgba(120,140,200,.10)'}" stroke-width="1"/>`;});
+  for(let i=0;i<N;i++){const o=pt(i,R);g+=`<line x1="${cx}" y1="${cy}" x2="${o[0].toFixed(1)}" y2="${o[1].toFixed(1)}" stroke="rgba(120,140,200,.10)"/>`;
+    const lp=pt(i,R+14),vp=pt(i,R+30),anc=Math.abs(lp[0]-cx)<6?'middle':(lp[0]>cx?'start':'end');
+    g+=`<text class="fsr-l" x="${lp[0].toFixed(1)}" y="${(lp[1]+3).toFixed(1)}" text-anchor="${anc}">${SCORE_FACT[i][1].split(' ')[0]}</text>`;
+    g+=`<text class="fsr-v" x="${vp[0].toFixed(1)}" y="${(vp[1]+3).toFixed(1)}" text-anchor="${anc}">${sub[SCORE_FACT[i][0]]||0}</text>`;}
+  let bp=[];for(let i=0;i<N;i++){const p=pt(i,R*0.6);bp.push(p[0].toFixed(1)+','+p[1].toFixed(1));}
+  g+=`<polygon points="${bp.join(' ')}" fill="none" stroke="#525b74" stroke-width="1" stroke-dasharray="3 3"/>`;
+  let vv=[];for(let i=0;i<N;i++){const p=pt(i,R*(sub[SCORE_FACT[i][0]]||0)/100);vv.push(p[0].toFixed(1)+','+p[1].toFixed(1));}
+  g+=`<polygon points="${vv.join(' ')}" fill="rgba(245,185,66,.18)" stroke="#f5b942" stroke-width="2" stroke-linejoin="round"/>`;
+  for(let i=0;i<N;i++){const p=pt(i,R*(sub[SCORE_FACT[i][0]]||0)/100);g+=`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3" fill="#ffd27a"/>`;}
+  let rows='';SCORE_FACT.forEach(f=>{const v=sub[f[0]]||0,pts=f[3]*v/100,col=scCol(v);
+    rows+=`<div class="fsl-row"><span class="fsl-k">${f[1]}<i>${f[2]}</i></span><span class="fsl-t"><i style="width:${v}%;background:${col}"></i></span><span class="fsl-w">${v} ×${f[3]}%</span><span class="fsl-p" style="color:${col}">${pts.toFixed(1)}</span></div>`;});
+  const gaps=SCORE_FACT.map(f=>({lab:f[1],lost:f[3]*(100-(sub[f[0]]||0))/100})).sort((a,b)=>b.lost-a.lost);
+  const short=100-fscore.s,note=`<b>${short} pts short of 100</b> — mostly ${gaps[0].lab.replace(' sun','')}${gaps[1].lost>4?' &amp; '+gaps[1].lab.replace(' cool',''):''}.`;
+  return `<div class="fs-radarcard">
+    <div class="fsr-h">Score breakdown <span>6 factors · weighted</span></div>
+    <svg class="fsr-svg" viewBox="0 0 264 246">${g}</svg>
+    <div class="fsr-legend"><span><i style="background:#f5b942"></i>this flat</span><span><i style="background:#525b74"></i>benchmark 60</span></div>
+    <div class="fs-ledger">${rows}<div class="fsl-tot"><span>Composite</span><b>${fscore.s}<span> / 100</span></b></div></div>
+    <div class="fsr-note">${note}</div>
+  </div>`;}
 function openFlat(t,uid,keepFloor){
   selUnit=uid;
   const rec=((selData||[]).find(x=>x.u.id===uid))||t.units.map(u=>({u,st:unitStats(t,u,2,0.3)})).find(x=>x.u.id===uid);
@@ -1952,10 +2008,8 @@ function openFlat(t,uid,keepFloor){
     sunpOpen(cfgK,u.id,planB);
     setFsView((_pf&&_pf.img)?'sun':(_has3d?'3d':'sun'));   // lead with the sun-path sim (works without any interior asset)
   })();
-  /* score strip */
-  document.getElementById('fsCap').innerHTML=`
-     <div class="fs-scorestrip">${[['\u2600 Morning',fscore.sub.morning],['\u2744 Summer cool',fscore.sub.cool],['\u262f Vastu',fscore.sub.vastu],['\u2248 Airflow',fscore.sub.vent]].map(m=>`<div class="fs-sc"><span class="fs-sc-k">${m[0]}</span><span class="fs-sc-v" style="color:${scCol(m[1])}">${m[1]}</span><div class="fs-sc-bar"><div class="fs-sc-fill" style="width:${m[1]}%;background:${scCol(m[1])}"></div></div><span class="fs-sc-tag">of 100</span></div>`).join('')}
-    </div>`;
+  /* score breakdown \u2014 6-factor radar + weighted ledger (all factors visible + the roll-up) */
+  document.getElementById('fsCap').innerHTML=scoreBreakdownHTML(fscore);
   /* tabs */
   const R=document.getElementById('fsIntel');
   R.innerHTML=`
