@@ -5,7 +5,9 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useJourney } from "./journey/JourneyProvider";
 import { useConsultation } from "./consultation/ConsultationProvider";
-import { ADVISORS, PRIMARY_CTA } from "@/lib/journey";
+import { PRIMARY_CTA } from "@/lib/journey";
+
+const basePath = "/Truth-Estate";
 
 /* ── Shared reveal: any [data-r] child fades up on intersect ── */
 function useReveal(ref: React.RefObject<HTMLElement | null>, threshold = 0.25) {
@@ -226,13 +228,63 @@ function Stage({
   );
 }
 
+/* Per-stage secondary CTA — a hairline outline that fills to ink on hover.
+   Renders an <a> when href is given (e.g. Deal Room), else a <button>. Kept
+   quieter than the green primary so the hierarchy holds. */
+function StageCTA({ label, onClick, href }: { label: string; onClick?: () => void; href?: string }) {
+  const cls =
+    "group/cta mt-8 inline-flex items-center gap-3 rounded-sm border border-[#1a1a1a]/25 px-6 py-3 text-[11px] font-medium uppercase tracking-[0.12em] text-[#1a1a1a] transition-colors duration-300 hover:border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-[#F5F0E8]";
+  const inner = (
+    <>
+      {label}
+      <span className="inline-block text-[#c9a96e] transition-all duration-300 group-hover/cta:translate-x-1 group-hover/cta:text-[#F5F0E8]">
+        &rarr;
+      </span>
+    </>
+  );
+  return href ? (
+    <a href={href} className={cls}>{inner}</a>
+  ) : (
+    <button type="button" onClick={onClick} className={cls}>{inner}</button>
+  );
+}
+
+/* Stage 3 — the founder, image + name only. Shows a neutral silhouette by
+   default and upgrades to the headshot ONLY once it successfully loads, so a
+   missing/not-yet-committed photo never renders as a broken image. Drop the
+   file at /images/founder-gaurav.jpg and it appears automatically. */
+function FounderBadge() {
+  const [photo, setPhoto] = useState<string | null>(null);
+  useEffect(() => {
+    const url = `${basePath}/images/founder-gaurav.jpg`;
+    const probe = new window.Image();
+    probe.onload = () => setPhoto(url);
+    probe.src = url;
+  }, []);
+  return (
+    <div className="flex items-center gap-4">
+      <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#c9a96e]/50 bg-[#c9a96e]/10">
+        {photo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={photo} alt="Gaurav Jain" width={56} height={56} className="h-full w-full object-cover" />
+        ) : (
+          <svg viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={1.3} className="h-7 w-7 opacity-50" aria-hidden>
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5" />
+          </svg>
+        )}
+      </span>
+      <p className="font-serif text-[1.3rem] font-medium text-[#1a1a1a]">Gaurav Jain</p>
+    </div>
+  );
+}
+
 function IndependentRepresentation() {
   const { open } = useJourney();
   const { openConsult } = useConsultation();
   const rootRef = useRef<HTMLElement>(null);
   const spineRef = useRef<HTMLDivElement>(null);
   const fillRef = useRef<HTMLDivElement>(null);
-  const advisor = ADVISORS[0];
 
   useEffect(() => {
     const root = rootRef.current;
@@ -381,6 +433,7 @@ function IndependentRepresentation() {
                 ))}
               </div>
             </div>
+            <StageCTA label="Share your Requirements" onClick={() => open()} />
           </Stage>
 
           <Stage kicker="Clarity" heading="See clearly. Ask freely.">
@@ -413,6 +466,7 @@ function IndependentRepresentation() {
                 </p>
               </div>
             </div>
+            <StageCTA label="Ask your first question" onClick={() => open("research")} />
           </Stage>
 
           {/* Represent — human + the commitment */}
@@ -424,19 +478,7 @@ function IndependentRepresentation() {
               Technology builds confidence; human judgement builds conviction. When you choose to go further, a dedicated advisor sits on your side of the table&mdash;and no one else&rsquo;s.
             </p>
             <div className="mt-8 max-w-md rounded-xl border border-[#1a1a1a]/12 bg-white p-6">
-              <div className="flex items-center gap-4">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#c9a96e]/50 bg-[#c9a96e]/10 font-serif text-[1rem] font-medium text-[#1a1a1a]/70">
-                  {advisor.initials}
-                </span>
-                <div>
-                  <p className="font-serif text-[1.2rem] font-medium text-[#1a1a1a]">{advisor.name}</p>
-                  <p className="mt-0.5 text-[0.78rem] font-light text-[#1a1a1a]/50">{advisor.experience} of experience</p>
-                </div>
-              </div>
-              <div className="mt-5 space-y-0.5 text-[0.85rem] font-light text-[#1a1a1a]/60">
-                <p>Luxury Residential Specialist</p>
-                <p className="text-[#1a1a1a]/40">Independent Advisor</p>
-              </div>
+              <FounderBadge />
               <button
                 onClick={() => openConsult({ sourceKind: "homepage", intent: "advice" })}
                 className="mt-6 w-full rounded-sm bg-[#1e6b45] px-6 py-3 text-[12px] font-medium tracking-[0.08em] text-white transition-colors duration-500 hover:bg-[#238c55]"
@@ -470,6 +512,7 @@ function IndependentRepresentation() {
                 </div>
               </div>
             </div>
+            <StageCTA label="See how we get your price" href={`${basePath}/deal-room`} />
           </Stage>
 
           {/* Climax — the relationship that doesn't end */}
@@ -494,6 +537,10 @@ function IndependentRepresentation() {
                 </p>
               </div>
             </div>
+            <span className="mt-8 inline-flex items-center gap-2 rounded-full border border-dashed border-[#1a1a1a]/25 px-4 py-2 text-[11px] font-normal uppercase tracking-[0.22em] text-[#1a1a1a]/45">
+              <span className="h-[5px] w-[5px] rounded-full bg-[#c9a96e]" />
+              Coming Soon
+            </span>
           </Stage>
           </div>
           </div>
