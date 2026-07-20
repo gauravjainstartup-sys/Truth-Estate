@@ -5,7 +5,8 @@
    `verifyOtp` are the single seam where MSG91 (mobile) wires in — swap
    the two stubs for MSG91's send/verify calls and nothing else on the
    page changes. Today: sendOtp resolves after a beat, verifyOtp accepts
-   any 4–6 digit code. Email OTP works the same way and is the NRI path.
+   any 4-digit code. Verification is mobile-only — SMS for +91, WhatsApp
+   for international numbers (same as the office Sign-in).
 
    Verification persists locally (no backend yet); when Supabase Auth
    lands, replace this store with the session and keep the same surface.
@@ -73,6 +74,6 @@ export async function sendOtp(_channel: Channel, _contact: string): Promise<{ ok
 /** Check the code. TODO(MSG91): replace the stub with the verify call. */
 export async function verifyOtp(_channel: Channel, _contact: string, code: string): Promise<{ ok: boolean; error?: string }> {
   await new Promise((r) => setTimeout(r, 550));
-  if (!/^\d{4,6}$/.test(code.trim())) return { ok: false, error: "Enter the 6-digit code we sent." };
+  if (!/^\d{4}$/.test(code.trim())) return { ok: false, error: "Enter the 4-digit code we sent." };
   return { ok: true };
 }

@@ -13,9 +13,10 @@
    SMS/WhatsApp later.
    ──────────────────────────────────────────────────────────────────────── */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
+import OtpDigits from "../auth/OtpDigits";
 import { saveLead, setSignedIn } from "@/lib/journey";
 
 const basePath = "/Truth-Estate";
@@ -43,7 +44,6 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
   const [otp, setOtp] = useState<string[]>(Array(OTP_LEN).fill(""));
   const [err, setErr] = useState("");
   const [resendIn, setResendIn] = useState(0);
-  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const isIndia = dial === "+91";
   const channel = isIndia ? "SMS" : "WhatsApp";
@@ -61,17 +61,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
     if (!name.trim()) { setErr("Please enter your name."); return; }
     if (!numValid) { setErr("Enter a valid mobile number."); return; }
     setErr(""); setStep("otp"); setResendIn(24);
-    requestAnimationFrame(() => otpRefs.current[0]?.focus());
   }
-
-  const setOtpDigit = (i: number, v: string) => {
-    const digit = v.replace(/\D/g, "").slice(-1);
-    setOtp((o) => { const n = [...o]; n[i] = digit; return n; });
-    if (digit && i < OTP_LEN - 1) otpRefs.current[i + 1]?.focus();
-  };
-  const onOtpKey = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Backspace" && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus();
-  };
 
   function verify(e: React.FormEvent) {
     e.preventDefault();
@@ -169,13 +159,8 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
                 <button type="button" onClick={() => { setStep("contact"); setOtp(Array(OTP_LEN).fill("")); setErr(""); }} className="font-medium text-[#9a7a2e] hover:underline">Change</button>
               </p>
 
-              <div className="mt-5 flex gap-3">
-                {otp.map((d, i) => (
-                  <input key={i} ref={(el) => { otpRefs.current[i] = el; }} value={d}
-                    onChange={(e) => setOtpDigit(i, e.target.value)} onKeyDown={(e) => onOtpKey(i, e)}
-                    inputMode="numeric" maxLength={1} aria-label={`Digit ${i + 1}`}
-                    className="h-14 w-14 rounded-lg border border-[#1a1a1a]/[0.18] bg-white text-center font-serif text-[1.5rem] text-[#1a1a1a] outline-none transition-colors focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/20" />
-                ))}
+              <div className="mt-5">
+                <OtpDigits value={otp} onChange={setOtp} len={OTP_LEN} autoFocus />
               </div>
 
               {err && <p className="mt-3 text-[0.8rem] text-[#b3402a]">{err}</p>}
