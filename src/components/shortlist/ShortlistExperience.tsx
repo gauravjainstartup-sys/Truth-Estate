@@ -8,6 +8,7 @@ import { loadVerified, maskContact, type Verified } from "@/lib/shortlistAuth";
 import { loadBuyData, hasPreferences, deriveDNA } from "@/lib/journey";
 import { rankProjectsIntel } from "@/lib/shortlist";
 import { useMatchCatalog } from "@/lib/useMatchCatalog";
+import { useAiRerank } from "@/lib/useAiRerank";
 
 /* ════════════════════════════════════════════════════════════════
    THE STANDALONE /shortlist ROUTE — the direct-land entry.
@@ -49,10 +50,13 @@ export default function ShortlistExperience() {
   // The live tracked universe (baked match-catalog.json); null until fetched.
   const catalog = useMatchCatalog();
   const dna = useMemo(() => (buy ? deriveDNA(buy) : null), [buy]);
-  const recs = useMemo(
+  const det = useMemo(
     () => (buy && catalog ? rankProjectsIntel(buy, catalog) : []),
     [buy, catalog]
   );
+  // Path 2: Gemini re-ranks the gated deterministic top; any failure keeps
+  // the deterministic order (settled flips either way, bounded at 3 s).
+  const { recs, settled } = useAiRerank(buy, det);
 
   return (
     <div className="min-h-svh bg-[#F5F0E8] text-[#1a1a1a]">
@@ -71,7 +75,7 @@ export default function ShortlistExperience() {
       <main className="mx-auto max-w-5xl px-6 pb-24 pt-8 md:px-10 md:pt-12">
         {!mounted ? null : !buy || !dna || !hasPreferences(buy) ? (
           <EmptyState onStart={() => open("buy")} />
-        ) : !catalog ? null /* catalog still loading — hold to avoid an empty-state flash */ : recs.length >= 1 ? (
+        ) : !catalog || !settled ? null /* catalog / re-rank settling — hold so cards never shuffle after reveal */ : recs.length >= 1 ? (
           <ShortlistCore
             buy={buy}
             dna={dna}
