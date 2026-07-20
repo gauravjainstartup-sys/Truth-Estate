@@ -585,6 +585,43 @@ export async function fetchCorridorPsf(): Promise<CorridorPsf> {
   return out;
 }
 
+/* ── tracked-universe headline stats, computed from the live set ──
+   Retires the hand-set "127 active projects / 6 micro-markets / ₹7K–38K"
+   headline (and the site-wide ACTIVE_PROJECT_COUNT) to real numbers: the
+   deduped scored universe, the corridors it actually spans, the psf span of the
+   tracked projects, and a per-corridor breakdown. Self-updates every deploy. */
+export type TrackedOverview = {
+  activeProjects: number;
+  microMarkets: number;
+  psfMin: number | null;
+  psfMax: number | null;
+  byCorridor: Record<string, number>;
+};
+
+let trackedOverviewCache: TrackedOverview | null | undefined;
+
+export async function fetchTrackedOverview(): Promise<TrackedOverview | null> {
+  if (trackedOverviewCache !== undefined) return trackedOverviewCache;
+  const rows = await fetchBacklogFull();
+  if (!rows) return (trackedOverviewCache = null);
+  const byCorridor: Record<string, number> = {};
+  const psfs: number[] = [];
+  for (const r of rows) {
+    const key = corridorKey(r.microMarket ?? r.location ?? "");
+    byCorridor[key] = (byCorridor[key] ?? 0) + 1;
+    if (r.avgCostSqft != null && r.avgCostSqft > 0) psfs.push(r.avgCostSqft);
+  }
+  trackedOverviewCache = {
+    activeProjects: rows.length,
+    microMarkets: Object.keys(byCorridor).length,
+    psfMin: psfs.length ? Math.min(...psfs) : null,
+    psfMax: psfs.length ? Math.max(...psfs) : null,
+    byCorridor,
+  };
+  console.log(`[supabase] tracked overview: ${trackedOverviewCache.activeProjects} projects across ${trackedOverviewCache.microMarkets} corridor(s)`);
+  return trackedOverviewCache;
+}
+
 /* ── extended details — hero, vitals & document media per project ──
    1-to-1 with backlog_projects via backlog_id; rows arrive as the
    founder fills them, so every field is nullable and the page simply

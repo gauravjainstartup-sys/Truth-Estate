@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { MARKETS, fmtPsf, type MarketIntel } from "@/lib/markets";
+import { corridorKey } from "@/lib/journey";
 
 const basePath = "/Truth-Estate";
 
@@ -77,9 +78,11 @@ const TIER_COLOR: Record<MarketIntel["tier"], string> = {
   Emerging: "#b9a989",
 };
 
-export default function GurugramMap() {
+export default function GurugramMap({ counts }: { counts?: Record<string, number> }) {
   const [active, setActive] = useState<string>("golf-course-extension");
   const m = MARKETS.find((x) => x.slug === active)!;
+  // live per-corridor project count where we have it, else the curated number
+  const projCount = (mk: MarketIntel) => counts?.[corridorKey(mk.name)] ?? mk.projectCount;
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1.25fr_1fr] lg:items-center">
@@ -132,7 +135,7 @@ export default function GurugramMap() {
                   {mk.short}
                 </text>
                 <text x={g.c.x} y={g.c.y + 13} textAnchor="middle" fontSize="10.5" fontFamily="monospace" fill="#1a1a1a" fillOpacity={on ? 0.7 : 0.45}>
-                  {mk.projectCount} · {fmtPsf(mk.psf.avg)}
+                  {projCount(mk)} · {fmtPsf(mk.psf.avg)}
                 </text>
               </g>
             );
@@ -154,7 +157,7 @@ export default function GurugramMap() {
 
         <div className="mt-6 grid grid-cols-3 gap-4 border-y border-[#1a1a1a]/8 py-5">
           <div>
-            <p className="font-mono text-[1.5rem] font-light leading-none text-[#1a1a1a]">{m.projectCount}</p>
+            <p className="font-mono text-[1.5rem] font-light leading-none text-[#1a1a1a]">{projCount(m)}</p>
             <p className="mt-1.5 text-[0.62rem] uppercase tracking-[0.12em] text-[#1a1a1a]/40">Projects</p>
           </div>
           <div>

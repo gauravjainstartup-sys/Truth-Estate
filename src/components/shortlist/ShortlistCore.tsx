@@ -29,12 +29,17 @@ export default function ShortlistCore({
   onConsult,
   onPickCard,
   onVerifiedChange,
+  scannedCount,
 }: {
   buy: BuyData;
   dna: DNA;
   recs: Scored[];
   onRefine: () => void;
   onConsult: () => void;
+  /* How many projects were scanned to produce this shortlist — the live
+     catalog size on /shortlist; falls back to ACTIVE_PROJECT_COUNT (the
+     in-modal mock journey doesn't pass it). */
+  scannedCount?: number;
   /* When set, #2/#3 (and the revealed #1) open the report via this callback
      instead of navigating by link — the in-modal path closes the modal first. */
   onPickCard?: (intel: ProjectIntel) => void;
@@ -105,7 +110,7 @@ export default function ShortlistCore({
         {/* ── RIGHT · funnel + the three options ── */}
         <div>
           <p className="text-[0.82rem] font-light leading-[1.5] text-[#1a1a1a]/55">
-            <b className="font-serif text-[1rem] font-medium text-[#1a1a1a]">{ACTIVE_PROJECT_COUNT}</b> scanned
+            <b className="font-serif text-[1rem] font-medium text-[#1a1a1a]">{scannedCount ?? ACTIVE_PROJECT_COUNT}</b> scanned
             <span className="mx-1.5 text-[#c9a96e]">→</span>
             <b className="font-serif text-[1rem] font-medium text-[#1a1a1a]">{top.length}</b> make the cut
             <span className="mx-1.5 text-[#c9a96e]">→</span>

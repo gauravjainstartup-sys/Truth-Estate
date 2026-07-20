@@ -7,7 +7,7 @@ import { PRIMARY_CTA, ACTIVE_PROJECT_COUNT } from "@/lib/journey";
 
 const basePath = "/Truth-Estate";
 
-export default function VisionHero() {
+export default function VisionHero({ activeProjects }: { activeProjects?: number }) {
   const { open } = useJourney();
   return (
     <section className="relative flex min-h-svh flex-col overflow-hidden bg-[#0a0a0a]">
@@ -80,7 +80,7 @@ export default function VisionHero() {
 
         {/* Quiet proof line */}
         <div className="animate-fade-up mt-16 flex flex-wrap items-center gap-x-10 gap-y-3 text-[0.78rem] font-light text-white/35" style={{ animationDelay: "440ms" }}>
-          <span><span className="font-mono text-white/70">{ACTIVE_PROJECT_COUNT}</span> active projects tracked</span>
+          <span><span className="font-mono text-white/70">{activeProjects ?? ACTIVE_PROJECT_COUNT}</span> active projects tracked</span>
           <span className="hidden h-3 w-px bg-white/15 sm:block" />
           <span><span className="font-mono text-white/70">6</span> micro-markets, live</span>
           <span className="hidden h-3 w-px bg-white/15 sm:block" />

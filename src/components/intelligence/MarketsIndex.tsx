@@ -4,9 +4,25 @@ import Logo from "../Logo";
 import GurugramMap from "./GurugramMap";
 import { useJourney } from "../journey/JourneyProvider";
 import { MARKETS, GURUGRAM_OVERVIEW, fmtPsf } from "@/lib/markets";
-import type { LiveMicroMarket } from "@/lib/supabase";
+import { corridorKey } from "@/lib/journey";
+import type { LiveMicroMarket, TrackedOverview } from "@/lib/supabase";
 
 const basePath = "/Truth-Estate";
+
+/* The headline stats, live from the tracked set where available (fallback to the
+   curated overview). Keeps the labels; swaps the hand-set numbers for real ones. */
+function liveStats(overview?: TrackedOverview | null): { k: string; v: string }[] {
+  if (!overview) return GURUGRAM_OVERVIEW.stats;
+  const psf =
+    overview.psfMin != null && overview.psfMax != null
+      ? `₹${Math.round(overview.psfMin / 1000)}K–${Math.round(overview.psfMax / 1000)}K / sq ft`
+      : GURUGRAM_OVERVIEW.stats.find((s) => s.k === "Price range")?.v ?? "";
+  return [
+    { k: "Micro-markets tracked", v: `${overview.microMarkets}` },
+    { k: "Active projects", v: `${overview.activeProjects}` },
+    { k: "Price range", v: psf },
+  ];
+}
 
 const TIER_TONE: Record<string, string> = {
   Established: "border-[#c9a96e]/40 text-[#9a7a2e]",
@@ -15,8 +31,9 @@ const TIER_TONE: Record<string, string> = {
   Emerging: "border-[#1a1a1a]/15 text-[#1a1a1a]/45",
 };
 
-export default function MarketsIndex({ live }: { live?: LiveMicroMarket[] | null }) {
+export default function MarketsIndex({ live, overview }: { live?: LiveMicroMarket[] | null; overview?: TrackedOverview | null }) {
   const { open } = useJourney();
+  const stats = liveStats(overview);
   return (
     <div className="min-h-svh bg-[#F5F0E8] text-[#1a1a1a]">
       <header className="sticky top-0 z-40 border-b border-[#1a1a1a]/6 bg-[#F5F0E8]/90 backdrop-blur-sm">
@@ -39,7 +56,7 @@ export default function MarketsIndex({ live }: { live?: LiveMicroMarket[] | null
         <h1 className="mt-5 max-w-2xl font-serif text-[2.6rem] font-medium leading-[1.04] tracking-[-0.02em] md:text-[4rem]">{GURUGRAM_OVERVIEW.headline}</h1>
         <p className="mt-6 max-w-2xl text-[1rem] font-light leading-[1.85] text-[#1a1a1a]/60 md:text-[1.05rem]">{GURUGRAM_OVERVIEW.body}</p>
         <div className="mt-8 flex flex-wrap gap-x-10 gap-y-3">
-          {GURUGRAM_OVERVIEW.stats.map((s) => (
+          {stats.map((s) => (
             <div key={s.k} className="flex items-baseline gap-2.5">
               <span className="font-mono text-[1.2rem] text-[#1a1a1a]">{s.v}</span>
               <span className="text-[0.74rem] font-light text-[#1a1a1a]/40">{s.k}</span>
@@ -49,7 +66,7 @@ export default function MarketsIndex({ live }: { live?: LiveMicroMarket[] | null
 
         {/* Interactive map */}
         <div className="mt-14">
-          <GurugramMap />
+          <GurugramMap counts={overview?.byCorridor} />
         </div>
 
         {/* All micro-markets */}
@@ -67,7 +84,7 @@ export default function MarketsIndex({ live }: { live?: LiveMicroMarket[] | null
               </div>
               <p className="mt-4 text-[0.88rem] font-light leading-[1.6] text-[#1a1a1a]/55">{m.info}</p>
               <div className="mt-6 grid grid-cols-3 gap-3 border-t border-[#1a1a1a]/8 pt-5">
-                <Mini v={`${m.projectCount}`} k="Projects" />
+                <Mini v={`${overview?.byCorridor[corridorKey(m.name)] ?? m.projectCount}`} k="Projects" />
                 <Mini v={fmtPsf(m.psf.avg)} k="Avg/sqft" />
                 <Mini v={m.appreciation3Y} k="3Y" accent />
               </div>
