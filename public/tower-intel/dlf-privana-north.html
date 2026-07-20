@@ -669,7 +669,7 @@ const FH=3.6, LOBBY=10.8;            // 3.6 m floor-to-floor, triple-height lobb
 const FLOORS=50;                     // G+50 all towers (founder-confirmed)
 const BENCH=4.0;                     // usable-sun threshold (h)
 let   WEST_W=0.6;                    // afternoon/west sun weight vs morning
-const LAKE={x:-10,z:-80};            // central landscaped greens ("Site for Future Use" + play greens) west/inner of the tower arc — the premium deck-view axis
+const LAKE={x:10,z:-85};             // central landscaped greens ("Site for Future Use") centroid — west/inner of the tower arc, the premium deck-view axis
 /* Tower centres. ENGINE PLAN FRAME (M3M convention, unchanged): scene +x = TRUE NORTH,
    +z = EAST (NORTH_CAL=-90°). The Privana siteplan is north-up, so I map it in as
    x = northward offset, z = eastward offset (both metres from the cluster centroid).
@@ -678,12 +678,12 @@ const LAKE={x:-10,z:-80};            // central landscaped greens ("Site for Fut
    [inf] positions/rotations traced from the official site plan (explicitly NOT to scale;
    18-acre plot) — the render loop refines spacing & each tower's rotation. rot in RAD. */
 const towers=[
- {id:'F',x:  98,z:-38,rot:0.14,hw:19,hd:15,core:4,cfg:'4 BHK',q:{'101':'4 BHK','102':'4 BHK','103':'4 BHK','104':'4 BHK'}},
- {id:'E',x:  50,z: -6,rot:0.38,hw:19,hd:15,core:4,cfg:'4 BHK',q:{'101':'4 BHK','102':'4 BHK','103':'4 BHK','104':'4 BHK'}},
- {id:'D',x:  26,z: 44,rot:0.40,hw:19,hd:15,core:4,cfg:'4 BHK',q:{'101':'4 BHK','102':'4 BHK','103':'4 BHK','104':'4 BHK'}},
- {id:'C',x: -24,z: 46,rot:0.52,hw:19,hd:15,core:4,cfg:'4 BHK',q:{'101':'4 BHK','102':'4 BHK','103':'4 BHK','104':'4 BHK'}},
- {id:'B',x: -54,z:  6,rot:0.68,hw:19,hd:15,core:4,cfg:'4 BHK',q:{'101':'4 BHK','102':'4 BHK','103':'4 BHK','104':'4 BHK'}},
- {id:'A',x: -92,z:-28,rot:0.72,hw:19,hd:15,core:4,cfg:'4 BHK',q:{'101':'4 BHK','102':'4 BHK','103':'4 BHK','104':'4 BHK'}},
+ {id:'F',x: 150.4,z:-60.2,rot:0.14,hw:28,hd:17,core:4,cfg:'4 BHK',q:{'101':'4 BHK','102':'4 BHK','103':'4 BHK','104':'4 BHK'}},
+ {id:'E',x:  79.5,z:-22.4,rot:0.38,hw:28,hd:17,core:4,cfg:'4 BHK',q:{'101':'4 BHK','102':'4 BHK','103':'4 BHK','104':'4 BHK'}},
+ {id:'D',x:  34.1,z: 65.5,rot:0.40,hw:28,hd:17,core:4,cfg:'4 BHK',q:{'101':'4 BHK','102':'4 BHK','103':'4 BHK','104':'4 BHK'}},
+ {id:'C',x: -39.0,z: 62.2,rot:0.52,hw:28,hd:17,core:4,cfg:'4 BHK',q:{'101':'4 BHK','102':'4 BHK','103':'4 BHK','104':'4 BHK'}},
+ {id:'B',x: -85.4,z:  7.2,rot:0.68,hw:28,hd:17,core:4,cfg:'4 BHK',q:{'101':'4 BHK','102':'4 BHK','103':'4 BHK','104':'4 BHK'}},
+ {id:'A',x:-139.6,z:-52.3,rot:0.72,hw:28,hd:17,core:4,cfg:'4 BHK',q:{'101':'4 BHK','102':'4 BHK','103':'4 BHK','104':'4 BHK'}},
 ];
 const CONFIGS={
  /* 4 BHK + servant — the typical-level plate (4 per floor, quad core). Areas are the
@@ -748,29 +748,36 @@ function poly(ptsPx,c,y,o={}){const s=new T.Shape();ptsPx.forEach((p,i)=>{const[
    lagoon: the large central "Site for Future Use" + landscape/kids'-play greens
    sit west/inner of the curving tower arc (the LAKE view axis). No M3M lagoon /
    clubhouse / courts / expressway. */
+/* the real DLF Privana North parcel boundary — traced from the official siteplan
+   and georeferenced to the founder's per-tower lat/long (world x=north, z=east). */
+const PARCEL=[[199,-213],[199,-62],[145,-50],[120,23],[148,102],[74,116],[9,70],[-93,98],[-159,98],[-141,-26],[-158,-68],[-39,-183],[79,-286]];
+function inParcel(x,z){let c=false;for(let i=0,j=PARCEL.length-1;i<PARCEL.length;j=i++){const [xi,zi]=PARCEL[i],[xj,zj]=PARCEL[j];
+  if(((zi>z)!==(zj>z))&&(x<(xj-xi)*(z-zi)/(zj-zi)+xi))c=!c;}return c;}
 (function privanaSite(){
-  const bx0=-170,bx1=185,bz0=-75,bz1=150;          // boundary box (model m), encloses towers A–F
-  const grd=new T.Mesh(new T.BoxGeometry(bx1-bx0,0.3,bz1-bz0),new T.MeshStandardMaterial({color:'#93bd64',roughness:1}));
-  grd.position.set((bx0+bx1)/2,0.02,(bz0+bz1)/2);grd.receiveShadow=true;siteGrp.add(grd);
+  /* parcel ground — a ShapeGeometry of the real boundary (not a box). Shape is built
+     in (x,-z) so that after rotation.x=-90° it lands in the model's x=north/z=east frame. */
+  const shp=new T.Shape();PARCEL.forEach(([x,z],i)=>{i?shp.lineTo(x,-z):shp.moveTo(x,-z);});shp.closePath();
+  const grd=new T.Mesh(new T.ShapeGeometry(shp),new T.MeshStandardMaterial({color:'#b7cf92',roughness:1}));
+  grd.rotation.x=-Math.PI/2;grd.position.y=0.02;grd.receiveShadow=true;siteGrp.add(grd);
   /* central greens — the premium open outlook (LAKE axis) */
-  const green=new T.Mesh(new T.CircleGeometry(72,44),new T.MeshStandardMaterial({color:'#a7ce74',roughness:1}));
+  const green=new T.Mesh(new T.CircleGeometry(74,44),new T.MeshStandardMaterial({color:'#a7ce74',roughness:1}));
   green.rotation.x=-Math.PI/2;green.position.set(LAKE.x,0.05,LAKE.z);siteGrp.add(green);
   label(LAKE.x,LAKE.z,5,'Central greens',{fs:24,scale:.46,border:'rgba(120,170,90,.6)'});
-  /* a couple of secondary landscape greens (kids'/sports) between the towers */
-  [[10,120,26],[-95,95,22]].forEach(([gx,gz,r])=>{const m=new T.Mesh(new T.CircleGeometry(r,28),new T.MeshStandardMaterial({color:'#adc76e',roughness:1}));m.rotation.x=-Math.PI/2;m.position.set(gx,0.045,gz);siteGrp.add(m);});
-  /* boundary wall around the box */
-  const corners=[[bx0,bz0],[bx1,bz0],[bx1,bz1],[bx0,bz1],[bx0,bz0]];
-  for(let i=0;i<corners.length-1;i++){const[ax,az]=corners[i],[cx,cz]=corners[i+1];const len=Math.hypot(cx-ax,cz-az);
+  /* secondary landscape greens (kids'/sports) tucked between the towers */
+  [[70,10,24],[-70,-10,22],[-120,60,20]].forEach(([gx,gz,r])=>{const m=new T.Mesh(new T.CircleGeometry(r,28),new T.MeshStandardMaterial({color:'#adc76e',roughness:1}));m.rotation.x=-Math.PI/2;m.position.set(gx,0.045,gz);siteGrp.add(m);});
+  /* boundary wall following the parcel edges */
+  for(let i=0;i<PARCEL.length;i++){const[ax,az]=PARCEL[i],[cx,cz]=PARCEL[(i+1)%PARCEL.length];const len=Math.hypot(cx-ax,cz-az);
     const w=new T.Mesh(new T.BoxGeometry(len,2.4,0.6),new T.MeshStandardMaterial({color:'#7d8494',roughness:.9}));
     w.position.set((ax+cx)/2,1.2,(az+cz)/2);w.rotation.y=-Math.atan2(cz-az,cx-ax);w.castShadow=true;siteGrp.add(w);}
   /* internal drive — the curving spine that threads the towers F→A */
   for(let i=0;i<towers.length-1;i++){const a=towers[i],b=towers[i+1];const len=Math.hypot(b.x-a.x,b.z-a.z);
     const r=new T.Mesh(new T.BoxGeometry(len,.3,8),new T.MeshStandardMaterial({color:'#8a8f97',roughness:.95}));
     r.position.set((a.x+b.x)/2,.16,(a.z+b.z)/2);r.rotation.y=-Math.atan2(b.z-a.z,b.x-a.x);r.receiveShadow=true;siteGrp.add(r);}
-  /* trees, avoiding towers + the central green */
-  let n=0,g=0;while(n<90&&g<3000){g++;const x=bx0+Math.random()*(bx1-bx0),z=bz0+Math.random()*(bz1-bz0);
-    let near=false;for(const t of towers){if(Math.hypot(x-t.x,z-t.z)<28){near=true;break;}}
-    if(near||Math.hypot(x-LAKE.x,z-LAKE.z)<44)continue;
+  /* trees, inside the parcel, avoiding towers + the central green */
+  let n=0,g=0;while(n<120&&g<6000){g++;const x=-160+Math.random()*360,z=-280+Math.random()*400;
+    if(!inParcel(x,z))continue;
+    let near=false;for(const t of towers){if(Math.hypot(x-t.x,z-t.z)<30){near=true;break;}}
+    if(near||Math.hypot(x-LAKE.x,z-LAKE.z)<46)continue;
     const h=3+Math.random()*3;const tr=new T.Mesh(new T.CylinderGeometry(.25,.35,h*.4,5),new T.MeshStandardMaterial({color:'#6b4f33'}));tr.position.set(x,h*.2,z);siteGrp.add(tr);
     const cr=new T.Mesh(new T.SphereGeometry(h*.42,6,5),new T.MeshStandardMaterial({color:['#5f9e54','#6fae63','#558a4d'][n%3],roughness:1}));cr.position.set(x,h*.6,z);cr.scale.y=.85;cr.castShadow=true;siteGrp.add(cr);n++;}
 })();
@@ -813,6 +820,20 @@ function makeUnits(t){const cw=3.5; // half core width along slab
     {id:'102',x0:-t.hw,x1:-cw,prim:'end',end:-1,mir:-1},
     {id:'103',x0:-t.hw*0.46,x1:t.hw*0.46,prim:'lake',end:0,mir:1,nose:1,zhw:t.hd*0.95},
     {id:'101',x0: cw,x1: t.hw,prim:'end',end: 1,mir: 1}];}   /* 101 = sanctioned-plate layout (S-zone entrance) */
+/* curved-balcony unit: a vertical prism whose OUTER (deck) edge bows out in a
+   convex arc — the signature "curved wrap-around deck balcony" read off the
+   official floor plans. Inner edge (toward the core) stays straight. `zrow` is
+   the outward depth sign; `bow` is how far (m) the deck sweeps past the slab. */
+function curvedUnitGeo(cx,w,zhw,height,zrow,HW,bow){
+  const hw=w/2, yi=-zrow*zhw, yo=zrow*zhw, s=new T.Shape();
+  s.moveTo(-hw,yi); s.lineTo(hw,yi);                    // inner (core-side) edge, straight
+  const N=14;                                           // outer edge follows ONE tower-wide convex arc
+  for(let k=0;k<=N;k++){const gx=hw-w*k/N, tx=cx+gx, off=bow*(1-Math.min(1,(tx/HW)**2)); s.lineTo(gx,yo+zrow*off);}
+  s.lineTo(-hw,yi);
+  const g=new T.ExtrudeGeometry(s,{depth:height,bevelEnabled:false});
+  g.rotateX(Math.PI/2); g.translate(0,height/2,0); return g;   // -> local x=width, y=height, z=depth
+}
+const UNIT_BOW=4.6;   // deck sweep (m) past the slab face at the tower's mid-line
 towers.forEach(t=>{const h=topH();
   t.units=makeUnits(t);
   // resolve each unit's primary world normal
@@ -835,7 +856,8 @@ towers.forEach(t=>{const h=topH();
   // unit segments (full height, colored by config)
   const facMap=towerFacade(t);
   t.units.forEach((u,i)=>{const w=u.x1-u.x0;
-    const m=new T.Mesh(new T.BoxGeometry(w-.4,h-LOBBY,u.zhw*2),new T.MeshStandardMaterial({map:facMap,color:new T.Color('#ffffff').offsetHSL(0,0,(i-1)*.03),roughness:.34,metalness:.42}));
+    const geo=u.zrow?curvedUnitGeo(u.cx,w-.4,u.zhw,h-LOBBY,u.zrow,t.hw,UNIT_BOW):new T.BoxGeometry(w-.4,h-LOBBY,u.zhw*2);
+    const m=new T.Mesh(geo,new T.MeshStandardMaterial({map:facMap,color:new T.Color('#ffffff').offsetHSL(0,0,(i-1)*.03),roughness:.34,metalness:.42}));
     const[ox,oz]=rotV(t.rot,u.cx,u.zc);
     m.position.set(t.x+ox,LOBBY+(h-LOBBY)/2,t.z+oz);m.rotation.y=t.rot;m.castShadow=m.receiveShadow=true;siteGrp.add(m);u.mesh=m;u.baseCol=m.material.color.clone();
     if(u.nose){m.userData.tower=t.id;towerPick.push(m);}});

@@ -585,12 +585,14 @@ export const TOWER_INTEL: Record<string, TowerIntelMeta> = {
     },
   },
   // DB project_name "DLF Privana North" (page slug dlf-privana-north). Six G+50
-  // quad-core point towers, single 4 BHK + servant plate; blue-glass massing with
-  // flat modern crowns. Tower footprints traced to the official DLF siteplan; the
-  // interior 3D + 2D floor-plan layer is built from the sanctioned 4 BHK + SR plan
-  // (traced walls + floor-plan textures). The tightened arc has no south-facing
-  // decks — units face E/NE/SW/W, so winter sun is morning/afternoon (~4 h), not
-  // all-day. The advisor leads with the interactive 3D + sun-path sim.
+  // quad-core point towers (56×34 m), single 4 BHK + servant plate; blue-glass
+  // massing with curved wrap-around deck balconies (per the sanctioned plans).
+  // Tower positions are the founder's exact per-tower lat/long (converted to the
+  // model's metric frame); the ground is the real parcel polygon traced from the
+  // official siteplan and georeferenced to those coords. Interior 3D + 2D floor-
+  // plan layer is built from the sanctioned 4 BHK + SR plan (traced walls +
+  // textures). The arc has no south-facing decks — units face E/NE/SW/W, so winter
+  // sun is morning/afternoon (~4 h), not all-day. Advisor leads with the 3D + sun sim.
   "DLF Privana North": {
     file: "tower-intel/dlf-privana-north.html",
     preview: "tower-intel/dlf-privana-north-preview.jpg",
