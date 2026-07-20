@@ -9,7 +9,7 @@
    UI components; the data adapts to the UI, not the other way round.
    ════════════════════════════════════════════════════════════════ */
 
-import type { LiveBacklogFull, LiveConfiguration, LiveExtendedDetails } from "./supabase";
+import type { CorridorPsf, LiveBacklogFull, LiveConfiguration, LiveExtendedDetails } from "./supabase";
 import { MARKETS } from "./markets";
 import { corridorKey } from "./journey";
 import type { DeveloperIntel, FinKey, FinRating, LegalCase } from "./developers";
@@ -255,6 +255,7 @@ export function liveProjectIntel(
   row: LiveBacklogFull,
   extRaw?: LiveExtendedDetails | null,
   cfgs?: LiveConfiguration[] | null,
+  corridorPsf?: CorridorPsf | null,
 ): ProjectIntel {
   /* prefer materialized files over inline blobs */
   const mm = extRaw ? MANIFEST[extRaw.backlogId] : undefined;
@@ -483,6 +484,11 @@ export function liveProjectIntel(
   const market =
     MARKETS.find((m) => m.name === marketName) ??
     MARKETS.find((m) => corridorKey(m.name) === corridorKey(marketName));
+  // psf band: the live-computed corridor percentiles when the corpus has enough
+  // priced projects, otherwise the curated MARKETS band. Drives the value/luxury
+  // signals below and the report's psf strip — all from real numbers where we
+  // have them.
+  const corridorBand = corridorPsf?.[corridorKey(marketName)] ?? market?.psf ?? null;
   const range = psfRange(ext?.priceRangeSqft ?? null);
 
   /* Hero ticket = the lowest psf we can cite × the smallest super area on
@@ -490,7 +496,7 @@ export function liveProjectIntel(
      with the entry-BHK chip). Prefer the project's own filed psf range, then
      the corridor floor; only when neither a psf nor a super area is known do
      we fall back to the pipeline's min ticket. Rounded to a clean 0.1 Cr. */
-  const psfLo = range?.[0] ?? market?.psf.low ?? null;
+  const psfLo = range?.[0] ?? corridorBand?.low ?? null;
   const superAreas = homes.map((h) => h.superSqft).filter((n) => n > 0);
   const smallestSuper = superAreas.length ? Math.min(...superAreas) : null;
   const largestSuper = superAreas.length ? Math.max(...superAreas) : null;
@@ -613,8 +619,9 @@ export function liveProjectIntel(
   // investment axis
   if ((row.expectedCagrNum ?? 0) >= 12 || (row.roiIdealCagr ?? 0) >= 12) tags.push("Capital Appreciation");
   if (/High Momentum/i.test(row.sectionTag ?? "")) tags.push("Construction Progress");
-  // value — a strong ROI read, or an average psf below the corridor midpoint
-  if (bandRating(bands.roi) === "strong" || (market != null && row.avgCostSqft != null && row.avgCostSqft < market.psf.avg)) tags.push("Value Buying");
+  // value — a strong ROI read, or an average psf in the corridor's cheapest
+  // band (below its 25th-percentile — genuinely under-priced for where it sits)
+  if (bandRating(bands.roi) === "strong" || (corridorBand != null && row.avgCostSqft != null && row.avgCostSqft < corridorBand.low)) tags.push("Value Buying");
   // early-entry — still early in the build, before the price ladder climbs
   if (row.constructionProgressPct != null && row.constructionProgressPct <= 25) tags.push("Early-Entry Pricing");
   // low-density / green — sparse density or generous open area on record
@@ -623,9 +630,9 @@ export function liveProjectIntel(
   if ((carpetEff != null && carpetEff >= 0.68) || usp(/layout|floor ?plan|efficien|spacious/)) tags.push("Layouts");
   // amenities & wellness — USP-stated
   if (usp(/amenit|wellness|clubhouse|\bclub\b|\bspa\b|\bpool\b|\bgym\b|sports|landscap/)) tags.push("Amenities & Wellness");
-  // luxury lifestyle — priced at/above the corridor ceiling, or USP-stated
-  // (bare "premium" is too common a word to trust as a signal)
-  if ((market != null && row.avgCostSqft != null && row.avgCostSqft >= market.psf.high) || usp(/luxur|ultra-?luxur|signature living|bespoke|exclusiv|palatial/)) tags.push("Luxury Lifestyle");
+  // luxury lifestyle — priced at/above the corridor's top band (75th-percentile),
+  // or USP-stated (bare "premium" is too common a word to trust as a signal)
+  if ((corridorBand != null && row.avgCostSqft != null && row.avgCostSqft >= corridorBand.high) || usp(/luxur|ultra-?luxur|signature living|bespoke|exclusiv|palatial/)) tags.push("Luxury Lifestyle");
   // construction quality — USP-stated build / finish
   if (usp(/build quality|construction quality|\bfinish\b|specification|craftsman|imported fitting/)) tags.push("Construction Quality");
   // vaastu — USP-stated
@@ -1102,8 +1109,8 @@ export function liveProjectIntel(
     marketShort: market?.short ?? marketName,
     psf:
       row.avgCostSqft != null && row.avgCostSqft > 0
-        ? { low: market?.psf.low ?? row.avgCostSqft, avg: Math.round(row.avgCostSqft), high: market?.psf.high ?? row.avgCostSqft }
-        : market?.psf ?? null,
+        ? { low: corridorBand?.low ?? row.avgCostSqft, avg: Math.round(row.avgCostSqft), high: corridorBand?.high ?? row.avgCostSqft }
+        : corridorBand,
     sizeBand: ext?.superAreaRange ?? null,
     anatomy,
     ops,
