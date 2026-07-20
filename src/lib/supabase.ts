@@ -15,6 +15,8 @@
    <dir>/<view>.json instead of the network.
    ════════════════════════════════════════════════════════════════ */
 
+import { corridorKey } from "./journey";
+
 const SUPABASE_URL = "https://lyetvabfgaidvqrbmaoy.supabase.co";
 const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5ZXR2YWJmZ2FpZHZxcmJtYW95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MDI2MzEsImV4cCI6MjA5MzI3ODYzMX0.zJzqyfhANxChklw7bEiOc7PwSq2R9wiJIpS39wCYS_8";
@@ -535,6 +537,52 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
   const deduped = out.length === bySlug.size ? out : [...bySlug.values()];
   if (collisions) console.log(`[dedupe] ${collisions} slug collision(s) resolved · ${out.length} → ${deduped.length} rows`);
   return deduped.length ? deduped : null;
+}
+
+/* ── corridor psf bands, computed from the live set ──
+   Group every tracked project by its corridor (the same corridorKey the adapter
+   resolves markets with) and take the 25th / 50th / 75th percentile of its real
+   avg_cost_sqft. These replace the hand-set MARKETS reference bands for the
+   value/luxury match signals and the report's psf strip — so "below the
+   corridor" means below what the tracked projects actually sell for, and the
+   bands self-update on every deploy. A corridor with fewer than MIN_FOR_LIVE
+   priced projects is omitted; liveProjectIntel falls back to the curated MARKETS
+   band there (too thin to trust a computed percentile). */
+export type CorridorPsf = Record<string, { low: number; avg: number; high: number }>;
+
+const MIN_FOR_LIVE = 4;
+let corridorPsfCache: CorridorPsf | undefined;
+
+function percentile(sorted: number[], p: number): number {
+  if (sorted.length === 1) return sorted[0];
+  const idx = (p / 100) * (sorted.length - 1);
+  const lo = Math.floor(idx), hi = Math.ceil(idx);
+  return lo === hi ? sorted[lo] : sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+}
+
+export async function fetchCorridorPsf(): Promise<CorridorPsf> {
+  if (corridorPsfCache !== undefined) return corridorPsfCache;
+  const rows = (await fetchBacklogFull()) ?? [];
+  const byKey: Record<string, number[]> = {};
+  for (const r of rows) {
+    const psf = r.avgCostSqft;
+    if (psf == null || psf <= 0) continue;
+    const key = corridorKey(r.microMarket ?? r.location ?? "");
+    (byKey[key] ??= []).push(psf);
+  }
+  const out: CorridorPsf = {};
+  for (const [key, arr] of Object.entries(byKey)) {
+    if (arr.length < MIN_FOR_LIVE) continue;
+    arr.sort((a, b) => a - b);
+    out[key] = {
+      low: Math.round(percentile(arr, 25)),
+      avg: Math.round(percentile(arr, 50)),
+      high: Math.round(percentile(arr, 75)),
+    };
+  }
+  console.log(`[supabase] corridor psf bands computed from live avg_cost_sqft for ${Object.keys(out).length} corridor(s)`);
+  corridorPsfCache = out;
+  return out;
 }
 
 /* ── extended details — hero, vitals & document media per project ──

@@ -5,6 +5,7 @@ import {
   fetchBacklogFull,
   fetchBacklogNameIds,
   fetchConfigurations,
+  fetchCorridorPsf,
   fetchExtendedDetails,
   type LiveBacklogFull,
   type LiveConfiguration,
@@ -214,11 +215,11 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       { name: "Projects", path: "/intelligence/projects" },
       { name: live.name, path: `/intelligence/projects/${slug}` },
     ]);
-    const [ext, cfg, nameIds] = [await extended(), await configurations(), await backlogNameIds()];
+    const [ext, cfg, nameIds, corridorPsf] = [await extended(), await configurations(), await backlogNameIds(), await fetchCorridorPsf()];
     const extKey = lookupKey(live.id, live.name, ext, nameIds, live.altIds);
     const cfgKey = lookupKey(live.id, live.name, cfg, nameIds, live.altIds);
     const intel = {
-      ...liveProjectIntel(live, extKey ? ext![extKey] : null, cfgKey ? cfg![cfgKey] : null),
+      ...liveProjectIntel(live, extKey ? ext![extKey] : null, cfgKey ? cfg![cfgKey] : null, corridorPsf),
       trackedRank: trackedRankOf(live.truthScore, await liveScores()),
     };
     return (

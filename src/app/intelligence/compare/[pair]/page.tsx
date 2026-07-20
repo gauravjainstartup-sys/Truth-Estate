@@ -5,6 +5,7 @@ import {
   fetchExtendedDetails,
   fetchConfigurations,
   fetchBacklogNameIds,
+  fetchCorridorPsf,
   type LiveBacklogFull,
   type LiveConfiguration,
   type LiveExtendedDetails,
@@ -88,12 +89,12 @@ async function resolveProjectPair(pair: string): Promise<ResolvedCompare | null>
   const ra = rows.find((r) => r.slug === sp[0]);
   const rb = rows.find((r) => r.slug === sp[1]);
   if (!ra || !rb) return null;
-  const [ext, cfg, nameIds, scores] = [await extended(), await configurations(), await backlogNameIds(), await liveScores()];
+  const [ext, cfg, nameIds, scores, corridorPsf] = [await extended(), await configurations(), await backlogNameIds(), await liveScores(), await fetchCorridorPsf()];
   const build = (row: LiveBacklogFull) => {
     const eK = lookupKey(row.id, row.name, ext, nameIds, row.altIds);
     const cK = lookupKey(row.id, row.name, cfg, nameIds, row.altIds);
     return {
-      ...liveProjectIntel(row, eK ? ext![eK] : null, cK ? cfg![cK] : null),
+      ...liveProjectIntel(row, eK ? ext![eK] : null, cK ? cfg![cK] : null, corridorPsf),
       trackedRank: trackedRankOf(row.truthScore, scores),
     };
   };
