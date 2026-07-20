@@ -9,6 +9,8 @@ import ProjectProfile from "../intelligence/ProjectProfile";
 import ShortlistCore from "../shortlist/ShortlistCore";
 import FocusOffRamp from "../FocusOffRamp";
 import { projectByName } from "@/lib/projects";
+import { rankProjectsIntel } from "@/lib/shortlist";
+import { useMatchCatalog } from "@/lib/useMatchCatalog";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import type { ConsultIntent, ConsultProfileChip } from "@/lib/consultation";
 import {
@@ -425,7 +427,14 @@ export default function JourneyModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const allScored = useMemo(() => rankProjects(buy), [buy]);
+  const catalog = useMatchCatalog();
+  // The in-modal shortlist ranks the SAME live catalog as /shortlist (falling
+  // back to the mock set until it loads, or if the backend is unreachable), so
+  // the "N scanned" funnel and the reasoning count are the real universe.
+  const allScored = useMemo<Scored[]>(
+    () => (catalog ? rankProjectsIntel(buy, catalog) : rankProjects(buy)),
+    [buy, catalog],
+  );
   const recs = useMemo(() => allScored.slice(0, 3), [allScored]);
   const dna = useMemo(() => deriveDNA(buy), [buy]);
 
@@ -1131,6 +1140,7 @@ export default function JourneyModal({
           buy={buy}
           dna={dna}
           recs={recs}
+          scannedCount={catalog?.length}
           onRefine={() => setStep("budget")}
           onConsult={() => requestAdvice("buy")}
           onPickCard={(intel) => {
@@ -1175,6 +1185,7 @@ export default function JourneyModal({
         <ContextualTruthGuide
           project={selected}
           dna={dna}
+          universeCount={catalog?.length ?? ACTIVE_PROJECT_COUNT}
           onConsult={() => requestAdvice("buy")}
           onExplore={() => setStep("shortlist")}
         />
@@ -1413,7 +1424,7 @@ function ProjectPreview({
    ════════════════════════════════════════════════════════════════ */
 type TGAnswer = { answer: string; reasoning: string; evidence: string; confidence: string; next: string };
 
-function buildAnswer(q: string, p: Scored, dna: DNA): TGAnswer {
+function buildAnswer(q: string, p: Scored, dna: DNA, universeCount: number): TGAnswer {
   if (q.startsWith("Is")) {
     return {
       answer: `For a ${dna.archetype.toLowerCase()} like you, ${p.name} is a ${p.recommendation.toLowerCase()}.`,
@@ -1445,7 +1456,7 @@ function buildAnswer(q: string, p: Scored, dna: DNA): TGAnswer {
   }
   return {
     answer: `We only surface what we'd seriously consider for you — and ${p.name} made the cut.`,
-    reasoning: `From ${ACTIVE_PROJECT_COUNT} active projects, three fit your ${dna.budgetRange} ${dna.archetype.toLowerCase()} profile. ${p.reason}`,
+    reasoning: `From ${universeCount} active projects, three fit your ${dna.budgetRange} ${dna.archetype.toLowerCase()} profile. ${p.reason}`,
     evidence: `Independent scoring of developer, construction, location and price.`,
     confidence: p.confidence,
     next: "Book a consultation to pressure-test our thinking.",
@@ -1455,11 +1466,13 @@ function buildAnswer(q: string, p: Scored, dna: DNA): TGAnswer {
 function ContextualTruthGuide({
   project,
   dna,
+  universeCount,
   onConsult,
   onExplore,
 }: {
   project: Scored;
   dna: DNA;
+  universeCount: number;
   onConsult: () => void;
   onExplore: () => void;
 }) {
@@ -1481,7 +1494,7 @@ function ContextualTruthGuide({
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
       setThinking(false);
-      setAns(buildAnswer(q, project, dna));
+      setAns(buildAnswer(q, project, dna, universeCount));
     }, 1000);
   };
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);

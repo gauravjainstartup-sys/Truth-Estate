@@ -8,7 +8,7 @@ import ProjectOptionCard from "./ProjectOptionCard";
 
 const basePath = "/Truth-Estate";
 
-export default function MarketProfile({ m }: { m: MarketIntel }) {
+export default function MarketProfile({ m, count }: { m: MarketIntel; count?: number }) {
   const { openConsult } = useConsultation();
   // Advice sought from a corridor page is about that market — the
   // consultation opens knowing it ("We'll prepare the SPR market picture…").
@@ -51,7 +51,7 @@ export default function MarketProfile({ m }: { m: MarketIntel }) {
 
         {/* Numbers */}
         <div className="mt-8 grid grid-cols-2 gap-x-6 gap-y-8 rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-8 md:grid-cols-4 md:p-10">
-          <Num v={`${m.projectCount}`} k="Projects tracked" />
+          <Num v={`${count ?? m.projectCount}`} k="Projects tracked" />
           <Num v={fmtPsf(m.psf.avg)} k="Avg / sq ft" />
           <Num v={m.unitBand} k="Typical ticket" />
           <Num v={m.appreciation3Y} k="3-Year trend" accent />
