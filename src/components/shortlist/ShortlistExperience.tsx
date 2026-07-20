@@ -5,7 +5,9 @@ import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import ShortlistCore from "./ShortlistCore";
 import { loadVerified, maskContact, type Verified } from "@/lib/shortlistAuth";
-import { loadBuyData, hasPreferences, deriveDNA, rankProjects } from "@/lib/journey";
+import { loadBuyData, hasPreferences, deriveDNA } from "@/lib/journey";
+import { rankProjectsIntel } from "@/lib/shortlist";
+import { useMatchCatalog } from "@/lib/useMatchCatalog";
 
 /* ════════════════════════════════════════════════════════════════
    THE STANDALONE /shortlist ROUTE — the direct-land entry.
@@ -44,10 +46,13 @@ export default function ShortlistExperience() {
     wasOpen.current = isOpen;
   }, [isOpen, refresh]);
 
+  // The live tracked universe (baked match-catalog.json); null until fetched.
+  const catalog = useMatchCatalog();
   const dna = useMemo(() => (buy ? deriveDNA(buy) : null), [buy]);
-  const recs = useMemo(() => (buy ? rankProjects(buy) : []), [buy]);
-
-  const ready = mounted && buy && hasPreferences(buy) && dna && recs.length >= 1;
+  const recs = useMemo(
+    () => (buy && catalog ? rankProjectsIntel(buy, catalog) : []),
+    [buy, catalog]
+  );
 
   return (
     <div className="min-h-svh bg-[#F5F0E8] text-[#1a1a1a]">
@@ -64,9 +69,9 @@ export default function ShortlistExperience() {
       </header>
 
       <main className="mx-auto max-w-5xl px-6 pb-24 pt-8 md:px-10 md:pt-12">
-        {!mounted ? null : !ready ? (
+        {!mounted ? null : !buy || !dna || !hasPreferences(buy) ? (
           <EmptyState onStart={() => open("buy")} />
-        ) : (
+        ) : !catalog ? null /* catalog still loading — hold to avoid an empty-state flash */ : recs.length >= 1 ? (
           <ShortlistCore
             buy={buy}
             dna={dna}
@@ -75,6 +80,8 @@ export default function ShortlistExperience() {
             onConsult={() => open()}
             onVerifiedChange={setVerified}
           />
+        ) : (
+          <EmptyState onStart={() => open("buy")} />
         )}
       </main>
     </div>

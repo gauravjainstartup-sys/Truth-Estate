@@ -8,7 +8,19 @@
    ════════════════════════════════════════════════════════════════ */
 
 import type { ProjectIntel } from "./projects";
+import { rankCore } from "./journey";
 import type { BuyData, DNA } from "./journey";
+
+/* Rank the LIVE catalog (ProjectIntel from match-catalog.json) with the same
+   heuristic the mock shortlist uses — so the standalone /shortlist ranks the
+   real tracked universe instead of the ten hand-curated projects. The items
+   already ARE ProjectIntel, so ShortlistCore consumes them directly (no
+   projectByName lookup). Same weights, same relative matchPct as rankProjects. */
+export type RankedIntel = ProjectIntel & { matchPct: number };
+
+export function rankProjectsIntel(d: BuyData, catalog: ProjectIntel[]): RankedIntel[] {
+  return rankCore(catalog, d);
+}
 
 type Pt = { weight: number; text: string };
 

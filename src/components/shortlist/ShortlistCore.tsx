@@ -52,7 +52,12 @@ export default function ShortlistCore({
     () =>
       recs
         .slice(0, 3)
-        .map((r) => ({ r, intel: projectByName(r.name) }))
+        // Live catalog items already ARE ProjectIntel (they carry a slug) — use
+        // them directly; mock items (the in-modal JourneyModal path) resolve by name.
+        .map((r) => ({
+          r,
+          intel: "slug" in r ? (r as unknown as ProjectIntel) : projectByName(r.name),
+        }))
         .filter((x): x is { r: Scored; intel: ProjectIntel } => Boolean(x.intel)),
     [recs]
   );

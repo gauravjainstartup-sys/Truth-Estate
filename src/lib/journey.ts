@@ -347,45 +347,88 @@ export const PROJECTS: Project[] = [
   },
 ];
 
-/* ── Scoring ── */
+/* Corridor canonicalisation — the buyer picks from LOCATIONS ("SPR", "Golf
+   Course Extension", "Sohna"), the mock PROJECTS carry the same vocab, but the
+   LIVE pipeline names the same corridors differently ("Southern Peripheral Road
+   (SPR Corridor)", "Golf Course Road Extension (GCRE)", "Sohna Road"). Reduce
+   any of those forms to a stable key so a location preference actually weighs
+   against a live project's corridor. No-op for the mock path (both sides already
+   share the LOCATIONS vocab); this is data-side adaptation, not a UI change. */
+export function corridorKey(s: string): string {
+  const t = s.toLowerCase();
+  if (t.includes("spr") || t.includes("southern peripheral")) return "spr";
+  if (t.includes("dwarka")) return "dwarka";
+  if (t.includes("new gurgaon") || t.includes("new gurugram")) return "new-gurgaon";
+  if (t.includes("sohna")) return "sohna";
+  if (t.includes("noida")) return "noida";
+  if (t.includes("golf course")) {
+    // "…Extension (GCRE)" / "Golf Course Extension" → GCE; bare "Golf Course Road" → GCR
+    return t.includes("ext") || t.includes("gcre") || t.includes("gce") ? "gce" : "gcr";
+  }
+  return t.trim();
+}
+
+const sameCorridor = (a: string, b: string): boolean => corridorKey(a) === corridorKey(b);
+
+/* ── Scoring ──
+   rankCore ranks ANY catalog whose items carry the fields the heuristic
+   reads (Rankable) — the hand-curated mock PROJECTS, or the live tracked
+   universe (ProjectIntel) baked into match-catalog.json. matchPct is
+   relative to the strongest item in the SAME set, so the shortlist copy
+   ("fits you almost perfectly") stays honest whichever catalog is in play.
+   rankProjects is the mock-typed shortcut used by the in-app journey. */
+export type Rankable = {
+  market: string;
+  budget: [number, number];
+  configs: string[];
+  tags: string[];
+  truthScore: number;
+};
+
 export type Scored = Project & { matchPct: number };
 
-export function rankProjects(d: BuyData): Scored[] {
-  const wantsConfig = (p: Project) =>
+export function rankCore<T extends Rankable>(items: readonly T[], d: BuyData): (T & { matchPct: number })[] {
+  const wantsConfig = (p: T) =>
     d.configs.length === 0 ||
     d.configs.includes("Flexible") ||
     p.configs.some((c) => d.configs.includes(c));
 
-  const raw = PROJECTS.map((p) => {
-    let s = 0;
+  const raw = items
+    .map((p) => {
+      let s = 0;
 
-    // Location
-    if (d.locations.length === 0 || d.locations.includes(p.market)) s += 30;
-    else s += 6;
+      // Location
+      if (d.locations.length === 0 || d.locations.some((loc) => sameCorridor(loc, p.market))) s += 30;
+      else s += 6;
 
-    // Budget overlap (with a little tolerance)
-    const [lo, hi] = p.budget;
-    if (d.budgetCr >= lo - 1 && d.budgetCr <= hi + 2) s += 26;
-    else s += Math.max(0, 16 - Math.abs(d.budgetCr - (lo + hi) / 2) * 2.2);
+      // Budget overlap (with a little tolerance)
+      const [lo, hi] = p.budget;
+      if (d.budgetCr >= lo - 1 && d.budgetCr <= hi + 2) s += 26;
+      else s += Math.max(0, 16 - Math.abs(d.budgetCr - (lo + hi) / 2) * 2.2);
 
-    // Configuration
-    if (wantsConfig(p)) s += 18;
+      // Configuration
+      if (wantsConfig(p)) s += 18;
 
-    // Priority alignment
-    const overlap = p.tags.filter((t) => d.priorities.includes(t)).length;
-    s += overlap * 9;
+      // Priority alignment
+      const overlap = p.tags.filter((t) => d.priorities.includes(t)).length;
+      s += overlap * 9;
 
-    // Quality nudge
-    s += (p.truthScore - 84) * 0.8;
+      // Quality nudge
+      s += (p.truthScore - 84) * 0.8;
 
-    return { p, s };
-  }).sort((a, b) => b.s - a.s);
+      return { p, s };
+    })
+    .sort((a, b) => b.s - a.s);
 
   const max = raw[0]?.s || 1;
   return raw.map(({ p, s }) => ({
     ...p,
     matchPct: Math.min(99, Math.max(72, Math.round(86 + (s / max) * 12))),
-  }));
+  })) as (T & { matchPct: number })[];
+}
+
+export function rankProjects(d: BuyData): Scored[] {
+  return rankCore(PROJECTS, d);
 }
 
 /* ── Buyer DNA ── */
@@ -620,7 +663,7 @@ export function matchScoreFor(p: Project, d: BuyData): number {
   let s = 0;
   // Location (34)
   if (d.locations.length === 0) s += 22;
-  else s += d.locations.includes(p.market) ? 34 : 6;
+  else s += d.locations.some((loc) => sameCorridor(loc, p.market)) ? 34 : 6;
   // Budget (30)
   const [lo, hi] = p.budget;
   if (d.budgetCr >= lo - 1 && d.budgetCr <= hi + 2) s += 30;
