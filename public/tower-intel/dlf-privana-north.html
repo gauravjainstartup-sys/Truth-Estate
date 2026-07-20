@@ -725,6 +725,16 @@ body.sun-cinema{overflow:hidden}
 #flatSheet.sx .fsr-note{font:500 10px/1.5 'Geist',system-ui,sans-serif;color:var(--muted);margin-top:11px;padding-left:15px;position:relative}
 #flatSheet.sx .fsr-note::before{content:"";position:absolute;left:0;top:4px;width:7px;height:7px;border-radius:2px;background:var(--warn,#f5a04a)}
 #flatSheet.sx .fsr-note b{color:var(--text)}
+/* floor-index bars — an obvious control that doubles as a sun-by-floor chart */
+#flatSheet.sx .fs-floor .ff-bars{display:flex;align-items:flex-end;gap:2px;height:84px;padding:8px 8px 0;border:1px solid var(--line);border-radius:11px;background:#141a2b;position:relative;cursor:pointer;margin:12px 0 6px;touch-action:none;outline:none}
+#flatSheet.sx .fs-floor .ff-bars:focus-visible{border-color:var(--gold)}
+#flatSheet.sx .fs-floor .ff-bar{flex:1;border-radius:2px 2px 0 0;min-height:5px;position:relative;transition:background .1s}
+#flatSheet.sx .fs-floor .ff-bar.cur{box-shadow:0 0 0 1.5px #57c8ea,0 0 10px #57c8ea;z-index:3}
+#flatSheet.sx .fs-floor .ff-bar.cur::after{content:attr(data-lbl);position:absolute;left:50%;top:-18px;transform:translateX(-50%);font:700 10.5px/1 'Geist',system-ui,sans-serif;color:#57c8ea;white-space:nowrap;pointer-events:none}
+#flatSheet.sx .fs-floor .ff-sunline{position:absolute;top:0;bottom:0;width:0;border-left:1.5px dashed rgba(245,185,66,.6);z-index:2;pointer-events:none}
+#flatSheet.sx .fs-floor .ff-sunline span{position:absolute;top:2px;left:5px;font:600 8px/1 ui-monospace,monospace;color:#ffd27a;white-space:nowrap}
+#flatSheet.sx .fs-floor .ffscale{color:#525b74}
+#flatSheet.sx .fs-floor .ffbest{color:var(--sun)}
 </style>
 <div id="flatSheet" class="sx">
   <div class="fs-top">
@@ -2289,21 +2299,38 @@ function openFlat(t,uid,keepFloor){
   selFloor=Math.max(1,Math.min(FLOORS,selFloor||bv.fl));
   const ffEl=document.getElementById('fsFloor');
   const linesHTML=t.units.slice().sort((a,b)=>(parseInt(String(a.id).slice(-2),10)||0)-(parseInt(String(b.id).slice(-2),10)||0)).map(u2=>{const ln=('0'+(parseInt(String(u2.id).slice(-2),10)||0)).slice(-2);return `<button class="ff-line${u2.id===u.id?' on':''}" data-uid="${u2.id}"><span class="fl-no">${ln}</span><span class="fl-face">${vfacing(t,u2)}</span></button>`;}).join('');
+  /* floor-index bars: one bar per floor, height = winter sun, coloured by band —
+     an obvious control that doubles as a sun-by-floor chart (replaces the thin slider). */
+  const _fc=floorCurve(t,u,1,0.3),_mH=Math.max(0.5,..._fc.map(p=>p.h));
+  const _bCol=(f,h)=>(f>=bd.pLo&&f<=bd.pHi)?'rgba(87,200,234,.5)':(f>=bd.vLo&&f<=bd.vHi)?'rgba(103,214,160,.62)':(cf!=null&&f>=cf)?'rgba(245,185,66,.45)':'#2c3450';
+  let _bars='';for(let f=1;f<=FLOORS;f++){const h=(_fc[f-1]||{h:0}).h;_bars+=`<div class="ff-bar" data-fl="${f}" style="height:${(5+h/_mH*72).toFixed(0)}px;background:${_bCol(f,h)}"></div>`;}
+  const _slp=cf!=null?((cf-0.5)/FLOORS*100).toFixed(1):null;
   if(ffEl){ffEl.innerHTML=`
     <div class="ff-lines"><span class="ff-lines-lab">Line</span><div class="ff-lineseg">${linesHTML}</div></div>
-    <div class="ffhead"><span class="ffttl">Choose your floor</span><span class="ffnow">Floor <b id="ffCur">${selFloor}</b> of ${FLOORS}</span></div>
-    <input type="range" id="ffRange" min="1" max="${FLOORS}" step="1" value="${selFloor}">
-    <div class="ffscale"><span>01</span><span class="ffbest">◎ best value · ${bv.fl}</span><span>${FLOORS}</span></div>
+    <div class="ffhead"><span class="ffttl">Choose your floor</span><span class="ffnow">Floor <b id="ffCur">${selFloor}</b> of ${FLOORS}<span id="ffSunH"></span></span></div>
+    <div class="ff-bars" id="ffBars" role="slider" aria-label="Floor" aria-valuemin="1" aria-valuemax="${FLOORS}" aria-valuenow="${selFloor}" tabindex="0">${_bars}${_slp!=null?`<div class="ff-sunline" style="left:${_slp}%"><span>full sun ↑</span></div>`:''}</div>
+    <div class="ffscale"><span>F1</span><span class="ffbest">◎ best value · F${bv.fl}</span><span>F${FLOORS}</span></div>
     <div class="ffhint" id="ffHint"></div>`;
-    ffEl.querySelectorAll('.ff-line').forEach(bt=>bt.onclick=()=>{const nu=bt.dataset.uid;if(nu!==u.id)openFlat(t,nu,true);});}
+    ffEl.querySelectorAll('.ff-line').forEach(bt=>bt.onclick=()=>{const nu=bt.dataset.uid;if(nu!==u.id)openFlat(t,nu,true);});
+    const _bx=document.getElementById('ffBars');
+    if(_bx){const _pick=cx=>{const r=_bx.getBoundingClientRect();paintFloor(Math.round((cx-r.left)/r.width*(FLOORS-1))+1);};let _dg=false;
+      _bx.addEventListener('pointerdown',e=>{_dg=true;try{_bx.setPointerCapture(e.pointerId);}catch(_){}_pick(e.clientX);});
+      _bx.addEventListener('pointermove',e=>{if(_dg)_pick(e.clientX);});
+      _bx.addEventListener('pointerup',()=>{_dg=false;});_bx.addEventListener('pointercancel',()=>{_dg=false;});
+      _bx.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowUp'){paintFloor(selFloor+1);e.preventDefault();}else if(e.key==='ArrowLeft'||e.key==='ArrowDown'){paintFloor(selFloor-1);e.preventDefault();}});}
+  }
   function paintFloor(fl){
     fl=Math.max(1,Math.min(FLOORS,fl|0));selFloor=fl;
     const flatNo=`${fl}${lineNum}`;
     document.getElementById('fsName').textContent=`${t.id} · ${flatNo}`;
     const cur=document.getElementById('ffCur');if(cur)cur.textContent=fl;
     const tier=floorTier(fl,bd,cf),fsun=floorSun(t,u,fl),season=benchShort[String(decl)].toLowerCase();
+    const bx=document.getElementById('ffBars');
+    if(bx){bx.setAttribute('aria-valuenow',fl);bx.querySelectorAll('.ff-bar').forEach(b=>{b.classList.remove('cur');b.removeAttribute('data-lbl');});
+      const cb=bx.querySelector('.ff-bar[data-fl="'+fl+'"]');if(cb){cb.classList.add('cur');cb.setAttribute('data-lbl','F'+fl);}}
+    const sh=document.getElementById('ffSunH');if(sh)sh.innerHTML=` · <b style="color:#f5b942;font-weight:600">${fsun.h>0.05?fsun.h.toFixed(1)+'h':'no'}</b> <span style="color:#8790a6">${season} sun</span>`;
     const hint=document.getElementById('ffHint');
-    if(hint)hint.innerHTML=`<b style="color:${tier.c}">${tier.k}</b> · ${tier.d} <span style="color:#9a9c95">— ${fsun.h>0.05?fsun.h.toFixed(1)+'h '+season+' sun':'no direct '+season+' sun at this floor'}.</span>`;
+    if(hint)hint.innerHTML=`<b style="color:${tier.c}">${tier.k}</b> · ${tier.d} <span style="color:#8790a6">— ${fsun.h>0.05?fsun.h.toFixed(1)+'h '+season+' sun':'no direct '+season+' sun at this floor'}.</span>`;
     const sp=document.getElementById('fp-sun');if(sp)sp.innerHTML=sunFloorHTML(t,u,fl,oppSt);
     renderSunRooms();if(f3&&f3.roomsData)f3setSun(f3.sunFrac);
     const wu=document.getElementById('fsWalkUnit');if(wu)wu.textContent=flatNo;
