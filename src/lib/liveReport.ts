@@ -374,15 +374,8 @@ export function liveProjectIntel(
     ...strList(row.locConnConstraints),
   ]).slice(0, 5);
 
-  /* priorities served — claimed only where the signal is clearly strong */
-  const tags: string[] = [];
-  if (row.delayRisk && /low/i.test(row.delayRisk)) tags.push("On-Time Delivery");
-  if (absorptionPct != null && absorptionPct >= 90) tags.push("Liquidity");
-  if (bandRating(bands.legal) === "strong" || (row.legalScore ?? 0) >= 80 || row.riskNoActiveFlags === true) tags.push("Legal Safety");
-  if ((row.expectedCagrNum ?? 0) >= 12 || (row.roiIdealCagr ?? 0) >= 12) tags.push("Capital Appreciation");
-  if (bandRating(bands.developer) === "strong") tags.push("Developer Reputation");
-  if (bandRating(bands.location) === "strong" || /Prime Advantage|Strong Access/i.test(row.locPillarTag ?? "")) tags.push("Location");
-  if (/High Momentum/i.test(row.sectionTag ?? "")) tags.push("Construction Progress");
+  /* priorities served → derived lower down (deriveTags), once the config
+     homes, corridor psf, density and open-area signals are all in scope. */
 
   /* configurations table (when filled) is richer than the caption string */
   /* One physical unit can arrive as several configuration rows — a duplex with
@@ -491,11 +484,24 @@ export function liveProjectIntel(
   const psfLo = range?.[0] ?? market?.psf.low ?? null;
   const superAreas = homes.map((h) => h.superSqft).filter((n) => n > 0);
   const smallestSuper = superAreas.length ? Math.min(...superAreas) : null;
+  const largestSuper = superAreas.length ? Math.max(...superAreas) : null;
   const fallbackCr = row.minPriceCr ?? row.roiCostCr ?? (row.budget ? parseFloat(row.budget.replace(/[^\d.]/g, "")) : NaN);
   const lo =
     psfLo && smallestSuper
       ? Math.round(((psfLo * smallestSuper) / 1e7) * 10) / 10
       : Number.isFinite(fallbackCr) ? fallbackCr : 0;
+
+  /* Top ticket = the project's OWN filed psf high × its largest home — a
+     genuine low–high band ONLY where the pipeline actually has that spread
+     (a filed price range and a bigger config). Where it doesn't, hi === lo
+     and every consumer keeps its "from ₹X Cr+" single-ticket convention:
+     we never manufacture a range the data can't support. */
+  const psfHi = range?.[1] ?? null;
+  let hi = lo;
+  if (psfHi && largestSuper) {
+    const top = Math.round(((psfHi * largestSuper) / 1e7) * 10) / 10;
+    if (top > lo) hi = top;
+  }
 
   /* price journey — only when the extended row carries a parseable
      current range AND a launch price; the launch month anchors to the
@@ -563,6 +569,60 @@ export function liveProjectIntel(
   const density = row.densityAptPerAcre != null ? Math.round(row.densityAptPerAcre) : null;
   const openAreaPct = row.openAreaPct != null ? Math.round(row.openAreaPct) : null;
   const landAcres = row.landAcres != null ? Math.round(row.landAcres * 10) / 10 : null;
+
+  /* ── priorities served — a buyer's chosen priority should tilt the ranking
+     ONLY where the pipeline genuinely evidences it. Each tag is gated on a real
+     signal (a band, a metric, or the project's OWN stated USP); silence is
+     honest — an unclaimed priority simply doesn't move the match, never a
+     hopeful guess. Vocabulary mirrors journey.ts PRIORITIES_BY_TYPE so a
+     buyer's picks line up with what a live project can claim. ── */
+  const carpetRatios = homes.map((h) => (h.superSqft > 0 ? h.carpetSqft / h.superSqft : 0)).filter((r) => r > 0);
+  const carpetEff = carpetRatios.length ? carpetRatios.reduce((a, b) => a + b, 0) / carpetRatios.length : null;
+  const uspText = (() => {
+    const parts: string[] = [];
+    for (const c of asArr(row.uspCards)) {
+      const t = tIn(c, ["title"]);
+      const b = tIn(c, ["insight", "body", "deep_insight"]);
+      if (t) parts.push(t);
+      if (b) parts.push(b);
+    }
+    parts.push(...strList(row.locKeyStrengths), ...strList(row.locGrowthDrivers));
+    if (typeof row.brandedReasoning === "string") parts.push(row.brandedReasoning);
+    if (typeof row.ecosystemReasoning === "string") parts.push(row.ecosystemReasoning);
+    return parts.join(" · ").toLowerCase();
+  })();
+  const usp = (re: RegExp) => re.test(uspText);
+
+  const tags: string[] = [];
+  // delivery & liquidity
+  if (row.delayRisk && /low/i.test(row.delayRisk)) tags.push("On-Time Delivery");
+  if (absorptionPct != null && absorptionPct >= 90) tags.push("Liquidity");
+  // legal · developer · location
+  if (bandRating(bands.legal) === "strong" || (row.legalScore ?? 0) >= 80 || row.riskNoActiveFlags === true) tags.push("Legal Safety");
+  if (bandRating(bands.developer) === "strong") tags.push("Developer Reputation");
+  if (bandRating(bands.location) === "strong" || /Prime Advantage|Strong Access/i.test(row.locPillarTag ?? "")) tags.push("Location");
+  // investment axis
+  if ((row.expectedCagrNum ?? 0) >= 12 || (row.roiIdealCagr ?? 0) >= 12) tags.push("Capital Appreciation");
+  if (/High Momentum/i.test(row.sectionTag ?? "")) tags.push("Construction Progress");
+  // value — a strong ROI read (buying right; the corridor-relative psf test can't
+  // fire here because live market names don't match the MARKETS vocabulary)
+  if (bandRating(bands.roi) === "strong") tags.push("Value Buying");
+  // early-entry — still early in the build, before the price ladder climbs
+  if (row.constructionProgressPct != null && row.constructionProgressPct <= 25) tags.push("Early-Entry Pricing");
+  // low-density / green — sparse density or generous open area on record
+  if ((density != null && density <= 100) || (openAreaPct != null && openAreaPct >= 72)) tags.push("Low-Density / Green");
+  // efficient layouts — high carpet-to-super efficiency, or USP-stated
+  if ((carpetEff != null && carpetEff >= 0.68) || usp(/layout|floor ?plan|efficien|spacious/)) tags.push("Layouts");
+  // amenities & wellness — USP-stated
+  if (usp(/amenit|wellness|clubhouse|\bclub\b|\bspa\b|\bpool\b|\bgym\b|sports|landscap/)) tags.push("Amenities & Wellness");
+  // luxury lifestyle — USP-stated (bare "premium" is too common to trust as a signal)
+  if (usp(/luxur|ultra-?luxur|signature living|bespoke|exclusiv|palatial/)) tags.push("Luxury Lifestyle");
+  // construction quality — USP-stated build / finish
+  if (usp(/build quality|construction quality|\bfinish\b|specification|craftsman|imported fitting/)) tags.push("Construction Quality");
+  // vaastu — USP-stated
+  if (usp(/vaastu|vastu/)) tags.push("Vaastu-Compliant");
+  // rental yield — stated rental appeal
+  if (usp(/rental|\byield\b|rent-?ready|\blease\b/)) tags.push("Rental Yield");
 
   /* ════════ backlog_listing_public_v3 → the detail page's own slots ════════ */
 
@@ -1015,7 +1075,7 @@ export function liveProjectIntel(
     developer: row.developer ?? "",
     market: marketName,
     configs: configs.length ? configs : ["NA"],
-    budget: [lo, lo],
+    budget: [lo, hi],
     truthScore: Math.round(row.truthScore ?? 0),
     recommendation,
     confidence,
