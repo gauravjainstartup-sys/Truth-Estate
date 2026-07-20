@@ -22,6 +22,34 @@ Until the function is deployed, the site works exactly as before: the client
 attempts the call, fails fast, and renders the deterministic order. Deploying
 the function switches the AI layer on — no site rebuild needed.
 
+## Brief logging (one-time table)
+
+Every brief that reaches the function is recorded to `shortlist_log` (a
+fire-and-forget, service-role insert — logging never delays or fails the
+re-rank). Run this once in the Supabase SQL editor so the writes have a home;
+without the table the function still works, it just logs an insert error and
+moves on.
+
+```sql
+create table if not exists public.shortlist_log (
+  id              uuid        primary key default gen_random_uuid(),
+  created_at      timestamptz not null    default now(),
+  brief           jsonb       not null,   -- the buyer's full BuyData (incl. free-text notes)
+  candidate_slugs text[]      not null    default '{}',  -- what the deterministic screen sent
+  ranked_slugs    text[]      not null    default '{}',  -- Gemini's re-rank (empty if it declined)
+  model_ok        boolean     not null    default false  -- did the AI layer accept & re-rank?
+);
+-- Writes come ONLY from the Edge Function via the injected service-role key,
+-- which bypasses RLS. Turn RLS on with no policies so nothing else — anon or
+-- authenticated — can read or write it.
+alter table public.shortlist_log enable row level security;
+```
+
+Read your buyers' asks back with e.g.
+`select created_at, brief->>'budgetCr' as budget, brief->'locations' as corridors,
+brief->'configs' as configs, brief->>'notes' as notes, model_ok
+from public.shortlist_log order by created_at desc limit 50;`
+
 ## Contract
 
 ```
