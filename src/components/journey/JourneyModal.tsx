@@ -20,7 +20,6 @@ import {
   BuyData,
   CONFIGS,
   DNA,
-  GOALS,
   INVEST_HORIZONS,
   INVEST_OBJECTIVES,
   INVEST_PRIORITIES,
@@ -341,8 +340,6 @@ type InvestStep = (typeof INVEST_STEPS)[number];
 
 type Step =
   | "welcome"
-  | "goal"
-  | "coming-soon"
   | BuyStep
   | "buy-offramp-rtm"
   | "buy-offramp-commercial"
@@ -389,7 +386,6 @@ export default function JourneyModal({
     : "welcome";
 
   const [step, setStep] = useState<Step>(initialStep);
-  const [goal, setGoal] = useState<Intent>(initialIntent ?? "buy");
   const [buy, setBuy] = useState<BuyData>(account?.buy ?? emptyBuyData);
   const [sell, setSell] = useState<SellData>(emptySellData);
   const [invest, setInvest] = useState<InvestData>(emptyInvestData);
@@ -415,6 +411,7 @@ export default function JourneyModal({
       // Carries the chosen priorities — including deal-structure ones like a
       // flexible payment plan — into the advisor's brief.
       ...(buy.priorities.length ? [{ label: "Priorities", value: buy.priorities.join(", ") }] : []),
+      ...(buy.notes?.trim() ? [{ label: "In their words", value: buy.notes.trim() }] : []),
     ];
   };
   const requestAdvice = (intent: ConsultIntent) => {
@@ -473,7 +470,7 @@ export default function JourneyModal({
   };
   const backBuy = () => {
     if (editReturn) setEditReturn(false);
-    return buyIndex <= 0 ? setStep("goal") : setStep(BUY_STEPS[buyIndex - 1]);
+    return buyIndex <= 0 ? setStep("welcome") : setStep(BUY_STEPS[buyIndex - 1]);
   };
 
   const canContinue: Record<BuyStep, boolean> = {
@@ -502,7 +499,7 @@ export default function JourneyModal({
   const sellProgress = inSellFlow ? (sellIndex + 1) / SELL_STEPS.length : null;
   const nextSell = () =>
     sellIndex < SELL_STEPS.length - 1 ? setStep(SELL_STEPS[sellIndex + 1]) : setStep("sell-processing");
-  const backSell = () => (sellIndex <= 0 ? setStep("goal") : setStep(SELL_STEPS[sellIndex - 1]));
+  const backSell = () => (sellIndex <= 0 ? onClose() : setStep(SELL_STEPS[sellIndex - 1]));
   const setSellField = <K extends keyof SellData>(k: K, v: SellData[K]) => setSell((s) => ({ ...s, [k]: v }));
   const toggleSellPriority = (value: string) =>
     setSell((s) => {
@@ -526,7 +523,7 @@ export default function JourneyModal({
   const investProgress = inInvestFlow ? (investIndex + 1) / INVEST_STEPS.length : null;
   const nextInvest = () =>
     investIndex < INVEST_STEPS.length - 1 ? setStep(INVEST_STEPS[investIndex + 1]) : setStep("invest-processing");
-  const backInvest = () => (investIndex <= 0 ? setStep("goal") : setStep(INVEST_STEPS[investIndex - 1]));
+  const backInvest = () => (investIndex <= 0 ? onClose() : setStep(INVEST_STEPS[investIndex - 1]));
   const setInvestField = <K extends keyof InvestData>(k: K, v: InvestData[K]) => setInvest((s) => ({ ...s, [k]: v }));
   const toggleInvestLocation = (value: string) =>
     setInvest((s) => {
@@ -585,75 +582,22 @@ export default function JourneyModal({
           <p className="mb-12 text-[0.8rem] font-light uppercase tracking-[0.28em] text-[#1a1a1a]/40">
             Around 2 minutes
           </p>
-          <PrimaryButton onClick={() => setStep("goal")}>Continue</PrimaryButton>
+          <PrimaryButton onClick={() => setStep("possession")}>Continue</PrimaryButton>
         </div>
       </Shell>
     );
   }
 
-  if (step === "goal") {
-    const pick = (g: Intent, live: boolean) => {
-      setGoal(g);
-      setStep(live ? INTENT_STEP[g] : "coming-soon");
-    };
-    return frame(
-      <Shell onClose={onClose} eyebrow="The Truth Estate Journey">
-        <div key="goal" className="animate-fade-up">
-          <ScreenHeading title="What's your goal today?" />
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {GOALS.map((g) => (
-              <button
-                key={g.key}
-                onClick={() => pick(g.key, g.live)}
-                className="group flex flex-col items-start gap-6 rounded-xl border border-[#1a1a1a]/12 bg-white px-7 py-8 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-[#1a1a1a]/25 hover:bg-white hover:shadow-lg hover:shadow-black/[0.04] md:px-8 md:py-10"
-              >
-                <span className="text-[2rem] transition-transform duration-500 group-hover:scale-110 md:text-[2.4rem]">
-                  {g.icon}
-                </span>
-                <span className="flex w-full items-center justify-between">
-                  <span className="font-serif text-[1.3rem] font-medium text-[#1a1a1a] md:text-[1.6rem]">
-                    {g.label}
-                  </span>
-                  {!g.live && (
-                    <span className="text-[9px] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/35">
-                      Soon
-                    </span>
-                  )}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </Shell>
-    );
-  }
-
-  if (step === "coming-soon") {
-    const g = GOALS.find((x) => x.key === goal);
-    return frame(
-      <Shell onClose={onClose} onBack={() => setStep("goal")} eyebrow={g?.label}>
-        <div key="coming-soon" className="animate-fade-up text-center">
-          <span className="text-[3rem] md:text-[3.6rem]">{g?.icon}</span>
-          <h2 className="mt-8 font-serif text-[2rem] font-medium leading-[1.15] text-[#1a1a1a] md:text-[3rem]">
-            {g?.label} is coming soon.
-          </h2>
-          <p className="mx-auto mt-6 max-w-md text-[0.98rem] font-light leading-relaxed text-[#1a1a1a]/55">
-            We&apos;re building this with the same independence and depth as our Buy experience.
-            You&apos;ll be among the first to know when it opens.
-          </p>
-          <div className="mt-12 flex justify-center">
-            <GhostButton onClick={() => setStep("goal")}>Explore Buying Instead</GhostButton>
-          </div>
-        </div>
-      </Shell>
-    );
-  }
+  // The "What's your goal?" chooser (and its coming-soon screen) were removed —
+  // buyer-only onboarding goes straight from welcome into the Buy flow
+  // (welcome → possession). Sell/Invest remain reachable via open("sell") /
+  // open("invest") from their own entry points (e.g. the Ownership card).
 
   /* ─────────────── SELL FLOW ─────────────── */
 
   if (step === "sell-intro") {
     return frame(
-      <Shell onClose={onClose} onBack={() => setStep("goal")} progress={sellProgress} eyebrow="Sell Property">
+      <Shell onClose={onClose} onBack={onClose} progress={sellProgress} eyebrow="Sell Property">
         <div key="sell-intro" className="animate-fade-up max-w-2xl">
           <ScreenHeading
             title={<>Tell us about<br />your property.</>}
@@ -797,7 +741,7 @@ export default function JourneyModal({
 
   if (step === "invest-intro") {
     return frame(
-      <Shell onClose={onClose} onBack={() => setStep("goal")} progress={investProgress} eyebrow="Invest">
+      <Shell onClose={onClose} onBack={onClose} progress={investProgress} eyebrow="Invest">
         <div key="invest-intro" className="animate-fade-up max-w-2xl">
           <ScreenHeading
             title={<>Tell us about<br />your investment goals.</>}
@@ -1146,6 +1090,30 @@ export default function JourneyModal({
               />
             ))}
           </div>
+
+          {/* In your own words — free-text so a buyer can say anything the chips
+              don't capture; saved with the brief and carried to the advisor. */}
+          <div className="mt-10 border-t border-dashed border-[#1a1a1a]/15 pt-7">
+            <label className="block">
+              <span className="text-[0.98rem] font-medium text-[#1a1a1a]">
+                In your own words <span className="font-light text-[#1a1a1a]/40">&mdash; optional</span>
+              </span>
+              <span className="mt-1 block text-[0.86rem] font-light leading-relaxed text-[#1a1a1a]/50">
+                Anything the options above don&rsquo;t capture? Tell us what a perfect home looks like for you.
+              </span>
+              <textarea
+                value={buy.notes ?? ""}
+                onChange={(e) => set("notes", e.target.value.slice(0, 600))}
+                rows={3}
+                placeholder="e.g. a quiet corner unit away from the main road, ideally park-facing, with a separate study for WFH and space for aging parents. Avoid ground/first floors."
+                className="mt-3.5 w-full resize-none rounded-xl border border-[#1a1a1a]/15 bg-white px-4 py-3.5 text-[0.95rem] font-light leading-relaxed text-[#1a1a1a] outline-none transition-colors placeholder:italic placeholder:text-[#1a1a1a]/35 focus:border-[#1e6b45]"
+              />
+              <span className="mt-1.5 block text-right font-mono text-[0.7rem] text-[#1a1a1a]/35">
+                {(buy.notes ?? "").length} / 600
+              </span>
+            </label>
+          </div>
+
           <NextBar onNext={nextBuy} disabled={!canContinue.priorities} label="See my shortlist" />
         </div>
       </Shell>
@@ -1297,7 +1265,7 @@ export default function JourneyModal({
       <ResearchWorkspace
         onClose={onClose}
         onConsult={() => requestAdvice("research")}
-        onStartJourney={() => setStep("goal")}
+        onStartJourney={() => setStep("possession")}
       />
     );
   }
