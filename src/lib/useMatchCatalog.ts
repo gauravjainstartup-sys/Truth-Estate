@@ -20,8 +20,11 @@ import { projectByName, type ProjectIntel } from "./projects";
 const basePath = "/Truth-Estate";
 
 /* The mock PROJECTS, resolved to their enriched ProjectIntel — the fallback
-   whenever the baked catalog can't be fetched or comes back empty. */
-const MOCK_INTEL: ProjectIntel[] = PROJECTS.map((p) => projectByName(p.name)).filter(
+   whenever the baked catalog can't be fetched or comes back empty. Exported so
+   callers can tell a live catalog from this fallback (identity check): only the
+   live set's projects have prerendered detail pages, so a deep-link is only safe
+   when catalog !== MOCK_INTEL. */
+export const MOCK_INTEL: ProjectIntel[] = PROJECTS.map((p) => projectByName(p.name)).filter(
   (p): p is ProjectIntel => Boolean(p),
 );
 

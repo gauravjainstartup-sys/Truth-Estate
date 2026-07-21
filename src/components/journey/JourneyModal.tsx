@@ -11,7 +11,7 @@ import FocusOffRamp from "../FocusOffRamp";
 import { projectByName } from "@/lib/projects";
 import { rankProjectsIntel } from "@/lib/shortlist";
 import type { RankedIntel } from "@/lib/shortlist";
-import { useMatchCatalog } from "@/lib/useMatchCatalog";
+import { useMatchCatalog, MOCK_INTEL } from "@/lib/useMatchCatalog";
 import { useAiRerank } from "@/lib/useAiRerank";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import type { ConsultIntent, ConsultProfileChip } from "@/lib/consultation";
@@ -1164,7 +1164,16 @@ export default function JourneyModal({
           onConsult={() => requestAdvice("buy")}
           onPickCard={(intel) => {
             onClose();
-            router.push(`/intelligence/projects/${intel.slug}`);
+            // Only the LIVE catalog's projects have prerendered detail pages on
+            // the static host. When the baked catalog can't be fetched the hook
+            // hands back MOCK_INTEL, whose slugs have no page — deep-linking there
+            // 404s. So only navigate to the report when the catalog is the real
+            // live set; otherwise send the pick to /shortlist (always prerendered,
+            // and it re-ranks the live universe from the saved brief), so a pick
+            // can never dead-end. This is why the standalone /shortlist — which
+            // never renders the mock set — doesn't 404.
+            const isLive = catalog != null && catalog !== MOCK_INTEL;
+            router.push(isLive ? `/intelligence/projects/${intel.slug}` : "/shortlist");
           }}
         />
       </Shell>
