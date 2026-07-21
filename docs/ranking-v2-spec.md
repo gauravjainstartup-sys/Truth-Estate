@@ -1,6 +1,8 @@
 # Ranking v2 — persona-aware, graded, trust-weighted
 
-Status: **step 1 shipped · step 2 built (awaiting founder review + deploy).** Supersedes the flat weighted sum in
+Status: **step 1 shipped · step 2 built as opt-in (live on `/test-rank` for user
+testing; `/shortlist` still on the clamp until the honest numbers are approved).**
+Supersedes the flat weighted sum in
 `rankCore` (`src/lib/journey.ts`). The AI re-rank layer (Gemini, Path 2) and the
 two hard gates are unchanged; this rewrites only the deterministic score that
 orders the survivors.
@@ -87,7 +89,11 @@ one.
 1. **This doc** — persona + graded + trust engine (order improves, display same).
 2. **Honest absolute Match %** — surface the raw 0–100 instead of the relative
    clamp (a deliberate, visible UX change; founder reviews the new numbers
-   first). ← **built; on the feature branch, awaiting review + deploy.**
+   first). ← **built as `rankCore(items, d, { honestPct: true })` — opt-in, so
+   `/shortlist` keeps the clamp. Exercised live on the `/test-rank` console (a
+   noindexed QA harness: full brief → RUN → ranked catalog + per-axis breakdown
+   + a data-completeness audit of the matchable universe). Flip the default once
+   user testing signs off.**
 3. **Diversity pass** (don't return 4 near-identical units) **+ one honest gap**
    per card.
 4. **Outcome calibration** — instrument recommend→unlock→consult→convert and
