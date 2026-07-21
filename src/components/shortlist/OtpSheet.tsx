@@ -25,10 +25,14 @@ export default function OtpSheet({
   open,
   onClose,
   onVerified,
+  title = "Unlock your #1 match",
+  subtitle = "Verify once — your shortlist stays saved, and your top match is revealed instantly.",
 }: {
   open: boolean;
   onClose: () => void;
   onVerified: (v: Verified) => void;
+  title?: string;
+  subtitle?: string;
 }) {
   const [cc, setCc] = useState("+91");
   const [phone, setPhone] = useState("");
@@ -113,9 +117,9 @@ export default function OtpSheet({
       >
         <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-[#1a1a1a]/15" />
 
-        <h2 className="font-serif text-[1.5rem] font-medium leading-tight">Unlock your #1 match</h2>
+        <h2 className="font-serif text-[1.5rem] font-medium leading-tight">{title}</h2>
         <p className="mt-1.5 text-[0.82rem] font-light leading-relaxed text-[#1a1a1a]/55">
-          Verify once — your shortlist stays saved, and your top match is revealed instantly.
+          {subtitle}
         </p>
 
         {step === "contact" ? (

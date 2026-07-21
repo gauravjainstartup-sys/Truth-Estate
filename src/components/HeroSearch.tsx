@@ -19,7 +19,6 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useConsultation } from "./consultation/ConsultationProvider";
 import { scoreTag, type OmniIndex, type OmniProject, type ScoreTag } from "@/lib/omni";
 import {
   fuzzySearch, highlightName, defaultList, coveredNearby, coveredCountLabel,
@@ -32,7 +31,7 @@ const MOBILE_MQ = "(max-width: 767px)";
 
 type NavItem =
   | { kind: "project"; p: OmniProject }
-  | { kind: "action"; action: "report" | "prioritise" };
+  | { kind: "action"; action: "report" };
 
 /* Truth Score chip — the score number, then the canonical tag pill (layout B). */
 function ScoreTagChip({ score, tag }: { score: number; tag: ScoreTag }) {
@@ -48,7 +47,6 @@ function ScoreTagChip({ score, tag }: { score: number; tag: ScoreTag }) {
 }
 
 export default function HeroSearch({ index }: { index: OmniIndex }) {
-  const { openConsult } = useConsultation();
   const projects = index.projects;
 
   const [query, setQuery] = useState("");
@@ -58,7 +56,6 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
   const [isMobile, setIsMobile] = useState(false);
   const [active, setActive] = useState(-1);
   const [recentSlugs, setRecentSlugs] = useState<string[]>([]);
-  const [prioritised, setPrioritised] = useState(false);
   const [placeholder, setPlaceholder] = useState("Search any Gurugram project");
   const [vvh, setVvh] = useState<number | null>(null); // visual-viewport height
 
@@ -113,13 +110,11 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
     if (state === 2) return results.map((p) => ({ kind: "project", p }) as NavItem);
     return [
       { kind: "action", action: "report" },
-      ...(prioritised ? [] : [{ kind: "action", action: "prioritise" } as NavItem]),
       ...nearby.map((p) => ({ kind: "project", p }) as NavItem),
     ];
-  }, [state, recentProjects, mostList, results, nearby, prioritised]);
+  }, [state, recentProjects, mostList, results, nearby]);
 
   useEffect(() => { setActive(-1); }, [q, state, variant]);
-  useEffect(() => { setPrioritised(false); }, [q]);
 
   useEffect(() => {
     if (active >= 0) document.getElementById(optId(active))?.scrollIntoView({ block: "nearest" });
@@ -162,15 +157,15 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
   }, []);
   const requestReport = useCallback(() => {
     setMobileOpen(false); setOpen(false);
-    openConsult({ sourceKind: "homepage", source: (query.trim() || q), intent: "research" });
-  }, [openConsult, query, q]);
-  const prioritise = useCallback(() => { pushDemand(query.trim() || q); setPrioritised(true); }, [query, q]);
+    const term = (query.trim() || q).trim();
+    if (term) pushDemand(term);
+    window.location.href = `${basePath}/get-custom-project-report${term ? `?project=${encodeURIComponent(term)}` : ""}`;
+  }, [query, q]);
 
   const activate = useCallback((item: NavItem) => {
     if (item.kind === "project") go(item.p);
-    else if (item.action === "report") requestReport();
-    else prioritise();
-  }, [go, requestReport, prioritise]);
+    else requestReport();
+  }, [go, requestReport]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -269,25 +264,11 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
           >
             Request a custom report
           </button>
-          {prioritised ? (
-            <span className="inline-flex items-center gap-1.5 text-[13px] text-[#6b6252]">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2f6b4f" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
-              We&rsquo;ll prioritise it.
-            </span>
-          ) : (
-            <button
-              type="button" id={optId(1)} role="option" aria-selected={active === 1}
-              onMouseDown={(e) => e.preventDefault()} onMouseEnter={() => setActive(1)} onClick={prioritise}
-              className={`inline-flex min-h-[44px] items-center text-[13px] text-[#6b6252] underline underline-offset-2 transition-colors hover:text-[#4d4535] ${active === 1 ? "text-[#4d4535]" : ""}`}
-            >
-              Prioritise it for me
-            </button>
-          )}
         </li>
         {nearby.length > 0 && (
           <>
             {label("Covered nearby", true)}
-            {nearby.map((p, k) => row(p, (prioritised ? 1 : 2) + k, false))}
+            {nearby.map((p, k) => row(p, 1 + k, false))}
           </>
         )}
       </>
