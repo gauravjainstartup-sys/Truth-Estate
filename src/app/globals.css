@@ -264,3 +264,18 @@ body {
   .teh-search-panel { animation: teh-search-in 0.14s ease-out both; }
   .teh-search-overlay { animation: teh-search-fade 0.14s ease-out both; }
 }
+
+/* Mobile TruthGuide mini-entry — the guiding star "rolls" in and out on a
+   gentle loop (mostly still, one smooth 360° roll with a scale bump), and the
+   label occasionally peeks out then tucks back so first-timers know what it is.
+   Applied via motion-safe utilities, so reduced-motion users just see the icon. */
+@keyframes tg-star-roll {
+  0%, 58%   { transform: rotate(0deg) scale(1); }
+  72%       { transform: rotate(200deg) scale(1.16); }
+  86%, 100% { transform: rotate(360deg) scale(1); }
+}
+@keyframes tg-peek {
+  0%, 6%    { max-width: 0; opacity: 0; transform: translateX(8px); }
+  15%, 27%  { max-width: 160px; opacity: 1; transform: translateX(0); }
+  38%, 100% { max-width: 0; opacity: 0; transform: translateX(8px); }
+}
