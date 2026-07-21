@@ -51,9 +51,6 @@ function IconTag({ className }: IconProps) { // price tag — best deal, secured
 function IconRupee({ className }: IconProps) { // rupee coin — flat, fixed fee
   return <svg className={className} {...svgBase}><circle cx="12" cy="12" r="9" /><path d="M9.5 8.2h5M9.5 11h5M13.6 8.2c0 2.6-1.9 3-4.1 3l3.9 4.6" /></svg>;
 }
-function IconCompass({ className }: IconProps) { // compass — guidance when you don't know where to start
-  return <svg className={className} {...svgBase}><circle cx="12" cy="12" r="9" /><path d="M15.6 8.4l-2 5.2-5.2 2 2-5.2z" /></svg>;
-}
 
 const NAV = [
   { label: "Compare", href: `${basePath}/intelligence/compare`, Icon: IconCompare },
@@ -134,36 +131,6 @@ export default function Hero({ index }: { index: OmniIndex }) {
             <HeroSearch index={index} />
           </div>
 
-          {/* secondary CTA — the path for a buyer WITHOUT a project in mind:
-             share requirements → get their best-matched projects. Deliberately
-             quieter than the green "Get verdict" primary. Opens the existing
-             requirements journey (the ranking refinement is tracked separately).
-             MOCK: entry + copy only for now — the recommendations it produces
-             improve as the ranking work lands. */}
-          <button
-            type="button"
-            onClick={() => open("buy")}
-            className="group mt-3.5 flex w-full max-w-[420px] items-center gap-3 text-left md:mt-4"
-          >
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#c9a24b]/35 bg-[#c9a24b]/[0.07] text-[#c9a24b] transition-colors duration-150 group-hover:border-[#c9a24b]/70 group-hover:bg-[#c9a24b]/[0.14]">
-              <IconCompass className="h-[18px] w-[18px]" />
-            </span>
-            <span className="min-w-0 leading-snug">
-              <span className="text-[13.5px] text-[#b3aa9e] md:text-[14px]">
-                Not sure which project?{" "}
-                <span className="whitespace-nowrap font-medium text-[#e7cf95]">
-                  <span className="underline decoration-[#c9a24b]/40 underline-offset-[3px] transition-colors duration-150 group-hover:decoration-[#c9a24b]">
-                    Share your requirements
-                  </span>
-                  <span className="ml-1 inline-block text-[#c9a24b] transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden="true">&rarr;</span>
-                </span>
-              </span>
-              <span className="mt-0.5 block text-[12px] text-[#8f887d]">
-                We&rsquo;ll match you to your best-fit projects.
-              </span>
-            </span>
-          </button>
-
           {/* trust chips — stacked one-per-line on mobile; an inline, wrapping
              row on desktop. Each promise carries its own distinct gold glyph;
              no dividers (the narrow hero column can't hold them on one line). */}
@@ -174,6 +141,24 @@ export default function Hero({ index }: { index: OmniIndex }) {
               </li>
             ))}
           </ul>
+
+          {/* secondary CTA — for the buyer WITHOUT a project in mind. A quiet
+             one-line whisper, sat AFTER the trust promises with a hair-thin
+             divider so the credibility lands first and this reads as the natural
+             next step, not a competing button. Opens the requirements journey. */}
+          <button
+            type="button"
+            onClick={() => open("buy")}
+            className="group mt-4 block w-full max-w-[420px] border-t border-[#f6f1e8]/10 pt-3.5 text-left text-[13.5px] text-[#b3aa9e] transition-colors duration-150 hover:text-[#f6f1e8] md:mt-5 md:pt-4"
+          >
+            Not sure?{" "}
+            <span className="whitespace-nowrap font-medium text-[#e7cf95]">
+              <span className="underline decoration-[#c9a24b]/40 underline-offset-[3px] transition-colors duration-150 group-hover:decoration-[#c9a24b]">
+                Share your requirements
+              </span>
+              <span className="ml-1 inline-block text-[#c9a24b] transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden="true">&rarr;</span>
+            </span>
+          </button>
         </div>
       </div>
 
