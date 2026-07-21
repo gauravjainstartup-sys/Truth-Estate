@@ -36,10 +36,18 @@ AI re-rank of top-N (Gemini, free-text notes)           ← unchanged
 display Match %                                          ← unchanged in step 1
 ```
 
-## Persona
+## Persona — one profile per purchase type
 
-From the brief's `purchaseType`: **`"Investment"` → investor**; everything else
-(First Home, Upgrade, Holiday Home) → **end-user**. No new buyer input needed.
+Each purchase type IS a persona with its own weight row (`PERSONA_WEIGHTS`) and
+its own priority-pill vocabulary (`PRIORITIES_BY_TYPE`). The weights are the
+persona's defaults — what this buyer cares about before picking a single pill:
+
+| Persona | Optimises for |
+|---|---|
+| **First Home** | Safety first — delivery certainty, legal cleanliness, staying affordable. |
+| **Upgrade** | Space first — the exact configuration and a better address, built well. |
+| **Investment** | Return first — appreciation, liquidity, entry price; config barely matters. |
+| **Holiday Home** | Place first — the corridor and the lifestyle carry the weight. |
 
 ## Graded dimensions
 
@@ -59,12 +67,33 @@ absent field).
 
 `norm(truthScore) = clamp((truthScore − 60) / 35, 0, 1)`.
 
-## Persona weight tables (sum = 100 → the raw is now an absolute 0..100)
+## Persona weight tables (sum = 100 → the raw is an absolute 0..100)
 
 | | Budget | Config | Location | Priorities | Trust | Investor |
 |---|---|---|---|---|---|---|
-| **End-user** | 28 | 20 | 14 | 18 | 20 | — |
-| **Investor** | 24 | 8 | 12 | 12 | 20 | 24 |
+| **First Home** | 28 | 20 | 14 | 18 | 20 | — |
+| **Upgrade** | 20 | 26 | 16 | 18 | 20 | — |
+| **Investment** | 24 | 8 | 12 | 12 | 20 | 24 |
+| **Holiday Home** | 24 | 14 | 24 | 20 | 18 | — |
+
+## Hard musts from the buyer's own words
+
+`mustHaveConfigsFrom(notes)` parses "duplex is a must", "must be 4 BHK",
+"penthouse only" out of the free-text brief. A parsed must is a **strict
+gate with no fallback**: a project whose known configs miss it is out, and so
+is a project with no config data (a must-have can't be satisfied by a blank).
+This can honestly empty the shortlist — callers show their empty state, which
+IS the honest answer, and points at config data needing backfill.
+
+## Corridors (8 Gurugram + Noida)
+
+The buyer vocabulary is the pipeline's: GCR, GCE, SPR, **Sohna Road** (in-city
+corridor — distinct from the **Sohna** belt), Dwarka Expressway, New Gurgaon,
+**NH-48**, Sohna, + Noida. `corridorKey` folds pipeline spellings onto these
+(e.g. "Southern Peripheral Road (SPR Corridor)" → spr, "Northern Peripheral"
+→ dwarka); multi-select matching = ANY selected corridor matches → full
+location fit, none → 0.25. Timeline and possession are captured for the brief
+and the advisor, not scored.
 
 `raw = Σ weightᵢ · fitᵢ` — continuous, so ties are rare; sort desc, tie-break on
 truthScore then name for determinism.

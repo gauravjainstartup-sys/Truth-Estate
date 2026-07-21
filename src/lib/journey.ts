@@ -71,12 +71,18 @@ export const GOALS = [
 
 export const PURCHASE_TYPES = ["First Home", "Upgrade", "Investment", "Holiday Home"];
 
+/* The 8 Gurugram corridors the pipeline files projects under (Sohna Road —
+   the in-city corridor — is distinct from the Sohna belt south of the city;
+   NH-48 is the highway frontage corridor), plus Noida. Keys must stay in sync
+   with corridorKey below. */
 export const LOCATIONS = [
   "Golf Course Road",
   "Golf Course Extension",
   "SPR",
+  "Sohna Road",
   "Dwarka Expressway",
   "New Gurgaon",
+  "NH-48",
   "Sohna",
   "Noida",
 ];
@@ -357,9 +363,12 @@ export const PROJECTS: Project[] = [
 export function corridorKey(s: string): string {
   const t = s.toLowerCase();
   if (t.includes("spr") || t.includes("southern peripheral")) return "spr";
-  if (t.includes("dwarka")) return "dwarka";
+  if (t.includes("dwarka") || t.includes("northern peripheral")) return "dwarka";
   if (t.includes("new gurgaon") || t.includes("new gurugram")) return "new-gurgaon";
-  if (t.includes("sohna")) return "sohna";
+  // "Sohna Road" (the in-city corridor) is a different corridor from the
+  // Sohna belt south of Gurugram — the pipeline files both names.
+  if (t.includes("sohna")) return t.includes("road") ? "sohna-road" : "sohna";
+  if (t.includes("nh-48") || t.includes("nh48") || t.includes("nh 48")) return "nh48";
   if (t.includes("noida")) return "noida";
   if (t.includes("golf course")) {
     // "…Extension (GCRE)" / "Golf Course Extension" → GCE; bare "Golf Course Road" → GCR
@@ -413,6 +422,62 @@ const normTruth = (t: number): number => Math.max(0, Math.min(1, (t - 60) / 35))
 export type Persona = "investor" | "end-user";
 export const personaOf = (d: BuyData): Persona =>
   d.purchaseType === "Investment" ? "investor" : "end-user";
+
+/* ── Persona weight tables (docs/ranking-v2-spec.md) ──
+   One profile per purchase type — each row sums to 100 so the raw score is an
+   absolute 0..100. The weights ARE the persona's defaults: what this buyer
+   cares about before they pick a single priority pill. The Investor axis
+   (Capital-Appreciation / Liquidity tags) only carries weight for Investment.
+   Priority PILLS also change per persona (PRIORITIES_BY_TYPE above). */
+export type RankWeights = {
+  budget: number;
+  config: number;
+  location: number;
+  priority: number;
+  trust: number;
+  invest: number;
+};
+export const PERSONA_WEIGHTS: Record<string, RankWeights> = {
+  "First Home": { budget: 28, config: 20, location: 14, priority: 18, trust: 20, invest: 0 },
+  Upgrade: { budget: 20, config: 26, location: 16, priority: 18, trust: 20, invest: 0 },
+  Investment: { budget: 24, config: 8, location: 12, priority: 12, trust: 20, invest: 24 },
+  "Holiday Home": { budget: 24, config: 14, location: 24, priority: 20, trust: 18, invest: 0 },
+};
+
+/* The one-line "what this profile optimises for" shown wherever weights are. */
+export const PERSONA_BRIEF: Record<string, string> = {
+  "First Home": "Safety first — delivery certainty, legal cleanliness, staying affordable.",
+  Upgrade: "Space first — the exact configuration and a better address, built well.",
+  Investment: "Return first — appreciation, liquidity and entry price; config barely matters.",
+  "Holiday Home": "Place first — the corridor and the lifestyle carry the weight.",
+};
+
+export function weightsFor(purchaseType: string | null): RankWeights {
+  return (purchaseType && PERSONA_WEIGHTS[purchaseType]) || PERSONA_WEIGHTS["First Home"];
+}
+
+/* ── Hard requirements written in the buyer's own words ──
+   "duplex is a must", "must be 4 BHK", "penthouse only", "need a duplex" —
+   when the notes name a configuration with must/only/need language, that is a
+   HARD filter: a project whose known configs don't offer it is out, no
+   fallback (the founder's "duplex is a MUST" case — twice). Projects with no
+   config data at all are also excluded: we cannot verify a must-have against
+   a blank, and "closest there is" is exactly what the buyer said no to. */
+const CONFIG_WORD = /(\d(?:\.\d)?\s*bhk|duplex|penthouse|studio|villa|independent floor)/gi;
+const MUST_WORD = /\b(must|mandatory|required|non-?negotiable|only|needs?|has to|have to)\b/i;
+export function mustHaveConfigsFrom(notes: string | undefined): string[] {
+  if (!notes || !MUST_WORD.test(notes)) return [];
+  const out = new Set<string>();
+  for (const sentence of notes.split(/[.;\n]+/)) {
+    if (!MUST_WORD.test(sentence)) continue;
+    for (const m of sentence.matchAll(CONFIG_WORD)) {
+      const w = m[1].toLowerCase();
+      if (w.includes("bhk")) out.add(`${w.replace(/\s*bhk/, "").trim()} BHK`);
+      else out.add(w.charAt(0).toUpperCase() + w.slice(1));
+    }
+  }
+  return [...out];
+}
 
 /* ── Scoring ──
    rankCore ranks ANY catalog whose items carry the fields the heuristic
@@ -487,19 +552,28 @@ export function rankCore<T extends Rankable>(
      "flexible / no preference" no-op, so this is inert unless a real config
      was asked for. */
   const cfgMatched = affordablePool.filter(wantsConfig);
-  const pool = cfgMatched.length ? cfgMatched : affordablePool;
+  const cfgPool = cfgMatched.length ? cfgMatched : affordablePool;
+
+  /* Hard musts from the notes ("duplex is a must") — a strict filter with NO
+     fallback: known-miss is out, and so is a project with no config data (a
+     must-have can't be satisfied by a blank). Can genuinely empty the pool —
+     callers surface their empty state, which is the honest answer. */
+  const musts = mustHaveConfigsFrom(d.notes);
+  const pool = musts.length
+    ? cfgPool.filter((p) => {
+        const known = p.configs.filter((c) => c && c.toUpperCase() !== "NA");
+        return known.length > 0 && musts.some((chip) => known.some((cfg) => configMatches(chip, cfg)));
+      })
+    : cfgPool;
 
   /* ── Persona-weighted graded score (docs/ranking-v2-spec.md) ──
      Each dimension is a continuous 0..1 fit × a persona weight, so close-but-
      not-perfect earns partial credit (no cliffs) and an objectively safer /
-     better project outranks a filter-equal but weaker one. An investor and an
-     end-user weight the same signals differently. Weights sum to 100, so `s` is
-     an honest absolute 0..100 (surfaced in step 2 of the spec; the displayed
-     matchPct below is still relative for now). */
-  const investor = personaOf(d) === "investor";
-  const W = investor
-    ? { budget: 24, config: 8, location: 12, priority: 12, trust: 20, invest: 24 }
-    : { budget: 28, config: 20, location: 14, priority: 18, trust: 20, invest: 0 };
+     better project outranks a filter-equal but weaker one. Each purchase type
+     weights the same signals differently (PERSONA_WEIGHTS). Weights sum to
+     100, so `s` is an honest absolute 0..100. */
+  const W = weightsFor(d.purchaseType);
+  const investor = W.invest > 0;
 
   const budgetFit = (lo: number, hi: number): number => {
     if (d.budgetCr >= lo) return d.budgetCr <= hi ? 1 : 0.9; // within band, or comfortably affordable
