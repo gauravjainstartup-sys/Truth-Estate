@@ -1094,7 +1094,10 @@ export default function JourneyModal({
   }
 
   if (step === "processing") {
-    return frame(<ProcessingScreen onDone={() => setStep("shortlist")} />);
+    // Onboarding lands on the standalone /shortlist PAGE (not an in-modal
+    // step), so it gets its own URL and a history entry — opening a report and
+    // hitting back returns here, not to the homepage.
+    return frame(<ProcessingScreen onDone={() => { saveBuyData(buy); onClose(); router.push("/shortlist"); }} />);
   }
 
   if (step === "shortlist") {

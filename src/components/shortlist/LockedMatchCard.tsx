@@ -74,10 +74,12 @@ export default function LockedMatchCard({
       </div>
 
       <div className="relative mt-[22px]">
-        {/* name — blurred behind an inline gold lock until verified */}
-        <div className="flex min-h-[30px] items-center gap-2.5">
+        {/* name — blurred behind an inline gold lock until verified. Right pad
+            reserves the Truth Score corner so the blur + lock never collide
+            with the score. */}
+        <div className="flex min-h-[30px] items-center gap-2.5 pr-[68px]">
           <h3
-            className="font-serif text-[1.5rem] font-medium leading-tight tracking-[-0.01em] text-[#1a1a1a] transition-all duration-500"
+            className="min-w-0 font-serif text-[1.5rem] font-medium leading-tight tracking-[-0.01em] text-[#1a1a1a] transition-all duration-500"
             style={revealed ? undefined : { filter: "blur(9px)", opacity: 0.5, userSelect: "none" }}
           >
             {p.name}
