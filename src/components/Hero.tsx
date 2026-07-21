@@ -17,6 +17,7 @@
 import { useState } from "react";
 import Logo from "./Logo";
 import HeroSearch from "./HeroSearch";
+import { useJourney } from "./journey/JourneyProvider";
 import type { OmniIndex } from "@/lib/omni";
 
 const basePath = "/Truth-Estate";
@@ -50,6 +51,9 @@ function IconTag({ className }: IconProps) { // price tag — best deal, secured
 function IconRupee({ className }: IconProps) { // rupee coin — flat, fixed fee
   return <svg className={className} {...svgBase}><circle cx="12" cy="12" r="9" /><path d="M9.5 8.2h5M9.5 11h5M13.6 8.2c0 2.6-1.9 3-4.1 3l3.9 4.6" /></svg>;
 }
+function IconCompass({ className }: IconProps) { // compass — guidance when you don't know where to start
+  return <svg className={className} {...svgBase}><circle cx="12" cy="12" r="9" /><path d="M15.6 8.4l-2 5.2-5.2 2 2-5.2z" /></svg>;
+}
 
 const NAV = [
   { label: "Compare", href: `${basePath}/intelligence/compare`, Icon: IconCompare },
@@ -64,6 +68,7 @@ const CHIPS = [
 
 export default function Hero({ index }: { index: OmniIndex }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { open } = useJourney();
 
   return (
     <section className="teh2 relative w-full overflow-hidden bg-[#14110d]" style={{ height: "100svh", maxHeight: "900px", minHeight: "560px" }}>
@@ -128,6 +133,36 @@ export default function Hero({ index }: { index: OmniIndex }) {
           <div className="mt-5 md:mt-6">
             <HeroSearch index={index} />
           </div>
+
+          {/* secondary CTA — the path for a buyer WITHOUT a project in mind:
+             share requirements → get their best-matched projects. Deliberately
+             quieter than the green "Get verdict" primary. Opens the existing
+             requirements journey (the ranking refinement is tracked separately).
+             MOCK: entry + copy only for now — the recommendations it produces
+             improve as the ranking work lands. */}
+          <button
+            type="button"
+            onClick={() => open("buy")}
+            className="group mt-3.5 flex w-full max-w-[420px] items-center gap-3 text-left md:mt-4"
+          >
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#c9a24b]/35 bg-[#c9a24b]/[0.07] text-[#c9a24b] transition-colors duration-150 group-hover:border-[#c9a24b]/70 group-hover:bg-[#c9a24b]/[0.14]">
+              <IconCompass className="h-[18px] w-[18px]" />
+            </span>
+            <span className="min-w-0 leading-snug">
+              <span className="text-[13.5px] text-[#b3aa9e] md:text-[14px]">
+                Not sure which project?{" "}
+                <span className="whitespace-nowrap font-medium text-[#e7cf95]">
+                  <span className="underline decoration-[#c9a24b]/40 underline-offset-[3px] transition-colors duration-150 group-hover:decoration-[#c9a24b]">
+                    Share your requirements
+                  </span>
+                  <span className="ml-1 inline-block text-[#c9a24b] transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden="true">&rarr;</span>
+                </span>
+              </span>
+              <span className="mt-0.5 block text-[12px] text-[#8f887d]">
+                We&rsquo;ll match you to your best-fit projects.
+              </span>
+            </span>
+          </button>
 
           {/* trust chips — stacked one-per-line on mobile; an inline, wrapping
              row on desktop. Each promise carries its own distinct gold glyph;
