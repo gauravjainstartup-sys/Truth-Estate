@@ -740,57 +740,70 @@ function ExperienceIntelligence() {
           </div>
         </div>
 
-        {/* Card 3 — Ownership Intelligence (for sellers) */}
+        {/* Card 3 — Spatial Intelligence (Sun & Vastu 3D, Beta) */}
         <div
           data-ei-o
           className="group rounded-sm border border-[#1a1a1a]/8 bg-white p-8 transition-shadow duration-500 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] md:p-10 lg:p-12"
           style={{ opacity: 0, transform: "translateY(28px)" }}
         >
-          <span className="text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]/70">
-            Ownership Intelligence
+          <span className="flex items-center gap-2.5">
+            <span className="text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]/70">
+              Spatial Intelligence
+            </span>
+            <span className="rounded-full border border-[#a2782a]/40 px-2 py-[2px] text-[8.5px] font-semibold uppercase tracking-[0.16em] text-[#a2782a]">
+              Beta
+            </span>
           </span>
           <h3 className="mt-6 font-serif text-[1.6rem] font-medium leading-[1.12] text-[#1a1a1a] md:text-[1.9rem]">
-            For owners ready
+            For buyers who value
             <br />
-            to sell.
+            light &amp; vastu.
           </h3>
           <div className="mt-8 space-y-3 text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/50 md:text-[0.95rem]">
-            <p>Track your unit&rsquo;s live resale value.</p>
-            <p>Sell without the broker circus.</p>
-            <p>One trusted process &mdash; the best price.</p>
-            <p>Documents and buyers, handled.</p>
+            <p>See the sun on every floor.</p>
+            <p>Read daylight, heat &amp; shade.</p>
+            <p>Check vastu, room by room.</p>
+            <p>Compare units before you buy.</p>
           </div>
           <p className="mt-8 font-serif text-[0.85rem] font-light italic text-[#1a1a1a]/40 md:text-[0.92rem]">
-            The best price, without the chase.
+            See the home before you sign.
           </p>
 
-          {/* Preview */}
+          {/* Preview — sun/vastu read-out */}
           <div className="mt-10 flex items-center gap-5">
             <div className="flex flex-col">
               <span className="text-[9px] font-light uppercase tracking-[0.35em] text-[#1a1a1a]/35">
-                Est. Resale Today
+                Facing
               </span>
               <span className="mt-2 font-serif text-[0.95rem] font-medium tracking-wide text-[#1e6b45] md:text-[1.05rem]">
-                Tracked live
+                North-East
+              </span>
+              <span className="mt-1.5 text-[0.78rem] font-light text-[#1a1a1a]/55">
+                Brahmasthan clear <span className="font-medium text-[#1e6b45]">&#10003;</span>
               </span>
             </div>
-            <div className="ml-auto">
-              <span className="font-serif text-[2.2rem] font-light leading-none text-[#1a1a1a]/75 md:text-[2.6rem]">
-                &#8377;6.4<span className="text-[1.1rem] text-[#1a1a1a]/35"> Cr</span>
-              </span>
-            </div>
+            <span className="ml-auto" aria-hidden="true">
+              <svg width="50" height="50" viewBox="0 0 52 52" fill="none">
+                <circle cx="26" cy="26" r="22" stroke="#1a1a1a" strokeOpacity="0.1" strokeWidth="1" />
+                <path d="M26 26 L37 15" stroke="#1e6b45" strokeWidth="2.2" strokeLinecap="round" />
+                <path d="M26 26 L18 34" stroke="#1a1a1a" strokeOpacity="0.15" strokeWidth="1.6" strokeLinecap="round" />
+                <circle cx="26" cy="26" r="2" fill="#1e6b45" />
+                <text x="26" y="10.5" textAnchor="middle" fontSize="7" fill="#1a1a1a" fillOpacity="0.5">N</text>
+                <text x="43.5" y="28.5" textAnchor="middle" fontSize="7" fill="#1a1a1a" fillOpacity="0.4">E</text>
+              </svg>
+            </span>
           </div>
 
           <div className="mt-10">
-            <button
-              onClick={() => open("sell")}
+            <a
+              href="/Truth-Estate/sun-vastu"
               className="group/btn inline-flex items-center gap-2 text-[0.82rem] font-light tracking-[0.14em] text-[#1a1a1a]/65 transition-colors duration-400 hover:text-[#1a1a1a]"
             >
-              See your resale value
+              Explore Sun &amp; Vastu 3D
               <span className="inline-block transition-transform duration-300 group-hover/btn:translate-x-1">
                 &rarr;
               </span>
-            </button>
+            </a>
           </div>
         </div>
       </div>
