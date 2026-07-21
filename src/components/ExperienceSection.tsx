@@ -256,17 +256,17 @@ function StageCTA({ label, onClick, href }: { label: string; onClick?: () => voi
 function FounderBadge() {
   const [photo, setPhoto] = useState<string | null>(null);
   useEffect(() => {
-    const url = `${basePath}/images/founder-gaurav.jpg`;
+    const url = `${basePath}/images/founder-gaurav.webp`;
     const probe = new window.Image();
     probe.onload = () => setPhoto(url);
     probe.src = url;
   }, []);
   return (
     <div className="flex items-center gap-4">
-      <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#c9a96e]/50 bg-[#c9a96e]/10">
+      <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full ring-2 ring-[#B29668]/50 bg-[#c9a96e]/10">
         {photo ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={photo} alt="Gaurav Jain" width={56} height={56} className="h-full w-full object-cover" />
+          <img src={photo} alt="Gaurav Jain — Founder, Truth Estate" width={56} height={56} className="h-full w-full object-cover" />
         ) : (
           <svg viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={1.3} className="h-7 w-7 opacity-50" aria-hidden>
             <circle cx="12" cy="8" r="4" />
@@ -274,7 +274,10 @@ function FounderBadge() {
           </svg>
         )}
       </span>
-      <p className="font-serif text-[1.3rem] font-medium text-[#1a1a1a]">Gaurav Jain</p>
+      <div>
+        <p className="font-serif text-[1.3rem] font-medium leading-tight text-[#1a1a1a]">Gaurav Jain</p>
+        <p className="mt-0.5 text-[0.8rem] font-light text-[#1a1a1a]/45">Founder, Truth Estate</p>
+      </div>
     </div>
   );
 }

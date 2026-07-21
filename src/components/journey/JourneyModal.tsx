@@ -36,7 +36,9 @@ import {
   MAX_INVEST_PRIORITIES,
   MAX_PRIORITIES,
   MAX_SELL_PRIORITIES,
-  POSSESSION_OPTIONS,
+  deliveryOptionsFor,
+  deliveryHeading,
+  deliverySub,
   prioritiesFor,
   PURCHASE_TYPES,
   SELL_CONFIGS,
@@ -46,7 +48,6 @@ import {
   Scored,
   SellData,
   SellStrategy,
-  TIMELINES,
   RESEARCH_PLACEHOLDERS,
   RESEARCH_SUGGESTIONS,
   RESEARCH_TOPICS,
@@ -254,45 +255,6 @@ function OptionRow({
   );
 }
 
-function PossessionRow({
-  label,
-  sub,
-  selected,
-  onClick,
-}: {
-  label: string;
-  sub: string;
-  selected: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`group flex w-full items-start gap-5 border-b py-4 text-left transition-colors duration-300 ${
-        selected ? "border-[#1e6b45]/40" : "border-[#1a1a1a]/10 hover:border-[#1a1a1a]/25"
-      }`}
-    >
-      <span
-        className={`mt-1.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border transition-colors duration-300 ${
-          selected ? "border-[#1e6b45]" : "border-[#1a1a1a]/30 group-hover:border-[#1a1a1a]/50"
-        }`}
-      >
-        {selected && <span className="h-2 w-2 rounded-full bg-[#1e6b45]" />}
-      </span>
-      <span className="flex flex-col gap-1">
-        <span
-          className={`font-serif text-[1.3rem] font-light leading-tight transition-colors duration-300 md:text-[1.6rem] ${
-            selected ? "text-[#1a1a1a]" : "text-[#1a1a1a]/65"
-          }`}
-        >
-          {label}
-        </span>
-        <span className="text-[0.84rem] font-light text-[#1a1a1a]/40 md:text-[0.9rem]">{sub}</span>
-      </span>
-    </button>
-  );
-}
-
 function Chip({
   label,
   selected,
@@ -333,7 +295,7 @@ function Avatar({ initials }: { initials: string }) {
    STEP MACHINE
    ════════════════════════════════════════════════════════════════ */
 
-const BUY_STEPS = ["possession", "purchase", "budget", "locations", "configs", "timeline", "priorities"] as const;
+const BUY_STEPS = ["purchase", "budget", "locations", "configs", "delivery", "priorities"] as const;
 type BuyStep = (typeof BUY_STEPS)[number];
 
 const SELL_STEPS = ["sell-intro", "sell-project", "sell-config", "sell-details", "sell-timeline", "sell-priorities"] as const;
@@ -368,7 +330,7 @@ type Step =
   | "research";
 
 const INTENT_STEP: Record<Intent, Step> = {
-  buy: "possession",
+  buy: "purchase",
   sell: "sell-intro",
   invest: "invest-intro",
   research: "research",
@@ -415,7 +377,7 @@ export default function JourneyModal({
     return [
       { label: "Budget", value: dna.budgetRange },
       { label: "Markets", value: dna.markets.length ? dna.markets.slice(0, 3).join(", ") : "Open to guidance" },
-      { label: "Timeline", value: dna.timeline },
+      { label: "Delivery", value: dna.timeline },
       // Carries the chosen priorities — including deal-structure ones like a
       // flexible payment plan — into the advisor's brief.
       ...(buy.priorities.length ? [{ label: "Priorities", value: buy.priorities.join(", ") }] : []),
@@ -502,21 +464,14 @@ export default function JourneyModal({
   };
 
   const canContinue: Record<BuyStep, boolean> = {
-    possession: buy.possession !== null,
     purchase: buy.purchaseType !== null,
     budget: true,
     locations: true,
     configs: true,
-    timeline: buy.timeline !== null,
+    delivery: buy.timeline !== null, // delivery bucket stored in buy.timeline
     priorities: buy.priorities.length > 0,
   };
 
-  // Possession is a qualifier: "ready-to-move" diverts to the honest
-  // off-ramp; "under-construction" and "open" continue into the journey.
-  const nextPossession = () => {
-    if (buy.possession === "ready-to-move") setStep("buy-offramp-rtm");
-    else nextBuy();
-  };
   const exploreMethodology = () => {
     onClose();
     router.push("/methodology");
@@ -610,7 +565,7 @@ export default function JourneyModal({
           <p className="mb-12 text-[0.8rem] font-light uppercase tracking-[0.28em] text-[#1a1a1a]/40">
             Around 2 minutes
           </p>
-          <PrimaryButton onClick={() => setStep("possession")}>Continue</PrimaryButton>
+          <PrimaryButton onClick={() => setStep("purchase")}>Continue</PrimaryButton>
         </div>
       </Shell>
     );
@@ -948,42 +903,9 @@ export default function JourneyModal({
 
   /* ─────────────── BUY FLOW ─────────────── */
 
-  if (step === "possession") {
-    return frame(
-      <Shell onClose={onClose} onBack={backBuy} progress={progress} eyebrow="Buy Property" align="top">
-        <div key="possession" className="animate-fade-up">
-          <ScreenHeading
-            dense
-            kicker="Where you're looking"
-            title="Under construction, or ready to move?"
-            sub="Truth Estate specialises in under-construction homes in Gurugram — where delivery risk is real and independent diligence changes the outcome."
-          />
-          <div className="flex flex-col">
-            {POSSESSION_OPTIONS.map((o) => (
-              <PossessionRow
-                key={o.key}
-                label={o.label}
-                sub={o.sub}
-                selected={buy.possession === o.key}
-                onClick={() => set("possession", o.key)}
-              />
-            ))}
-          </div>
-          <button
-            onClick={() => setStep("buy-offramp-commercial")}
-            className="mt-4 text-[0.86rem] font-light text-[#1a1a1a]/45 underline decoration-[#1a1a1a]/15 underline-offset-4 transition-colors hover:text-[#1a1a1a]/80"
-          >
-            Looking for commercial space instead?
-          </button>
-          <NextBar onNext={nextPossession} disabled={!canContinue.possession} tight />
-        </div>
-      </Shell>
-    );
-  }
-
   if (step === "buy-offramp-rtm") {
     return frame(
-      <Shell onClose={onClose} onBack={() => setStep("possession")} eyebrow="Buy Property">
+      <Shell onClose={onClose} onBack={() => setStep("delivery")} eyebrow="Buy Property">
         <FocusOffRamp kind="ready-to-move" locations={buy.locations} onExplore={exploreMethodology} />
       </Shell>
     );
@@ -991,7 +913,7 @@ export default function JourneyModal({
 
   if (step === "buy-offramp-commercial") {
     return frame(
-      <Shell onClose={onClose} onBack={() => setStep("possession")} eyebrow="Buy Property">
+      <Shell onClose={onClose} onBack={() => setStep("delivery")} eyebrow="Buy Property">
         <FocusOffRamp kind="commercial" locations={buy.locations} />
       </Shell>
     );
@@ -1081,17 +1003,40 @@ export default function JourneyModal({
     );
   }
 
-  if (step === "timeline") {
+  if (step === "delivery") {
     return frame(
-      <Shell onClose={onClose} onBack={backBuy} progress={progress} eyebrow="Buy Property">
-        <div key="timeline" className="animate-fade-up">
-          <ScreenHeading title="What's your timeline?" />
+      <Shell onClose={onClose} onBack={backBuy} progress={progress} eyebrow="Buy Property" align="top">
+        <div key="delivery" className="animate-fade-up">
+          <ScreenHeading
+            dense
+            kicker="When you'll take possession"
+            title={deliveryHeading(buy.purchaseType)}
+            sub={deliverySub(buy.purchaseType)}
+          />
           <div className="flex flex-col">
-            {TIMELINES.map((t) => (
+            {deliveryOptionsFor(buy.purchaseType).map((t) => (
               <OptionRow key={t} label={t} selected={buy.timeline === t} onClick={() => set("timeline", t)} />
             ))}
           </div>
-          <NextBar onNext={nextBuy} disabled={!canContinue.timeline} />
+          {/* Small off-ramps for the two segments we don't serve as a new-launch
+              buyer — same muted treatment the possession step used, routing to
+              the existing off-ramp screens. */}
+          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
+            <span className="text-[0.82rem] font-light text-[#1a1a1a]/40">Not looking for under construction projects?</span>
+            <button
+              onClick={() => setStep("buy-offramp-rtm")}
+              className="text-[0.86rem] font-light text-[#1a1a1a]/55 underline decoration-[#1a1a1a]/15 underline-offset-4 transition-colors hover:text-[#1a1a1a]/85"
+            >
+              Ready to move in →
+            </button>
+            <button
+              onClick={() => setStep("buy-offramp-commercial")}
+              className="text-[0.86rem] font-light text-[#1a1a1a]/55 underline decoration-[#1a1a1a]/15 underline-offset-4 transition-colors hover:text-[#1a1a1a]/85"
+            >
+              Commercial space →
+            </button>
+          </div>
+          <NextBar onNext={nextBuy} disabled={!canContinue.delivery} />
         </div>
       </Shell>
     );
@@ -1304,7 +1249,7 @@ export default function JourneyModal({
       <ResearchWorkspace
         onClose={onClose}
         onConsult={() => requestAdvice("research")}
-        onStartJourney={() => setStep("possession")}
+        onStartJourney={() => setStep("purchase")}
       />
     );
   }

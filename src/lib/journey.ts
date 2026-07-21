@@ -97,6 +97,29 @@ export const TIMELINES = [
   "Just Exploring",
 ];
 
+/* ── Expected delivery timeline ──
+   Replaces the old purchase-urgency question. Buckets map to how soon the
+   buyer wants handover; for an Investor the SAME step reads as a holding
+   period. The value is stored in BuyData.timeline (the urgency field,
+   repurposed — no schema change). Ready-to-move / commercial are handled as
+   off-ramp links on the step, not options here. */
+export const DELIVERY_TIMELINES = [
+  "Within 1 year",
+  "Within 3 years",
+  "Within 5 years",
+  "Beyond 5 years",
+  "Flexible",
+];
+export const HOLDING_PERIODS = ["1–3 years", "3–5 years", "5–10 years", "10+ years", "Flexible"];
+export const deliveryOptionsFor = (purchaseType: string | null): string[] =>
+  purchaseType === "Investment" ? HOLDING_PERIODS : DELIVERY_TIMELINES;
+export const deliveryHeading = (purchaseType: string | null): string =>
+  purchaseType === "Investment" ? "Holding period" : "Expected delivery timeline";
+export const deliverySub = (purchaseType: string | null): string =>
+  purchaseType === "Investment"
+    ? "How long do you plan to hold? Truth Estate focuses on under-construction homes in Gurugram."
+    : "Truth Estate specialises in under-construction homes in Gurugram — how soon do you want handover?";
+
 /* Priorities are tailored to the buyer's purchase type, so each list stays
    focused (max 10) instead of one generic wall of chips. A shared core —
    Location, On-Time Delivery, Legal Safety, Developer Reputation — appears
@@ -733,7 +756,7 @@ export function deriveDNA(d: BuyData): DNA {
     markets,
     config,
     topPriorities: p.length ? p : ["To be discovered together"],
-    timeline: d.timeline ?? "Just Exploring",
+    timeline: d.timeline ?? "Flexible",
     possession: d.possession ? POSSESSION_DNA_LABEL[d.possession] : "Under-construction focus",
   };
 }
