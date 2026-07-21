@@ -397,6 +397,23 @@ export const configMatches = (chip: string, cfg: string): boolean => {
   return c === w;
 };
 
+/* ── Ranking v2 signals (docs/ranking-v2-spec.md) ──
+   Trust tags are the objective safety signals the pipeline stamps on a project;
+   personaOf reads the buyer's purchase intent so an investor and an end-user
+   get different weights. Kept module-level and pure so the ranker stays
+   auditable and unit-testable. */
+const TRUST_TAGS = ["On-Time Delivery", "Legal Safety", "Developer Reputation"];
+const bhkAdjacent = (chip: string, cfg: string): boolean => {
+  const a = bhkNumber(chip);
+  const b = bhkNumber(cfg);
+  return a != null && b != null && Math.abs(Number(a) - Number(b)) === 1;
+};
+const normTruth = (t: number): number => Math.max(0, Math.min(1, (t - 60) / 35));
+
+export type Persona = "investor" | "end-user";
+export const personaOf = (d: BuyData): Persona =>
+  d.purchaseType === "Investment" ? "investor" : "end-user";
+
 /* ── Scoring ──
    rankCore ranks ANY catalog whose items carry the fields the heuristic
    reads (Rankable) — the hand-curated mock PROJECTS, or the live tracked
@@ -454,32 +471,60 @@ export function rankCore<T extends Rankable>(items: readonly T[], d: BuyData): (
   const cfgMatched = affordablePool.filter(wantsConfig);
   const pool = cfgMatched.length ? cfgMatched : affordablePool;
 
+  /* ── Persona-weighted graded score (docs/ranking-v2-spec.md) ──
+     Each dimension is a continuous 0..1 fit × a persona weight, so close-but-
+     not-perfect earns partial credit (no cliffs) and an objectively safer /
+     better project outranks a filter-equal but weaker one. An investor and an
+     end-user weight the same signals differently. Weights sum to 100, so `s` is
+     an honest absolute 0..100 (surfaced in step 2 of the spec; the displayed
+     matchPct below is still relative for now). */
+  const investor = personaOf(d) === "investor";
+  const W = investor
+    ? { budget: 24, config: 8, location: 12, priority: 12, trust: 20, invest: 24 }
+    : { budget: 28, config: 20, location: 14, priority: 18, trust: 20, invest: 0 };
+
+  const budgetFit = (lo: number, hi: number): number => {
+    if (d.budgetCr >= lo) return d.budgetCr <= hi ? 1 : 0.9; // within band, or comfortably affordable
+    return Math.max(0, 1 - (lo - d.budgetCr) / 2.5); // entry above budget → graded stretch decay
+  };
+  const configFit = (p: T): number => {
+    if (d.configs.length === 0 || d.configs.includes("Flexible")) return 1;
+    const known = p.configs.filter((c) => c && c.toUpperCase() !== "NA");
+    if (known.length === 0) return 0.5; // unknown → benefit of the doubt
+    if (d.configs.some((chip) => known.some((cfg) => configMatches(chip, cfg)))) return 1;
+    if (d.configs.some((chip) => known.some((cfg) => bhkAdjacent(chip, cfg)))) return 0.45;
+    return 0.2; // known, but misses (only reachable when the config gate falls back)
+  };
+  const locationFit = (p: T): number =>
+    d.locations.length === 0 || d.locations.some((loc) => sameCorridor(loc, p.market)) ? 1 : 0.25;
+  const priorityFit = (p: T): number => {
+    if (d.priorities.length === 0) return 1;
+    const served = p.tags.filter((t) => d.priorities.includes(t)).length;
+    return served / d.priorities.length;
+  };
+  const trustFit = (p: T): number => {
+    const tags = TRUST_TAGS.filter((t) => p.tags.includes(t)).length;
+    return 0.7 * normTruth(p.truthScore) + 0.3 * (Math.min(3, tags) / 3);
+  };
+  const investorFit = (p: T): number => {
+    const appreciation = p.tags.includes("Capital Appreciation") ? 0.55 : 0;
+    const liquidity = p.tags.includes("Liquidity") ? 0.3 : 0;
+    return Math.min(1, appreciation + liquidity + 0.15 * normTruth(p.truthScore));
+  };
+
   const raw = pool
     .map((p) => {
-      let s = 0;
-
-      // Location
-      if (d.locations.length === 0 || d.locations.some((loc) => sameCorridor(loc, p.market))) s += 30;
-      else s += 6;
-
-      // Budget overlap (with a little tolerance)
       const [lo, hi] = p.budget;
-      if (d.budgetCr >= lo - 1 && d.budgetCr <= hi + 2) s += 26;
-      else s += Math.max(0, 16 - Math.abs(d.budgetCr - (lo + hi) / 2) * 2.2);
-
-      // Configuration
-      if (wantsConfig(p)) s += 18;
-
-      // Priority alignment
-      const overlap = p.tags.filter((t) => d.priorities.includes(t)).length;
-      s += overlap * 9;
-
-      // Quality nudge
-      s += (p.truthScore - 84) * 0.8;
-
+      const s =
+        W.budget * budgetFit(lo, hi) +
+        W.config * configFit(p) +
+        W.location * locationFit(p) +
+        W.priority * priorityFit(p) +
+        W.trust * trustFit(p) +
+        W.invest * (investor ? investorFit(p) : 0);
       return { p, s };
     })
-    .sort((a, b) => b.s - a.s);
+    .sort((a, b) => b.s - a.s || b.p.truthScore - a.p.truthScore);
 
   const max = raw[0]?.s || 1;
   return raw.map(({ p, s }) => ({
