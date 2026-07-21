@@ -1,6 +1,6 @@
 # Ranking v2 — persona-aware, graded, trust-weighted
 
-Status: **BUILDING — step 1 of 4.** Supersedes the flat weighted sum in
+Status: **step 1 shipped · step 2 built (awaiting founder review + deploy).** Supersedes the flat weighted sum in
 `rankCore` (`src/lib/journey.ts`). The AI re-rank layer (Gemini, Path 2) and the
 two hard gates are unchanged; this rewrites only the deterministic score that
 orders the survivors.
@@ -67,17 +67,27 @@ absent field).
 `raw = Σ weightᵢ · fitᵢ` — continuous, so ties are rare; sort desc, tie-break on
 truthScore then name for determinism.
 
-## Display (step 1: unchanged)
+## Display
 
-The displayed `matchPct` keeps the existing relative mapping
-(`86 + raw/max·12`, clamped 72–99) so numbers stay familiar while **ordering**
-improves. The raw is now genuinely absolute (0–100), which sets up:
+**Step 1** kept the existing relative mapping (`86 + raw/max·12`, clamped
+72–99) so numbers stayed familiar while **ordering** improved.
+
+**Step 2 (built, awaiting review)** drops that clamp: the raw is already an
+honest 0–100 (weights sum to 100), so `matchPct = min(99, round(raw))`. The old
+clamp compressed every shortlist into a ~93–98 band — a can't-afford stretch
+pick displayed at 98%. The honest number gives a real spread (top true match
+99%, a genuine budget stretch caps the whole shortlist at ~79%, weak fits fall
+to the 50s–60s). Cap at 99 = never claim a perfect match; a project the pipeline
+hasn't scored yet (no truthScore/tags/price) now honestly reads low (~39%)
+rather than being flattered — an honest signal of a **data** gap, not a ranking
+one.
 
 ## Roadmap (approved, in order)
 
 1. **This doc** — persona + graded + trust engine (order improves, display same).
 2. **Honest absolute Match %** — surface the raw 0–100 instead of the relative
-   clamp (a deliberate, visible UX change; founder reviews the new numbers first).
+   clamp (a deliberate, visible UX change; founder reviews the new numbers
+   first). ← **built; on the feature branch, awaiting review + deploy.**
 3. **Diversity pass** (don't return 4 near-identical units) **+ one honest gap**
    per card.
 4. **Outcome calibration** — instrument recommend→unlock→consult→convert and

@@ -526,10 +526,15 @@ export function rankCore<T extends Rankable>(items: readonly T[], d: BuyData): (
     })
     .sort((a, b) => b.s - a.s || b.p.truthScore - a.p.truthScore);
 
-  const max = raw[0]?.s || 1;
+  /* Honest absolute Match % (docs/ranking-v2-spec.md, step 2). The weights sum
+     to 100, so `s` already IS a 0..100 score — surface it directly instead of
+     the old relative mapping (`86 + s/max·12`, floored at 72) that made every
+     shortlist look ~86–99 regardless of true fit. Cap at 99 so we never claim a
+     perfect match; unstated preferences count as satisfied (their dimension
+     returns 1), so the number reads as "% of what you told us mattered". */
   return raw.map(({ p, s }) => ({
     ...p,
-    matchPct: Math.min(99, Math.max(72, Math.round(86 + (s / max) * 12))),
+    matchPct: Math.min(99, Math.round(s)),
   })) as (T & { matchPct: number })[];
 }
 
