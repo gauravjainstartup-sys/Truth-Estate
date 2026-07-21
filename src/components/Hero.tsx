@@ -17,6 +17,7 @@
 import { useState } from "react";
 import Logo from "./Logo";
 import HeroSearch from "./HeroSearch";
+import { useJourney } from "./journey/JourneyProvider";
 import type { OmniIndex } from "@/lib/omni";
 
 const basePath = "/Truth-Estate";
@@ -64,6 +65,7 @@ const CHIPS = [
 
 export default function Hero({ index }: { index: OmniIndex }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { open } = useJourney();
 
   return (
     <section className="teh2 relative w-full overflow-hidden bg-[#14110d]" style={{ height: "100svh", maxHeight: "900px", minHeight: "560px" }}>
