@@ -13,13 +13,12 @@ import { sendOtp, verifyOtp, maskContact, type Verified } from "@/lib/shortlistA
    A branching two-step form that captures a VERIFIED lead against a
    specific project, pan-India:
      Step 1 · the project + intent (looking to invest / already invested)
-     Step 2 · requirements (only when "looking to invest") → name +
-              OTP-verified mobile → a ₹999 willingness signal
-     → a premium thank-you.
-   Layout: desktop is two columns (the pitch on the left, sticky; the
-   form on the right). Mobile stacks to one column with a persistent
-   bottom CTA bar so the primary action is always in view.
-   Reuses OtpSheet (verification) and saveLead/pushDemand (persistence).
+     Step 2 · requirements (looking only) → the ₹999 commitment →
+              name + number → OTP verification as the closing action.
+   Layout: desktop is two columns (pitch left, sticky; form right).
+   Mobile stacks to one column with a persistent bottom CTA bar.
+   Reuses OtpDigits (code entry) + sendOtp/verifyOtp (MSG91 seam) and
+   saveLead/pushDemand (persistence).
    ════════════════════════════════════════════════════════════════ */
 
 const CITIES = ["Gurugram", "Mumbai", "Bengaluru", "Pune", "Hyderabad", "Noida"];
@@ -58,13 +57,19 @@ export default function CustomReportPage() {
   const [cityOther, setCityOther] = useState("");
   const [intent, setIntent] = useState<Intent | null>(null);
 
-  // step 2 — requirements (looking only) + contact + willingness
+  // step 2 — requirements (looking only) + commitment + details + verify
   const [config, setConfig] = useState<string | null>(null);
   const [budget, setBudget] = useState<string | null>(null);
   const [holding, setHolding] = useState<string | null>(null);
-  const [name, setName] = useState("");
-  const [verified, setVerified] = useState<Verified | null>(null);
   const [pay999, setPay999] = useState<"yes" | "no" | null>(null);
+  const [name, setName] = useState("");
+  const [cc, setCc] = useState("+91");
+  const [phone, setPhone] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState<string[]>(Array(4).fill(""));
+  const [otpBusy, setOtpBusy] = useState(false);
+  const [otpErr, setOtpErr] = useState<string | null>(null);
+  const [verified, setVerified] = useState<Verified | null>(null);
 
   const [done, setDone] = useState(false);
 
@@ -91,16 +96,44 @@ export default function CustomReportPage() {
   const looking = intent === "looking";
   const cityFinal = (city && city !== "Other" ? city : cityOther).trim();
   const step1ok = project.trim().length > 0 && cityFinal.length > 0 && intent !== null;
-  const step2ok = name.trim().length > 0 && verified !== null && pay999 !== null;
 
-  // one source of truth for the primary CTA, shared by the in-card button
-  // (desktop) and the sticky bottom bar (mobile)
-  const primaryLabel = step === 1 ? "Continue →" : "Request my report →";
-  const primaryDisabled = step === 1 ? !step1ok : !step2ok;
-  const primaryAction = () => (step === 1 ? setStep(2) : submit());
+  const contact = phone.replace(/\s/g, "");
+  const phoneValid = /^\d{7,12}$/.test(contact);
+  const otpComplete = otp.every((d) => d !== "");
+  const channelLabel = cc === "+91" ? "SMS" : "WhatsApp";
+  // everything needed before we fire the code (the money question is mandatory)
+  const detailsOk = pay999 !== null && name.trim().length > 0 && phoneValid;
 
-  function submit() {
-    if (!step2ok) return;
+  function goBack() {
+    setStep(1); setOtpSent(false); setOtp(Array(4).fill("")); setOtpErr(null);
+  }
+
+  async function sendCode() {
+    if (!detailsOk || otpBusy) return;
+    setOtpBusy(true); setOtpErr(null);
+    const r = await sendOtp("mobile", contact);
+    setOtpBusy(false);
+    if (r.ok) setOtpSent(true); else setOtpErr(r.error ?? "Couldn't send the code. Try again.");
+  }
+
+  async function confirmAndSubmit() {
+    if (otpBusy || !otpComplete) return;
+    setOtpBusy(true); setOtpErr(null);
+    const r = await verifyOtp("mobile", contact, otp.join(""));
+    setOtpBusy(false);
+    if (!r.ok) { setOtpErr(r.error ?? "That code didn't match. Try again."); return; }
+    const v: Verified = { channel: "mobile", contact, cc, name: name.trim() || undefined, at: Date.now() };
+    setVerified(v);
+    submit(v);
+  }
+
+  // auto-verify + submit once all four digits are in
+  useEffect(() => {
+    if (otpSent && otpComplete && !otpBusy && !done) confirmAndSubmit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [otpComplete]);
+
+  function submit(v: Verified) {
     const buy: BuyData | undefined = looking
       ? {
           ...emptyBuyData,
@@ -113,7 +146,7 @@ export default function CustomReportPage() {
     saveLead({
       name: name.trim(),
       email: "",
-      phone: verified ? `${verified.cc ?? ""} ${verified.contact}`.trim() : undefined,
+      phone: `${v.cc ?? ""} ${v.contact}`.trim(),
       project: project.trim(),
       intent: "custom-report",
       message: [
@@ -132,6 +165,21 @@ export default function CustomReportPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  // one source of truth for the primary CTA (in-card on desktop, sticky on mobile)
+  const primaryLabel =
+    step === 1 ? "Continue →"
+    : otpSent ? (otpBusy ? "Verifying…" : "Verify & send →")
+    : (otpBusy ? "Sending…" : "Verify & send request →");
+  const primaryDisabled =
+    step === 1 ? !step1ok
+    : otpSent ? (!otpComplete || otpBusy)
+    : (!detailsOk || otpBusy);
+  const primaryAction = () => {
+    if (step === 1) setStep(2);
+    else if (!otpSent) sendCode();
+    else confirmAndSubmit();
+  };
+
   return (
     <main className="min-h-svh bg-[#F5F0E8] text-[#1a1a1a]">
       <header className="border-b border-[#1a1a1a]/[0.07]">
@@ -143,7 +191,7 @@ export default function CustomReportPage() {
 
       {done ? (
         <div className="mx-auto max-w-3xl px-6 pb-24 pt-10 md:px-8 md:pt-14">
-          <Success project={project} contact={verified ? maskContact(verified) : ""} looking={looking} pay={pay999} />
+          <Success project={project} contact={verified ? maskContact(verified) : ""} />
         </div>
       ) : (
         <div className="mx-auto max-w-6xl px-6 pb-32 pt-10 md:px-8 md:pt-14 lg:grid lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1fr)] lg:items-start lg:gap-14 lg:pb-24 xl:gap-20">
@@ -242,18 +290,11 @@ export default function CustomReportPage() {
                     </>
                   )}
 
-                  <GroupLabel className={looking ? "mt-7" : ""}>Where to send it</GroupLabel>
-                  <Field label="Full name">
-                    <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className={inputCls(name)} />
-                  </Field>
-                  <Field label="Mobile">
-                    <MobileVerify verified={verified} onVerified={setVerified} onReset={() => setVerified(null)} />
-                  </Field>
-
-                  {/* willingness to pay — captured as a signal only */}
-                  <div className="mt-5 rounded-[11px] border border-[#9a7a2e]/25 bg-[#9a7a2e]/[0.05] p-4">
-                    <p className="font-serif text-[1rem] text-[#1a1a1a]">Would you pay ₹999 for this report?</p>
-                    <p className="mt-0.5 text-[0.76rem] text-[#1a1a1a]/60">Independent, forensic, buyer-side. A flat fee — no surprises.</p>
+                  {/* 1 · the commitment — asked up front, mandatory */}
+                  <GroupLabel className={looking ? "mt-7" : ""}>The report</GroupLabel>
+                  <div className="rounded-[12px] border border-[#9a7a2e]/25 bg-[#9a7a2e]/[0.05] p-4">
+                    <p className="font-serif text-[1.05rem] leading-snug text-[#1a1a1a]">Your report is a flat <b className="font-semibold">₹999</b> — shall we build it?</p>
+                    <p className="mt-1 text-[0.76rem] text-[#1a1a1a]/60">Independent, forensic, buyer-side. One flat fee, confirmed before any work — no surprises.</p>
                     <div className="mt-3 flex gap-2.5">
                       {(["yes", "no"] as const).map((v) => (
                         <button
@@ -270,11 +311,55 @@ export default function CustomReportPage() {
                     </div>
                   </div>
 
-                  <button type="button" disabled={!step2ok} onClick={submit} className={`${ctaCls} hidden lg:block`}>
-                    Request my report →
+                  {/* 2 · your details — name + number (plain entry; verified at the close) */}
+                  <GroupLabel className="mt-7">Your details</GroupLabel>
+                  <Field label="Full name">
+                    <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className={inputCls(name)} />
+                  </Field>
+                  <Field label="Mobile number">
+                    <div className="flex gap-2">
+                      <div className="relative shrink-0">
+                        <select
+                          value={cc}
+                          onChange={(e) => setCc(e.target.value)}
+                          disabled={otpSent}
+                          aria-label="Country code"
+                          className="h-full appearance-none rounded-lg border border-[#1a1a1a]/22 bg-white pl-3 pr-7 text-[0.9rem] font-semibold outline-none focus:border-[#9a7a2e] disabled:opacity-60"
+                        >
+                          {CCS.map((c) => <option key={c.cc} value={c.cc}>{c.flag} {c.cc}</option>)}
+                        </select>
+                        <span aria-hidden className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[0.6rem] text-[#1a1a1a]/40">▾</span>
+                      </div>
+                      <input
+                        inputMode="numeric"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value.replace(/[^\d\s]/g, ""))}
+                        readOnly={otpSent}
+                        placeholder="98765 43210"
+                        className="min-w-0 flex-1 rounded-lg border border-[#1a1a1a]/22 bg-[#faf8f4] px-3.5 py-3 text-[0.95rem] tracking-[0.02em] outline-none transition-colors focus:border-[#9a7a2e] read-only:opacity-70"
+                      />
+                    </div>
+
+                    {!otpSent ? (
+                      <p className="mt-2 text-[0.68rem] leading-relaxed text-[#1a1a1a]/45">We&rsquo;ll text a 4-digit code to confirm it&rsquo;s you — only at the final step.</p>
+                    ) : (
+                      <div className="mt-3 rounded-[11px] border border-[#1e6b45]/25 bg-[#1e6b45]/[0.04] p-3.5">
+                        <p className="text-[0.78rem] text-[#1a1a1a]/70">
+                          Code sent to <b className="font-medium text-[#1a1a1a]">{cc} {phone}</b> by {channelLabel}{" "}
+                          <button type="button" onClick={() => { setOtpSent(false); setOtp(Array(4).fill("")); setOtpErr(null); }} className="text-[#9a7a2e] underline underline-offset-2">change</button>
+                        </p>
+                        <div className="mt-3"><OtpDigits value={otp} onChange={setOtp} len={4} autoFocus /></div>
+                        {otpErr && <p className="mt-2 text-[0.72rem] text-[#9a4130]">{otpErr}</p>}
+                        <p className="mt-2 font-mono text-[0.58rem] tracking-[0.04em] text-[#9a7a2e]">Demo — any 4 digits work · MSG91 wires in later</p>
+                      </div>
+                    )}
+                  </Field>
+
+                  <button type="button" disabled={primaryDisabled} onClick={primaryAction} className={`${ctaCls} hidden lg:block`}>
+                    {primaryLabel}
                   </button>
                   <div className="mt-3 hidden items-center justify-between lg:flex">
-                    <button type="button" onClick={() => setStep(1)} className="font-mono text-[0.7rem] text-[#1a1a1a]/45 hover:text-[#1a1a1a]/75">← Back</button>
+                    <button type="button" onClick={goBack} className="font-mono text-[0.7rem] text-[#1a1a1a]/45 hover:text-[#1a1a1a]/75">← Back</button>
                     <p className="font-mono text-[0.58rem] tracking-[0.03em] text-[#1a1a1a]/45">A real analyst reviews every request</p>
                   </div>
                 </>
@@ -301,7 +386,7 @@ export default function CustomReportPage() {
             {step === 2 && (
               <button
                 type="button"
-                onClick={() => setStep(1)}
+                onClick={goBack}
                 className="shrink-0 rounded-[11px] border border-[#1a1a1a]/20 px-4 py-3.5 text-[0.9rem] font-medium text-[#1a1a1a]/70"
               >
                 Back
@@ -318,131 +403,7 @@ export default function CustomReportPage() {
           </div>
         </div>
       )}
-
     </main>
-  );
-}
-
-/* Inline mobile verification — country code + number, a 4-digit code entered
-   in place (via the shared OtpDigits), collapsing to a verified pill. Uses the
-   same sendOtp/verifyOtp seam as the bottom-sheet flow (MSG91 wires in later),
-   but keeps the whole thing on the form rather than in a pop-up. */
-function MobileVerify({
-  verified,
-  onVerified,
-  onReset,
-}: {
-  verified: Verified | null;
-  onVerified: (v: Verified) => void;
-  onReset: () => void;
-}) {
-  const [cc, setCc] = useState("+91");
-  const [phone, setPhone] = useState("");
-  const [sent, setSent] = useState(false);
-  const [otp, setOtp] = useState<string[]>(Array(4).fill(""));
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-
-  const contact = phone.replace(/\s/g, "");
-  const valid = /^\d{7,12}$/.test(contact);
-  const complete = otp.every((d) => d !== "");
-  const channelLabel = cc === "+91" ? "SMS" : "WhatsApp";
-
-  async function send() {
-    if (!valid || busy) return;
-    setBusy(true); setErr(null);
-    const r = await sendOtp("mobile", contact);
-    setBusy(false);
-    if (r.ok) setSent(true); else setErr(r.error ?? "Couldn't send the code. Try again.");
-  }
-  async function confirm() {
-    if (busy || !complete) return;
-    setBusy(true); setErr(null);
-    const r = await verifyOtp("mobile", contact, otp.join(""));
-    setBusy(false);
-    if (!r.ok) { setErr(r.error ?? "That code didn't match."); return; }
-    onVerified({ channel: "mobile", contact, cc, at: Date.now() });
-  }
-
-  // auto-verify once all four digits are in
-  useEffect(() => {
-    if (sent && complete && !busy && !verified) confirm();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [complete]);
-
-  if (verified) {
-    return (
-      <div className="flex items-center gap-2.5 rounded-lg border border-[#1e6b45]/35 bg-[#1e6b45]/[0.06] px-3.5 py-3 text-[0.9rem] text-[#1e6b45]">
-        <span aria-hidden>✓</span>
-        <span className="font-medium tabular-nums">{maskContact(verified)}</span>
-        <span className="text-[0.74rem] text-[#1a1a1a]/55">verified · buyer-side only</span>
-        <button
-          type="button"
-          onClick={() => { setSent(false); setOtp(Array(4).fill("")); setErr(null); onReset(); }}
-          className="ml-auto text-[0.72rem] text-[#1a1a1a]/45 underline underline-offset-2"
-        >
-          change
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <div className="flex gap-2">
-        <div className="relative shrink-0">
-          <select
-            value={cc}
-            onChange={(e) => setCc(e.target.value)}
-            aria-label="Country code"
-            className="h-full appearance-none rounded-lg border border-[#1a1a1a]/22 bg-white pl-3 pr-7 text-[0.9rem] font-semibold outline-none focus:border-[#9a7a2e]"
-          >
-            {CCS.map((c) => <option key={c.cc} value={c.cc}>{c.flag} {c.cc}</option>)}
-          </select>
-          <span aria-hidden className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[0.6rem] text-[#1a1a1a]/40">▾</span>
-        </div>
-        <input
-          inputMode="numeric"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value.replace(/[^\d\s]/g, ""))}
-          onKeyDown={(e) => { if (e.key === "Enter" && !sent) { e.preventDefault(); send(); } }}
-          placeholder="98765 43210"
-          className="min-w-0 flex-1 rounded-lg border border-[#1a1a1a]/22 bg-[#faf8f4] px-3.5 py-3 text-[0.95rem] tracking-[0.02em] outline-none transition-colors focus:border-[#9a7a2e]"
-        />
-      </div>
-
-      {!sent ? (
-        <>
-          <button
-            type="button"
-            onClick={send}
-            disabled={!valid || busy}
-            className="mt-2.5 w-full rounded-lg border border-[#1e6b45] bg-[#1e6b45]/[0.06] py-3 text-[0.9rem] font-semibold text-[#1e6b45] transition-colors enabled:hover:bg-[#1e6b45]/[0.12] disabled:opacity-40"
-          >
-            {busy ? "Sending…" : "Send code →"}
-          </button>
-          <p className="mt-2 text-[0.68rem] leading-relaxed text-[#1a1a1a]/45">We&rsquo;ll send a 4-digit code by {channelLabel} · never shared with a developer.</p>
-        </>
-      ) : (
-        <div className="mt-3">
-          <p className="text-[0.78rem] text-[#1a1a1a]/60">
-            Code sent to <b className="font-medium text-[#1a1a1a]">{cc} {phone}</b>{" "}
-            <button type="button" onClick={() => { setSent(false); setOtp(Array(4).fill("")); setErr(null); }} className="text-[#9a7a2e] underline underline-offset-2">change</button>
-          </p>
-          <div className="mt-3"><OtpDigits value={otp} onChange={setOtp} len={4} autoFocus /></div>
-          {err && <p className="mt-2 text-[0.72rem] text-[#9a4130]">{err}</p>}
-          <button
-            type="button"
-            onClick={confirm}
-            disabled={busy || !complete}
-            className="mt-3 w-full rounded-lg bg-[#1e6b45] py-3 text-[0.9rem] font-semibold text-white transition-colors enabled:hover:bg-[#238c55] disabled:opacity-40"
-          >
-            {busy ? "Verifying…" : "Verify →"}
-          </button>
-          <p className="mt-2 text-center font-mono text-[0.58rem] tracking-[0.04em] text-[#9a7a2e]">Demo — any 4 digits work · MSG91 wires in later</p>
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -489,7 +450,7 @@ function SegOption({ label, sub, on, onClick }: { label: string; sub: string; on
   );
 }
 
-function Success({ project, contact, looking, pay }: { project: string; contact: string; looking: boolean; pay: "yes" | "no" | null }) {
+function Success({ project, contact }: { project: string; contact: string }) {
   return (
     <div className="mx-auto max-w-xl pt-6 text-center">
       <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#1e6b45]/12 text-[1.5rem] text-[#1e6b45]" aria-hidden>✓</span>
