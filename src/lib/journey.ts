@@ -429,9 +429,27 @@ export type Rankable = {
   truthScore: number;
 };
 
+/* Per-axis diagnostic attached to every ranked item: the 0..1 fit on each
+   dimension, its persona weight, and the weighted contribution (weight × fit).
+   `score` is the honest absolute raw (Σ contributions, 0..100). Existing callers
+   ignore these extra fields — they exist so the /test-rank harness can show WHY
+   a project scored what it did without re-deriving the maths. */
+export type RankAxis = "budget" | "config" | "location" | "priority" | "trust" | "invest";
+export type RankFit = { fit: Record<RankAxis, number>; weight: Record<RankAxis, number>; contribution: Record<RankAxis, number> };
 export type Scored = Project & { matchPct: number };
 
-export function rankCore<T extends Rankable>(items: readonly T[], d: BuyData): (T & { matchPct: number })[] {
+export type RankOpts = {
+  /* Honest absolute Match % (docs/ranking-v2-spec.md, step 2) instead of the
+     legacy relative clamp. OPT-IN — default stays the clamp so the live
+     shortlist is unchanged until the honest numbers pass user testing. */
+  honestPct?: boolean;
+};
+
+export function rankCore<T extends Rankable>(
+  items: readonly T[],
+  d: BuyData,
+  opts: RankOpts = {},
+): (T & { matchPct: number; _score: number; _fit: RankFit })[] {
   const wantsConfig = (p: T) => {
     if (d.configs.length === 0 || d.configs.includes("Flexible")) return true;
     // Only the configs the catalog actually knows for this project — "NA" is
@@ -515,27 +533,43 @@ export function rankCore<T extends Rankable>(items: readonly T[], d: BuyData): (
   const raw = pool
     .map((p) => {
       const [lo, hi] = p.budget;
-      const s =
-        W.budget * budgetFit(lo, hi) +
-        W.config * configFit(p) +
-        W.location * locationFit(p) +
-        W.priority * priorityFit(p) +
-        W.trust * trustFit(p) +
-        W.invest * (investor ? investorFit(p) : 0);
-      return { p, s };
+      const fit: Record<RankAxis, number> = {
+        budget: budgetFit(lo, hi),
+        config: configFit(p),
+        location: locationFit(p),
+        priority: priorityFit(p),
+        trust: trustFit(p),
+        invest: investor ? investorFit(p) : 0,
+      };
+      const contribution: Record<RankAxis, number> = {
+        budget: W.budget * fit.budget,
+        config: W.config * fit.config,
+        location: W.location * fit.location,
+        priority: W.priority * fit.priority,
+        trust: W.trust * fit.trust,
+        invest: W.invest * fit.invest,
+      };
+      const s = (Object.values(contribution) as number[]).reduce((a, b) => a + b, 0);
+      return { p, s, _fit: { fit, weight: W as Record<RankAxis, number>, contribution } };
     })
     .sort((a, b) => b.s - a.s || b.p.truthScore - a.p.truthScore);
 
-  /* Honest absolute Match % (docs/ranking-v2-spec.md, step 2). The weights sum
-     to 100, so `s` already IS a 0..100 score — surface it directly instead of
-     the old relative mapping (`86 + s/max·12`, floored at 72) that made every
-     shortlist look ~86–99 regardless of true fit. Cap at 99 so we never claim a
-     perfect match; unstated preferences count as satisfied (their dimension
-     returns 1), so the number reads as "% of what you told us mattered". */
-  return raw.map(({ p, s }) => ({
+  /* Display Match %. Two mappings, chosen by opts.honestPct:
+     • honest (step 2, in user testing) — the weights sum to 100 so `s` already
+       IS a 0..100 score; surface it directly (cap 99, never claim perfect).
+     • legacy relative clamp (DEFAULT, still live on /shortlist) — `86 + s/max·12`
+       floored at 72, which compressed every shortlist into ~86–99.
+     Every item also carries `_score` (honest raw) and `_fit` (per-axis
+     breakdown) for the /test-rank harness; existing callers ignore them. */
+  const max = raw[0]?.s || 1;
+  return raw.map(({ p, s, _fit }) => ({
     ...p,
-    matchPct: Math.min(99, Math.round(s)),
-  })) as (T & { matchPct: number })[];
+    matchPct: opts.honestPct
+      ? Math.min(99, Math.round(s))
+      : Math.min(99, Math.max(72, Math.round(86 + (s / max) * 12))),
+    _score: Math.round(s),
+    _fit,
+  })) as (T & { matchPct: number; _score: number; _fit: RankFit })[];
 }
 
 export function rankProjects(d: BuyData): Scored[] {
