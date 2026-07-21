@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Logo from "@/components/Logo";
-import OtpSheet from "@/components/shortlist/OtpSheet";
+import OtpDigits from "@/components/auth/OtpDigits";
 import { saveLead, emptyBuyData, type BuyData } from "@/lib/journey";
 import { pushDemand } from "@/lib/heroSearch";
-import { maskContact, type Verified } from "@/lib/shortlistAuth";
+import { sendOtp, verifyOtp, maskContact, type Verified } from "@/lib/shortlistAuth";
 
 /* ════════════════════════════════════════════════════════════════
    GET A CUSTOM PROJECT REPORT — the destination for the homepage
@@ -32,6 +32,14 @@ const TRUST: [string, string][] = [
   ["Flat fee", ", confirmed upfront"],
   ["The founder reviews", " every request"],
 ];
+const CCS = [
+  { cc: "+91", flag: "🇮🇳" },
+  { cc: "+971", flag: "🇦🇪" },
+  { cc: "+1", flag: "🇺🇸" },
+  { cc: "+44", flag: "🇬🇧" },
+  { cc: "+65", flag: "🇸🇬" },
+  { cc: "+61", flag: "🇦🇺" },
+];
 
 type Intent = "looking" | "invested";
 
@@ -56,7 +64,6 @@ export default function CustomReportPage() {
   const [holding, setHolding] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [verified, setVerified] = useState<Verified | null>(null);
-  const [otpOpen, setOtpOpen] = useState(false);
   const [pay999, setPay999] = useState<"yes" | "no" | null>(null);
 
   const [done, setDone] = useState(false);
@@ -240,22 +247,7 @@ export default function CustomReportPage() {
                     <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className={inputCls(name)} />
                   </Field>
                   <Field label="Mobile">
-                    {verified ? (
-                      <div className="flex items-center gap-2.5 rounded-lg border border-[#1e6b45]/35 bg-[#1e6b45]/[0.06] px-3.5 py-3 text-[0.9rem] text-[#1e6b45]">
-                        <span aria-hidden>✓</span>
-                        <span className="font-medium tabular-nums">{maskContact(verified)}</span>
-                        <span className="text-[0.74rem] text-[#1a1a1a]/55">verified · buyer-side only</span>
-                        <button type="button" onClick={() => setVerified(null)} className="ml-auto text-[0.72rem] text-[#1a1a1a]/45 underline underline-offset-2">change</button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setOtpOpen(true)}
-                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#1e6b45] bg-[#1e6b45]/[0.06] py-3 text-[0.9rem] font-semibold text-[#1e6b45] transition-colors hover:bg-[#1e6b45]/[0.12]"
-                      >
-                        Verify your mobile →
-                      </button>
-                    )}
+                    <MobileVerify verified={verified} onVerified={setVerified} onReset={() => setVerified(null)} />
                   </Field>
 
                   {/* willingness to pay — captured as a signal only */}
@@ -327,14 +319,130 @@ export default function CustomReportPage() {
         </div>
       )}
 
-      <OtpSheet
-        open={otpOpen}
-        onClose={() => setOtpOpen(false)}
-        onVerified={(v) => { setVerified(v); setOtpOpen(false); }}
-        title="Verify your mobile"
-        subtitle="One quick step, so an analyst can reach you about this report — never shared with a developer."
-      />
     </main>
+  );
+}
+
+/* Inline mobile verification — country code + number, a 4-digit code entered
+   in place (via the shared OtpDigits), collapsing to a verified pill. Uses the
+   same sendOtp/verifyOtp seam as the bottom-sheet flow (MSG91 wires in later),
+   but keeps the whole thing on the form rather than in a pop-up. */
+function MobileVerify({
+  verified,
+  onVerified,
+  onReset,
+}: {
+  verified: Verified | null;
+  onVerified: (v: Verified) => void;
+  onReset: () => void;
+}) {
+  const [cc, setCc] = useState("+91");
+  const [phone, setPhone] = useState("");
+  const [sent, setSent] = useState(false);
+  const [otp, setOtp] = useState<string[]>(Array(4).fill(""));
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const contact = phone.replace(/\s/g, "");
+  const valid = /^\d{7,12}$/.test(contact);
+  const complete = otp.every((d) => d !== "");
+  const channelLabel = cc === "+91" ? "SMS" : "WhatsApp";
+
+  async function send() {
+    if (!valid || busy) return;
+    setBusy(true); setErr(null);
+    const r = await sendOtp("mobile", contact);
+    setBusy(false);
+    if (r.ok) setSent(true); else setErr(r.error ?? "Couldn't send the code. Try again.");
+  }
+  async function confirm() {
+    if (busy || !complete) return;
+    setBusy(true); setErr(null);
+    const r = await verifyOtp("mobile", contact, otp.join(""));
+    setBusy(false);
+    if (!r.ok) { setErr(r.error ?? "That code didn't match."); return; }
+    onVerified({ channel: "mobile", contact, cc, at: Date.now() });
+  }
+
+  // auto-verify once all four digits are in
+  useEffect(() => {
+    if (sent && complete && !busy && !verified) confirm();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [complete]);
+
+  if (verified) {
+    return (
+      <div className="flex items-center gap-2.5 rounded-lg border border-[#1e6b45]/35 bg-[#1e6b45]/[0.06] px-3.5 py-3 text-[0.9rem] text-[#1e6b45]">
+        <span aria-hidden>✓</span>
+        <span className="font-medium tabular-nums">{maskContact(verified)}</span>
+        <span className="text-[0.74rem] text-[#1a1a1a]/55">verified · buyer-side only</span>
+        <button
+          type="button"
+          onClick={() => { setSent(false); setOtp(Array(4).fill("")); setErr(null); onReset(); }}
+          className="ml-auto text-[0.72rem] text-[#1a1a1a]/45 underline underline-offset-2"
+        >
+          change
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex gap-2">
+        <div className="relative shrink-0">
+          <select
+            value={cc}
+            onChange={(e) => setCc(e.target.value)}
+            aria-label="Country code"
+            className="h-full appearance-none rounded-lg border border-[#1a1a1a]/22 bg-white pl-3 pr-7 text-[0.9rem] font-semibold outline-none focus:border-[#9a7a2e]"
+          >
+            {CCS.map((c) => <option key={c.cc} value={c.cc}>{c.flag} {c.cc}</option>)}
+          </select>
+          <span aria-hidden className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[0.6rem] text-[#1a1a1a]/40">▾</span>
+        </div>
+        <input
+          inputMode="numeric"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value.replace(/[^\d\s]/g, ""))}
+          onKeyDown={(e) => { if (e.key === "Enter" && !sent) { e.preventDefault(); send(); } }}
+          placeholder="98765 43210"
+          className="min-w-0 flex-1 rounded-lg border border-[#1a1a1a]/22 bg-[#faf8f4] px-3.5 py-3 text-[0.95rem] tracking-[0.02em] outline-none transition-colors focus:border-[#9a7a2e]"
+        />
+      </div>
+
+      {!sent ? (
+        <>
+          <button
+            type="button"
+            onClick={send}
+            disabled={!valid || busy}
+            className="mt-2.5 w-full rounded-lg border border-[#1e6b45] bg-[#1e6b45]/[0.06] py-3 text-[0.9rem] font-semibold text-[#1e6b45] transition-colors enabled:hover:bg-[#1e6b45]/[0.12] disabled:opacity-40"
+          >
+            {busy ? "Sending…" : "Send code →"}
+          </button>
+          <p className="mt-2 text-[0.68rem] leading-relaxed text-[#1a1a1a]/45">We&rsquo;ll send a 4-digit code by {channelLabel} · never shared with a developer.</p>
+        </>
+      ) : (
+        <div className="mt-3">
+          <p className="text-[0.78rem] text-[#1a1a1a]/60">
+            Code sent to <b className="font-medium text-[#1a1a1a]">{cc} {phone}</b>{" "}
+            <button type="button" onClick={() => { setSent(false); setOtp(Array(4).fill("")); setErr(null); }} className="text-[#9a7a2e] underline underline-offset-2">change</button>
+          </p>
+          <div className="mt-3"><OtpDigits value={otp} onChange={setOtp} len={4} autoFocus /></div>
+          {err && <p className="mt-2 text-[0.72rem] text-[#9a4130]">{err}</p>}
+          <button
+            type="button"
+            onClick={confirm}
+            disabled={busy || !complete}
+            className="mt-3 w-full rounded-lg bg-[#1e6b45] py-3 text-[0.9rem] font-semibold text-white transition-colors enabled:hover:bg-[#238c55] disabled:opacity-40"
+          >
+            {busy ? "Verifying…" : "Verify →"}
+          </button>
+          <p className="mt-2 text-center font-mono text-[0.58rem] tracking-[0.04em] text-[#9a7a2e]">Demo — any 4 digits work · MSG91 wires in later</p>
+        </div>
+      )}
+    </div>
   );
 }
 
