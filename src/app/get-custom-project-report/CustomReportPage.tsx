@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Logo from "@/components/Logo";
 import OtpSheet from "@/components/shortlist/OtpSheet";
 import { saveLead, emptyBuyData, type BuyData } from "@/lib/journey";
@@ -16,6 +16,9 @@ import { maskContact, type Verified } from "@/lib/shortlistAuth";
      Step 2 · requirements (only when "looking to invest") → name +
               OTP-verified mobile → a ₹999 willingness signal
      → a premium thank-you.
+   Layout: desktop is two columns (the pitch on the left, sticky; the
+   form on the right). Mobile stacks to one column with a persistent
+   bottom CTA bar so the primary action is always in view.
    Reuses OtpSheet (verification) and saveLead/pushDemand (persistence).
    ════════════════════════════════════════════════════════════════ */
 
@@ -23,6 +26,12 @@ const CITIES = ["Gurugram", "Mumbai", "Bengaluru", "Pune", "Hyderabad", "Noida"]
 const CONFIGS = ["2 BHK", "3 BHK", "4 BHK", "Penthouse"];
 const BUDGETS = ["Under ₹3 Cr", "₹3–5 Cr", "₹5–8 Cr", "₹8 Cr+"];
 const HOLDING = ["1–3 yrs", "3–5 yrs", "5+ yrs"];
+const TRUST: [string, string][] = [
+  ["No developer money", "— ever"],
+  ["Buyer-side only", ", never shared"],
+  ["Flat fee", ", confirmed upfront"],
+  ["The founder reviews", " every request"],
+];
 
 type Intent = "looking" | "invested";
 
@@ -52,6 +61,9 @@ export default function CustomReportPage() {
 
   const [done, setDone] = useState(false);
 
+  const cardRef = useRef<HTMLDivElement>(null);
+  const firstStep = useRef(true);
+
   // prefill the project from the search that sent them here (?project= / ?q=)
   useEffect(() => {
     try {
@@ -63,10 +75,22 @@ export default function CustomReportPage() {
     }
   }, []);
 
+  // on step change, bring the form back into view (matters on mobile)
+  useEffect(() => {
+    if (firstStep.current) { firstStep.current = false; return; }
+    cardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [step]);
+
   const looking = intent === "looking";
   const cityFinal = (city && city !== "Other" ? city : cityOther).trim();
   const step1ok = project.trim().length > 0 && cityFinal.length > 0 && intent !== null;
   const step2ok = name.trim().length > 0 && verified !== null && pay999 !== null;
+
+  // one source of truth for the primary CTA, shared by the in-card button
+  // (desktop) and the sticky bottom bar (mobile)
+  const primaryLabel = step === 1 ? "Continue →" : "Request my report →";
+  const primaryDisabled = step === 1 ? !step1ok : !step2ok;
+  const primaryAction = () => (step === 1 ? setStep(2) : submit());
 
   function submit() {
     if (!step2ok) return;
@@ -104,20 +128,22 @@ export default function CustomReportPage() {
   return (
     <main className="min-h-svh bg-[#F5F0E8] text-[#1a1a1a]">
       <header className="border-b border-[#1a1a1a]/[0.07]">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4 md:px-8">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 md:px-8">
           <a href="/Truth-Estate" aria-label="Truth Estate — home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
           <span className="font-mono text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#9a7a2e]">The Independent Buyer&rsquo;s Office</span>
         </div>
       </header>
 
-      <div className="mx-auto max-w-3xl px-6 pb-24 pt-10 md:px-8 md:pt-14">
-        {done ? (
+      {done ? (
+        <div className="mx-auto max-w-3xl px-6 pb-24 pt-10 md:px-8 md:pt-14">
           <Success project={project} contact={verified ? maskContact(verified) : ""} looking={looking} pay={pay999} />
-        ) : (
-          <>
-            {/* hero */}
+        </div>
+      ) : (
+        <div className="mx-auto max-w-6xl px-6 pb-32 pt-10 md:px-8 md:pt-14 lg:grid lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1fr)] lg:items-start lg:gap-14 lg:pb-24 xl:gap-20">
+          {/* ── LEFT · the pitch (sticky on desktop) ── */}
+          <div className="lg:sticky lg:top-14 lg:self-start">
             <p className="font-mono text-[0.66rem] font-semibold uppercase tracking-[0.24em] text-[#9a7a2e]">Custom Report</p>
-            <h1 className="mt-3 max-w-[15ch] font-serif text-[2.3rem] font-medium leading-[1.05] tracking-[-0.01em] md:text-[2.9rem]">
+            <h1 className="mt-3 max-w-[15ch] font-serif text-[2.15rem] font-medium leading-[1.05] tracking-[-0.01em] md:text-[2.9rem] lg:text-[3rem]">
               Considering a project we haven&rsquo;t covered?
             </h1>
             <p className="mt-4 max-w-[46ch] text-[1.02rem] font-light leading-relaxed text-[#1a1a1a]/65">
@@ -128,8 +154,20 @@ export default function CustomReportPage() {
               ✦ Now pan-India
             </span>
 
-            {/* form card */}
-            <div className="mt-8 rounded-[16px] border border-[#1a1a1a]/12 bg-white p-6 shadow-[0_24px_60px_-40px_rgba(0,0,0,0.35)] md:p-8">
+            {/* trust — vertical list, desktop only */}
+            <ul className="mt-9 hidden gap-3 border-t border-[#1a1a1a]/10 pt-7 lg:grid">
+              {TRUST.map(([a, b]) => (
+                <li key={a} className="flex items-start gap-2.5 text-[0.88rem] text-[#1a1a1a]/60">
+                  <span className="mt-0.5 text-[#9a7a2e]" aria-hidden>✦</span>
+                  <span><b className="font-semibold text-[#1a1a1a]">{a}</b>{b}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* ── RIGHT · the form ── */}
+          <div className="mt-8 lg:mt-0">
+            <div ref={cardRef} className="scroll-mt-6 rounded-[16px] border border-[#1a1a1a]/12 bg-white p-6 shadow-[0_24px_60px_-40px_rgba(0,0,0,0.35)] md:p-8">
               {/* progress */}
               <div className="mb-6 flex items-center gap-2.5">
                 <Pip on />
@@ -164,12 +202,7 @@ export default function CustomReportPage() {
                     </div>
                   </Field>
 
-                  <button
-                    type="button"
-                    disabled={!step1ok}
-                    onClick={() => setStep(2)}
-                    className={ctaCls}
-                  >
+                  <button type="button" disabled={!step1ok} onClick={() => setStep(2)} className={`${ctaCls} hidden lg:block`}>
                     Continue →
                   </button>
                 </>
@@ -245,10 +278,10 @@ export default function CustomReportPage() {
                     </div>
                   </div>
 
-                  <button type="button" disabled={!step2ok} onClick={submit} className={ctaCls}>
+                  <button type="button" disabled={!step2ok} onClick={submit} className={`${ctaCls} hidden lg:block`}>
                     Request my report →
                   </button>
-                  <div className="mt-3 flex items-center justify-between">
+                  <div className="mt-3 hidden items-center justify-between lg:flex">
                     <button type="button" onClick={() => setStep(1)} className="font-mono text-[0.7rem] text-[#1a1a1a]/45 hover:text-[#1a1a1a]/75">← Back</button>
                     <p className="font-mono text-[0.58rem] tracking-[0.03em] text-[#1a1a1a]/45">A real analyst reviews every request</p>
                   </div>
@@ -256,20 +289,43 @@ export default function CustomReportPage() {
               )}
             </div>
 
-            {/* trust strip */}
-            <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-[0.8rem] text-[#1a1a1a]/60">
-              {[
-                ["No developer money", "— ever"],
-                ["Buyer-side only", ", never shared"],
-                ["Flat fee", ", confirmed upfront"],
-                ["The founder reviews", " every request"],
-              ].map(([a, b]) => (
+            {/* trust — inline row, mobile only (below the form) */}
+            <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-[0.8rem] text-[#1a1a1a]/60 lg:hidden">
+              {TRUST.map(([a, b]) => (
                 <span key={a}>✦ <b className="font-semibold text-[#1a1a1a]">{a}</b>{b}</span>
               ))}
             </div>
-          </>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── mobile sticky CTA — keeps the primary action always in view ── */}
+      {!done && (
+        <div
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-[#1a1a1a]/10 bg-[#F5F0E8]/95 backdrop-blur-sm lg:hidden"
+          style={{ paddingBottom: "max(0.7rem, env(safe-area-inset-bottom))" }}
+        >
+          <div className="mx-auto flex max-w-6xl items-center gap-3 px-5 pt-3">
+            {step === 2 && (
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="shrink-0 rounded-[11px] border border-[#1a1a1a]/20 px-4 py-3.5 text-[0.9rem] font-medium text-[#1a1a1a]/70"
+              >
+                Back
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={primaryDisabled}
+              onClick={primaryAction}
+              className="flex-1 rounded-[11px] bg-[#1e6b45] py-3.5 text-[0.95rem] font-semibold text-white transition-all duration-300 enabled:hover:bg-[#238c55] disabled:cursor-not-allowed disabled:opacity-35"
+            >
+              {primaryLabel}
+            </button>
+          </div>
+        </div>
+      )}
 
       <OtpSheet
         open={otpOpen}
