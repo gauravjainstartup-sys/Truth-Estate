@@ -145,10 +145,12 @@ export default function Hero({ index }: { index: OmniIndex }) {
           {/* secondary CTA — for the buyer WITHOUT a project in mind. A quiet
              one-line whisper, sat AFTER the trust promises with a hair-thin
              divider so the credibility lands first and this reads as the natural
-             next step, not a competing button. Opens the requirements journey. */}
+             next step, not a competing button. open() with no intent starts at
+             the Welcome intro (then flows into the buy journey), matching the
+             other requirement entry points site-wide. */}
           <button
             type="button"
-            onClick={() => open("buy")}
+            onClick={() => open()}
             className="group mt-4 block w-full max-w-[420px] border-t border-[#f6f1e8]/10 pt-3.5 text-left text-[13.5px] text-[#b3aa9e] transition-colors duration-150 hover:text-[#f6f1e8] md:mt-5 md:pt-4"
           >
             Not sure?{" "}
