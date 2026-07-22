@@ -7,7 +7,7 @@ import ShortlistCore from "./ShortlistCore";
 import { loadVerified, maskContact, type Verified } from "@/lib/shortlistAuth";
 import { loadBuyData, hasPreferences, deriveDNA } from "@/lib/journey";
 import { rankProjectsIntel } from "@/lib/shortlist";
-import { useMatchCatalog } from "@/lib/useMatchCatalog";
+import { useMatchCatalog, useMatchMarket } from "@/lib/useMatchCatalog";
 import { useAiRerank } from "@/lib/useAiRerank";
 
 /* ════════════════════════════════════════════════════════════════
@@ -49,10 +49,11 @@ export default function ShortlistExperience() {
 
   // The live tracked universe (baked match-catalog.json); null until fetched.
   const catalog = useMatchCatalog();
+  const market = useMatchMarket();
   const dna = useMemo(() => (buy ? deriveDNA(buy) : null), [buy]);
   const det = useMemo(
-    () => (buy && catalog ? rankProjectsIntel(buy, catalog) : []),
-    [buy, catalog]
+    () => (buy && catalog ? rankProjectsIntel(buy, catalog, market) : []),
+    [buy, catalog, market]
   );
   // Path 2: Gemini re-ranks the gated deterministic top; any failure keeps
   // the deterministic order (settled flips either way, bounded at 3 s).
