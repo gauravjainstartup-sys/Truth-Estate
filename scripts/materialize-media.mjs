@@ -438,6 +438,7 @@ try {
      cached deterministically so Google is hit once per centre. Fail-soft. */
   try {
     const GKEY = process.env.NEXT_PUBLIC_GMAPS_KEY || process.env.GMAPS_KEY || "";
+    const SAT_ZOOM = 18; // site-level framing; the cache key tracks this so a change re-bakes
     const fix = process.env.SUPABASE_FIXTURES;
     let geoRows = [];
     if (fix) { try { geoRows = JSON.parse(await readFile(path.join(fix, "backlog_listing_public_v3.json"), "utf8")); } catch { geoRows = []; } }
@@ -454,8 +455,8 @@ try {
         if (Math.abs(lat) > 90 || Math.abs(lng) > 180 || (lat === 0 && lng === 0)) continue;
         if (r.geo_provenance === "suspect") { suspect++; continue; }
         const c = `${lat.toFixed(6)},${lng.toFixed(6)}`;
-        const cacheStr = `sat|v1|${c}|z16|640x360|satellite|jpg`;
-        const url = `https://maps.googleapis.com/maps/api/staticmap?center=${c}&zoom=16&size=640x360&scale=2&maptype=satellite&format=jpg&key=${encodeURIComponent(GKEY)}`;
+        const cacheStr = `sat|v1|${c}|z${SAT_ZOOM}|640x360|satellite|jpg`;
+        const url = `https://maps.googleapis.com/maps/api/staticmap?center=${c}&zoom=${SAT_ZOOM}&size=640x360&scale=2&maptype=satellite&format=jpg&key=${encodeURIComponent(GKEY)}`;
         const got = await fetchSatellite(url, cacheStr);
         if (!got || !got.buf) { skipped++; if (baked === 0 && skipped <= 2) console.log(`[materialize] satellite ${id}: ${got?.skip ?? "no-body"}`); continue; }
         const rel = `live-media/sat-${id}.${got.ext}`;
