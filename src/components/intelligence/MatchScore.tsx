@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   loadBuyData,
   saveBuyData,
@@ -19,8 +19,10 @@ import { scoreMatch, type MarketContext } from "@/lib/matchEngine";
 import { useMatchMarket } from "@/lib/useMatchCatalog";
 import { saveVerified, loadVerified, maskContact, type Verified } from "@/lib/shortlistAuth";
 import OtpSheet from "@/components/shortlist/OtpSheet";
-import PoiSearch, { POI_ENABLED } from "./PoiSearch";
 import type { ProjectIntel } from "@/lib/projects";
+
+const GMAPS_KEY = process.env.NEXT_PUBLIC_GMAPS_KEY ?? "";
+const POI_ENABLED = !!GMAPS_KEY;
 
 const BUDGETS = [
   { label: "Under ₹3 Cr", cr: 2 },
@@ -328,13 +330,17 @@ function MatchSheet({ open, project, market, seed, computed, existing, member, v
             {CONFIG_CHIPS.map((c) => <Chip key={c} on={draft.configs.includes(c)} onClick={() => toggle("configs", c)}>{c}</Chip>)}
           </Block>
           {(corridors.length > 0 || POI_ENABLED) && (
-            <Block label="Preferred location" hint="optional">
-              {corridors.map((ch) => <Chip key={ch.label} on={ch.keys.some((k) => draft.locations.includes(k))} onClick={() => toggleCorridor(ch.keys)}>{ch.label}</Chip>)}
-            </Block>
-          )}
-          {POI_ENABLED && (
-            <div className={corridors.length > 0 ? "mt-1" : "mt-3"}>
-              <PoiSearch value={draft.poi} onChange={(poi) => setDraft((d) => ({ ...d, poi }))} />
+            <div className="mt-5">
+              <p className="mb-2.5 font-mono text-[0.6rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/45">
+                Preferred location<span className="ml-2 tracking-normal text-[#1a1a1a]/30">· optional</span>
+              </p>
+              <LocationSearch
+                corridors={corridors}
+                selectedLocations={draft.locations}
+                poi={draft.poi}
+                onToggleCorridor={toggleCorridor}
+                onPoiChange={(poi) => setDraft((d) => ({ ...d, poi }))}
+              />
             </div>
           )}
           {draft.persona === "investor" && (
@@ -403,5 +409,180 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
     >
       {children}
     </button>
+  );
+}
+
+type PlaceHit = { placeId: string; main: string; secondary: string };
+
+function LocationSearch({ corridors, selectedLocations, poi, onToggleCorridor, onPoiChange }: {
+  corridors: CorridorChip[];
+  selectedLocations: string[];
+  poi: { lat: number; lng: number; label: string } | null;
+  onToggleCorridor: (keys: string[]) => void;
+  onPoiChange: (poi: { lat: number; lng: number; label: string } | null) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [places, setPlaces] = useState<PlaceHit[]>([]);
+  const [open, setOpen] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  const filtered = query.trim()
+    ? corridors.filter((c) => c.label.toLowerCase().includes(query.trim().toLowerCase()))
+    : [];
+
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+
+  useEffect(() => {
+    if (filtered.length > 0 || query.trim().length < 3 || !GMAPS_KEY) {
+      setPlaces([]);
+      return;
+    }
+    clearTimeout(timer.current);
+    timer.current = setTimeout(async () => {
+      try {
+        const res = await fetch("https://places.googleapis.com/v1/places:autocomplete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Goog-Api-Key": GMAPS_KEY },
+          body: JSON.stringify({
+            input: query,
+            locationBias: { circle: { center: { latitude: 28.45, longitude: 77.03 }, radius: 30000 } },
+          }),
+        });
+        if (!res.ok) { setPlaces([]); return; }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data: any = await res.json();
+        setPlaces(
+          (data.suggestions ?? [])
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .filter((s: any) => s.placePrediction?.placeId)
+            .slice(0, 5)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .map((s: any) => ({
+              placeId: s.placePrediction.placeId,
+              main: s.placePrediction.structuredFormat?.mainText?.text ?? s.placePrediction.text?.text ?? "",
+              secondary: s.placePrediction.structuredFormat?.secondaryText?.text ?? "",
+            })),
+        );
+        setOpen(true);
+      } catch { setPlaces([]); }
+    }, 300);
+    return () => clearTimeout(timer.current);
+  }, [query, filtered.length]);
+
+  const pickPlace = useCallback(async (hit: PlaceHit) => {
+    setOpen(false);
+    setQuery("");
+    try {
+      const res = await fetch(
+        `https://places.googleapis.com/v1/places/${hit.placeId}`,
+        { headers: { "X-Goog-Api-Key": GMAPS_KEY, "X-Goog-FieldMask": "location" } },
+      );
+      if (!res.ok) return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data: any = await res.json();
+      if (data.location) {
+        onPoiChange({ lat: data.location.latitude, lng: data.location.longitude, label: hit.main });
+      }
+    } catch { /* silent */ }
+  }, [onPoiChange]);
+
+  const pickCorridor = (ch: CorridorChip) => {
+    onToggleCorridor(ch.keys);
+    setQuery("");
+    setOpen(false);
+  };
+
+  const showDropdown = open && query.trim() && (filtered.length > 0 || places.length > 0);
+
+  return (
+    <div ref={wrapRef}>
+      <div className="relative">
+        <input
+          value={query}
+          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+          onFocus={() => { if (query.trim()) setOpen(true); }}
+          placeholder="Search area or landmark…"
+          className="w-full rounded-full border border-black/[0.12] bg-white/80 py-2 pl-3.5 pr-8 text-[0.8rem] font-light outline-none placeholder:text-black/30 focus:border-[#1e6b45]"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => { setQuery(""); setPlaces([]); setOpen(false); }}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[0.7rem] text-black/30 hover:text-black/60"
+            aria-label="Clear"
+          >✕</button>
+        )}
+        {showDropdown && (
+          <div className="absolute inset-x-0 top-full z-20 mt-1 max-h-[200px] overflow-y-auto rounded-xl border border-black/10 bg-white shadow-lg">
+            {filtered.map((ch) => (
+              <button
+                key={ch.label}
+                type="button"
+                onClick={() => pickCorridor(ch)}
+                className="flex w-full items-center justify-between px-3.5 py-2.5 text-left transition-colors hover:bg-[#1e6b45]/[0.06]"
+              >
+                <span className="text-[0.8rem] font-light text-[#1a1a1a]/80">{ch.label}</span>
+                {ch.keys.some((k) => selectedLocations.includes(k))
+                  ? <span className="text-[0.72rem] font-light text-[#1e6b45]">✓</span>
+                  : <span className="text-[0.72rem] font-light text-black/30">Add</span>}
+              </button>
+            ))}
+            {places.map((h) => (
+              <button
+                key={h.placeId}
+                type="button"
+                onClick={() => pickPlace(h)}
+                className="w-full px-3.5 py-2.5 text-left transition-colors hover:bg-[#1e6b45]/[0.06]"
+              >
+                <span className="block text-[0.8rem] font-light text-[#1a1a1a]/80">{h.main}</span>
+                {h.secondary && <span className="block text-[0.68rem] font-light text-[#1a1a1a]/40">{h.secondary}</span>}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {corridors.length > 0 && (
+        <div className="mt-3 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+          <div className="flex gap-2">
+            {corridors.map((ch) => {
+              const on = ch.keys.some((k) => selectedLocations.includes(k));
+              return (
+                <button
+                  key={ch.label}
+                  type="button"
+                  onClick={() => onToggleCorridor(ch.keys)}
+                  className={`shrink-0 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-[0.8rem] font-light transition-all ${on ? "border-[#1e6b45] bg-[#1e6b45]/10 text-[#1e6b45]" : "border-black/[0.14] text-[#1a1a1a]/60 hover:border-black/30 hover:text-[#1a1a1a]/85"}`}
+                >
+                  {ch.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {poi && (
+        <div className="mt-2.5 flex">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#9a7a2e] bg-[#9a7a2e]/10 py-1.5 pl-3.5 pr-2 text-[0.8rem] font-light text-[#9a7a2e]">
+            {poi.label}
+            <button
+              type="button"
+              onClick={() => onPoiChange(null)}
+              aria-label={`Remove ${poi.label}`}
+              className="grid h-4 w-4 place-items-center rounded-full text-[0.7rem] leading-none text-[#9a7a2e]/70 transition-colors hover:bg-[#9a7a2e]/15 hover:text-[#9a7a2e]"
+            >✕</button>
+          </span>
+        </div>
+      )}
+    </div>
   );
 }
