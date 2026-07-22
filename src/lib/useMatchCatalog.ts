@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { PROJECTS } from "./journey";
 import { projectByName, type ProjectIntel } from "./projects";
+import { emptyMarket, type MarketContext } from "./matchEngine";
 
 /* ════════════════════════════════════════════════════════════════
    LIVE MATCH CATALOG — the client-side hook the shortlist ranks against.
@@ -27,6 +28,22 @@ const basePath = "/Truth-Estate";
 export const MOCK_INTEL: ProjectIntel[] = PROJECTS.map((p) => projectByName(p.name)).filter(
   (p): p is ProjectIntel => Boolean(p),
 );
+
+/* The baked corpus market context (corridor price medians + centroids) for the
+   entry-price and location factors. Starts empty (those factors read neutral)
+   and fills once match-market.json settles. */
+export function useMatchMarket(): MarketContext {
+  const [market, setMarket] = useState<MarketContext>(emptyMarket);
+  useEffect(() => {
+    let alive = true;
+    fetch(`${basePath}/match-market.json`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((data: MarketContext) => { if (alive && data && data.corridorCentroid) setMarket(data); })
+      .catch(() => { /* keep empty market → entry/location stay neutral */ });
+    return () => { alive = false; };
+  }, []);
+  return market;
+}
 
 export function useMatchCatalog(): ProjectIntel[] | null {
   const [catalog, setCatalog] = useState<ProjectIntel[] | null>(null);

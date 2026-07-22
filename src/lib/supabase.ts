@@ -257,6 +257,7 @@ export type LiveBacklogFull = {
   devDelayedPct: number | null;
   devAvgDelayMonths: number | null;
   devFinancialBand: string | null;
+  devFinancialScore: number | null;
   devLegalBand: string | null;
   devLegalScore: number | null;
   companyType: string | null;
@@ -443,6 +444,7 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
       devDelayedPct: n(r.developer_delayed_pct),
       devAvgDelayMonths: n(r.developer_avg_delay_months),
       devFinancialBand: s(r.developer_financial_band),
+      devFinancialScore: n(r.developer_financial_score),
       devLegalBand: s(r.developer_legal_band),
       devLegalScore: n(r.developer_legal_score),
       companyType: s(r.company_type_badge),

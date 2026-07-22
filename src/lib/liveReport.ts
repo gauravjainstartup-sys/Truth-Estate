@@ -10,6 +10,8 @@
    ════════════════════════════════════════════════════════════════ */
 
 import type { CorridorPsf, LiveBacklogFull, LiveConfiguration, LiveExtendedDetails } from "./supabase";
+import { fetchBacklogFull, fetchBacklogNameIds, fetchConfigurations, fetchCorridorPsf, fetchExtendedDetails } from "./supabase";
+import { bhkBucket, buildMarket, type MarketContext, type MatchInput, type UnitConfig } from "./matchEngine";
 import { MARKETS } from "./markets";
 import { corridorKey } from "./journey";
 import type { DeveloperIntel, FinKey, FinRating, LegalCase } from "./developers";
@@ -277,6 +279,85 @@ function psfRange(s: string | null): [number, number] | null {
 }
 
 const normBhk = (s: string): string => s.replace(/(\d(?:\.\d)?)\s*BHK/i, "$1 BHK").trim();
+
+/* ── Match-engine inputs — map a v3 row (+ joined ext / configs) to the pure
+   MatchInput the scorer reads. ₹/sqft lower bound × the config's super area
+   powers the config-specific price; v3 columns power the rest. ── */
+export function toMatchInput(
+  row: LiveBacklogFull,
+  ext?: LiveExtendedDetails | null,
+  cfgs?: LiveConfiguration[] | null,
+): MatchInput {
+  const psfLow = (() => {
+    const m = ext?.priceRangeSqft?.match(/(\d[\d,]*)/);
+    return m ? Number(m[1].replace(/,/g, "")) : null;
+  })();
+  const configs: UnitConfig[] = (cfgs ?? []).flatMap((c) => {
+    const b = bhkBucket(c.bhkType);
+    return b != null && c.superArea != null && c.superArea > 0 ? [{ bucket: b, superArea: c.superArea }] : [];
+  });
+  const yr = row.predictedDeliveryDate ? Number(String(row.predictedDeliveryDate).slice(0, 4)) || null : null;
+  return {
+    name: row.name,
+    corridor: row.microMarket ?? row.location ?? "",
+    lat: row.latitude, lng: row.longitude,
+    budgetLoCr: row.minPriceCr,
+    configs, psfLow,
+    deliveryYear: yr,
+    delayChancePct: row.chancesOfDelayPct,
+    paceMonths: row.paceVsScheduleMonths,
+    progressPct: row.constructionProgressPct,
+    legalScore: row.legalScore,
+    redFlags: row.redFlags,
+    devDelayedPct: row.devDelayedPct,
+    devDelivered: row.devDelivered,
+    devAvgDelayMonths: row.devAvgDelayMonths,
+    roiActualCagr: row.roiActualCagr,
+    roiCityCagr: row.roiCityCagr,
+    salesVelocityPct: row.salesVelocityPct,
+    demandScore: row.demandScore,
+    soldUnits: row.soldUnits,
+    totalUnits: row.totalUnits,
+    devFinancialScore: row.devFinancialScore,
+    ebitdaMargin: row.finMargin,
+    netDebtToEquity: row.finLeverage,
+  };
+}
+
+/* id-drift tolerant key resolver (mirrors the report/catalog join). */
+function matchKey<T>(id: string, name: string, table: Record<string, T> | null, nameIds: Record<string, string> | null, altIds: string[] = []): string | null {
+  if (!table) return null;
+  if (table[id] !== undefined) return id;
+  for (const a of altIds) if (table[a] !== undefined) return a;
+  const alt = nameIds?.[name];
+  return alt && table[alt] !== undefined ? alt : null;
+}
+
+/* The full live tracked universe as ProjectIntel (each carrying matchInput) —
+   the single builder for the catalog route and the market context. */
+export async function buildLiveCatalog(): Promise<ProjectIntel[]> {
+  const [rows, ext, cfg, nameIds, corridorPsf] = await Promise.all([
+    fetchBacklogFull(), fetchExtendedDetails(), fetchConfigurations(), fetchBacklogNameIds(), fetchCorridorPsf(),
+  ]);
+  const seen = new Set<string>();
+  const out: ProjectIntel[] = [];
+  for (const r of rows ?? []) {
+    const eKey = matchKey(r.id, r.name, ext, nameIds, r.altIds);
+    const cKey = matchKey(r.id, r.name, cfg, nameIds, r.altIds);
+    const intel = liveProjectIntel(r, eKey ? ext![eKey] : null, cKey ? cfg![cKey] : null, corridorPsf);
+    if (!intel.slug || seen.has(intel.slug)) continue;
+    seen.add(intel.slug);
+    out.push(intel);
+  }
+  return out;
+}
+
+/* Corpus market context (corridor×bucket price medians + centroids) for the
+   entry-price and location-distance factors. Built once over the catalog. */
+export async function buildLiveMarket(): Promise<MarketContext> {
+  const catalog = await buildLiveCatalog();
+  return buildMarket(catalog.map((p) => p.matchInput).filter((m): m is MatchInput => !!m));
+}
 
 export function liveProjectIntel(
   row: LiveBacklogFull,
@@ -1162,6 +1243,7 @@ export function liveProjectIntel(
     strengths,
     watchouts,
     slug: row.slug,
+    matchInput: toMatchInput(row, extRaw, cfgs),
     devSlug: row.devSlug ?? (row.developer ? developerSlugOf(row.developer) : undefined),
     marketSlug: market?.slug,
     marketShort: market?.short ?? marketName,
