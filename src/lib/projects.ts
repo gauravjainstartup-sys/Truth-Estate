@@ -223,12 +223,15 @@ export type ProjectOps = {
   };
   construction?: {
     actualPct: number; // built vs plan, latest QPR
-    expectedPct: number; // schedule expectation at same date
+    expectedPct: number; // % RERA required by the quarter-end (filed value)
     absorptionPct: number; // units sold / launched
     reraDate: string; // committed possession
     predictedDate: string; // our execution-adjusted estimate
     qpr: string; // QPR the read is drawn from
     delayChancePct?: number; // pipeline-scored delay probability (live rows)
+    paceMonths?: number; // build pace vs schedule, months (+ ahead / − behind)
+    constructionProofPdf?: string; // R2 link — the RERA QPR document
+    salesProofPdf?: string; // R2 link — the sales-velocity proof (MIS / RERA)
   };
   usps?: { title: string; body: string }[];
 };
