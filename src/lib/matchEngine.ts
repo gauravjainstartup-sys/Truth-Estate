@@ -2,45 +2,44 @@
    MATCH ENGINE — persona-weighted, factor-graded project fit.
 
    One engine for BOTH the report's "YOUR FIT" and the shortlist rank,
-   replacing the old 4-factor `matchScoreFor` (report) and the coarse
-   6-axis `rankCore` (shortlist). Every factor is a continuous 0..1 fit ×
-   a persona weight; weights per persona sum to 100, so the score is an
-   honest absolute 0..100 (no relative clamp). Missing data → neutral 0.5,
-   never a penalty — an uncovered project ranks on the factors it has.
+   replacing the old 4-factor `matchScoreFor` and coarse 6-axis `rankCore`.
+   Every factor is a continuous 0..1 fit × a persona weight. Weights are
+   renormalized over the factors that ACTUALLY apply to this buyer (skipped
+   inputs drop out), so the score is an honest absolute 0..100 and sharpens
+   as the buyer says more. Missing PROJECT data → neutral 0.5, never a
+   penalty. Curves calibrated on the live corpus (scratchpad/calibrate.mjs).
 
-   Two personas (End-user / Investor), derived from purchase intent. The
-   weight tables ARE the product decision and are meant to be tuned — edit
-   MATCH_WEIGHTS, nothing else. Curves calibrated against the live corpus
-   (docs: scratchpad/calibrate.mjs).
-
-   Factor data all comes from backlog_listing_public_v3, except the
-   config-specific entry price, which needs the project's Current ₹/sqft
-   (project_extended_details.price_range_sqft, lower bound) × the chosen
-   config's super area (project_configurations) — see MarketContext.
+   Two personas (End-user / Investor). MATCH_WEIGHTS is the whole tuning
+   surface. Factor data comes from backlog_listing_public_v3, except the
+   config-specific price, which needs Current ₹/sqft (project_extended_details
+   .price_range_sqft lower bound) × the config's super area
+   (project_configurations), and location distance, which needs project
+   lat/long (v3, seed-authoritative) vs the target corridor centroid / POI.
    ════════════════════════════════════════════════════════════════ */
 
 export type Persona = "end-user" | "investor";
 
-/* ── Configurable persona weights (each column sums to 100) ──
-   This is the tuning surface. Nothing else here needs editing to reweight
-   what a persona cares about. */
 export type MatchFactor =
   | "budget" | "config" | "location" | "timeline"
-  | "delivery" | "legal" | "developer"      // end-user quality
+  | "delivery" | "legal" | "developer"        // end-user quality
   | "roi" | "entry" | "liquidity" | "finance"; // investor quality
 
+/* ── Configurable persona weights (each column sums to 100 as authored;
+   the engine renormalizes over whatever factors apply per buyer) ── */
 export const MATCH_WEIGHTS: Record<Persona, Partial<Record<MatchFactor, number>>> = {
   "end-user": { budget: 16, config: 14, location: 12, timeline: 8, delivery: 16, legal: 16, developer: 12, entry: 6 },
   investor:   { budget: 14, config: 2, location: 6, timeline: 6, delivery: 10, roi: 24, entry: 14, liquidity: 14, finance: 10 },
 };
 
+/* Factors that need a buyer input — dropped (and their weight renormalized
+   away) when the buyer hasn't given that input. Everything else is always on. */
+const CONDITIONAL: MatchFactor[] = ["config", "location", "timeline"];
+
 export const personaOf = (purchaseType: string | null | undefined): Persona =>
   purchaseType === "Investment" ? "investor" : "end-user";
 
-/* ── BHK buckets (founder's scheme) ──
-   Studio/1/1.5 → "1"; 2/2.5 → "2"; 3/3.5 → "3"; 4/4.5 → "4"; 5/5.5 → "5";
-   any Penthouse incl. Duplex Penthouse → "PH" (its own category, so a
-   "4 BHK Penthouse" is PH, not 4). */
+/* ── BHK buckets: Studio/1/1.5→"1"; 2/2.5→"2"; …; 5/5.5→"5"; any Penthouse
+   (incl. Duplex Penthouse) → "PH" (its own category). ── */
 export type BhkBucket = "1" | "2" | "3" | "4" | "5" | "PH";
 export function bhkBucket(bhkType: string | null | undefined): BhkBucket | null {
   if (!bhkType) return null;
@@ -50,41 +49,36 @@ export function bhkBucket(bhkType: string | null | undefined): BhkBucket | null 
   const n = Math.floor(parseFloat(m[1]));
   return (n <= 1 ? "1" : n >= 5 ? "5" : String(n)) as BhkBucket;
 }
-export function bucketOfChip(chip: string): BhkBucket | null {
-  return /penthouse/i.test(chip) ? "PH" : bhkBucket(chip);
-}
+export const bucketOfChip = (chip: string): BhkBucket | null => (/penthouse/i.test(chip) ? "PH" : bhkBucket(chip));
 
-/* A config the pipeline knows for a project: its bucket + super area (sqft). */
 export type UnitConfig = { bucket: BhkBucket; superArea: number };
+export type GeoPoint = { lat: number; lng: number };
 
-/* Sanity floor on super area per bucket, so a mislabeled/typo row (e.g. a
-   ~750 sqft "4 BHK") can't masquerade as the entry unit. ~350 sqft/BHK. */
+/* Sanity floor on super area per bucket, so a mislabeled/typo row (a ~750 sqft
+   "4 BHK") can't masquerade as the entry unit. ~350 sqft/BHK. */
 const MIN_AREA: Record<BhkBucket, number> = { "1": 300, "2": 650, "3": 1000, "4": 1400, "5": 1750, PH: 1400 };
 
-/* ── The per-project factor inputs (all from v3 unless noted) ── */
 export type MatchInput = {
   name: string;
-  corridor: string;              // microMarket key (corridor scope for entry price)
-  budgetLoCr: number | null;     // min_price_cr — project entry price
-  configs: UnitConfig[];         // project_configurations, bucketed
-  psfLow: number | null;         // project_extended_details.price_range_sqft lower bound
-  deliveryYear: number | null;   // predicted_delivery_date
-  // delivery certainty
-  delayChancePct: number | null; // chances_of_delay_pct
-  paceMonths: number | null;     // pace_vs_schedule_months (+ ahead)
-  progressPct: number | null;    // construction_progress_pct
-  // legal
-  legalScore: number | null;     // 0..100
-  redFlags: number | null;       // listing_red_flags
-  // developer
-  devDelayedPct: number | null;  // developer_delayed_pct
-  devDelivered: number | null;   // developer_delivered_projects
+  corridor: string;
+  lat: number | null;
+  lng: number | null;
+  budgetLoCr: number | null;     // min_price_cr fallback
+  configs: UnitConfig[];         // bucketed project_configurations
+  psfLow: number | null;         // price_range_sqft lower bound
+  deliveryYear: number | null;
+  delayChancePct: number | null;
+  paceMonths: number | null;
+  progressPct: number | null;
+  legalScore: number | null;
+  redFlags: number | null;
+  devDelayedPct: number | null;
+  devDelivered: number | null;
   devAvgDelayMonths: number | null;
-  // investor quality
   roiActualCagr: number | null;
   roiCityCagr: number | null;
   salesVelocityPct: number | null;
-  demandScore: number | null;    // demand_sales_score
+  demandScore: number | null;
   soldUnits: number | null;
   totalUnits: number | null;
   devFinancialScore: number | null;
@@ -92,62 +86,99 @@ export type MatchInput = {
   netDebtToEquity: number | null;
 };
 
-/* Buyer brief (a subset of BuyData, engine-agnostic). */
 export type Buyer = {
   persona: Persona;
   budgetCr: number;
-  bucket: BhkBucket | null;      // chosen config bucket (null = flexible)
-  corridors: string[] | null;    // preferred corridors (null = any)
-  byYear: number | null;         // desired possession year
-  exitYears?: number | null;     // investor exit horizon (feeds timeline)
+  bucket: BhkBucket | null;       // chosen config (null = flexible → factor drops)
+  corridors: string[] | null;     // chosen corridors (null/empty = any → factor drops)
+  poi: GeoPoint | null;           // a geocoded landmark, alternative to corridors
+  byYear: number | null;          // desired possession year (null = flexible → factor drops)
+  exitYears?: number | null;      // investor exit horizon
 };
 
 const clamp = (x: number, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, x));
+const r2 = (x: number) => Math.round(x * 100) / 100;
 const median = (a: number[]) => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor((s.length - 1) / 2)] : null; };
+function haversineKm(a: GeoPoint, b: GeoPoint): number {
+  const R = 6371, dLat = ((b.lat - a.lat) * Math.PI) / 180, dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
 
-/* ── MarketContext: corridor × bucket price benchmarks for "entry vs market".
-   Built once over the whole corpus so each project scores against its peers. */
-export type MarketContext = { medianByCorridorBucket: Map<string, number>; medianByBucket: Map<BhkBucket, number> };
-
-/** The entry unit's price for a bucket, ₹Cr = psfLow × smallest sane super area. */
+/* ── Config pricing (₹Cr) = Current ₹/sqft (lower) × super area, sanity-floored. ── */
 export function configPriceCr(p: MatchInput, bucket: BhkBucket): number | null {
   if (p.psfLow == null) return null;
   const areas = p.configs.filter((c) => c.bucket === bucket && c.superArea >= MIN_AREA[bucket]).map((c) => c.superArea);
-  if (!areas.length) return null;
-  return (p.psfLow * Math.min(...areas)) / 1e7;
+  return areas.length ? (p.psfLow * Math.min(...areas)) / 1e7 : null;
+}
+export function allConfigPricesCr(p: MatchInput): number[] {
+  if (p.psfLow == null) return [];
+  return p.configs.filter((c) => c.superArea >= MIN_AREA[c.bucket]).map((c) => (p.psfLow! * c.superArea) / 1e7);
 }
 
+/* ── MarketContext: corridor×bucket price medians + corridor centroids, built
+   once over the corpus so each project scores against its peers/geography. ── */
+export type MarketContext = {
+  medianByCorridorBucket: Map<string, number>;
+  medianByBucket: Map<BhkBucket, number>;
+  corridorCentroid: Map<string, GeoPoint>;
+};
 export function buildMarket(all: MatchInput[]): MarketContext {
   const buckets: BhkBucket[] = ["1", "2", "3", "4", "5", "PH"];
-  const byCB = new Map<string, number>(), byB = new Map<BhkBucket, number>();
+  const byCB = new Map<string, number>(), byB = new Map<BhkBucket, number>(), cen = new Map<string, GeoPoint>();
   for (const b of buckets) {
-    const all_ = [];
-    const byCorr: Record<string, number[]> = {};
-    for (const p of all) { const price = configPriceCr(p, b); if (price == null) continue; all_.push(price); (byCorr[p.corridor] ??= []).push(price); }
-    const mAll = median(all_); if (mAll != null) byB.set(b, mAll);
-    for (const [corr, arr] of Object.entries(byCorr)) { const m = median(arr); if (m != null) byCB.set(`${corr}|${b}`, m); }
+    const flat: number[] = [], byCorr: Record<string, number[]> = {};
+    for (const p of all) { const price = configPriceCr(p, b); if (price == null) continue; flat.push(price); (byCorr[p.corridor] ??= []).push(price); }
+    const m = median(flat); if (m != null) byB.set(b, m);
+    for (const [c, arr] of Object.entries(byCorr)) { const mm = median(arr); if (mm != null) byCB.set(`${c}|${b}`, mm); }
   }
-  return { medianByCorridorBucket: byCB, medianByBucket: byB };
+  const geoByCorr: Record<string, GeoPoint[]> = {};
+  for (const p of all) if (p.lat != null && p.lng != null) (geoByCorr[p.corridor] ??= []).push({ lat: p.lat, lng: p.lng });
+  for (const [c, pts] of Object.entries(geoByCorr)) { const la = median(pts.map((q) => q.lat)), lo = median(pts.map((q) => q.lng)); if (la != null && lo != null) cen.set(c, { lat: la, lng: lo }); }
+  return { medianByCorridorBucket: byCB, medianByBucket: byB, corridorCentroid: cen };
 }
 
-/* ── Factor fit curves (0..1). Each returns 0.5 when its inputs are absent. ── */
+const entryBucket = (p: MatchInput): BhkBucket | null => (["1", "2", "3", "4", "5", "PH"] as BhkBucket[]).find((b) => p.configs.some((c) => c.bucket === b)) ?? null;
+
+/* ── Factor fit curves (0..1). Return 0.5 when their inputs are absent. ── */
 const F: Record<MatchFactor, (p: MatchInput, d: Buyer, mkt: MarketContext) => number> = {
+  // Budget: ±10% band → 1; judged against the chosen config's price, or (flexible)
+  // the best-fitting of the project's config prices. Below band → wrong-tier
+  // decay; above → unaffordable decay.
   budget: (p, d) => {
-    // price of the chosen config if known, else the project entry price
-    const price = (d.bucket && configPriceCr(p, d.bucket)) || p.budgetLoCr;
-    if (price == null) return 0.5;
-    return price <= d.budgetCr ? 1 : clamp(1 - (price - d.budgetCr) / 2.5);
+    const lo = d.budgetCr * 0.9, hi = d.budgetCr * 1.1;
+    const prices = d.bucket ? (configPriceCr(p, d.bucket) != null ? [configPriceCr(p, d.bucket)!] : []) : allConfigPricesCr(p);
+    const pool = prices.length ? prices : p.budgetLoCr != null ? [p.budgetLoCr] : [];
+    if (!pool.length) return 0.5;
+    if (pool.some((pr) => pr >= lo && pr <= hi)) return 1;
+    let best = 0;
+    for (const pr of pool) best = Math.max(best, pr > hi ? clamp(1 - (pr - hi) / 2.5) : clamp(Math.pow(pr / lo, 1.6)));
+    return best;
   },
+  // BHK: exact bucket → 1; project offers only a BIGGER bucket → −0.5 per step;
+  // only smaller (or wrong category) → 0. Penthouse matches penthouse only.
   config: (p, d) => {
     if (!d.bucket) return 1;
-    const have = new Set(p.configs.map((c) => c.bucket));
-    if (!have.size) return 0.5;
-    if (have.has(d.bucket)) return 1;
-    const n = Number(d.bucket); if (Number.isFinite(n) && (have.has(String(n - 1) as BhkBucket) || have.has(String(n + 1) as BhkBucket))) return 0.45;
-    return 0.25;
+    const offered = new Set(p.configs.map((c) => c.bucket));
+    if (!offered.size) return 0.5;
+    if (offered.has(d.bucket)) return 1;
+    if (d.bucket === "PH") return 0;
+    const want = Number(d.bucket);
+    const upSteps = [...offered].filter((b) => b !== "PH" && Number(b) > want).map((b) => Number(b) - want);
+    return upSteps.length ? clamp(1 - 0.5 * Math.min(...upSteps)) : 0;
   },
-  location: (p, d) => (!d.corridors || !d.corridors.length ? 1 : d.corridors.includes(p.corridor) ? 1 : 0.25),
-  timeline: (p, d) => { const by = d.byYear; if (p.deliveryYear == null || by == null) return 0.7; return p.deliveryYear <= by ? 1 : clamp(1 - (p.deliveryYear - by) * 0.3); },
+  // Location: same corridor OR within 3 km of target → 1; then −0.2/km. Target =
+  // POI (geocoded) or the nearest chosen corridor's centroid.
+  location: (p, d, mkt) => {
+    if (d.corridors && d.corridors.includes(p.corridor)) return 1;
+    const targets: GeoPoint[] = [];
+    if (d.poi) targets.push(d.poi);
+    for (const c of d.corridors ?? []) { const g = mkt.corridorCentroid.get(c); if (g) targets.push(g); }
+    if (!targets.length || p.lat == null || p.lng == null) return 0.5;
+    const dkm = Math.min(...targets.map((t) => haversineKm({ lat: p.lat!, lng: p.lng! }, t)));
+    return dkm <= 3 ? 1 : clamp(1 - 0.2 * (dkm - 3));
+  },
+  timeline: (p, d) => { if (p.deliveryYear == null || d.byYear == null) return 0.7; return p.deliveryYear <= d.byYear ? 1 : clamp(1 - (p.deliveryYear - d.byYear) * 0.3); },
   delivery: (p) => {
     if (p.delayChancePct == null && p.paceMonths == null) return 0.5;
     const base = p.delayChancePct != null ? 1 - p.delayChancePct / 100 : 0.5;
@@ -169,8 +200,7 @@ const F: Record<MatchFactor, (p: MatchInput, d: Buyer, mkt: MarketContext) => nu
     if (!bucket) return 0.5;
     const price = configPriceCr(p, bucket);
     const med = mkt.medianByCorridorBucket.get(`${p.corridor}|${bucket}`) ?? mkt.medianByBucket.get(bucket);
-    if (price == null || med == null || med <= 0) return 0.5;
-    return clamp(0.5 + (med - price) / med);
+    return price == null || med == null || med <= 0 ? 0.5 : clamp(0.5 + (med - price) / med);
   },
   liquidity: (p) => {
     const sv = p.salesVelocityPct != null ? clamp(p.salesVelocityPct / 40) : 0.5;
@@ -186,14 +216,6 @@ const F: Record<MatchFactor, (p: MatchInput, d: Buyer, mkt: MarketContext) => nu
   },
 };
 
-/** The project's own entry bucket (smallest bucket it offers) — used when the buyer is Flexible. */
-function entryBucket(p: MatchInput): BhkBucket | null {
-  const order: BhkBucket[] = ["1", "2", "3", "4", "5", "PH"];
-  for (const b of order) if (p.configs.some((c) => c.bucket === b)) return b;
-  return null;
-}
-
-/* ── Labels (unchanged thresholds) ── */
 export function matchLabel(pct: number): { label: string; tone: "good" | "fair" | "low" } {
   if (pct >= 82) return { label: "Ideal fit", tone: "good" };
   if (pct >= 68) return { label: "Strong fit", tone: "good" };
@@ -201,7 +223,6 @@ export function matchLabel(pct: number): { label: string; tone: "good" | "fair" 
   return { label: "Limited fit", tone: "low" };
 }
 
-/* Human labels for the gap subline. */
 const FACTOR_LABEL: Record<MatchFactor, string> = {
   budget: "budget", config: "configuration", location: "location", timeline: "timeline",
   delivery: "delivery certainty", legal: "legal", developer: "developer track record",
@@ -214,31 +235,40 @@ export type MatchResult = {
   label: string;
   tone: "good" | "fair" | "low";
   subline: string;
+  active: MatchFactor[];
   breakdown: { factor: MatchFactor; weight: number; fit: number; contribution: number }[];
 };
+
+/** Is a factor active for this buyer? Conditional fit-factors drop when unspecified. */
+function isActive(factor: MatchFactor, d: Buyer): boolean {
+  if (factor === "config") return d.bucket != null;
+  if (factor === "location") return (!!d.corridors && d.corridors.length > 0) || d.poi != null;
+  if (factor === "timeline") return d.byYear != null;
+  return true;
+}
 
 /** Score one project for one buyer against the corpus market context. */
 export function scoreMatch(p: MatchInput, d: Buyer, mkt: MarketContext): MatchResult {
   const W = MATCH_WEIGHTS[d.persona];
+  const active = (Object.keys(W) as MatchFactor[]).filter((f) => isActive(f, d));
+  const totalW = active.reduce((s, f) => s + (W[f] || 0), 0) || 1;
   const breakdown: MatchResult["breakdown"] = [];
   let s = 0;
-  for (const factor of Object.keys(W) as MatchFactor[]) {
-    const weight = W[factor]!;
+  for (const factor of active) {
+    const weight = ((W[factor] || 0) / totalW) * 100; // renormalized to sum 100 over active factors
     const fit = F[factor](p, d, mkt);
     const contribution = weight * fit;
     s += contribution;
-    breakdown.push({ factor, weight, fit: Math.round(fit * 100) / 100, contribution });
+    breakdown.push({ factor, weight: Math.round(weight), fit: r2(fit), contribution });
   }
   const pct = Math.min(99, Math.round(s));
-  const meta = matchLabel(pct);
-  return { pct, persona: d.persona, ...meta, subline: sublineFor(breakdown), breakdown };
+  return { pct, persona: d.persona, ...matchLabel(pct), subline: sublineFor(breakdown), active, breakdown };
 }
 
-/* ── Persona-aware gap subline: the single best-fitting factor that carries
-   real weight, and the biggest weighted gap. "Delivery and legal check out;
-   budget's a stretch." Skips fit==neutral factors so we don't praise unknowns. */
+/* Persona-aware gap subline: the best-fitting weighty factor + the biggest gap.
+   "Delivery and legal check out; budget's a stretch." */
 function sublineFor(bd: MatchResult["breakdown"]): string {
-  const real = bd.filter((b) => b.weight >= 6);
+  const real = bd.filter((b) => b.weight >= 8);
   const fits = real.filter((b) => b.fit >= 0.75).sort((a, b) => b.weight * b.fit - a.weight * a.fit).map((b) => FACTOR_LABEL[b.factor]);
   const gaps = real.filter((b) => b.fit <= 0.5).sort((a, b) => b.weight * (1 - b.fit) - a.weight * (1 - a.fit)).map((b) => FACTOR_LABEL[b.factor]);
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
