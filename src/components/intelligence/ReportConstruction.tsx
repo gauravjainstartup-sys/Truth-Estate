@@ -7,22 +7,6 @@ import RenderVsReality from "./RenderVsReality";
 
 const basePath = "/Truth-Estate";
 
-/* RERA QPRs report against quarter-end dates — "Q1 2026" → "31 Mar 2026". */
-function qprEndDate(qpr: string): string {
-  const m = qpr.match(/Q([1-4])\D*(\d{4})/i);
-  if (!m) return qpr;
-  const ends: Record<string, string> = { "1": "31 Mar", "2": "30 Jun", "3": "30 Sep", "4": "31 Dec" };
-  return `${ends[m[1]]} ${m[2]}`;
-}
-
-/* "Q1 2026" → "Mar 2026" — the last-QPR quarter as month + year (its quarter-end
-   month, which is also how the milestone date reads, so the two never disagree). */
-function qprMonthYear(qpr: string): string {
-  const m = qpr.match(/Q([1-4])\D*(\d{4})/i);
-  if (!m) return qpr;
-  const mon: Record<string, string> = { "1": "Mar", "2": "Jun", "3": "Sep", "4": "Dec" };
-  return `${mon[m[1]]} ${m[2]}`;
-}
 /* a proof link: an absolute R2/CDN URL as-is, else same-origin under basePath. */
 function pdfHref(u: string): string {
   return /^https?:\/\//i.test(u) ? u : `${basePath}/${u.replace(/^\//, "")}`;
@@ -31,25 +15,36 @@ function pdfHref(u: string): string {
 export default function ReportConstruction({ p }: { p: ProjectIntel }) {
   const o = deliveryOutlook(p);
   if (!o) return null;
-  // Launch shown as month + year — prefer the precise price-history launch date
-  // where we track it, falling back to the coarser launch field.
-  const launchLabel = p.ops?.price?.launchDate ?? p.ops?.launch ?? "—";
   // Absorption in absolute terms: units sold of the total launched.
   const totalUnits = p.ops?.units;
   const unitsSold = totalUnits != null ? Math.round((totalUnits * o.absorptionPct) / 100) : null;
   const render = p.ops?.media?.render;
   const heroImg = p.ops?.media?.heroImage;
   const site = p.ops?.media?.sitePhotos?.[0];
-  const siteAsOf = site ? `◉ ${site.asOf} · on site` : `▦ schematic · ${o.actualPct}% built`;
+  const builtPct = Math.round(o.actualPct); // whole-number, for the render-vs-reality captions
+  const siteAsOf = site ? `◉ ${site.asOf} · on site` : `▦ schematic · ${builtPct}% built`;
   const assess =
     o.aheadOfPlan > 0 && o.absorptionPct >= 95 ? "Ahead of schedule, and already sold out."
     : o.aheadOfPlan > 0 ? "Tracking ahead of the RERA plan."
     : o.aheadOfPlan < 0 ? "Running behind the RERA plan — watch closely."
     : "Building on plan.";
-  const deg = Math.round((o.delayChance / 100) * 360);
-  // cursor + caption share ONE position so they always agree (light edge clamp)
-  const reraPos = Math.min(92, Math.max(8, o.expectedPct));
-  const qprLabel = qprMonthYear(o.qpr); // "Q2 2026" → "Jun 2026"
+
+  // ── Construction & sales cards + delivery banner ──
+  const absorption = o.absorptionPct;
+  const paceMo = o.paceMonths;
+  const paceAhead = paceMo != null ? paceMo >= 0 : o.aheadOfPlan >= 0;
+  const paceHeadline =
+    paceMo == null ? (o.aheadOfPlan >= 0 ? "Ahead of Plan" : "Behind Plan")
+    : paceMo === 0 ? "On Schedule"
+    : `${Math.abs(paceMo)} Month${Math.abs(paceMo) === 1 ? "" : "s"} ${paceMo > 0 ? "Ahead" : "Behind"}`;
+  const predicted = o.predictedDateFull ?? o.predictedDate;
+  const rera = o.reraDateFull ?? o.reraDate;
+  const aheadMo = o.aheadMonths ?? o.ahead; // + = forecast beats the RERA promise
+  const aheadPos = aheadMo > 0;
+  const aheadTxt =
+    aheadMo === 0 ? "On the RERA date"
+    : `${Math.abs(aheadMo)} Month${Math.abs(aheadMo) === 1 ? "" : "s"} ${aheadMo > 0 ? "Ahead of RERA" : "Behind RERA"}`;
+  const clampPct = (v: number) => Math.max(0, Math.min(100, v));
 
   return (
     <div className="mt-8">
@@ -105,117 +100,92 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
               <span className="text-[0.58rem] font-medium uppercase tracking-[0.1em] text-[#1e6b45]/70">Our field visit</span>
             </div>
             <div className="relative aspect-[4/3] w-full">
-              {site ? <img src={`${basePath}/${site.src}`} alt={`${p.name} site, ${site.asOf}`} className="h-full w-full object-cover" /> : <SiteStandin pct={o.actualPct} />}
+              {site ? <img src={`${basePath}/${site.src}`} alt={`${p.name} site, ${site.asOf}`} className="h-full w-full object-cover" /> : <SiteStandin pct={builtPct} />}
               <span className="absolute bottom-2.5 right-2.5 rounded bg-[#141110]/75 px-2 py-1 font-mono text-[0.6rem] tracking-[0.06em] text-white">{siteAsOf}</span>
             </div>
-            <figcaption className="px-5 py-2.5 text-[0.7rem] font-light text-[#1a1a1a]/50">{site?.note ?? `Structure at ${o.actualPct}% — verified against QPR ${o.qpr}.`}</figcaption>
+            <figcaption className="px-5 py-2.5 text-[0.7rem] font-light text-[#1a1a1a]/50">{site?.note ?? `Structure at ${builtPct}% — verified against QPR ${o.qpr}.`}</figcaption>
           </figure>
         </div>
         )}
       </div>
 
-      {/* Construction → delivery — one timeline. Progress is read from the RERA
-          Quarterly Progress Report (quarterly, not "today"): what's actually
-          built vs the % RERA required by the quarter-end. Forecast folded in. */}
-      <div className="mt-5 rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-6 md:p-7">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-[0.66rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">Construction &rarr; delivery</span>
-          {o.paceMonths != null && o.paceMonths !== 0 && (
-            <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.08em] ${o.paceMonths > 0 ? "border-[#238c55]/25 bg-[#238c55]/[0.1] text-[#1c7a4c]" : "border-[#9a4130]/25 bg-[#9a4130]/[0.08] text-[#9a4130]"}`}>
-              <span aria-hidden>{o.paceMonths > 0 ? "▲" : "▼"}</span> {Math.abs(o.paceMonths)} mo {o.paceMonths > 0 ? "ahead" : "behind"}
-            </span>
+      {/* Construction & sales — two comparison cards (actual vs expected build,
+          and sales absorption), then a delivery-date verdict banner. No calendar
+          cursor: build-% and the calendar are shown as separate, honest reads. */}
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
+        {/* Sales momentum */}
+        <div className="flex flex-col rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-6">
+          <div className="flex-1">
+            <span className="text-[0.66rem] font-semibold uppercase tracking-[0.15em] text-[#1a1a1a]/45">Sales momentum</span>
+            <div className="mt-5 flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-[#1a1a1a]/40">Units sold</p>
+                <p className="mt-1.5 font-serif text-[1.85rem] font-medium leading-none">{unitsSold != null ? unitsSold.toLocaleString("en-IN") : "—"}{totalUnits != null && <span className="text-[1rem] font-normal text-[#1a1a1a]/40"> / {totalUnits.toLocaleString("en-IN")}</span>}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-[#1a1a1a]/40">Absorption</p>
+                <p className="mt-1.5 font-serif text-[1.85rem] font-medium leading-none text-[#1e6b45]">{absorption}%</p>
+              </div>
+            </div>
+            <div className="mt-4 h-[9px] overflow-hidden rounded-full bg-[#e9e2d3]"><div className="h-full rounded-full" style={{ width: `${clampPct(absorption)}%`, background: "linear-gradient(90deg,#1e6b45,#238c55)" }} /></div>
+          </div>
+          {o.salesProofPdf && (
+            <a href={pdfHref(o.salesProofPdf)} target="_blank" rel="noopener noreferrer" className="mt-6 flex items-center justify-center gap-2.5 rounded-xl border border-[#1a1a1a]/12 bg-white/70 px-4 py-3 text-[0.72rem] font-semibold uppercase tracking-[0.06em] text-[#1a1a1a]/70 transition-colors hover:border-[#1e6b45]/40 hover:text-[#1e6b45]">
+              <span className="grid h-[18px] w-[23px] shrink-0 place-items-center rounded border border-[#c9a96e]/50 bg-[#f6efe1] text-[0.5rem] font-bold text-[#9a7a2e]">PDF</span>
+              View verified sales record <span className="text-[#1a1a1a]/35">↗</span>
+            </a>
           )}
-        </div>
-        <p className="mt-1.5 text-[0.68rem] font-light leading-[1.5] text-[#1a1a1a]/45">From the latest RERA Quarterly Progress Report ({qprLabel}) — actual build against the % RERA required by the quarter-end.</p>
-
-        {/* the progress timeline */}
-        <div className="mt-[4.5rem] px-1">
-          <div className="relative">
-            {/* actual-built marker above the track (as per QPR) */}
-            <div className="absolute bottom-full mb-2.5 -translate-x-1/2 whitespace-nowrap text-center" style={{ left: `${Math.min(90, Math.max(10, o.actualPct))}%` }}>
-              <span className="rounded-md bg-[#1e6b45] px-2 py-0.5 text-[0.68rem] font-bold text-white">{o.actualPct}% built</span>
-              <span className="mt-1 block text-[0.52rem] font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/40">actual</span>
-            </div>
-            {/* track */}
-            <div className="relative h-2.5 rounded-full bg-[#ece5d7]">
-              <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${o.actualPct}%`, background: "linear-gradient(90deg,#1e6b45,#238c55)" }} />
-              {/* RERA-due tick — the % RERA required by the QPR quarter-end */}
-              <span aria-hidden className="absolute -bottom-2 -top-2 w-[2px] rounded bg-[#1a1a1a]/55" style={{ left: `calc(${reraPos}% - 1px)` }} />
-              {/* milestone dots: launch · QPR read · handover */}
-              <span aria-hidden className="absolute left-0 top-1/2 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-white bg-[#1e6b45] shadow-sm" />
-              <span aria-hidden className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[#1e6b45] shadow" style={{ left: `${o.actualPct}%` }} />
-              <span aria-hidden className="absolute right-0 top-1/2 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-white bg-[#9a7a2e] shadow-sm" />
-            </div>
-            {/* milestone labels below */}
-            <div className="relative mt-3.5 h-8 text-[0.63rem] leading-tight">
-              <div className="absolute left-0 top-0 text-[#1a1a1a]/45"><span className="block font-semibold text-[#1a1a1a]/75">Launch</span>{launchLabel}</div>
-              <div className="absolute top-0 -translate-x-1/2 whitespace-nowrap text-center text-[#1a1a1a]/45" style={{ left: `${reraPos}%` }}><span className="block font-semibold text-[#1a1a1a]/75">{o.expectedPct}% RERA-due</span>by {qprEndDate(o.qpr)}</div>
-              <div className="absolute right-0 top-0 text-right text-[#1a1a1a]/45"><span className="block font-semibold text-[#1a1a1a]/75">Expected OC</span>{o.reraDate} &middot; RERA</div>
-            </div>
+          <div className="-mx-6 mt-5 flex items-center gap-2.5 border-t border-[#1a1a1a]/8 px-6 pt-4">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1e6b45" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 3l1.7 5.1L19 10l-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9z" /></svg>
+            <span className="text-[0.72rem] font-semibold uppercase tracking-[0.1em] text-[#1e6b45]">{absorption >= 90 ? "High demand" : "Steady demand"}</span>
+            <span title="Units sold as a share of total launched — from the developer MIS / RERA filing." className="ml-auto grid h-[15px] w-[15px] cursor-help place-items-center rounded-full border border-[#1a1a1a]/25 font-serif text-[0.55rem] italic text-[#1a1a1a]/40">i</span>
           </div>
         </div>
 
-        {/* the forecast, merged — same journey, so same div */}
-        <div className="mt-11 flex flex-wrap items-end gap-x-7 gap-y-4 border-t border-[#1a1a1a]/8 pt-5">
-          <div className="min-w-0">
-            <p className="text-[0.56rem] font-bold uppercase tracking-[0.12em] text-[#9a7a2e]">Truth Estate forecast</p>
-            <p className="mt-1.5 font-serif text-[1.9rem] font-medium leading-none text-[#1a1a1a]">{o.predictedDate}</p>
-            <p className="mt-1.5 text-[0.72rem] font-light text-[#1a1a1a]/45">our predicted OC &mdash; from build pace + {p.developer}&rsquo;s record</p>
+        {/* Construction progress vs plan */}
+        <div className="flex flex-col rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-6">
+          <div className="flex-1">
+            <span className="text-[0.66rem] font-semibold uppercase tracking-[0.15em] text-[#1a1a1a]/45">Construction progress vs plan</span>
+            <p className={`mt-4 font-serif text-[1.65rem] font-medium leading-tight ${paceAhead ? "text-[#1e6b45]" : "text-[#9a4130]"}`}>{paceHeadline}</p>
+            <div className="mt-5">
+              <div className="flex items-baseline justify-between"><span className="text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-[#1a1a1a]/70">Actual progress</span><span className="font-mono text-[0.9rem] font-bold text-[#1e6b45]">{o.actualPct}%</span></div>
+              <div className="mt-2 h-[9px] overflow-hidden rounded-full bg-[#e9e2d3]"><div className="h-full rounded-full" style={{ width: `${clampPct(o.actualPct)}%`, background: "linear-gradient(90deg,#1e6b45,#238c55)" }} /></div>
+            </div>
+            <div className="mt-4">
+              <div className="flex items-baseline justify-between"><span className="text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-[#1a1a1a]/40">Expected progress</span><span className="font-mono text-[0.9rem] font-bold text-[#1a1a1a]/55">{o.expectedPct}%</span></div>
+              <div className="mt-2 h-[9px] overflow-hidden rounded-full bg-[#e9e2d3]"><div className="h-full rounded-full bg-[#c4bcab]" style={{ width: `${clampPct(o.expectedPct)}%` }} /></div>
+            </div>
           </div>
-          {o.ahead !== 0 && (
-            <div className="rounded-lg border border-[#1a1a1a]/10 bg-white/70 px-3.5 py-2">
-              <p className="text-[0.54rem] font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/40">vs RERA promise</p>
-              <p className={`mt-0.5 font-mono text-[0.98rem] font-semibold ${o.ahead > 0 ? "text-[#1e6b45]" : "text-[#9a4130]"}`}>{Math.abs(o.ahead)} mo {o.ahead > 0 ? "early" : "late"}</p>
-            </div>
+          {o.constructionProofPdf && (
+            <a href={pdfHref(o.constructionProofPdf)} target="_blank" rel="noopener noreferrer" className="mt-6 flex items-center justify-center gap-2.5 rounded-xl border border-[#1a1a1a]/12 bg-white/70 px-4 py-3 text-[0.72rem] font-semibold uppercase tracking-[0.06em] text-[#1a1a1a]/70 transition-colors hover:border-[#1e6b45]/40 hover:text-[#1e6b45]">
+              <span className="grid h-[18px] w-[23px] shrink-0 place-items-center rounded border border-[#c9a96e]/50 bg-[#f6efe1] text-[0.5rem] font-bold text-[#9a7a2e]">PDF</span>
+              View construction pace audit <span className="text-[#1a1a1a]/35">↗</span>
+            </a>
           )}
-          <div className="flex items-center gap-2.5">
-            <div className="relative h-[50px] w-[50px]">
-              <div className="absolute inset-0 rounded-full" style={{ background: `conic-gradient(#9a7a2e 0 ${deg}deg, rgba(26,26,26,0.08) ${deg}deg 360deg)` }} />
-              <div className="absolute inset-[5px] rounded-full bg-white" />
-              <div className="absolute inset-0 grid place-items-center font-mono text-[0.82rem] font-bold text-[#8a6a1e]">{o.delayChance}%</div>
-            </div>
-            <p className="text-[0.72rem] font-light leading-tight text-[#1a1a1a]/55">chance of<br /><b className="font-medium text-[#1a1a1a]/75">any</b> delay</p>
+          <div className="-mx-6 mt-5 flex items-center gap-2.5 border-t border-[#1a1a1a]/8 px-6 pt-4">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={paceAhead ? "#1e6b45" : "#9a4130"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 15c0-5.5 3-10.5 7-12.5 4 2 7 7 7 12.5l-3.6-1.6L12 20l-3.4-6.6z" /><circle cx="12" cy="8.5" r="1.5" /></svg>
+            <span className={`text-[0.72rem] font-semibold uppercase tracking-[0.1em] ${paceAhead ? "text-[#1e6b45]" : "text-[#9a4130]"}`}>{paceAhead ? "Ahead of schedule" : "Behind schedule"}</span>
+            <span title="Actual build against the % RERA required by the last quarterly progress report." className="ml-auto grid h-[15px] w-[15px] cursor-help place-items-center rounded-full border border-[#1a1a1a]/25 font-serif text-[0.55rem] italic text-[#1a1a1a]/40">i</span>
           </div>
         </div>
-        {o.constructionProofPdf && (
-          <a href={pdfHref(o.constructionProofPdf)} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex items-center gap-2.5 rounded-lg border border-[#1a1a1a]/12 bg-white/70 px-3.5 py-2.5 text-[0.76rem] font-medium text-[#1a1a1a]/70 transition-colors hover:border-[#1e6b45]/40 hover:text-[#1e6b45]">
-            <span className="grid h-6 w-[30px] shrink-0 place-items-center rounded border border-[#c9a96e]/50 bg-[#f6efe1] text-[0.56rem] font-bold text-[#9a7a2e]">PDF</span>
-            View the proof — RERA Quarterly Progress Report <span className="text-[#1a1a1a]/35">↗</span>
-          </a>
-        )}
       </div>
 
-      {/* Sales absorption — a distinct signal (demand, not delivery). */}
-      <div className="mt-4 rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-6">
-        <div className="flex items-center justify-between">
-          <span className="text-[0.66rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">Sales absorption</span>
-          <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.08em] ${o.absorptionPct >= 90 ? "border-[#238c55]/25 bg-[#238c55]/[0.1] text-[#1c7a4c]" : "border-[#9a7a2e]/30 bg-[#9a7a2e]/[0.12] text-[#8a6a1e]"}`}>
-            <span className={`h-[6px] w-[6px] rounded-full ${o.absorptionPct >= 90 ? "bg-[#238c55]" : "bg-[#9a7a2e]"}`} />{o.absorptionPct >= 90 ? "High demand" : "Steady"}
+      {/* Delivery verdict — the calendar read: our forecast vs the RERA promise,
+          and the modelled chance of any slip. */}
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-6 overflow-hidden rounded-2xl bg-gradient-to-br from-[#17130e] to-[#241d15] px-7 py-7 text-[#f3ecdd]">
+        <div className="min-w-0">
+          <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[#f3ecdd]/55">Predicted delivery date</p>
+          <p className="mt-2 font-serif text-[2.3rem] font-medium leading-none md:text-[2.6rem]">{predicted}</p>
+          <p className="mt-2.5 text-[0.82rem] text-[#f3ecdd]/60">RERA promise: {rera}</p>
+          <span className={`mt-4 inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-[0.75rem] font-bold ${aheadPos ? "border-[#7abe96]/40 bg-[#238c55]/[0.16] text-[#8fd6ac]" : "border-[#d99a86]/40 bg-[#9a4130]/25 text-[#e6a892]"}`}>
+            <span aria-hidden>{aheadMo === 0 ? "◆" : aheadPos ? "▲" : "▼"}</span> {aheadTxt}
           </span>
         </div>
-        <p className="mt-4 text-[2.4rem] font-normal leading-none tracking-[-0.02em] tabular-nums text-[#1e6b45]">
-          {o.absorptionPct}<span className="text-[0.95rem] text-[#1a1a1a]/35">%</span>
-          <span className="ml-2.5 text-[0.72rem] font-light tracking-normal text-[#1a1a1a]/45">of launched units sold</span>
-        </p>
-        <div className="mt-3.5 h-3 overflow-hidden rounded-full bg-[#e9e2d3]"><div className="h-full rounded-full" style={{ width: `${o.absorptionPct}%`, background: "linear-gradient(90deg,#1e6b45,#238c55)" }} /></div>
-        {totalUnits != null && (
-          <div className="mt-3 flex items-stretch gap-3">
-            <div className="flex-1 rounded-xl border border-[#1a1a1a]/8 bg-white/60 px-4 py-2.5">
-              <p className="text-[0.56rem] font-semibold uppercase tracking-[0.12em] text-[#1a1a1a]/40">Units sold</p>
-              <p className="mt-0.5 font-mono text-[1.15rem] font-semibold leading-none text-[#1e6b45]">{unitsSold!.toLocaleString("en-IN")}</p>
-            </div>
-            <div className="flex-1 rounded-xl border border-[#1a1a1a]/8 bg-white/60 px-4 py-2.5">
-              <p className="text-[0.56rem] font-semibold uppercase tracking-[0.12em] text-[#1a1a1a]/40">Total units</p>
-              <p className="mt-0.5 font-mono text-[1.15rem] font-semibold leading-none text-[#1a1a1a]/75">{totalUnits.toLocaleString("en-IN")}</p>
-            </div>
-          </div>
-        )}
-        {o.salesProofPdf && (
-          <a href={pdfHref(o.salesProofPdf)} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-2.5 rounded-lg border border-[#1a1a1a]/12 bg-white/70 px-3.5 py-2.5 text-[0.76rem] font-medium text-[#1a1a1a]/70 transition-colors hover:border-[#1e6b45]/40 hover:text-[#1e6b45]">
-            <span className="grid h-6 w-[30px] shrink-0 place-items-center rounded border border-[#c9a96e]/50 bg-[#f6efe1] text-[0.56rem] font-bold text-[#9a7a2e]">PDF</span>
-            View the sales proof — developer MIS &amp; RERA filing <span className="text-[#1a1a1a]/35">↗</span>
-          </a>
-        )}
+        <div className="flex items-center gap-3 sm:border-l sm:border-[#f3ecdd]/15 sm:pl-6">
+          <span className="font-serif text-[2rem] font-semibold leading-none text-[#e9c675]">{o.delayChance}%</span>
+          <span className="max-w-[84px] text-[0.66rem] font-semibold uppercase leading-[1.3] tracking-[0.1em] text-[#f3ecdd]/70">Chance of delay</span>
+          <span title="Our pipeline's modelled probability the project slips past its RERA date." className="grid h-[15px] w-[15px] cursor-help place-items-center rounded-full border border-[#f3ecdd]/40 font-serif text-[0.55rem] italic text-[#f3ecdd]/60">i</span>
+        </div>
       </div>
     </div>
   );

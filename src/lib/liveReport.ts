@@ -121,6 +121,33 @@ const monthsBetween = (a: string | null, b: string | null): number | null => {
   const da = parseAnyDate(a), db = parseAnyDate(b);
   return da && db ? (db.y - da.y) * 12 + (db.m - da.m) : null;
 };
+/* full date incl. the day where the pipeline carries it — "2032-02-29" → "29 Feb
+   2032"; a month-only value still reads "Feb 2032". Used by the delivery banner. */
+function parseFullDate(sv: string | null): { y: number; m: number; d: number | null } | null {
+  if (!sv) return null;
+  const t = sv.trim();
+  let m = t.match(/^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?/);            // 2032-02-29
+  if (m) return { y: +m[1], m: +m[2] - 1, d: m[3] ? +m[3] : null };
+  m = t.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);              // 29/02/2032
+  if (m) return { y: +m[3], m: +m[2] - 1, d: +m[1] };
+  m = t.match(/(?:(\d{1,2})\s+)?([A-Za-z]{3,9})\s+(\d{4})/);      // 29 Feb 2032 / Feb 2032
+  if (m) { const mi = MON3.findIndex((x) => m![2].toLowerCase().startsWith(x.toLowerCase())); if (mi >= 0) return { y: +m[3], m: mi, d: m[1] ? +m[1] : null }; }
+  return null;
+}
+const fullDateLabel = (sv: string | null): string | null => {
+  const d = parseFullDate(sv);
+  if (!d) return monthLabel(sv);
+  return d.d != null ? `${d.d} ${MON3[d.m]} ${d.y}` : `${MON3[d.m]} ${d.y}`;
+};
+/* precise months between two dates (day-aware), 1 dp — the forecast's lead over
+   the RERA promise. Positive = predicted date is earlier than RERA = ahead. */
+const monthsAheadPrecise = (predicted: string | null, rera: string | null): number | null => {
+  const p = parseFullDate(predicted), r = parseFullDate(rera);
+  if (!p || !r) return null;
+  const pd = new Date(p.y, p.m, p.d ?? 1).getTime();
+  const rd = new Date(r.y, r.m, r.d ?? 1).getTime();
+  return Math.round(((rd - pd) / 86400000 / 30.4375) * 10) / 10;
+};
 
 /* financial-metric ratings from the audited values (same thresholds the
    flagship registry was graded on; conservative middles) */
@@ -803,7 +830,7 @@ export function liveProjectIntel(
     return isHttpUrl(s) ? s : pdfSrc(s); // an R2/CDN link as-is; a relative path via the pdf gate
   };
 
-  const actualPct = row.constructionProgressPct != null ? Math.round(row.constructionProgressPct) : null;
+  const actualPct = row.constructionProgressPct != null ? Math.round(row.constructionProgressPct * 10) / 10 : null;
   const reraDate = monthLabel(row.reraPromiseDate) ?? row.promised;
   const predictedDate = monthLabel(row.predictedDeliveryDate) ?? row.predicted;
   const filedRequiredPct = numAny(conMod.expected_pct_at_qpr);
@@ -832,6 +859,9 @@ export function liveProjectIntel(
           predictedDate,
           qpr: quarterLabel(row.lastQprDate) ?? "latest QPR",
           ...(row.paceVsScheduleMonths != null ? { paceMonths: row.paceVsScheduleMonths } : {}),
+          ...(fullDateLabel(row.reraPromiseDate) ? { reraDateFull: fullDateLabel(row.reraPromiseDate)! } : {}),
+          ...(fullDateLabel(row.predictedDeliveryDate) ? { predictedDateFull: fullDateLabel(row.predictedDeliveryDate)! } : {}),
+          ...(monthsAheadPrecise(row.predictedDeliveryDate, row.reraPromiseDate) != null ? { aheadMonths: monthsAheadPrecise(row.predictedDeliveryDate, row.reraPromiseDate)! } : {}),
           ...(conProofPdf ? { constructionProofPdf: conProofPdf } : {}),
           ...(salesProofPdf ? { salesProofPdf: salesProofPdf } : {}),
           ...(delayPct != null ? { delayChancePct: Math.round(delayPct) } : {}),
