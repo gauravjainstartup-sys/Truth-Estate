@@ -6,6 +6,7 @@
    ════════════════════════════════════════════════════════════════ */
 
 import { grantModelAccess, modelSlugFor, resolveModelSubject } from "./modelAccess";
+import { type Buyer, bucketOfChip } from "./matchEngine";
 
 /* The primary CTA is configurable in one place — we may rename later. */
 export const PRIMARY_CTA = "Start Your Journey";
@@ -920,6 +921,22 @@ export function matchScoreFor(p: Project, d: BuyData): number {
     s += Math.round((overlap / d.priorities.length) * 18);
   }
   return Math.max(8, Math.min(99, Math.round(s)));
+}
+
+/* BuyData → the match engine's Buyer. Persona from purchase intent; the chosen
+   config maps to a BHK bucket; timeline/exit-year mapping lands with the
+   Phase-2 sheet (until then those factors simply drop and renormalize). */
+export function buyerFromBuyData(d: BuyData): Buyer {
+  const bucket = d.configs.length && !d.configs.includes("Flexible") ? bucketOfChip(d.configs[0]) : null;
+  return {
+    persona: personaOf(d),
+    budgetCr: d.budgetCr,
+    bucket,
+    corridors: d.locations.length ? d.locations : null,
+    poi: null,
+    byYear: null,
+    exitYears: null,
+  };
 }
 
 export function matchLabel(pct: number): { label: string; tone: "good" | "fair" | "low" } {

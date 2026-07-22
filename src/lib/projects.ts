@@ -91,6 +91,9 @@ function legalRating(p: Project): FinRating {
 /* ── Enriched project ──────────────────────────────────────────── */
 export type ProjectIntel = Project & {
   slug: string;
+  /* Pure inputs for the match engine (scoreMatch). Present on live-pipeline
+     projects (built in liveProjectIntel); absent on the mock fallback set. */
+  matchInput?: import("./matchEngine").MatchInput;
   devSlug?: string;
   marketSlug?: string;
   marketShort: string;

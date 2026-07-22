@@ -8,8 +8,11 @@ import {
   matchScoreFor,
   matchLabel,
   emptyBuyData,
+  buyerFromBuyData,
   type BuyData,
 } from "@/lib/journey";
+import { scoreMatch } from "@/lib/matchEngine";
+import { useMatchMarket } from "@/lib/useMatchCatalog";
 import type { ProjectIntel } from "@/lib/projects";
 
 const BUDGETS = [
@@ -36,20 +39,26 @@ export default function MatchScore({ project, initialBuy, variant = "card" }: { 
     }
   }, [initialBuy]);
 
+  const market = useMatchMarket();
   const computed = buy && hasPreferences(buy);
-  const pct = computed ? matchScoreFor(project, buy!) : null;
-  const meta = pct != null ? matchLabel(pct) : null;
-  const bandRead = (() => {
-    if (!computed || !buy) return "";
-    const okB = project.budget[0] - 1 <= buy.budgetCr && buy.budgetCr <= project.budget[1] + 2;
-    const okC = buy.configs.length === 0 || project.configs.some((c) => buy.configs.includes(c));
-    const okP = buy.priorities.length > 0 && buy.priorities.some((t) => project.tags.includes(t));
-    const fits = [okB && "budget", okC && "configuration", okP && "priorities"].filter(Boolean) as string[];
-    const gaps = [!okB && "budget", !okC && "configuration", buy.priorities.length > 0 && !okP && "priorities"].filter(Boolean) as string[];
-    if (gaps.length === 0) return "Fits your budget, configuration and priorities.";
-    if (fits.length === 0) return `Worth a closer look on ${gaps.join(" & ")}.`;
-    return `${fits.join(" & ").replace(/^./, (m) => m.toUpperCase())} fit; ${gaps.join(" & ")} to look at.`;
-  })();
+  // The persona match engine drives the score when the project carries live
+  // matchInput; the mock fallback set (no matchInput) keeps the legacy score.
+  const engine = computed && buy && project.matchInput ? scoreMatch(project.matchInput, buyerFromBuyData(buy), market) : null;
+  const pct = engine ? engine.pct : computed && buy ? matchScoreFor(project, buy) : null;
+  const meta = engine ? { label: engine.label, tone: engine.tone } : pct != null ? matchLabel(pct) : null;
+  const bandRead = engine
+    ? engine.subline
+    : (() => {
+        if (!computed || !buy) return "";
+        const okB = project.budget[0] - 1 <= buy.budgetCr && buy.budgetCr <= project.budget[1] + 2;
+        const okC = buy.configs.length === 0 || project.configs.some((c) => buy.configs.includes(c));
+        const okP = buy.priorities.length > 0 && buy.priorities.some((t) => project.tags.includes(t));
+        const fits = [okB && "budget", okC && "configuration", okP && "priorities"].filter(Boolean) as string[];
+        const gaps = [!okB && "budget", !okC && "configuration", buy.priorities.length > 0 && !okP && "priorities"].filter(Boolean) as string[];
+        if (gaps.length === 0) return "Fits your budget, configuration and priorities.";
+        if (fits.length === 0) return `Worth a closer look on ${gaps.join(" & ")}.`;
+        return `${fits.join(" & ").replace(/^./, (m) => m.toUpperCase())} fit; ${gaps.join(" & ")} to look at.`;
+      })();
 
   function onSave(next: BuyData) {
     saveBuyData(next);

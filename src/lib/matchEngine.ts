@@ -118,25 +118,28 @@ export function allConfigPricesCr(p: MatchInput): number[] {
 
 /* ── MarketContext: corridor×bucket price medians + corridor centroids, built
    once over the corpus so each project scores against its peers/geography. ── */
+// Plain records (not Maps) so the context serializes cleanly as a baked JSON
+// route and as a client-component prop.
 export type MarketContext = {
-  medianByCorridorBucket: Map<string, number>;
-  medianByBucket: Map<BhkBucket, number>;
-  corridorCentroid: Map<string, GeoPoint>;
+  medianByCorridorBucket: Record<string, number>;
+  medianByBucket: Record<string, number>;
+  corridorCentroid: Record<string, GeoPoint>;
 };
 export function buildMarket(all: MatchInput[]): MarketContext {
   const buckets: BhkBucket[] = ["1", "2", "3", "4", "5", "PH"];
-  const byCB = new Map<string, number>(), byB = new Map<BhkBucket, number>(), cen = new Map<string, GeoPoint>();
+  const byCB: Record<string, number> = {}, byB: Record<string, number> = {}, cen: Record<string, GeoPoint> = {};
   for (const b of buckets) {
     const flat: number[] = [], byCorr: Record<string, number[]> = {};
     for (const p of all) { const price = configPriceCr(p, b); if (price == null) continue; flat.push(price); (byCorr[p.corridor] ??= []).push(price); }
-    const m = median(flat); if (m != null) byB.set(b, m);
-    for (const [c, arr] of Object.entries(byCorr)) { const mm = median(arr); if (mm != null) byCB.set(`${c}|${b}`, mm); }
+    const m = median(flat); if (m != null) byB[b] = m;
+    for (const [c, arr] of Object.entries(byCorr)) { const mm = median(arr); if (mm != null) byCB[`${c}|${b}`] = mm; }
   }
   const geoByCorr: Record<string, GeoPoint[]> = {};
   for (const p of all) if (p.lat != null && p.lng != null) (geoByCorr[p.corridor] ??= []).push({ lat: p.lat, lng: p.lng });
-  for (const [c, pts] of Object.entries(geoByCorr)) { const la = median(pts.map((q) => q.lat)), lo = median(pts.map((q) => q.lng)); if (la != null && lo != null) cen.set(c, { lat: la, lng: lo }); }
+  for (const [c, pts] of Object.entries(geoByCorr)) { const la = median(pts.map((q) => q.lat)), lo = median(pts.map((q) => q.lng)); if (la != null && lo != null) cen[c] = { lat: la, lng: lo }; }
   return { medianByCorridorBucket: byCB, medianByBucket: byB, corridorCentroid: cen };
 }
+export const emptyMarket = (): MarketContext => ({ medianByCorridorBucket: {}, medianByBucket: {}, corridorCentroid: {} });
 
 const entryBucket = (p: MatchInput): BhkBucket | null => (["1", "2", "3", "4", "5", "PH"] as BhkBucket[]).find((b) => p.configs.some((c) => c.bucket === b)) ?? null;
 
@@ -173,7 +176,7 @@ const F: Record<MatchFactor, (p: MatchInput, d: Buyer, mkt: MarketContext) => nu
     if (d.corridors && d.corridors.includes(p.corridor)) return 1;
     const targets: GeoPoint[] = [];
     if (d.poi) targets.push(d.poi);
-    for (const c of d.corridors ?? []) { const g = mkt.corridorCentroid.get(c); if (g) targets.push(g); }
+    for (const c of d.corridors ?? []) { const g = mkt.corridorCentroid[c]; if (g) targets.push(g); }
     if (!targets.length || p.lat == null || p.lng == null) return 0.5;
     const dkm = Math.min(...targets.map((t) => haversineKm({ lat: p.lat!, lng: p.lng! }, t)));
     return dkm <= 3 ? 1 : clamp(1 - 0.2 * (dkm - 3));
@@ -199,7 +202,7 @@ const F: Record<MatchFactor, (p: MatchInput, d: Buyer, mkt: MarketContext) => nu
     const bucket = d.bucket ?? entryBucket(p);
     if (!bucket) return 0.5;
     const price = configPriceCr(p, bucket);
-    const med = mkt.medianByCorridorBucket.get(`${p.corridor}|${bucket}`) ?? mkt.medianByBucket.get(bucket);
+    const med = mkt.medianByCorridorBucket[`${p.corridor}|${bucket}`] ?? mkt.medianByBucket[bucket];
     return price == null || med == null || med <= 0 ? 0.5 : clamp(0.5 + (med - price) / med);
   },
   liquidity: (p) => {
