@@ -9,10 +9,16 @@ import {
   matchLabel,
   emptyBuyData,
   buyerFromBuyData,
+  setMember,
+  isMember,
+  corridorKey,
+  LOCATIONS,
   type BuyData,
 } from "@/lib/journey";
 import { scoreMatch, type MarketContext } from "@/lib/matchEngine";
 import { useMatchMarket } from "@/lib/useMatchCatalog";
+import { saveVerified, loadVerified, maskContact, type Verified } from "@/lib/shortlistAuth";
+import OtpSheet from "@/components/shortlist/OtpSheet";
 import type { ProjectIntel } from "@/lib/projects";
 
 const BUDGETS = [
@@ -33,18 +39,54 @@ const EXIT_YEARS = [3, 5, 7, 10];
 type Persona = "end-user" | "investor";
 
 const toneClass = { good: "text-[#1e6b45]", fair: "text-[#9a7a2e]", low: "text-[#b0503e]" } as const;
-type Draft = { persona: Persona; budgetCr: number; configs: string[]; priorities: string[]; exitYears: number | null };
+type Draft = { persona: Persona; budgetCr: number; configs: string[]; locations: string[]; priorities: string[]; exitYears: number | null };
+
+/* Corridor chips for the location step. The engine matches a buyer corridor to
+   a project's corridor by EXACT string (and looks the centroid up by that same
+   string), so the values MUST be the live corridor names — but those come in
+   long, parenthesised, and near-duplicated ("Golf Course Road (GCR)" vs
+   "Golf Course Road (Sectors 27–56)"). Group them by canonical corridorKey so
+   the buyer sees one clean chip per corridor; selecting it selects EVERY
+   underlying live string, so both the exact-match and centroid lookups fire.
+   Data-side adaptation only — the buyer's mental model stays "SPR / GCE / Sohna". */
+type CorridorChip = { label: string; keys: string[] };
+function corridorChips(market: MarketContext): CorridorChip[] {
+  const groups: Record<string, string[]> = {};
+  for (const c of Object.keys(market.corridorCentroid)) (groups[corridorKey(c)] ??= []).push(c);
+  const label = (canon: string, sample: string) =>
+    LOCATIONS.find((l) => corridorKey(l) === canon) ?? sample.replace(/\s*\(.*$/, "").trim();
+  return Object.entries(groups).map(([canon, keys]) => ({ label: label(canon, keys[0]), keys }));
+}
 
 export default function MatchScore({ project, initialBuy, variant = "card" }: { project: ProjectIntel; initialBuy?: BuyData | null; variant?: "card" | "band" }) {
   const [buy, setBuy] = useState<BuyData | null>(initialBuy ?? null);
   const [sheet, setSheet] = useState(false);
+  // Identity — anonymous until verified. Drives the login / save-your-brief
+  // affordances in the sheet (real account sync lands with Supabase Auth; today
+  // OTP marks membership and the brief is already local). `otp` names the intent
+  // so the OTP sheet frames itself as a log-in or a save.
+  const [member, setMemberFlag] = useState(false);
+  const [verified, setVerified] = useState<Verified | null>(null);
+  const [otp, setOtp] = useState<null | "login" | "save">(null);
 
   useEffect(() => {
     if (!initialBuy) {
       const saved = loadBuyData();
       if (saved) setBuy(saved);
     }
+    setMemberFlag(isMember());
+    setVerified(loadVerified());
   }, [initialBuy]);
+
+  function handleVerified(v: Verified) {
+    saveVerified(v);
+    setMember();
+    setMemberFlag(true);
+    setVerified(v);
+    setOtp(null);
+    // Phase 3 (Supabase Auth): hydrate this buyer's saved brief from their
+    // account here and setBuy(...) — until then the brief is already local.
+  }
 
   const market = useMatchMarket();
   const computed = buy && hasPreferences(buy);
@@ -77,6 +119,7 @@ export default function MatchScore({ project, initialBuy, variant = "card" }: { 
     persona: buy?.purchaseType === "Investment" ? "investor" : "end-user",
     budgetCr: buy?.budgetCr ?? 6,
     configs: buy?.configs ?? [],
+    locations: buy?.locations ?? [],
     priorities: buy?.priorities ?? [],
     exitYears: buy?.exitYears ?? null,
   };
@@ -99,13 +142,19 @@ export default function MatchScore({ project, initialBuy, variant = "card" }: { 
             <span className="hidden shrink-0 text-[0.72rem] font-semibold text-[#9a7a2e] transition-colors group-hover:text-[#7a5f1e] sm:inline">Adjust →</span>
           </a>
         ) : (
-          <button onClick={() => setSheet(true)} className="group flex w-full items-center gap-4 rounded-2xl border border-[#1a1a1a]/12 bg-white/60 px-5 py-4 text-left transition-colors hover:border-[#9a7a2e]/40 sm:gap-5 sm:px-6">
-            <div className="min-w-0 flex-1">
-              <p className="text-[0.5rem] font-medium uppercase tracking-[0.22em] text-[#c9a96e]">Your Fit</p>
-              <p className="mt-0.5 font-serif text-[1.05rem] leading-tight text-[#1a1a1a]">How well does this project fit you?</p>
-              <p className="mt-0.5 text-[0.78rem] font-light leading-snug text-[#1a1a1a]/50">20 seconds — we score it against <span className="italic">your</span> brief, not the brochure.</p>
+          <button onClick={() => setSheet(true)} className="group flex w-full items-center gap-4 rounded-2xl border border-[#9a7a2e]/25 bg-[#9a7a2e]/[0.05] px-5 py-4 text-left transition-colors hover:bg-[#9a7a2e]/[0.09] sm:gap-5 sm:px-6">
+            <div className="relative flex shrink-0 items-baseline gap-0.5">
+              <span className="select-none font-serif text-[2.5rem] font-normal leading-none text-[#9a7a2e]/70 blur-[7px]" aria-hidden>72</span>
+              <span className="select-none font-mono text-[0.78rem] text-[#1a1a1a]/35 blur-[3px]" aria-hidden>%</span>
+              <span className="absolute inset-0 flex items-center justify-center text-[1rem]" aria-hidden>🔒</span>
             </div>
-            <span className="shrink-0 rounded-lg bg-[#1e6b45] px-4 py-2.5 text-[0.78rem] font-semibold text-white transition-colors group-hover:bg-[#238c55]">Score my fit →</span>
+            <div className="h-11 w-px shrink-0 bg-[#9a7a2e]/25" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[0.5rem] font-medium uppercase tracking-[0.22em] text-[#1a1a1a]/40">Your Fit</p>
+              <p className="text-[0.9rem] font-semibold text-[#9a7a2e]">Locked — reveal your fit</p>
+              <p className="mt-0.5 text-[0.78rem] font-light leading-snug text-[#1a1a1a]/55">Set your preferences · 20s, scored against <span className="italic">your</span> brief, not the brochure.</p>
+            </div>
+            <span className="hidden shrink-0 text-[0.72rem] font-semibold text-[#9a7a2e] transition-colors group-hover:text-[#7a5f1e] sm:inline">Reveal →</span>
           </button>
         )
       ) : computed ? (
@@ -134,36 +183,63 @@ export default function MatchScore({ project, initialBuy, variant = "card" }: { 
           </div>
         </div>
       ) : (
-        /* Cold — a mini teaser that opens the input sheet */
-        <div className="overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-white/60">
+        /* Cold — the score sits blurred behind a lock until the buyer sets a brief */
+        <button onClick={() => setSheet(true)} className="group block w-full overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-white/60 text-left transition-colors hover:border-[#9a7a2e]/40">
           <div className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center md:gap-7 md:p-7">
-            <div className="shrink-0"><Gauge /></div>
+            <div className="relative shrink-0 self-start">
+              <p className="select-none font-mono text-[3.2rem] font-light leading-none text-[#9a7a2e]/70 blur-[9px]" aria-hidden>72%</p>
+              <span className="absolute inset-0 flex items-center justify-center text-[1.5rem]" aria-hidden>🔒</span>
+            </div>
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#c9a96e]">Match Score</p>
-              <p className="mt-2 font-serif text-[1.5rem] leading-[1.15] text-[#1a1a1a] md:text-[1.7rem]">How well does this fit you?</p>
+              <p className="mt-2 font-serif text-[1.5rem] leading-[1.15] text-[#1a1a1a] md:text-[1.7rem]">Your fit is locked</p>
               <p className="mt-2 text-[0.85rem] font-light leading-[1.6] text-[#1a1a1a]/50">
-                Tell us what you&apos;re after — in 20 seconds we&apos;ll score this project against <span className="italic">your</span> needs, not the brochure.
+                Set your preferences — 20 seconds — and we&apos;ll reveal how this scores against <span className="italic">your</span> brief, not the brochure.
               </p>
             </div>
-            <button onClick={() => setSheet(true)} className="shrink-0 rounded-sm bg-[#1e6b45] px-6 py-3.5 text-[0.84rem] font-semibold tracking-[0.02em] text-white transition-colors hover:bg-[#238c55]">
-              Score my fit →
-            </button>
+            <span className="shrink-0 rounded-sm bg-[#1e6b45] px-6 py-3.5 text-[0.84rem] font-semibold tracking-[0.02em] text-white transition-colors group-hover:bg-[#238c55]">Reveal my fit →</span>
           </div>
-        </div>
+        </button>
       )}
 
-      <MatchSheet open={sheet} project={project} market={market} seed={seed} computed={!!computed} onClose={() => setSheet(false)} onSave={onSave} existing={buy} />
+      <MatchSheet
+        open={sheet}
+        project={project}
+        market={market}
+        seed={seed}
+        computed={!!computed}
+        existing={buy}
+        member={member}
+        verified={verified}
+        onClose={() => setSheet(false)}
+        onSave={onSave}
+        onLogin={() => setOtp("login")}
+        onSaveBrief={() => setOtp("save")}
+      />
+      <OtpSheet
+        open={otp !== null}
+        onClose={() => setOtp(null)}
+        onVerified={handleVerified}
+        title={otp === "login" ? "Log in to Truth Estate" : "Save your brief"}
+        subtitle={
+          otp === "login"
+            ? "Verify your number and we'll bring your saved requirements across."
+            : "Verify once — your brief stays saved to you and follows you across every project."
+        }
+      />
     </section>
   );
 }
 
 /* The input sheet — bottom sheet on mobile, centred dialog on desktop. */
-function MatchSheet({ open, project, market, seed, computed, existing, onClose, onSave }: {
+function MatchSheet({ open, project, market, seed, computed, existing, member, verified, onClose, onSave, onLogin, onSaveBrief }: {
   open: boolean; project: ProjectIntel; market: MarketContext; seed: Draft; computed: boolean; existing: BuyData | null;
-  onClose: () => void; onSave: (b: BuyData) => void;
+  member: boolean; verified: Verified | null;
+  onClose: () => void; onSave: (b: BuyData) => void; onLogin: () => void; onSaveBrief: () => void;
 }) {
   const [show, setShow] = useState(false);
   const [draft, setDraft] = useState<Draft>(seed);
+  const corridors = corridorChips(market);
 
   useEffect(() => {
     if (!open) return;
@@ -186,11 +262,22 @@ function MatchSheet({ open, project, market, seed, computed, existing, onClose, 
       return { ...d, [key]: next };
     });
 
+  // A corridor chip owns several underlying live strings; toggle them as a set.
+  const toggleCorridor = (keys: string[]) =>
+    setDraft((d) => {
+      const on = keys.some((k) => d.locations.includes(k));
+      const locations = on
+        ? d.locations.filter((k) => !keys.includes(k))
+        : [...d.locations, ...keys.filter((k) => !d.locations.includes(k))];
+      return { ...d, locations };
+    });
+
   const preview: BuyData = {
     ...emptyBuyData, ...(existing ?? {}),
     purchaseType: draft.persona === "investor" ? "Investment" : existing?.purchaseType && existing.purchaseType !== "Investment" ? existing.purchaseType : "First Home",
     budgetCr: draft.budgetCr,
     configs: draft.configs,
+    locations: draft.locations,
     priorities: draft.priorities,
     exitYears: draft.persona === "investor" ? draft.exitYears : null,
   };
@@ -237,6 +324,11 @@ function MatchSheet({ open, project, market, seed, computed, existing, onClose, 
           <Block label="Configuration">
             {CONFIG_CHIPS.map((c) => <Chip key={c} on={draft.configs.includes(c)} onClick={() => toggle("configs", c)}>{c}</Chip>)}
           </Block>
+          {corridors.length > 0 && (
+            <Block label="Preferred corridor" hint="optional">
+              {corridors.map((ch) => <Chip key={ch.label} on={ch.keys.some((k) => draft.locations.includes(k))} onClick={() => toggleCorridor(ch.keys)}>{ch.label}</Chip>)}
+            </Block>
+          )}
           {draft.persona === "investor" && (
             <Block label="Exit horizon" hint="when you'd sell">
               {EXIT_YEARS.map((y) => <Chip key={y} on={draft.exitYears === y} onClick={() => setDraft((d) => ({ ...d, exitYears: y }))}>{y} yrs</Chip>)}
@@ -249,6 +341,25 @@ function MatchSheet({ open, project, market, seed, computed, existing, onClose, 
             {computed ? "Update my fit" : "See my fit"}
           </button>
           <p className="mt-3 text-center text-[0.68rem] font-light text-black/35">Private to you · scores against your brief, never the brochure.</p>
+
+          {/* Identity — confirm the save once verified, otherwise offer to save the
+             brief to a profile (register) or pull an existing one (log in). */}
+          {member && verified ? (
+            <p className="mt-4 flex items-center justify-center gap-1.5 text-center font-mono text-[0.62rem] tracking-[0.02em] text-[#1e6b45]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#1e6b45]" aria-hidden /> Saved to {maskContact(verified)}
+            </p>
+          ) : (
+            <div className="mt-4 border-t border-black/[0.06] pt-3.5 text-center">
+              <button onClick={onSaveBrief} className="text-[0.78rem] font-medium text-[#1e6b45] underline decoration-[#1e6b45]/30 underline-offset-2 transition-colors hover:decoration-[#1e6b45]">
+                Save this brief to your profile
+              </button>
+              <p className="mt-2 text-[0.68rem] font-light text-black/40">
+                Already with us?{" "}
+                <button onClick={onLogin} className="font-medium text-[#9a7a2e] underline decoration-[#9a7a2e]/40 underline-offset-2 transition-colors hover:decoration-[#9a7a2e]">Log in</button>{" "}
+                to pull your saved requirements.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -284,19 +395,5 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
     >
       {children}
     </button>
-  );
-}
-
-/* A small dial glyph for the cold teaser. */
-function Gauge() {
-  return (
-    <div className="relative grid h-20 w-20 place-items-center rounded-xl border border-[#c9a96e]/30 bg-[#c9a96e]/[0.07]">
-      <svg width="46" height="46" viewBox="0 0 48 48" fill="none" aria-hidden>
-        <circle cx="24" cy="24" r="17" stroke="#1a1a1a" strokeOpacity="0.10" strokeWidth="4" />
-        <path d="M24 7a17 17 0 0 1 14.7 25.5" stroke="#1e6b45" strokeWidth="4" strokeLinecap="round" />
-        <circle cx="24" cy="24" r="3" fill="#9a7a2e" />
-        <path d="M24 24l8-5" stroke="#9a7a2e" strokeWidth="2.4" strokeLinecap="round" />
-      </svg>
-    </div>
   );
 }
