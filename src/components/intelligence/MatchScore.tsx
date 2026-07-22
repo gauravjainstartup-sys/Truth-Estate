@@ -11,7 +11,7 @@ import {
   buyerFromBuyData,
   type BuyData,
 } from "@/lib/journey";
-import { scoreMatch } from "@/lib/matchEngine";
+import { scoreMatch, type MarketContext } from "@/lib/matchEngine";
 import { useMatchMarket } from "@/lib/useMatchCatalog";
 import type { ProjectIntel } from "@/lib/projects";
 
@@ -23,10 +23,17 @@ const BUDGETS = [
   { label: "₹12 Cr +", cr: 14 },
 ];
 const CONFIG_CHIPS = ["2 BHK", "3 BHK", "4 BHK", "5 BHK", "Penthouse"];
-const PRIORITY_CHIPS = ["Legal Safety", "On-Time Delivery", "Capital Appreciation", "Value Buying", "Luxury Lifestyle", "Location", "Layouts", "Rental Yield"];
+// "What matters most" is persona-specific — an investor and an end-user care
+// about different things, and each chip boosts its matching engine factor.
+const PRIORITY_BY_PERSONA = {
+  "end-user": ["Legal Safety", "On-Time Delivery", "Layouts", "Luxury Lifestyle", "Location"],
+  investor: ["Capital Appreciation", "Rental Yield", "Value Buying", "Liquidity", "Location"],
+} as const;
+const EXIT_YEARS = [3, 5, 7, 10];
+type Persona = "end-user" | "investor";
 
 const toneClass = { good: "text-[#1e6b45]", fair: "text-[#9a7a2e]", low: "text-[#b0503e]" } as const;
-type Draft = { budgetCr: number; configs: string[]; priorities: string[] };
+type Draft = { persona: Persona; budgetCr: number; configs: string[]; priorities: string[]; exitYears: number | null };
 
 export default function MatchScore({ project, initialBuy, variant = "card" }: { project: ProjectIntel; initialBuy?: BuyData | null; variant?: "card" | "band" }) {
   const [buy, setBuy] = useState<BuyData | null>(initialBuy ?? null);
@@ -66,7 +73,13 @@ export default function MatchScore({ project, initialBuy, variant = "card" }: { 
     setSheet(false);
   }
 
-  const seed: Draft = { budgetCr: buy?.budgetCr ?? 6, configs: buy?.configs ?? [], priorities: buy?.priorities ?? [] };
+  const seed: Draft = {
+    persona: buy?.purchaseType === "Investment" ? "investor" : "end-user",
+    budgetCr: buy?.budgetCr ?? 6,
+    configs: buy?.configs ?? [],
+    priorities: buy?.priorities ?? [],
+    exitYears: buy?.exitYears ?? null,
+  };
 
   return (
     <section id="match" className={variant === "band" ? "scroll-mt-28" : "mt-6 scroll-mt-24"}>
@@ -139,14 +152,14 @@ export default function MatchScore({ project, initialBuy, variant = "card" }: { 
         </div>
       )}
 
-      <MatchSheet open={sheet} project={project} seed={seed} computed={!!computed} onClose={() => setSheet(false)} onSave={onSave} existing={buy} />
+      <MatchSheet open={sheet} project={project} market={market} seed={seed} computed={!!computed} onClose={() => setSheet(false)} onSave={onSave} existing={buy} />
     </section>
   );
 }
 
 /* The input sheet — bottom sheet on mobile, centred dialog on desktop. */
-function MatchSheet({ open, project, seed, computed, existing, onClose, onSave }: {
-  open: boolean; project: ProjectIntel; seed: Draft; computed: boolean; existing: BuyData | null;
+function MatchSheet({ open, project, market, seed, computed, existing, onClose, onSave }: {
+  open: boolean; project: ProjectIntel; market: MarketContext; seed: Draft; computed: boolean; existing: BuyData | null;
   onClose: () => void; onSave: (b: BuyData) => void;
 }) {
   const [show, setShow] = useState(false);
@@ -173,13 +186,23 @@ function MatchSheet({ open, project, seed, computed, existing, onClose, onSave }
       return { ...d, [key]: next };
     });
 
-  const preview: BuyData = { ...emptyBuyData, ...(existing ?? {}), budgetCr: draft.budgetCr, configs: draft.configs, priorities: draft.priorities };
-  const live = hasPreferences(preview) ? matchScoreFor(project, preview) : null;
+  const preview: BuyData = {
+    ...emptyBuyData, ...(existing ?? {}),
+    purchaseType: draft.persona === "investor" ? "Investment" : existing?.purchaseType && existing.purchaseType !== "Investment" ? existing.purchaseType : "First Home",
+    budgetCr: draft.budgetCr,
+    configs: draft.configs,
+    priorities: draft.priorities,
+    exitYears: draft.persona === "investor" ? draft.exitYears : null,
+  };
+  // Live preview via the same engine the card uses; the mock fallback set keeps the legacy score.
+  const live = hasPreferences(preview)
+    ? project.matchInput
+      ? scoreMatch(project.matchInput, buyerFromBuyData(preview), market).pct
+      : matchScoreFor(project, preview)
+    : null;
   const liveMeta = live != null ? matchLabel(live) : null;
 
-  function save() {
-    onSave({ ...emptyBuyData, ...(existing ?? {}), budgetCr: draft.budgetCr, configs: draft.configs, priorities: draft.priorities });
-  }
+  function save() { onSave(preview); }
 
   return (
     <div className="fixed inset-0 z-[130] flex items-end justify-center md:items-center md:p-6">
@@ -204,14 +227,23 @@ function MatchSheet({ open, project, seed, computed, existing, onClose, onSave }
         </div>
 
         <div className="relative overflow-y-auto px-7 pb-7 pt-5">
+          <Block label="You're buying to">
+            <Chip on={draft.persona === "end-user"} onClick={() => setDraft((d) => ({ ...d, persona: "end-user", priorities: [] }))}>Live in it</Chip>
+            <Chip on={draft.persona === "investor"} onClick={() => setDraft((d) => ({ ...d, persona: "investor", priorities: [] }))}>Invest</Chip>
+          </Block>
           <Block label="Your budget">
             {BUDGETS.map((b) => <Chip key={b.cr} on={draft.budgetCr === b.cr} onClick={() => setDraft((d) => ({ ...d, budgetCr: b.cr }))}>{b.label}</Chip>)}
           </Block>
           <Block label="Configuration">
             {CONFIG_CHIPS.map((c) => <Chip key={c} on={draft.configs.includes(c)} onClick={() => toggle("configs", c)}>{c}</Chip>)}
           </Block>
+          {draft.persona === "investor" && (
+            <Block label="Exit horizon" hint="when you'd sell">
+              {EXIT_YEARS.map((y) => <Chip key={y} on={draft.exitYears === y} onClick={() => setDraft((d) => ({ ...d, exitYears: y }))}>{y} yrs</Chip>)}
+            </Block>
+          )}
           <Block label="What matters most" hint="up to 3">
-            {PRIORITY_CHIPS.map((p) => <Chip key={p} on={draft.priorities.includes(p)} onClick={() => toggle("priorities", p, 3)}>{p}</Chip>)}
+            {PRIORITY_BY_PERSONA[draft.persona].map((p) => <Chip key={p} on={draft.priorities.includes(p)} onClick={() => toggle("priorities", p, 3)}>{p}</Chip>)}
           </Block>
           <button onClick={save} className="mt-6 w-full rounded-md bg-[#1e6b45] px-6 py-3.5 text-[0.88rem] font-medium tracking-[0.02em] text-white transition-colors hover:bg-[#238c55]">
             {computed ? "Update my fit" : "See my fit"}
