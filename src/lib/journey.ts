@@ -50,6 +50,7 @@ export type BuyData = {
   timeline: string | null;
   priorities: string[]; // up to 3
   exitYears?: number | null; // investor hold horizon (captured in the report sheet)
+  poi?: { lat: number; lng: number; label?: string } | null;
   notes?: string; // free-text: "in your own words" on the last onboarding step
 };
 
@@ -934,7 +935,7 @@ export function buyerFromBuyData(d: BuyData): Buyer {
     budgetCr: d.budgetCr,
     bucket,
     corridors: d.locations.length ? d.locations : null,
-    poi: null,
+    poi: d.poi ? { lat: d.poi.lat, lng: d.poi.lng } : null,
     byYear: null,
     exitYears: d.exitYears ?? null,
     priorities: d.priorities,

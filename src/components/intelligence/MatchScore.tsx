@@ -19,6 +19,7 @@ import { scoreMatch, type MarketContext } from "@/lib/matchEngine";
 import { useMatchMarket } from "@/lib/useMatchCatalog";
 import { saveVerified, loadVerified, maskContact, type Verified } from "@/lib/shortlistAuth";
 import OtpSheet from "@/components/shortlist/OtpSheet";
+import PoiSearch, { POI_ENABLED } from "./PoiSearch";
 import type { ProjectIntel } from "@/lib/projects";
 
 const BUDGETS = [
@@ -39,7 +40,7 @@ const EXIT_YEARS = [3, 5, 7, 10];
 type Persona = "end-user" | "investor";
 
 const toneClass = { good: "text-[#1e6b45]", fair: "text-[#9a7a2e]", low: "text-[#b0503e]" } as const;
-type Draft = { persona: Persona; budgetCr: number; configs: string[]; locations: string[]; priorities: string[]; exitYears: number | null };
+type Draft = { persona: Persona; budgetCr: number; configs: string[]; locations: string[]; priorities: string[]; exitYears: number | null; poi: { lat: number; lng: number; label: string } | null };
 
 /* Corridor chips for the location step. The engine matches a buyer corridor to
    a project's corridor by EXACT string (and looks the centroid up by that same
@@ -122,6 +123,7 @@ export default function MatchScore({ project, initialBuy, variant = "card" }: { 
     locations: buy?.locations ?? [],
     priorities: buy?.priorities ?? [],
     exitYears: buy?.exitYears ?? null,
+    poi: buy?.poi ? { lat: buy.poi.lat, lng: buy.poi.lng, label: buy.poi.label ?? "" } : null,
   };
 
   return (
@@ -280,6 +282,7 @@ function MatchSheet({ open, project, market, seed, computed, existing, member, v
     locations: draft.locations,
     priorities: draft.priorities,
     exitYears: draft.persona === "investor" ? draft.exitYears : null,
+    poi: draft.poi,
   };
   // Live preview via the same engine the card uses; the mock fallback set keeps the legacy score.
   const live = hasPreferences(preview)
@@ -324,10 +327,15 @@ function MatchSheet({ open, project, market, seed, computed, existing, member, v
           <Block label="Configuration">
             {CONFIG_CHIPS.map((c) => <Chip key={c} on={draft.configs.includes(c)} onClick={() => toggle("configs", c)}>{c}</Chip>)}
           </Block>
-          {corridors.length > 0 && (
-            <Block label="Preferred corridor" hint="optional">
+          {(corridors.length > 0 || POI_ENABLED) && (
+            <Block label="Preferred location" hint="optional">
               {corridors.map((ch) => <Chip key={ch.label} on={ch.keys.some((k) => draft.locations.includes(k))} onClick={() => toggleCorridor(ch.keys)}>{ch.label}</Chip>)}
             </Block>
+          )}
+          {POI_ENABLED && (
+            <div className={corridors.length > 0 ? "mt-1" : "mt-3"}>
+              <PoiSearch value={draft.poi} onChange={(poi) => setDraft((d) => ({ ...d, poi }))} />
+            </div>
           )}
           {draft.persona === "investor" && (
             <Block label="Exit horizon" hint="when you'd sell">
