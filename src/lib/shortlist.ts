@@ -8,8 +8,9 @@
    ════════════════════════════════════════════════════════════════ */
 
 import type { ProjectIntel } from "./projects";
-import { rankCore } from "./journey";
+import { rankCore, buyerFromBuyData } from "./journey";
 import type { BuyData, DNA } from "./journey";
+import { scoreMatch, type MarketContext } from "./matchEngine";
 
 /* Rank the LIVE catalog (ProjectIntel from match-catalog.json) with the same
    heuristic the mock shortlist uses — so the standalone /shortlist ranks the
@@ -18,8 +19,15 @@ import type { BuyData, DNA } from "./journey";
    projectByName lookup). Same weights, same relative matchPct as rankProjects. */
 export type RankedIntel = ProjectIntel & { matchPct: number };
 
-export function rankProjectsIntel(d: BuyData, catalog: ProjectIntel[]): RankedIntel[] {
-  return rankCore(catalog, d);
+/* Rank the live catalog with the persona match engine (same engine the report's
+   YOUR FIT uses), against the baked market context. The mock fallback set (no
+   matchInput) keeps the legacy rankCore so /shortlist still works offline. */
+export function rankProjectsIntel(d: BuyData, catalog: ProjectIntel[], market: MarketContext): RankedIntel[] {
+  if (!catalog.some((p) => p.matchInput)) return rankCore(catalog, d);
+  const buyer = buyerFromBuyData(d);
+  return catalog
+    .map((p) => ({ ...p, matchPct: p.matchInput ? scoreMatch(p.matchInput, buyer, market).pct : 0 }))
+    .sort((a, b) => b.matchPct - a.matchPct);
 }
 
 type Pt = { weight: number; text: string };

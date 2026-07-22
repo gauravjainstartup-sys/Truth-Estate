@@ -11,7 +11,7 @@ import FocusOffRamp from "../FocusOffRamp";
 import { projectByName } from "@/lib/projects";
 import { rankProjectsIntel } from "@/lib/shortlist";
 import type { RankedIntel } from "@/lib/shortlist";
-import { useMatchCatalog, MOCK_INTEL } from "@/lib/useMatchCatalog";
+import { useMatchCatalog, useMatchMarket, MOCK_INTEL } from "@/lib/useMatchCatalog";
 import { useAiRerank } from "@/lib/useAiRerank";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import type { ConsultIntent, ConsultProfileChip } from "@/lib/consultation";
@@ -396,12 +396,13 @@ export default function JourneyModal({
   }, [onClose]);
 
   const catalog = useMatchCatalog();
+  const market = useMatchMarket();
   // The in-modal shortlist ranks the SAME live catalog as /shortlist (falling
   // back to the mock set until it loads, or if the backend is unreachable), so
   // the "N scanned" funnel and the reasoning count are the real universe.
   const detLive = useMemo<RankedIntel[]>(
-    () => (catalog ? rankProjectsIntel(buy, catalog) : NO_DET),
-    [buy, catalog],
+    () => (catalog ? rankProjectsIntel(buy, catalog, market) : NO_DET),
+    [buy, catalog, market],
   );
   // AI re-rank (Path 2) — same Gemini pass /shortlist uses, but fired ONCE the
   // buyer commits to the shortlist, never per keystroke: `buy` is handed to the
