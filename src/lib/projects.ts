@@ -225,8 +225,11 @@ export type ProjectOps = {
     actualPct: number; // built vs plan, latest QPR
     expectedPct: number; // % RERA required by the quarter-end (filed value)
     absorptionPct: number; // units sold / launched
-    reraDate: string; // committed possession
-    predictedDate: string; // our execution-adjusted estimate
+    reraDate: string; // committed possession (month-year)
+    predictedDate: string; // our execution-adjusted estimate (month-year)
+    reraDateFull?: string; // committed possession, day-precision where filed
+    predictedDateFull?: string; // predicted delivery, day-precision where derived
+    aheadMonths?: number; // forecast lead over the RERA promise, months (1 dp, + ahead)
     qpr: string; // QPR the read is drawn from
     delayChancePct?: number; // pipeline-scored delay probability (live rows)
     paceMonths?: number; // build pace vs schedule, months (+ ahead / − behind)
@@ -340,7 +343,7 @@ export const OPS: Record<string, ProjectOps> = {
       },
     },
     reraNote: "Registered · Haryana RERA · active, no project-level complaints on record",
-    construction: { actualPct: 57, expectedPct: 47, absorptionPct: 100, reraDate: "Mar 2030", predictedDate: "Nov 2029", qpr: "Q1 2026" },
+    construction: { actualPct: 57, expectedPct: 47, absorptionPct: 100, reraDate: "Mar 2030", predictedDate: "Nov 2029", qpr: "Q1 2026", paceMonths: 9 },
     usps: [
       { title: "A 1.5 elevator-per-apartment core ratio — rare in NCR", body: "Three high-speed (3.5 m/s) elevators serving just two apartments per core — a near-zero-wait standard borrowed from ultra-prime Manhattan and Hong Kong towers." },
       { title: "WATG-shaped landscape, ~89% open", body: "Grounds by WATG — among the world's top hospitality architects — with low-density green cover across 25 acres." },
