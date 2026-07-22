@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   LocEntity,
   idsFromMarkets,
@@ -10,26 +10,28 @@ import {
   searchLocations,
 } from "@/lib/locations";
 
-/* ════════════════════════════════════════════════════════════════
-   LOCATION PICKER — search-first, landmark-aware, resolve-to-market.
-   Buyers can think in areas, sectors OR landmarks (Cyber City, IFC,
-   32nd Milestone). Everything resolves to the canonical micro-markets
-   our intelligence is keyed to, which is what we hand back up via
-   `onChange`. Built to scale: more cities = more rows in locations.ts,
-   no change here. Uncovered places surface as "Soon" so we never
-   dead-end and we learn where demand is going.
-   ════════════════════════════════════════════════════════════════ */
+const GMAPS_KEY = process.env.NEXT_PUBLIC_GMAPS_KEY ?? "";
+const BIAS = { latitude: 28.45, longitude: 77.03 };
+
+type Poi = { lat: number; lng: number; label: string };
+type PlaceHit = { placeId: string; main: string; secondary: string };
+
 export default function LocationPicker({
   value,
   onChange,
+  poi,
+  onPoiChange,
 }: {
   value: string[];
   onChange: (markets: string[]) => void;
+  poi?: Poi | null;
+  onPoiChange?: (poi: Poi | null) => void;
 }) {
-  // Selected entity ids — seeded once from the stored micro-market names.
   const [ids, setIds] = useState<string[]>(() => idsFromMarkets(value));
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const [places, setPlaces] = useState<PlaceHit[]>([]);
+  const debounce = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const selected = useMemo(
     () => ids.map((id) => locationById(id)).filter(Boolean) as LocEntity[],
@@ -37,6 +39,60 @@ export default function LocationPicker({
   );
   const results = useMemo(() => searchLocations(query), [query]);
   const popular = useMemo(() => popularLocations(), []);
+
+  useEffect(() => {
+    if (results.length > 0 || query.trim().length < 3 || !GMAPS_KEY) {
+      setPlaces([]);
+      return;
+    }
+    clearTimeout(debounce.current);
+    debounce.current = setTimeout(async () => {
+      try {
+        const res = await fetch("https://places.googleapis.com/v1/places:autocomplete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Goog-Api-Key": GMAPS_KEY },
+          body: JSON.stringify({
+            input: query,
+            locationBias: { circle: { center: BIAS, radius: 30000 } },
+          }),
+        });
+        if (!res.ok) { setPlaces([]); return; }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data: any = await res.json();
+        setPlaces(
+          (data.suggestions ?? [])
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .filter((s: any) => s.placePrediction?.placeId)
+            .slice(0, 5)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .map((s: any) => ({
+              placeId: s.placePrediction.placeId,
+              main: s.placePrediction.structuredFormat?.mainText?.text ?? s.placePrediction.text?.text ?? "",
+              secondary: s.placePrediction.structuredFormat?.secondaryText?.text ?? "",
+            })),
+        );
+      } catch { setPlaces([]); }
+    }, 300);
+    return () => clearTimeout(debounce.current);
+  }, [query, results.length]);
+
+  const pickPlace = useCallback(async (hit: PlaceHit) => {
+    if (!onPoiChange) return;
+    setQuery("");
+    setPlaces([]);
+    try {
+      const res = await fetch(
+        `https://places.googleapis.com/v1/places/${hit.placeId}`,
+        { headers: { "X-Goog-Api-Key": GMAPS_KEY, "X-Goog-FieldMask": "location" } },
+      );
+      if (!res.ok) return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data: any = await res.json();
+      if (data.location) {
+        onPoiChange({ lat: data.location.latitude, lng: data.location.longitude, label: hit.main });
+      }
+    } catch { /* silent */ }
+  }, [onPoiChange]);
 
   const isSelected = (id: string) => ids.includes(id);
 
@@ -60,6 +116,8 @@ export default function LocationPicker({
     else add(e);
   };
 
+  const hasSelected = selected.length > 0 || !!poi;
+
   return (
     <div>
       {/* ── Search ── */}
@@ -74,57 +132,85 @@ export default function LocationPicker({
         />
         {query.trim() && (
           <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-[300px] overflow-y-auto rounded-lg border border-[#1a1a1a]/12 bg-[#F5F0E8] shadow-xl shadow-black/[0.06]">
-            {results.length === 0 ? (
-              <p className="px-5 py-4 text-[0.9rem] font-light text-[#1a1a1a]/45">
-                No match yet — we&rsquo;re expanding city by city.
-              </p>
-            ) : (
-              results.map((e) => (
-                <button
-                  key={e.id}
-                  onClick={() => add(e)}
-                  disabled={e.status !== "live"}
-                  className={`flex w-full items-center justify-between gap-3 px-5 py-3 text-left transition-colors duration-200 ${
-                    e.status === "live" ? "hover:bg-[#1e6b45]/[0.06]" : "cursor-not-allowed"
-                  }`}
-                >
-                  <span className="min-w-0">
-                    <span
-                      className={`text-[0.98rem] font-light ${
-                        e.status === "live" ? "text-[#1a1a1a]/80" : "text-[#1a1a1a]/40"
-                      }`}
-                    >
-                      {e.name}
-                    </span>
-                    {e.kind === "landmark" && e.status === "live" ? (
-                      <span className="ml-2 text-[0.78rem] font-light text-[#1a1a1a]/40">
-                        → {e.resolvesTo[0]}
+            {results.length > 0
+              ? results.map((e) => (
+                  <button
+                    key={e.id}
+                    onClick={() => add(e)}
+                    disabled={e.status !== "live"}
+                    className={`flex w-full items-center justify-between gap-3 px-5 py-3 text-left transition-colors duration-200 ${
+                      e.status === "live" ? "hover:bg-[#1e6b45]/[0.06]" : "cursor-not-allowed"
+                    }`}
+                  >
+                    <span className="min-w-0">
+                      <span
+                        className={`text-[0.98rem] font-light ${
+                          e.status === "live" ? "text-[#1a1a1a]/80" : "text-[#1a1a1a]/40"
+                        }`}
+                      >
+                        {e.name}
                       </span>
-                    ) : e.hint ? (
-                      <span className="ml-2 text-[0.78rem] font-light text-[#1a1a1a]/35">{e.hint}</span>
-                    ) : null}
-                  </span>
-                  {e.status === "live" ? (
-                    isSelected(e.id) ? (
-                      <span className="shrink-0 text-[0.8rem] font-light text-[#1e6b45]">✓ Added</span>
+                      {e.kind === "landmark" && e.status === "live" ? (
+                        <span className="ml-2 text-[0.78rem] font-light text-[#1a1a1a]/40">
+                          → {e.resolvesTo[0]}
+                        </span>
+                      ) : e.hint ? (
+                        <span className="ml-2 text-[0.78rem] font-light text-[#1a1a1a]/35">{e.hint}</span>
+                      ) : null}
+                    </span>
+                    {e.status === "live" ? (
+                      isSelected(e.id) ? (
+                        <span className="shrink-0 text-[0.8rem] font-light text-[#1e6b45]">✓ Added</span>
+                      ) : (
+                        <span className="shrink-0 text-[0.8rem] font-light text-[#1a1a1a]/30">Add</span>
+                      )
                     ) : (
-                      <span className="shrink-0 text-[0.8rem] font-light text-[#1a1a1a]/30">Add</span>
-                    )
-                  ) : (
-                    <SoonBadge />
-                  )}
-                </button>
-              ))
-            )}
+                      <SoonBadge />
+                    )}
+                  </button>
+                ))
+              : places.length > 0
+              ? places.map((h) => (
+                  <button
+                    key={h.placeId}
+                    onClick={() => pickPlace(h)}
+                    className="flex w-full items-center justify-between gap-3 px-5 py-3 text-left transition-colors duration-200 hover:bg-[#1e6b45]/[0.06]"
+                  >
+                    <span className="min-w-0">
+                      <span className="text-[0.98rem] font-light text-[#1a1a1a]/80">{h.main}</span>
+                      {h.secondary && (
+                        <span className="ml-2 text-[0.78rem] font-light text-[#1a1a1a]/40">{h.secondary}</span>
+                      )}
+                    </span>
+                    <span className="shrink-0 text-[0.8rem] font-light text-[#1a1a1a]/30">Add</span>
+                  </button>
+                ))
+              : (
+                <p className="px-5 py-4 text-[0.9rem] font-light text-[#1a1a1a]/45">
+                  No match yet — we&rsquo;re expanding city by city.
+                </p>
+              )}
           </div>
         )}
       </div>
 
       {/* ── Selected ── */}
-      {selected.length > 0 && (
+      {hasSelected && (
         <div className="mt-7">
           <p className="mb-3 text-[10px] font-light uppercase tracking-[0.22em] text-[#1a1a1a]/40">Selected</p>
           <div className="flex flex-wrap gap-2.5">
+            {poi && onPoiChange && (
+              <span className="inline-flex items-center gap-2 rounded-full border border-[#9a7a2e] bg-[#9a7a2e] py-2 pl-4 pr-2.5 text-[0.85rem] font-light text-white shadow-sm shadow-black/10">
+                {poi.label}
+                <button
+                  onClick={() => onPoiChange(null)}
+                  aria-label={`Remove ${poi.label}`}
+                  className="grid h-4 w-4 place-items-center rounded-full text-[0.9rem] leading-none text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+                >
+                  ×
+                </button>
+              </span>
+            )}
             {selected.map((e) => (
               <span
                 key={e.id}
