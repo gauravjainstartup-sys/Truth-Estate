@@ -379,10 +379,21 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
       );
     }
   }
+  /* QPR modules — construction_pace / sales_velocity (JSONB carrying
+     expected_pct_at_qpr and the R2 proof PDFs) live in backlog_project_data,
+     keyed by the same project id; the listing view only exposes the flattened
+     numeric scores. Join them in so the construction & sales report reads the
+     FILED expected-% and the proof links instead of a pace-vs-schedule estimate. */
+  const bpdById = new Map<string, Row>();
+  for (const b of (await sbRows("backlog_project_data", "select=id,construction_pace,sales_velocity&limit=2000")) ?? []) {
+    const id = s(b.id);
+    if (id) bpdById.set(id, b);
+  }
   const out: LiveBacklogFull[] = [];
   for (const r of rows) {
     const name = s(r.name);
     if (!name) continue;
+    const bpd = bpdById.get(s(r.id) ?? "");
     out.push({
       id: s(r.id) ?? liveSlug(name),
       slug: liveSlug(name),
@@ -415,8 +426,8 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
       densityAptPerAcre: n(r.density_apt_per_acre),
       openAreaPct: n(r.open_area_pct),
       landAcres: n(r.land_acres),
-      modConstruction: j(r.construction_pace),
-      modSales: j(r.sales_velocity),
+      modConstruction: j(bpd?.construction_pace),
+      modSales: j(bpd?.sales_velocity),
       modTrackRecord: j(r.developer_track_record),
       modLegal: j(r.legal_risks),
       modFinancial: j(r.financial_subscores),
