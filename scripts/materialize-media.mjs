@@ -438,7 +438,7 @@ try {
      cached deterministically so Google is hit once per centre. Fail-soft. */
   try {
     const GKEY = process.env.NEXT_PUBLIC_GMAPS_KEY || process.env.GMAPS_KEY || "";
-    const SAT_ZOOM = 18; // site-level framing; the cache key tracks this so a change re-bakes
+    const SAT_ZOOM = 17; // site-level framing; the cache key tracks this so a change re-bakes
     const fix = process.env.SUPABASE_FIXTURES;
     let geoRows = [];
     if (fix) { try { geoRows = JSON.parse(await readFile(path.join(fix, "backlog_listing_public_v3.json"), "utf8")); } catch { geoRows = []; } }
