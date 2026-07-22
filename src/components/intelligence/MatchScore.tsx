@@ -395,7 +395,7 @@ function Block({ label, hint, children }: { label: string; hint?: string; childr
       <p className="mb-2.5 font-mono text-[0.6rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/45">
         {label}{hint && <span className="ml-2 tracking-normal text-[#1a1a1a]/30">· {hint}</span>}
       </p>
-      <div className="flex flex-wrap gap-2">{children}</div>
+      <div className="flex gap-2 overflow-x-auto" style={{ scrollbarWidth: "none" }}>{children}</div>
     </div>
   );
 }
@@ -405,7 +405,7 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full border px-3.5 py-1.5 text-[0.8rem] font-light transition-all ${on ? "border-[#1e6b45] bg-[#1e6b45]/10 text-[#1e6b45]" : "border-black/[0.14] text-[#1a1a1a]/60 hover:border-black/30 hover:text-[#1a1a1a]/85"}`}
+      className={`shrink-0 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-[0.8rem] font-light transition-all ${on ? "border-[#1e6b45] bg-[#1e6b45]/10 text-[#1e6b45]" : "border-black/[0.14] text-[#1a1a1a]/60 hover:border-black/30 hover:text-[#1a1a1a]/85"}`}
     >
       {children}
     </button>
