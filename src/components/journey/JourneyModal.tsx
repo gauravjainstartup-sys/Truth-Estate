@@ -981,7 +981,7 @@ export default function JourneyModal({
             title="Where are you looking?"
             sub="Think in areas, sectors or landmarks — we'll map it to the right micro-market."
           />
-          <LocationPicker value={buy.locations} onChange={(m) => set("locations", m)} />
+          <LocationPicker value={buy.locations} onChange={(m) => set("locations", m)} poi={buy.poi ? { lat: buy.poi.lat, lng: buy.poi.lng, label: buy.poi.label ?? "" } : null} onPoiChange={(p) => set("poi", p)} />
           <NextBar onNext={nextBuy} />
         </div>
       </Shell>
