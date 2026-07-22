@@ -168,6 +168,38 @@ async function cacheThumb(key, tb, thumbOnly) {
   } catch { /* cache is best-effort */ }
 }
 
+/* Deterministic tile cache for Static Maps: a coord+zoom+style string keys the
+   image, so a fixed centre is fetched from Google ONCE and reused across every
+   later build (no conditional GET — the aerial for a fixed point doesn't move);
+   only a changed coordinate re-fetches. Registers the key in cacheTouched so the
+   end-of-run prune keeps it. Fail-soft: any miss returns {skip} → gradient. */
+async function fetchSatellite(url, cacheStr) {
+  const h = cKey(cacheStr);
+  cacheTouched.add(h);
+  const bin = await readOpt(cPath(h, ".bin"));
+  const metaRaw = await readOpt(cPath(h, ".json"));
+  if (bin && metaRaw) {
+    cacheStats.hit++;
+    try { return { buf: bin, ext: JSON.parse(metaRaw).ext || "jpg" }; } catch { return { buf: bin, ext: "jpg" }; }
+  }
+  let res;
+  try { res = await fetch(url, { signal: AbortSignal.timeout(30000) }); }
+  catch { return { skip: "fetch-failed" }; }
+  if (!res.ok) { try { await res.body?.cancel(); } catch { /* discard */ } return { skip: `http-${res.status}` }; }
+  const ct = (res.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+  const ext = CT_EXT[ct] ?? "jpg";
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (!buf.length || buf.length > MAX_BYTES) return { skip: "empty/too-big" };
+  dlBytes += buf.length;
+  cacheStats.fresh++;
+  try {
+    await mkdir(CACHE_DIR, { recursive: true });
+    await writeFile(cPath(h, ".bin"), buf);
+    await writeFile(cPath(h, ".json"), JSON.stringify({ ext, bytes: buf.length }));
+  } catch { /* best-effort */ }
+  return { buf, ext };
+}
+
 /* A media column may hold a Storage URL rather than base64. Pull a SINGLE-URL
    value into the static build so it serves same-origin — frees every visit
    from Supabase — via the conditional-GET cache above. Fail-soft: any hiccup
@@ -395,6 +427,46 @@ try {
     if (saved) manifest.__urls = urls;
     console.log(`[materialize] url-map: ${saved}/${urlQueue.size} remote file(s) pulled same-origin`);
   }
+
+  /* ── Satellite hero fallback ──────────────────────────────────────────
+     Every project without an uploaded hero gets a Google Static Maps satellite
+     of its site as the hero backdrop — the component already renders it and
+     captions it "Satellite view of the site". Coordinates come from the ENRICHED
+     snapshot (the seed-authoritative centres the location map plots), and a
+     `suspect` provenance is skipped so we never plot a contradicted centre.
+     Baked same-origin, keyed by project id under manifest.__satellite, and
+     cached deterministically so Google is hit once per centre. Fail-soft. */
+  try {
+    const GKEY = process.env.NEXT_PUBLIC_GMAPS_KEY || process.env.GMAPS_KEY || "";
+    const fix = process.env.SUPABASE_FIXTURES;
+    let geoRows = [];
+    if (fix) { try { geoRows = JSON.parse(await readFile(path.join(fix, "backlog_listing_public_v3.json"), "utf8")); } catch { geoRows = []; } }
+    if (!GKEY) {
+      console.log(`[materialize] satellite: no GMAPS key set — heroes left as gradient`);
+    } else if (!geoRows.length) {
+      console.log(`[materialize] satellite: no enriched v3 snapshot — skipped`);
+    } else {
+      const sat = {};
+      let baked = 0, skipped = 0, suspect = 0;
+      for (const r of geoRows) {
+        const id = r?.id, lat = Number(r?.latitude), lng = Number(r?.longitude);
+        if (!id || !Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+        if (Math.abs(lat) > 90 || Math.abs(lng) > 180 || (lat === 0 && lng === 0)) continue;
+        if (r.geo_provenance === "suspect") { suspect++; continue; }
+        const c = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+        const cacheStr = `sat|v1|${c}|z16|640x360|satellite|jpg`;
+        const url = `https://maps.googleapis.com/maps/api/staticmap?center=${c}&zoom=16&size=640x360&scale=2&maptype=satellite&format=jpg&key=${encodeURIComponent(GKEY)}`;
+        const got = await fetchSatellite(url, cacheStr);
+        if (!got || !got.buf) { skipped++; if (baked === 0 && skipped <= 2) console.log(`[materialize] satellite ${id}: ${got?.skip ?? "no-body"}`); continue; }
+        const rel = `live-media/sat-${id}.${got.ext}`;
+        try { await writeFile(path.join("public", rel), got.buf); } catch { skipped++; continue; }
+        sat[id] = rel; baked++; files++;
+      }
+      if (baked) manifest.__satellite = sat;
+      console.log(`[materialize] satellite: ${baked} hero(es) baked · ${suspect} suspect-skipped · ${skipped} miss`);
+    }
+  } catch (e) { console.warn(`[materialize] satellite pass skipped (${e instanceof Error ? e.message : "error"}) — heroes stay gradient`); }
+
   console.log(`[materialize] cache: ${cacheStats.hit} unchanged (304) · ${cacheStats.fresh} new · ${cacheStats.changed} changed · ${cacheStats.stale} stale-kept · ⇢ Storage egress ≈ ${(dlBytes / 1048576).toFixed(1)} MB pulled`);
   // drop cache entries whose URL vanished from the data — the cache tracks
   // the live media set instead of growing without bound. Only prune when this
