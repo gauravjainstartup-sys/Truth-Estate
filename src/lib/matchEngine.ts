@@ -94,7 +94,23 @@ export type Buyer = {
   poi: GeoPoint | null;           // a geocoded landmark, alternative to corridors
   byYear: number | null;          // desired possession year (null = flexible → factor drops)
   exitYears?: number | null;      // investor exit horizon
+  priorities?: string[];          // "what matters most" chips → boost the named factors
 };
+
+/* "What matters most" chip → the factor it amplifies. A chosen priority raises
+   that factor's weight before renormalization, so the buyer's stated priorities
+   pull the score. Chips with no single factor (e.g. Luxury Lifestyle) are inert. */
+export const PRIORITY_FACTOR: Record<string, MatchFactor> = {
+  "Legal Safety": "legal",
+  "On-Time Delivery": "delivery",
+  "Layouts": "config",
+  "Location": "location",
+  "Capital Appreciation": "roi",
+  "Value Buying": "entry",
+  "Rental Yield": "liquidity",
+  "Liquidity": "liquidity",
+};
+const PRIORITY_BOOST = 1.6;
 
 const clamp = (x: number, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, x));
 const r2 = (x: number) => Math.round(x * 100) / 100;
@@ -253,12 +269,14 @@ function isActive(factor: MatchFactor, d: Buyer): boolean {
 /** Score one project for one buyer against the corpus market context. */
 export function scoreMatch(p: MatchInput, d: Buyer, mkt: MarketContext): MatchResult {
   const W = MATCH_WEIGHTS[d.persona];
+  const boosted = new Set((d.priorities ?? []).map((pr) => PRIORITY_FACTOR[pr]).filter(Boolean) as MatchFactor[]);
+  const baseW = (f: MatchFactor) => (W[f] || 0) * (boosted.has(f) ? PRIORITY_BOOST : 1);
   const active = (Object.keys(W) as MatchFactor[]).filter((f) => isActive(f, d));
-  const totalW = active.reduce((s, f) => s + (W[f] || 0), 0) || 1;
+  const totalW = active.reduce((s, f) => s + baseW(f), 0) || 1;
   const breakdown: MatchResult["breakdown"] = [];
   let s = 0;
   for (const factor of active) {
-    const weight = ((W[factor] || 0) / totalW) * 100; // renormalized to sum 100 over active factors
+    const weight = (baseW(factor) / totalW) * 100; // priority-boosted, renormalized to sum 100 over active factors
     const fit = F[factor](p, d, mkt);
     const contribution = weight * fit;
     s += contribution;

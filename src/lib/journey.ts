@@ -49,6 +49,7 @@ export type BuyData = {
   configs: string[];
   timeline: string | null;
   priorities: string[]; // up to 3
+  exitYears?: number | null; // investor hold horizon (captured in the report sheet)
   notes?: string; // free-text: "in your own words" on the last onboarding step
 };
 
@@ -935,7 +936,8 @@ export function buyerFromBuyData(d: BuyData): Buyer {
     corridors: d.locations.length ? d.locations : null,
     poi: null,
     byYear: null,
-    exitYears: null,
+    exitYears: d.exitYears ?? null,
+    priorities: d.priorities,
   };
 }
 
