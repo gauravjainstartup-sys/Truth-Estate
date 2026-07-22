@@ -240,6 +240,7 @@ export type LiveBacklogFull = {
   landAcres: number | null;
   /* module payloads — shapes owned by the pipeline */
   modConstruction: unknown;
+  modSales: unknown;
   modTrackRecord: unknown;
   modLegal: unknown;
   modFinancial: unknown;
@@ -415,6 +416,7 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
       openAreaPct: n(r.open_area_pct),
       landAcres: n(r.land_acres),
       modConstruction: j(r.construction_pace),
+      modSales: j(r.sales_velocity),
       modTrackRecord: j(r.developer_track_record),
       modLegal: j(r.legal_risks),
       modFinancial: j(r.financial_subscores),

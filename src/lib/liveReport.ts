@@ -786,14 +786,32 @@ export function liveProjectIntel(
         })()
       : undefined;
 
-  /* ── construction & sales — the QPR read; expectedPct is derived from the
-     pace-vs-schedule months at the project's own observed build rate ── */
+  /* ── construction & sales — the QPR read. The "% RERA required by quarter-end"
+     is the FILED figure from the construction_pace module (expected_pct_at_qpr) —
+     we read it verbatim (2 dp). Only when it's absent do we fall back to a
+     pace-vs-schedule estimate. The R2 proof PDFs ride the same modules
+     (construction_pace.proof_file.url, sales_velocity.proof_file.url). ── */
+  const conMod = (row.modConstruction && typeof row.modConstruction === "object" ? row.modConstruction : {}) as Record<string, unknown>;
+  const salesMod = (row.modSales && typeof row.modSales === "object" ? row.modSales : {}) as Record<string, unknown>;
+  const numAny = (v: unknown): number | null =>
+    typeof v === "number" && isFinite(v) ? v : typeof v === "string" && v.trim() !== "" && isFinite(Number(v)) ? Number(v) : null;
+  const proofUrlOf = (m: Record<string, unknown>): string | null => {
+    const pf = m.proof_file;
+    const u = pf && typeof pf === "object" ? (pf as Record<string, unknown>).url : undefined;
+    if (typeof u !== "string" || u.trim() === "") return null;
+    const s = u.trim();
+    return isHttpUrl(s) ? s : pdfSrc(s); // an R2/CDN link as-is; a relative path via the pdf gate
+  };
+
   const actualPct = row.constructionProgressPct != null ? Math.round(row.constructionProgressPct) : null;
   const reraDate = monthLabel(row.reraPromiseDate) ?? row.promised;
   const predictedDate = monthLabel(row.predictedDeliveryDate) ?? row.predicted;
+  const filedRequiredPct = numAny(conMod.expected_pct_at_qpr);
   const behindMonths = row.paceVsScheduleMonths != null ? -row.paceVsScheduleMonths : row.predictedDelayMonths;
   let expectedPct: number | null = null;
-  if (actualPct != null) {
+  if (filedRequiredPct != null) {
+    expectedPct = Math.max(0, Math.min(100, Math.round(filedRequiredPct * 100) / 100)); // filed value, kept to 2 dp
+  } else if (actualPct != null) {
     if (behindMonths == null || behindMonths === 0) expectedPct = actualPct;
     else {
       const elapsed = monthsBetween(row.registrationDate, row.lastQprDate);
@@ -801,6 +819,8 @@ export function liveProjectIntel(
       expectedPct = Math.max(0, Math.min(100, Math.round(actualPct + behindMonths * rate)));
     }
   }
+  const conProofPdf = proofUrlOf(conMod);
+  const salesProofPdf = proofUrlOf(salesMod);
   const conAbsorption = velocityPct != null ? Math.round(velocityPct) : absorptionPct;
   const construction: ProjectOps["construction"] =
     actualPct != null && expectedPct != null && conAbsorption != null && reraDate && predictedDate
@@ -811,6 +831,9 @@ export function liveProjectIntel(
           reraDate,
           predictedDate,
           qpr: quarterLabel(row.lastQprDate) ?? "latest QPR",
+          ...(row.paceVsScheduleMonths != null ? { paceMonths: row.paceVsScheduleMonths } : {}),
+          ...(conProofPdf ? { constructionProofPdf: conProofPdf } : {}),
+          ...(salesProofPdf ? { salesProofPdf: salesProofPdf } : {}),
           ...(delayPct != null ? { delayChancePct: Math.round(delayPct) } : {}),
         }
       : undefined;
