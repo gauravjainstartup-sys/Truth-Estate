@@ -20,7 +20,7 @@ import mediaManifest from "./live-media.manifest.json";
    The manifest only covers any LEGACY base64 rows — decoded to real files
    before the build (scripts/materialize-media.mjs) — and is empty once every
    row has migrated. When present, a materialized path is preferred. */
-const MANIFEST = mediaManifest as Record<string, Partial<Record<string, string>>> & { __urls?: Record<string, string> };
+const MANIFEST = mediaManifest as Record<string, Partial<Record<string, string>>> & { __urls?: Record<string, string>; __satellite?: Record<string, string> };
 /* remote URL → same-origin materialized path (floor plans, brochure pages);
    unmapped URLs pass through untouched */
 const viaUrls = (s: string): string => MANIFEST.__urls?.[s] ?? s;
@@ -557,6 +557,11 @@ export function liveProjectIntel(
       : null;
 
   const heroSrc = mediaSrc(ext?.heroImageUrl);
+  // Fallback hero: the build bakes a Google satellite of the site for projects
+  // with no uploaded hero (keyed by project id). DB hero wins; satellite is the
+  // middle tier; absent → the component's own gradient. Same-origin baked path,
+  // so it flows through the existing hero <img> unchanged.
+  const heroImg = heroSrc ?? MANIFEST.__satellite?.[row.id] ?? null;
   const renderSrc = mediaSrc(ext?.renderElevationUrl);
   const siteMapSrc = mediaSrc(ext?.siteMapImageUrl);
   const brochurePages = mediaPages(ext?.brochureUrl) ?? (mediaSrc(ext?.brochureUrl) ? [mediaSrc(ext?.brochureUrl)!] : null);
@@ -564,7 +569,7 @@ export function liveProjectIntel(
   const paymentSrc = mediaSrc(ext?.paymentPlanUrl);
   const paymentPdf = paymentSrc ? null : pdfSrc(ext?.paymentPlanUrl);
   const media: NonNullable<ProjectOps["media"]> = {
-    ...(heroSrc ? { heroImage: heroSrc } : {}),
+    ...(heroImg ? { heroImage: heroImg } : {}),
     ...(renderSrc ? { render: renderSrc } : {}),
     ...(siteMapSrc
       ? { masterplan: { src: siteMapSrc, read: "The site layout as filed — tap to enlarge. Verify the RERA-approved siteplan before signing." } }
