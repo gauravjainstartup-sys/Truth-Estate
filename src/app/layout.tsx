@@ -141,7 +141,7 @@ export default function RootLayout({
            React hydrates so no stale state is ever read. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var r=false;var e=(performance.getEntriesByType&&performance.getEntriesByType('navigation')[0]);if(e){r=e.type==='reload';}else if(performance.navigation){r=performance.navigation.type===1;}if(r){for(var i=localStorage.length-1;i>=0;i--){var k=localStorage.key(i);if(k&&k.indexOf('truthEstate')===0){localStorage.removeItem(k);}}}}catch(_){}})();`,
+            __html: `(function(){try{if('scrollRestoration' in history){history.scrollRestoration='manual';}window.scrollTo(0,0);var r=false;var e=(performance.getEntriesByType&&performance.getEntriesByType('navigation')[0]);if(e){r=e.type==='reload';}else if(performance.navigation){r=performance.navigation.type===1;}if(r){for(var i=localStorage.length-1;i>=0;i--){var k=localStorage.key(i);if(k&&k.indexOf('truthEstate')===0){localStorage.removeItem(k);}}}}catch(_){}})();`,
           }}
         />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgLd) }} />

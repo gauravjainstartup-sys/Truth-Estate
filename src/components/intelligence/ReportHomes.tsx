@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ProjectIntel } from "@/lib/projects";
+import { saveLead } from "@/lib/journey";
 import ZoomStage from "./ZoomStage";
 
 /* Chapter I — the homes. One plan on screen at a time: BHK tabs pick the
@@ -115,8 +116,10 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
               return (
                 <button key={idx} onClick={() => { setVIdx(idx); setPlanIdx(0); setImgErr(false); }}
                   className={`min-w-[112px] flex-1 rounded-xl border px-4 py-2.5 text-left transition-colors sm:flex-none ${on ? "border-[#9a7a2e] bg-[#9a7a2e]/[0.09] shadow-[0_0_0_1px_#9a7a2e]" : "border-[#1a1a1a]/12 bg-white hover:border-[#1a1a1a]/30"}`}>
-                  <span className={`block text-[0.82rem] font-semibold ${on ? "text-[#7a5f1e]" : "text-[#1a1a1a]/75"}`}>{v.variant ?? `Size ${idx + 1}`}</span>
-                  <span className="mt-0.5 block font-mono text-[0.68rem] text-[#1a1a1a]/50">{v.superSqft.toLocaleString("en-IN")} sq ft</span>
+                  {v.variant && !/super\s*area/i.test(v.variant) && (
+                    <span className={`block text-[0.82rem] font-semibold ${on ? "text-[#7a5f1e]" : "text-[#1a1a1a]/75"}`}>{v.variant}</span>
+                  )}
+                  <span className={`block font-mono text-[0.68rem] text-[#1a1a1a]/50 ${v.variant && !/super\s*area/i.test(v.variant) ? "mt-0.5" : ""}`}>{v.superSqft.toLocaleString("en-IN")} sq ft</span>
                   {price && <span className={`mt-1 block font-mono text-[0.98rem] font-semibold ${on ? "text-[#7a5f1e]" : "text-[#1a1a1a]"}`}>{price}</span>}
                 </button>
               );
@@ -140,20 +143,18 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
                 ))}
               </div>
             )}
-            {/* the plan fills the column so it matches the measured panel's
-               height on desktop; contain-fit centres it on the cream ground */}
-            <button type="button" onClick={() => setZoom(true)} aria-label="Enlarge the floor plan"
-              className="group relative block w-full cursor-zoom-in overflow-hidden rounded-xl border border-[#1a1a1a]/10 bg-[#FBF8F2] text-left lg:min-h-0 lg:flex-1">
-              {activePlan && !imgErr ? (
+            {activePlan && !imgErr ? (
+              <button type="button" onClick={() => setZoom(true)} aria-label="Enlarge the floor plan"
+                className="group relative block w-full cursor-zoom-in overflow-hidden rounded-xl border border-[#1a1a1a]/10 bg-[#FBF8F2] text-left lg:min-h-0 lg:flex-1">
                 <img loading="lazy" src={asset(activePlan.src)} onError={() => setImgErr(true)} alt={`${h.config} ${activePlan.label || h.variant || ""} floor plan — ${p.name}`} className="block w-full transition-transform duration-500 group-hover:scale-[1.02] lg:h-full lg:object-contain" />
-              ) : (
-                <FloorPlanSchematic beds={beds} balcony={h.balconySqft != null} />
-              )}
-              <span className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-[#0b1f1a]/70 px-3 py-1.5 text-[0.66rem] font-medium text-white backdrop-blur-sm transition-colors group-hover:bg-[#0b1f1a]/90">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
-                Enlarge
-              </span>
-            </button>
+                <span className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-[#0b1f1a]/70 px-3 py-1.5 text-[0.66rem] font-medium text-white backdrop-blur-sm transition-colors group-hover:bg-[#0b1f1a]/90">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
+                  Enlarge
+                </span>
+              </button>
+            ) : (
+              <FloorPlanRequest project={p.name} config={h.config} />
+            )}
           </div>
 
           {/* ── the areas, measured ── */}
@@ -191,23 +192,17 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
 
       {/* floor-plan viewer — same chrome as the site-plan / document viewer:
          emerald full-screen backdrop, gold title, round ✕; Esc or tap-out closes */}
-      {zoom && (
+      {zoom && activePlan && !imgErr && (
         <div className="fixed inset-0 z-[140] flex flex-col bg-[#0b1f1a]/90 backdrop-blur-sm" onClick={() => setZoom(false)} role="dialog" aria-modal="true" aria-label="Floor plan — enlarged">
           <div className="flex items-center justify-between gap-4 px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
             <p className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[#B29668]">
-              {h.config}{activePlan?.label ? ` · ${activePlan.label}` : ""} — Floor plan
+              {h.config}{activePlan.label ? ` · ${activePlan.label}` : ""} — Floor plan
             </p>
             <button onClick={() => setZoom(false)} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white">✕</button>
           </div>
           <div className="flex min-h-0 flex-1 items-center justify-center px-4 pb-6" onClick={(e) => e.stopPropagation()}>
             <ZoomStage>
-              {activePlan && !imgErr ? (
-                <img src={asset(activePlan.src)} onError={() => setImgErr(true)} alt={`${h.config} ${activePlan.label || ""} floor plan — ${p.name}`} className="max-h-[78vh] max-w-full rounded-lg shadow-[0_30px_90px_rgba(0,0,0,0.5)]" draggable={false} />
-              ) : (
-                <div className="w-[min(42rem,88vw)] overflow-hidden rounded-lg bg-[#FBF8F2] shadow-[0_30px_90px_rgba(0,0,0,0.5)]">
-                  <FloorPlanSchematic beds={beds} balcony={h.balconySqft != null} />
-                </div>
-              )}
+              <img src={asset(activePlan.src)} onError={() => setImgErr(true)} alt={`${h.config} ${activePlan.label || ""} floor plan — ${p.name}`} className="max-h-[78vh] max-w-full rounded-lg shadow-[0_30px_90px_rgba(0,0,0,0.5)]" draggable={false} />
             </ZoomStage>
           </div>
         </div>
@@ -216,42 +211,45 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
   );
 }
 
-/* An indicative, brand-safe zoning schematic — deliberately not a surveyed
-   plan (that's the licensed image + the gated dimensioned plan). Reads as
-   "a floor plan" without asserting one. */
-function FloorPlanSchematic({ beds, balcony }: { beds: number; balcony: boolean }) {
-  const bedLabels = beds >= 4 ? ["Master bed", "Bed 2", "Bed 3", "Bed 4"] : ["Master bed", "Bed 2", "Bed 3"];
+function FloorPlanRequest({ project, config }: { project: string; config: string }) {
+  const [open, setOpen] = useState(false);
+  const [contact, setContact] = useState("");
+  const [sent, setSent] = useState(false);
   return (
-    <svg viewBox="0 0 340 250" className="block w-full" role="img" aria-label="Indicative zoning schematic">
-      <rect width="340" height="250" fill="#FBF8F2" />
-      {/* unit boundary */}
-      <rect x="12" y="12" width="316" height="226" rx="6" fill="#fff" stroke="#9a7a2e" strokeWidth="2" opacity="0.9" />
-      {/* zones */}
-      <Zone x={18} y={18} w={168} h={128} label="Living / Dining" big />
-      <Zone x={18} y={150} w={168} h={82} label="Kitchen" />
-      <Zone x={190} y={18} w={132} h={78} label={bedLabels[0]} />
-      <Zone x={190} y={100} w={132} h={64} label={beds >= 4 ? "Bed 2 · Bed 4" : "Bed 2"} />
-      <Zone x={190} y={168} w={72} h={64} label="Bed 3" />
-      <Zone x={266} y={168} w={56} h={64} label="Bath" small />
-      {/* balcony strip */}
-      {balcony && <><rect x="18" y="146" width="168" height="0" /></>}
-      {/* door + compass */}
-      <path d="M96 232 q14 -14 28 0" fill="none" stroke="#9a7a2e" strokeWidth="1.5" opacity="0.6" />
-      <g transform="translate(305 34)" opacity="0.5">
-        <circle r="9" fill="none" stroke="#9a7a2e" strokeWidth="1" />
-        <path d="M0 -7 L0 5 M0 -7 L-3 -2 M0 -7 L3 -2" stroke="#9a7a2e" strokeWidth="1" fill="none" />
-        <text y="16" textAnchor="middle" fontSize="7" fill="#9a7a2e" fontFamily="ui-sans-serif">N</text>
-      </g>
-    </svg>
-  );
-}
-
-function Zone({ x, y, w, h, label, big, small }: { x: number; y: number; w: number; h: number; label: string; big?: boolean; small?: boolean }) {
-  return (
-    <g>
-      <rect x={x} y={y} width={w} height={h} rx="3" fill={big ? "#9a7a2e0f" : "#1a1a1a05"} stroke="#9a7a2e" strokeWidth="1" opacity="0.5" />
-      <text x={x + w / 2} y={y + h / 2 + 3} textAnchor="middle" fontSize={small ? 8.5 : big ? 12 : 10} fill="#1a1a1a" opacity="0.6" fontFamily="ui-sans-serif" fontWeight={big ? 600 : 400}>{label}</text>
-    </g>
+    <div className="relative flex w-full flex-col items-center justify-center overflow-hidden rounded-xl border border-dashed border-[#9a7a2e]/40 bg-[#FBF8F2] py-10 text-center lg:min-h-0 lg:flex-1"
+      style={sent ? { borderStyle: "solid", borderColor: "rgba(30,107,69,0.3)" } : undefined}>
+      {sent ? (
+        <p className="px-6 text-[0.8rem] font-medium leading-[1.5] text-[#1e6b45]">
+          &#10003; Requested — the desk sources it and sends it to you, usually the same day.
+        </p>
+      ) : open ? (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            saveLead({ name: "", email: contact, project, intent: "documents", docs: [`${config} floor plan`], createdAt: Date.now() });
+            setSent(true);
+          }}
+          className="flex w-full max-w-xs gap-2 px-6"
+        >
+          <input
+            required autoFocus value={contact} onChange={(e) => setContact(e.target.value)}
+            placeholder="Phone / WhatsApp / email"
+            className="w-full min-w-0 flex-1 rounded-lg border border-[#1a1a1a]/12 bg-white px-3 py-2.5 text-[0.78rem] outline-none transition-colors focus:border-[#1e6b45]"
+          />
+          <button type="submit" className="shrink-0 rounded-lg bg-[#1e6b45] px-3.5 py-2.5 text-[0.76rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Send&nbsp;&rarr;</button>
+        </form>
+      ) : (
+        <>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#9a7a2e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto h-8 w-8 opacity-60" aria-hidden>
+            <path d="M6 2.5h8L19.5 8v13a1 1 0 0 1-1 1h-12a1 1 0 0 1-1-1v-17a1 1 0 0 1 1-1Z" /><path d="M14 2.5V8h5.5M9 13h6M9 17h6" />
+          </svg>
+          <p className="mt-2.5 text-[0.72rem] font-medium text-[#1a1a1a]/45">Floor plan not yet on file</p>
+          <button onClick={() => setOpen(true)} className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[#9a7a2e] bg-[#9a7a2e]/[0.09] px-4 py-2 text-[0.78rem] font-semibold text-[#9a7a2e] transition-colors hover:bg-[#9a7a2e]/[0.18]">
+            Request floor plan &rarr;
+          </button>
+        </>
+      )}
+    </div>
   );
 }
 
