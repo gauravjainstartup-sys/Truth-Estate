@@ -298,7 +298,6 @@ export default function ProjectProfile({
   const score = useScoreReveal(p.truthScore);
   const locked = !sample && !readAccess;
   const SAMPLE_HREF = `${basePath}/intelligence/projects/sample-read`;
-  const lockedTicket = p.budget[0] === p.budget[1] ? (p.budget[0] ? `₹${p.budget[0]} Cr+` : "") : `₹${p.budget[0]}–${p.budget[1]} Cr`;
   // "Get Independent Advice" from a report is about THIS project — open the
   // consultation with the project as its source (the advisor preps for it),
   // and if the visitor already shared a brief (Match Score / Buyer Office),
@@ -348,6 +347,14 @@ export default function ProjectProfile({
     : undefined;
   const heroImage = ops?.media?.heroImage;
   const has3D = !!towerIntelMeta(p)?.file;
+
+  const liveTicket: [number, number] = (() => {
+    const cLow = live?.currentLow ?? ops?.price?.currentLow;
+    const band = live?.superAreaRange ?? p.sizeBand;
+    const t = cLow ? ticketFromPsf(cLow, band) : null;
+    return t ?? p.budget;
+  })();
+  const lockedTicket = liveTicket[0] === liveTicket[1] ? (liveTicket[0] ? `₹${liveTicket[0]} Cr+` : "") : `₹${liveTicket[0]}–${liveTicket[1]} Cr`;
 
   const con = ops?.construction;
 
@@ -638,7 +645,7 @@ export default function ProjectProfile({
                          top config + ticket, each with its glyph */}
                       <p className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-1 text-[0.86rem] font-light text-white/60">
                         <span className="inline-flex items-center gap-2"><IconBed className="text-[#d8b978]" />{configsCompact(p.configs)}</span>
-                        <span className="inline-flex items-center gap-2"><IconTag className="text-[#d8b978]" />{p.budget[0] === p.budget[1] ? (p.budget[0] ? `₹${p.budget[0]} Cr+` : "Price NA") : <>₹{p.budget[0]}–{p.budget[1]} Cr</>}</span>
+                        <span className="inline-flex items-center gap-2"><IconTag className="text-[#d8b978]" />{liveTicket[0] === liveTicket[1] ? (liveTicket[0] ? `₹${liveTicket[0]} Cr+` : "Price NA") : <>₹{liveTicket[0]}–{liveTicket[1]} Cr</>}</span>
                       </p>
                       {/* credential chips — on xl they stay with the identity column;
                          on stacked layouts they move down with the score group */}
@@ -764,13 +771,7 @@ export default function ProjectProfile({
               <div className="rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-8 md:p-10">
                 {/* money facts — value-first, serif, 2×2 on mobile / 4-up on desktop */}
                 <div className="grid grid-cols-2 gap-x-8 gap-y-8 lg:grid-cols-4">
-                  <Money v={(() => {
-                    const cLow = live?.currentLow ?? ops?.price?.currentLow;
-                    const band = live?.superAreaRange ?? p.sizeBand;
-                    const t = cLow ? ticketFromPsf(cLow, band) : null;
-                    const [lo, hi] = t ?? p.budget;
-                    return lo === hi ? (lo ? `₹${lo} Cr+` : "NA") : `₹${lo}–${hi} Cr`;
-                  })()} k="Ticket" />
+                  <Money v={liveTicket[0] === liveTicket[1] ? (liveTicket[0] ? `₹${liveTicket[0]} Cr+` : "NA") : `₹${liveTicket[0]}–${liveTicket[1]} Cr`} k="Ticket" />
                   {(live?.currentLow ?? ops?.price?.currentLow)
                     ? <Money v={`₹${kpsf(live?.currentLow ?? ops!.price!.currentLow)}k+`} k="Current / sq ft" />
                     : <Money v={p.psf ? fmtPsf(live?.corridorAvg ?? p.psf.avg) : "—"} k="Corridor avg / sq ft" />}
