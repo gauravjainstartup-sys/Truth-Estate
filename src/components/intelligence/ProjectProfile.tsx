@@ -740,27 +740,59 @@ export default function ProjectProfile({
             {/* Your Fit — the personal counterpart to the Truth Score, leading the body */}
             <MatchScore project={p} variant="band" />
 
-            {/* The short answer — the 10-second executive read. The word
-               "verdict" belongs to exactly one thing: the profile-tailored
-               call at the end of the report. */}
-            <div className="mt-11 rounded-2xl border border-[#c9a96e]/30 bg-white/70 p-8 shadow-[0_16px_50px_rgba(0,0,0,0.04)] md:p-10">
-              <Eyebrow>The short answer</Eyebrow>
-              <p className="mt-5 font-serif text-[1.4rem] font-normal leading-[1.5] md:text-[1.7rem]">{shortAnswer(p.reason)}</p>
-              <div className="mt-6 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 border-t border-[#1a1a1a]/8 pt-5">
-                <p className="max-w-xl text-[0.86rem] font-light leading-[1.7] text-[#1a1a1a]/55">
-                  <span className="font-medium text-[#1a1a1a]/70">Best suited for:</span> {investorFit(p).replace(/^Best suited for\s+/i, "")}
-                </p>
-                {locked ? (
-                  <button onClick={() => setUnlockOpen(true)} className="shrink-0 text-[0.78rem] font-semibold text-[#1e6b45] transition-colors hover:text-[#238c55]">
-                    🔒 Unlock your verdict →
-                  </button>
-                ) : (
-                  <a href="#verdict" className="shrink-0 text-[0.78rem] font-semibold text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]">
-                    Your personalised verdict ↓
-                  </a>
-                )}
-              </div>
-            </div>
+            {/* The short answer — structured executive read */}
+            {(() => {
+              const signals = shortAnswerSignals(p, ctx, live);
+              return (
+                <div className="mt-11 rounded-2xl border border-[#c9a96e]/30 bg-white/70 p-8 shadow-[0_16px_50px_rgba(0,0,0,0.04)] md:p-10">
+                  <Eyebrow>The short answer</Eyebrow>
+                  <p className="mt-5 font-serif text-[1.65rem] font-normal leading-[1.2] md:text-[2rem]">{p.recommendation}</p>
+
+                  {signals.highlights.length > 0 && (
+                    <div className="mt-6">
+                      <p className="text-[0.7rem] font-semibold uppercase tracking-[0.15em] text-[#1e6b45]/70">Highlights</p>
+                      <ul className="mt-2.5 space-y-2">
+                        {signals.highlights.map((h, i) => (
+                          <li key={i} className="flex items-start gap-2.5 text-[0.88rem] leading-[1.55] text-[#1a1a1a]/75">
+                            <span className="mt-[3px] shrink-0 text-[0.7rem] text-[#1e6b45]">&#10003;</span>
+                            {h}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {signals.cautions.length > 0 && (
+                    <div className="mt-5">
+                      <p className="text-[0.7rem] font-semibold uppercase tracking-[0.15em] text-[#9a7a2e]/70">Be cautious</p>
+                      <ul className="mt-2.5 space-y-2">
+                        {signals.cautions.map((c, i) => (
+                          <li key={i} className="flex items-start gap-2.5 text-[0.88rem] leading-[1.55] text-[#1a1a1a]/75">
+                            <span className="mt-[3px] shrink-0 text-[0.7rem] text-[#9a7a2e]">&#9888;</span>
+                            {c}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className="mt-6 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 border-t border-[#1a1a1a]/8 pt-5">
+                    <p className="max-w-xl text-[0.86rem] font-light leading-[1.7] text-[#1a1a1a]/55">
+                      <span className="font-medium text-[#1a1a1a]/70">Best suited for:</span> {investorFit(p).replace(/^Best suited for\s+/i, "")}
+                    </p>
+                    {locked ? (
+                      <button onClick={() => setUnlockOpen(true)} className="shrink-0 text-[0.78rem] font-semibold text-[#1e6b45] transition-colors hover:text-[#238c55]">
+                        🔒 Unlock your verdict →
+                      </button>
+                    ) : (
+                      <a href="#verdict" className="shrink-0 text-[0.78rem] font-semibold text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]">
+                        Your personalised verdict ↓
+                      </a>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
 
             <Chapter n="I" title="Project Fundamentals" framing="The facts of the asset — before we weigh trust." />
 
@@ -1301,20 +1333,49 @@ function ScoreGradePill({ score }: { score: number }) {
   );
 }
 
-/* The short answer — reformat the pipeline's terse data-caption
-   ("<Reco> project. <n>% construction complete. <a>/<b> units sold.") into a
-   cleaner one-liner. Any other (prose) reason is left as-is, bar swapping a
-   raw units fraction for a percentage. */
-function shortAnswer(reason: string): string {
-  const s = (reason ?? "").trim();
-  const m = s.match(/^([A-Za-z][A-Za-z ]{2,22}?)\s+project\.\s*(\d+)%\s*construction\s*complete\.\s*(\d+)\s*\/\s*(\d+)\s*units\s*sold\.?\s*$/i);
-  if (m) {
-    const reco = m[1].trim();
-    const lead = /review/i.test(reco) ? reco : `${reco}-grade`;
-    const pct = Math.round((Number(m[3]) / Number(m[4])) * 100);
-    return `${lead}. ${m[2]}% built · ${pct}% sold (${m[3]} of ${m[4]} units).`;
+function shortAnswerSignals(p: ProjectIntel, ctx: ReturnType<typeof rankContext>, live: import("@/lib/useLiveVitals").LiveVitals | null) {
+  const ops = p.ops;
+  const dev = developerOf(p);
+  const highlights: string[] = [];
+  const cautions: string[] = [];
+
+  const cLow = live?.currentLow ?? ops?.price?.currentLow;
+  const launchPsf = live?.launchPsf ?? ops?.price?.launchPsf;
+  if (cLow && launchPsf && launchPsf > 0) {
+    const appr = Math.round(((cLow - launchPsf) / launchPsf) * 100);
+    if (appr > 0) highlights.push(`${appr}% price appreciation since launch`);
+    else if (appr === 0) cautions.push("No price appreciation since launch");
+    else cautions.push(`Prices down ${Math.abs(appr)}% from launch`);
   }
-  return s.replace(/(\d+)\s*\/\s*(\d+)\s*units\s*sold/i, (_, n, t) => `${Math.round((Number(n) / Number(t)) * 100)}% sold (${n} of ${t} units)`);
+
+  if (ctx.corridorRank > 0) {
+    if (ctx.corridorRank <= 3) highlights.push(`#${ctx.corridorRank} of ${ctx.corridorCount} in ${p.marketShort}`);
+    else if (ctx.bottomHalf) cautions.push(`Ranks ${ctx.corridorRank} of ${ctx.corridorCount} in ${p.marketShort}`);
+  }
+
+  if (dev) {
+    const perf = dev.performance;
+    if (perf.onTimePct >= 85) highlights.push(`${dev.name}: consistent delivery across ${perf.delivered} projects`);
+    else if (perf.avgDelayMonths > 12) cautions.push(`${dev.name}: avg ${perf.avgDelayMonths}-month delays across past projects`);
+  }
+
+  if (ops?.construction) {
+    const pct = ops.construction.actualPct;
+    if (pct >= 50) highlights.push(`${pct}% constructed — execution on track`);
+    else if (pct < 20) cautions.push(`Only ${pct}% constructed — early-stage execution risk`);
+  }
+
+  if (ops?.units && ops.construction) {
+    const soldPct = ops.construction.absorptionPct;
+    if (soldPct >= 100) cautions.push(`${soldPct}% sold — no primary inventory, resale premium likely`);
+    else if (soldPct >= 80) highlights.push(`${soldPct}% sold — strong demand signal`);
+    else if (soldPct < 30) cautions.push(`Only ${soldPct}% sold — early absorption`);
+  }
+
+  if (p.strengths.length) for (const s of p.strengths) { if (highlights.length < 3) highlights.push(s); }
+  if (p.watchouts.length) for (const w of p.watchouts) { if (cautions.length < 2) cautions.push(w); }
+
+  return { highlights: highlights.slice(0, 3), cautions: cautions.slice(0, 2) };
 }
 
 /* ── one consistent line-icon set for the hero (replaces ad-hoc unicode glyphs) ── */
