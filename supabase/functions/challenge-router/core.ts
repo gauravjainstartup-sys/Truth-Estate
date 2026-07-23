@@ -12,9 +12,10 @@ export type Ctx = {
   publicKnowledge?: string;
   paidKnowledge?: string | null;
   paidTopics?: string[];
+  tier?: "anonymous" | "registered" | "paid";
 };
 export type Msg = { role: "user" | "bot"; text: string };
-export type Body = { question?: string; locked?: boolean; history?: Msg[]; context?: Ctx };
+export type Body = { mode?: "project" | "general"; question?: string; locked?: boolean; tier?: string; history?: Msg[]; context?: Ctx };
 export type RouterAnswer = { ok: true; text: string; gate: boolean } | { ok: false };
 
 export type FetchLike = (url: string, init: Record<string, unknown>) => Promise<{
@@ -83,6 +84,36 @@ export async function callGemini(
   return text || null;
 }
 
+function generalSystemPrompt(ctx: Ctx): string {
+  const tier = ctx.tier ?? "anonymous";
+  const paid = tier === "paid" && ctx.paidKnowledge
+    ? `\n\nPAID INTELLIGENCE (this visitor has PAID — use it fully, give deep answers):\n${ctx.paidKnowledge}`
+    : "";
+
+  const depthRule =
+    tier === "anonymous"
+      ? `5. This visitor is ANONYMOUS (free, limited messages). Keep answers at OVERVIEW level — general market direction, corridor comparisons, methodology. Do NOT give specific project verdicts, ROI numbers, or proprietary analysis. Be helpful but concise (2-3 sentences). Encourage them to sign up for deeper insights.`
+      : tier === "registered"
+        ? `5. This visitor is REGISTERED (free account). Give moderately detailed answers — name projects and scores, share corridor-level data, give general developer assessments. Do NOT share deep proprietary analysis (specific ROI models, detailed red flags, internal verdicts). For deep questions, mention that a paid read unlocks the full analysis.`
+        : `5. This visitor is a PAID user. Answer with FULL DEPTH — use all available data including project verdicts, ROI models, developer records, red flags, and market projections. Be thorough but concise.`;
+
+  return [
+    `You are TruthGuide, the independent, buyer-side real estate advisor for Truth Estate. You answer questions about Gurugram residential real estate ONLY.`,
+    ``,
+    `RULES:`,
+    `1. Answer ONLY from the context below. Never invent facts, numbers or findings. If something isn't in the context, say we haven't assessed it.`,
+    `2. Be concise and conversational — 2-4 sentences, like a sharp WhatsApp reply. No headings, no markdown.`,
+    `3. Be honest, even about weaknesses — conceding a weak point builds trust. You are NOT a salesperson.`,
+    `4. ONLY discuss Gurugram residential real estate. Politely decline anything else (commercial, other cities, non-real-estate topics). Say: "I focus exclusively on Gurugram residential real estate — that's where our independent research runs deepest."`,
+    depthRule,
+    `6. Never say you are an AI, a language model, or Gemini. You are TruthGuide, the independent advisor.`,
+    ``,
+    `CONTEXT:`,
+    ctx.publicKnowledge ?? "(none provided)",
+    paid,
+  ].join("\n");
+}
+
 export async function routeChallenge(
   body: Body,
   opts: { apiKey: string | undefined; model: string; fetchImpl: FetchLike },
@@ -90,15 +121,21 @@ export async function routeChallenge(
   const question = (body.question ?? "").trim();
   const ctx = body.context ?? {};
   const locked = Boolean(body.locked);
+  const mode = body.mode ?? "project";
   if (!question || !ctx.publicKnowledge) return { ok: false };
   if (!opts.apiKey) {
     console.error("[challenge-router] GEMINI_API_KEY not set");
     return { ok: false };
   }
-  const text = await callGemini(opts.apiKey, systemPrompt(ctx, locked), body.history, question, {
+
+  const sys = mode === "general"
+    ? generalSystemPrompt(ctx)
+    : systemPrompt(ctx, locked);
+
+  const text = await callGemini(opts.apiKey, sys, body.history, question, {
     model: opts.model,
     fetchImpl: opts.fetchImpl,
   });
   if (!text) return { ok: false };
-  return { ok: true, text, gate: locked }; // client is authoritative on the gate
+  return { ok: true, text, gate: locked };
 }
