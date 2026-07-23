@@ -163,6 +163,39 @@ function ticketFromPsf(currentLow: number, sizeBand: string | null): [number, nu
   return lo > 0 && hi > 0 ? [lo, hi] : null;
 }
 
+function useScoreReveal(end: number) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [count, setCount] = useState(0);
+  const [revealed, setRevealed] = useState(false);
+  const started = useRef(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !started.current) {
+          started.current = true;
+          setRevealed(true);
+          const dur = 2400;
+          let t0: number | null = null;
+          const step = (ts: number) => {
+            if (!t0) t0 = ts;
+            const p = Math.min((ts - t0) / dur, 1);
+            const eased = 1 - Math.pow(1 - p, 3);
+            setCount(Math.floor(eased * end));
+            if (p < 1) requestAnimationFrame(step);
+          };
+          requestAnimationFrame(step);
+        }
+      },
+      { threshold: 0.3 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [end]);
+  return { ref, count, revealed };
+}
+
 /* Low/Mid/High-rise from the top of the floors band ("34–38" → 38). */
 function riseTypeOf(floors: string): string | null {
   const nums = floors.match(/\d+/g);
@@ -262,6 +295,7 @@ export default function ProjectProfile({
   const [challengeOpen, setChallengeOpen] = useState(false);
   useEffect(() => { setReadAccess(hasReadAccess(p.slug)); setThreeDAccess(has3DAccess(p.slug)); }, [p.slug]);
   const live = useLiveVitals(p.name);
+  const score = useScoreReveal(p.truthScore);
   const locked = !sample && !readAccess;
   const SAMPLE_HREF = `${basePath}/intelligence/projects/sample-read`;
   const lockedTicket = p.budget[0] === p.budget[1] ? (p.budget[0] ? `₹${p.budget[0]} Cr+` : "") : `₹${p.budget[0]}–${p.budget[1]} Cr`;
@@ -597,7 +631,7 @@ export default function ProjectProfile({
                       {ops?.address && (
                         <p className="mt-4 flex items-center text-[0.78rem] font-light text-white/70 sm:text-[0.9rem]">
                           <IconPin className="mr-2 text-[#d8b978]" />
-                          {mapHref ? <a href={mapHref} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-white">{ops.address}<IconArrowUpRight className="ml-1 text-[#d8b978]" /></a> : ops.address}
+                          {ops.address}{p.marketShort ? ` (${p.marketShort} Corridor)` : ""}
                         </p>
                       )}
                       {/* the developer brand already leads the project name — no by-line;
@@ -656,20 +690,18 @@ export default function ProjectProfile({
                       )}
                     </div>
                     {/* Truth Score — light readout card floated on the canvas */}
-                    <div className="w-full max-w-[300px] rounded-2xl border border-white/20 bg-[#FBF8F2]/95 p-4 shadow-[0_22px_55px_-18px_rgba(0,0,0,0.6)] backdrop-blur-md sm:w-[290px] sm:p-5">
+                    <div ref={score.ref} className="w-full max-w-[300px] rounded-2xl border border-white/20 bg-[#FBF8F2]/95 p-4 shadow-[0_22px_55px_-18px_rgba(0,0,0,0.6)] backdrop-blur-md sm:w-[290px] sm:p-5">
                       <p className="text-[0.5rem] font-medium uppercase tracking-[0.22em] text-[#1a1a1a]/40">Truth Score</p>
                       <p className="mt-1 flex items-baseline">
-                        <span className="font-serif text-[3.2rem] font-normal leading-[0.82] text-[#1e6b45]">{p.truthScore}</span>
+                        <span className="font-serif text-[3.2rem] font-normal leading-[0.82] text-[#1e6b45]">{score.count}</span>
                         <span className="ml-1.5 font-mono text-[0.95rem] text-[#1a1a1a]/30">/100</span>
                       </p>
                       <p className="mt-2">
-                        {/* the score's grade as the canonical band pill — same
-                           treatment as the search-result cards (band-coloured) */}
                         <ScoreGradePill score={p.truthScore} />
                       </p>
                       <div className="mt-2.5 flex w-full gap-[3px]">
                         {Array.from({ length: 10 }).map((_, idx) => (
-                          <span key={idx} className={`h-[8px] flex-1 rounded-[2px] ${idx < Math.round(p.truthScore / 10) ? "bg-[#1e6b45]" : "bg-[#1a1a1a]/[0.1]"}`} />
+                          <span key={idx} className={`h-[8px] flex-1 rounded-[2px] transition-colors duration-700 ${score.revealed && idx < Math.round(p.truthScore / 10) ? "bg-[#1e6b45]" : "bg-[#1a1a1a]/[0.1]"}`} style={{ transitionDelay: `${idx * 80}ms` }} />
                         ))}
                       </div>
                       <div className="mt-3 border-t border-[#1a1a1a]/8 pt-2.5">
