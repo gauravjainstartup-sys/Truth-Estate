@@ -153,6 +153,15 @@ function kpsf(n: number): string {
   return (n / 1000).toFixed(n % 1000 === 0 ? 0 : 1).replace(/\.0$/, "");
 }
 
+function ticketFromPsf(currentLow: number, sizeBand: string | null): [number, number] | null {
+  if (!sizeBand) return null;
+  const nums = sizeBand.replace(/,/g, "").match(/\d+/g);
+  if (!nums || nums.length < 2) return null;
+  const lo = Math.round((currentLow * Number(nums[0])) / 1e6) / 10;
+  const hi = Math.round((currentLow * Number(nums[1])) / 1e6) / 10;
+  return lo > 0 && hi > 0 ? [lo, hi] : null;
+}
+
 /* Low/Mid/High-rise from the top of the floors band ("34–38" → 38). */
 function riseTypeOf(floors: string): string | null {
   const nums = floors.match(/\d+/g);
@@ -721,9 +730,13 @@ export default function ProjectProfile({
               <div className="rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-8 md:p-10">
                 {/* money facts — value-first, serif, 2×2 on mobile / 4-up on desktop */}
                 <div className="grid grid-cols-2 gap-x-8 gap-y-8 lg:grid-cols-4">
-                  <Money v={p.budget[0] === p.budget[1] ? (p.budget[0] ? `₹${p.budget[0]} Cr+` : "NA") : `₹${p.budget[0]}–${p.budget[1]} Cr`} k="Ticket" />
+                  <Money v={(() => {
+                    const t = ops?.price ? ticketFromPsf(ops.price.currentLow, p.sizeBand) : null;
+                    const [lo, hi] = t ?? p.budget;
+                    return lo === hi ? (lo ? `₹${lo} Cr+` : "NA") : `₹${lo}–${hi} Cr`;
+                  })()} k="Ticket" />
                   {ops?.price
-                    ? <Money v={`₹${kpsf(ops.price.currentLow)}–${kpsf(ops.price.currentHigh)}k`} k="Current / sq ft" />
+                    ? <Money v={`₹${kpsf(ops.price.currentLow)}k+`} k="Current / sq ft" />
                     : <Money v={p.psf ? fmtPsf(p.psf.avg) : "—"} k="Corridor avg / sq ft" />}
                   <Money v={configsDisplay(p.configs)} k="Configs" />
                   <Money v={p.sizeBand ?? "—"} k="Super sq ft" />
