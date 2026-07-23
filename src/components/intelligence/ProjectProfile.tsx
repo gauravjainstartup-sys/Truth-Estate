@@ -20,6 +20,7 @@ import {
   reviewedOn,
   type ProjectIntel,
 } from "@/lib/projects";
+import { useLiveVitals } from "@/lib/useLiveVitals";
 import MatchScore from "./MatchScore";
 import TowerIntel, { openUnitIntel } from "./TowerIntel";
 import UnlockModal from "./UnlockModal";
@@ -260,6 +261,7 @@ export default function ProjectProfile({
   const [threeDAccess, setThreeDAccess] = useState(false);
   const [challengeOpen, setChallengeOpen] = useState(false);
   useEffect(() => { setReadAccess(hasReadAccess(p.slug)); setThreeDAccess(has3DAccess(p.slug)); }, [p.slug]);
+  const live = useLiveVitals(p.name);
   const locked = !sample && !readAccess;
   const SAMPLE_HREF = `${basePath}/intelligence/projects/sample-read`;
   const lockedTicket = p.budget[0] === p.budget[1] ? (p.budget[0] ? `₹${p.budget[0]} Cr+` : "") : `₹${p.budget[0]}–${p.budget[1]} Cr`;
@@ -731,21 +733,22 @@ export default function ProjectProfile({
                 {/* money facts — value-first, serif, 2×2 on mobile / 4-up on desktop */}
                 <div className="grid grid-cols-2 gap-x-8 gap-y-8 lg:grid-cols-4">
                   <Money v={(() => {
-                    const t = ops?.price ? ticketFromPsf(ops.price.currentLow, p.sizeBand) : null;
+                    const cLow = live?.currentLow ?? ops?.price?.currentLow;
+                    const band = live?.superAreaRange ?? p.sizeBand;
+                    const t = cLow ? ticketFromPsf(cLow, band) : null;
                     const [lo, hi] = t ?? p.budget;
                     return lo === hi ? (lo ? `₹${lo} Cr+` : "NA") : `₹${lo}–${hi} Cr`;
                   })()} k="Ticket" />
-                  {ops?.price
-                    ? <Money v={`₹${kpsf(ops.price.currentLow)}k+`} k="Current / sq ft" />
-                    : <Money v={p.psf ? fmtPsf(p.psf.avg) : "—"} k="Corridor avg / sq ft" />}
+                  {(live?.currentLow ?? ops?.price?.currentLow)
+                    ? <Money v={`₹${kpsf(live?.currentLow ?? ops!.price!.currentLow)}k+`} k="Current / sq ft" />
+                    : <Money v={p.psf ? fmtPsf(live?.corridorAvg ?? p.psf.avg) : "—"} k="Corridor avg / sq ft" />}
                   <Money v={configsDisplay(p.configs)} k="Configs" />
-                  <Money v={p.sizeBand ?? "—"} k="Super sq ft" />
+                  <Money v={live?.superAreaRange ?? p.sizeBand ?? "—"} k="Super sq ft" />
                 </div>
                 {/* the registry — dotted-leader detail list */}
                 <div className="mt-9 grid border-t border-[#1a1a1a]/8 pt-4 md:grid-cols-2 md:gap-x-12">
-                  {ops?.price && <Reg icon={VITAL_ICON.tag} k="Launch price / sq ft" v={fmtPsf(ops.price.launchPsf)} />}
-                  {/* Fields the live pipeline doesn't carry yet render "NA" (founder: columns coming). */}
-                  <Reg icon={VITAL_ICON.psf} k="Corridor avg / sq ft" v={p.psf ? fmtPsf(p.psf.avg) : "NA"} />
+                  {(live?.launchPsf ?? ops?.price?.launchPsf) != null && <Reg icon={VITAL_ICON.tag} k="Launch price / sq ft" v={fmtPsf(live?.launchPsf ?? ops!.price!.launchPsf)} />}
+                  <Reg icon={VITAL_ICON.psf} k="Corridor avg / sq ft" v={(live?.corridorAvg ?? p.psf?.avg) ? fmtPsf((live?.corridorAvg ?? p.psf?.avg)!) : "NA"} />
                   {ops?.units != null && <Reg icon={VITAL_ICON.units} k="Total units" v={`${ops.units.toLocaleString("en-IN")}`} />}
                   <Reg icon={VITAL_ICON.towers} k="Towers" v={ops?.towers != null ? `${ops.towers}` : "NA"} />
                   <Reg icon={VITAL_ICON.land} k="Land" v={ops?.landAcres != null ? `${ops.landAcres} acre` : "NA"} />
