@@ -1201,21 +1201,38 @@ export default function ProjectProfile({
          project-scoped entry (the site-wide TruthGuide bubble is suppressed on
          project pages). On mobile it rides just above the sticky primary CTA,
          kept visually subordinate to it; on desktop it's the corner pill. */}
-      {!embedded && !challengeOpen && (
+      {!embedded && !challengeOpen && (<>
+        {/* Desktop — full pill */}
         <button
           onClick={challenge}
           aria-label={`Challenge our read on ${p.name}`}
-          className="group fixed bottom-[76px] right-4 z-40 flex items-center gap-2.5 rounded-full border border-[#c9a96e]/30 bg-[#0a0a0a]/95 py-2 pl-2 pr-4 text-white shadow-[0_18px_44px_-14px_rgba(0,0,0,0.7)] backdrop-blur transition-all duration-300 hover:border-[#c9a96e]/60 md:bottom-5 md:right-5 md:gap-3 md:py-2.5 md:pl-2.5 md:pr-5"
+          className="group fixed bottom-5 right-5 z-40 hidden items-center gap-3 rounded-full border border-[#c9a96e]/30 bg-[#0a0a0a]/95 py-2.5 pl-2.5 pr-5 text-white shadow-[0_18px_44px_-14px_rgba(0,0,0,0.7)] backdrop-blur transition-all duration-300 hover:border-[#c9a96e]/60 md:flex"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1e6b45] text-[#eafff3] transition-transform duration-300 group-hover:scale-105 md:h-9 md:w-9">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1e6b45] text-[#eafff3]">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-[18px] w-[18px] motion-safe:animate-[tg-star-roll_4.5s_ease-in-out_infinite]"><path d="M12 2.4l1.75 7.1 7.1 1.75-7.1 1.75L12 21.6l-1.75-7.1L3.15 12.75l7.1-1.75z" /></svg>
           </span>
           <span className="text-left leading-tight">
-            <span className="hidden text-[0.58rem] font-medium uppercase tracking-[0.16em] text-[#c9a96e] md:block">TruthGuide</span>
-            <span className="block text-[0.78rem] font-medium md:text-[0.82rem]">Challenge our read &rarr;</span>
+            <span className="block text-[0.58rem] font-medium uppercase tracking-[0.16em] text-[#c9a96e]">TruthGuide</span>
+            <span className="block text-[0.82rem] font-medium">Challenge our read &rarr;</span>
           </span>
         </button>
-      )}
+        {/* Mobile — FAB with peek label */}
+        <button
+          onClick={challenge}
+          aria-label={`Challenge our read on ${p.name}`}
+          className="fixed bottom-[76px] right-4 z-40 h-12 w-12 md:hidden"
+        >
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute right-[54px] top-1/2 flex -translate-y-1/2 items-center overflow-hidden whitespace-nowrap rounded-full border border-[#c9a96e]/25 bg-[#0a0a0a]/95 text-[0.72rem] font-medium text-[#f6f1e8] opacity-0 shadow-[0_10px_24px_-10px_rgba(0,0,0,0.7)] backdrop-blur [max-width:0] motion-safe:animate-[tg-peek_13s_ease-in-out_infinite]"
+          >
+            <span className="px-3.5 py-1.5">Ask TruthGuide</span>
+          </span>
+          <span className="grid h-12 w-12 place-items-center rounded-full border border-[#c9a96e]/40 bg-[#1e6b45] text-[#eafff3] shadow-[0_14px_32px_-10px_rgba(30,107,69,0.75)]">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-[22px] w-[22px] motion-safe:animate-[tg-star-roll_4.5s_ease-in-out_infinite]"><path d="M12 2.4l1.75 7.1 7.1 1.75-7.1 1.75L12 21.6l-1.75-7.1L3.15 12.75l7.1-1.75z" /></svg>
+          </span>
+        </button>
+      </>)}
 
       {/* Sample read — a faint diagonal tiled watermark + a persistent badge so
           the dummy report can never be mistaken for a paid one. */}
