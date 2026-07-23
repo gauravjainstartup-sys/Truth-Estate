@@ -78,9 +78,12 @@ export async function callGemini(
     console.error(`[challenge-router] gemini HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
     return null;
   }
-  const data = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+  const data = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[]; promptFeedback?: unknown };
   const parts = data?.candidates?.[0]?.content?.parts;
   const text = Array.isArray(parts) ? parts.map((p) => p.text ?? "").join("").trim() : "";
+  if (!text) {
+    console.error(`[challenge-router] gemini empty text. candidates=${data?.candidates?.length ?? 0} feedback=${JSON.stringify(data?.promptFeedback ?? null)}`);
+  }
   return text || null;
 }
 
@@ -122,7 +125,11 @@ export async function routeChallenge(
   const ctx = body.context ?? {};
   const locked = Boolean(body.locked);
   const mode = body.mode ?? "project";
-  if (!question || !ctx.publicKnowledge) return { ok: false };
+  console.log(`[challenge-router] mode=${mode} q=${question.slice(0, 40)} hasPK=${!!ctx.publicKnowledge} hasKey=${!!opts.apiKey}`);
+  if (!question || !ctx.publicKnowledge) {
+    console.error(`[challenge-router] early exit: question=${!!question} publicKnowledge=${!!ctx.publicKnowledge}`);
+    return { ok: false };
+  }
   if (!opts.apiKey) {
     console.error("[challenge-router] GEMINI_API_KEY not set");
     return { ok: false };
@@ -136,6 +143,9 @@ export async function routeChallenge(
     model: opts.model,
     fetchImpl: opts.fetchImpl,
   });
-  if (!text) return { ok: false };
+  if (!text) {
+    console.error(`[challenge-router] gemini returned empty text for mode=${mode}`);
+    return { ok: false };
+  }
   return { ok: true, text, gate: locked };
 }
