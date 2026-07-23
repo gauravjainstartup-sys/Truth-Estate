@@ -163,39 +163,6 @@ function ticketFromPsf(currentLow: number, sizeBand: string | null): [number, nu
   return lo > 0 && hi > 0 ? [lo, hi] : null;
 }
 
-function useScoreReveal(end: number) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [count, setCount] = useState(0);
-  const [revealed, setRevealed] = useState(false);
-  const started = useRef(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !started.current) {
-          started.current = true;
-          setRevealed(true);
-          const dur = 2400;
-          let t0: number | null = null;
-          const step = (ts: number) => {
-            if (!t0) t0 = ts;
-            const p = Math.min((ts - t0) / dur, 1);
-            const eased = 1 - Math.pow(1 - p, 3);
-            setCount(Math.floor(eased * end));
-            if (p < 1) requestAnimationFrame(step);
-          };
-          requestAnimationFrame(step);
-        }
-      },
-      { threshold: 0.3 },
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [end]);
-  return { ref, count, revealed };
-}
-
 /* Low/Mid/High-rise from the top of the floors band ("34–38" → 38). */
 function riseTypeOf(floors: string): string | null {
   const nums = floors.match(/\d+/g);
@@ -295,7 +262,6 @@ export default function ProjectProfile({
   const [challengeOpen, setChallengeOpen] = useState(false);
   useEffect(() => { setReadAccess(hasReadAccess(p.slug)); setThreeDAccess(has3DAccess(p.slug)); }, [p.slug]);
   const live = useLiveVitals(p.name);
-  const score = useScoreReveal(p.truthScore);
   const locked = !sample && !readAccess;
   const SAMPLE_HREF = `${basePath}/intelligence/projects/sample-read`;
   // "Get Independent Advice" from a report is about THIS project — open the
@@ -697,10 +663,10 @@ export default function ProjectProfile({
                       )}
                     </div>
                     {/* Truth Score — light readout card floated on the canvas */}
-                    <div ref={score.ref} className="w-full max-w-[300px] rounded-2xl border border-white/20 bg-[#FBF8F2]/95 p-4 shadow-[0_22px_55px_-18px_rgba(0,0,0,0.6)] backdrop-blur-md sm:w-[290px] sm:p-5">
+                    <div className="w-full max-w-[300px] rounded-2xl border border-white/20 bg-[#FBF8F2]/95 p-4 shadow-[0_22px_55px_-18px_rgba(0,0,0,0.6)] backdrop-blur-md sm:w-[290px] sm:p-5">
                       <p className="text-[0.5rem] font-medium uppercase tracking-[0.22em] text-[#1a1a1a]/40">Truth Score</p>
                       <p className="mt-1 flex items-baseline">
-                        <span className="font-serif text-[3.2rem] font-normal leading-[0.82] text-[#1e6b45]">{score.count}</span>
+                        <span className="font-serif text-[3.2rem] font-normal leading-[0.82] text-[#1e6b45]">{p.truthScore}</span>
                         <span className="ml-1.5 font-mono text-[0.95rem] text-[#1a1a1a]/30">/100</span>
                       </p>
                       <p className="mt-2">
@@ -708,7 +674,7 @@ export default function ProjectProfile({
                       </p>
                       <div className="mt-2.5 flex w-full gap-[3px]">
                         {Array.from({ length: 10 }).map((_, idx) => (
-                          <span key={idx} className={`h-[8px] flex-1 rounded-[2px] transition-colors duration-700 ${score.revealed && idx < Math.round(p.truthScore / 10) ? "bg-[#1e6b45]" : "bg-[#1a1a1a]/[0.1]"}`} style={{ transitionDelay: `${idx * 80}ms` }} />
+                          <span key={idx} className={`h-[8px] flex-1 rounded-[2px] ${idx < Math.round(p.truthScore / 10) ? "bg-[#1e6b45]" : "bg-[#1a1a1a]/[0.1]"}`} />
                         ))}
                       </div>
                       <div className="mt-3 border-t border-[#1a1a1a]/8 pt-2.5">
@@ -1064,7 +1030,9 @@ export default function ProjectProfile({
                 {/* Still curious? The AI challenge lives here now, right where the
                    questions do — not competing with the advisor CTA below. */}
                 <button onClick={challenge} className="group mt-5 flex w-full items-center gap-4 rounded-2xl border border-[#0B1F1A]/12 bg-[#0B1F1A]/[0.04] px-6 py-5 text-left transition-colors hover:border-[#B29668]/50 hover:bg-[#0B1F1A]/[0.06]">
-                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#0B1F1A] text-[1.05rem] text-[#B29668]" aria-hidden>◆</span>
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#0B1F1A] text-[#B29668]" aria-hidden>
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="h-[20px] w-[20px] motion-safe:animate-[tg-star-roll_4.5s_ease-in-out_infinite]"><path d="M12 2.4l1.75 7.1 7.1 1.75-7.1 1.75L12 21.6l-1.75-7.1L3.15 12.75l7.1-1.75z" /></svg>
+                  </span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-[0.95rem] font-semibold text-[#1a1a1a]">Still have a question? Challenge TruthGuide.</span>
                     <span className="mt-0.5 block text-[0.82rem] font-light leading-[1.5] text-[#1a1a1a]/55">Ask our AI anything about {p.name} — pricing, risks, the fine print.</span>
@@ -1239,7 +1207,9 @@ export default function ProjectProfile({
           aria-label={`Challenge our read on ${p.name}`}
           className="group fixed bottom-[76px] right-4 z-40 flex items-center gap-2.5 rounded-full border border-[#c9a96e]/30 bg-[#0a0a0a]/95 py-2 pl-2 pr-4 text-white shadow-[0_18px_44px_-14px_rgba(0,0,0,0.7)] backdrop-blur transition-all duration-300 hover:border-[#c9a96e]/60 md:bottom-5 md:right-5 md:gap-3 md:py-2.5 md:pl-2.5 md:pr-5"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1e6b45] text-[0.9rem] transition-transform duration-300 group-hover:scale-105 md:h-9 md:w-9 md:text-[0.95rem]">◆</span>
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1e6b45] text-[#eafff3] transition-transform duration-300 group-hover:scale-105 md:h-9 md:w-9">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-[18px] w-[18px] motion-safe:animate-[tg-star-roll_4.5s_ease-in-out_infinite]"><path d="M12 2.4l1.75 7.1 7.1 1.75-7.1 1.75L12 21.6l-1.75-7.1L3.15 12.75l7.1-1.75z" /></svg>
+          </span>
           <span className="text-left leading-tight">
             <span className="hidden text-[0.58rem] font-medium uppercase tracking-[0.16em] text-[#c9a96e] md:block">TruthGuide</span>
             <span className="block text-[0.78rem] font-medium md:text-[0.82rem]">Challenge our read &rarr;</span>
