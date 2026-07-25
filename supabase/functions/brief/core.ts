@@ -180,9 +180,14 @@ function inferCorridor(ts: TouchedProject[]): Guess<string[]> {
     const two = ranked.slice(0, 2);
     const twoShare = (two[0][1].weight + two[1][1].weight) / total;
     if (twoShare >= 0.75) {
+      const [a, b] = [two[0][1].projects.length, two[1][1].projects.length];
       return {
         value: [two[0][0], two[1][0]],
-        evidence: `you've opened reports in both — ${two[0][1].projects.length} and ${two[1][1].projects.length}`,
+        /* "you've opened reports in both — 1 and 1" was technically true
+           and unreadable. Counts only earn their place when they differ. */
+        evidence: a === b
+          ? `you've opened ${a === 1 ? "a report" : `${a} reports`} in each`
+          : `you've opened reports in both — ${a} and ${b}`,
         confidence: "weak",
       };
     }
@@ -219,30 +224,41 @@ function roundCr(n: number): number {
 }
 
 function inferBudget(ts: TouchedProject[]): Guess<{ min: number; max: number }> {
-  const pairs = ts
-    .filter((t) => typeof t.minPriceCr === "number")
-    .map((t) => ({ v: t.minPriceCr as number, w: t.weight }));
-  if (!pairs.length) return { value: null, evidence: "we've no signal on this", confidence: "none" };
+  const priced = ts.filter((t) => typeof t.minPriceCr === "number");
+  if (!priced.length) return { value: null, evidence: "we've no signal on this", confidence: "none" };
 
-  const mid = weightedMedian(pairs);
+  const mid = weightedMedian(priced.map((t) => ({ v: t.minPriceCr as number, w: t.weight })));
   if (mid == null) return { value: null, evidence: "we've no signal on this", confidence: "none" };
 
   /* The band is the spread of what they actually looked at, clamped so a
      single project still yields a usable range rather than a point. */
-  const near = pairs.filter((p) => p.v >= mid * 0.6 && p.v <= mid * 1.6);
-  const lo = Math.min(...near.map((p) => p.v));
-  const hi = Math.max(...near.map((p) => p.v));
-  const min = roundCr(Math.min(lo, mid * 0.85));
-  const max = roundCr(Math.max(hi, mid * 1.15));
+  const near = priced.filter((t) => (t.minPriceCr as number) >= mid * 0.6 && (t.minPriceCr as number) <= mid * 1.6);
+  const prices = near.map((t) => t.minPriceCr as number);
+  const min = roundCr(Math.min(Math.min(...prices), mid * 0.85));
+  const max = roundCr(Math.max(Math.max(...prices), mid * 1.15));
 
-  const paid = ts.find((t) => t.paid);
-  const evidence = paid
-    ? `the report you paid for starts at ₹${paid.minPriceCr} Cr`
-    : `entry prices on the reports you opened`;
+  /* The evidence has to come from the SAME projects that produced the
+     band. Naming the first paid project regardless once produced "₹2-3.75
+     Cr — the report you paid for starts at ₹9.5 Cr": a number the visitor
+     can immediately see is not the number above it. An unauditable guess
+     is the one thing this file is not allowed to emit, so evidence is
+     derived from `near` and nothing else. */
+  const paidNear = near.find((t) => t.paid);
+  const evidence = paidNear
+    ? `the report you paid for starts at ₹${paidNear.minPriceCr} Cr`
+    : near.length > 1
+      ? `entry prices on ${near.length} of the reports you opened`
+      : `${near[0].name} starts at ₹${near[0].minPriceCr} Cr`;
+
+  /* Purchases at very different price points are not a budget, they are
+     two searches. Say the band, but do not claim to be sure of it. */
+  const paidPrices = ts.filter((t) => t.paid && typeof t.minPriceCr === "number").map((t) => t.minPriceCr as number);
+  const paidSplit = paidPrices.length > 1 && Math.max(...paidPrices) > Math.min(...paidPrices) * 2;
+
   return {
     value: { min, max },
     evidence,
-    confidence: near.length >= 2 || paid ? "strong" : "weak",
+    confidence: paidSplit ? "weak" : (paidNear || near.length >= 2) ? "strong" : "weak",
   };
 }
 
@@ -262,13 +278,25 @@ function inferConfig(ts: TouchedProject[]): Guess<string> {
   const share = w / total;
   const n = ts.filter((t) => t.bhk === bhk).length;
 
-  if (share < 0.5) {
-    return { value: null, evidence: `you've looked at ${byBhk.size} different sizes`, confidence: "none" };
+  /* Two gates, and BOTH must pass.
+
+     Weight alone is not enough: one paid project can carry half the total
+     weight on its own, and "4 BHK — 1 of the 3 you viewed" is a claim
+     that refutes itself in its own evidence line. A size is a preference
+     when it recurs, so a lone project must clear a much higher bar than a
+     repeated one before it gets to speak for the whole search. */
+  const repeated = n >= 2;
+  if (share < 0.5 || (!repeated && share < 0.6)) {
+    return {
+      value: null,
+      evidence: `you've looked at ${byBhk.size} different sizes`,
+      confidence: "none",
+    };
   }
   return {
     value: `${bhk} BHK`,
     evidence: n === ts.length ? "every project you viewed" : `${n} of the ${ts.length} you viewed`,
-    confidence: share >= 0.75 ? "strong" : "weak",
+    confidence: share >= 0.75 && repeated ? "strong" : "weak",
   };
 }
 

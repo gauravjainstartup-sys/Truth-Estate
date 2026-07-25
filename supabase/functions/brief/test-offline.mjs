@@ -122,6 +122,47 @@ console.log("\nrubbish in");
   t("empty catalogue is safe", inferBrief([ev("report_viewed", "x", "10:00")], []).reportsRead === 0);
 }
 
+console.log("\nthe real trail from 2026-07-25 — every guess must match its own evidence");
+{
+  /* Copied from production: two purchases four crore apart, plus one idle
+     open. The first version of this file answered "₹2-3.75 Cr — the report
+     you paid for starts at ₹9.5 Cr", and "4 BHK — 1 of the 3 you viewed".
+     Both are self-refuting on the face of them. */
+  const CAT2 = [
+    ...CAT,
+    { name: "BIRLA PRAVAAH", microMarket: "Southern Peripheral Road (SPR Corridor)", min_price_cr: 3.3, config: "3BHK", min_bhk_num: 3, avg_cost_sqft: 15250, truthScore: 74 },
+  ];
+  const b = inferBrief([
+    ev("report_viewed", "dlf-the-arbour", "13:17"),
+    ev("report_viewed", "dlf-the-arbour", "13:18"),
+    ev("payment_completed", "dlf-the-arbour", "13:19"),
+    ev("payment_completed", "birla-pravaah", "13:20"),
+    ev("report_viewed", "birla-pravaah", "13:21"),
+    ev("report_viewed", "m3m-capital", "13:22"),
+  ], CAT2);
+
+  t("enough", b.enough === true);
+  const inBand = (p) => p >= b.budgetCr.value.min && p <= b.budgetCr.value.max;
+  const quoted = Number((b.budgetCr.evidence.match(/₹([\d.]+) Cr/) ?? [])[1]);
+  t("budget evidence quotes a price INSIDE the band",
+    !Number.isFinite(quoted) || inBand(quoted),
+    `band ${JSON.stringify(b.budgetCr.value)} vs evidence "${b.budgetCr.evidence}"`);
+  t("two purchases 4 Cr apart is not 'strong'", b.budgetCr.confidence !== "strong", b.budgetCr.confidence);
+  t("no size claimed from a single project", b.config.value === null, JSON.stringify(b.config));
+  t("says why instead", /different sizes/.test(b.config.evidence), b.config.evidence);
+  t("corridor evidence reads like English", !/— 1 and 1/.test(b.corridor.evidence), b.corridor.evidence);
+}
+
+console.log("\na repeated size still gets claimed");
+{
+  const b = inferBrief([
+    ev("report_viewed", "dlf-the-arbour", "10:00"),
+    ev("report_viewed", "dlf-privana-south", "10:05"),
+    ev("report_viewed", "m3m-golf-hills", "10:10"),
+  ], CAT);
+  t("4 BHK from two projects", b.config.value === "4 BHK", JSON.stringify(b.config));
+}
+
 console.log("\nweights and median");
 t("repeat views are capped", weightFor({ views: 99, paid: false, enquired: false }) === 3);
 t("a purchase outweighs idle views", weightFor({ views: 1, paid: true, enquired: false }) > weightFor({ views: 3, paid: false, enquired: false }));
