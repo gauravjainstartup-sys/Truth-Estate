@@ -964,8 +964,58 @@ export type Lead = {
 
 const LEAD_KEY = "truthEstate.leads";
 
+const CAPTURE_LEAD_URL =
+  "https://lyetvabfgaidvqrbmaoy.supabase.co/functions/v1/capture-lead";
+
+/* Ship the lead to the backend. Fire-and-forget by design: the localStorage
+   write above has already succeeded, so a network failure costs us the row
+   but never the visitor's submission. `keepalive` matters because most of
+   these forms navigate or unmount immediately after submit — without it the
+   browser cancels the request in flight and the lead is lost. */
+function postLead(l: Lead): void {
+  try {
+    void fetch(CAPTURE_LEAD_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      keepalive: true,
+      body: JSON.stringify({
+        name: l.name,
+        email: l.email,
+        phone: l.phone,
+        intent: l.intent,
+        project: l.project,
+        docs: l.docs,
+        identity: l.identity,
+        message: l.message,
+        payload: l.buy ?? null,
+        sessionId: readSessionId(),
+        source: typeof location !== "undefined" ? location.pathname : undefined,
+        referrer: typeof document !== "undefined" ? document.referrer || undefined : undefined,
+      }),
+    }).catch(() => {
+      /* lead capture must never surface an error to the visitor */
+    });
+  } catch {
+    /* same */
+  }
+}
+
+/* The chat's session id, read directly rather than imported, so this module
+   stays free of a dependency on the chat library. */
+function readSessionId(): string | undefined {
+  try {
+    return window.localStorage.getItem("truthEstate.tgSession") ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function saveLead(l: Lead): void {
   if (typeof window === "undefined") return;
+  /* localStorage first and unconditionally. It is no longer the system of
+     record — public.leads is — but it is what makes the write safe to treat
+     as fire-and-forget, and it keeps the visitor's own history working
+     offline. */
   try {
     const raw = window.localStorage.getItem(LEAD_KEY);
     const list: Lead[] = raw ? (JSON.parse(raw) as Lead[]) : [];
@@ -974,6 +1024,7 @@ export function saveLead(l: Lead): void {
   } catch {
     /* ignore */
   }
+  postLead(l);
   // a project-scoped lead is a 'lead'-tier model entitlement (no-op while dormant)
   if (l.project) grantModelAccess(modelSlugFor(l.project), l.phone || l.email, "lead");
 }

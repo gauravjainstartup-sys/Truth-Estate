@@ -15,6 +15,12 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: latest
+      # Deployed individually rather than with a bare `deploy` so a new
+      # function has to be added here consciously — and so one function
+      # failing to bundle cannot silently skip the others.
       - run: supabase functions deploy challenge-router --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      - run: supabase functions deploy capture-lead --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
