@@ -22,8 +22,16 @@
      # optional: supabase secrets set GEMINI_MODEL=gemini-2.5-flash
    ════════════════════════════════════════════════════════════════ */
 import { routeChallenge, type Body, type FetchLike } from "./core.ts";
+import { buildGeneralContext, type FetchLike as CtxFetch } from "./context.ts";
 
 const MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
+
+/* Supabase injects these into every Edge Function — nothing to configure.
+   The service role is used so the reads keep working regardless of how RLS
+   evolves on the published views. */
+const DB_URL = Deno.env.get("SUPABASE_URL") ?? "";
+const DB_KEY =
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
 const ALLOW_ORIGIN = [
   /^https:\/\/gauravjainstartup-sys\.github\.io$/,
@@ -54,6 +62,11 @@ Deno.serve(async (req: Request) => {
       apiKey: Deno.env.get("GEMINI_API_KEY"),
       model: MODEL,
       fetchImpl: fetch as unknown as FetchLike,
+      generalContext: (unlocked) =>
+        buildGeneralContext(
+          { url: DB_URL, key: DB_KEY, fetchImpl: fetch as unknown as CtxFetch },
+          unlocked,
+        ),
     });
     return new Response(JSON.stringify(answer), { status: 200, headers });
   } catch (e) {

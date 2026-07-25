@@ -23,7 +23,7 @@
    All tier logic + message counting lives in localStorage (same pattern
    as the rest of the demo). Real enforcement moves to the server with auth.
    ════════════════════════════════════════════════════════════════ */
-import { isSignedIn, isAllAccess, isMember, PROJECTS } from "@/lib/journey";
+import { isSignedIn, isAllAccess, isMember, loadUnlocks, PROJECTS } from "@/lib/journey";
 import type { OmniIndex } from "@/lib/omni";
 
 export type TruthGuideTier = "anonymous" | "registered" | "paid";
@@ -208,50 +208,37 @@ function forensicLine(p: GuideProject): string | null {
   return bits.length ? `- ${p.name}: ${bits.join("; ")}` : null;
 }
 
-export type GeneralContext = {
-  tier: TruthGuideTier;
-  publicKnowledge: string;
-  paidKnowledge: string | null;
-};
+/* ── Session identity ───────────────────────────────────────────
+   A per-browser id so a conversation can be grouped, and so the whole
+   anonymous history can later be claimed by a verified account. It is
+   deliberately a plain random id in localStorage rather than a device
+   fingerprint: a fingerprint would survive a cache clear, but it is
+   personal data under the DPDP Act and browsers actively defeat it. The
+   durable identity is the verified phone number, not the device. */
+const SESSION_KEY = "truthEstate.tgSession";
 
-export async function buildGeneralContext(): Promise<GeneralContext> {
-  const tier = getTier();
-  const rows = rankForContext(await trackedProjects());
-
-  const publicKnowledge = [
-    `ROLE: You are TruthGuide, the independent real estate advisor for Truth Estate — a buyer-side-only advisory. No inventory, no developer commission, no paid placement.`,
-    `SCOPE: Gurugram residential real estate ONLY.`,
-    ``,
-    `METHODOLOGY: Every tracked project carries a Truth Score (0–100) from five weighted pillars — Location (26%), Developer (25%), Construction (22%), Legal (15%), USPs (12%). Re-scored quarterly. No builder can pay to move it.`,
-    `SCORE BANDS: 90+ Exceptional · 80–89 Strong · 70–79 Solid · 60–69 Fair · below 60 Watch.`,
-    ``,
-    `CORRIDORS (typical rates):`,
-    `- Golf Course Road (GCR): prime ultra-luxury, ₹25k–45k/sqft.`,
-    `- SPR (Southern Peripheral Road): emerging luxury, ₹18k–28k/sqft, strongest recent appreciation.`,
-    `- Dwarka Expressway: mass-luxury to mid-premium, ₹12k–22k/sqft, metro connectivity catalyst.`,
-    `- Golf Course Extension (GCX): premium extension of GCR, ₹16k–24k/sqft.`,
-    `- New Gurgaon (Sectors 76–95): value corridor, ₹8k–16k/sqft.`,
-    `- Sohna Road: affordable to mid-premium, ₹7k–14k/sqft.`,
-    ``,
-    `TRACKED PROJECTS (${rows.length} from our current coverage — this scoreboard is PUBLIC. Use it freely to name projects, quote Truth Scores, filter by budget/corridor/configuration, and rank):`,
-    ...rows.map(publicLine),
-    ``,
-    `SERVICES: full forensic read ₹999/project · Sun & Vastu 3D analysis ₹1,499/project · All-Access pass ₹9,999 · free advisor call with any package · free Private Buyer's Office for registered users.`,
-  ].join("\n");
-
-  if (tier !== "paid") {
-    return { tier, publicKnowledge, paidKnowledge: null };
+export function getSessionId(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    const existing = window.localStorage.getItem(SESSION_KEY);
+    if (existing) return existing;
+    const id =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `tg-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    window.localStorage.setItem(SESSION_KEY, id);
+    return id;
+  } catch {
+    return "";
   }
+}
 
-  const forensics = rows.map(forensicLine).filter(Boolean) as string[];
-  const paidKnowledge = [
-    `FORENSIC SIGNALS (this visitor has PAID — use these fully and go deep):`,
-    ...(forensics.length ? forensics : ["(no red-flag or delay-risk signals logged on the current rows)"]),
-    ``,
-    `DEPTH AVAILABLE TO THIS VISITOR: the full pillar audit behind each score, ROI reasoning, developer delivery records, legal/title read, and construction-progress assessment. Answer with that depth and reason openly about trade-offs, rather than deferring them to a purchase they have already made.`,
-  ].join("\n");
-
-  return { tier, publicKnowledge, paidKnowledge };
+/* Which projects this visitor has bought the read on. Depth is sold one
+   report at a time, so this — not the account tier — is what unlocks
+   forensic detail in the answer. */
+export function unlockedProjectNames(): string[] {
+  if (typeof window === "undefined") return [];
+  return loadUnlocks();
 }
 
 /* ── Client bridge to the Edge Function ────────────────────────── */
@@ -275,12 +262,17 @@ export type ChatMsg = { id: string; role: "user" | "bot"; text: string; gate?: G
 let n = 0;
 export const msgId = () => `tg${Date.now().toString(36)}${(n++).toString(36)}`;
 
+/* The client no longer assembles the knowledge. It used to build the whole
+   scoreboard here and POST it, which meant (a) it could only ever be as
+   fresh as the last deploy, and (b) anyone could edit the payload in
+   flight and have TruthGuide state invented projects as fact. The Edge
+   Function now reads the database itself. We send the question and who is
+   asking; the server decides what is true. */
 export async function askTruthGuideRemote(
   question: string,
   history: { role: "user" | "bot"; text: string }[] = [],
 ): Promise<{ text: string } | null> {
   try {
-    const ctx = await buildGeneralContext();
     const res = await fetch(routerUrl(), {
       method: "POST",
       headers: {
@@ -291,9 +283,10 @@ export async function askTruthGuideRemote(
       body: JSON.stringify({
         mode: "general",
         question,
-        tier: ctx.tier,
+        tier: getTier(),
         history: history.slice(-8),
-        context: ctx,
+        unlockedProjects: unlockedProjectNames(),
+        sessionId: getSessionId(),
       }),
       signal: AbortSignal.timeout(20000),
     });
@@ -361,8 +354,26 @@ export async function fallbackAnswer(question: string): Promise<string> {
     return "The recurring risks in Gurugram are construction delay, developer financial stress and title/approval gaps. Each is scored inside the project's Truth Score, and the full forensic read sets out the specific findings. Which project are you evaluating?";
   }
 
-  if (/location|corridor|spr|gcr|dwarka|sohna|golf course|new gurgaon/.test(q)) {
-    return "Six corridors matter in Gurugram: Golf Course Road (ultra-luxury, ₹25–45k/sqft), SPR (emerging luxury, ₹18–28k, strongest appreciation), Dwarka Expressway (₹12–22k, metro catalyst), Golf Course Extension (₹16–24k), New Gurgaon (₹8–16k, value) and Sohna Road (₹7–14k). Which are you weighing?";
+  if (/location|corridor|micro.?market|spr|gcr|dwarka|sohna|golf course|new gurgaon|nh.?8/.test(q)) {
+    /* Derived from the rows we hold, never a typed list. The previous
+       hardcoded version was wrong on every band — it called Sohna Road the
+       cheap corridor at ₹7–14k when it actually averages ₹19,250/sqft. */
+    const byArea = new Map<string, number[]>();
+    for (const p of rows) {
+      if (!p.location || p.minPriceCr == null) continue;
+      const k = p.location.split("·").pop()!.trim();
+      const bucket = byArea.get(k) ?? [];
+      bucket.push(p.minPriceCr);
+      byArea.set(k, bucket);
+    }
+    const list = [...byArea.entries()]
+      .sort((a, b) => Math.min(...b[1]) - Math.min(...a[1]))
+      .slice(0, 8)
+      .map(([k, v]) => `${k} (from ₹${Math.min(...v)} Cr)`)
+      .join("; ");
+    return list
+      ? `The corridors we track: ${list}. Which are you weighing?`
+      : "I track every Gurugram corridor — tell me which one you're weighing and I'll give you our read.";
   }
 
   if (/^(hi|hello|hey|namaste)\b/.test(q) && q.length < 20) {

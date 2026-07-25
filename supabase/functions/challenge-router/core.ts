@@ -15,7 +15,20 @@ export type Ctx = {
   tier?: "anonymous" | "registered" | "paid";
 };
 export type Msg = { role: "user" | "bot"; text: string };
-export type Body = { mode?: "project" | "general"; question?: string; locked?: boolean; tier?: string; history?: Msg[]; context?: Ctx };
+export type Body = {
+  mode?: "project" | "general";
+  question?: string;
+  locked?: boolean;
+  tier?: string;
+  history?: Msg[];
+  /* Only honoured for mode:"project". General mode builds its own context
+     server-side and ignores whatever the client sends. */
+  context?: Ctx;
+  /* Project names the visitor has purchased the read on. Per-project, not
+     per-account — depth is bought one report at a time. */
+  unlockedProjects?: string[];
+  sessionId?: string;
+};
 export type RouterAnswer = { ok: true; text: string; gate: boolean } | { ok: false };
 
 export type FetchLike = (url: string, init: Record<string, unknown>) => Promise<{
@@ -93,38 +106,27 @@ export async function callGemini(
   return text || null;
 }
 
-/* Output budget by tier — a shallow answer that gets truncated reads as
-   evasive, which is exactly the failure we are fixing. */
-export function generalTokenBudget(tier: string | undefined): number {
-  return tier === "paid" ? 900 : tier === "registered" ? 700 : 400;
-}
+/* One output budget for everyone. Answer QUALITY does not vary with
+   account status — signing in buys quota, not better answers. Depth is
+   bought per project via the read, and that arrives as extra context
+   rather than as a bigger allowance. */
+export const GENERAL_MAX_TOKENS = 800;
 
 function generalSystemPrompt(ctx: Ctx): string {
-  const tier = ctx.tier ?? "anonymous";
-  const paid = tier === "paid" && ctx.paidKnowledge
-    ? `\n\nFORENSIC LAYER (this visitor has PAID — use it fully):\n${ctx.paidKnowledge}`
+  const paid = ctx.paidKnowledge
+    ? `\n\n${ctx.paidKnowledge}`
     : "";
-
-  /* The scoreboard in CONTEXT is public site data. Every tier may name
-     projects and quote scores; the tiers differ in how far the ANALYSIS
-     goes, and in the nudge that closes the answer. */
-  const depthRule =
-    tier === "anonymous"
-      ? `6. DEPTH — this visitor is ANONYMOUS with a 2-question trial. ANSWER THE QUESTION PROPERLY: name the specific projects, quote their Truth Scores, respect their budget and corridor. Keep it tight (2-3 sentences, up to ~4 named projects). Do NOT walk through the pillar-by-pillar audit or ROI reasoning. Close with one short line that a free account unlocks unlimited questions. NEVER refuse to name projects and never answer with "it depends on your needs" — you have the scoreboard, use it.`
-      : tier === "registered"
-        ? `6. DEPTH — this visitor has a FREE ACCOUNT. Answer generously: rank and compare projects, quote Truth Scores, weigh corridors, discuss developer reputation and what the score bands mean. 3-5 sentences. The pillar-by-pillar forensic audit, the ROI model and the legal read live inside the ₹999 read — when a question genuinely needs those, give the honest public-level answer first, then mention the read in one clause. Never withhold a fact that is in the scoreboard.`
-        : `6. DEPTH — this visitor has PAID. Go all the way: rank, compare, weigh red flags and delay risk, reason about trade-offs and what the pillar scores imply. Be thorough and specific. Never defer them to a purchase they have already made.`;
 
   return [
     `You are TruthGuide, the independent, buyer-side real estate advisor for Truth Estate. You answer questions about Gurugram residential real estate ONLY.`,
     ``,
     `RULES:`,
     `1. Answer ONLY from the context below. Never invent projects, scores or numbers. If a project isn't in the scoreboard, say we don't track it yet — do not guess.`,
-    `2. Be direct and conversational, like a sharp WhatsApp reply from a knowledgeable friend. Plain prose, no headings, no markdown, no bullet characters.`,
-    `3. LEAD WITH THE ANSWER. Name names and quote numbers in the first sentence. Never open with a caveat, never say the answer "depends on your needs", and never ask a clarifying question INSTEAD of answering — answer with what you have, then optionally offer to narrow it.`,
+    `2. LEAD WITH THE ANSWER. Name names and quote numbers in the first sentence. Never open with a caveat, never say the answer "depends on your needs", and never ask a clarifying question INSTEAD of answering — answer with what you have, then offer to narrow it.`,
+    `3. FORMAT FOR SCANNING, NOT FOR READING. When you name two or more projects, write one short lead line, then ONE PROJECT PER LINE, each as: Name — Score · Corridor · from ₹X Cr. Separate lines with a real newline. Max 5 rows, then offer more. Use flowing prose ONLY for single-fact answers, methodology, and conversational replies. No markdown, no headings, no bullet characters — plain lines.`,
     `4. Be honest, including about weaknesses — conceding a weak point builds trust. You are NOT a salesperson, and at most ONE short nudge per answer.`,
     `5. ONLY discuss Gurugram residential real estate. Politely decline anything else (commercial property, other cities, non-real-estate topics) with: "I focus exclusively on Gurugram residential real estate — that's where our independent research runs deepest."`,
-    depthRule,
+    `6. The scoreboard below is PUBLIC — every visitor sees the same facts. Never withhold a project name, Truth Score, price or corridor from anyone, and never imply a better answer exists behind an account. Depth on a SPECIFIC project is what the paid read adds, and only where a FORENSIC LAYER section appears below.`,
     `7. Never say you are an AI, a language model, or Gemini. You are TruthGuide, the independent advisor.`,
     ``,
     `CONTEXT:`,
@@ -135,23 +137,55 @@ function generalSystemPrompt(ctx: Ctx): string {
 
 export async function routeChallenge(
   body: Body,
-  opts: { apiKey: string | undefined; model: string; fetchImpl: FetchLike },
+  opts: {
+    apiKey: string | undefined;
+    model: string;
+    fetchImpl: FetchLike;
+    /* Server-side context builder for general mode. Supplied by index.ts,
+       which owns the DB credentials. Absent in the offline harness. */
+    generalContext?: (unlocked: string[]) => Promise<{ publicKnowledge: string; paidKnowledge: string | null; projectCount: number }>;
+  },
 ): Promise<RouterAnswer> {
   const question = (body.question ?? "").trim();
-  const ctx = body.context ?? {};
   const locked = Boolean(body.locked);
   const mode = body.mode ?? "project";
-  const tier = ctx.tier ?? body.tier;
-  console.log(
-    `[challenge-router] mode=${mode} tier=${tier ?? "-"} ctxChars=${ctx.publicKnowledge?.length ?? 0} q=${question.slice(0, 60)}`,
-  );
-  if (!question || !ctx.publicKnowledge) {
-    console.error(`[challenge-router] early exit: question=${!!question} publicKnowledge=${!!ctx.publicKnowledge}`);
+
+  if (!question) {
+    console.error("[challenge-router] empty question");
     return { ok: false };
   }
   if (!opts.apiKey) {
     console.error("[challenge-router] GEMINI_API_KEY not set");
     return { ok: false };
+  }
+
+  let ctx: Ctx;
+  if (mode === "general") {
+    /* The client's context is DELIBERATELY DISCARDED here. It used to be
+       assembled in the browser and POSTed, which let anyone edit the
+       payload and have TruthGuide assert invented projects as fact. It is
+       now built from the database, server-side, every time — so a stale
+       or hostile client cannot influence what the model believes. */
+    if (!opts.generalContext) {
+      console.error("[challenge-router] general mode requested but no context builder wired");
+      return { ok: false };
+    }
+    const built = await opts.generalContext(body.unlockedProjects ?? []);
+    if (!built.projectCount) {
+      console.error("[challenge-router] live context returned 0 projects");
+      return { ok: false };
+    }
+    ctx = { publicKnowledge: built.publicKnowledge, paidKnowledge: built.paidKnowledge };
+    console.log(
+      `[challenge-router] mode=general projects=${built.projectCount} unlocked=${(body.unlockedProjects ?? []).length} ctxChars=${built.publicKnowledge.length} q=${question.slice(0, 60)}`,
+    );
+  } else {
+    ctx = body.context ?? {};
+    console.log(`[challenge-router] mode=project locked=${locked} q=${question.slice(0, 60)}`);
+    if (!ctx.publicKnowledge) {
+      console.error("[challenge-router] project mode: no publicKnowledge supplied");
+      return { ok: false };
+    }
   }
 
   const sys = mode === "general"
@@ -161,7 +195,7 @@ export async function routeChallenge(
   const text = await callGemini(opts.apiKey, sys, body.history, question, {
     model: opts.model,
     fetchImpl: opts.fetchImpl,
-    ...(mode === "general" ? { maxTokens: generalTokenBudget(tier) } : {}),
+    ...(mode === "general" ? { maxTokens: GENERAL_MAX_TOKENS } : {}),
   });
   if (!text) {
     console.error(`[challenge-router] no text returned for mode=${mode}`);
