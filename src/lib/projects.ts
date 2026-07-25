@@ -591,6 +591,70 @@ export const TOWER_INTEL: Record<string, TowerIntelMeta> = {
       idealFor: "Sun-first & nuclear families (3 BHK)",
     },
   },
+  "Ashiana Amarah Phase - 2": {
+    file: "tower-intel/ashiana-amarah-phase-2.html",
+    preview: "tower-intel/ashiana-amarah-phase-2-preview.jpg",
+    towers: 4, // T5 & T7 Lavender (3 BHK 1000), T6 & T8 Tulip+ (3 BHK 1205), Stilt+14
+    unitTypes: 2, // Lavender / Tulip+
+    totalUnits: "110+", // 4 towers × 14 floors × 2 lines
+    sample: {
+      ref: "Tower T5 · Line 01",
+      type: "Lavender · 3 BHK 1000 · east-facing",
+      sun: "4.1 h/day (winter · all morning)",
+      sunPct: 68,
+      ventilation: "End line · cross-light on 3 sides",
+      vastu: "East sunrise deck · morning light",
+      idealFor: "Sun-first & nuclear families (3 BHK)",
+    },
+  },
+  "Ashiana Amarah Phase - 3 & 3A": {
+    file: "tower-intel/ashiana-amarah-phase-3.html",
+    preview: "tower-intel/ashiana-amarah-phase-3-preview.jpg",
+    towers: 4, // T9 & T10 Tulip+ (3 BHK+3T 1205), T11 & T12 Lavender (3 BHK+2T 1000), Stilt+14
+    unitTypes: 2, // Tulip+ / Lavender
+    totalUnits: "110+", // 4 towers × 14 floors × 2 lines
+    sample: {
+      ref: "Tower T9 · Line 02",
+      type: "Tulip+ · 3 BHK 1205 · south-west corner",
+      sun: "6.9 h/day (winter)",
+      sunPct: 87,
+      ventilation: "Corner line · light on 3 sides",
+      vastu: "South-west deck · steady afternoon light",
+      idealFor: "Nuclear families (3 BHK)",
+    },
+  },
+  "Ashiana Amarah Phase - 4": {
+    file: "tower-intel/ashiana-amarah-phase-4.html",
+    preview: "tower-intel/ashiana-amarah-phase-4-preview.jpg",
+    towers: 5, // T13/T15/T16 Tulip+ (3 BHK 1205), T14 & T17 Lavender (3 BHK 1000), Stilt+14
+    unitTypes: 2, // Tulip+ / Lavender
+    totalUnits: "140+", // 5 towers × 14 floors × 2 lines
+    sample: {
+      ref: "Tower T17 · Line 01",
+      type: "Lavender · 3 BHK 1000 · south-west facing",
+      sun: "6.9 h/day (winter)",
+      sunPct: 86,
+      ventilation: "End line · cross-light on 3 sides",
+      vastu: "South-west park deck",
+      idealFor: "Sun-first families (3 BHK)",
+    },
+  },
+  "Ashiana Amarah Phase - 5": {
+    file: "tower-intel/ashiana-amarah-phase-5.html",
+    preview: "tower-intel/ashiana-amarah-phase-5-preview.jpg",
+    towers: 4, // T18 Iris+ (4 BHK 1444), T19 & T21 Lavender (3 BHK 1000), T20 Tulip+ (3 BHK 1205), G+14
+    unitTypes: 3, // Iris+ / Lavender / Tulip+
+    totalUnits: "110+", // 4 towers × 14 floors × 2 lines
+    sample: {
+      ref: "Tower T19 · Line 01",
+      type: "Lavender · 3 BHK 1000 · south-facing",
+      sun: "6.4 h/day (winter · best in phase)",
+      sunPct: 90,
+      ventilation: "End line · cross-light on 3 sides",
+      vastu: "South sun-deck · keep the NE open",
+      idealFor: "Sun-first & nuclear families (3 BHK)",
+    },
+  },
   // DB project_name is "M3M Elie Saab" (page slug m3m-elie-saab); the db3d
   // pipeline dir keeps the longer marketing slug m3m-residences-by-elie-saab.
   "M3M Elie Saab": {
