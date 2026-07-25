@@ -4,15 +4,27 @@
    challenge-router Edge Function, with a "general" mode.
 
    Three tiers:
-     Layer 1  anonymous   2 messages/session, overview answers only,
-                          restricted to Gurugram residential real estate
-     Layer 2  registered  unlimited, moderate depth (no deep proprietary data)
-     Layer 3  paid        20 messages/day, full depth from our own database
+     Layer 1  anonymous   2 messages/session, concise answers
+     Layer 2  registered  unlimited, fuller answers + comparisons
+     Layer 3  paid        20 messages/day, full forensic depth
+
+   THE GATE IS ON DEPTH, NOT ON FACTS. The tracked scoreboard — project
+   names, Truth Scores, developers, corridors, price bands, delivery
+   years — is ALREADY public: the build publishes it as /omni-index.json
+   and every visitor's browser can read it. Withholding it from the chat
+   would make the chat useless without protecting anything. What the paid
+   read actually sells is the FORENSIC AUDIT behind each score (pillar
+   breakdown, ROI model, legal read, developer record) — that is what the
+   tiers gate, mirroring the ₹999 wall on the project reports.
+
+   Context comes from the LIVE index (the same rows the site renders),
+   never a hand-typed list, so the chat can never drift from the database.
 
    All tier logic + message counting lives in localStorage (same pattern
    as the rest of the demo). Real enforcement moves to the server with auth.
    ════════════════════════════════════════════════════════════════ */
-import { isSignedIn, isAllAccess, isMember } from "@/lib/journey";
+import { isSignedIn, isAllAccess, isMember, PROJECTS } from "@/lib/journey";
+import type { OmniIndex } from "@/lib/omni";
 
 export type TruthGuideTier = "anonymous" | "registered" | "paid";
 
@@ -22,6 +34,15 @@ export const PAID_DAILY_LIMIT = 20;
 const MSG_COUNT_KEY = "truthEstate.tgMsgCount";
 const PAID_DAY_KEY = "truthEstate.tgPaidDay";
 const PAID_DAY_COUNT_KEY = "truthEstate.tgPaidDayCount";
+
+const BASE_PATH = "/Truth-Estate";
+/* How many tracked rows ride in the prompt. The whole scoreboard is ~100 rows
+   ≈ 12 KB ≈ 3k tokens, which is nothing against Flash's window — so this cap
+   is only a runaway guard for a much larger future backlog. Keep it well above
+   the live count: rows are ranked by score, so a tight cap would drop the
+   LOWEST-scored projects, and those are the cheapest — precisely the ones a
+   "best under ₹2 Cr" question needs. */
+const MAX_CONTEXT_PROJECTS = 200;
 
 export function getTier(): TruthGuideTier {
   if (typeof window === "undefined") return "anonymous";
@@ -94,59 +115,140 @@ export function trackMessage(): void {
   if (tier === "paid") incrementPaidDailyCount();
 }
 
-/* ── General context for Gemini ─────────────────────────────────
-   Unlike the project-scoped ChallengeChat, the general TruthGuide
-   sends a market-wide context built from whatever public data the
-   client holds. Tier determines depth. */
+/* ── The tracked universe, from the live index ──────────────────── */
+export type GuideProject = {
+  name: string;
+  developer: string | null;
+  location: string | null;
+  score: number | null;
+  minPriceCr: number | null;
+  config: string | null;
+  deliveryYear: number | null;
+  redFlags: number | null;
+  delayRisk: string | null;
+  has3D: boolean;
+};
+
+/* One fetch of the public project index, cached for the session.
+   Failure → null, and the caller falls back to the curated catalog. */
+let omniCache: OmniIndex | null | undefined;
+async function fetchOmni(): Promise<OmniIndex | null> {
+  if (omniCache !== undefined) return omniCache;
+  try {
+    const res = await fetch(`${BASE_PATH}/omni-index.json`, { signal: AbortSignal.timeout(8000) });
+    omniCache = res.ok ? ((await res.json()) as OmniIndex) : null;
+  } catch {
+    omniCache = null;
+  }
+  return omniCache;
+}
+
+/* Live rows first; the curated PROJECTS catalog is the offline fallback so
+   the chat still knows real projects if the index can't be reached. */
+async function trackedProjects(): Promise<GuideProject[]> {
+  const idx = await fetchOmni();
+  const live = (idx?.projects ?? [])
+    .filter((p) => p.name)
+    .map<GuideProject>((p) => ({
+      name: p.name,
+      developer: p.developer,
+      location: p.location,
+      score: p.score == null ? null : Math.round(p.score),
+      minPriceCr: p.minPriceCr,
+      config: p.config,
+      deliveryYear: p.deliveryYear,
+      redFlags: p.redFlags,
+      delayRisk: p.delayRisk,
+      has3D: p.has3D,
+    }));
+  if (live.length) return live;
+
+  return PROJECTS.map<GuideProject>((p) => ({
+    name: p.name,
+    developer: p.developer,
+    location: p.market,
+    score: p.truthScore,
+    minPriceCr: p.budget?.[0] ?? null,
+    config: p.configs?.join(", ") ?? null,
+    deliveryYear: null,
+    redFlags: null,
+    delayRisk: null,
+    has3D: false,
+  }));
+}
+
+/* Highest-scoring first — a truncated list should keep the best reads, and
+   "which score highest" is the single most common question. */
+function rankForContext(rows: GuideProject[]): GuideProject[] {
+  return [...rows]
+    .sort((a, b) => (b.score ?? -1) - (a.score ?? -1))
+    .slice(0, MAX_CONTEXT_PROJECTS);
+}
+
+/* Public scoreboard line — exactly the fields /omni-index.json already
+   serves to every anonymous visitor. */
+function publicLine(p: GuideProject): string {
+  const bits = [p.name];
+  if (p.developer) bits.push(p.developer);
+  if (p.location) bits.push(p.location);
+  if (p.score != null) bits.push(`Truth Score ${p.score}`);
+  if (p.minPriceCr != null) bits.push(`from ₹${p.minPriceCr} Cr`);
+  if (p.config) bits.push(p.config);
+  if (p.deliveryYear) bits.push(`handover ${p.deliveryYear}`);
+  return `- ${bits.join(" · ")}`;
+}
+
+/* Forensic signals — the paid layer. Counts and risk flags are the hooks
+   the ₹999 read explains in full. */
+function forensicLine(p: GuideProject): string | null {
+  const bits: string[] = [];
+  if (p.redFlags != null && p.redFlags > 0) bits.push(`${p.redFlags} red flag${p.redFlags === 1 ? "" : "s"} logged`);
+  if (p.delayRisk) bits.push(`delay risk ${p.delayRisk}`);
+  if (p.has3D) bits.push("Sun & Vastu 3D model available");
+  return bits.length ? `- ${p.name}: ${bits.join("; ")}` : null;
+}
+
 export type GeneralContext = {
   tier: TruthGuideTier;
   publicKnowledge: string;
   paidKnowledge: string | null;
 };
 
-export function buildGeneralContext(): GeneralContext {
+export async function buildGeneralContext(): Promise<GeneralContext> {
   const tier = getTier();
+  const rows = rankForContext(await trackedProjects());
 
   const publicKnowledge = [
-    `ROLE: You are TruthGuide, the independent real estate advisor for Truth Estate. Truth Estate is a buyer-side-only advisory — no inventory, no developer commission, no paid placement.`,
-    `SCOPE: Gurugram residential real estate ONLY. Politely decline anything outside this scope (commercial, other cities, non-real-estate).`,
-    `COVERAGE: We track luxury and premium residential projects in Gurugram across corridors — Golf Course Road, SPR (Southern Peripheral Road), Dwarka Expressway, New Gurgaon (Sectors 76–95), Sohna Road, and Golf Course Extension. We cover developers like DLF, Godrej, M3M, Smartworld, Signature Global, Puri, Birla, Conscient, Emaar, and others.`,
-    `METHODOLOGY: Each project gets a Truth Score (0–100) built from five weighted pillars: Location (26%), Developer (25%), Construction (22%), Legal (15%), USPs (12%). Re-scored quarterly. No builder can pay to move it.`,
-    `SERVICES: Full forensic reads (₹999/project), Sun & Vastu 3D analysis (₹1,499/project), All-Access pass (₹9,999), free advisor calls with any package, and a Private Buyer's Office for registered users.`,
-    `CORRIDORS:`,
-    `- Golf Course Road (GCR): Gurugram's prime corridor; DLF Camellias, Magnolias, Aralias territory. Ultra-luxury, ₹25k–45k/sqft.`,
-    `- SPR (Southern Peripheral Road): Emerging luxury corridor; DLF Privana South, Arbour, Puri Aravallis. ₹18k–28k/sqft. Strong appreciation.`,
-    `- Dwarka Expressway: Mass luxury to mid-premium; Godrej, Emaar, Conscient. ₹12k–22k/sqft. Metro connectivity catalyst.`,
-    `- New Gurgaon (Sec 76–95): Value corridor; Smartworld, Signature Global. ₹8k–16k/sqft. High volume.`,
-    `- Golf Course Extension (GCX): Premium extension of GCR; M3M Golf Estate, Ireo. ₹16k–24k/sqft.`,
-    `- Sohna Road: Emerging; mix of affordable and mid-premium. ₹7k–14k/sqft.`,
+    `ROLE: You are TruthGuide, the independent real estate advisor for Truth Estate — a buyer-side-only advisory. No inventory, no developer commission, no paid placement.`,
+    `SCOPE: Gurugram residential real estate ONLY.`,
+    ``,
+    `METHODOLOGY: Every tracked project carries a Truth Score (0–100) from five weighted pillars — Location (26%), Developer (25%), Construction (22%), Legal (15%), USPs (12%). Re-scored quarterly. No builder can pay to move it.`,
+    `SCORE BANDS: 90+ Exceptional · 80–89 Strong · 70–79 Solid · 60–69 Fair · below 60 Watch.`,
+    ``,
+    `CORRIDORS (typical rates):`,
+    `- Golf Course Road (GCR): prime ultra-luxury, ₹25k–45k/sqft.`,
+    `- SPR (Southern Peripheral Road): emerging luxury, ₹18k–28k/sqft, strongest recent appreciation.`,
+    `- Dwarka Expressway: mass-luxury to mid-premium, ₹12k–22k/sqft, metro connectivity catalyst.`,
+    `- Golf Course Extension (GCX): premium extension of GCR, ₹16k–24k/sqft.`,
+    `- New Gurgaon (Sectors 76–95): value corridor, ₹8k–16k/sqft.`,
+    `- Sohna Road: affordable to mid-premium, ₹7k–14k/sqft.`,
+    ``,
+    `TRACKED PROJECTS (${rows.length} from our current coverage — this scoreboard is PUBLIC. Use it freely to name projects, quote Truth Scores, filter by budget/corridor/configuration, and rank):`,
+    ...rows.map(publicLine),
+    ``,
+    `SERVICES: full forensic read ₹999/project · Sun & Vastu 3D analysis ₹1,499/project · All-Access pass ₹9,999 · free advisor call with any package · free Private Buyer's Office for registered users.`,
   ].join("\n");
 
   if (tier !== "paid") {
     return { tier, publicKnowledge, paidKnowledge: null };
   }
 
+  const forensics = rows.map(forensicLine).filter(Boolean) as string[];
   const paidKnowledge = [
-    `PAID CONTEXT — answer with full depth from this data:`,
-    `TOP PROJECTS (our current reads):`,
-    `- DLF Privana South: Truth Score 89/100, SPR corridor, 4-5 BHK + Penthouse, ₹9-18 Cr. Strong Buy. Developer: DLF (98% on-time). Top 5% of tracked.`,
-    `- DLF Arbour: Truth Score 86/100, SPR corridor, 3-4 BHK, ₹5-9 Cr. Strong Buy. Same DLF pedigree at a lower ticket.`,
-    `- Godrej Aristocrat: Truth Score 82/100, Dwarka Expressway, 3-4 BHK, ₹3-6 Cr. Good Buy. Godrej's track record is solid.`,
-    `- Puri The Aravallis: Truth Score 78/100, SPR corridor, 3-4 BHK, ₹4-7 Cr. Qualified Buy. Watch construction pace.`,
-    `- M3M Golf Estate: Truth Score 76/100, GCX, 3-4 BHK, ₹4-8 Cr. Qualified Buy. Premium location, watch developer financials.`,
-    `- Smartworld One DXP: Truth Score 73/100, New Gurgaon, 2-3 BHK, ₹1.5-3 Cr. Fair. Value entry, newer developer.`,
-    `- Emaar Digi Homes: Truth Score 71/100, Dwarka Expressway, 2-3 BHK, ₹2-4 Cr. Fair. Emaar brand, corridor appreciation play.`,
-    `DEVELOPER INSIGHTS:`,
-    `- DLF: Market leader. 98% on-time delivery, strong balance sheet, premium command. Verdict: highest conviction.`,
-    `- Godrej: Institutional backing, 92% on-time, disciplined pricing. Strong buy-side developer.`,
-    `- M3M: Aggressive growth, 75% on-time, financial leverage is a watch factor. Mixed conviction.`,
-    `- Smartworld: New entrant, backed by experienced promoters. Limited track record. Moderate conviction.`,
-    `- Signature Global: Volume player, aggressive pricing, 70% on-time. Watch construction and finish quality.`,
-    `MARKET TRENDS:`,
-    `- Gurugram luxury has appreciated 40-60% in 3 years (2022-2025). SPR leads.`,
-    `- Dwarka Expressway metro connectivity is a 2025-26 catalyst.`,
-    `- New supply is concentrated in SPR and Dwarka Expressway.`,
-    `- NRI demand is up 35% YoY; FEMA-compliant structures standard at top developers.`,
+    `FORENSIC SIGNALS (this visitor has PAID — use these fully and go deep):`,
+    ...(forensics.length ? forensics : ["(no red-flag or delay-risk signals logged on the current rows)"]),
+    ``,
+    `DEPTH AVAILABLE TO THIS VISITOR: the full pillar audit behind each score, ROI reasoning, developer delivery records, legal/title read, and construction-progress assessment. Answer with that depth and reason openly about trade-offs, rather than deferring them to a purchase they have already made.`,
   ].join("\n");
 
   return { tier, publicKnowledge, paidKnowledge };
@@ -178,7 +280,7 @@ export async function askTruthGuideRemote(
   history: { role: "user" | "bot"; text: string }[] = [],
 ): Promise<{ text: string } | null> {
   try {
-    const ctx = buildGeneralContext();
+    const ctx = await buildGeneralContext();
     const res = await fetch(routerUrl(), {
       method: "POST",
       headers: {
@@ -193,7 +295,7 @@ export async function askTruthGuideRemote(
         history: history.slice(-8),
         context: ctx,
       }),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(20000),
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { ok?: boolean; text?: string };
@@ -204,39 +306,77 @@ export async function askTruthGuideRemote(
   }
 }
 
-/* Deterministic fallback — used when Gemini is unreachable */
-export function fallbackAnswer(question: string): string {
+/* ── Deterministic fallback — used when Gemini is unreachable ─────
+   Answers from the same live rows, so an outage degrades depth, not truth. */
+const cr = (n: number | null) => (n == null ? "" : `₹${n} Cr`);
+
+function topList(rows: GuideProject[], k = 5): string {
+  return rows
+    .filter((p) => p.score != null)
+    .slice(0, k)
+    .map((p) => `${p.name} (${p.score}${p.location ? `, ${p.location}` : ""})`)
+    .join("; ");
+}
+
+export async function fallbackAnswer(question: string): Promise<string> {
   const q = question.toLowerCase();
-  if (/truth\s*score|methodology|how.*score|how.*work/i.test(q)) {
-    return "Truth Score is our independent 0–100 rating built from five weighted pillars: Location (26%), Developer (25%), Construction (22%), Legal (15%), and USPs (12%). Re-scored quarterly — no builder can pay to move it. Ask me about any specific project or corridor.";
+  const rows = rankForContext(await trackedProjects());
+
+  if (/truth\s*score|methodology|how.*score|how.*work/.test(q)) {
+    return "Truth Score is our independent 0–100 rating built from five weighted pillars: Location (26%), Developer (25%), Construction (22%), Legal (15%) and USPs (12%). Re-scored quarterly — no builder can pay to move it. 90+ is Exceptional, 80–89 Strong, 70–79 Solid.";
   }
-  if (/compare|vs |versus/i.test(q)) {
-    return "I can help you compare projects, developers, or corridors. Try naming two specific ones — like \"DLF Arbour vs Puri Aravallis\" or \"SPR vs Dwarka Expressway\" — and I'll give you our read.";
+
+  const budget = q.match(/(\d+(?:\.\d+)?)\s*(?:cr|crore)/);
+  if (budget) {
+    const cap = parseFloat(budget[1]);
+    const fit = rows.filter((p) => p.minPriceCr != null && p.minPriceCr <= cap);
+    if (fit.length) {
+      return `Under ${cr(cap)}, the strongest reads we track are ${topList(fit)}. Those are entry tickets — tell me your preferred corridor or configuration and I'll narrow it further.`;
+    }
+    const cheapest = rows
+      .filter((p) => p.minPriceCr != null)
+      .sort((a, b) => (a.minPriceCr ?? 0) - (b.minPriceCr ?? 0))
+      .slice(0, 3)
+      .map((p) => `${p.name} (from ${cr(p.minPriceCr)})`)
+      .join("; ");
+    return `Nothing in our tracked set starts under ${cr(cap)} right now. The lowest entry tickets we hold are ${cheapest}.`;
   }
-  if (/price|budget|how much|afford|cost/i.test(q)) {
-    return "Gurugram luxury ranges from ₹8k–45k/sqft depending on the corridor. SPR (₹18k–28k) is the strongest appreciation corridor right now; Dwarka Expressway (₹12k–22k) is the metro-driven value play. Tell me your budget range and I can narrow it down.";
+
+  if (/best|top|highest|score.*high|recommend|which project/.test(q)) {
+    return rows.length
+      ? `On our current reads the highest-scoring projects are ${topList(rows)}. Tell me your budget and corridor and I'll narrow it to the ones that actually fit.`
+      : "I can rank our tracked projects by Truth Score once the index loads — try again in a moment.";
   }
-  if (/developer|builder|dlf|godrej|m3m|smartworld|signature|puri/i.test(q)) {
-    return "We track every major developer in Gurugram on delivery record, financial strength, and build quality. DLF and Godrej lead on execution. Ask me about a specific developer and I'll share what our read shows.";
+
+  if (/compare|vs |versus/.test(q)) {
+    return "Name the two projects and I'll put their Truth Scores, corridors and entry tickets side by side — for example \"DLF Arbour vs Godrej Aristocrat\".";
   }
-  if (/risk|safe|concern|worry/i.test(q)) {
-    return "The key risks in Gurugram real estate are construction delays, developer financial stress, and legal title issues. Our Truth Score flags these at the project level. Tell me which project you're evaluating and I'll point you to the specific risks.";
+
+  if (/developer|builder|dlf|godrej|m3m|smartworld|signature|puri|emaar|birla/.test(q)) {
+    const devs = [...new Set(rows.map((p) => p.developer).filter(Boolean))].slice(0, 8).join(", ");
+    return `We track developers on delivery record, financial strength and build quality. Currently covered: ${devs}. Ask me about a specific one and I'll share what our read shows.`;
   }
-  if (/location|corridor|spr|gcr|dwarka|sohna|golf course/i.test(q)) {
-    return "Gurugram has six main corridors: Golf Course Road (ultra-luxury), SPR (emerging luxury, strongest appreciation), Dwarka Expressway (metro catalyst play), New Gurgaon (value), Golf Course Extension (premium), and Sohna Road (affordable/mid). Which one are you considering?";
+
+  if (/risk|safe|concern|worry|red flag/.test(q)) {
+    return "The recurring risks in Gurugram are construction delay, developer financial stress and title/approval gaps. Each is scored inside the project's Truth Score, and the full forensic read sets out the specific findings. Which project are you evaluating?";
   }
-  if (/hi|hello|hey|namaste/i.test(q) && q.length < 20) {
-    return "Hi — I'm TruthGuide, your independent advisor for Gurugram residential real estate. Ask me about any project, developer, corridor, or investment question. No sales, no bias — just the facts from our independent read.";
+
+  if (/location|corridor|spr|gcr|dwarka|sohna|golf course|new gurgaon/.test(q)) {
+    return "Six corridors matter in Gurugram: Golf Course Road (ultra-luxury, ₹25–45k/sqft), SPR (emerging luxury, ₹18–28k, strongest appreciation), Dwarka Expressway (₹12–22k, metro catalyst), Golf Course Extension (₹16–24k), New Gurgaon (₹8–16k, value) and Sohna Road (₹7–14k). Which are you weighing?";
   }
-  return "I'm TruthGuide — I answer questions about Gurugram residential real estate from our independent research. Ask me about a specific project, developer, corridor, pricing, risks, or investment opportunity and I'll give you our read.";
+
+  if (/^(hi|hello|hey|namaste)\b/.test(q) && q.length < 20) {
+    return `Hi — I'm TruthGuide, your independent advisor for Gurugram residential real estate. We currently track ${rows.length} projects, each with a Truth Score. Ask me about any project, developer, corridor or budget.`;
+  }
+
+  return `I answer from our independent research on ${rows.length} tracked Gurugram projects. Ask me for the highest scores, projects inside a budget, a head-to-head comparison, or a developer's delivery record.`;
 }
 
 /* Suggestion chips for the opening screen */
 export const GUIDE_SUGGESTIONS = [
   "Which projects score highest right now?",
-  "Is DLF Privana South worth the premium?",
-  "Compare SPR vs Dwarka Expressway",
   "Best projects under ₹5 Cr",
+  "Compare SPR vs Dwarka Expressway",
   "Which developers deliver on time?",
-  "What are the risks in Gurugram real estate?",
+  "What should I watch out for in Gurugram?",
 ];

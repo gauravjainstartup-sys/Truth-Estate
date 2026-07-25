@@ -54,7 +54,7 @@ export default function TruthGuideChat({
 
     const history = msgs.map((m) => ({ role: m.role, text: m.text }));
     const remote = await askTruthGuideRemote(q, history).catch(() => null);
-    const text = remote?.text ?? fallbackAnswer(q);
+    const text = remote?.text ?? (await fallbackAnswer(q).catch(() => "I couldn't reach our research just now — try that again in a moment."));
 
     await new Promise((r) => setTimeout(r, 400));
     setTyping(false);

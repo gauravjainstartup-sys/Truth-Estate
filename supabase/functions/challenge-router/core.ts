@@ -56,7 +56,7 @@ export async function callGemini(
   system: string,
   history: Msg[] | undefined,
   question: string,
-  opts: { model: string; fetchImpl: FetchLike },
+  opts: { model: string; fetchImpl: FetchLike; maxTokens?: number },
 ): Promise<string | null> {
   const contents = [
     ...(history ?? []).slice(-8).map((m) => ({ role: m.role === "bot" ? "model" : "user", parts: [{ text: m.text }] })),
@@ -70,7 +70,7 @@ export async function callGemini(
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
         contents,
-        generationConfig: { temperature: 0.4, maxOutputTokens: 600, topP: 0.9 },
+        generationConfig: { temperature: 0.4, maxOutputTokens: opts.maxTokens ?? 600, topP: 0.9 },
       }),
     },
   );
@@ -78,38 +78,54 @@ export async function callGemini(
     console.error(`[challenge-router] gemini HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
     return null;
   }
-  const data = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[]; promptFeedback?: unknown };
+  const data = (await res.json()) as {
+    candidates?: { content?: { parts?: { text?: string }[] }; finishReason?: string }[];
+    promptFeedback?: unknown;
+  };
   const parts = data?.candidates?.[0]?.content?.parts;
   const text = Array.isArray(parts) ? parts.map((p) => p.text ?? "").join("").trim() : "";
   if (!text) {
-    console.error(`[challenge-router] gemini empty text. candidates=${data?.candidates?.length ?? 0} feedback=${JSON.stringify(data?.promptFeedback ?? null)}`);
+    console.error(
+      `[challenge-router] gemini empty text. candidates=${data?.candidates?.length ?? 0}` +
+      ` finish=${data?.candidates?.[0]?.finishReason ?? "?"} feedback=${JSON.stringify(data?.promptFeedback ?? null)}`,
+    );
   }
   return text || null;
+}
+
+/* Output budget by tier — a shallow answer that gets truncated reads as
+   evasive, which is exactly the failure we are fixing. */
+export function generalTokenBudget(tier: string | undefined): number {
+  return tier === "paid" ? 900 : tier === "registered" ? 700 : 400;
 }
 
 function generalSystemPrompt(ctx: Ctx): string {
   const tier = ctx.tier ?? "anonymous";
   const paid = tier === "paid" && ctx.paidKnowledge
-    ? `\n\nPAID INTELLIGENCE (this visitor has PAID — use it fully, give deep answers):\n${ctx.paidKnowledge}`
+    ? `\n\nFORENSIC LAYER (this visitor has PAID — use it fully):\n${ctx.paidKnowledge}`
     : "";
 
+  /* The scoreboard in CONTEXT is public site data. Every tier may name
+     projects and quote scores; the tiers differ in how far the ANALYSIS
+     goes, and in the nudge that closes the answer. */
   const depthRule =
     tier === "anonymous"
-      ? `5. This visitor is ANONYMOUS (free, limited messages). Keep answers at OVERVIEW level — general market direction, corridor comparisons, methodology. Do NOT give specific project verdicts, ROI numbers, or proprietary analysis. Be helpful but concise (2-3 sentences). Encourage them to sign up for deeper insights.`
+      ? `6. DEPTH — this visitor is ANONYMOUS with a 2-question trial. ANSWER THE QUESTION PROPERLY: name the specific projects, quote their Truth Scores, respect their budget and corridor. Keep it tight (2-3 sentences, up to ~4 named projects). Do NOT walk through the pillar-by-pillar audit or ROI reasoning. Close with one short line that a free account unlocks unlimited questions. NEVER refuse to name projects and never answer with "it depends on your needs" — you have the scoreboard, use it.`
       : tier === "registered"
-        ? `5. This visitor is REGISTERED (free account). Give moderately detailed answers — name projects and scores, share corridor-level data, give general developer assessments. Do NOT share deep proprietary analysis (specific ROI models, detailed red flags, internal verdicts). For deep questions, mention that a paid read unlocks the full analysis.`
-        : `5. This visitor is a PAID user. Answer with FULL DEPTH — use all available data including project verdicts, ROI models, developer records, red flags, and market projections. Be thorough but concise.`;
+        ? `6. DEPTH — this visitor has a FREE ACCOUNT. Answer generously: rank and compare projects, quote Truth Scores, weigh corridors, discuss developer reputation and what the score bands mean. 3-5 sentences. The pillar-by-pillar forensic audit, the ROI model and the legal read live inside the ₹999 read — when a question genuinely needs those, give the honest public-level answer first, then mention the read in one clause. Never withhold a fact that is in the scoreboard.`
+        : `6. DEPTH — this visitor has PAID. Go all the way: rank, compare, weigh red flags and delay risk, reason about trade-offs and what the pillar scores imply. Be thorough and specific. Never defer them to a purchase they have already made.`;
 
   return [
     `You are TruthGuide, the independent, buyer-side real estate advisor for Truth Estate. You answer questions about Gurugram residential real estate ONLY.`,
     ``,
     `RULES:`,
-    `1. Answer ONLY from the context below. Never invent facts, numbers or findings. If something isn't in the context, say we haven't assessed it.`,
-    `2. Be concise and conversational — 2-4 sentences, like a sharp WhatsApp reply. No headings, no markdown.`,
-    `3. Be honest, even about weaknesses — conceding a weak point builds trust. You are NOT a salesperson.`,
-    `4. ONLY discuss Gurugram residential real estate. Politely decline anything else (commercial, other cities, non-real-estate topics). Say: "I focus exclusively on Gurugram residential real estate — that's where our independent research runs deepest."`,
+    `1. Answer ONLY from the context below. Never invent projects, scores or numbers. If a project isn't in the scoreboard, say we don't track it yet — do not guess.`,
+    `2. Be direct and conversational, like a sharp WhatsApp reply from a knowledgeable friend. Plain prose, no headings, no markdown, no bullet characters.`,
+    `3. LEAD WITH THE ANSWER. Name names and quote numbers in the first sentence. Never open with a caveat, never say the answer "depends on your needs", and never ask a clarifying question INSTEAD of answering — answer with what you have, then optionally offer to narrow it.`,
+    `4. Be honest, including about weaknesses — conceding a weak point builds trust. You are NOT a salesperson, and at most ONE short nudge per answer.`,
+    `5. ONLY discuss Gurugram residential real estate. Politely decline anything else (commercial property, other cities, non-real-estate topics) with: "I focus exclusively on Gurugram residential real estate — that's where our independent research runs deepest."`,
     depthRule,
-    `6. Never say you are an AI, a language model, or Gemini. You are TruthGuide, the independent advisor.`,
+    `7. Never say you are an AI, a language model, or Gemini. You are TruthGuide, the independent advisor.`,
     ``,
     `CONTEXT:`,
     ctx.publicKnowledge ?? "(none provided)",
@@ -125,7 +141,10 @@ export async function routeChallenge(
   const ctx = body.context ?? {};
   const locked = Boolean(body.locked);
   const mode = body.mode ?? "project";
-  console.log(`[challenge-router] mode=${mode} q=${question.slice(0, 40)} hasPK=${!!ctx.publicKnowledge} hasKey=${!!opts.apiKey}`);
+  const tier = ctx.tier ?? body.tier;
+  console.log(
+    `[challenge-router] mode=${mode} tier=${tier ?? "-"} ctxChars=${ctx.publicKnowledge?.length ?? 0} q=${question.slice(0, 60)}`,
+  );
   if (!question || !ctx.publicKnowledge) {
     console.error(`[challenge-router] early exit: question=${!!question} publicKnowledge=${!!ctx.publicKnowledge}`);
     return { ok: false };
@@ -142,9 +161,10 @@ export async function routeChallenge(
   const text = await callGemini(opts.apiKey, sys, body.history, question, {
     model: opts.model,
     fetchImpl: opts.fetchImpl,
+    ...(mode === "general" ? { maxTokens: generalTokenBudget(tier) } : {}),
   });
   if (!text) {
-    console.error(`[challenge-router] gemini returned empty text for mode=${mode}`);
+    console.error(`[challenge-router] no text returned for mode=${mode}`);
     return { ok: false };
   }
   return { ok: true, text, gate: locked };
