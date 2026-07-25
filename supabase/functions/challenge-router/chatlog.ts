@@ -61,6 +61,12 @@ export async function logTurn(deps: LogDeps, t: Turn): Promise<void> {
      ids, so the columns may well have no default at all — and supplying
      them is harmless either way, since an explicit value simply overrides
      a default where one exists. Two failure modes removed for nothing. */
+  /* PostgREST rejects a bulk insert whose objects have differing key sets
+     (PGRST102 "All object keys must match") — it builds one INSERT with a
+     single column list, so it cannot express per-row columns. model_used
+     and latency_ms are meaningful only on the reply, but both rows must
+     still CARRY the keys, so the user row sets them null rather than
+     omitting them. Keep every key in `base` and override per row. */
   const now = new Date().toISOString();
   const base = {
     session_id: t.sessionId,
@@ -68,13 +74,20 @@ export async function logTurn(deps: LogDeps, t: Turn): Promise<void> {
     user_id: null,
     tier: t.tier ?? null,
     created_at: now,
+    model_used: null as string | null,
+    latency_ms: null as number | null,
   };
 
   const rows = [
-    { id: crypto.randomUUID(), ...base, role: ROLE_USER, content: cap(t.question, 4000) },
     {
-      id: crypto.randomUUID(),
       ...base,
+      id: crypto.randomUUID(),
+      role: ROLE_USER,
+      content: cap(t.question, 4000),
+    },
+    {
+      ...base,
+      id: crypto.randomUUID(),
       role: ROLE_BOT,
       content: cap(t.answer, 8000),
       model_used: t.model ?? null,
