@@ -28,12 +28,23 @@ import type { OmniIndex } from "@/lib/omni";
 
 export type TruthGuideTier = "anonymous" | "registered" | "paid";
 
+/* ── Quotas ────────────────────────────────────────────────────
+   Two independent limits, both configurable here.
+
+   ANON_MESSAGE_LIMIT is a CONVERSION gate, not a cost control: the free
+   questions a guest gets before being asked to sign in.
+
+   DAILY_LIMIT is the cost/abuse ceiling and applies to EVERY tier
+   equally. It previously applied only to paid users, which meant a free
+   registered account had no cap while a paying customer was held to 20 —
+   backwards. Signing in buys quota; it does not buy an exemption. */
 export const ANON_MESSAGE_LIMIT = 2;
-export const PAID_DAILY_LIMIT = 20;
+export const DAILY_LIMIT = 20;
+
 
 const MSG_COUNT_KEY = "truthEstate.tgMsgCount";
-const PAID_DAY_KEY = "truthEstate.tgPaidDay";
-const PAID_DAY_COUNT_KEY = "truthEstate.tgPaidDayCount";
+const DAY_KEY = "truthEstate.tgDay";
+const DAY_COUNT_KEY = "truthEstate.tgDayCount";
 
 const BASE_PATH = "/Truth-Estate";
 /* How many tracked rows ride in the prompt. The whole scoreboard is ~100 rows
@@ -69,50 +80,49 @@ function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function getPaidDailyCount(): number {
+export function getDailyCount(): number {
   if (typeof window === "undefined") return 0;
   try {
-    const day = window.localStorage.getItem(PAID_DAY_KEY);
+    const day = window.localStorage.getItem(DAY_KEY);
     if (day !== todayKey()) return 0;
-    return parseInt(window.localStorage.getItem(PAID_DAY_COUNT_KEY) ?? "0", 10);
+    return parseInt(window.localStorage.getItem(DAY_COUNT_KEY) ?? "0", 10);
   } catch { return 0; }
 }
 
-export function incrementPaidDailyCount(): number {
+export function incrementDailyCount(): number {
   if (typeof window === "undefined") return 0;
   const today = todayKey();
   try {
-    const day = window.localStorage.getItem(PAID_DAY_KEY);
+    const day = window.localStorage.getItem(DAY_KEY);
     let n = 1;
     if (day === today) {
-      n = parseInt(window.localStorage.getItem(PAID_DAY_COUNT_KEY) ?? "0", 10) + 1;
+      n = parseInt(window.localStorage.getItem(DAY_COUNT_KEY) ?? "0", 10) + 1;
     }
-    window.localStorage.setItem(PAID_DAY_KEY, today);
-    window.localStorage.setItem(PAID_DAY_COUNT_KEY, String(n));
+    window.localStorage.setItem(DAY_KEY, today);
+    window.localStorage.setItem(DAY_COUNT_KEY, String(n));
     return n;
   } catch { return 0; }
 }
 
-export type GateReason = "anon-limit" | "paid-daily-limit" | null;
+export type GateReason = "anon-limit" | "daily-limit" | null;
 
 export function checkGate(): GateReason {
-  const tier = getTier();
-  if (tier === "anonymous" && getSessionMessageCount() >= ANON_MESSAGE_LIMIT) return "anon-limit";
-  if (tier === "paid" && getPaidDailyCount() >= PAID_DAILY_LIMIT) return "paid-daily-limit";
+  /* Guests meet the sign-in gate first — it is the lower of the two and
+     the one we actually want them to hit. */
+  if (getTier() === "anonymous" && getSessionMessageCount() >= ANON_MESSAGE_LIMIT) return "anon-limit";
+  if (getDailyCount() >= DAILY_LIMIT) return "daily-limit";
   return null;
 }
 
-export function remainingMessages(): number | null {
-  const tier = getTier();
-  if (tier === "anonymous") return Math.max(0, ANON_MESSAGE_LIMIT - getSessionMessageCount());
-  if (tier === "paid") return Math.max(0, PAID_DAILY_LIMIT - getPaidDailyCount());
-  return null;
+export function remainingMessages(): number {
+  const daily = Math.max(0, DAILY_LIMIT - getDailyCount());
+  if (getTier() !== "anonymous") return daily;
+  return Math.min(daily, Math.max(0, ANON_MESSAGE_LIMIT - getSessionMessageCount()));
 }
 
 export function trackMessage(): void {
-  const tier = getTier();
-  if (tier === "anonymous") incrementSessionMessageCount();
-  if (tier === "paid") incrementPaidDailyCount();
+  if (getTier() === "anonymous") incrementSessionMessageCount();
+  incrementDailyCount();
 }
 
 /* ── The tracked universe, from the live index ──────────────────── */
@@ -175,6 +185,13 @@ async function trackedProjects(): Promise<GuideProject[]> {
     delayRisk: null,
     has3D: false,
   }));
+}
+
+/* How many projects we currently track. Used in the opening message so the
+   number is never typed into copy — the founder's rule that no market fact
+   is hardcoded applies to prose as much as to the prompt. */
+export async function trackedProjectCount(): Promise<number> {
+  return (await trackedProjects()).length;
 }
 
 /* Highest-scoring first — a truncated list should keep the best reads, and

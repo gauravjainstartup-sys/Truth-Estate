@@ -11,7 +11,8 @@ import {
   msgId,
   GUIDE_SUGGESTIONS,
   ANON_MESSAGE_LIMIT,
-  PAID_DAILY_LIMIT,
+  DAILY_LIMIT,
+  trackedProjectCount,
   type ChatMsg,
   type GateReason,
 } from "@/lib/truthGuideChat";
@@ -28,6 +29,7 @@ export default function TruthGuideChat({
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [gate, setGate] = useState<GateReason>(null);
+  const [projectCount, setProjectCount] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -37,6 +39,7 @@ export default function TruthGuideChat({
 
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 350);
+    trackedProjectCount().then(setProjectCount).catch(() => {});
   }, []);
 
   async function send(raw: string) {
@@ -85,11 +88,9 @@ export default function TruthGuideChat({
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {tier !== "registered" && remaining !== null && (
-            <span className="rounded-full border border-white/15 px-2.5 py-1 text-[0.6rem] font-medium text-white/50">
-              {remaining} left{tier === "paid" ? " today" : ""}
-            </span>
-          )}
+          <span className="rounded-full border border-white/15 px-2.5 py-1 text-[0.6rem] font-medium text-white/50">
+            {remaining} left{tier === "anonymous" ? "" : " today"}
+          </span>
           <button onClick={onClose} aria-label="Close" className="-mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white/55 transition-colors hover:bg-white/10 hover:text-white">
             &#10005;
           </button>
@@ -102,10 +103,10 @@ export default function TruthGuideChat({
           <div>
             <Bubble>
               {tier === "anonymous"
-                ? `Hi — I'm TruthGuide, your independent advisor for Gurugram residential real estate. Ask me anything about projects, developers, pricing, or corridors. You have ${ANON_MESSAGE_LIMIT} questions — sign up free for unlimited.`
+                ? `Hi — I'm TruthGuide, Truth Estate's independent advisor. I answer from our own research on ${projectCount ? `${projectCount} Gurugram projects` : "Gurugram projects"}, each scored 0–100. We take no developer commission and sell no inventory, so you get our honest read — including the unflattering parts.\n\nWhat are you trying to work out?`
                 : tier === "registered"
-                  ? "Hi — you're signed in. Ask me anything about Gurugram residential real estate — projects, developers, pricing, risks, corridors. I'll answer from our independent research."
-                  : `Hi — you have full access. Ask me anything — I'll go as deep as our read allows. ${PAID_DAILY_LIMIT} questions per day.`}
+                  ? `Welcome back. Ask me anything about Gurugram residential real estate — I'll rank projects, compare corridors, and give you our read on any developer. ${DAILY_LIMIT} questions a day.`
+                  : `You're all set — full access. Ask anything and I'll go as deep as our research goes: red flags, delay risk, and the trade-offs behind each score. ${DAILY_LIMIT} questions a day.`}
             </Bubble>
             <p className="mt-4 mb-2 px-1 text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-[#1a1a1a]/40">Try asking</p>
             <div className="flex flex-col gap-2">
@@ -134,6 +135,26 @@ export default function TruthGuideChat({
             </div>
           ),
         )}
+
+        {(() => {
+          const replies = msgs.filter((m) => m.role === "bot").length;
+          if (typing || gate || signedIn || tier !== "anonymous" || replies !== 1) return null;
+          return (
+            <div className="rounded-2xl border border-[#1a1a1a]/10 bg-white/60 px-4 py-3.5">
+              <p className="text-[0.78rem] font-light leading-relaxed text-[#1a1a1a]/60">
+                Everything above is our real read — we don&apos;t hold back facts for guests.
+                Signing in doesn&apos;t get you a better answer, just more of them:
+                {" "}{ANON_MESSAGE_LIMIT} questions as a guest, {DAILY_LIMIT} a day once you&apos;re in.
+              </p>
+              <button
+                onClick={onSignUp}
+                className="mt-2.5 text-[0.78rem] font-semibold text-[#1e6b45] transition-opacity hover:opacity-70"
+              >
+                Sign in &rarr;
+              </button>
+            </div>
+          );
+        })()}
 
         {(() => {
           const last = msgs[msgs.length - 1];
@@ -165,28 +186,29 @@ export default function TruthGuideChat({
         {gate === "anon-limit" && !signedIn && (
           <div className="rounded-2xl border border-[#1e6b45]/20 bg-[#1e6b45]/[0.06] px-5 py-5 text-center">
             <p className="text-[0.85rem] font-medium text-[#1a1a1a]/80">
-              You&apos;ve used your {ANON_MESSAGE_LIMIT} free questions
+              Want to keep going?
             </p>
             <p className="mt-1.5 text-[0.78rem] font-light text-[#1a1a1a]/50">
-              Sign up free for unlimited conversations — no credit card needed.
+              Signing in gets you {DAILY_LIMIT} questions a day — same answers, no card.
+              Either way, the project reads stay open to you.
             </p>
             <button
               onClick={onSignUp}
               className="mt-4 rounded-xl bg-[#1e6b45] px-6 py-3 text-[0.82rem] font-semibold text-white transition-colors hover:bg-[#238c55]"
             >
-              Sign up free &rarr;
+              Sign in &rarr;
             </button>
           </div>
         )}
 
         {/* Gate: paid daily limit reached */}
-        {gate === "paid-daily-limit" && (
+        {gate === "daily-limit" && (
           <div className="rounded-2xl border border-[#c9a96e]/20 bg-[#c9a96e]/[0.06] px-5 py-5 text-center">
             <p className="text-[0.85rem] font-medium text-[#1a1a1a]/80">
-              You&apos;ve reached the daily limit ({PAID_DAILY_LIMIT} questions)
+              You&apos;ve reached today&apos;s limit of {DAILY_LIMIT} questions
             </p>
             <p className="mt-1.5 text-[0.78rem] font-light text-[#1a1a1a]/50">
-              Your quota resets at midnight. Need urgent help? Request an advisor call.
+              It resets at midnight. Need something sooner? Request an advisor call.
             </p>
           </div>
         )}
