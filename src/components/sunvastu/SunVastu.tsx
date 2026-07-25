@@ -46,6 +46,8 @@ const LIVE: { name: string; file: string; preview: string; towers: number; note:
   { name: "Ashiana Amarah Phase - 3 & 3A", file: "tower-intel/ashiana-amarah-phase-3.html", preview: "tower-intel/ashiana-amarah-phase-3-preview.jpg", towers: 4, note: "Stilt+14 · eastern park" },
   { name: "Ashiana Amarah Phase - 4", file: "tower-intel/ashiana-amarah-phase-4.html", preview: "tower-intel/ashiana-amarah-phase-4-preview.jpg", towers: 5, note: "Stilt+14 · NE park-facing row" },
   { name: "Ashiana Amarah Phase - 5", file: "tower-intel/ashiana-amarah-phase-5.html", preview: "tower-intel/ashiana-amarah-phase-5-preview.jpg", towers: 4, note: "G+14 · Iris 4 BHK + 3 BHK" },
+  { name: "Ashiana Anmol Phase - 3", file: "tower-intel/ashiana-anmol-phase-3.html", preview: "tower-intel/ashiana-anmol-phase-3-preview.jpg", towers: 5, note: "Stilt+14 · Sohna · 2 & 3 BHK" },
+  { name: "Signature Global De-Luxe DXP", file: "tower-intel/signature-global-de-luxe-dxp.html", preview: "tower-intel/signature-global-de-luxe-dxp-preview.jpg", towers: 8, note: "G+33 · Sector 37D · 3 & 4 BHK" },
   { name: "Signature Global Titanium SPR", file: "tower-intel/signature-global-titanium-spr.html", preview: "tower-intel/signature-global-titanium-spr-preview.jpg", towers: 7, note: "2-to-core dual-aspect" },
   { name: "M3M Elie Saab", file: "tower-intel/m3m-residences-by-elie-saab.html", preview: "tower-intel/m3m-residences-by-elie-saab-preview.jpg", towers: 3, note: "east-sunrise living" },
   { name: "DLF The Arbour", file: "tower-intel/dlf-arbour.html", preview: "tower-intel/preview.jpg", towers: 5, note: "south-east corners" },

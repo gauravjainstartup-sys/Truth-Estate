@@ -29,6 +29,8 @@ const COORDS: Record<string, { lat: number; lng: number }> = {
   "ashiana-amarah-phase-3-3a": { lat: 28.39, lng: 76.951 },
   "ashiana-amarah-phase-4": { lat: 28.39, lng: 76.951 },
   "ashiana-amarah-phase-5": { lat: 28.39, lng: 76.951 },
+  "ashiana-anmol-phase-3": { lat: 28.248, lng: 77.075 },
+  "signature-global-de-luxe-dxp": { lat: 28.44, lng: 76.98 },
   "puri-the-aravallis": { lat: 28.4125, lng: 77.0835 },
 };
 
