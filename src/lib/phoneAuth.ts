@@ -128,36 +128,46 @@ export async function sendOtp(phone10: string): Promise<AuthResult> {
   }
 }
 
+/* Goes through chat-signin rather than verify-otp directly.
+   verify-otp confirms the code with MSG91 and stops there — it creates no
+   Supabase user, so calling it from here left every sign-in invisible:
+   conversation still under anon_id, name going nowhere, and no answer to
+   "who logged in". chat-signin re-verifies server-side, creates or finds
+   the account, and claims this device's history in one call. */
 export async function verifyOtp(phone10: string, code: string): Promise<AuthResult> {
   try {
-    const { ok, data } = await callFn("verify-otp", {
-      phone: phone10,
-      otp: code.replace(/\D/g, ""),
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/chat-signin`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({
+        phone: phone10,
+        otp: code.replace(/\D/g, ""),
+        anonId: getAnonId(),
+        sessionId: getSessionId(),
+      }),
+      signal: AbortSignal.timeout(20000),
     });
-    if (!ok) {
-      console.warn("[otp] verify failed", data.step ?? "", data.message ?? "");
-      return { ok: false, error: readable(data) };
+    const data = (await res.json().catch(() => ({}))) as {
+      ok?: boolean; error?: string; userId?: string;
+      chatsClaimed?: number; leadsClaimed?: number;
+    };
+    if (!data.ok || !data.userId) {
+      return { ok: false, error: data.error ?? "Couldn't verify that just now. Try again in a moment." };
     }
-
-    /* Read the session from wherever the function puts it. If it returns
-       none, the visitor is still legitimately verified — MSG91 said so —
-       so sign them in locally and carry on. Only the history claim and
-       the profile write need a token, and both are best-effort. */
-    const token = data.session?.access_token ?? data.access_token ?? data.token ?? null;
-    const userId = data.session?.user?.id ?? data.user?.id ?? data.userId ?? null;
 
     try {
       window.localStorage.setItem(
         SESSION_STORE,
-        JSON.stringify({ access_token: token, user_id: userId, phone: phone10 }),
+        JSON.stringify({ access_token: null, user_id: data.userId, phone: phone10 }),
       );
     } catch { /* a full quota must not block a verified sign-in */ }
 
     setSignedIn();
-
-    if (token) void claimAnonymousHistory(token);
-    else console.warn("[otp] verified but no session token returned — history claim skipped");
-
+    console.info(`[signin] linked ${data.chatsClaimed ?? 0} chats, ${data.leadsClaimed ?? 0} leads`);
     return { ok: true };
   } catch {
     return { ok: false, error: "Couldn't reach us just now — check your connection and try again." };
@@ -213,17 +223,27 @@ export async function saveName(name: string): Promise<void> {
   });
 
   const session = getSession();
-  if (!session?.access_token || !session.user_id) return;
+  if (!session?.phone || !session.user_id) return;
+  /* Re-runs chat-signin's link step with the name attached. The browser
+     holds no session token — verify-otp never issues one — so it cannot
+     PATCH user_profiles itself, and this is the only path that reaches
+     the row. Cheap enough to repeat, and idempotent. */
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/user_profiles?id=eq.${session.user_id}`, {
-      method: "PATCH",
+    await fetch(`${SUPABASE_URL}/functions/v1/chat-signin`, {
+      method: "POST",
       headers: {
         "content-type": "application/json",
         apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${session.access_token}`,
-        Prefer: "return=minimal",
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
       },
-      body: JSON.stringify({ name: clean, phone: session.phone, phone_verified: true }),
+      body: JSON.stringify({
+        phone: session.phone,
+        userId: session.user_id,
+        name: clean,
+        anonId: getAnonId(),
+        sessionId: getSessionId(),
+        nameOnly: true,
+      }),
       signal: AbortSignal.timeout(10000),
     });
   } catch { /* the local copy is already saved */ }
