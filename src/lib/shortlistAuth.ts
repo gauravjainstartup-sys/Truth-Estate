@@ -11,15 +11,19 @@
    when nothing had verified it, and every lead built on top of it was
    fiction.
 
-   Verification is mobile-only and, for now, India-only: the DLT
-   templates MSG91 sends against are registered for Indian numbers, so
-   an international number would be charged for and never arrive.
-   Saying so beats pretending to send.
+   Verification is mobile-only. Indian numbers get a real MSG91 SMS
+   code; international numbers take the WhatsApp path, which is DUMMIED
+   until those templates are live — any code is accepted and the account
+   is recorded unverified. Callers hold the dialling code separately, so
+   they pass it in rather than have this file guess from the digits.
    ════════════════════════════════════════════════════════════════ */
 
 import {
   normalisePhone,
+  normaliseIntl,
+  isIndiaDial,
   sendOtp as sendPhoneOtp,
+  sendOtpIntl,
   verifyOtp as verifyPhoneOtp,
   OTP_LENGTH,
 } from "@/lib/phoneAuth";
@@ -81,37 +85,42 @@ export function maskContact(v: Verified): string {
    an Indian number arrives as ten digits and normalisePhone accepts it.
    A UAE or UK number does not fit /^[6-9]\d{9}$/ and comes back null —
    which is the correct answer, not a bug to route around. */
-function toTen(contact: string): string | null {
-  return normalisePhone(contact);
+function toNumber(contact: string, cc: string): string | null {
+  return isIndiaDial(cc) ? normalisePhone(contact) : normaliseIntl(cc, contact);
 }
 
-/** Trigger the OTP. Goes to MSG91 via the deployed send-otp function. */
-export async function sendOtp(channel: Channel, contact: string): Promise<{ ok: boolean; error?: string }> {
+/** Trigger the OTP. Real SMS for +91; nothing is sent internationally. */
+export async function sendOtp(
+  channel: Channel,
+  contact: string,
+  cc = "+91",
+): Promise<{ ok: boolean; error?: string }> {
   if (channel !== "mobile") {
     return { ok: false, error: "We can only verify by mobile right now." };
   }
-  const ten = toTen(contact);
-  if (!ten) return { ok: false, error: "We can only verify Indian mobile numbers right now." };
-  return sendPhoneOtp(ten);
+  const num = toNumber(contact, cc);
+  if (!num) return { ok: false, error: "That number doesn't look right — mind checking it?" };
+  return isIndiaDial(cc) ? sendPhoneOtp(num) : sendOtpIntl(num);
 }
 
-/** Check the code with MSG91, then create/find the account and sign in. */
+/** Check the code, then create/find the account and sign in. */
 export async function verifyOtp(
   channel: Channel,
   contact: string,
   code: string,
   name?: string,
+  cc = "+91",
 ): Promise<{ ok: boolean; error?: string }> {
   if (channel !== "mobile") {
     return { ok: false, error: "We can only verify by mobile right now." };
   }
-  const ten = toTen(contact);
-  if (!ten) return { ok: false, error: "That number doesn't look right — go back and check it." };
+  const num = toNumber(contact, cc);
+  if (!num) return { ok: false, error: "That number doesn't look right — go back and check it." };
   const clean = code.trim().replace(/\D/g, "");
   if (clean.length !== OTP_LENGTH) {
     return { ok: false, error: `Enter the ${OTP_LENGTH}-digit code we sent.` };
   }
-  return verifyPhoneOtp(ten, clean, name);
+  return verifyPhoneOtp(num, clean, name, cc);
 }
 
 /* Re-exported so the screens that drive this flow render the number of

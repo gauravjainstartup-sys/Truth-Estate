@@ -16,7 +16,7 @@ import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import OtpDigits from "../auth/OtpDigits";
 import { saveLead } from "@/lib/journey";
-import { normalisePhone, prettyPhone, sendOtp, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
+import { normalisePhone, normaliseIntl, prettyPhone, sendOtp, sendOtpIntl, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
 
 const basePath = "/Truth-Estate";
 
@@ -53,7 +53,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
      the STD 0 out of habit rendered "+91 09958777313" — the SMS went to
      the right handset, but this line is precisely where someone checks
      their number, so it has to match what was dialled. */
-  const normalised = normalisePhone(num);
+  const normalised = isIndia ? normalisePhone(num) : null;
   const sentTo = normalised ? `${dial} ${prettyPhone(normalised)}` : `${dial} ${num.trim()}`;
 
   useEffect(() => {
@@ -66,15 +66,14 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
     if (busy) return;
     if (!name.trim()) { setErr("Please enter your name."); return; }
     if (!numValid) { setErr("Enter a valid mobile number."); return; }
-    /* MSG91's DLT templates are registered for Indian numbers only, so an
-       international number would take the money and never arrive. Say so
-       rather than pretend to send. */
-    if (!isIndia) { setErr("We can only verify Indian mobile numbers right now."); return; }
-    const ten = normalisePhone(num);
-    if (!ten) { setErr("That doesn't look like a valid Indian mobile number."); return; }
+    /* MSG91's DLT templates reach Indian handsets only. An international
+       number therefore takes the WhatsApp path, which is dummied until
+       those templates are live — see lib/phoneAuth. */
+    const ten = isIndia ? normalisePhone(num) : normaliseIntl(dial, num);
+    if (!ten) { setErr("That number doesn't look right — mind checking it?"); return; }
 
     setErr(""); setBusy(true);
-    const r = await sendOtp(ten);
+    const r = isIndia ? await sendOtp(ten) : await sendOtpIntl(ten);
     setBusy(false);
     if (!r.ok) { setErr(r.error); return; }
     setStep("otp"); setResendIn(24);
@@ -84,7 +83,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
     e.preventDefault();
     if (busy) return;
     if (!otpComplete) { setErr(`Enter the ${OTP_LEN}-digit code.`); return; }
-    const ten = normalisePhone(num);
+    const ten = isIndia ? normalisePhone(num) : normaliseIntl(dial, num);
     if (!ten) { setErr("That number doesn't look right — go back and check it."); return; }
 
     setErr(""); setBusy(true);
@@ -92,7 +91,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
        the verification and the profile lands complete in one round trip.
        verifyOtp signs in only after the server has confirmed the code —
        it does not simply set a flag, which is what this screen used to do. */
-    const r = await verifyOtp(ten, otp.join(""), name.trim());
+    const r = await verifyOtp(ten, otp.join(""), name.trim(), dial);
     setBusy(false);
     if (!r.ok) { setErr(r.error); return; }
 
@@ -206,10 +205,10 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
                       disabled={busy}
                       onClick={async () => {
                         if (busy) return;
-                        const ten = normalisePhone(num);
+                        const ten = isIndia ? normalisePhone(num) : normaliseIntl(dial, num);
                         if (!ten) { setErr("That number doesn't look right."); return; }
                         setErr(""); setBusy(true);
-                        const r = await sendOtp(ten);
+                        const r = isIndia ? await sendOtp(ten) : await sendOtpIntl(ten);
                         setBusy(false);
                         if (r.ok) setResendIn(24); else setErr(r.error);
                       }}

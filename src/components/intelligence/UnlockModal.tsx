@@ -20,7 +20,7 @@ import {
   hasReadAccess, has3DAccess, isAllAccess,
   type PackageId,
 } from "@/lib/journey";
-import { normalisePhone, prettyPhone, sendOtp, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
+import { normalisePhone, normaliseIntl, prettyPhone, sendOtp, sendOtpIntl, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
 
 const DIAL = [
   { code: "+91", flag: "🇮🇳" }, { code: "+971", flag: "🇦🇪" }, { code: "+1", flag: "🇺🇸" },
@@ -99,7 +99,7 @@ export default function UnlockModal({
   const otpComplete = otp.every((d) => d !== "");
   /* Show the number the SMS actually went to, not the raw keystrokes —
      typing the STD 0 out of habit rendered "+91 09958777312". */
-  const normalised = normalisePhone(num);
+  const normalised = isIndia ? normalisePhone(num) : null;
   const sentTo = normalised ? `${dial} ${prettyPhone(normalised)}` : `${dial} ${num.trim()}`;
 
   // ── upgrade economics: credit what's already paid on THIS project ──
@@ -141,14 +141,13 @@ export default function UnlockModal({
     if (!sent) {
       if (!name.trim()) { setErr("Please enter your name."); return; }
       if (!numValid) { setErr("Enter a valid mobile number."); return; }
-      /* MSG91's DLT templates are registered for Indian numbers only, so
-         an international number would be billed for and never arrive. */
-      if (!isIndia) { setErr("We can only verify Indian mobile numbers right now."); return; }
-      const ten = normalisePhone(num);
-      if (!ten) { setErr("That doesn't look like a valid Indian mobile number."); return; }
+      /* Indian numbers get the MSG91 SMS code; international numbers take
+         the WhatsApp path, dummied until those templates are live. */
+      const ten = isIndia ? normalisePhone(num) : normaliseIntl(dial, num);
+      if (!ten) { setErr("That number doesn't look right — mind checking it?"); return; }
 
       setErr(""); setBusy(true);
-      const r = await sendOtp(ten);
+      const r = isIndia ? await sendOtp(ten) : await sendOtpIntl(ten);
       setBusy(false);
       if (!r.ok) { setErr(r.error); return; }
       setSent(true);
@@ -157,13 +156,13 @@ export default function UnlockModal({
     }
 
     if (!otpComplete) { setErr(`Enter the ${OTP_LEN}-digit code.`); return; }
-    const ten = normalisePhone(num);
+    const ten = isIndia ? normalisePhone(num) : normaliseIntl(dial, num);
     if (!ten) { setErr("That number doesn't look right — go back and check it."); return; }
 
     setErr(""); setBusy(true);
     /* Signs in only on a server-confirmed code, and carries the name so
        the profile lands complete in one round trip. */
-    const r = await verifyOtp(ten, otp.join(""), name.trim());
+    const r = await verifyOtp(ten, otp.join(""), name.trim(), dial);
     setBusy(false);
     if (!r.ok) { setErr(r.error); return; }
 
@@ -224,7 +223,7 @@ export default function UnlockModal({
                 </>
               ) : (
                 <div className="mt-5">
-                  <p className="text-[0.85rem] text-[#1a1a1a]/55">Code sent to <span className="font-medium text-[#1a1a1a]">{sentTo}</span> via SMS{" · "}<button type="button" onClick={() => { setSent(false); setOtp(Array(OTP_LEN).fill("")); setErr(""); }} className="font-medium text-[#9a7a2e] hover:underline">Change</button></p>
+                  <p className="text-[0.85rem] text-[#1a1a1a]/55">Code sent to <span className="font-medium text-[#1a1a1a]">{sentTo}</span> via {isIndia ? "SMS" : "WhatsApp"}{" · "}<button type="button" onClick={() => { setSent(false); setOtp(Array(OTP_LEN).fill("")); setErr(""); }} className="font-medium text-[#9a7a2e] hover:underline">Change</button></p>
                   <div className="mt-4 flex gap-3">
                     {otp.map((d, i) => (
                       <input key={i} ref={(el) => { otpRefs.current[i] = el; }} value={d}

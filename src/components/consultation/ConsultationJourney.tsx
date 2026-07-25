@@ -451,7 +451,7 @@ function RegisterCard({
     if (!numValid || sending) return;
     setErr(null);
     setSending(true);
-    const r = await sendOtp("mobile", digits);
+    const r = await sendOtp("mobile", digits, dialCode);
     setSending(false);
     if (r.ok) {
       setOtpSent(true);
@@ -463,7 +463,7 @@ function RegisterCard({
     if (!nameValid || !otpComplete || verifying) return;
     setErr(null);
     setVerifying(true);
-    const r = await verifyOtp("mobile", digits, otp.join(""), name.trim());
+    const r = await verifyOtp("mobile", digits, otp.join(""), name.trim(), dialCode);
     setVerifying(false);
     if (r.ok) {
       onVerified({ channel: "mobile", contact: digits, cc: dialCode, name: name.trim(), email: email.trim() || undefined, at: Date.now() });

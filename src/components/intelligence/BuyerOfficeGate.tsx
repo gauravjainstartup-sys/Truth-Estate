@@ -7,7 +7,7 @@ import {
   PROJECT_UNLOCK_INR, packageById,
 } from "@/lib/journey";
 import { CONSULT_DAYS, CONSULT_DAYPARTS, CONSULT_FORMATS, advisorFor } from "@/lib/consultation";
-import { normalisePhone, sendOtp, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
+import { normalisePhone, normaliseIntl, sendOtp, sendOtpIntl, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
 
 /* THE BUYER OFFICE — the member surface for a project's unit intelligence.
    Freemium: the live 3D + a sample unit are free; the full per-unit verdict
@@ -222,12 +222,11 @@ export default function BuyerOfficeGate({
       return;
     }
     if (!numValid) { setErr("Enter a valid mobile number."); return; }
-    if (!isIndia) { setErr("We can only verify Indian mobile numbers right now."); return; }
-    const ten = normalisePhone(num);
-    if (!ten) { setErr("That doesn't look like a valid Indian mobile number."); return; }
+    const ten = isIndia ? normalisePhone(num) : normaliseIntl(dial, num);
+    if (!ten) { setErr("That number doesn't look right — mind checking it?"); return; }
 
     setErr(""); setBusy(true);
-    const r = await sendOtp(ten);
+    const r = isIndia ? await sendOtp(ten) : await sendOtpIntl(ten);
     setBusy(false);
     if (!r.ok) { setErr(r.error); return; }
     setSent(true);
@@ -239,11 +238,11 @@ export default function BuyerOfficeGate({
     if (!name.trim()) { setErr("Please enter your name."); return; }
     if (!sent) { await sendCode(); return; }
     if (!otpComplete) { setErr(`Enter the ${OTP_LENGTH}-digit code.`); return; }
-    const ten = normalisePhone(num);
+    const ten = isIndia ? normalisePhone(num) : normaliseIntl(dial, num);
     if (!ten) { setErr("That number doesn't look right — go back and check it."); return; }
 
     setErr(""); setBusy(true);
-    const r = await verifyOtp(ten, otp.join(""), name.trim());
+    const r = await verifyOtp(ten, otp.join(""), name.trim(), dial);
     setBusy(false);
     if (!r.ok) { setErr(r.error); return; }
     persistAndJoin();

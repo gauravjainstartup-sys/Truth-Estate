@@ -111,7 +111,7 @@ export default function CustomReportPage() {
   async function sendCode() {
     if (!detailsOk || otpBusy) return;
     setOtpBusy(true); setOtpErr(null);
-    const r = await sendOtp("mobile", contact);
+    const r = await sendOtp("mobile", contact, cc);
     setOtpBusy(false);
     if (r.ok) setOtpSent(true); else setOtpErr(r.error ?? "Couldn't send the code. Try again.");
   }
@@ -119,7 +119,7 @@ export default function CustomReportPage() {
   async function confirmAndSubmit() {
     if (otpBusy || !otpComplete) return;
     setOtpBusy(true); setOtpErr(null);
-    const r = await verifyOtp("mobile", contact, otp.join(""), name.trim());
+    const r = await verifyOtp("mobile", contact, otp.join(""), name.trim(), cc);
     setOtpBusy(false);
     if (!r.ok) { setOtpErr(r.error ?? "That code didn't match. Try again."); return; }
     const v: Verified = { channel: "mobile", contact, cc, name: name.trim() || undefined, at: Date.now() };

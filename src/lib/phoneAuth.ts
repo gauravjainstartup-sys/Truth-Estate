@@ -65,6 +65,35 @@ export function prettyPhone(ten: string): string {
   return ten.length === 10 ? `${ten.slice(0, 5)} ${ten.slice(5)}` : ten;
 }
 
+/* ── International ───────────────────────────────────────────────
+   MSG91's DLT templates reach Indian handsets only, so an international
+   number gets a WhatsApp step instead of an SMS one — DUMMIED until
+   those templates are live. Any code is accepted, and the account is
+   recorded as unverified.
+
+   This is not a new hole. truthestate.in lets international numbers in
+   today with no verification step at all; this at least marks them, and
+   puts the flow in the shape the real WhatsApp OTP will need so only
+   the transport changes later. */
+export const INDIA_DIAL = "+91";
+
+export function isIndiaDial(dial: string): boolean {
+  return dial.replace(/\D/g, "") === "91";
+}
+
+/* Digits including the country code, e.g. "+44 7911 123456" → 447911123456.
+   Deliberately NOT reduced to the last ten: a UK number's last ten can
+   collide with an Indian one, and matching on them would hand a stranger
+   somebody else's account. */
+export function normaliseIntl(dial: string, raw: string): string | null {
+  const cc = dial.replace(/\D/g, "");
+  let local = raw.replace(/\D/g, "");
+  if (local.startsWith(cc)) local = local.slice(cc.length);
+  local = local.replace(/^0+/, "");
+  if (local.length < 5 || local.length > 14) return null;
+  return cc + local;
+}
+
 type FnResponse = {
   success?: boolean;
   message?: string;
@@ -116,6 +145,14 @@ function readable(data: FnResponse): string {
   return "Couldn't verify that just now. Try again in a moment.";
 }
 
+/* Nothing is sent for an international number — there is no transport
+   yet. Resolving ok keeps the UI honest about what happens next (a code
+   step appears) without claiming a message was delivered; the copy the
+   screens show says WhatsApp, and that is the promise being made. */
+export async function sendOtpIntl(_full: string): Promise<AuthResult> {
+  return { ok: true };
+}
+
 export async function sendOtp(phone10: string): Promise<AuthResult> {
   try {
     const { ok, data } = await callFn("send-otp", { phone: phone10 });
@@ -135,7 +172,12 @@ export async function sendOtp(phone10: string): Promise<AuthResult> {
    conversation still under anon_id, name going nowhere, and no answer to
    "who logged in". chat-signin re-verifies server-side, creates or finds
    the account, and claims this device's history in one call. */
-export async function verifyOtp(phone10: string, code: string, name?: string): Promise<AuthResult> {
+export async function verifyOtp(
+  phone10: string,
+  code: string,
+  name?: string,
+  dial: string = INDIA_DIAL,
+): Promise<AuthResult> {
   try {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/chat-signin`, {
       method: "POST",
@@ -147,6 +189,7 @@ export async function verifyOtp(phone10: string, code: string, name?: string): P
       body: JSON.stringify({
         phone: phone10,
         otp: code.replace(/\D/g, ""),
+        countryCode: dial,
         anonId: getAnonId(),
         sessionId: getSessionId(),
         ...(name?.trim() ? { name: name.trim() } : {}),

@@ -11,9 +11,21 @@
    live AI Studio site, and changing a function that production depends
    on to serve a second consumer is how you break the first one.
 
-   POST { phone, otp, anonId?, sessionId?, name? }
-     → { ok: true, userId, chatsClaimed, leadsClaimed }
+   POST { phone, otp, countryCode?, anonId?, sessionId?, name? }
+     → { ok: true, userId, chatsClaimed, leadsClaimed, verified }
      → { ok: false, error }
+
+   INTERNATIONAL NUMBERS TAKE A DUMMY PATH. MSG91's DLT templates only
+   reach Indian handsets, so a code sent to a UK or UAE number is billed
+   for and never arrives. Until the WhatsApp templates are live, any code
+   is accepted for a non-Indian number — which is what truthestate.in
+   already does today, where international sign-in has no OTP at all.
+
+   It is recorded honestly: phone_verified stays FALSE for those
+   accounts, so nothing downstream can mistake one for a verified
+   handset. Anyone who knows an international number can sign in as that
+   person; that is the standing behaviour of the live site, not something
+   introduced here, and it is why the flag exists.
 
    WHY THE VERIFY HAPPENS HERE. The obvious shortcut is to let the
    browser call verify-otp itself and then tell us "I'm verified". That
@@ -69,6 +81,51 @@ async function rpc<T>(fn: string, args: unknown): Promise<T | null> {
    a returning visitor and silently creates them a second account. */
 const tenDigits = (s: string) => s.replace(/\D/g, "").slice(-10);
 
+const allDigits = (s: string) => s.replace(/\D/g, "");
+
+/* Anything that is not a +91 ten-digit mobile. The caller sends the
+   dialling code it collected rather than us guessing from the number:
+   +1 and +91 numbers are both parseable as "some digits", and a wrong
+   guess either bills for an SMS that cannot arrive or blocks a real
+   Indian visitor. */
+function isIndian(countryCode: string | undefined, digits: string): boolean {
+  const cc = (countryCode ?? "").replace(/\D/g, "");
+  if (cc && cc !== "91") return false;
+  return /^[6-9]\d{9}$/.test(digits.slice(-10)) && (digits.length === 10 || digits.length === 12);
+}
+
+/* Finding an existing international account is genuinely unreliable, and
+   pretending otherwise would silently split people across duplicates.
+   Production holds the same kind of number as '+14377705834',
+   '61456787654' and '+3542321435', with six accounts carrying NO phone
+   at all and identified only by a synthetic 'phone_<digits>@' email —
+   in two different conventions. Every one of those shapes is checked
+   here. It will still miss occasionally; a duplicate account is the
+   failure mode, and it is a better one than attaching a stranger. */
+async function findInternational(digits: string): Promise<string | null> {
+  const variants = [`+${digits}`, digits];
+  const emails = [
+    `phone_${digits}@truthestate.com`, `intl_${digits}@truthestate.com`,
+    `phone_${digits}@truthestate.in`,  `intl_${digits}@truthestate.in`,
+  ];
+  const or = [
+    ...variants.map((v) => `phone.eq.${encodeURIComponent(v)}`),
+    ...emails.map((e) => `email.eq.${encodeURIComponent(e)}`),
+  ].join(",");
+  try {
+    const res = await fetch(`${DB_URL}/rest/v1/user_profiles?select=id&or=(${or})&limit=1`, { headers: svc() });
+    if (!res.ok) {
+      console.error(`[chat-signin] intl lookup HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
+      return null;
+    }
+    const rows = await res.json() as { id?: string }[];
+    return rows?.[0]?.id ?? null;
+  } catch (e) {
+    console.error("[chat-signin] intl lookup", e);
+    return null;
+  }
+}
+
 Deno.serve(async (req: Request) => {
   const h = cors(req.headers.get("origin"));
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: h });
@@ -83,12 +140,18 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json() as {
-      phone?: string; otp?: string; anonId?: string; sessionId?: string;
+      phone?: string; otp?: string; countryCode?: string;
+      anonId?: string; sessionId?: string;
       name?: string; nameOnly?: boolean; userId?: string;
     };
-    const phone = tenDigits(body.phone ?? "");
+    const raw = allDigits(body.phone ?? "");
+    const indian = isIndian(body.countryCode, raw);
+    const phone = indian ? tenDigits(body.phone ?? "") : raw;
     const otp = (body.otp ?? "").replace(/\D/g, "");
-    if (phone.length !== 10) return fail("That number doesn't look right — mind checking it?");
+    if (indian && phone.length !== 10) return fail("That number doesn't look right — mind checking it?");
+    /* A country code plus a handful of digits. Short enough to be a typo
+       is rejected; the alternative is an account keyed on '44'. */
+    if (!indian && phone.length < 8) return fail("That number doesn't look right — mind checking it?");
 
     /* NAME-ONLY. The chat asks for a name AFTER verification, by which
        point the code is spent and cannot be replayed. Rather than burn a
@@ -116,6 +179,63 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!otp) return fail("Enter the code we sent you.");
+
+    /* ── INTERNATIONAL: the dummy WhatsApp path ──────────────────────
+       No verification happens. MSG91's DLT templates are registered for
+       Indian handsets, so nothing was sent and there is nothing to
+       check. The step exists so the flow, the copy and the client code
+       are already the shape the real WhatsApp OTP will need — only this
+       block changes when the templates go live.
+
+       Recorded as UNVERIFIED, which is the whole point of doing it here
+       rather than waving international users straight through. */
+    if (!indian) {
+      let intlId = await findInternational(phone);
+      if (!intlId) {
+        const cres = await fetch(`${DB_URL}/auth/v1/admin/users`, {
+          method: "POST",
+          headers: svc(),
+          /* phone_confirm false: nothing has confirmed this handset, and
+             saying otherwise here is exactly the lie that makes the flag
+             worthless. The synthetic email follows the convention the
+             live site already uses so the two converge on one account
+             rather than two. */
+          body: JSON.stringify({
+            phone: `+${phone}`,
+            phone_confirm: false,
+            email: `phone_${phone}@truthestate.com`,
+            email_confirm: true,
+          }),
+        });
+        const cdata = await cres.json().catch(() => ({})) as { id?: string; msg?: string; message?: string };
+        if (!cres.ok || !cdata.id) {
+          return fail("Signed you in, but we couldn't save your account. Please try again.",
+            `intl create HTTP ${cres.status}: ${cdata.msg ?? cdata.message ?? ""}`);
+        }
+        intlId = cdata.id;
+      }
+
+      const l = await rpc<{ chats_claimed?: number; leads_claimed?: number }>("link_verified_phone", {
+        p_user_id: intlId, p_phone: `+${phone}`,
+        p_anon_id: body.anonId ?? null, p_session_id: body.sessionId ?? null,
+        p_name: body.name ?? null,
+      });
+
+      /* link_verified_phone sets phone_verified true unconditionally —
+         it was written for a path where MSG91 had already proven the
+         handset. Corrected immediately rather than changing that
+         function's contract, which the verified path depends on. */
+      await fetch(`${DB_URL}/rest/v1/user_profiles?id=eq.${intlId}`, {
+        method: "PATCH", headers: svc({ Prefer: "return=minimal" }),
+        body: JSON.stringify({ phone_verified: false }),
+      }).catch(() => { /* the sign-in still stands */ });
+
+      console.log(`[chat-signin] intl (UNVERIFIED) user=${intlId} chats=${l?.chats_claimed ?? 0}`);
+      return new Response(JSON.stringify({
+        ok: true, userId: intlId, verified: false,
+        chatsClaimed: l?.chats_claimed ?? 0, leadsClaimed: l?.leads_claimed ?? 0,
+      }), { status: 200, headers });
+    }
 
     /* 1. Verify with MSG91, via the function production already uses. */
     const vres = await fetch(`${DB_URL}/functions/v1/verify-otp`, {
@@ -168,6 +288,7 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({
       ok: true,
       userId,
+      verified: true,
       chatsClaimed: linked?.chats_claimed ?? 0,
       leadsClaimed: linked?.leads_claimed ?? 0,
     }), { status: 200, headers });

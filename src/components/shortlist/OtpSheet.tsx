@@ -81,7 +81,7 @@ export default function OtpSheet({
   async function requestCode() {
     if (!contactValid || busy) return;
     setBusy(true); setErr(null);
-    const r = await sendOtp("mobile", contact);
+    const r = await sendOtp("mobile", contact, cc);
     setBusy(false);
     if (r.ok) setStep("code");
     else setErr(r.error ?? "Couldn't send the code. Try again.");
@@ -90,7 +90,7 @@ export default function OtpSheet({
   async function confirm() {
     if (busy || !otpComplete) return;
     setBusy(true); setErr(null);
-    const r = await verifyOtp("mobile", contact, code, name.trim() || undefined);
+    const r = await verifyOtp("mobile", contact, code, name.trim() || undefined, cc);
     setBusy(false);
     if (!r.ok) { setErr(r.error ?? "That code didn't match."); return; }
     onVerified({
