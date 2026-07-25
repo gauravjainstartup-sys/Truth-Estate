@@ -1025,8 +1025,14 @@ export function saveLead(l: Lead): void {
     /* ignore */
   }
   postLead(l);
+  /* The slug as well as the name. Reports are recorded under a slug
+     (report_viewed), leads carried only a display name, so "DLF The
+     Arbour" and "dlf-the-arbour" never joined — and every funnel question
+     of the form "which report did they read before enquiring" came back
+     empty. events.project_slug is the indexed column; it has to be set. */
   fireEvent("lead_captured", {
     projectName: l.project,
+    ...(l.project ? { projectSlug: modelSlugFor(l.project) } : {}),
     props: { intent: l.intent, ...(l.docs?.length ? { docs: l.docs } : {}) },
   });
   // a project-scoped lead is a 'lead'-tier model entitlement (no-op while dormant)
@@ -1249,6 +1255,18 @@ export function grantPackage(pkg: PackageId, slug?: string): void {
       amountInr: pkg === "all" ? MEMBERSHIP_INR : pkg === "read3d" ? PROJECT_UNLOCK_INR : READ_FROM_INR,
     },
   });
+  /* …and the access it bought. There are two unlock stores: unlockProject
+     writes UNLOCK_KEY (the shortlist path) and fires report_unlocked;
+     grantPackage writes access.reads (every paid path) and fired nothing.
+     So a real purchase logged payment_completed and no report_unlocked,
+     and "paid but never opened what they paid for" was unanswerable.
+     All-access unlocks the catalogue, not one report, so it is reported
+     as its own shape rather than 97 rows. */
+  if (pkg === "all") {
+    fireEvent("report_unlocked", { props: { package: pkg, scope: "all" } });
+  } else if (slug) {
+    fireEvent("report_unlocked", { projectSlug: slug, props: { package: pkg, scope: "project" } });
+  }
   // fire-and-forget backend entitlement (dormant until the gate URL is set)
   if (pkg === "all") grantModelAccess(PROJECTS.map((p) => modelSlugFor(p.name)), resolveModelSubject(), "member");
   else if (slug) grantModelAccess(slug, resolveModelSubject(), "paid");
