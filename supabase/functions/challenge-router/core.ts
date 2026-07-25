@@ -28,8 +28,36 @@ export type Body = {
      per-account — depth is bought one report at a time. */
   unlockedProjects?: string[];
   sessionId?: string;
+  /* Stable per browser across "start fresh" — links a device's separate
+     conversations so they can be claimed together on verification. */
+  anonId?: string;
 };
-export type RouterAnswer = { ok: true; text: string; gate: boolean } | { ok: false };
+export type RouterAnswer =
+  | { ok: true; text: string; gate: boolean; followups?: string[] }
+  | { ok: false };
+
+/* ── Follow-up chips ────────────────────────────────────────────
+   The model appends a trailer line rather than returning JSON. Structured
+   output would mean an invalid parse costs the whole answer; here a
+   malformed or missing trailer costs only the chips, and the answer is
+   returned untouched. Worth the trade for a decorative feature. */
+const FOLLOWUP_TAG = "\nFOLLOW-UPS:";
+
+export function splitFollowups(raw: string): { text: string; followups: string[] } {
+  const at = raw.lastIndexOf(FOLLOWUP_TAG);
+  if (at === -1) return { text: raw.trim(), followups: [] };
+  const text = raw.slice(0, at).trim();
+  const followups = raw
+    .slice(at + FOLLOWUP_TAG.length)
+    .split("|")
+    .map((s) => s.trim().replace(/^[-•*\d.\s]+/, ""))
+    .filter((s) => s.length > 3 && s.length <= 60)
+    .slice(0, 3);
+  /* If the trailer ate the whole reply, the model misformatted — keep the
+     original text and drop the chips rather than showing an empty bubble. */
+  if (!text) return { text: raw.trim(), followups: [] };
+  return { text, followups };
+}
 
 export type FetchLike = (url: string, init: Record<string, unknown>) => Promise<{
   ok: boolean;
@@ -161,6 +189,9 @@ function generalSystemPrompt(ctx: Ctx): string {
     `5. ONLY discuss Gurugram residential real estate. Politely decline anything else (commercial property, other cities, non-real-estate topics) with: "I focus exclusively on Gurugram residential real estate — that's where our independent research runs deepest."`,
     `6. The scoreboard below is PUBLIC — every visitor sees the same facts. Never withhold a project name, Truth Score, price or corridor from anyone, and never imply a better answer exists behind an account. Depth on a SPECIFIC project is what the paid read adds, and only where a FORENSIC LAYER section appears below.`,
     `7. Never say you are an AI, a language model, or Gemini. You are TruthGuide, the independent advisor.`,
+    `8. END EVERY REPLY with a final line in exactly this form, and nothing after it:`,
+    `FOLLOW-UPS: question one|question two|question three`,
+    `   Three short questions (max 8 words each) THIS visitor would plausibly ask next. Never repeat something already asked. Walk them deeper: from browsing toward a specific project, from a project toward its risks, from risks toward the forensic read. Phrase them as the visitor would type them.`,
     ``,
     `CONTEXT:`,
     ctx.publicKnowledge ?? "(none provided)",
@@ -236,5 +267,8 @@ export async function routeChallenge(
     console.error(`[challenge-router] no text returned for mode=${mode}`);
     return { ok: false };
   }
-  return { ok: true, text, gate: locked };
+  if (mode !== "general") return { ok: true, text, gate: locked };
+
+  const { text: clean, followups } = splitFollowups(text);
+  return { ok: true, text: clean, gate: locked, followups };
 }

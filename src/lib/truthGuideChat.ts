@@ -216,16 +216,50 @@ function forensicLine(p: GuideProject): string | null {
    personal data under the DPDP Act and browsers actively defeat it. The
    durable identity is the verified phone number, not the device. */
 const SESSION_KEY = "truthEstate.tgSession";
+const ANON_KEY = "truthEstate.tgAnon";
+
+function newId(): string {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `tg-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/* Stable for the life of the browser profile, unlike the session id which
+   is replaced whenever the visitor starts a fresh chat. This is what lets
+   several conversations from one device be claimed together once a phone
+   number is verified. */
+export function getAnonId(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    const existing = window.localStorage.getItem(ANON_KEY);
+    if (existing) return existing;
+    const id = newId();
+    window.localStorage.setItem(ANON_KEY, id);
+    return id;
+  } catch {
+    return "";
+  }
+}
+
+/* Begins a new conversation while keeping the device identity, so "start
+   fresh" clears the thread without orphaning the history. */
+export function startFreshSession(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    const id = newId();
+    window.localStorage.setItem(SESSION_KEY, id);
+    return id;
+  } catch {
+    return "";
+  }
+}
 
 export function getSessionId(): string {
   if (typeof window === "undefined") return "";
   try {
     const existing = window.localStorage.getItem(SESSION_KEY);
     if (existing) return existing;
-    const id =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `tg-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    const id = newId();
     window.localStorage.setItem(SESSION_KEY, id);
     return id;
   } catch {
@@ -257,7 +291,15 @@ function routerUrl(): string {
   return DEFAULT_URL;
 }
 
-export type ChatMsg = { id: string; role: "user" | "bot"; text: string; gate?: GateReason };
+export type ChatMsg = {
+  id: string;
+  role: "user" | "bot";
+  text: string;
+  gate?: GateReason;
+  /* What the visitor might plausibly ask next. Rendered as chips under the
+     newest reply only, so the thread does not fill with stale suggestions. */
+  followups?: string[];
+};
 
 let n = 0;
 export const msgId = () => `tg${Date.now().toString(36)}${(n++).toString(36)}`;
@@ -271,7 +313,7 @@ export const msgId = () => `tg${Date.now().toString(36)}${(n++).toString(36)}`;
 export async function askTruthGuideRemote(
   question: string,
   history: { role: "user" | "bot"; text: string }[] = [],
-): Promise<{ text: string } | null> {
+): Promise<{ text: string; followups: string[] } | null> {
   try {
     const res = await fetch(routerUrl(), {
       method: "POST",
@@ -287,13 +329,14 @@ export async function askTruthGuideRemote(
         history: history.slice(-8),
         unlockedProjects: unlockedProjectNames(),
         sessionId: getSessionId(),
+        anonId: getAnonId(),
       }),
       signal: AbortSignal.timeout(20000),
     });
     if (!res.ok) return null;
-    const data = (await res.json()) as { ok?: boolean; text?: string };
+    const data = (await res.json()) as { ok?: boolean; text?: string; followups?: string[] };
     if (!data?.ok || typeof data.text !== "string") return null;
-    return { text: data.text };
+    return { text: data.text, followups: Array.isArray(data.followups) ? data.followups : [] };
   } catch {
     return null;
   }

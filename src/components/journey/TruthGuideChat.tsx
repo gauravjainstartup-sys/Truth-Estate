@@ -55,12 +55,13 @@ export default function TruthGuideChat({
     const history = msgs.map((m) => ({ role: m.role, text: m.text }));
     const remote = await askTruthGuideRemote(q, history).catch(() => null);
     const text = remote?.text ?? (await fallbackAnswer(q).catch(() => "I couldn't reach our research just now — try that again in a moment."));
+    const followups = remote?.followups ?? [];
 
     await new Promise((r) => setTimeout(r, 400));
     setTyping(false);
 
     const afterGate = checkGate();
-    setMsgs((m) => [...m, { id: msgId(), role: "bot", text, gate: afterGate }]);
+    setMsgs((m) => [...m, { id: msgId(), role: "bot", text, gate: afterGate, followups }]);
     if (afterGate) setGate(afterGate);
   }
 
@@ -134,6 +135,24 @@ export default function TruthGuideChat({
           ),
         )}
 
+        {(() => {
+          const last = msgs[msgs.length - 1];
+          if (typing || gate || last?.role !== "bot" || !last.followups?.length) return null;
+          return (
+            <div className="flex flex-wrap gap-2 pl-1 pt-1">
+              {last.followups.map((f) => (
+                <button
+                  key={f}
+                  onClick={() => send(f)}
+                  className="rounded-full border border-[#1a1a1a]/12 bg-white/70 px-3.5 py-1.5 text-[0.78rem] text-[#1a1a1a]/70 transition-colors hover:border-[#1e6b45]/40 hover:bg-white hover:text-[#1a1a1a]"
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          );
+        })()}
+
         {typing && (
           <Bubble>
             <span className="inline-flex gap-1 py-1">
@@ -195,7 +214,7 @@ export default function TruthGuideChat({
           >&uarr;</button>
         </form>
         <p className="mt-2 px-1 text-center text-[0.62rem] font-light leading-snug text-[#1a1a1a]/35">
-          TruthGuide answers from our independent research on Gurugram residential real estate. Not investment advice.
+          TruthGuide answers from our independent research on Gurugram residential real estate. Not investment advice. Conversations are saved to improve our answers.
         </p>
       </div>
     </div>
@@ -205,7 +224,7 @@ export default function TruthGuideChat({
 function Bubble({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex justify-start">
-      <div className="max-w-[88%] rounded-2xl rounded-bl-md border border-[#1a1a1a]/8 bg-white px-4 py-2.5 text-[0.85rem] leading-relaxed text-[#1a1a1a]/85">
+      <div className="max-w-[88%] whitespace-pre-wrap rounded-2xl rounded-bl-md border border-[#1a1a1a]/8 bg-white px-4 py-2.5 text-[0.85rem] leading-relaxed text-[#1a1a1a]/85">
         {children}
       </div>
     </div>

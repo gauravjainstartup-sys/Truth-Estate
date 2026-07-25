@@ -23,6 +23,7 @@
    ════════════════════════════════════════════════════════════════ */
 import { routeChallenge, type Body, type FetchLike } from "./core.ts";
 import { buildGeneralContext, type FetchLike as CtxFetch } from "./context.ts";
+import { logTurn, type FetchLike as LogFetch } from "./chatlog.ts";
 
 const MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
 
@@ -58,6 +59,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = (await req.json()) as Body;
+    const startedAt = Date.now();
     const answer = await routeChallenge(body, {
       apiKey: Deno.env.get("GEMINI_API_KEY"),
       model: MODEL,
@@ -68,6 +70,26 @@ Deno.serve(async (req: Request) => {
           unlocked,
         ),
     });
+
+    /* Record the turn. Awaited rather than fired-and-forgotten because the
+       isolate can be torn down the moment we respond, which would drop the
+       write — it is one insert to the same region, and logTurn swallows its
+       own failures so a logging outage can never cost a visitor an answer. */
+    if (body.mode === "general" && answer.ok) {
+      await logTurn(
+        { url: DB_URL, key: DB_KEY, fetchImpl: fetch as unknown as LogFetch },
+        {
+          sessionId: body.sessionId,
+          anonId: body.anonId,
+          question: body.question ?? "",
+          answer: answer.text,
+          model: MODEL,
+          tier: body.tier,
+          latencyMs: Date.now() - startedAt,
+        },
+      );
+    }
+
     return new Response(JSON.stringify(answer), { status: 200, headers });
   } catch (e) {
     console.error("[challenge-router]", e instanceof Error ? e.message : e);
