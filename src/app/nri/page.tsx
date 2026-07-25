@@ -3,7 +3,7 @@ import NRIDesk from "@/components/nri/NRIDesk";
 import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "The NRI Desk — Buy Property in India from Abroad | Truth Estate",
+  title: "The NRI Desk — Buy Property in India from Abroad",
   description:
     "Independent, forensic property advice for NRIs and OCIs buying in India from the UK, USA, Canada, UAE, Singapore and Australia. Your eyes on the ground: due diligence, site visits, negotiation, FEMA, TDS, repatriation and Power of Attorney — represented only by you.",
   keywords: [

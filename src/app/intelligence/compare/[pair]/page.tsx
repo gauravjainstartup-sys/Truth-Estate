@@ -117,10 +117,10 @@ export const dynamicParams = false;
 export async function generateMetadata({ params }: { params: Promise<{ pair: string }> }): Promise<Metadata> {
   const { pair } = await params;
   const r = await resolve(pair);
-  if (!r) return { title: "Compare — Truth Estate Intelligence" };
+  if (!r) return { title: "Compare" };
   const title = compareTitle(r);
   return {
-    title: `${title} — Compare | Truth Estate`,
+    title: `${title} — Compare`,
     description: `Independent side-by-side comparison of ${title}: measured on the same evidence — score, signals, delivery, pricing and outlook. No paid rankings.`,
     alternates: { canonical: `/intelligence/compare/${pair}` },
   };

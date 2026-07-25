@@ -57,7 +57,7 @@ export async function generateMetadata(
   const { slug } = await params;
   const target = await targetFor(slug);
   return {
-    title: "This report moved — Truth Estate",
+    title: "This report moved",
     /* Not indexed itself; the canonical is what search should keep. */
     robots: { index: false, follow: true },
     alternates: { canonical: target ?? "/intelligence/projects" },

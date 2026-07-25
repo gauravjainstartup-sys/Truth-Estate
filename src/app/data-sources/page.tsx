@@ -3,7 +3,7 @@ import DataSources from "@/components/data-sources/DataSources";
 import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "Data Sources — Truth Estate",
+  title: "Data Sources",
   description:
     "Where Truth Estate's intelligence comes from. Public, regulatory, financial and market sources independently verified to support every recommendation.",
   keywords: [
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     "Truth Estate",
   ],
   openGraph: {
-    title: "Data Sources — Truth Estate",
+    title: "Data Sources",
     description:
       "Independent intelligence begins with reliable evidence. How Truth Estate gathers, verifies and interprets real estate data.",
     type: "article",

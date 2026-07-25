@@ -15,9 +15,9 @@ export const dynamicParams = false;
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const m = marketBySlug(slug);
-  if (!m) return { title: "Location Intelligence — Truth Estate" };
+  if (!m) return { title: "Location Intelligence" };
   return {
-    title: `${m.name} — Location Intelligence | Truth Estate`,
+    title: `${m.name} — Location Intelligence`,
     description: `Independent intelligence on ${m.name}, Gurugram: verdict, project count, price band, current and future trends, and the projects we track. ${m.info}`,
   };
 }

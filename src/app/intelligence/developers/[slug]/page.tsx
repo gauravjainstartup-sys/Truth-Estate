@@ -13,9 +13,9 @@ export const dynamicParams = false;
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const dev = developerBySlug(slug);
-  if (!dev) return { title: "Developer Intelligence — Truth Estate" };
+  if (!dev) return { title: "Developer Intelligence" };
   return {
-    title: `${dev.name} — Developer Intelligence | Truth Estate`,
+    title: `${dev.name} — Developer Intelligence`,
     description: `Independent developer intelligence on ${dev.name}: track record, delivery performance and financial health. ${dev.tagline}`,
   };
 }

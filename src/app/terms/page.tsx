@@ -3,7 +3,7 @@ import TermsContent from "@/components/legal/TermsContent";
 import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "Terms of Use — Truth Estate",
+  title: "Terms of Use",
   description:
     "The terms governing your use of Truth Estate's independent real estate research platform and advisory services.",
   keywords: [
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     "Truth Estate",
   ],
   openGraph: {
-    title: "Terms of Use — Truth Estate",
+    title: "Terms of Use",
     description:
       "Terms governing your use of Truth Intelligence, TruthGuide, Private Office, and all Truth Estate services.",
     type: "article",

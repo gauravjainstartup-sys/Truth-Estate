@@ -3,7 +3,7 @@ import PrivacyContent from "@/components/legal/PrivacyContent";
 import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Truth Estate",
+  title: "Privacy Policy",
   description:
     "How Truth Estate collects, uses, and protects your information. Written in plain English for transparency.",
   keywords: [
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     "Truth Estate",
   ],
   openGraph: {
-    title: "Privacy Policy — Truth Estate",
+    title: "Privacy Policy",
     description:
       "How we collect, use, and protect your information when you use Truth Estate's independent research and advisory services.",
     type: "article",

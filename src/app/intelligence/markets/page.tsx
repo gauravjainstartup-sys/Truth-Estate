@@ -3,7 +3,7 @@ import MarketsIndex from "@/components/intelligence/MarketsIndex";
 import { fetchMicroMarkets, fetchTrackedOverview } from "@/lib/supabase";
 
 export const metadata: Metadata = {
-  title: "Location Intelligence — Truth Estate",
+  title: "Location Intelligence",
   description:
     "Independent location intelligence for Gurugram real estate — every micro-market mapped, with project counts, price bands and outlook. No paid rankings.",
 };

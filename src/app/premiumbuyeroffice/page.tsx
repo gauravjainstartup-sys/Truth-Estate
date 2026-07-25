@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import { CONSULT_FEE } from "@/lib/consultation";
 
 export const metadata: Metadata = {
-  title: "Premium Buyer Office — Your Independent Representative | Truth Estate",
+  title: "Premium Buyer Office — Your Independent Representative",
   description:
     "Your independent representative from first thought to final signature. Eight offices under one membership — buyer & unit intelligence, on-ground evaluation, negotiation, transaction management and lifelong ownership support — for one of life's biggest financial decisions.",
   keywords: [
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: "/premiumbuyeroffice" },
   openGraph: {
-    title: "Premium Buyer Office — Truth Estate",
+    title: "Premium Buyer Office",
     description:
       "One membership, eight offices — the entire buy-side, working only for you. From first thought to final signature.",
     type: "website",

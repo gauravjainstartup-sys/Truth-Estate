@@ -3,7 +3,7 @@ import Methodology from "@/components/methodology/Methodology";
 import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "Our Research Methodology — Truth Estate",
+  title: "Our Research Methodology",
   description:
     "How Truth Estate researches real estate. An independent, evidence-first methodology for evaluating projects, developers and markets — and how Truth Score and Match Score work.",
   keywords: [
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     "Truth Estate",
   ],
   openGraph: {
-    title: "Our Research Methodology — Truth Estate",
+    title: "Our Research Methodology",
     description:
       "Every recommendation begins with evidence. How Truth Estate reaches its independent real estate research conclusions.",
     type: "article",

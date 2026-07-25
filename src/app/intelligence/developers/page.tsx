@@ -3,7 +3,7 @@ import DevelopersIndex from "@/components/intelligence/DevelopersIndex";
 import { fetchDevelopersOverview } from "@/lib/supabase";
 
 export const metadata: Metadata = {
-  title: "Developer Intelligence — Truth Estate",
+  title: "Developer Intelligence",
   description:
     "Independent developer dossiers for Gurugram real estate — track record, delivery performance and financial health. No paid rankings.",
 };

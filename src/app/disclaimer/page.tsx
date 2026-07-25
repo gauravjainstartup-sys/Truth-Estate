@@ -3,7 +3,7 @@ import DisclaimerContent from "@/components/legal/DisclaimerContent";
 import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "Disclaimer — Truth Estate",
+  title: "Disclaimer",
   description:
     "What Truth Estate is, what it is not, and the boundaries of the independent research and intelligence we provide.",
   keywords: [
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     "Truth Estate",
   ],
   openGraph: {
-    title: "Disclaimer — Truth Estate",
+    title: "Disclaimer",
     description:
       "Understanding the nature and limitations of Truth Estate's independent real estate research and advisory services.",
     type: "article",

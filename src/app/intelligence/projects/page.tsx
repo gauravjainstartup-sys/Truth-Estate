@@ -5,7 +5,7 @@ import { liveProjectIntel } from "@/lib/liveReport";
 import type { ProjectIntel } from "@/lib/projects";
 
 export const metadata: Metadata = {
-  title: "Project Intelligence — Truth Estate",
+  title: "Project Intelligence",
   description:
     "Independent Truth Scores for Gurugram residential projects — built from six audited inputs: delivery, legal, developer strength, liquidity, pricing and construction. No paid rankings.",
 };

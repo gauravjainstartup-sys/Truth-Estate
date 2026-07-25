@@ -6,7 +6,7 @@ import TestRankConsole from "./TestRankConsole";
    score, plus a live data-completeness audit of the matchable universe. Kept
    out of the index and the sitemap. */
 export const metadata: Metadata = {
-  title: "Rank Console · Truth Estate",
+  title: "Rank Console",
   description: "Internal ranking test harness.",
   robots: { index: false, follow: false, nocache: true },
 };

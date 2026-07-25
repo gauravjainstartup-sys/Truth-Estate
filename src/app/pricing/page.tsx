@@ -3,7 +3,7 @@ import Pricing from "@/components/pricing/Pricing";
 import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "Engagement Models — Truth Estate",
+  title: "Engagement Models",
   description:
     "Explore how Truth Estate supports your property decision — from independent research intelligence to dedicated buyer representation.",
   keywords: [
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     "NRI Real Estate Advisory",
   ],
   openGraph: {
-    title: "Engagement Models — Truth Estate",
+    title: "Engagement Models",
     description:
       "Choose how Truth Estate supports your decision. From self-directed intelligence to dedicated buyer representation.",
     type: "website",
