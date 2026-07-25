@@ -17,19 +17,27 @@ import {
   type GateReason,
 } from "@/lib/truthGuideChat";
 import { isSignedIn } from "@/lib/journey";
+import { normalisePhone, prettyPhone, sendOtp, verifyOtp, saveName } from "@/lib/phoneAuth";
 
 export default function TruthGuideChat({
   onClose,
-  onSignUp,
 }: {
   onClose: () => void;
-  onSignUp: () => void;
+  /* Kept for callers that still pass it. Sign-in now happens inline in the
+     thread, so this is no longer used to leave the chat. */
+  onSignUp?: () => void;
 }) {
   const [msgs, setMsgs] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [gate, setGate] = useState<GateReason>(null);
   const [projectCount, setProjectCount] = useState<number | null>(null);
+  /* Sign-in runs INSIDE the thread rather than as a modal: the visitor is
+     mid-conversation, and bouncing them to a separate screen is where
+     these flows lose people. */
+  const [authStep, setAuthStep] = useState<null | "phone" | "code" | "name">(null);
+  const [authPhone, setAuthPhone] = useState("");
+  const [authBusy, setAuthBusy] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -66,6 +74,57 @@ export default function TruthGuideChat({
     const afterGate = checkGate();
     setMsgs((m) => [...m, { id: msgId(), role: "bot", text, gate: afterGate, followups }]);
     if (afterGate) setGate(afterGate);
+  }
+
+  const say = (text: string) =>
+    setMsgs((m) => [...m, { id: msgId(), role: "bot", text }]);
+  const echo = (text: string) =>
+    setMsgs((m) => [...m, { id: msgId(), role: "user", text }]);
+
+  function startAuth() {
+    setAuthStep("phone");
+    setInput("");
+    say("Happy to keep going — I just need a number to verify. What's the best mobile for you?");
+    setTimeout(() => inputRef.current?.focus(), 80);
+  }
+
+  async function handleAuth(raw: string) {
+    const v = raw.trim();
+    if (!v || authBusy) return;
+
+    if (authStep === "phone") {
+      const e164 = normalisePhone(v);
+      if (!e164) { say("That doesn't look like a mobile number — try 10 digits, or include the country code."); return; }
+      setInput(""); echo(prettyPhone(e164)); setAuthBusy(true);
+      const r = await sendOtp(e164);
+      setAuthBusy(false);
+      if (!r.ok) { say(r.error); return; }
+      setAuthPhone(e164);
+      setAuthStep("code");
+      say(`Sent a 6-digit code to ${prettyPhone(e164)} — pop it in below.`);
+      return;
+    }
+
+    if (authStep === "code") {
+      setInput(""); echo(v.replace(/\D/g, "")); setAuthBusy(true);
+      const r = await verifyOtp(authPhone, v);
+      setAuthBusy(false);
+      if (!r.ok) { say(r.error); return; }
+      /* Verified — the quota gate no longer applies. */
+      setGate(null);
+      setAuthStep("name");
+      say("You're in. What should I call you?");
+      return;
+    }
+
+    if (authStep === "name") {
+      setInput(""); echo(v); setAuthBusy(true);
+      await saveName(v);
+      setAuthBusy(false);
+      setAuthStep(null);
+      say(`Thanks, ${v.trim().split(/\s+/)[0]}. Ask me anything — ${DAILY_LIMIT} questions a day now.`);
+      return;
+    }
   }
 
   const tier = getTier();
@@ -147,7 +206,7 @@ export default function TruthGuideChat({
                 {" "}{ANON_MESSAGE_LIMIT} questions as a guest, {DAILY_LIMIT} a day once you&apos;re in.
               </p>
               <button
-                onClick={onSignUp}
+                onClick={startAuth}
                 className="mt-2.5 text-[0.78rem] font-semibold text-[#1e6b45] transition-opacity hover:opacity-70"
               >
                 Sign in &rarr;
@@ -183,7 +242,7 @@ export default function TruthGuideChat({
         )}
 
         {/* Gate: anonymous limit reached */}
-        {gate === "anon-limit" && !signedIn && (
+        {gate === "anon-limit" && !signedIn && !authStep && (
           <div className="rounded-2xl border border-[#1e6b45]/20 bg-[#1e6b45]/[0.06] px-5 py-5 text-center">
             <p className="text-[0.85rem] font-medium text-[#1a1a1a]/80">
               Want to keep going?
@@ -193,7 +252,7 @@ export default function TruthGuideChat({
               Either way, the project reads stay open to you.
             </p>
             <button
-              onClick={onSignUp}
+              onClick={startAuth}
               className="mt-4 rounded-xl bg-[#1e6b45] px-6 py-3 text-[0.82rem] font-semibold text-white transition-colors hover:bg-[#238c55]"
             >
               Sign in &rarr;
@@ -217,24 +276,59 @@ export default function TruthGuideChat({
       {/* Composer */}
       <div className="shrink-0 border-t border-[#1a1a1a]/8 bg-[#F5F0E8] px-4 pb-4 pt-3">
         <form
-          onSubmit={(e) => { e.preventDefault(); send(input); }}
+          onSubmit={(e) => { e.preventDefault(); authStep ? handleAuth(input) : send(input); }}
           className="flex items-center gap-2 rounded-full border border-[#1a1a1a]/15 bg-white pl-4 pr-1.5 py-1.5 focus-within:border-[#1e6b45]"
         >
           <input
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about Gurugram real estate..."
-            disabled={!!gate}
+            placeholder={
+              authStep === "phone" ? "Your mobile number"
+              : authStep === "code" ? "6-digit code"
+              : authStep === "name" ? "Your name"
+              : "Ask about Gurugram real estate..."
+            }
+            inputMode={authStep === "phone" || authStep === "code" ? "numeric" : "text"}
+            autoComplete={
+              authStep === "phone" ? "tel"
+              : authStep === "code" ? "one-time-code"
+              : authStep === "name" ? "given-name"
+              : "off"
+            }
+            disabled={!!gate && !authStep}
             className="min-w-0 flex-1 bg-transparent text-[0.85rem] outline-none placeholder:text-[#1a1a1a]/35 disabled:opacity-40"
           />
           <button
             type="submit"
-            disabled={!input.trim() || typing || !!gate}
+            disabled={!input.trim() || typing || authBusy || (!!gate && !authStep)}
             aria-label="Send"
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1e6b45] text-white transition-colors hover:bg-[#238c55] disabled:opacity-35"
           >&uarr;</button>
         </form>
+        {authStep === "code" && (
+          <div className="mt-2 flex justify-center gap-4 text-[0.68rem] text-[#1a1a1a]/45">
+            <button
+              onClick={async () => {
+                if (authBusy) return;
+                setAuthBusy(true);
+                const r = await sendOtp(authPhone);
+                setAuthBusy(false);
+                say(r.ok ? "Sent another code." : r.error);
+              }}
+              className="underline underline-offset-2 transition-colors hover:text-[#1a1a1a]/70"
+            >
+              Resend code
+            </button>
+            <button
+              onClick={() => { setAuthStep("phone"); setInput(""); say("No problem — what's the right number?"); }}
+              className="underline underline-offset-2 transition-colors hover:text-[#1a1a1a]/70"
+            >
+              Wrong number?
+            </button>
+          </div>
+        )}
+
         <p className="mt-2 px-1 text-center text-[0.62rem] font-light leading-snug text-[#1a1a1a]/35">
           TruthGuide answers from our independent research on Gurugram residential real estate. Not investment advice. Conversations are saved to improve our answers.
         </p>
