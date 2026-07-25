@@ -31,6 +31,7 @@ import {
   loadVerified,
   saveVerified,
   maskContact,
+  OTP_LENGTH,
   type Verified,
 } from "@/lib/shortlistAuth";
 
@@ -430,7 +431,10 @@ function RegisterCard({
   const [num, setNum] = useState("");
   const [email, setEmail] = useState("");
   const [otpSent, setOtpSent] = useState(false);
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  /* Six boxes could never be filled: MSG91's DLT template sends four
+     digits, so the Verify button stayed disabled forever once the code
+     was real. Driven off OTP_LENGTH now, not a literal. */
+  const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(""));
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -459,7 +463,7 @@ function RegisterCard({
     if (!nameValid || !otpComplete || verifying) return;
     setErr(null);
     setVerifying(true);
-    const r = await verifyOtp("mobile", digits, otp.join(""));
+    const r = await verifyOtp("mobile", digits, otp.join(""), name.trim());
     setVerifying(false);
     if (r.ok) {
       onVerified({ channel: "mobile", contact: digits, cc: dialCode, name: name.trim(), email: email.trim() || undefined, at: Date.now() });
@@ -539,7 +543,7 @@ function RegisterCard({
       {otpSent && (
         <div className="animate-fade-up mt-3.5">
           <div className="flex items-center justify-between">
-            <label className="text-[0.72rem] font-light uppercase tracking-[0.18em] text-[#1a1a1a]/40">Enter the 6-digit code</label>
+            <label className="text-[0.72rem] font-light uppercase tracking-[0.18em] text-[#1a1a1a]/40">Enter the {OTP_LENGTH}-digit code</label>
             <button onClick={send} disabled={sending} className="text-[0.72rem] font-light text-[#1e6b45] transition-opacity hover:opacity-70 disabled:opacity-40">
               {sending ? "Sending…" : "Resend"}
             </button>
@@ -559,7 +563,6 @@ function RegisterCard({
               />
             ))}
           </div>
-          <p className="mt-2 text-[0.72rem] font-light italic text-[#1a1a1a]/35">Passwordless — enter any 6 digits to continue this preview.</p>
         </div>
       )}
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { sendOtp, verifyOtp, type Verified } from "@/lib/shortlistAuth";
+import { sendOtp, verifyOtp, OTP_LENGTH, type Verified } from "@/lib/shortlistAuth";
 import OtpDigits from "../auth/OtpDigits";
 
 /* Bottom-sheet OTP for the #1-match unlock. Mobile-only verification — the
@@ -10,7 +10,8 @@ import OtpDigits from "../auth/OtpDigits";
    captured (optional) at the code step. Transport is the dummy in
    shortlistAuth (MSG91 seam); this component only drives the flow. */
 
-const OTP_LEN = 4;
+/* Set by MSG91's DLT template, not by us. */
+const OTP_LEN = OTP_LENGTH;
 
 const CCS = [
   { cc: "+91", flag: "🇮🇳", name: "India" },
@@ -89,7 +90,7 @@ export default function OtpSheet({
   async function confirm() {
     if (busy || !otpComplete) return;
     setBusy(true); setErr(null);
-    const r = await verifyOtp("mobile", contact, code);
+    const r = await verifyOtp("mobile", contact, code, name.trim() || undefined);
     setBusy(false);
     if (!r.ok) { setErr(r.error ?? "That code didn't match."); return; }
     onVerified({

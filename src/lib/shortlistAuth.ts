@@ -1,16 +1,28 @@
 /* ════════════════════════════════════════════════════════════════
    SHORTLIST VERIFICATION — the OTP gate on the #1 match.
 
-   The flow is real; the OTP transport is a PLACEHOLDER. `sendOtp` and
-   `verifyOtp` are the single seam where MSG91 (mobile) wires in — swap
-   the two stubs for MSG91's send/verify calls and nothing else on the
-   page changes. Today: sendOtp resolves after a beat, verifyOtp accepts
-   any 4-digit code. Verification is mobile-only — SMS for +91, WhatsApp
-   for international numbers (same as the office Sign-in).
+   The seam this file always promised is now closed: sendOtp/verifyOtp
+   delegate to lib/phoneAuth, which goes to MSG91 through the deployed
+   Edge Functions. Until today they were stubs that resolved after a beat
+   and accepted ANY four digits, so three separate surfaces — the
+   shortlist sheet, the consultation booking and the custom-report
+   request — let a visitor past the gate without ever receiving a code.
+   That is worse than no gate: it recorded a phone number as "verified"
+   when nothing had verified it, and every lead built on top of it was
+   fiction.
 
-   Verification persists locally (no backend yet); when Supabase Auth
-   lands, replace this store with the session and keep the same surface.
+   Verification is mobile-only and, for now, India-only: the DLT
+   templates MSG91 sends against are registered for Indian numbers, so
+   an international number would be charged for and never arrive.
+   Saying so beats pretending to send.
    ════════════════════════════════════════════════════════════════ */
+
+import {
+  normalisePhone,
+  sendOtp as sendPhoneOtp,
+  verifyOtp as verifyPhoneOtp,
+  OTP_LENGTH,
+} from "@/lib/phoneAuth";
 
 export type Channel = "mobile" | "email";
 
@@ -63,17 +75,45 @@ export function maskContact(v: Verified): string {
   return `${(user ?? "").slice(0, 2)}···@${domain ?? ""}`;
 }
 
-/* ── the MSG91 seam ─────────────────────────────────────────────── */
+/* ── the MSG91 seam, now closed ─────────────────────────────────── */
 
-/** Trigger the OTP. TODO(MSG91): replace the stub with the send call. */
-export async function sendOtp(_channel: Channel, _contact: string): Promise<{ ok: boolean; error?: string }> {
-  await new Promise((r) => setTimeout(r, 650));
-  return { ok: true };
+/* Callers hold the dialling code separately and pass bare digits here, so
+   an Indian number arrives as ten digits and normalisePhone accepts it.
+   A UAE or UK number does not fit /^[6-9]\d{9}$/ and comes back null —
+   which is the correct answer, not a bug to route around. */
+function toTen(contact: string): string | null {
+  return normalisePhone(contact);
 }
 
-/** Check the code. TODO(MSG91): replace the stub with the verify call. */
-export async function verifyOtp(_channel: Channel, _contact: string, code: string): Promise<{ ok: boolean; error?: string }> {
-  await new Promise((r) => setTimeout(r, 550));
-  if (!/^\d{4}$/.test(code.trim())) return { ok: false, error: "Enter the 4-digit code we sent." };
-  return { ok: true };
+/** Trigger the OTP. Goes to MSG91 via the deployed send-otp function. */
+export async function sendOtp(channel: Channel, contact: string): Promise<{ ok: boolean; error?: string }> {
+  if (channel !== "mobile") {
+    return { ok: false, error: "We can only verify by mobile right now." };
+  }
+  const ten = toTen(contact);
+  if (!ten) return { ok: false, error: "We can only verify Indian mobile numbers right now." };
+  return sendPhoneOtp(ten);
 }
+
+/** Check the code with MSG91, then create/find the account and sign in. */
+export async function verifyOtp(
+  channel: Channel,
+  contact: string,
+  code: string,
+  name?: string,
+): Promise<{ ok: boolean; error?: string }> {
+  if (channel !== "mobile") {
+    return { ok: false, error: "We can only verify by mobile right now." };
+  }
+  const ten = toTen(contact);
+  if (!ten) return { ok: false, error: "That number doesn't look right — go back and check it." };
+  const clean = code.trim().replace(/\D/g, "");
+  if (clean.length !== OTP_LENGTH) {
+    return { ok: false, error: `Enter the ${OTP_LENGTH}-digit code we sent.` };
+  }
+  return verifyPhoneOtp(ten, clean, name);
+}
+
+/* Re-exported so the screens that drive this flow render the number of
+   boxes MSG91's template actually fills. Two of them were drawing six. */
+export { OTP_LENGTH };

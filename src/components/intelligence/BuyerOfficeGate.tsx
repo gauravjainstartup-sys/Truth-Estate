@@ -7,6 +7,7 @@ import {
   PROJECT_UNLOCK_INR, packageById,
 } from "@/lib/journey";
 import { CONSULT_DAYS, CONSULT_DAYPARTS, CONSULT_FORMATS, advisorFor } from "@/lib/consultation";
+import { normalisePhone, sendOtp, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
 
 /* THE BUYER OFFICE — the member surface for a project's unit intelligence.
    Freemium: the live 3D + a sample unit are free; the full per-unit verdict
@@ -128,8 +129,10 @@ export default function BuyerOfficeGate({
   const [channel, setChannel] = useState<"whatsapp" | "sms">("whatsapp");
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  /* Six boxes could never be filled by a four-digit code. */
+  const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(""));
   const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   // payment
   const [plan, setPlan] = useState<Plan>("single");
@@ -154,7 +157,7 @@ export default function BuyerOfficeGate({
       setCall(loadMemberCall());
       return () => cancelAnimationFrame(id);
     }
-    setSent(false); setOtp(["", "", "", "", "", ""]); setErr("");
+    setSent(false); setOtp(Array(OTP_LENGTH).fill("")); setErr("");
     setDay(null); setSlot(null); setFormat(null);
     setCard(""); setExp(""); setCvv(""); setPaying(false);
   }, [open, start]);
@@ -190,7 +193,7 @@ export default function BuyerOfficeGate({
   const setOtpDigit = (i: number, v: string) => {
     const digit = v.replace(/\D/g, "").slice(-1);
     setOtp((o) => { const n = [...o]; n[i] = digit; return n; });
-    if (digit && i < 5) otpRefs.current[i + 1]?.focus();
+    if (digit && i < OTP_LENGTH - 1) otpRefs.current[i + 1]?.focus();
   };
 
   function saveBrief() {
@@ -207,17 +210,42 @@ export default function BuyerOfficeGate({
     setStep("done");
   }
 
-  function sendCode() {
-    if (method === "phone" && !numValid) { setErr("Enter a valid mobile number."); return; }
-    if (method === "email" && !emailOk(email)) { setErr("Enter a valid email."); return; }
-    setErr(""); setSent(true);
+  /* Both halves were theatre: sendCode flipped a flag without sending
+     anything, and submitVerify joined on any six digits. A gate that
+     opens for everyone is worse than no gate — it stamped a phone number
+     "verified" when nothing had checked it. */
+  async function sendCode() {
+    if (busy) return;
+    if (method === "email") {
+      /* MSG91 is an SMS transport; there is no email OTP behind this. */
+      setErr("We can only verify by mobile right now — switch to phone.");
+      return;
+    }
+    if (!numValid) { setErr("Enter a valid mobile number."); return; }
+    if (!isIndia) { setErr("We can only verify Indian mobile numbers right now."); return; }
+    const ten = normalisePhone(num);
+    if (!ten) { setErr("That doesn't look like a valid Indian mobile number."); return; }
+
+    setErr(""); setBusy(true);
+    const r = await sendOtp(ten);
+    setBusy(false);
+    if (!r.ok) { setErr(r.error); return; }
+    setSent(true);
   }
 
-  function submitVerify(e: React.FormEvent) {
+  async function submitVerify(e: React.FormEvent) {
     e.preventDefault();
+    if (busy) return;
     if (!name.trim()) { setErr("Please enter your name."); return; }
-    if (!sent) { sendCode(); return; }
-    if (!otpComplete) { setErr("Enter the 6-digit code."); return; }
+    if (!sent) { await sendCode(); return; }
+    if (!otpComplete) { setErr(`Enter the ${OTP_LENGTH}-digit code.`); return; }
+    const ten = normalisePhone(num);
+    if (!ten) { setErr("That number doesn't look right — go back and check it."); return; }
+
+    setErr(""); setBusy(true);
+    const r = await verifyOtp(ten, otp.join(""), name.trim());
+    setBusy(false);
+    if (!r.ok) { setErr(r.error); return; }
     persistAndJoin();
   }
 
@@ -329,7 +357,7 @@ export default function BuyerOfficeGate({
                 )}
                 {sent && (
                   <div>
-                    <p className={`mb-2.5 text-[0.76rem] font-light ${t.body}`}>Enter the code sent {method === "email" ? "to your email" : `on ${channelName}`} <span className={t.demo}>· demo, any 6 digits</span></p>
+                    <p className={`mb-2.5 text-[0.76rem] font-light ${t.body}`}>Enter the code sent {method === "email" ? "to your email" : `on ${channelName}`}</p>
                     <div className="flex gap-2">
                       {otp.map((d, i) => (
                         <input key={i} ref={(el) => { otpRefs.current[i] = el; }} value={d} onChange={(e) => setOtpDigit(i, e.target.value)}
@@ -341,7 +369,7 @@ export default function BuyerOfficeGate({
                 )}
               </div>
               {err && <p className={`mt-2.5 text-[0.78rem] ${t.err}`}>{err}</p>}
-              <button className={`mt-5 ${primaryBtn}`}>{!sent ? "Send code" : "Open my Buyer Office"}</button>
+              <button disabled={busy} className={`mt-5 ${primaryBtn} disabled:opacity-60`}>{busy ? (sent ? "Verifying…" : "Sending…") : !sent ? "Send code" : "Open my Buyer Office"}</button>
               <button type="button" onClick={() => setStep("req")} className={`mt-3.5 ${backLink}`}>← Back</button>
               <p className={`mt-4 text-center text-[0.68rem] font-light leading-[1.5] ${t.fine}`}>Free — no payment. We never share or spam. Front-end demo; OTP is simulated.</p>
             </form>

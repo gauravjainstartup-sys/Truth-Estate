@@ -5,7 +5,7 @@ import Logo from "@/components/Logo";
 import OtpDigits from "@/components/auth/OtpDigits";
 import { saveLead, emptyBuyData, type BuyData } from "@/lib/journey";
 import { pushDemand } from "@/lib/heroSearch";
-import { sendOtp, verifyOtp, maskContact, type Verified } from "@/lib/shortlistAuth";
+import { sendOtp, verifyOtp, maskContact, OTP_LENGTH, type Verified } from "@/lib/shortlistAuth";
 
 /* ════════════════════════════════════════════════════════════════
    GET A CUSTOM PROJECT REPORT — the destination for the homepage
@@ -66,7 +66,7 @@ export default function CustomReportPage() {
   const [cc, setCc] = useState("+91");
   const [phone, setPhone] = useState("");
   const [otpSent, setOtpSent] = useState(false);
-  const [otp, setOtp] = useState<string[]>(Array(4).fill(""));
+  const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(""));
   const [otpBusy, setOtpBusy] = useState(false);
   const [otpErr, setOtpErr] = useState<string | null>(null);
   const [verified, setVerified] = useState<Verified | null>(null);
@@ -105,7 +105,7 @@ export default function CustomReportPage() {
   const detailsOk = pay999 !== null && name.trim().length > 0 && phoneValid;
 
   function goBack() {
-    setStep(1); setOtpSent(false); setOtp(Array(4).fill("")); setOtpErr(null);
+    setStep(1); setOtpSent(false); setOtp(Array(OTP_LENGTH).fill("")); setOtpErr(null);
   }
 
   async function sendCode() {
@@ -119,7 +119,7 @@ export default function CustomReportPage() {
   async function confirmAndSubmit() {
     if (otpBusy || !otpComplete) return;
     setOtpBusy(true); setOtpErr(null);
-    const r = await verifyOtp("mobile", contact, otp.join(""));
+    const r = await verifyOtp("mobile", contact, otp.join(""), name.trim());
     setOtpBusy(false);
     if (!r.ok) { setOtpErr(r.error ?? "That code didn't match. Try again."); return; }
     const v: Verified = { channel: "mobile", contact, cc, name: name.trim() || undefined, at: Date.now() };
@@ -346,11 +346,10 @@ export default function CustomReportPage() {
                       <div className="mt-3 rounded-[11px] border border-[#1e6b45]/25 bg-[#1e6b45]/[0.04] p-3.5">
                         <p className="text-[0.78rem] text-[#1a1a1a]/70">
                           Code sent to <b className="font-medium text-[#1a1a1a]">{cc} {phone}</b> by {channelLabel}{" "}
-                          <button type="button" onClick={() => { setOtpSent(false); setOtp(Array(4).fill("")); setOtpErr(null); }} className="text-[#9a7a2e] underline underline-offset-2">change</button>
+                          <button type="button" onClick={() => { setOtpSent(false); setOtp(Array(OTP_LENGTH).fill("")); setOtpErr(null); }} className="text-[#9a7a2e] underline underline-offset-2">change</button>
                         </p>
-                        <div className="mt-3"><OtpDigits value={otp} onChange={setOtp} len={4} autoFocus /></div>
+                        <div className="mt-3"><OtpDigits value={otp} onChange={setOtp} len={OTP_LENGTH} autoFocus /></div>
                         {otpErr && <p className="mt-2 text-[0.72rem] text-[#9a4130]">{otpErr}</p>}
-                        <p className="mt-2 font-mono text-[0.58rem] tracking-[0.04em] text-[#9a7a2e]">Demo — any 4 digits work · MSG91 wires in later</p>
                       </div>
                     )}
                   </Field>

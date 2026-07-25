@@ -7,10 +7,8 @@
    wipes the simulated session) lands here instead of the office. Verifying
    sets membership (setMember) and reveals the office.
 
-   Mobile-only auth: Indian numbers (+91) get an SMS code, international
-   numbers a WhatsApp code — the copy reflects the channel. The OTP is a
-   working dummy today (any 4 digits), with the MSG91 seam wired for real
-   SMS/WhatsApp later.
+   Mobile-only auth, India-only for now: MSG91 sends the code by SMS
+   against DLT-registered templates, which cover Indian numbers only.
    ──────────────────────────────────────────────────────────────────────── */
 
 import { useEffect, useState } from "react";

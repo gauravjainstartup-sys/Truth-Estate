@@ -16,16 +16,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  PACKAGES, packageById, grantPackage, isSignedIn, setSignedIn, saveLead,
+  PACKAGES, packageById, grantPackage, isSignedIn, saveLead,
   hasReadAccess, has3DAccess, isAllAccess,
   type PackageId,
 } from "@/lib/journey";
+import { normalisePhone, prettyPhone, sendOtp, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
 
 const DIAL = [
   { code: "+91", flag: "🇮🇳" }, { code: "+971", flag: "🇦🇪" }, { code: "+1", flag: "🇺🇸" },
   { code: "+44", flag: "🇬🇧" }, { code: "+65", flag: "🇸🇬" }, { code: "+61", flag: "🇦🇺" },
 ];
-const OTP_LEN = 4;
+const OTP_LEN = OTP_LENGTH;
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
 /* The value ladder. `lead` renders as the "builds on the tier below" line;
@@ -90,11 +91,16 @@ export default function UnlockModal({
   const [sent, setSent] = useState(false);
   const [err, setErr] = useState("");
   const [paying, setPaying] = useState(false);
+  const [busy, setBusy] = useState(false);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const isIndia = dial === "+91";
   const numValid = num.replace(/\D/g, "").length >= (isIndia ? 10 : 6);
   const otpComplete = otp.every((d) => d !== "");
+  /* Show the number the SMS actually went to, not the raw keystrokes —
+     typing the STD 0 out of habit rendered "+91 09958777312". */
+  const normalised = normalisePhone(num);
+  const sentTo = normalised ? `${dial} ${prettyPhone(normalised)}` : `${dial} ${num.trim()}`;
 
   // ── upgrade economics: credit what's already paid on THIS project ──
   const credit = has3DAccess(slug) ? packageById("read3d").inr : hasReadAccess(slug) ? packageById("read").inr : 0;
@@ -123,18 +129,45 @@ export default function UnlockModal({
     if (d && i < OTP_LEN - 1) otpRefs.current[i + 1]?.focus();
   };
 
-  function registerSubmit(e: React.FormEvent) {
+  /* This step used to send nothing and accept anything: pressing "Send
+     code" only flipped `sent`, and any four digits walked straight
+     through to setSignedIn(). Someone could unlock and "pay" against a
+     number that was never theirs. Both halves are real now — the code
+     leaves MSG91 and the server confirms it before anyone is signed in. */
+  async function registerSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (busy) return;
+
     if (!sent) {
       if (!name.trim()) { setErr("Please enter your name."); return; }
       if (!numValid) { setErr("Enter a valid mobile number."); return; }
-      setErr(""); setSent(true);
+      /* MSG91's DLT templates are registered for Indian numbers only, so
+         an international number would be billed for and never arrive. */
+      if (!isIndia) { setErr("We can only verify Indian mobile numbers right now."); return; }
+      const ten = normalisePhone(num);
+      if (!ten) { setErr("That doesn't look like a valid Indian mobile number."); return; }
+
+      setErr(""); setBusy(true);
+      const r = await sendOtp(ten);
+      setBusy(false);
+      if (!r.ok) { setErr(r.error); return; }
+      setSent(true);
       requestAnimationFrame(() => otpRefs.current[0]?.focus());
       return;
     }
+
     if (!otpComplete) { setErr(`Enter the ${OTP_LEN}-digit code.`); return; }
+    const ten = normalisePhone(num);
+    if (!ten) { setErr("That number doesn't look right — go back and check it."); return; }
+
+    setErr(""); setBusy(true);
+    /* Signs in only on a server-confirmed code, and carries the name so
+       the profile lands complete in one round trip. */
+    const r = await verifyOtp(ten, otp.join(""), name.trim());
+    setBusy(false);
+    if (!r.ok) { setErr(r.error); return; }
+
     saveLead({ name: name.trim(), email: "", phone: `${dial} ${num}`.trim(), intent: "buyer-office", createdAt: Date.now() });
-    setSignedIn();
     setErr("");
     setStep("plans");
   }
@@ -191,7 +224,7 @@ export default function UnlockModal({
                 </>
               ) : (
                 <div className="mt-5">
-                  <p className="text-[0.85rem] text-[#1a1a1a]/55">Code sent to <span className="font-medium text-[#1a1a1a]">{dial} {num}</span> via {isIndia ? "SMS" : "WhatsApp"}{" · "}<button type="button" onClick={() => { setSent(false); setOtp(Array(OTP_LEN).fill("")); }} className="font-medium text-[#9a7a2e] hover:underline">Change</button></p>
+                  <p className="text-[0.85rem] text-[#1a1a1a]/55">Code sent to <span className="font-medium text-[#1a1a1a]">{sentTo}</span> via SMS{" · "}<button type="button" onClick={() => { setSent(false); setOtp(Array(OTP_LEN).fill("")); setErr(""); }} className="font-medium text-[#9a7a2e] hover:underline">Change</button></p>
                   <div className="mt-4 flex gap-3">
                     {otp.map((d, i) => (
                       <input key={i} ref={(el) => { otpRefs.current[i] = el; }} value={d}
@@ -201,13 +234,12 @@ export default function UnlockModal({
                         className="h-14 min-w-0 flex-1 rounded-lg border border-[#1a1a1a]/[0.18] bg-white text-center font-serif text-[1.4rem] text-[#1a1a1a] outline-none focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/20" />
                     ))}
                   </div>
-                  <p className="mt-3 text-[0.72rem] text-[#1a1a1a]/35">Demo: any {OTP_LEN}-digit code works.</p>
                 </div>
               )}
 
               {err && <p className="mt-3 text-[0.8rem] text-[#b3402a]">{err}</p>}
-              <button type="submit" className="mt-6 w-full rounded-md bg-[#1e6b45] px-4 py-3 text-[0.9rem] font-medium text-white transition-colors hover:bg-[#238c55]">
-                {sent ? "Verify & continue →" : "Send code →"}
+              <button type="submit" disabled={busy} className="mt-6 w-full rounded-md bg-[#1e6b45] px-4 py-3 text-[0.9rem] font-medium text-white transition-colors hover:bg-[#238c55] disabled:opacity-60">
+                {busy ? (sent ? "Verifying…" : "Sending…") : sent ? "Verify & continue →" : "Send code →"}
               </button>
               <p className="mt-3 text-[0.72rem] leading-relaxed text-[#1a1a1a]/40">By continuing you agree to our Terms &amp; Privacy Policy.</p>
             </form>
