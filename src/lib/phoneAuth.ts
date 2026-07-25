@@ -39,6 +39,11 @@ const SESSION_STORE = "truthEstate.sbSession";
 
 export type AuthResult = { ok: true } | { ok: false; error: string };
 
+/* MSG91's template sends a 4-digit code on this account. Kept as a
+   constant because it is set by the DLT-registered template, not by us —
+   if the template changes, this is the one place to follow it. */
+export const OTP_LENGTH = 4;
+
 /* ── Phone normalisation ────────────────────────────────────────
    Returns the 10 digits the Edge Functions require. People type their
    number every which way — "+91 99587 77312", "099587-77312",
@@ -100,7 +105,7 @@ function readable(data: FnResponse): string {
   if (step === "validate_phone" || /phone|mobile/i.test(msg)) {
     return "That number doesn't look right — mind checking it?";
   }
-  if (step === "validate_otp") return "That code should be 6 digits — try again.";
+  if (step === "validate_otp") return `That code should be ${OTP_LENGTH} digits — try again.`;
   if (step.includes("not_verified") || /invalid|expired/i.test(msg)) {
     return "That code didn't match. Try again, or ask for a new one.";
   }

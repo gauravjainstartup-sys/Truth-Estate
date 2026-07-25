@@ -1181,9 +1181,15 @@ export function isSignedIn(): boolean {
   if (typeof window === "undefined") return false;
   try { return window.localStorage.getItem(SIGNED_IN_KEY) === "1" || isMember(); } catch { return false; }
 }
+export const AUTH_EVENT = "truthEstate:auth";
+
 export function setSignedIn(): void {
   if (typeof window === "undefined") return;
   try { window.localStorage.setItem(SIGNED_IN_KEY, "1"); } catch { /* ignore */ }
+  /* Sign-in can now happen mid-page — inline in the TruthGuide chat —
+     so anything showing auth state has to be told. Without this the
+     header keeps saying "Sign in" to someone who just signed in. */
+  try { window.dispatchEvent(new Event(AUTH_EVENT)); } catch { /* ignore */ }
 }
 
 /* Paid-content checks — the single source of truth for the report + 3D gates. */

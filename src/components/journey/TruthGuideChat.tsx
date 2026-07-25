@@ -17,7 +17,7 @@ import {
   type GateReason,
 } from "@/lib/truthGuideChat";
 import { isSignedIn } from "@/lib/journey";
-import { normalisePhone, prettyPhone, sendOtp, verifyOtp, saveName } from "@/lib/phoneAuth";
+import { normalisePhone, prettyPhone, sendOtp, verifyOtp, saveName, OTP_LENGTH } from "@/lib/phoneAuth";
 
 export default function TruthGuideChat({
   onClose,
@@ -101,7 +101,7 @@ export default function TruthGuideChat({
       if (!r.ok) { say(r.error); return; }
       setAuthPhone(e164);
       setAuthStep("code");
-      say(`Sent a 6-digit code to ${prettyPhone(e164)} — pop it in below.`);
+      say(`Sent a ${OTP_LENGTH}-digit code to ${prettyPhone(e164)} — pop it in below.`);
       return;
     }
 
@@ -285,7 +285,7 @@ export default function TruthGuideChat({
             onChange={(e) => setInput(e.target.value)}
             placeholder={
               authStep === "phone" ? "Your mobile number"
-              : authStep === "code" ? "6-digit code"
+              : authStep === "code" ? `${OTP_LENGTH}-digit code`
               : authStep === "name" ? "Your name"
               : "Ask about Gurugram real estate..."
             }

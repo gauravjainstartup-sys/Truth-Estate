@@ -14,10 +14,11 @@
    consultation / custom-report enquiry — the buyer lead path.
    ──────────────────────────────────────────────────────────────────────── */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Logo from "./Logo";
 import HeroSearch from "./HeroSearch";
 import { useJourney } from "./journey/JourneyProvider";
+import { AUTH_EVENT, isSignedIn, loadAccount } from "@/lib/journey";
 import type { OmniIndex } from "@/lib/omni";
 
 const basePath = "/Truth-Estate";
@@ -38,6 +39,14 @@ function IconCube({ className }: IconProps) { // cube — Sun & Vastu 3D
 function IconGlobe({ className }: IconProps) { // globe — NRI / overseas
   return <svg className={className} {...svgBase}><circle cx="12" cy="12" r="8.5" /><path d="M3.5 12h17" /><path d="M12 3.5c2.6 2.4 2.6 14.6 0 17M12 3.5c-2.6 2.4-2.6 14.6 0 17" /></svg>;
 }
+function Initial({ name }: { name: string }) {
+  return (
+    <span className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-[#c9a24b] text-[9px] font-bold text-[#0b1a12]">
+      {name.trim().charAt(0).toUpperCase() || "\u2022"}
+    </span>
+  );
+}
+
 function IconUser({ className }: IconProps) { // person — sign in
   return <svg className={className} {...svgBase}><circle cx="12" cy="8.5" r="3.3" /><path d="M5.5 20a6.5 6.5 0 0 1 13 0" /></svg>;
 }
@@ -65,6 +74,22 @@ const CHIPS = [
 
 export default function Hero({ index }: { index: OmniIndex }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [who, setWho] = useState<string | null>(null);
+
+  useEffect(() => {
+    const read = () => setWho(isSignedIn() ? (loadAccount()?.name ?? "") : null);
+    read();
+    /* AUTH_EVENT covers signing in on this page (the chat does it inline);
+       `storage` covers doing it in another tab. */
+    window.addEventListener(AUTH_EVENT, read);
+    window.addEventListener("storage", read);
+    return () => {
+      window.removeEventListener(AUTH_EVENT, read);
+      window.removeEventListener("storage", read);
+    };
+  }, []);
+
+  const firstName = who ? who.trim().split(/\s+/)[0] : "";
   const { open } = useJourney();
 
   return (
@@ -104,7 +129,11 @@ export default function Hero({ index }: { index: OmniIndex }) {
               <IconGlobe className="h-[15px] w-[15px] shrink-0 opacity-80" />NRI Desk
             </a>
             <a href={`${basePath}/office`} className="flex items-center gap-1.5 rounded-full border border-[#c9a24b]/50 px-4 py-1.5 text-[#e7cf95] transition-colors duration-150 hover:border-[#c9a24b] hover:bg-[#c9a24b]/10">
-              <IconUser className="h-[15px] w-[15px] shrink-0" />Sign in
+              {who === null ? (
+                <><IconUser className="h-[15px] w-[15px] shrink-0" />Sign in</>
+              ) : (
+                <><Initial name={firstName} />{firstName || "My Office"}</>
+              )}
             </a>
           </nav>
           {/* hamburger */}
@@ -189,7 +218,13 @@ export default function Hero({ index }: { index: OmniIndex }) {
               <IconGlobe className="h-6 w-6 shrink-0 opacity-70" />NRI Desk
             </a>
             <a href={`${basePath}/office`} className="flex items-center gap-4 font-serif text-[2rem] font-light text-[#e7cf95]">
-              <IconUser className="h-6 w-6 shrink-0 opacity-80" />Sign in
+              {who === null ? (
+                <><IconUser className="h-6 w-6 shrink-0 opacity-80" />Sign in</>
+              ) : (
+                <><span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#c9a24b] text-[11px] font-bold text-[#0b1a12]">
+                    {firstName.charAt(0).toUpperCase() || "\u2022"}
+                  </span>{firstName || "My Office"}</>
+              )}
             </a>
           </nav>
         </div>
