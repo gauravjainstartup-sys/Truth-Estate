@@ -12,6 +12,8 @@
    cost a visitor a page.
    ════════════════════════════════════════════════════════════════ */
 import { useEffect, useRef } from "react";
+import { fetchEntitlements } from "@/lib/entitlements";
+import { AUTH_EVENT } from "@/lib/journey";
 import { usePathname } from "next/navigation";
 import { track, wireEventFlush, projectSlugFromPath } from "@/lib/events";
 
@@ -24,6 +26,19 @@ export default function EventTracker() {
   const lastPath = useRef<string | null>(null);
 
   useEffect(() => { wireEventFlush(); }, []);
+
+  /* Pull the server's view of what this account paid for, once per load
+     and again whenever they sign in. Mounted here because this component
+     is already global and already fires on every page — a purchase made
+     on truthestate.in, or on this device before a refresh, is otherwise
+     invisible to the gates in journey.ts. Fire and forget: the helpers
+     fall back to the local grant if it never arrives. */
+  useEffect(() => {
+    void fetchEntitlements();
+    const onAuth = () => { void fetchEntitlements(); };
+    window.addEventListener(AUTH_EVENT, onAuth);
+    return () => window.removeEventListener(AUTH_EVENT, onAuth);
+  }, []);
 
   useEffect(() => {
     if (!pathname || pathname === lastPath.current) return;

@@ -6,6 +6,7 @@
    ════════════════════════════════════════════════════════════════ */
 
 import { grantModelAccess, modelSlugFor, resolveModelSubject } from "./modelAccess";
+import { serverHasAccess } from "./entitlementsCache";
 import { type Buyer, bucketOfChip } from "./matchEngine";
 
 /* The primary CTA is configurable in one place — we may rename later. */
@@ -1203,20 +1204,41 @@ export function setSignedIn(): void {
   try { window.dispatchEvent(new Event(AUTH_EVENT)); } catch { /* ignore */ }
 }
 
-/* Paid-content checks — the single source of truth for the report + 3D gates. */
+/* Paid-content checks — the single source of truth for the report + 3D gates.
+
+   Local access is now the CACHE, not the record. The record lives in
+   user_profiles.unlocked_reports and payments, and reaches here through
+   lib/entitlements. Two things were broken by trusting localStorage
+   alone: the reload script in layout.tsx clears the truthEstate.*
+   namespace, so a purchase did not survive a refresh; and the 29
+   profiles who bought on truthestate.in were unknown to this build
+   entirely, so every one of them met a paywall for a report they owned.
+
+   The server can only ever ADD. serverAccess returns null for "not
+   known", never false, so a failed request or a signed-out visitor falls
+   through to whatever this device already had. Someone who just paid
+   must not lose access because the network blinked. */
+function serverAccess(slug: string): boolean {
+  return serverHasAccess(slug) === true;
+}
+
 export function hasReadAccess(slug: string): boolean {
   if (typeof window === "undefined") return false;
   const a = loadAccess();
-  return a.all || a.reads.includes(slug) || a.threeD.includes(slug) || isMember();
+  return a.all || a.reads.includes(slug) || a.threeD.includes(slug) || isMember() || serverAccess(slug);
 }
 export function has3DAccess(slug: string): boolean {
   if (typeof window === "undefined") return false;
   const a = loadAccess();
+  /* The 3D tier is this build's own product; truthestate.in sells only
+     the read, so a server entitlement grants the read and never the 3D.
+     Inferring one from the other would hand away something nobody paid
+     for. */
   return a.all || a.threeD.includes(slug) || isMember();
 }
 export function isAllAccess(): boolean {
   if (typeof window === "undefined") return false;
-  return loadAccess().all || isMember();
+  return loadAccess().all || isMember() || serverAccess("*all*");
 }
 
 
