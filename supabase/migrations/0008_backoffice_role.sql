@@ -1,25 +1,24 @@
 -- ════════════════════════════════════════════════════════════════
--- 0008 — BACKOFFICE ROLE
+-- 0008 — BACKOFFICE ROLE  (full read/write/delete, no authentication)
 --
 -- 0003 removed anon write access from the product tables, because the
--- anon key ships in the public bundle and anyone holding it could have
--- run `delete from projects`. That also broke the AI Studio back-office,
--- which writes with the anon key and has no real login to authenticate
--- with.
+-- anon key ships in the public site bundle and anyone holding it could
+-- have run `delete from projects`. That also broke the AI Studio
+-- back-office, which writes with a browser-side key and has no login.
 --
--- The obvious fix is to hand the back-office the service_role key. Don't.
--- service_role bypasses RLS on EVERYTHING: leaked, it reads every
--- customer email and phone in user_profiles, every conversation in
--- chat_sessions, every lead, and can delete any of it.
+-- This role restores full access for the back-office: every table in
+-- public, select/insert/update/delete, plus tables created later. It is
+-- reached with a dedicated key that exists only in the back-office and
+-- appears in no other codebase.
 --
--- This role can rewrite project data and nothing else. Leaked, the damage
--- is product data — bad, visible, and restorable from a backup. It cannot
--- read one customer record.
---
--- HOW IT WORKS. PostgREST reads the `role` claim from the JWT and does
--- SET LOCAL ROLE. A token signed with the project's JWT secret carrying
--- role=backoffice therefore executes as this role, with exactly the
--- grants below. See mint-backoffice-key.mjs for issuing the token.
+-- WHY NOT JUST USE service_role
+-- The founder asked for full table access, and this delivers it. The one
+-- thing deliberately withheld is the AUTH SCHEMA: service_role can read
+-- and delete auth.users directly and is a universally recognised name, so
+-- a leak reads as total compromise. This role reaches all the DATA and
+-- none of the account plumbing — same convenience, smaller blast radius,
+-- and it is revoked with one statement instead of a key rotation that
+-- would take the anon and service keys down with it.
 -- ════════════════════════════════════════════════════════════════
 
 do $$
@@ -29,65 +28,57 @@ begin
   end if;
 end $$;
 
--- PostgREST connects as `authenticator` and switches roles per request;
--- without this grant the switch is refused and every call 500s.
+-- PostgREST connects as `authenticator` and switches role per request.
+-- Without this grant the switch is refused and every call fails.
 grant backoffice to authenticator;
 grant usage on schema public to backoffice;
 
--- Serial/identity columns need their sequences.
-grant usage, select on all sequences in schema public to backoffice;
+-- ── Everything in public, now and in future ─────────────────────
+grant all on all tables    in schema public to backoffice;
+grant all on all sequences in schema public to backoffice;
+grant all on all functions in schema public to backoffice;
 
--- ── Grants + policies, product tables only ──────────────────────
--- RLS still applies (this role is not a superuser and has no BYPASSRLS),
--- so each table needs both a grant and a policy.
+-- So a table added next month does not silently break the back-office.
+-- Applies to objects created by BOTH owners that matter here: the
+-- dashboard creates as `postgres`, the API/migrations as `supabase_admin`.
+alter default privileges for role postgres        in schema public grant all on tables    to backoffice;
+alter default privileges for role postgres        in schema public grant all on sequences to backoffice;
+alter default privileges for role supabase_admin  in schema public grant all on tables    to backoffice;
+alter default privileges for role supabase_admin  in schema public grant all on sequences to backoffice;
+
+-- ── Get past RLS ────────────────────────────────────────────────
+-- BYPASSRLS is the clean way and needs superuser, which Supabase may not
+-- grant. Try it; if refused, fall back to a permissive policy per table.
+-- The fallback is equivalent for existing tables — it just has to be
+-- re-run when new ones appear (see MAINTENANCE below).
 do $$
-declare t text;
 begin
-  foreach t in array array[
-    'projects',
-    'developers',
-    'micro_market_data',
-    'cagr_defaults',
-    'developer_health',
-    'backlog_projects',
-    'backlog_project_data',
-    'project_configurations',
-    'project_extended_details',
-    'project_3d_intake'
-  ] loop
-    if to_regclass('public.' || t) is null then
-      raise notice 'skipping %, table not present', t;
-      continue;
-    end if;
+  execute 'alter role backoffice bypassrls';
+  raise notice 'backoffice: BYPASSRLS granted — per-table policies are belt-and-braces';
+exception when others then
+  raise notice 'backoffice: BYPASSRLS unavailable (%) — using per-table policies', sqlerrm;
+end $$;
 
-    execute format('grant select, insert, update, delete on public.%I to backoffice', t);
-    execute format('alter table public.%I enable row level security', t);
-    execute format('drop policy if exists %I on public.%I', t || '_backoffice', t);
+do $$
+declare r record;
+begin
+  for r in
+    select tablename from pg_tables where schemaname = 'public'
+  loop
+    execute format('drop policy if exists %I on public.%I', r.tablename || '_backoffice', r.tablename);
     execute format(
       'create policy %I on public.%I for all to backoffice using (true) with check (true)',
-      t || '_backoffice', t);
+      r.tablename || '_backoffice', r.tablename);
   end loop;
 end $$;
 
--- ── Explicitly NOT granted ──────────────────────────────────────
--- user_profiles, chat_sessions, contact_leads, payments.
---
--- Omission alone would be enough, but stating it makes the boundary a
--- decision rather than an oversight — and makes it obvious if someone
--- later adds a grant here without thinking about it.
-revoke all on public.user_profiles from backoffice;
-revoke all on public.chat_sessions from backoffice;
-revoke all on public.contact_leads from backoffice;
-revoke all on public.payments      from backoffice;
-
 
 -- ════════════════════════════════════════════════════════════════
--- ISSUING THE KEY — IN THE SQL EDITOR, no local machine needed
+-- ISSUING THE KEY — in the SQL editor, no local checkout needed.
 --
--- All of this project's code lives on GitHub with no local checkout, so
--- the node script is the secondary route. Postgres can mint the token
--- itself: a JWT is base64url(header).base64url(payload).base64url(HMAC),
--- and pgcrypto already provides the HMAC.
+-- A JWT is base64url(header).base64url(payload).base64url(HMAC), and
+-- pgcrypto provides the HMAC. Replace the secret from
+-- Settings → API → JWT Settings:
 --
 --   create extension if not exists pgcrypto with schema extensions;
 --
@@ -111,32 +102,31 @@ revoke all on public.payments      from backoffice;
 -- Three details that are load-bearing, not incidental:
 --   • replace(..., E'\n', '')  — encode() wraps base64 at 76 chars, and a
 --     newline inside a JWT segment makes the token silently invalid.
---   • translate(..., '+/=', '-_')  — base64 → base64url. The '=' has no
+--   • translate(..., '+/=', '-_')  — base64 → base64url. '=' has no
 --     counterpart in the target, which is how translate() DELETES it;
---     padding is not allowed in a JWT.
---   • the secret goes in the query text, so DELETE THE SAVED SNIPPET
---     afterwards — the SQL editor keeps query history.
+--     JWTs do not allow padding.
+--   • the secret sits in the query text — DELETE THE SAVED SNIPPET
+--     afterwards, the SQL editor keeps history.
 --
--- Alternative, if you have a local checkout:
---   node scripts/mint-backoffice-key.mjs
--- It reads the secret from a hidden prompt instead, so it never reaches
--- shell history.
+-- Then in the back-office, as BOTH headers:
+--   apikey: <backoffice key>
+--   Authorization: Bearer <backoffice key>
 --
--- Either way, use the key exactly like the anon key — as both the
--- `apikey` header and the Bearer token.
 --
--- VERIFY — with the backoffice token:
---   ✅ writes product data:
+-- MAINTENANCE — only if BYPASSRLS was refused above. After creating new
+-- tables, re-run the second DO block to give them a backoffice policy.
+--
+--
+-- REVOKING a leaked key — instant, and leaves anon/service_role alone:
+--   revoke backoffice from authenticator;
+-- (Rotating the JWT secret also works but invalidates every other key.)
+--
+--
+-- VERIFY with the backoffice key:
 --   curl -X PATCH "<URL>/rest/v1/project_extended_details?id=eq.<id>" \
 --        -H "apikey: <BO>" -H "Authorization: Bearer <BO>" \
 --        -H "content-type: application/json" -d '{"...":"..."}'
---
---   ✅ CANNOT read customers — must return [] or a permission error:
---   curl "<URL>/rest/v1/user_profiles?select=email" \
+--   curl "<URL>/rest/v1/user_profiles?select=email&limit=1" \
 --        -H "apikey: <BO>" -H "Authorization: Bearer <BO>"
---
--- REVOKING a leaked key: rotating the project JWT secret invalidates it,
--- but also every anon and service_role key. The lighter option is
---   revoke backoffice from authenticator;
--- which disables the role instantly and leaves everything else running.
+-- Both should now succeed — this role has full table access by design.
 -- ════════════════════════════════════════════════════════════════
