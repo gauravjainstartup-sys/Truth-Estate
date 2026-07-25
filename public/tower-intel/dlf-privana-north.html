@@ -735,6 +735,16 @@ body.sun-cinema{overflow:hidden}
 #flatSheet.sx .fs-floor .ff-sunline span{position:absolute;top:2px;left:5px;font:600 8px/1 ui-monospace,monospace;color:#ffd27a;white-space:nowrap}
 #flatSheet.sx .fs-floor .ffscale{color:#525b74}
 #flatSheet.sx .fs-floor .ffbest{color:var(--sun)}
+/* legacy tab panels carry inline light-theme colours; inline beats the skin's class rules,
+   so force-map the light-only text/surfaces to the dark tokens (attribute selectors match
+   inline styles only - CSS-rule colours are untouched). Keeps every tab readable. */
+#flatSheet.sx [style*="color:#23272e"]{color:var(--text)!important}
+#flatSheet.sx [style*="color:#64707d"]{color:var(--muted)!important}
+#flatSheet.sx [style*="color:#6b7787"]{color:var(--muted)!important}
+#flatSheet.sx [style*="color:#9a9c95"]{color:var(--muted)!important}
+#flatSheet.sx [style*="color:#abaea1"]{color:var(--muted)!important}
+#flatSheet.sx [style*="background:rgba(0,0,0,.0"]{background:var(--surf)!important}
+#flatSheet.sx [style*="solid rgba(0,0,0,.0"]{border-color:var(--line)!important}
 </style>
 <div id="flatSheet" class="sx">
   <div class="fs-top">
