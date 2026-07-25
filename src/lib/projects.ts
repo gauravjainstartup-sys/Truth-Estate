@@ -573,6 +573,24 @@ export const TOWER_INTEL: Record<string, TowerIntelMeta> = {
       idealFor: "Large families (4 BHK)",
     },
   },
+  "Ashiana Amarah Phase - 1 & 1A": {
+    file: "tower-intel/ashiana-amarah-phase-1.html",
+    preview: "tower-intel/ashiana-amarah-phase-1-preview.jpg",
+    towers: 4, // T1/T3 Lavender (3 BHK 1000) · T2 Tulip+ (3 BHK 1205) · T4 Iris+ (4 BHK 1408), Stilt+14
+    unitTypes: 3, // three sanctioned plans — Lavender / Tulip+ / Iris+
+    totalUnits: "110+", // 4 towers × 14 floors × 2 lines
+    // Mirrors the advisor's own #1 pick (top composite): T1 is the only
+    // south-facing tower, so it leads the phase on winter sun.
+    sample: {
+      ref: "Tower T1 · Line 01",
+      type: "Lavender · 3 BHK 1000 · south-facing",
+      sun: "6.7 h/day (winter · best in phase)",
+      sunPct: 84,
+      ventilation: "End line · cross-light on 3 sides",
+      vastu: "South sun-deck · keep the NE open",
+      idealFor: "Sun-first & nuclear families (3 BHK)",
+    },
+  },
   // DB project_name is "M3M Elie Saab" (page slug m3m-elie-saab); the db3d
   // pipeline dir keeps the longer marketing slug m3m-residences-by-elie-saab.
   "M3M Elie Saab": {

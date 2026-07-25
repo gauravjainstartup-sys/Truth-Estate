@@ -41,6 +41,7 @@ const LIVE: { name: string; file: string; preview: string; towers: number; note:
   { name: "Elan The Presidential", file: "tower-intel/elan-the-presidential.html", preview: "tower-intel/elan-the-presidential-preview.jpg", towers: 8, note: "lagoon-facing heads & wings" },
   { name: "Elan The Emperor", file: "tower-intel/elan-the-emperor.html", preview: "tower-intel/elan-the-emperor-preview.jpg", towers: 5, note: "NE-sunrise corners" },
   { name: "Birla Arika", file: "tower-intel/birla-arika.html", preview: "tower-intel/birla-arika-preview.jpg", towers: 4, note: "six sanctioned plates" },
+  { name: "Ashiana Amarah Phase - 1 & 1A", file: "tower-intel/ashiana-amarah-phase-1.html", preview: "tower-intel/ashiana-amarah-phase-1-preview.jpg", towers: 4, note: "Stilt+14 · amenity-facing decks" },
   { name: "Signature Global Titanium SPR", file: "tower-intel/signature-global-titanium-spr.html", preview: "tower-intel/signature-global-titanium-spr-preview.jpg", towers: 7, note: "2-to-core dual-aspect" },
   { name: "M3M Elie Saab", file: "tower-intel/m3m-residences-by-elie-saab.html", preview: "tower-intel/m3m-residences-by-elie-saab-preview.jpg", towers: 3, note: "east-sunrise living" },
   { name: "DLF The Arbour", file: "tower-intel/dlf-arbour.html", preview: "tower-intel/preview.jpg", towers: 5, note: "south-east corners" },

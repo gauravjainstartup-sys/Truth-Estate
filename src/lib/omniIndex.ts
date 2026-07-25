@@ -24,6 +24,7 @@ const COORDS: Record<string, { lat: number; lng: number }> = {
   "elan-the-presidential": { lat: 28.502307, lng: 77.001726 },
   "elan-the-emperor": { lat: 28.501491, lng: 77.001726 },
   "birla-arika": { lat: 28.450497, lng: 77.046439 },
+  "ashiana-amarah-phase-1-1a": { lat: 28.39, lng: 76.951 },
   "puri-the-aravallis": { lat: 28.4125, lng: 77.0835 },
 };
 
