@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import DashboardHome from "./DashboardHome";
 import { useEffect, useRef, useState } from "react";
 import Logo from "../Logo";
 import SignIn from "./SignIn";
-import { isSignedIn, clearAllDemoData } from "@/lib/journey";
+import { isSignedIn, clearAllDemoData, loadAccount } from "@/lib/journey";
 import { projectByName } from "@/lib/projects";
 import ProjectOptionCard from "../intelligence/ProjectOptionCard";
 import {
@@ -139,8 +140,16 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
       {/* ── Main ── */}
       <main className="min-w-0 flex-1">
         <div className="mx-auto max-w-5xl px-6 py-9 md:px-12 md:py-12">
-          {/* Thread switcher + preview control */}
-          <div className="mb-9 flex flex-wrap items-center justify-between gap-4">
+          {/* Thread switcher + preview control.
+              HIDDEN ON THE DASHBOARD HOME. The switcher is demo scaffolding
+              — three seeded threads and a "PREVIEW · stage" dropdown that
+              lets you fast-forward the journey — and it sat directly above
+              the verdict, which is the one thing on that page a real buyer
+              is meant to read first. A control for inspecting a demo has no
+              business being the first thing on the page that tells someone
+              what to do about a seven-crore decision. The deal sections
+              still need it, so it stays everywhere else. */}
+          <div className={`mb-9 flex-wrap items-center justify-between gap-4 ${section === "home" ? "hidden" : "flex"}`}>
             <div className="flex flex-wrap gap-2">
               {state.threads.map((t) => (
                 <button
@@ -165,7 +174,7 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
             <PreviewStage value={active.stage} onChange={setStage} onReset={() => update(reseedOffice())} />
           </div>
 
-          {section === "home" && <HomeSection thread={active} />}
+          {section === "home" && <DashboardHome name={loadAccount()?.name ?? null} />}
           {section === "requirements" && <RequirementsSection state={state} activeId={active.id} onPick={setActive} />}
           {section === "recommendations" && <RecommendationsSection thread={active} onActivate={() => setPayOpen(true)} />}
           {section === "deal" && <DealSection thread={active} onAdvance={advanceTo} onActivate={() => setPayOpen(true)} />}

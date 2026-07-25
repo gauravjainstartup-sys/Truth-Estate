@@ -1213,7 +1213,11 @@ export default function JourneyModal({
             <PrimaryButton
               onClick={() => {
                 if (account) {
-                  setBuy(account.buy);
+                  /* localStorage can hold a shape written by an older
+                     release, and every read below assumes buy is present —
+                     buy.priorities alone is dereferenced in six places. The
+                     type says non-null; the storage cannot promise it. */
+                  setBuy(account.buy ?? emptyBuyData);
                   setBooking(account.booking);
                 }
                 onClose();

@@ -42,6 +42,7 @@ export type BriefProject = {
   microMarket: string | null;
   minPriceCr: number | null;
   bhk: number | null;
+  truthScore: number | null;
   views: number;
   paid: boolean;
   enquired: boolean;
@@ -52,6 +53,11 @@ export type BuyerBrief = {
   /* True when the visitor has stated a brief OR the trail is rich enough
      to infer one. False is the dashboard's State A: ask, don't guess. */
   known: boolean;
+  /* We could not reach the trail — NOT the same as "there is nothing to
+     find". Without this the dashboard tells someone who has read nine
+     reports that they have not read enough, which is a false statement
+     about them, made confidently, at the exact moment we know least. */
+  unavailable: boolean;
   reportsRead: number;
   projects: BriefProject[];
   corridor: Field<string[]>;
@@ -122,6 +128,8 @@ type RemoteBrief = {
   timeline: RemoteGuess<null>;
 };
 
+/* null means "ask failed", a RemoteBrief means "asked and answered".
+   The caller must be able to tell those apart. */
 async function fetchInferred(): Promise<RemoteBrief | null> {
   const anonId = getAnonId();
   if (!anonId) return null;
@@ -174,6 +182,9 @@ export async function loadBuyerBrief(): Promise<BuyerBrief> {
 
   return {
     known: [corridor, budgetCr, config].some((f) => f.value != null),
+    /* Stated-only briefs are complete without the server, so an outage is
+       only worth admitting when we actually needed it. */
+    unavailable: remote === null && !Object.keys(stated).length,
     reportsRead: remote?.reportsRead ?? 0,
     projects: remote?.projects ?? [],
     corridor, budgetCr, config, purchaseType, timeline,

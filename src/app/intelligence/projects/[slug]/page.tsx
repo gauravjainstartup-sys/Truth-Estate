@@ -29,9 +29,22 @@ async function targetFor(slug: string): Promise<string | null> {
   return hit ? `/projects/${hit.seoSlug}` : null;
 }
 
+/* A dynamic route under output:export must return at least one param —
+   an empty array is indistinguishable from having no generateStaticParams
+   at all, and Next fails the whole build. The catalogue fetch is allowed
+   to fail (it is a network call at build time), so without this sentinel
+   one Supabase blip takes the deploy down rather than costing us the
+   redirect stubs for that build. Everything else here already degrades
+   softly; this route should too. */
+const NO_ROWS_SENTINEL = "unavailable";
+
 export async function generateStaticParams() {
   const all = await rows();
   const params = (all ?? []).map((r) => ({ slug: r.slug }));
+  if (!params.length) {
+    console.warn("[urls] legacy project stubs: catalogue unavailable — emitting sentinel only");
+    return [{ slug: NO_ROWS_SENTINEL }];
+  }
   console.log(`[urls] legacy project stubs at /intelligence/projects: ${params.length}`);
   return params;
 }

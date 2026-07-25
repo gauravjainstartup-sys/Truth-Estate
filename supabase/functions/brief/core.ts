@@ -58,6 +58,10 @@ export type TouchedProject = {
   microMarket: string | null;
   minPriceCr: number | null;
   bhk: number | null;
+  /* Carried so the dashboard can show fit-to-brief and Truth Score as two
+     separate readings. Conflating them is the whole thing the fit table
+     exists to prevent: a 90 that does not fit you is still the wrong flat. */
+  truthScore: number | null;
   views: number;
   paid: boolean;
   enquired: boolean;
@@ -125,6 +129,7 @@ export function touchedProjects(
         microMarket: p.microMarket,
         minPriceCr: p.min_price_cr,
         bhk: p.min_bhk_num,
+        truthScore: p.truthScore ?? null,
         views: 0,
         paid: false,
         enquired: false,

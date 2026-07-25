@@ -45,19 +45,42 @@ const sb = (path: string) =>
 let cache: { at: number; rows: ProjectRow[] } | null = null;
 const TTL_MS = 5 * 60 * 1000;
 
+const CATALOGUE_QUERY =
+  "backlog_listing_public_v3?select=name,%22microMarket%22,min_price_cr,config,min_bhk_num,avg_cost_sqft,%22truthScore%22&limit=500";
+
 async function projects(): Promise<ProjectRow[]> {
   if (cache && Date.now() - cache.at < TTL_MS) return cache.rows;
-  try {
-    const res = await sb(
-      "backlog_listing_public_v3?select=name,%22microMarket%22,min_price_cr,config,min_bhk_num,avg_cost_sqft,%22truthScore%22&limit=500",
-    );
-    if (!res.ok) return cache?.rows ?? [];
-    const rows = await res.json() as ProjectRow[];
-    if (Array.isArray(rows) && rows.length) cache = { at: Date.now(), rows };
-    return cache?.rows ?? [];
-  } catch {
-    return cache?.rows ?? [];
+  /* One retry, because the failure this guards against is transient and
+     the consequence is not. A COLD start during a blip has no stale copy
+     to fall back on, so the function returns "no catalogue" and the
+     dashboard tells the visitor it does not know them — a false statement
+     about a person, produced by a two-second outage. PostgREST answered
+     521 for several minutes on 2026-07-25 while this was being built,
+     which is exactly the window a retry covers. */
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await sb(CATALOGUE_QUERY);
+      if (res.ok) {
+        const rows = await res.json() as ProjectRow[];
+        if (Array.isArray(rows) && rows.length) {
+          cache = { at: Date.now(), rows };
+          return rows;
+        }
+      } else {
+        console.warn(`[brief] catalogue HTTP ${res.status} (attempt ${attempt + 1})`);
+      }
+    } catch (err) {
+      console.warn(`[brief] catalogue unreachable (attempt ${attempt + 1})`, err);
+    }
+    if (attempt === 0) await new Promise((r) => setTimeout(r, 600));
   }
+  /* Stale beats absent: a brief built on a catalogue five minutes out of
+     date is right about everything that matters here. */
+  if (cache) {
+    console.warn(`[brief] serving catalogue cached ${Math.round((Date.now() - cache.at) / 1000)}s ago`);
+    return cache.rows;
+  }
+  return [];
 }
 
 /* Everything this person has done, on this device or any other they have
