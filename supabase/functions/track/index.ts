@@ -7,8 +7,12 @@
    projects every visitor is considering.
 
    POST { events: [ { name, projectSlug?, projectName?, props?,
-                      path?, referrer? } ], anonId, sessionId? }
+                      path?, referrer? } ], anonId, sessionId?, userRef? }
      → { ok: true, stored: n }
+
+   userRef is a SELF-ASSERTED account id from a front-end with no
+   Supabase session. It is stored in props.uid, never in user_id — see
+   the note at the read site below.
 
    Always answers HTTP 200 and never blocks the page. Analytics failing
    must never cost a visitor an interaction, so the client fires this and
@@ -117,7 +121,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json() as {
-      events?: InEvent[]; anonId?: string; sessionId?: string;
+      events?: InEvent[]; anonId?: string; sessionId?: string; userRef?: string;
     };
     const anonId = str(body.anonId, 100);
     const sessionId = str(body.sessionId, 100);
@@ -133,6 +137,22 @@ Deno.serve(async (req: Request) => {
        silently wrong rather than missing. The browser sets Origin on
        every cross-origin POST, including sendBeacon. */
     const site = siteFromOrigin(req.headers.get("origin"));
+
+    /* A SELF-ASSERTED account id, for front-ends that do not hold a
+       Supabase session — truthestate.in signs people in with MSG91 and
+       mints its own JWT client-side, so there is no token anyone could
+       verify and nothing to check this against.
+
+       It therefore does NOT go in events.user_id. That column means "an
+       account this server confirmed", and quietly filling it with a
+       string the browser supplied would destroy the only thing that makes
+       it worth having. It lands in props.uid instead, where every query
+       can see exactly what kind of claim it is.
+
+       This is what identify() does in Mixpanel or GA, and it is safe for
+       the same reason: the value labels analytics, it grants nothing.
+       Forging it buys an attacker a wrong row in a funnel chart. */
+    const userRef = str(body.userRef, 100);
 
     /* Who this device turned out to be.
 
@@ -168,7 +188,11 @@ Deno.serve(async (req: Request) => {
         project_name: str(e.projectName, 200),
         /* Merged rather than nested so existing queries on props keep
            working, and site is one hop away: props->>'site'. */
-        props: { ...(e.props && typeof e.props === "object" ? e.props : {}), site },
+        props: {
+          ...(e.props && typeof e.props === "object" ? e.props : {}),
+          site,
+          ...(userRef ? { uid: userRef } : {}),
+        },
         path: str(e.path, 300),
         referrer: str(e.referrer, 500),
         user_agent: ua,

@@ -11,6 +11,15 @@
 
    POST { anonId, accessToken }  → { ok, userId, events, chats }
 
+   NOT USABLE BY truthestate.in AS IT STANDS. That site verifies through
+   MSG91 and mints its own JWT in the browser, so it holds no Supabase
+   session: localStorage carries no sb-* key, and the token it does have
+   fails /auth/v1/user with "signature is invalid". Its attribution goes
+   through track's userRef instead, which is honest about being
+   self-asserted. This function stays for the front-ends that DO hold a
+   real session, and is the right path the moment that site moves to
+   Supabase auth.
+
    THE ONE RULE: the account is taken from the access token, verified
    against Supabase auth on every call — never from the request body.
    This function holds the service key and writes across users, so a
