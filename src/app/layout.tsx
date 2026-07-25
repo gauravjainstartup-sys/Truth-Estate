@@ -139,10 +139,18 @@ export default function RootLayout({
            brief, leads) so nothing carries over. Ordinary link / router
            navigation (type "navigate") is left untouched, so moving between
            reports keeps the persona built during the session. Runs before
-           React hydrates so no stale state is ever read. */}
+           React hydrates so no stale state is ever read.
+
+           KEEP_KEYS is the exception, and it exists because this wipe was
+           silently shredding the analytics. The device id lived in the same
+           truthEstate.* namespace as the demo state, so every refresh minted
+           a new one: 25 events arrived under SIX identities in a single
+           afternoon, and signing in could only ever claim the handful
+           written since the last refresh — the rest were orphaned for good.
+           Demo state is disposable; who the device is, is not. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{if('scrollRestoration' in history){history.scrollRestoration='manual';}window.scrollTo(0,0);var r=false;var e=(performance.getEntriesByType&&performance.getEntriesByType('navigation')[0]);if(e){r=e.type==='reload';}else if(performance.navigation){r=performance.navigation.type===1;}if(r){for(var i=localStorage.length-1;i>=0;i--){var k=localStorage.key(i);if(k&&k.indexOf('truthEstate')===0){localStorage.removeItem(k);}}}}catch(_){}})();`,
+            __html: `(function(){try{if('scrollRestoration' in history){history.scrollRestoration='manual';}window.scrollTo(0,0);var r=false;var e=(performance.getEntriesByType&&performance.getEntriesByType('navigation')[0]);if(e){r=e.type==='reload';}else if(performance.navigation){r=performance.navigation.type===1;}if(r){var KEEP={'truthEstate.tgAnon':1};for(var i=localStorage.length-1;i>=0;i--){var k=localStorage.key(i);if(k&&k.indexOf('truthEstate')===0&&!KEEP[k]){localStorage.removeItem(k);}}}}catch(_){}})();`,
           }}
         />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgLd) }} />

@@ -72,6 +72,25 @@ type InEvent = {
   referrer?: string;
 };
 
+/* The account this device has already been linked to, if any. One indexed
+   lookup on (anon_id, created_at); null is a perfectly normal answer and
+   must never block the write — an unattributed event beats a lost one. */
+async function resolveUserId(anonId: string): Promise<string | null> {
+  try {
+    const url = `${DB_URL}/rest/v1/events?select=user_id&anon_id=eq.${encodeURIComponent(anonId)}`
+      + `&user_id=not.is.null&order=created_at.desc&limit=1`;
+    const res = await fetch(url, {
+      headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!res.ok) return null;
+    const rows = await res.json() as { user_id?: string }[];
+    return rows?.[0]?.user_id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req: Request) => {
   const h = cors(req.headers.get("origin"));
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: h });
@@ -92,6 +111,20 @@ Deno.serve(async (req: Request) => {
     const sessionId = str(body.sessionId, 100);
     const ua = str(req.headers.get("user-agent"), 400);
 
+    /* Who this device turned out to be.
+
+       link_verified_phone stamps user_id onto the rows that exist AT THE
+       MOMENT of sign-in and never runs again, so everything after it —
+       including payment_completed, the one event that matters most —
+       stayed anonymous forever. Resolving it here instead means the
+       attribution continues for the life of the device.
+
+       Derived from a row this anon_id has ALREADY had claimed, never from
+       anything the caller sends. This function holds the service key and
+       bypasses RLS, so trusting a client-supplied user_id would let anyone
+       write events onto anyone else's trail. */
+    const userId = anonId ? await resolveUserId(anonId) : null;
+
     const incoming = Array.isArray(body.events) ? body.events.slice(0, MAX_BATCH) : [];
     const rows = incoming
       .filter((e) => {
@@ -106,7 +139,7 @@ Deno.serve(async (req: Request) => {
       .map((e) => ({
         anon_id: anonId,
         session_id: sessionId,
-        user_id: null,
+        user_id: userId,
         name: str(e.name, 60),
         project_slug: str(e.projectSlug, 160),
         project_name: str(e.projectName, 200),

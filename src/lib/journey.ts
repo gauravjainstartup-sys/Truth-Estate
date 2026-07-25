@@ -1274,11 +1274,17 @@ export function grantPackage(pkg: PackageId, slug?: string): void {
 
 /* Full demo reset — wipe every truthEstate.* key (account, brief, membership,
    unlocks, leads, office) so the browser behaves like a first-time visitor. */
+/* The device id survives a reset for the same reason it survives a refresh:
+   it is not demo state. Clearing it makes the visitor a stranger to the
+   event trail and orphans everything written before the reset. Keep this
+   list in step with KEEP in the layout's pre-hydration script. */
+const IDENTITY_KEYS = new Set(["truthEstate.tgAnon"]);
+
 export function clearAllDemoData(): void {
   if (typeof window === "undefined") return;
   try {
     Object.keys(window.localStorage)
-      .filter((k) => k.startsWith("truthEstate"))
+      .filter((k) => k.startsWith("truthEstate") && !IDENTITY_KEYS.has(k))
       .forEach((k) => window.localStorage.removeItem(k));
   } catch {
     /* ignore */
