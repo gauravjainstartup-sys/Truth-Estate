@@ -82,10 +82,47 @@ revoke all on public.payments      from backoffice;
 
 
 -- ════════════════════════════════════════════════════════════════
--- ISSUING THE KEY
+-- ISSUING THE KEY — IN THE SQL EDITOR, no local machine needed
+--
+-- All of this project's code lives on GitHub with no local checkout, so
+-- the node script is the secondary route. Postgres can mint the token
+-- itself: a JWT is base64url(header).base64url(payload).base64url(HMAC),
+-- and pgcrypto already provides the HMAC.
+--
+--   create extension if not exists pgcrypto with schema extensions;
+--
+--   with s as (select 'PASTE_JWT_SECRET_HERE'::text as secret),
+--   parts as (
+--     select
+--       translate(replace(encode(convert_to('{"alg":"HS256","typ":"JWT"}','utf8'),
+--         'base64'), E'\n',''), '+/=', '-_') as h,
+--       translate(replace(encode(convert_to(json_build_object(
+--           'role','backoffice',
+--           'iss','supabase',
+--           'iat',(extract(epoch from now()))::int,
+--           'exp',(extract(epoch from now() + interval '5 years'))::int
+--         )::text,'utf8'), 'base64'), E'\n',''), '+/=', '-_') as p
+--   )
+--   select parts.h||'.'||parts.p||'.'||
+--     translate(replace(encode(extensions.hmac(parts.h||'.'||parts.p, s.secret, 'sha256'),
+--       'base64'), E'\n',''), '+/=', '-_') as backoffice_key
+--   from parts, s;
+--
+-- Three details that are load-bearing, not incidental:
+--   • replace(..., E'\n', '')  — encode() wraps base64 at 76 chars, and a
+--     newline inside a JWT segment makes the token silently invalid.
+--   • translate(..., '+/=', '-_')  — base64 → base64url. The '=' has no
+--     counterpart in the target, which is how translate() DELETES it;
+--     padding is not allowed in a JWT.
+--   • the secret goes in the query text, so DELETE THE SAVED SNIPPET
+--     afterwards — the SQL editor keeps query history.
+--
+-- Alternative, if you have a local checkout:
 --   node scripts/mint-backoffice-key.mjs
--- It asks for the project's JWT secret (Settings → API → JWT Settings)
--- and prints a token. Use it exactly like the anon key — as both the
+-- It reads the secret from a hidden prompt instead, so it never reaches
+-- shell history.
+--
+-- Either way, use the key exactly like the anon key — as both the
 -- `apikey` header and the Bearer token.
 --
 -- VERIFY — with the backoffice token:
