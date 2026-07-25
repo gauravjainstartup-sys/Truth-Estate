@@ -75,7 +75,24 @@ function send(batch: Queued[], useBeacon = false): void {
       },
       body: payload,
       keepalive: true,
-    }).catch(() => { /* analytics must never surface an error */ });
+    })
+      /* The function answers 200 even when it stored nothing — an unknown
+         event name, a failed insert and a clean write are indistinguishable
+         from the status line alone. Without this check a broken pipeline
+         looks exactly like a working one, which is how report_viewed went
+         unnoticed. Warn only; a metric must never surface an error to the
+         visitor, and must never retry into a loop. */
+      .then(async (res) => {
+        const body = (await res.json().catch(() => null)) as { stored?: number } | null;
+        const stored = body?.stored ?? 0;
+        if (!res.ok || stored < batch.length) {
+          console.warn(
+            `[events] sent ${batch.length}, stored ${stored} (http ${res.status})`,
+            batch.map((e) => e.name),
+          );
+        }
+      })
+      .catch(() => { /* analytics must never surface an error */ });
   } catch { /* same */ }
 }
 
@@ -115,14 +132,22 @@ export function wireEventFlush(): void {
   });
 }
 
-/* Project pages live at /intelligence/<slug>; deriving the slug from the
-   path means every report page is instrumented by the single tracker in
-   the layout, with nothing to remember when pages are added. */
+/* Reports live at /intelligence/projects/<slug> — TWO segments, not one.
+   Deriving the slug from the path means every report page is instrumented
+   by the single tracker in the layout, with nothing to remember when
+   pages are added.
+
+   The earlier pattern was /intelligence/([a-z0-9-]+)$, written against an
+   assumed route rather than the real one. A character class cannot cross a
+   '/', so it matched no report at all and report_viewed never once fired —
+   while /intelligence/projects (the index) DID match and logged itself as a
+   report named "projects". Requiring the projects segment fixes both: the
+   198 report pages match, and the index no longer does.
+
+   Sibling routes (/intelligence/markets/..., /developers/..., /compare/...)
+   are deliberately excluded — they are browsing, not intent, and conflating
+   them with a report view would poison every funnel query built on this. */
 export function projectSlugFromPath(path: string): string | null {
-  const m = path.match(/\/intelligence\/([a-z0-9-]+)\/?$/i);
-  if (!m) return null;
-  const slug = m[1].toLowerCase();
-  /* Index and utility routes under /intelligence are not reports. */
-  const NOT_REPORTS = new Set(["markets", "developers", "compare", "map", "index"]);
-  return NOT_REPORTS.has(slug) ? null : slug;
+  const m = path.match(/\/intelligence\/projects\/([a-z0-9-]+)\/?$/i);
+  return m ? m[1].toLowerCase() : null;
 }
