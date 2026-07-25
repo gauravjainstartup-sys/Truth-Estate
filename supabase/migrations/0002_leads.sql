@@ -68,11 +68,28 @@ alter table public.contact_leads enable row level security;
 -- "your requests" in the Buyer's Office. Anon gets no policy at all, so it
 -- can neither read nor enumerate leads. Inserts arrive only from the
 -- capture-lead Edge Function, which runs as service_role and bypasses RLS.
+-- contact_leads.user_id is TEXT (probed), like payments.user_id and unlike
+-- user_profiles.id / chat_sessions.user_id which are uuid. Cast the RIGHT
+-- side so any index on user_id stays usable.
 drop policy if exists contact_leads_select_own on public.contact_leads;
 create policy contact_leads_select_own on public.contact_leads
   for select to authenticated
-  using (user_id = auth.uid());
+  using (user_id = auth.uid()::text);
 
+
+-- ════════════════════════════════════════════════════════════════
+-- COLUMN TYPES across this schema — probed, not assumed. They are NOT
+-- consistent, and each mismatch has cost a failed migration run:
+--   user_profiles.id        uuid
+--   chat_sessions.user_id   uuid
+--   payments.user_id        text
+--   contact_leads.user_id   text
+--   contact_leads.id        uuid
+-- Probe technique: filter the column with a non-uuid value —
+--   22P02 parse error => uuid      empty result => text
+-- Value format cannot distinguish them; PostgREST serialises a uuid as a
+-- 36-char JSON string either way.
+-- ════════════════════════════════════════════════════════════════
 
 -- ════════════════════════════════════════════════════════════════
 -- AFTER APPLYING, list any pre-existing permissive policies — 0001 showed
