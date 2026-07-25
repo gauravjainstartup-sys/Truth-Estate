@@ -691,6 +691,38 @@ export const TOWER_INTEL: Record<string, TowerIntelMeta> = {
       idealFor: "Sun-first & nuclear families (3 BHK)",
     },
   },
+  "Ashiana Anmol Phase - 3": {
+    file: "tower-intel/ashiana-anmol-phase-3.html",
+    preview: "tower-intel/ashiana-anmol-phase-3-preview.jpg",
+    towers: 5, // blocks B9-B13, Stilt+14, Sohna
+    unitTypes: 4, // 2 BHK 780 + 3 BHK 996 / 1180 / 1262
+    totalUnits: "140+", // 5 blocks × 14 floors × 2 lines
+    sample: {
+      ref: "Block B9 · Line 01",
+      type: "3 BHK 996 · south-facing",
+      sun: "7.3 h/day (winter · best in phase)",
+      sunPct: 92,
+      ventilation: "End line · cross-light on 3 sides",
+      vastu: "South sun-deck · keep the NE open",
+      idealFor: "Sun-first & nuclear families",
+    },
+  },
+  "Signature Global De-Luxe DXP": {
+    file: "tower-intel/signature-global-de-luxe-dxp.html",
+    preview: "tower-intel/signature-global-de-luxe-dxp-preview.jpg",
+    towers: 8, // T1-T8, G+33 high-rise, Sector 37D
+    unitTypes: 3, // 3 BHK 1320 / 1402 + 4 BHK 1739
+    totalUnits: "520+", // 8 towers × 33 floors × 2 lines
+    sample: {
+      ref: "Tower T6 · Line 01",
+      type: "3 BHK 1402 · north-east aspect",
+      sun: "Morning sun · NE aspect",
+      sunPct: 62,
+      ventilation: "Corner line · light on 3 sides",
+      vastu: "North-east — the auspicious Ishan aspect",
+      idealFor: "Vastu-first & morning-light buyers",
+    },
+  },
   // DB project_name is "M3M Elie Saab" (page slug m3m-elie-saab); the db3d
   // pipeline dir keeps the longer marketing slug m3m-residences-by-elie-saab.
   "M3M Elie Saab": {
