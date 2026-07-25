@@ -72,6 +72,18 @@ type InEvent = {
   referrer?: string;
 };
 
+/* A short, stable label per front-end. Deliberately an allow-list rather
+   than the raw host: an unrecognised origin becomes "other" instead of
+   creating a new bucket, so one stray deploy preview cannot fragment
+   every group-by in the funnel. */
+function siteFromOrigin(origin: string | null): string {
+  if (!origin) return "unknown";
+  if (/^https:\/\/(www\.)?truthestate\.in$/.test(origin)) return "truthestate.in";
+  if (/^https:\/\/gauravjainstartup-sys\.github\.io$/.test(origin)) return "pages";
+  if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return "local";
+  return "other";
+}
+
 /* The account this device has already been linked to, if any. One indexed
    lookup on (anon_id, created_at); null is a perfectly normal answer and
    must never block the write — an unattributed event beats a lost one. */
@@ -110,6 +122,17 @@ Deno.serve(async (req: Request) => {
     const anonId = str(body.anonId, 100);
     const sessionId = str(body.sessionId, 100);
     const ua = str(req.headers.get("user-agent"), 400);
+    /* Which site wrote this. Two front-ends now share this table — the
+       Next build and the AI Studio site on truthestate.in — and without a
+       marker every number is a blend of two different products with two
+       different funnels.
+
+       Taken from the Origin header, not the request body, for one
+       practical reason: a body field is something the NEXT integration
+       has to remember to send, and the moment it forgets, the data is
+       silently wrong rather than missing. The browser sets Origin on
+       every cross-origin POST, including sendBeacon. */
+    const site = siteFromOrigin(req.headers.get("origin"));
 
     /* Who this device turned out to be.
 
@@ -143,7 +166,9 @@ Deno.serve(async (req: Request) => {
         name: str(e.name, 60),
         project_slug: str(e.projectSlug, 160),
         project_name: str(e.projectName, 200),
-        props: e.props ?? null,
+        /* Merged rather than nested so existing queries on props keep
+           working, and site is one hop away: props->>'site'. */
+        props: { ...(e.props && typeof e.props === "object" ? e.props : {}), site },
         path: str(e.path, 300),
         referrer: str(e.referrer, 500),
         user_agent: ua,
