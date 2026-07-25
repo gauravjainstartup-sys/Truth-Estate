@@ -44,19 +44,36 @@ const cap = (s: string, n: number) => (s.length > n ? s.slice(0, n) : s);
 
 export async function logTurn(deps: LogDeps, t: Turn): Promise<void> {
   /* No session means no conversation to group this under — an orphan pair
-     of rows would only be noise in the analytics. */
-  if (!t.sessionId || !deps.url || !deps.key) return;
+     of rows would only be noise in the analytics. Logged rather than
+     returned silently: a missing sessionId means the client is not sending
+     one, which looks identical to a broken insert from the outside. */
+  if (!t.sessionId) {
+    console.error("[chatlog] skipped — no sessionId on the request");
+    return;
+  }
+  if (!deps.url || !deps.key) {
+    console.error(`[chatlog] skipped — url=${!!deps.url} key=${!!deps.key}`);
+    return;
+  }
 
+  /* id and created_at are supplied explicitly rather than left to column
+     defaults. The AI Studio app writes this table with client-generated
+     ids, so the columns may well have no default at all — and supplying
+     them is harmless either way, since an explicit value simply overrides
+     a default where one exists. Two failure modes removed for nothing. */
+  const now = new Date().toISOString();
   const base = {
     session_id: t.sessionId,
     anon_id: t.anonId ?? null,
     user_id: null,
     tier: t.tier ?? null,
+    created_at: now,
   };
 
   const rows = [
-    { ...base, role: ROLE_USER, content: cap(t.question, 4000) },
+    { id: crypto.randomUUID(), ...base, role: ROLE_USER, content: cap(t.question, 4000) },
     {
+      id: crypto.randomUUID(),
       ...base,
       role: ROLE_BOT,
       content: cap(t.answer, 8000),
@@ -77,7 +94,9 @@ export async function logTurn(deps: LogDeps, t: Turn): Promise<void> {
       body: JSON.stringify(rows),
     });
     if (!res.ok) {
-      console.error(`[chatlog] insert HTTP ${res.status}: ${(await res.text()).slice(0, 240)}`);
+      console.error(`[chatlog] insert HTTP ${res.status}: ${(await res.text()).slice(0, 400)}`);
+    } else {
+      console.log(`[chatlog] stored 2 rows session=${t.sessionId} latency=${t.latencyMs ?? "-"}ms`);
     }
   } catch (e) {
     console.error(`[chatlog] ${e instanceof Error ? e.message : e}`);
