@@ -1,0 +1,10 @@
+{"ok":true,"brief":{"enough":true,"reportsRead":4,
+"projects":[
+ {"slug":"dlf-the-arbour","name":"DLF The Arbour","microMarket":"Golf Course Road Extension (GCRE)","minPriceCr":9.5,"bhk":4,"truthScore":86,"views":3,"paid":true,"enquired":false,"weight":13,"lastAt":"2026-07-25T13:17:00Z"},
+ {"slug":"dlf-privana-south","name":"DLF Privana South","microMarket":"Southern Peripheral Road (SPR Corridor)","minPriceCr":7.5,"bhk":4,"truthScore":84,"views":2,"paid":false,"enquired":true,"weight":6,"lastAt":"2026-07-25T12:00:00Z"},
+ {"slug":"m3m-golf-hills-phase-2","name":"M3M Golf Hills Phase 2","microMarket":"Southern Peripheral Road (SPR Corridor)","minPriceCr":8.2,"bhk":3,"truthScore":71,"views":1,"paid":false,"enquired":false,"weight":1,"lastAt":"2026-07-25T11:00:00Z"},
+ {"slug":"m3m-capital","name":"M3M Capital","microMarket":"Dwarka Expressway","minPriceCr":2.1,"bhk":2,"truthScore":76,"views":2,"paid":false,"enquired":false,"weight":2,"lastAt":"2026-07-25T10:00:00Z"}],
+"corridor":{"value":["Golf Course Road Extension (GCRE)"],"evidence":"2 of the reports you opened are here","confidence":"weak"},
+"budgetCr":{"value":{"min":7.5,"max":10.5},"evidence":"the report you paid for starts at ₹9.5 Cr","confidence":"strong"},
+"config":{"value":"4 BHK","evidence":"2 of the 4 you viewed","confidence":"weak"},
+"timeline":{"value":null,"evidence":"we've no signal on this","confidence":"none"}}}
