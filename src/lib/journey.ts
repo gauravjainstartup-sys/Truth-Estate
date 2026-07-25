@@ -1025,6 +1025,10 @@ export function saveLead(l: Lead): void {
     /* ignore */
   }
   postLead(l);
+  fireEvent("lead_captured", {
+    projectName: l.project,
+    props: { intent: l.intent, ...(l.docs?.length ? { docs: l.docs } : {}) },
+  });
   // a project-scoped lead is a 'lead'-tier model entitlement (no-op while dormant)
   if (l.project) grantModelAccess(modelSlugFor(l.project), l.phone || l.email, "lead");
 }
@@ -1106,6 +1110,7 @@ export function isUnlocked(slug: string): boolean {
 
 export function unlockProject(slug: string): void {
   if (typeof window === "undefined") return;
+  fireEvent("report_unlocked", { projectSlug: slug });
   try {
     const list = loadUnlocks();
     if (!list.includes(slug)) {
@@ -1208,6 +1213,22 @@ export function isAllAccess(): boolean {
   return loadAccess().all || isMember();
 }
 
+
+/* ── Funnel instrumentation ─────────────────────────────────────
+   Hooked into the mutators rather than the call sites. grantPackage has
+   three callers, saveLead has ten; instrumenting here means every one is
+   covered and a new caller is instrumented by construction rather than
+   by remembering.
+
+   Imported dynamically because events.ts reaches truthGuideChat, which
+   imports this module — a static import would close the cycle. */
+function fireEvent(name: string, detail: Record<string, unknown> = {}): void {
+  if (typeof window === "undefined") return;
+  void import("@/lib/events")
+    .then((m) => m.track(name as never, detail as never))
+    .catch(() => { /* a metric must never break a purchase */ });
+}
+
 /* Grant entitlements after a (dummy) successful payment. */
 export function grantPackage(pkg: PackageId, slug?: string): void {
   const a = loadAccess();
@@ -1219,6 +1240,15 @@ export function grantPackage(pkg: PackageId, slug?: string): void {
   }
   saveAccess(a);
   setSignedIn();
+  /* The money moment. Every purchase path reaches here, so this is the
+     one place the funnel needs to know about. */
+  fireEvent("payment_completed", {
+    projectSlug: slug,
+    props: {
+      package: pkg,
+      amountInr: pkg === "all" ? MEMBERSHIP_INR : pkg === "read3d" ? PROJECT_UNLOCK_INR : READ_FROM_INR,
+    },
+  });
   // fire-and-forget backend entitlement (dormant until the gate URL is set)
   if (pkg === "all") grantModelAccess(PROJECTS.map((p) => modelSlugFor(p.name)), resolveModelSubject(), "member");
   else if (slug) grantModelAccess(slug, resolveModelSubject(), "paid");

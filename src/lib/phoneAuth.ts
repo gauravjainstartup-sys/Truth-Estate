@@ -30,6 +30,7 @@
    ════════════════════════════════════════════════════════════════ */
 import { setSignedIn, loadAccount, saveAccount, emptyBuyData } from "@/lib/journey";
 import { getAnonId, getSessionId } from "@/lib/truthGuideChat";
+import { track } from "@/lib/events";
 
 const SUPABASE_URL = "https://lyetvabfgaidvqrbmaoy.supabase.co";
 const SUPABASE_ANON_KEY =
@@ -168,6 +169,10 @@ export async function verifyOtp(phone10: string, code: string, name?: string): P
     } catch { /* a full quota must not block a verified sign-in */ }
 
     setSignedIn();
+    /* Fired BEFORE the events are claimed server-side, so it lands under
+       the anon_id and is swept up with the rest of the pre-signup trail —
+       putting the sign-in itself in sequence rather than after it. */
+    track("signed_in", { props: { chatsClaimed: data.chatsClaimed ?? 0, leadsClaimed: data.leadsClaimed ?? 0 } });
     console.info(`[signin] linked ${data.chatsClaimed ?? 0} chats, ${data.leadsClaimed ?? 0} leads`);
     return { ok: true };
   } catch {

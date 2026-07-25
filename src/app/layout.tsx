@@ -5,6 +5,7 @@ import "./globals.css";
 import JourneyProvider from "@/components/journey/JourneyProvider";
 import ConsultationProvider from "@/components/consultation/ConsultationProvider";
 import { SITE_URL } from "@/lib/site";
+import EventTracker from "@/components/EventTracker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -149,6 +150,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-[#0a0a0a] text-white">
         <ConsultationProvider>
+          <EventTracker />
           <JourneyProvider>{children}</JourneyProvider>
         </ConsultationProvider>
       </body>

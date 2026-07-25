@@ -18,6 +18,7 @@ import {
 } from "@/lib/truthGuideChat";
 import { isSignedIn } from "@/lib/journey";
 import { normalisePhone, prettyPhone, sendOtp, verifyOtp, saveName, OTP_LENGTH } from "@/lib/phoneAuth";
+import { track } from "@/lib/events";
 
 export default function TruthGuideChat({
   onClose,
@@ -48,6 +49,7 @@ export default function TruthGuideChat({
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 350);
     trackedProjectCount().then(setProjectCount).catch(() => {});
+    track("chat_opened");
   }, []);
 
   async function send(raw: string) {
