@@ -52,7 +52,19 @@ function cors(origin: string | null): Record<string, string> {
    rather than decoding the JWT here: it costs one request and it respects
    expiry, revocation and sign-out, none of which a local signature check
    would notice. */
-async function userFromToken(token: string): Promise<string | null> {
+type TokenCheck = { userId: string | null; detail: string };
+
+async function userFromToken(token: string): Promise<TokenCheck> {
+  /* "unauthenticated" alone sent us guessing for a round trip. The caller
+     needs to know WHICH thing was wrong — a token the auth server
+     rejected, a shape that was never a JWT, or this function missing its
+     own key. None of these leak anything: the detail describes the
+     request, never the token. */
+  if (!ANON_KEY && !SERVICE_KEY) return { userId: null, detail: "function has no key configured" };
+  const parts = token.split(".");
+  if (parts.length !== 3) {
+    return { userId: null, detail: `not a JWT (${parts.length} segment${parts.length === 1 ? "" : "s"}) — this is probably not a Supabase session token` };
+  }
   try {
     const res = await fetch(`${DB_URL}/auth/v1/user`, {
       headers: {
@@ -61,11 +73,15 @@ async function userFromToken(token: string): Promise<string | null> {
       },
       signal: AbortSignal.timeout(6000),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const body = (await res.text()).slice(0, 200);
+      return { userId: null, detail: `auth rejected it: ${res.status} ${body}` };
+    }
     const u = await res.json() as { id?: string };
-    return typeof u?.id === "string" && u.id.length >= 32 ? u.id : null;
-  } catch {
-    return null;
+    if (typeof u?.id === "string" && u.id.length >= 32) return { userId: u.id, detail: "ok" };
+    return { userId: null, detail: "auth accepted the token but returned no user id" };
+  } catch (err) {
+    return { userId: null, detail: `could not reach auth: ${String(err).slice(0, 120)}` };
   }
 }
 
@@ -122,8 +138,12 @@ Deno.serve(async (req: Request) => {
     if (anonId.length < 8) return done({ ok: false, reason: "anonId" });
     if (!token) return done({ ok: false, reason: "accessToken" });
 
-    const userId = await userFromToken(token);
-    if (!userId) return done({ ok: false, reason: "unauthenticated" });
+    const check = await userFromToken(token);
+    if (!check.userId) {
+      console.warn(`[claim-events] rejected: ${check.detail}`);
+      return done({ ok: false, reason: "unauthenticated", detail: check.detail });
+    }
+    const userId = check.userId;
 
     /* chat_sessions carries anon_id too, so the conversation is swept up
        with the browsing. A site that does not write it simply claims 0. */
