@@ -18,7 +18,7 @@ import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import OtpDigits from "../auth/OtpDigits";
 import { saveLead } from "@/lib/journey";
-import { normalisePhone, sendOtp, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
+import { normalisePhone, prettyPhone, sendOtp, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
 
 const basePath = "/Truth-Estate";
 
@@ -51,7 +51,12 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
   const channel = isIndia ? "SMS" : "WhatsApp";
   const numValid = num.replace(/\D/g, "").length >= (isIndia ? 10 : 6);
   const otpComplete = otp.every((d) => d !== "");
-  const sentTo = `${dial} ${num.trim()}`;
+  /* Show the number we ACTUALLY send to, not the raw keystrokes. Typing
+     the STD 0 out of habit rendered "+91 09958777313" — the SMS went to
+     the right handset, but this line is precisely where someone checks
+     their number, so it has to match what was dialled. */
+  const normalised = normalisePhone(num);
+  const sentTo = normalised ? `${dial} ${prettyPhone(normalised)}` : `${dial} ${num.trim()}`;
 
   useEffect(() => {
     if (resendIn <= 0) return;
