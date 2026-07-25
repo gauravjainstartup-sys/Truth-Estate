@@ -69,7 +69,7 @@ export async function callGemini(
   system: string,
   history: Msg[] | undefined,
   question: string,
-  opts: { model: string; fetchImpl: FetchLike; maxTokens?: number },
+  opts: { model: string; fetchImpl: FetchLike; maxTokens?: number; thinkingBudget?: number },
 ): Promise<string | null> {
   const contents = [
     ...(history ?? []).slice(-8).map((m) => ({ role: m.role === "bot" ? "model" : "user", parts: [{ text: m.text }] })),
@@ -83,7 +83,22 @@ export async function callGemini(
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
         contents,
-        generationConfig: { temperature: 0.4, maxOutputTokens: opts.maxTokens ?? 600, topP: 0.9 },
+        generationConfig: {
+          temperature: 0.4,
+          maxOutputTokens: opts.maxTokens ?? 600,
+          topP: 0.9,
+          /* Gemini 2.5 spends "thinking" tokens from the SAME budget as the
+             visible answer. Ranking 97 projects by price burned nearly all of
+             an 800-token allowance on reasoning and the reply was cut off
+             mid-number, while a single-corridor question answered fine — the
+             failure scaled with how much filtering the question needed, which
+             is exactly backwards. These answers are retrieval and formatting
+             over a scoreboard we already supply, so the reasoning buys little
+             and costs the whole reply. */
+          ...(opts.thinkingBudget != null
+            ? { thinkingConfig: { thinkingBudget: opts.thinkingBudget } }
+            : {}),
+        },
       }),
     },
   );
@@ -97,6 +112,13 @@ export async function callGemini(
   };
   const parts = data?.candidates?.[0]?.content?.parts;
   const text = Array.isArray(parts) ? parts.map((p) => p.text ?? "").join("").trim() : "";
+  const finish = data?.candidates?.[0]?.finishReason;
+  /* A truncated answer still returns text, so it never trips the empty-text
+     branch below — log it explicitly or a cut-off reply looks like a normal
+     one in the logs. */
+  if (text && finish === "MAX_TOKENS") {
+    console.error(`[challenge-router] answer TRUNCATED at ${text.length} chars — raise maxTokens or lower thinkingBudget`);
+  }
   if (!text) {
     console.error(
       `[challenge-router] gemini empty text. candidates=${data?.candidates?.length ?? 0}` +
@@ -109,8 +131,19 @@ export async function callGemini(
 /* One output budget for everyone. Answer QUALITY does not vary with
    account status — signing in buys quota, not better answers. Depth is
    bought per project via the read, and that arrives as extra context
-   rather than as a bigger allowance. */
-export const GENERAL_MAX_TOKENS = 800;
+   rather than as a bigger allowance.
+
+   Raised from 800 after live answers were truncated: Gemini 2.5 draws
+   thinking tokens from this same budget, so the harder the filtering the
+   shorter the visible reply. Paired with thinking disabled below, this is
+   now the answer's own allowance rather than a shared one. */
+export const GENERAL_MAX_TOKENS = 1500;
+
+/* Thinking off. TruthGuide filters and formats a scoreboard that is already
+   in the prompt — there is no multi-step reasoning for it to do, and the
+   tokens come straight out of the reply. Also makes answers faster and
+   cheaper. Flash accepts 0; Pro would need >= 128. */
+export const GENERAL_THINKING_BUDGET = 0;
 
 function generalSystemPrompt(ctx: Ctx): string {
   const paid = ctx.paidKnowledge
@@ -195,7 +228,9 @@ export async function routeChallenge(
   const text = await callGemini(opts.apiKey, sys, body.history, question, {
     model: opts.model,
     fetchImpl: opts.fetchImpl,
-    ...(mode === "general" ? { maxTokens: GENERAL_MAX_TOKENS } : {}),
+    ...(mode === "general"
+      ? { maxTokens: GENERAL_MAX_TOKENS, thinkingBudget: GENERAL_THINKING_BUDGET }
+      : {}),
   });
   if (!text) {
     console.error(`[challenge-router] no text returned for mode=${mode}`);
