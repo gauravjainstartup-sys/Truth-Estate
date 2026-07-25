@@ -132,22 +132,17 @@ export function wireEventFlush(): void {
   });
 }
 
-/* Reports live at /intelligence/projects/<slug> — TWO segments, not one.
-   Deriving the slug from the path means every report page is instrumented
-   by the single tracker in the layout, with nothing to remember when
-   pages are added.
+/* DELIBERATELY NOT DERIVED FROM THE PATH ANY MORE.
 
-   The earlier pattern was /intelligence/([a-z0-9-]+)$, written against an
-   assumed route rather than the real one. A character class cannot cross a
-   '/', so it matched no report at all and report_viewed never once fired —
-   while /intelligence/projects (the index) DID match and logged itself as a
-   report named "projects". Requiring the projects segment fixes both: the
-   198 report pages match, and the index no longer does.
+   This used to read the slug out of the URL, and it was wrong twice.
+   First the pattern was written against an assumed route and matched
+   none of the 198 report pages, so report_viewed never fired at all.
+   Then the reports moved to /projects/<seo slug> — and that slug is the
+   PUBLIC address, not the internal id, so a path-derived value would no
+   longer join to entitlements, to the inferred brief, or to any event
+   already stored.
 
-   Sibling routes (/intelligence/markets/..., /developers/..., /compare/...)
-   are deliberately excluded — they are browsing, not intent, and conflating
-   them with a report view would poison every funnel query built on this. */
-export function projectSlugFromPath(path: string): string | null {
-  const m = path.match(/\/intelligence\/projects\/([a-z0-9-]+)\/?$/i);
-  return m ? m[1].toLowerCase() : null;
-}
+   Both failures share one cause: inferring identity from a string that
+   was never meant to carry it. The report page knows exactly which
+   project it is rendering, so it now says so — see ProjectProfile. There
+   is nothing left here to get out of step with the routing. */

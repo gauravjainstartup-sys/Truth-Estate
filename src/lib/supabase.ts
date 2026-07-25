@@ -207,7 +207,11 @@ export async function fetchDevelopersOverview(): Promise<LiveDeveloper[] | null>
 
 export type LiveBacklogFull = {
   id: string;
+  /* The internal identifier — events, entitlements and the inferred
+     brief are all keyed on this. Not the URL. */
   slug: string;
+  /* The public address. See seoSlug(). */
+  seoSlug: string;
   name: string;
   developer: string | null;
   location: string | null;
@@ -346,11 +350,39 @@ export type LiveBacklogFull = {
   altIds?: string[];
 };
 
-/* THE project URL: /intelligence/projects/<slugified DB name>. The DB name is
-   the single source of truth (founder call) — no live-/sample- prefixes. The
+/* The INTERNAL id: the slugified DB name. The DB name is the single source
+   of truth (founder call) — no live-/sample- prefixes. Events, entitlements
+   and the inferred brief are all keyed on this; the public URL is seoSlug()
+   below. The
    old live-<slug> addresses render as redirect stubs in the [slug] route. */
 export function liveSlug(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+/* ── The public address of a report ──────────────────────────────
+   The URL truthestate.in has been serving, and the one Google has
+   indexed:
+
+     /projects/gurugram-real-estate-dlf-the-arbour
+               -golf-course-road-extension-gcre-sector-63
+
+   name + microMarket + location, each slugified, behind a fixed prefix.
+   Verified against every report URL in real traffic — 16 of 16 rebuilt
+   exactly, and all 97 projects produce distinct keys with no collisions.
+
+   It cannot be parsed back apart: the project name and the corridor run
+   together with no delimiter, so "dlf-the-arbour-golf-course-road..."
+   has no findable seam. Everything therefore maps FORWARD from the
+   catalogue — build the address from the row, never read the row from
+   the address — which is also why liveSlug stays the internal id for
+   events, entitlements and the brief. Only the URL changes. */
+export function seoSlug(name: string, microMarket: string | null, location: string | null): string {
+  return [
+    "gurugram-real-estate",
+    liveSlug(name),
+    liveSlug(microMarket ?? ""),
+    liveSlug(location ?? ""),
+  ].filter(Boolean).join("-");
 }
 
 // The whole tracked universe: no score gate, highest-scored first with any
@@ -398,6 +430,7 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
     out.push({
       id: s(r.id) ?? liveSlug(name),
       slug: liveSlug(name),
+      seoSlug: seoSlug(name, s(r.microMarket), s(r.location)),
       name,
       developer: s(r.developer),
       location: s(r.location),

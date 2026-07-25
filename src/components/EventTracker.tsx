@@ -15,7 +15,7 @@ import { useEffect, useRef } from "react";
 import { fetchEntitlements } from "@/lib/entitlements";
 import { AUTH_EVENT } from "@/lib/journey";
 import { usePathname } from "next/navigation";
-import { track, wireEventFlush, projectSlugFromPath } from "@/lib/events";
+import { track, wireEventFlush } from "@/lib/events";
 
 export default function EventTracker() {
   const pathname = usePathname();
@@ -46,14 +46,10 @@ export default function EventTracker() {
     try {
       track("page_viewed");
 
-      const slug = projectSlugFromPath(pathname);
-      if (slug) {
-        /* The strongest intent signal the site produces — someone reading
-           a specific report is further along than anything they type. */
-        track("report_viewed", { projectSlug: slug });
-      } else if (/^\/office(\/|$)/.test(pathname)) {
-        track("office_opened");
-      }
+      /* report_viewed is fired by the report itself, not guessed from the
+         URL — the page knows its project and the path no longer carries
+         the internal id. */
+      if (/^\/office(\/|$)/.test(pathname)) track("office_opened");
     } catch { /* never break a page for a metric */ }
   }, [pathname]);
 

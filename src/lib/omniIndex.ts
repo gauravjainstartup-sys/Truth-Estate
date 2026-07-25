@@ -132,6 +132,7 @@ export async function buildIndex(): Promise<OmniIndex> {
   if (rows && rows.length) {
     const projects: OmniProject[] = rows.map((r) => ({
       slug: r.slug,
+      seoSlug: r.seoSlug,
       name: r.name,
       developer: r.developer,
       location: [r.location, r.microMarket].filter(Boolean).join(" · ") || null,

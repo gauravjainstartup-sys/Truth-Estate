@@ -1,6 +1,7 @@
 "use client";
 
 import type { GeoCat } from "@/lib/projects";
+import { projectHref } from "@/lib/projectHref";
 
 /* Shared kit for the two street-map editions (Google + OSM fallback), so the
    founder-approved 2030 treatment exists exactly once: category glyphs that
@@ -126,7 +127,7 @@ export function MapCard({ sel, projectName, onClose }: { sel: MapSel; projectNam
           </div>
           <div className="mt-3 flex gap-2">
             {sel.d3 && (
-              <a href={`${basePath}/intelligence/projects/${sel.slug}/#tower-intel`}
+              <a href={`${projectHref(sel)}/#tower-intel`}
                 className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-[#B29668] bg-[#0B1F1A] px-3 py-2.5 text-[0.72rem] font-bold text-white transition-opacity hover:opacity-90">
                 <GlyphIcon name="sun" className="h-3.5 w-3.5 text-[#B29668]" />
                 Sun &amp; Vastu 3D

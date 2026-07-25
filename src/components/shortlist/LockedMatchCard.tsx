@@ -1,6 +1,7 @@
 "use client";
 
 import { streetAddress } from "@/components/intelligence/ProjectOptionCard";
+import { projectHref } from "@/lib/projectHref";
 import type { ProjectIntel } from "@/lib/projects";
 import type { BuyData, DNA } from "@/lib/journey";
 import { fitPoints, beatsReason } from "@/lib/shortlist";
@@ -127,7 +128,7 @@ export default function LockedMatchCard({
             </button>
           ) : (
             <a
-              href={`${basePath}/intelligence/projects/${p.slug}`}
+              href={projectHref(p)}
               className="mt-[18px] flex items-center justify-center gap-2 rounded-[13px] bg-[#0b1f1a] py-4 text-[0.9rem] font-semibold text-white transition-colors duration-300 hover:bg-[#12352c]"
             >
               Open the full file →

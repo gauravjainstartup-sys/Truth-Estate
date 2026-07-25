@@ -33,7 +33,12 @@ export function scoreTag(score: number | null | undefined): ScoreTag | null {
 }
 
 export type OmniProject = {
+  /* Internal id — matches events.project_slug and the entitlement keys. */
   slug: string;
+  /* Public address: /projects/<seoSlug>. Optional because an index built
+     by an older deploy will not have it; call sites fall back to the
+     internal slug, which still resolves through a redirect stub. */
+  seoSlug?: string;
   name: string;
   developer: string | null;
   location: string | null;

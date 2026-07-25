@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { track } from "@/lib/events";
 import { useRouter } from "next/navigation";
 import Logo from "../Logo";
 import { useConsultation } from "../consultation/ConsultationProvider";
@@ -261,9 +262,22 @@ export default function ProjectProfile({
   const [threeDAccess, setThreeDAccess] = useState(false);
   const [challengeOpen, setChallengeOpen] = useState(false);
   useEffect(() => { setReadAccess(hasReadAccess(p.slug)); setThreeDAccess(has3DAccess(p.slug)); }, [p.slug]);
+
+  /* The strongest intent signal the site produces: someone reading a
+     specific report is further along than anything they type. Fired from
+     the report rather than derived from the URL, because the page knows
+     which project it is and the address does not carry the internal id —
+     /projects/<seo slug> is the public form, while events, entitlements
+     and the brief are all keyed on p.slug. Guessing that from a string
+     is what broke report_viewed twice. Sample reads are excluded: nobody
+     is shopping for the demo. */
+  useEffect(() => {
+    if (sample) return;
+    track("report_viewed", { projectSlug: p.slug, projectName: p.name });
+  }, [p.slug, p.name, sample]);
   const live = useLiveVitals(p.name);
   const locked = !sample && !readAccess;
-  const SAMPLE_HREF = `${basePath}/intelligence/projects/sample-read`;
+  const SAMPLE_HREF = `${basePath}/projects/sample-read`;
   // "Get Independent Advice" from a report is about THIS project — open the
   // consultation with the project as its source (the advisor preps for it),
   // and if the visitor already shared a brief (Match Score / Buyer Office),

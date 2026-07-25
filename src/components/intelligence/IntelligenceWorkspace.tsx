@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { projectHref } from "@/lib/projectHref";
 import Logo from "../Logo";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import type { ConsultContext } from "@/lib/consultation";
@@ -108,7 +109,7 @@ export default function IntelligenceWorkspace({ index = EMPTY_INDEX }: { index?:
        CanvasView falls back to the TruthGuide brief if it's unreachable. */
     const parsed = parseAsk(q, index);
     if (parsed.intent === "navigate" && parsed.project) {
-      window.location.href = `${basePath}/intelligence/projects/${parsed.project.slug}`;
+      window.location.href = projectHref(parsed.project);
       return;
     }
     setView({ type: "canvas", query: q, parsed });
@@ -373,7 +374,7 @@ function HomeView({ doSearch, recentSearches, index }: { doSearch: (q: string) =
             )}
             {hits.map((p) => (
               <div key={p.slug} className="flex items-center justify-between gap-3 border-b border-[#1a1a1a]/[0.04] px-5 py-3 last:border-b-0">
-                <a href={`${basePath}/intelligence/projects/${p.slug}`} className="min-w-0 flex-1">
+                <a href={projectHref(p)} className="min-w-0 flex-1">
                   <span className="font-serif text-[0.95rem] font-medium text-[#1a1a1a]">{p.name}</span>
                   {p.has3D && (
                     <span className="ml-2 inline-flex items-center gap-1 rounded border border-[#c9a96e]/60 px-1.5 py-0.5 text-[8px] font-bold tracking-[0.08em] text-[#c9a96e]"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-2 w-2"><path d="M12 2 21 7v10l-9 5-9-5V7z" /><path d="M3 7l9 5 9-5M12 12v10" /></svg>SUN &amp; VASTU</span>
@@ -384,7 +385,7 @@ function HomeView({ doSearch, recentSearches, index }: { doSearch: (q: string) =
                 </a>
                 <div className="flex shrink-0 items-center gap-2">
                   {p.score != null && <span className="rounded-md bg-[#1e6b45]/[0.08] px-2 py-1 font-mono text-[0.78rem] font-bold text-[#1e6b45]">{p.score}</span>}
-                  <a href={`${basePath}/intelligence/projects/${p.slug}`}
+                  <a href={projectHref(p)}
                     className="rounded-md border border-[#1e6b45]/35 px-2.5 py-1 text-[0.68rem] font-medium text-[#1e6b45]">Report</a>
                   {p.advisorFile && (
                     <a href={`${basePath}/${p.advisorFile}`}
@@ -857,7 +858,7 @@ function CanvasView({ query, parsed, index, onFallback }: {
                     {r.p.advisorFile && (
                       <a href={`${basePath}/${r.p.advisorFile}`} className="rounded-md bg-[#1e6b45] px-3 py-1.5 text-center text-[0.66rem] font-bold text-white">Open Sun &amp; Vastu 3D</a>
                     )}
-                    <a href={`${basePath}/intelligence/projects/${r.p.slug}`} className="rounded-md border border-[#1e6b45]/35 px-3 py-1.5 text-center text-[0.66rem] font-medium text-[#1e6b45]">Full report</a>
+                    <a href={projectHref(r.p)} className="rounded-md border border-[#1e6b45]/35 px-3 py-1.5 text-center text-[0.66rem] font-medium text-[#1e6b45]">Full report</a>
                   </div>
                 </div>
               </div>

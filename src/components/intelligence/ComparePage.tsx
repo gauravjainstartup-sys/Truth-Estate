@@ -1,6 +1,7 @@
 "use client";
 
 import Logo from "../Logo";
+import { projectHref } from "@/lib/projectHref";
 import { useJourney } from "../journey/JourneyProvider";
 import { RATING_META, FIN_METRICS, type FinRating } from "@/lib/developers";
 import { fmtPsf, pillars, priceJourney, deliveryOutlook, roiModel, type ProjectIntel, type Pillar } from "@/lib/projects";
@@ -172,7 +173,7 @@ function ProjectHead({ p }: { p: ProjectIntel }) {
       : "border-[#1a1a1a]/15 bg-white/60 text-[#1a1a1a]/55";
   return (
     <div className="min-w-0">
-      <a href={`${basePath}/intelligence/projects/${p.slug}`}
+      <a href={projectHref(p)}
         className="font-serif text-[1.25rem] font-medium leading-[1.15] text-[#1a1a1a] underline decoration-[#c9a96e]/30 underline-offset-4 hover:text-[#1e6b45] md:text-[1.6rem]">
         {p.name}
       </a>

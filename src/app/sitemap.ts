@@ -41,7 +41,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // pipeline (one URL per v3 row, DB name as source of truth); legacy
   // live-* stubs and the sample dossier stay out of the sitemap.
   const rows = (await fetchBacklogFull()) ?? [];
-  rows.forEach((r) => add(`/intelligence/projects/${r.slug}`, 0.8, "weekly"));
+  /* The PUBLIC address, not the internal id — this file is what Google
+     reads, so a mismatch here is the whole migration wasted. */
+  rows.forEach((r) => add(`/projects/${r.seoSlug}`, 0.8, "weekly"));
   DEVELOPERS.forEach((d) => add(`/intelligence/developers/${d.slug}`, 0.6, "monthly"));
   MARKETS.forEach((m) => add(`/intelligence/markets/${m.slug}`, 0.6, "monthly"));
   // compare pages: live project pairs (scored set) + curated developer/market pairs
