@@ -134,7 +134,7 @@ export async function sendOtp(phone10: string): Promise<AuthResult> {
    conversation still under anon_id, name going nowhere, and no answer to
    "who logged in". chat-signin re-verifies server-side, creates or finds
    the account, and claims this device's history in one call. */
-export async function verifyOtp(phone10: string, code: string): Promise<AuthResult> {
+export async function verifyOtp(phone10: string, code: string, name?: string): Promise<AuthResult> {
   try {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/chat-signin`, {
       method: "POST",
@@ -148,6 +148,7 @@ export async function verifyOtp(phone10: string, code: string): Promise<AuthResu
         otp: code.replace(/\D/g, ""),
         anonId: getAnonId(),
         sessionId: getSessionId(),
+        ...(name?.trim() ? { name: name.trim() } : {}),
       }),
       signal: AbortSignal.timeout(20000),
     });

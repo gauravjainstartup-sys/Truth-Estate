@@ -17,7 +17,8 @@ import { useEffect, useState } from "react";
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import OtpDigits from "../auth/OtpDigits";
-import { saveLead, setSignedIn } from "@/lib/journey";
+import { saveLead } from "@/lib/journey";
+import { normalisePhone, sendOtp, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
 
 const basePath = "/Truth-Estate";
 
@@ -30,7 +31,7 @@ const TICKS = [
   "Independent, on-record advice",
   "Your negotiation, tracked end-to-end",
 ];
-const OTP_LEN = 4;
+const OTP_LEN = OTP_LENGTH;
 
 const FIELD =
   "w-full rounded-md border border-[#1a1a1a]/[0.16] bg-white px-4 py-3 text-[0.95rem] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#1a1a1a]/35 focus:border-[#c9a96e]";
@@ -44,6 +45,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
   const [otp, setOtp] = useState<string[]>(Array(OTP_LEN).fill(""));
   const [err, setErr] = useState("");
   const [resendIn, setResendIn] = useState(0);
+  const [busy, setBusy] = useState(false);
 
   const isIndia = dial === "+91";
   const channel = isIndia ? "SMS" : "WhatsApp";
@@ -57,17 +59,41 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
     return () => clearTimeout(id);
   }, [resendIn]);
 
-  function sendCode() {
+  async function sendCode() {
+    if (busy) return;
     if (!name.trim()) { setErr("Please enter your name."); return; }
     if (!numValid) { setErr("Enter a valid mobile number."); return; }
-    setErr(""); setStep("otp"); setResendIn(24);
+    /* MSG91's DLT templates are registered for Indian numbers only, so an
+       international number would take the money and never arrive. Say so
+       rather than pretend to send. */
+    if (!isIndia) { setErr("We can only verify Indian mobile numbers right now."); return; }
+    const ten = normalisePhone(num);
+    if (!ten) { setErr("That doesn't look like a valid Indian mobile number."); return; }
+
+    setErr(""); setBusy(true);
+    const r = await sendOtp(ten);
+    setBusy(false);
+    if (!r.ok) { setErr(r.error); return; }
+    setStep("otp"); setResendIn(24);
   }
 
-  function verify(e: React.FormEvent) {
+  async function verify(e: React.FormEvent) {
     e.preventDefault();
+    if (busy) return;
     if (!otpComplete) { setErr(`Enter the ${OTP_LEN}-digit code.`); return; }
+    const ten = normalisePhone(num);
+    if (!ten) { setErr("That number doesn't look right — go back and check it."); return; }
+
+    setErr(""); setBusy(true);
+    /* This screen collects the name before the number, so it travels with
+       the verification and the profile lands complete in one round trip.
+       verifyOtp signs in only after the server has confirmed the code —
+       it does not simply set a flag, which is what this screen used to do. */
+    const r = await verifyOtp(ten, otp.join(""), name.trim());
+    setBusy(false);
+    if (!r.ok) { setErr(r.error); return; }
+
     saveLead({ name: name.trim(), email: "", phone: `${dial} ${num}`.trim(), intent: "buyer-office", createdAt: Date.now() });
-    setSignedIn();         // registration only — opens the office, unlocks no reads
     onSignedIn();          // reveal the office (dashboard) behind…
     openOnboarding();      // …the onboarding brief. For now everyone onboards
                            // after sign-in; closing it lands in the dashboard.
@@ -135,8 +161,8 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
 
               {err && <p className="mt-3 text-[0.8rem] text-[#b3402a]">{err}</p>}
 
-              <button type="submit" className="mt-6 w-full rounded-md bg-[#1e6b45] px-4 py-3 text-[0.9rem] font-medium tracking-[0.02em] text-white transition-colors hover:bg-[#238c55]">
-                Send code &rarr;
+              <button type="submit" disabled={busy} className="mt-6 w-full rounded-md bg-[#1e6b45] px-4 py-3 text-[0.9rem] font-medium tracking-[0.02em] text-white transition-colors hover:bg-[#238c55] disabled:opacity-60">
+                {busy ? "Sending\u2026" : "Send code \u2192"}
               </button>
               <p className="mt-3 text-[0.75rem] leading-relaxed text-[#1a1a1a]/40">
                 We&rsquo;ll send a {OTP_LEN}-digit code {isIndia ? "by SMS" : "on WhatsApp"}{" "}to confirm it&rsquo;s you.
@@ -165,16 +191,29 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
 
               {err && <p className="mt-3 text-[0.8rem] text-[#b3402a]">{err}</p>}
 
-              <button type="submit" className="mt-6 w-full rounded-md bg-[#1e6b45] px-4 py-3 text-[0.9rem] font-medium tracking-[0.02em] text-white transition-colors hover:bg-[#238c55]">
-                Verify &amp; enter &rarr;
+              <button type="submit" disabled={busy} className="mt-6 w-full rounded-md bg-[#1e6b45] px-4 py-3 text-[0.9rem] font-medium tracking-[0.02em] text-white transition-colors hover:bg-[#238c55] disabled:opacity-60">
+                {busy ? "Verifying\u2026" : "Verify \u0026 enter \u2192"}
               </button>
               <p className="mt-3 text-[0.78rem] text-[#1a1a1a]/45">
                 Didn&rsquo;t get it?{" "}
                 {resendIn > 0
                   ? <span className="text-[#1a1a1a]/40">Resend in 0:{String(resendIn).padStart(2, "0")}</span>
-                  : <button type="button" onClick={() => setResendIn(24)} className="font-medium text-[#9a7a2e] hover:underline">Resend code</button>}
+                  : <button
+                      type="button"
+                      disabled={busy}
+                      onClick={async () => {
+                        if (busy) return;
+                        const ten = normalisePhone(num);
+                        if (!ten) { setErr("That number doesn't look right."); return; }
+                        setErr(""); setBusy(true);
+                        const r = await sendOtp(ten);
+                        setBusy(false);
+                        if (r.ok) setResendIn(24); else setErr(r.error);
+                      }}
+                      className="font-medium text-[#9a7a2e] hover:underline disabled:opacity-50"
+                    >Resend code</button>}
               </p>
-              <p className="mt-4 text-[0.72rem] text-[#1a1a1a]/35">Demo: any {OTP_LEN}-digit code opens the office.</p>
+
             </form>
           )}
         </div>
