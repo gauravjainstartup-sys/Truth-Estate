@@ -1,10 +1,13 @@
 /* ════════════════════════════════════════════════════════════════
    CAPTURE-LEAD CORE — pure logic, no Deno globals.
 
-   Receives a lead from the browser and writes it to public.leads with
-   the service role. The anon key has no grant on that table, so this
-   function is the only way in: a lead cannot be read, enumerated or
-   forged from the public bundle.
+   Receives a lead from the browser and writes it to public.contact_leads
+   with the service role. That table is reused rather than duplicated — it
+   already carries name / email / phone / project_name / message / user_id
+   and holds live rows, so a second table would split lead capture in two.
+
+   The anon key has no grant on it, so this function is the only way in:
+   a lead cannot be read, enumerated or forged from the public bundle.
 
    Fails SOFT by contract. The caller treats this as fire-and-forget —
    a rejected or unreachable write must never cost the visitor their
@@ -86,7 +89,8 @@ export function validate(body: LeadBody): { ok: true; row: Record<string, unknow
       email,
       phone,
       intent,
-      project,
+      // The table's own column is project_name, not project.
+      project_name: project,
       project_slug: project ? slugify(project) : null,
       docs: docs && docs.length ? docs : null,
       identity: clean(body.identity, CAP.identity),
@@ -115,7 +119,7 @@ export async function captureLead(
 
   const row = { ...checked.row, user_agent: clean(opts.userAgent, CAP.ua) };
 
-  const res = await opts.fetchImpl(`${opts.url}/rest/v1/leads`, {
+  const res = await opts.fetchImpl(`${opts.url}/rest/v1/contact_leads`, {
     method: "POST",
     headers: {
       apikey: opts.key,
@@ -131,6 +135,6 @@ export async function captureLead(
     return { ok: false, reason: `insert failed (${res.status})` };
   }
 
-  console.log(`[capture-lead] stored intent=${row.intent} project=${row.project ?? "-"} contact=${row.phone ? "phone" : "email"}`);
+  console.log(`[capture-lead] stored intent=${row.intent} project=${row.project_name ?? "-"} contact=${row.phone ? "phone" : "email"}`);
   return { ok: true };
 }

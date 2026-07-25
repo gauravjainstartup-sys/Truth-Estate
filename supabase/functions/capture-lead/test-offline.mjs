@@ -55,7 +55,7 @@ ok(empty.ok && empty.row.docs === null, "empty docs array → null, not []");
     { ...DB, fetchImpl: f, userAgent: "UA/1" },
   );
   ok(r.ok === true, "successful insert → ok:true");
-  ok(calls[0].url === "https://db.example/rest/v1/leads", "posts to the leads table");
+  ok(calls[0].url === "https://db.example/rest/v1/contact_leads", "posts to contact_leads (reused, not duplicated)");
   ok(calls[0].headers.Authorization === "Bearer svc-key", "uses the service role key");
   ok(calls[0].body.user_agent === "UA/1", "user_agent captured server-side");
   ok(calls[0].body.session_id === "s-1", "session_id carried for stitching");
