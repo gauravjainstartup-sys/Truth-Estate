@@ -1559,6 +1559,18 @@ function scoreBreakdownHTML(fscore){
     <div class="fs-ledger">${rows}<div class="fsl-tot"><span>Composite</span><b>${fscore.s}<span> / 100</span></b></div></div>
     <div class="fsr-note">${note}</div>
   </div>`;}
+/* per-room sun window — a room's facing (from the sanctioned vastu plate) → the direct-beam
+   period on the season benchmark. Ported from the reference engine (Privana). */
+const ROOM_AZ={N:0,NE:45,E:90,SE:135,S:180,SW:225,W:270,NW:315};
+function angDiff(a,b){let d=Math.abs(a-b)%360;return d>180?360-d:d;}
+function fmtT(h){const a=Math.floor(h),m=Math.round((h-a)*60);const ap=a<12?'am':'pm';let hh=a%12;if(hh===0)hh=12;return hh+(m?':'+String(m).padStart(2,'0'):'')+ap;}
+function roomSunWindow(dir,seasonDecl){
+  const _sd=decl;decl=seasonDecl;const[sr,ss]=dayB();
+  const rn=ROOM_AZ[dir]||0;let first=null,last=null,hrs=0;const step=0.1;
+  for(let h=sr;h<=ss;h+=step){const s=sunTrue(h);if(s.alt<=0.03)continue;
+    if(angDiff(s.az*180/Math.PI,rn)<78){if(first===null)first=h;last=h;hrs+=step;}}
+  decl=_sd;return{first,last,hrs,sr,ss};
+}
 function openFlat(t,uid,keepFloor){
   selUnit=uid;
   const rec=((selData||[]).find(x=>x.u.id===uid))||t.units.map(u=>({u,st:unitStats(t,u,2,0.3)})).find(x=>x.u.id===uid);
@@ -1735,83 +1747,44 @@ function openFlat(t,uid,keepFloor){
         ${m.barW?`<div class="mrow-bar"><div class="mrow-bfill" style="width:${m.barW};background:${m.barC}"></div></div>`:''}
       </div>
     </div>`).join('');
-  /* TAB 3: ROOMS — carpet / balcony split with sqft from plan dims */
-  const rooms45=[
-    {n:'Living/Dining/Family lounge',d:"25\u20185\u2033 \u00d7 15\u20182\u2033",sqft:386,tag:'primary living',type:'carpet',sp:true},
-    {n:'Outdoor deck',d:"6\u201911\u2033 \u00d7 28\u201910\u2033",sqft:199,tag:'perimeter view',type:'balcony',sp:true},
-    {n:'Master bedroom',d:"16\u20188\u2033 \u00d7 12\u20184\u2033",sqft:205,tag:'+ toilet/dress',type:'carpet'},
-    {n:'Bedroom 1',d:"12\u201811\u2033 \u00d7 11\u20186\u2033",sqft:149,tag:'+ balcony',type:'carpet'},
-    {n:'Bedroom 2',d:"12\u201811\u2033 \u00d7 12\u20186\u2033",sqft:162,tag:'+ balcony',type:'carpet'},
-    {n:'Junior master',d:"10\u20186\u2033 \u00d7 14\u20180\u2033",sqft:148,tag:'+ JM balcony',type:'carpet'},
-    {n:'Home office',d:"4\u20186\u2033 \u00d7 7\u201810\u2033",sqft:36,tag:'compact WFH',type:'carpet'},
-    {n:'Kitchen',d:"12\u20188\u2033 \u00d7 8\u20182\u2033",sqft:104,tag:'open, utility-linked',type:'carpet'},
-    {n:'Utility / staff room',d:"7\u20182\u2033 \u00d7 7\u20181\u2033",sqft:51,tag:'live-in staff',type:'carpet'},
-    {n:'Puja',d:'\u2014',sqft:6,tag:'est',type:'carpet'},
-    {n:'Powder room',d:"5\u20183\u2033 \u00d7 5\u20189\u2033",sqft:31,tag:'guest WC',type:'carpet'},
-    {n:'Private lift lobby',d:"5\u201911\u2033 \u00d7 8\u20184\u2033",sqft:49,tag:'exclusive entry',type:'carpet'},
-    {n:'VRF / utility balcony',d:"5\u201911\u2033 \u00d7 12\u20186\u2033",sqft:74,tag:'service balcony',type:'balcony'},
-    {n:'Bedroom 1 balcony',d:"11\u20182\u2033 \u00d7 4\u201911\u2033",sqft:55,tag:'open-to-sky',type:'balcony'},
-    {n:'Bedroom 2 balcony',d:"9\u20196\u2033 \u00d7 5\u20187\u2033",sqft:53,tag:'open-to-sky',type:'balcony'},
-    {n:'JM / home-office balcony',d:"4\u201911\u2033 \u00d7 12\u20186\u2033",sqft:62,tag:'open-to-sky',type:'balcony'},
-  ];
-  const rooms35=[
-    {n:'Living/Dining/Family lounge',d:"25\u20187\u2033 \u00d7 15\u20183\u2033",sqft:390,tag:'primary living',type:'carpet',sp:true},
-    {n:'Outdoor deck',d:"25\u20187\u2033 \u00d7 6\u201911\u2033",sqft:177,tag:'view side',type:'balcony',sp:true},
-    {n:'Master bedroom',d:"16\u20181\u2033 \u00d7 11\u20186\u2033",sqft:185,tag:'+ dress & toilet',type:'carpet'},
-    {n:'Master dressing',d:"6\u201911\u2033 \u00d7 5\u201910\u2033",sqft:40,tag:'walk-in',type:'carpet'},
-    {n:'Bedroom 1',d:"13\u20189\u2033 \u00d7 11\u20180\u2033",sqft:151,tag:'+ balcony & toilet',type:'carpet'},
-    {n:'Bedroom 2',d:"13\u20186\u2033 \u00d7 11\u20183\u2033",sqft:152,tag:'+ balcony & toilet',type:'carpet'},
-    {n:'Kitchen',d:"11\u201910\u2033 \u00d7 8\u20183\u2033",sqft:98,tag:'open, utility-linked',type:'carpet'},
-    {n:'Utility / staff room',d:"8\u20188\u2033 \u00d7 7\u20184\u2033",sqft:64,tag:'live-in staff',type:'carpet'},
-    {n:'Powder room',d:"6\u20180\u2033 \u00d7 4\u20187\u2033",sqft:28,tag:'guest WC',type:'carpet'},
-    {n:'Private lift lobby',d:"6\u201910\u2033 \u00d7 5\u201911\u2033",sqft:40,tag:'exclusive entry',type:'carpet'},
-    {n:'VRF / utility balcony',d:"13\u20182\u2033 \u00d7 5\u201911\u2033",sqft:78,tag:'service balcony',type:'balcony'},
-    {n:'Bedroom 1 balcony',d:"11\u20183\u2033 \u00d7 4\u20185\u2033",sqft:50,tag:'open-to-sky',type:'balcony'},
-    {n:'Bedroom 2 balcony',d:"11\u20182\u2033 \u00d7 5\u201911\u2033",sqft:66,tag:'open-to-sky',type:'balcony'},
-    {n:'Master balcony',d:"11\u20185\u2033 \u00d7 5\u201911\u2033",sqft:68,tag:'open-to-sky',type:'balcony'},
-  ];
-  const rl=[];   // room-by-room dims arrive with the Birla floor plans
-  const carpetRooms=rl.filter(r=>r.type==='carpet');
-  const balcRooms=rl.filter(r=>r.type==='balcony');
-  const totalCarpet=carpetRooms.reduce((a,r)=>a+r.sqft,0);
-  const totalBalc=balcRooms.reduce((a,r)=>a+r.sqft,0);
+  /* TAB 3: ROOMS - per-room sun: each room's facing (from the sanctioned vastu plate) -> its winter-sun window */
+  const sunRk=cfg.beds===4?['living','masterBed','bed2','bed3','kitchen','study']:['living','masterBed','bed2','bed3','kitchen'];
+  const sunNm={living:'Living / Dining',masterBed:'Master bedroom',bed2:'Bedroom 2',bed3:'Bedroom 3 / JM',kitchen:'Kitchen',study:'Home office'};
+  const sunRooms=sunRk.map(k=>{const dir=vastuRoomScore(k,compass,plateCfg(t,u),u.mir).dir;const w=roomSunWindow(dir,decl);
+    const has=w.first!=null&&w.hrs>0.2,noon=(w.sr+w.ss)/2;
+    const kind=!has?'none':(w.last<=noon+0.4?'morning':w.first>=noon-0.4?'afternoon':'all-day');
+    return {label:sunNm[k]||k,dir,has,first:w.first,last:w.last,hrs:w.hrs,kind};});
+  const kindLabel={morning:'Morning sun',afternoon:'Afternoon sun','all-day':'Sun most of the day',none:'No direct winter sun'};
+  const kindCol={morning:'#f5b942',afternoon:'#f5a04a','all-day':'#67d6a0',none:'#8790a6'};
+  const litN=sunRooms.filter(r=>r.has).length,benchL=(benchShort[String(decl)]||'winter').toLowerCase();
   document.getElementById('fp-rooms').innerHTML=`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:13px">
-      <div style="background:rgba(109,191,136,.08);border:1px solid rgba(109,191,136,.3);border-radius:9px;padding:10px 12px">
-        <div style="font:600 10px/1 ui-monospace;letter-spacing:.1em;text-transform:uppercase;color:#6dbf88;margin-bottom:5px">Carpet area</div>
-        <div style="font:700 22px/1 'Geist';color:#23272e">${cfg.carpetSqft?cfg.carpetSqft.toLocaleString():'—'} <span style="font-size:12px;font-weight:500;color:#6dbf88">sq ft</span></div>
-        <div style="font:500 9.5px/1.4 ui-monospace;color:var(--muted);margin-top:4px">developer-stated (RERA basis)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px">
+      <div style="background:var(--surf);border:1px solid var(--line);border-radius:9px;padding:10px 12px">
+        <div style="font:600 10px/1 ui-monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:5px">Saleable area</div>
+        <div style="font:700 22px/1 'Geist';color:var(--text)">${cfg.saleable.toLocaleString()} <span style="font-size:12px;font-weight:500;color:var(--muted)">sq ft</span></div>
+        <div style="font:500 9.5px/1.4 ui-monospace;color:var(--muted);margin-top:4px">${cfg.deck||'private deck'}${cfg.extra?' · '+cfg.extra:''}</div>
       </div>
-      <div style="background:rgba(79,195,217,.08);border:1px solid rgba(79,195,217,.3);border-radius:9px;padding:10px 12px">
-        <div style="font:600 10px/1 ui-monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin-bottom:5px">Balcony / deck area</div>
-        <div style="font:700 22px/1 'Geist';color:#23272e">${totalBalc.toLocaleString()} <span style="font-size:12px;font-weight:500;color:var(--teal)">sq ft</span></div>
-        <div style="font:500 9.5px/1.4 ui-monospace;color:var(--muted);margin-top:4px">${balcRooms.length} open-to-sky areas</div>
+      <div style="background:var(--surf);border:1px solid var(--line);border-radius:9px;padding:10px 12px">
+        <div style="font:600 10px/1 ui-monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin-bottom:5px">Rooms in ${benchL} sun</div>
+        <div style="font:700 22px/1 'Geist';color:var(--text)">${litN} <span style="font-size:12px;font-weight:500;color:var(--muted)">of ${sunRooms.length}</span></div>
+        <div style="font:500 9.5px/1.4 ui-monospace;color:var(--muted);margin-top:4px">catch direct sun on the ${benchL} day</div>
       </div>
     </div>
-    <div style="font:600 9.5px/1 ui-monospace;letter-spacing:.1em;text-transform:uppercase;color:#6dbf88;margin-bottom:7px">Carpet rooms</div>
-    <div class="room-grid" style="margin-bottom:13px">
-      ${carpetRooms.map(r=>`<div class="room-card${r.sp?' room-special':''}">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div class="room-name" style="flex:1;min-width:0">${r.n}</div>
-          <div style="font:700 11px/1 'Geist';color:#6dbf88;white-space:nowrap;margin-left:6px">${r.sqft} ft\u00b2</div>
+    <div style="font:600 9.5px/1 ui-monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:8px">Sun through the home</div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
+      ${sunRooms.map(r=>`<div style="display:flex;align-items:center;gap:10px;background:var(--surf);border:1px solid var(--line);border-radius:8px;padding:9px 12px">
+        <div style="flex:1;min-width:0">
+          <div style="font:600 11px/1.1 'Geist';color:var(--text)">${r.label}</div>
+          <div style="font:500 9px/1.3 ui-monospace;color:var(--muted);margin-top:3px">${r.dir}-facing${r.has?' · '+fmtT(r.first)+'–'+fmtT(r.last):''}</div>
         </div>
-        <div class="room-dim">${r.d}</div>
-        ${r.tag?`<span class="room-tag">${r.tag}</span>`:''}
+        <div style="text-align:right;white-space:nowrap">
+          <div style="font:700 10.5px/1 'Geist';color:${kindCol[r.kind]}">${kindLabel[r.kind]}</div>
+          <div style="font:500 9px/1 ui-monospace;color:var(--muted);margin-top:3px">${r.has?r.hrs.toFixed(1)+'h direct':'—'}</div>
+        </div>
       </div>`).join('')}
     </div>
-    <div style="font:600 9.5px/1 ui-monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin-bottom:7px">Open-to-sky (balconies &amp; decks)</div>
-    <div class="room-grid" style="margin-bottom:10px">
-      ${balcRooms.map(r=>`<div class="room-card" style="border-color:rgba(79,195,217,.25);background:rgba(79,195,217,.04)">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div class="room-name" style="flex:1;min-width:0;color:var(--teal)">${r.n}</div>
-          <div style="font:700 11px/1 'Geist';color:var(--teal);white-space:nowrap;margin-left:6px">${r.sqft} ft\u00b2</div>
-        </div>
-        <div class="room-dim">${r.d}</div>
-        <span class="room-tag" style="background:rgba(79,195,217,.12);color:var(--teal)">${r.tag}</span>
-      </div>`).join('')}
-    </div>
-    <div style="font:500 9px/1.5 ui-monospace;color:#abaea1">Individual room areas from plan dimensions \u2014 rooms sum to ${totalCarpet?totalCarpet.toLocaleString():'—'} sq ft; the stated carpet of ${cfg.carpetSqft?cfg.carpetSqft.toLocaleString():'—'} additionally counts foyer/circulation and wall-to-wall margins \u00b7 Saleable ${cfg.saleable.toLocaleString()} sq ft adds structural walls + common loading \u00b7 est = inferred from plan</div>`;
-  /* TAB 4: VERDICT */
+    <div style="font:500 9px/1.5 ui-monospace;color:var(--muted)">Each room's facing is read from the sanctioned floor-plate; the window is the direct-beam period on the ${benchL} benchmark, north-calibrated to the site plan. Room-by-room carpet dimensions load with the Birla RERA plates.</div>`;
+    /* TAB 4: VERDICT */
   const pros=[],cons=[];
   if(st.rawAvg>=6)pros.push(`Excellent winter sun (${st.rawAvg.toFixed(1)}h)`);
   else if(st.rawAvg>=3)pros.push(`Adequate winter sun (${st.rawAvg.toFixed(1)}h)`);
