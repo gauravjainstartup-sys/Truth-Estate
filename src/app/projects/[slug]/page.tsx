@@ -179,7 +179,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   if (slug === SAMPLE_SLUG) {
     return {
-      title: "Sample read — Project Intelligence | Truth Estate",
+      title: "Sample read — Project Intelligence",
       description:
         "A fully-populated sample project read — every forensic pillar, the price journey, ROI model and verdict — on the standard Truth Estate report layout. Watermarked as a sample.",
       robots: { index: false, follow: false },
@@ -188,7 +188,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
   if (slug === SAMPLE_LEGACY) {
     return {
-      title: "Sample read — Truth Estate",
+      title: "Sample read",
       robots: { index: false, follow: false },
       alternates: { canonical: `/projects/${SAMPLE_SLUG}` },
     };
@@ -196,21 +196,85 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const rows = await backlog();
   const live = rows?.find((r) => r.seoSlug === slug);
   if (live) {
+    const desc = `Independent read on ${live.name}${live.developer ? ` by ${live.developer}` : ""}${live.truthScore != null ? ` — Truth Score ${live.truthScore}/100` : ""}: delivery risk, construction pace, legal and financial signals from RERA filings and public records.`;
     return {
-      title: `${live.name} — Project Intelligence | Truth Estate`,
-      description: `Independent read on ${live.name}${live.developer ? ` by ${live.developer}` : ""}${live.truthScore != null ? ` — Truth Score ${live.truthScore}/100` : ""}: delivery risk, construction pace, legal and financial signals from RERA filings and public records.`,
+      /* No " | Truth Estate" here — the layout's title template already
+         appends it, and having both produced "… | Truth Estate | Truth
+         Estate" on all 97 reports. */
+      title: `${live.name} — Project Intelligence`,
+      description: desc,
       alternates: { canonical: `/projects/${slug}` },
+      /* Without this every report inherited the site-wide OG title, so all
+         97 shared one card: "Truth Estate — Independent Real Estate
+         Advisory for NRI Investors". A shared social title is also a
+         weaker signal to the engines that read them. */
+      openGraph: {
+        type: "article",
+        title: `${live.name} — Project Intelligence`,
+        description: desc,
+        url: `/projects/${slug}`,
+      },
+      twitter: { card: "summary_large_image", title: `${live.name} — Project Intelligence`, description: desc },
     };
   }
   const target = await legacyTarget(slug);
   if (target !== undefined) {
     // moved address: the canonical carries the equity to the new URL
     return {
-      title: "Report moved — Truth Estate",
+      title: "Report moved",
       alternates: { canonical: target ? `/projects/${target}` : "/intelligence/projects" },
     };
   }
-  return { title: "Project Intelligence — Truth Estate" };
+  return { title: "Project Intelligence" };
+}
+
+/* ── Page-level structured data ───────────────────────────────────
+   Both of these were built inside the SAMPLE branch and rendered only
+   there, so all 97 real reports shipped BreadcrumbList and nothing else —
+   no rating for Google to read, and no FAQ for an answer engine to quote.
+   Lifted out so the live pages, which are the ones that rank, get them
+   too. */
+
+/* The Truth Score is our independent assessment of a third-party
+   development — modelled as a Product review so Google and AI engines can
+   read the rating (out of 100) and who stands behind it. */
+function productLdFor(p: { name: string; developer?: string | null; reason?: string | null; truthScore?: number | null }) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: p.name,
+    category: "Residential real estate",
+    ...(p.developer ? { brand: { "@type": "Organization", name: p.developer } } : {}),
+    ...(p.reason ? { description: p.reason } : {}),
+    /* Omitted rather than sent as null when a project has not been scored:
+       a Rating with no ratingValue is invalid structured data, and an
+       invalid block can cost the whole page its rich result. */
+    ...(p.truthScore != null
+      ? {
+          review: {
+            "@type": "Review",
+            name: `Truth Score for ${p.name}`,
+            reviewRating: { "@type": "Rating", ratingValue: p.truthScore, bestRating: 100, worstRating: 0 },
+            author: { "@type": "Organization", name: "Truth Estate" },
+            ...(p.reason ? { reviewBody: p.reason } : {}),
+          },
+        }
+      : {}),
+  };
+}
+
+/* Forensic FAQ as FAQPage schema — a strong GEO/AI-answer surface so LLMs
+   and Google can cite our independent read directly. */
+function faqLdFor(faqs: { q: string; a: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
+    })),
+  };
 }
 
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
@@ -240,9 +304,14 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       ...liveProjectIntel(live, extKey ? ext![extKey] : null, cfgKey ? cfg![cfgKey] : null, corridorPsf),
       trackedRank: trackedRankOf(live.truthScore, await liveScores()),
     };
+    const liveFaqs = projectFaqs(intel);
     return (
       <>
         <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(liveBreadcrumb)} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(productLdFor(intel))} />
+        {liveFaqs.length > 0 && (
+          <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(faqLdFor(liveFaqs))} />
+        )}
         <ProjectProfile p={intel} />
       </>
     );
@@ -255,36 +324,8 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     { name: p.name, path: `/projects/${p.slug}` },
   ]);
 
-  /* The Truth Score is our independent assessment of a third-party
-     development — modelled as a Product review so Google and AI engines can
-     read the rating (out of 100) and who stands behind it. */
-  const productLd = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: p.name,
-    category: "Residential real estate",
-    brand: { "@type": "Organization", name: p.developer },
-    description: p.reason,
-    review: {
-      "@type": "Review",
-      name: `Truth Score for ${p.name}`,
-      reviewRating: { "@type": "Rating", ratingValue: p.truthScore, bestRating: 100, worstRating: 0 },
-      author: { "@type": "Organization", name: "Truth Estate" },
-      reviewBody: p.reason,
-    },
-  };
-
-  /* Forensic FAQ as FAQPage schema — a strong GEO/AI-answer surface so LLMs
-     and Google can cite our independent read directly. */
-  const faqLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: projectFaqs(p).map((f) => ({
-      "@type": "Question",
-      name: f.q,
-      acceptedAnswer: { "@type": "Answer", text: f.a },
-    })),
-  };
+  const productLd = productLdFor(p);
+  const faqLd = faqLdFor(projectFaqs(p));
 
   return (
     <>
