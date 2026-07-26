@@ -106,10 +106,84 @@ async function legacyUrl(b,vp){
   await ctx.close();
 }
 
+/* 5 · owner path — "I've already booked or bought" */
+const DIALOG='[role="dialog"] ';
+async function toOwnerSearch(p){
+  await p.goto(`${B}/`,{waitUntil:'networkidle'}); await p.waitForTimeout(900);
+  await p.locator('button:visible').filter({hasText:/Start Your Journey/i}).first().click();
+  await p.waitForTimeout(900);
+  const doors = await vis(p.getByText(/I.m looking to buy/i)) && await vis(p.getByText(/already booked or bought/i));
+  await p.getByText(/already booked or bought/i).first().click();
+  await p.locator(`${DIALOG}button:visible`).filter({hasText:/^Continue$/}).first().click();
+  await p.waitForTimeout(800);
+  return doors;
+}
+
+/* found → the report they own, locked */
+async function ownerFound(b,vp){
+  const {ctx,p}=await mk(b,vp); const F='owner · found';
+  try{
+    log(F,vp,'both doors on screen one', await toOwnerSearch(p));
+    const input=p.locator('input[aria-label="Project name"]:visible').first();
+    log(F,vp,'one question, no date/price/size', await vis(input));
+    await input.fill('dlf arb'); await p.waitForTimeout(800);
+    const covered=p.locator(`${DIALOG}button:visible`).filter({hasText:/DLF The Arbour/i}).first();
+    log(F,vp,'fuzzy match finds the covered project', await vis(covered));
+    await covered.click(); await p.waitForTimeout(2000);
+    log(F,vp,'lands on their report', /\/projects\/gurugram-real-estate-dlf-the-arbour/.test(p.url()), p.url().slice(-44));
+    log(F,vp,'report is locked', await vis(p.locator('#unlock')));
+    log(F,vp,'no js errors', p.errs.length===0, p.errs[0]??'');
+  }catch(e){log(F,vp,'THREW',false,String(e).slice(0,110))}
+  await ctx.close();
+}
+
+/* not found → Places confirms (or does not) → the ₹999 audit request.
+   Both outcomes must reach the request. Places is a confidence signal,
+   never a gate — an owner whose tower Google has never heard of is still
+   an owner. */
+async function ownerUnlisted(b,vp,mode){
+  const {ctx,p}=await mk(b,vp); const F=`owner · ${mode}`;
+  const body = mode==='confirmed'
+    ? JSON.stringify({suggestions:[{placePrediction:{placeId:'pid-1',structuredFormat:{
+        mainText:{text:'Zenith Skyline Towers'},
+        secondaryText:{text:'Sector 106, Dwarka Expressway, Gurugram'}}}}]})
+    : JSON.stringify({suggestions:[]});
+  await ctx.route('https://places.googleapis.com/**',r=>r.fulfill({status:200,contentType:'application/json',body}));
+  try{
+    await toOwnerSearch(p);
+    const input=p.locator('input[aria-label="Project name"]:visible').first();
+    await input.fill('Zenith Skyline Towers'); await p.waitForTimeout(1600);
+    log(F,vp,'admits we do not cover it', await vis(p.getByText(/don.t cover/i)));
+    const cta = mode==='confirmed'
+      ? p.locator(`${DIALOG}button:visible`).filter({hasText:/Sector 106/i}).first()
+      : p.locator(`${DIALOG}button:visible`).filter({hasText:/Send it to us anyway/i}).first();
+    log(F,vp,mode==='confirmed'?'Places offers the match':'still offers a way through', await vis(cta));
+    await cta.click(); await p.waitForTimeout(2000);
+    const u=p.url();
+    log(F,vp,'reaches the audit request', /get-custom-project-report/.test(u));
+    log(F,vp,'persona carried over, not re-asked', /intent=invested/.test(u));
+    log(F,vp,`recorded as ${mode}`, new RegExp(`place=${mode}`).test(u));
+    /* The URL saying intent=invested proves nothing on its own — the page
+       has to have READ it. Continue is enabled only when project, city and
+       intent are all set, so an enabled button is proof all three landed.
+       Unverified has no address, so no city, so the visitor still has to
+       pick one: disabled there is the correct answer, not a failure. */
+    const nameOk=await p.locator('input[value="Zenith Skyline Towers"]').count()>0;
+    log(F,vp,'project name prefilled', nameOk);
+    const cont=p.locator('button:visible').filter({hasText:/Continue →/}).first();
+    const enabled=await cont.isEnabled().catch(()=>false);
+    log(F,vp, mode==='confirmed'?'prefill completes step 1':'city still asked (no address to infer it)',
+        mode==='confirmed'?enabled:!enabled);
+    log(F,vp,'no js errors', p.errs.length===0, p.errs[0]??'');
+  }catch(e){log(F,vp,'THREW',false,String(e).slice(0,110))}
+  await ctx.close();
+}
+
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
 for(const vp of ['mobile','desktop']){
   console.log(`\n──── ${vp} ────`);
   await unlockToPaid(b,vp); await chatAsk(b,vp); await dashboard(b,vp); await legacyUrl(b,vp);
+  await ownerFound(b,vp); await ownerUnlisted(b,vp,'confirmed'); await ownerUnlisted(b,vp,'unverified');
 }
 await b.close();
 const f=R.filter(r=>!r.ok).length;

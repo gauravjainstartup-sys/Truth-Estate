@@ -56,6 +56,13 @@ export default function CustomReportPage() {
   const [city, setCity] = useState<string | null>(null);
   const [cityOther, setCityOther] = useState("");
   const [intent, setIntent] = useState<Intent | null>(null);
+  /* Not form fields — what Google Places said about this project on the way
+     in, carried through to the lead so the desk knows which building this is
+     without asking again. Null means no check was run; "unverified" means we
+     asked and Places had nothing, which is not the same as the project not
+     existing (new towers routinely have no listing). */
+  const [placeState, setPlaceState] = useState<"confirmed" | "unverified" | null>(null);
+  const [placeAddress, setPlaceAddress] = useState("");
 
   // step 2 — requirements (looking only) + commitment + details + verify
   const [config, setConfig] = useState<string | null>(null);
@@ -76,12 +83,29 @@ export default function CustomReportPage() {
   const cardRef = useRef<HTMLDivElement>(null);
   const firstStep = useRef(true);
 
-  // prefill the project from the search that sent them here (?project= / ?q=)
+  // prefill from whatever sent them here.
+  //   ?project= / ?q=  the homepage search, and the journey's owner path
+  //   ?intent=         invested | looking — the owner path already asked on
+  //                    screen one, and nobody should answer it twice
+  //   ?city=           only when it matched a chip we actually offer
+  //   ?place=          confirmed | unverified — whether Google Places matched.
+  //                    Absent means no check was run (the homepage search),
+  //                    which must not be recorded as a failed one.
+  //   ?address=        Places' formatted address, carried into the submitted
+  //                    message rather than into a new field
   useEffect(() => {
     try {
       const p = new URLSearchParams(window.location.search);
       const q = p.get("project") || p.get("q");
       if (q) setProject(q);
+      const i = p.get("intent");
+      if (i === "invested" || i === "looking") setIntent(i);
+      const c = p.get("city");
+      if (c && CITIES.includes(c)) setCity(c);
+      const pl = p.get("place");
+      if (pl === "confirmed" || pl === "unverified") setPlaceState(pl);
+      const a = p.get("address");
+      if (a) setPlaceAddress(a.slice(0, 200));
     } catch {
       /* ignore */
     }
@@ -153,6 +177,11 @@ export default function CustomReportPage() {
         looking ? "Looking to invest" : "Already invested",
         cityFinal,
         developer.trim() && `Developer: ${developer.trim()}`,
+        placeState === "confirmed" && placeAddress.trim()
+          ? `Places: ${placeAddress.trim()}`
+          : placeState === "unverified"
+          ? "Places: no match — check by hand"
+          : "",
         `Would pay ₹999: ${pay999}`,
       ]
         .filter(Boolean)

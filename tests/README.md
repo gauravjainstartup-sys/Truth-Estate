@@ -15,9 +15,16 @@ mkdir -p /tmp/serve && cp -r out /tmp/serve/Truth-Estate
 python3 tests/pages-server.py /tmp/serve 8100 &
 
 node tests/site-sweep.mjs      # every route · errors, h1, overflow, titles
-node tests/flows.mjs           # journeys · unlock→pay, chat, dashboard, legacy URL
+node tests/flows.mjs           # journeys · unlock→pay, chat, dashboard, legacy URL, owner path
 node tests/auth-surfaces.mjs   # all six sign-in surfaces, incl. international
 ```
+
+Build the export with `NEXT_PUBLIC_GMAPS_KEY=test-key` before running `flows.mjs`.
+`process.env.NEXT_PUBLIC_*` is inlined at build time, so a key-less export
+short-circuits every Google Places call and the owner path's confirm step is
+never exercised — the tests still pass, having tested a configuration that
+never ships. CI builds with the real key; test with a fake one and stub the
+endpoint (`ctx.route('https://places.googleapis.com/**', …)`).
 
 `pages-server.py` is not a convenience — a plain file server maps `/office`
 to a directory listing while GitHub Pages maps it to `office.html`. Testing

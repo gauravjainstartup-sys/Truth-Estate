@@ -24,6 +24,7 @@ import {
   fuzzySearch, highlightName, defaultList, coveredNearby, coveredCountLabel,
   rowMeta, TAG_CHIP, getRecentSlugs, pushRecentSlug, pushDemand,
 } from "@/lib/heroSearch";
+import { projectHref } from "@/lib/projectHref";
 
 const basePath = "/Truth-Estate";
 const DEBOUNCE_MS = 150;
@@ -153,7 +154,11 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
 
   const go = useCallback((p: OmniProject) => {
     pushRecentSlug(p.slug);
-    window.location.href = `${basePath}/intelligence/projects/${p.slug}`;
+    /* projectHref, not the old path built by hand: reports moved to
+       /projects/<seoSlug> and the old address now resolves as a redirect
+       stub, so every homepage search was costing a hop. It falls back to
+       the internal slug when the index predates the move. */
+    window.location.href = projectHref(p);
   }, []);
   const requestReport = useCallback(() => {
     setMobileOpen(false); setOpen(false);

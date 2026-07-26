@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import Logo from "../Logo";
 import BuyersOffice from "./BuyersOffice";
 import LocationPicker from "./LocationPicker";
+import OwnedProjectPicker from "./OwnedProjectPicker";
+import { auditHref } from "@/lib/ownerFlow";
+import { projectHref } from "@/lib/projectHref";
 import ProjectProfile from "../intelligence/ProjectProfile";
 import ShortlistCore from "../shortlist/ShortlistCore";
 import FocusOffRamp from "../FocusOffRamp";
@@ -294,6 +297,52 @@ function OptionRow({
   );
 }
 
+/* OptionRow with a line of explanation under it. The persona choice is the
+   only place in this journey where the two answers need arguing for rather
+   than just naming — "I've already booked" has to say what it will do, or
+   an owner reads it as a question about their status and picks the buy
+   door out of habit. */
+function PersonaRow({
+  label,
+  sub,
+  selected,
+  onClick,
+}: {
+  label: string;
+  sub: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`group flex w-full items-start gap-5 border-b py-6 text-left transition-colors duration-300 ${
+        selected ? "border-[#1e6b45]/40" : "border-[#1a1a1a]/10 hover:border-[#1a1a1a]/25"
+      }`}
+    >
+      <span
+        className={`mt-1.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border transition-colors duration-300 ${
+          selected ? "border-[#1e6b45]" : "border-[#1a1a1a]/30 group-hover:border-[#1a1a1a]/50"
+        }`}
+      >
+        {selected && <span className="h-2 w-2 rounded-full bg-[#1e6b45]" />}
+      </span>
+      <span className="min-w-0">
+        <span
+          className={`block font-serif text-[1.25rem] font-light leading-snug transition-colors duration-300 md:text-[1.55rem] ${
+            selected ? "text-[#1a1a1a]" : "text-[#1a1a1a]/65"
+          }`}
+        >
+          {label}
+        </span>
+        <span className="mt-2 block text-[0.85rem] font-light leading-relaxed text-[#1a1a1a]/45 md:text-[0.92rem]">
+          {sub}
+        </span>
+      </span>
+    </button>
+  );
+}
+
 function Chip({
   label,
   selected,
@@ -340,8 +389,11 @@ type BuyStep = (typeof BUY_STEPS)[number];
 const INVEST_STEPS = ["invest-intro", "invest-capital", "invest-horizon", "invest-objective", "invest-risk", "invest-locations", "invest-priorities"] as const;
 type InvestStep = (typeof INVEST_STEPS)[number];
 
+type Persona = "buy" | "own";
+
 type Step =
   | "welcome"
+  | "own-project"
   | BuyStep
   | "buy-offramp-rtm"
   | "buy-offramp-commercial"
@@ -387,6 +439,7 @@ export default function JourneyModal({
     : "welcome";
 
   const [step, setStep] = useState<Step>(initialStep);
+  const [persona, setPersona] = useState<Persona | null>(null);
   const [buy, setBuy] = useState<BuyData>(account?.buy ?? emptyBuyData);
   const [invest, setInvest] = useState<InvestData>(emptyInvestData);
   const [selected, setSelected] = useState<Scored | null>(null);
@@ -553,6 +606,14 @@ export default function JourneyModal({
 
   /* ─────────────── render by step ─────────────── */
 
+  /* The first screen used to state something and offer one Continue —
+     it asked nothing and branched nothing, while the flow behind it
+     assumed everyone was shopping. Someone who has already paid ₹4 Cr and
+     is watching their tower slip was being asked what their budget is.
+
+     A buyer asks "which one should I choose?". An owner asks "was I right,
+     and what do I do now?". Same data, opposite question, so the split
+     belongs here, before the first real question. */
   if (step === "welcome") {
     return frame(
       <Shell onClose={onClose} eyebrow="The Truth Estate Journey">
@@ -560,19 +621,56 @@ export default function JourneyModal({
           <ScreenHeading
             title={
               <>
-                Welcome.
+                Where are you
                 <br />
-                Let&apos;s understand
-                <br />
-                what you&apos;re looking for.
+                in this?
               </>
             }
-            sub="We'll personalize everything from here."
+            sub="It changes everything we show you. Around a minute either way."
           />
-          <p className="mb-12 text-[0.8rem] font-light uppercase tracking-[0.28em] text-[#1a1a1a]/40">
-            Around 2 minutes
-          </p>
-          <PrimaryButton onClick={() => setStep("purchase")}>Continue</PrimaryButton>
+          <div className="flex flex-col">
+            <PersonaRow
+              label="I'm looking to buy"
+              sub="We'll build your brief, then score every project against it — not against each other."
+              selected={persona === "buy"}
+              onClick={() => setPersona("buy")}
+            />
+            <PersonaRow
+              label="I've already booked or bought"
+              sub="Tell us which project. We'll show you what our research says about it."
+              selected={persona === "own"}
+              onClick={() => setPersona("own")}
+            />
+          </div>
+          <NextBar
+            onNext={() => setStep(persona === "own" ? "own-project" : "purchase")}
+            disabled={persona === null}
+          />
+        </div>
+      </Shell>
+    );
+  }
+
+  /* ─────────────── OWNER PATH ─────────────── */
+
+  /* One question, and only one. Not when they booked, not what they paid,
+     not how big the unit is — the founder's call, and the catalogue agrees:
+     launch_price is empty on all 97 rows, so a "what it's worth now" read
+     would have rested on a number we asked them for and could not check. */
+  if (step === "own-project") {
+    return frame(
+      <Shell onClose={onClose} onBack={() => setStep("welcome")} progress={0.6} eyebrow="Your investment">
+        <div key="own-project" className="animate-fade-up">
+          <ScreenHeading
+            title={<>Which project<br />did you book?</>}
+            sub="That's the only thing we need — everything else we already hold."
+          />
+          <OwnedProjectPicker
+            onFound={(p) => { window.location.href = projectHref(p); }}
+            onUnlisted={(name, place) => {
+              window.location.href = auditHref({ project: name, address: place?.address ?? null });
+            }}
+          />
         </div>
       </Shell>
     );
