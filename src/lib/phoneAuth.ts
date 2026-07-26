@@ -28,7 +28,7 @@
    and rewriting those call sites is a separate job from putting a real
    OTP in the chat. This file is where that bridge gets cut later.
    ════════════════════════════════════════════════════════════════ */
-import { setSignedIn, loadAccount, saveAccount, emptyBuyData } from "@/lib/journey";
+import { setSignedIn, signOut, loadAccount, saveAccount, emptyBuyData } from "@/lib/journey";
 import { getAnonId, getSessionId } from "@/lib/truthGuideChat";
 import { track } from "@/lib/events";
 
@@ -202,6 +202,22 @@ export async function verifyOtp(
     };
     if (!data.ok || !data.userId) {
       return { ok: false, error: data.error ?? "Couldn't verify that just now. Try again in a moment." };
+    }
+
+    /* A different person on the same handset. Everything cached about the
+       last one — what they had unlocked, their brief, their office — was
+       fetched or built for THEM, and none of it transfers.
+
+       This matters more than it looks. Entitlements are fetched with the
+       device id, so on a shared phone the server will happily answer with
+       the previous account's unlocks; the session check in
+       entitlementsCache then refuses them, but only because the cached
+       answer no longer matches who is signed in. Clearing here is what
+       makes that check meet a clean slate rather than a stale one. */
+    const previous = getSession()?.user_id ?? null;
+    if (previous && previous !== data.userId) {
+      console.info("[signin] different account on this device — clearing the previous one's state");
+      signOut();
     }
 
     try {

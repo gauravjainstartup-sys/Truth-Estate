@@ -76,6 +76,42 @@ async function rpc<T>(fn: string, args: unknown): Promise<T | null> {
   try { return (await res.json()) as T; } catch { return null; }
 }
 
+/* ── Who this device is NOW ───────────────────────────────────────────
+   track resolves a device to a person by reading the newest events row
+   for that anon_id that already carries a user_id. link_verified_phone
+   backfills that column, but only `where user_id is null` — correctly,
+   since it must never reassign somebody else's history.
+
+   Together those two rules have a consequence nobody chose: the SECOND
+   person to sign in on a handset claims nothing (every row already
+   belongs to the first), so no row ever carries their id, so track keeps
+   resolving the device to the first person — permanently. Their reading,
+   their enquiries and their payment all land on someone else's trail.
+
+   One row fixes it. Writing the sign-in itself with the new user_id
+   gives the resolver something to find, and every event after it is
+   attributed to whoever actually signed in. Best-effort: a failure here
+   costs attribution, and must never cost a sign-in. */
+async function stampSignIn(userId: string, anonId?: string | null, sessionId?: string | null): Promise<void> {
+  if (!anonId) return;
+  try {
+    const res = await fetch(`${DB_URL}/rest/v1/events`, {
+      method: "POST",
+      headers: svc({ Prefer: "return=minimal" }),
+      body: JSON.stringify({
+        anon_id: anonId,
+        session_id: sessionId ?? null,
+        user_id: userId,
+        name: "signed_in",
+        props: { via: "chat-signin", server: true },
+      }),
+    });
+    if (!res.ok) console.error(`[chat-signin] stamp HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  } catch (e) {
+    console.error("[chat-signin] stamp failed", e);
+  }
+}
+
 /* Last ten digits. user_profiles alone holds '9958777313',
    '+917011823963' and '7768003668', so anything stricter fails to match
    a returning visitor and silently creates them a second account. */
@@ -172,6 +208,7 @@ Deno.serve(async (req: Request) => {
         p_anon_id: body.anonId ?? null, p_session_id: body.sessionId ?? null,
         p_name: body.name ?? null,
       });
+      await stampSignIn(actual, body.anonId, body.sessionId);
       return new Response(JSON.stringify({
         ok: true, userId: actual,
         chatsClaimed: l?.chats_claimed ?? 0, leadsClaimed: l?.leads_claimed ?? 0,
@@ -220,6 +257,8 @@ Deno.serve(async (req: Request) => {
         p_anon_id: body.anonId ?? null, p_session_id: body.sessionId ?? null,
         p_name: body.name ?? null,
       });
+
+      await stampSignIn(intlId, body.anonId, body.sessionId);
 
       /* link_verified_phone sets phone_verified true unconditionally —
          it was written for a path where MSG91 had already proven the
@@ -284,6 +323,7 @@ Deno.serve(async (req: Request) => {
       p_name: body.name ?? null,
     });
 
+    await stampSignIn(userId, body.anonId, body.sessionId);
     console.log(`[chat-signin] ok user=${userId} chats=${linked?.chats_claimed ?? 0} leads=${linked?.leads_claimed ?? 0}`);
     return new Response(JSON.stringify({
       ok: true,

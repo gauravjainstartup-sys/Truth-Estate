@@ -185,11 +185,50 @@ async function ownerUnlisted(b,vp,mode){
   await ctx.close();
 }
 
+/* 6 · paid content follows the SESSION, never the device.
+
+   Entitlements are fetched with the device id, because no front-end here
+   holds a Supabase session to authenticate with. So a handset that once
+   signed in as an account with 51 unlocked reports was being served all
+   51 — signed in or not, and to whoever was holding it. These three cases
+   are the whole of that bug. */
+async function paywallSession(b,vp,mode){
+  const ctx=await b.newContext({viewport:VP[vp]});
+  const F=`paywall · ${mode}`;
+  const seed={
+    none:  null,
+    match: 'U1',
+    other: 'U2',
+  }[mode];
+  await ctx.addInitScript(`(()=>{
+    localStorage.setItem('truthEstate.tgAnon','d72b361a-3450-486b-94f0-8ee275556747');
+    ${seed?`localStorage.setItem('truthEstate.signedIn','1');
+    localStorage.setItem('truthEstate.sbSession',JSON.stringify({access_token:null,user_id:'${seed}',phone:'9958777313'}));`:''}
+  })()`);
+  await ctx.route('**/functions/v1/**',r=>r.fulfill({status:200,contentType:'application/json',body:'{"ok":true,"stored":0}'}));
+  /* The server answers about the DEVICE, and answers with U1's unlocks
+     whoever is asking — which is exactly the real behaviour. */
+  await ctx.route('**/functions/v1/entitlements',r=>r.fulfill({status:200,contentType:'application/json',
+    body:JSON.stringify({ok:true,userId:'U1',unlocked:['dlf-the-arbour'],all:false,plan:'Free'})}));
+  const p=await ctx.newPage(); p.errs=[];
+  p.on('pageerror',e=>p.errs.push(String(e).slice(0,120)));
+  try{
+    await p.goto(REPORT,{waitUntil:'networkidle'}); await p.waitForTimeout(2200);
+    const open=await vis(p.locator('#developer, #location, #legal'));
+    const shut=await vis(p.locator('#unlock'));
+    const want=mode==='match';
+    log(F,vp,want?'unlocks for the account that owns it':'stays locked', want?(open&&!shut):(shut&&!open));
+    log(F,vp,'no js errors', p.errs.length===0, p.errs[0]??'');
+  }catch(e){log(F,vp,'THREW',false,String(e).slice(0,110))}
+  await ctx.close();
+}
+
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
 for(const vp of ['mobile','desktop']){
   console.log(`\n──── ${vp} ────`);
   await unlockToPaid(b,vp); await chatAsk(b,vp); await dashboard(b,vp); await legacyUrl(b,vp);
   await ownerFound(b,vp); await ownerUnlisted(b,vp,'confirmed'); await ownerUnlisted(b,vp,'unverified');
+  for (const m of ['none','match','other']) await paywallSession(b,vp,m);
 }
 await b.close();
 const f=R.filter(r=>!r.ok).length;

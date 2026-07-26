@@ -7,6 +7,7 @@
 
 import { grantModelAccess, modelSlugFor, resolveModelSubject } from "./modelAccess";
 import { serverHasAccess } from "./entitlementsCache";
+import { CLEARED_ON_SIGN_OUT, KEEP_ON_DEMO_RESET } from "./durableKeys";
 import { type Buyer, bucketOfChip } from "./matchEngine";
 
 /* The primary CTA is configurable in one place — we may rename later. */
@@ -1198,6 +1199,22 @@ export function isSignedIn(): boolean {
 }
 export const AUTH_EVENT = "truthEstate:auth";
 
+/* The other half of setSignedIn, and until now it did not exist. Nothing
+   in the codebase cleared the session — the only thing that ever "logged
+   anyone out" was the reload wipe in layout.tsx, which is demo
+   scaffolding and takes no view on whether someone meant to leave.
+
+   Clears the session and everything it entitles, and deliberately not the
+   device id: the person leaves, the browser is still the same browser and
+   its trail should stay continuous. */
+export function signOut(): void {
+  if (typeof window === "undefined") return;
+  try {
+    CLEARED_ON_SIGN_OUT.forEach((k) => window.localStorage.removeItem(k));
+  } catch { /* ignore */ }
+  try { window.dispatchEvent(new Event(AUTH_EVENT)); } catch { /* ignore */ }
+}
+
 export function setSignedIn(): void {
   if (typeof window === "undefined") return;
   try { window.localStorage.setItem(SIGNED_IN_KEY, "1"); } catch { /* ignore */ }
@@ -1301,9 +1318,9 @@ export function grantPackage(pkg: PackageId, slug?: string): void {
    unlocks, leads, office) so the browser behaves like a first-time visitor. */
 /* The device id survives a reset for the same reason it survives a refresh:
    it is not demo state. Clearing it makes the visitor a stranger to the
-   event trail and orphans everything written before the reset. Keep this
-   list in step with KEEP in the layout's pre-hydration script. */
-const IDENTITY_KEYS = new Set(["truthEstate.tgAnon"]);
+   event trail and orphans everything written before the reset. The list is
+   shared with the layout's pre-hydration script — see durableKeys.ts. */
+const IDENTITY_KEYS = new Set<string>(KEEP_ON_DEMO_RESET);
 
 export function clearAllDemoData(): void {
   if (typeof window === "undefined") return;

@@ -5,7 +5,8 @@ import { track } from "@/lib/events";
 import { useRouter } from "next/navigation";
 import Logo from "../Logo";
 import { useConsultation } from "../consultation/ConsultationProvider";
-import { loadBuyData, hasPreferences, deriveDNA, clearAllDemoData, saveLead, hasReadAccess, has3DAccess } from "@/lib/journey";
+import { loadBuyData, hasPreferences, deriveDNA, clearAllDemoData, saveLead, hasReadAccess, has3DAccess, AUTH_EVENT } from "@/lib/journey";
+import { ENTITLEMENTS_EVENT } from "@/lib/entitlementsCache";
 import type { ConsultProfileChip } from "@/lib/consultation";
 import { TAG_CHIP } from "@/lib/heroSearch";
 import type { ScoreTag } from "@/lib/omni";
@@ -34,6 +35,7 @@ import ReportConstruction from "./ReportConstruction";
 import ReportLegal from "./ReportLegal";
 import ReportLocation from "./ReportLocation";
 import SearchPalette from "./SearchPalette";
+import AccountChip from "../AccountChip";
 import ZoomStage from "./ZoomStage";
 import PdfScroller from "./PdfScroller";
 import PdfThumb from "./PdfThumb";
@@ -261,7 +263,20 @@ export default function ProjectProfile({
   const [unlockFocus3D, setUnlockFocus3D] = useState(false);
   const [threeDAccess, setThreeDAccess] = useState(false);
   const [challengeOpen, setChallengeOpen] = useState(false);
-  useEffect(() => { setReadAccess(hasReadAccess(p.slug)); setThreeDAccess(has3DAccess(p.slug)); }, [p.slug]);
+  /* Re-check when the server's answer lands, and when the session changes.
+     Mount alone is too early: fetchEntitlements is still in flight, so a
+     reader who owns this report was shown the paywall and only let in on
+     their next navigation. */
+  useEffect(() => {
+    const read = () => { setReadAccess(hasReadAccess(p.slug)); setThreeDAccess(has3DAccess(p.slug)); };
+    read();
+    window.addEventListener(ENTITLEMENTS_EVENT, read);
+    window.addEventListener(AUTH_EVENT, read);
+    return () => {
+      window.removeEventListener(ENTITLEMENTS_EVENT, read);
+      window.removeEventListener(AUTH_EVENT, read);
+    };
+  }, [p.slug]);
 
   /* ?as=owner — set by the journey's owner path, which already knows this
      visitor has bought. It reframes the paywall's copy and nothing else:
@@ -491,6 +506,10 @@ export default function ProjectProfile({
             <>
               <a href={basePath} aria-label="Home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
               <SearchPalette className="ml-auto" />
+              {/* This is the page behind the paywall, so "am I signed in"
+                 and "why can I read this" are the same question. It had no
+                 answer here until now. */}
+              <AccountChip onSignIn={() => setUnlockOpen(true)} />
               <button onClick={primaryCta.onClick} className="hidden rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.74rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] md:inline-block md:px-5">
                 {primaryCta.label}
               </button>

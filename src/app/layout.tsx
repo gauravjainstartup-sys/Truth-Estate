@@ -5,6 +5,7 @@ import "./globals.css";
 import JourneyProvider from "@/components/journey/JourneyProvider";
 import ConsultationProvider from "@/components/consultation/ConsultationProvider";
 import { SITE_URL } from "@/lib/site";
+import { KEEP_ON_RELOAD } from "@/lib/durableKeys";
 import EventTracker from "@/components/EventTracker";
 
 const geistSans = Geist({
@@ -148,10 +149,16 @@ export default function RootLayout({
            afternoon, and signing in could only ever claim the handful
            written since the last refresh — the rest were orphaned for good.
            Demo state is disposable; who the device is, is not — and neither
-           is a record of what they paid for. */}
+           is the session, nor a record of what they paid for. The session
+           keys were missing from this list while the entitlements cache was
+           on it, so a refresh produced a header saying "Sign in" above a
+           fully unlocked report. The list is now shared with signOut and
+           clearAllDemoData rather than kept in step by comment. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{if('scrollRestoration' in history){history.scrollRestoration='manual';}window.scrollTo(0,0);var r=false;var e=(performance.getEntriesByType&&performance.getEntriesByType('navigation')[0]);if(e){r=e.type==='reload';}else if(performance.navigation){r=performance.navigation.type===1;}if(r){var KEEP={'truthEstate.tgAnon':1,'truthEstate.entitlements':1};for(var i=localStorage.length-1;i>=0;i--){var k=localStorage.key(i);if(k&&k.indexOf('truthEstate')===0&&!KEEP[k]){localStorage.removeItem(k);}}}}catch(_){}})();`,
+            __html: `(function(){try{if('scrollRestoration' in history){history.scrollRestoration='manual';}window.scrollTo(0,0);var r=false;var e=(performance.getEntriesByType&&performance.getEntriesByType('navigation')[0]);if(e){r=e.type==='reload';}else if(performance.navigation){r=performance.navigation.type===1;}if(r){var KEEP=${JSON.stringify(
+              Object.fromEntries(KEEP_ON_RELOAD.map((k) => [k, 1])),
+            )};for(var i=localStorage.length-1;i>=0;i--){var k=localStorage.key(i);if(k&&k.indexOf('truthEstate')===0&&!KEEP[k]){localStorage.removeItem(k);}}}}catch(_){}})();`,
           }}
         />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgLd) }} />
