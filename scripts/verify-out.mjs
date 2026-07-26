@@ -32,6 +32,11 @@ const files = dirs.flatMap((d) => {
 const PAID_MARKER = "Will this address still be winning";
 const LOCK_MARKER = 'id="unlock"';
 const NEG_MARKER = 'id="negotiate"';
+/* A locked report used to link to exactly one project page: its own.
+   Internal links are how authority moves through a site and how a crawler
+   learns 97 pages belong together — a sitemap gets them found, not
+   related. Six is what relatedProjects emits; three is the alarm. */
+const MIN_OUTBOUND = 3;
 const FAQ_MARKER = 'id="faqs"';
 
 /* The paid half of the negotiation section: the ask. If any of these
@@ -80,7 +85,8 @@ const faqSchemas = (html) => {
 
 let stubs = 0, locked = 0, samples = 0;
 const leaked = [], unlockless = [], sampleBare = [];
-const noNeg = [], noFaq = [], askLeak = [], thin = [], schemaGhost = [];
+const noNeg = [], noFaq = [], askLeak = [], thin = [], schemaGhost = [], stranded = [];
+const inbound = new Set();
 
 for (const [dir, f] of files) {
   const s = readFileSync(`${dir}/${f}`, "utf8");
@@ -109,6 +115,15 @@ for (const [dir, f] of files) {
   if (ASK_MARKERS.some((a) => text.includes(a))) askLeak.push(f);
 
   if (text.split(" ").length < MIN_WORDS) thin.push(f);
+
+  const me = f.slice(0, -5);
+  const outbound = new Set(
+    [...s.matchAll(/href="[^"]*?\/projects\/([a-z0-9-]+)"/g)]
+      .map((m) => m[1])
+      .filter((t) => t !== me && t !== "sample-read"),
+  );
+  if (outbound.size < MIN_OUTBOUND) stranded.push(f);
+  for (const t of outbound) inbound.add(t);
 
   /* Structured data has to describe content that is ON the page. FAQPage
      schema was being emitted on all 97 locked reports while the FAQ
@@ -150,6 +165,10 @@ report(noNeg, "NO NEGOTIATION SECTION");
 report(noFaq, "NO FAQ SECTION");
 report(thin, `UNDER ${MIN_WORDS} CRAWLABLE WORDS`);
 report(schemaGhost, "FAQ SCHEMA NOT VISIBLE ON THE PAGE");
+report(stranded, `UNDER ${MIN_OUTBOUND} OUTBOUND PROJECT LINKS`);
+if (locked && inbound.size < locked) {
+  console.log(`[verify-out] ORPHANS: ${locked - inbound.size} report(s) have no inbound link from another report`);
+}
 
 if (!locked) console.log("[verify-out] NO REPORT PAGES FOUND — the export or this path is wrong");
 

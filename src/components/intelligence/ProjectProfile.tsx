@@ -8,6 +8,7 @@ import { useConsultation } from "../consultation/ConsultationProvider";
 import { loadBuyData, hasPreferences, deriveDNA, clearAllDemoData, saveLead, hasReadAccess, has3DAccess, AUTH_EVENT } from "@/lib/journey";
 import { ENTITLEMENTS_EVENT } from "@/lib/entitlementsCache";
 import { negotiationLevers } from "@/lib/negotiation";
+import type { RelatedProject } from "@/lib/relatedProjects";
 import type { ConsultProfileChip } from "@/lib/consultation";
 import { TAG_CHIP } from "@/lib/heroSearch";
 import type { ScoreTag } from "@/lib/omni";
@@ -232,6 +233,7 @@ function configsDisplay(list: string[]): string {
 
 export default function ProjectProfile({
   p,
+  related,
   embedded = false,
   sample = false,
   onClose,
@@ -241,6 +243,9 @@ export default function ProjectProfile({
   onSelectAlternative,
 }: {
   p: ProjectIntel;
+  /* Comparable projects, computed at build time by the page. Present only
+     on real report routes; the journey modal renders without them. */
+  related?: RelatedProject[];
   /* When rendered inside the journey modal: drop the page chrome, keep the
      reader in the flow, and route actions back to the journey. */
   embedded?: boolean;
@@ -1123,6 +1128,37 @@ export default function ProjectProfile({
               </Section>
             )}
 
+
+            {/* ── Comparable projects ──
+               Only when locked: an unlocked reader already has Chapter V's
+               full cards below. These are plain links, rendered from props
+               the page computed at build time, so they are in the static
+               HTML — which is the entire point. A locked report used to
+               link to exactly one project page: its own. */}
+            {locked && related && related.length > 0 && (
+              <Section id="comparable" n={num()} title={`Others on ${p.marketShort}`}>
+                <p className="-mt-2 mb-6 max-w-2xl text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/55">
+                  The projects we would weigh against {p.name} — each with its own forensic read.
+                </p>
+                <ul className="grid gap-px overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-[#1a1a1a]/[0.07] sm:grid-cols-2">
+                  {related.map((r) => (
+                    <li key={r.seoSlug} className="bg-[#F5F0E8]">
+                      <a href={`${basePath}/projects/${r.seoSlug}`} className="group flex h-full items-center justify-between gap-3 px-5 py-4 transition-colors hover:bg-[#1e6b45]/[0.06]">
+                        <span className="min-w-0">
+                          <span className="block truncate font-serif text-[1.02rem] font-medium text-[#1a1a1a]/85">{r.name}</span>
+                          {r.microMarket && (
+                            <span className="mt-0.5 block truncate text-[0.76rem] font-light text-[#1a1a1a]/45">{r.microMarket}</span>
+                          )}
+                        </span>
+                        {r.truthScore != null && (
+                          <span className="shrink-0 font-mono text-[0.8rem] font-bold tabular-nums text-[#9a7a2e]">{Math.round(r.truthScore)}</span>
+                        )}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </Section>
+            )}
 
             {/* The Independent Desk on mobile — the desktop rail is hidden below
                xl, so the founder gets a face here, right before the CTA. When

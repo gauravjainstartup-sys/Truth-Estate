@@ -14,6 +14,7 @@ import {
 import ProjectProfile from "@/components/intelligence/ProjectProfile";
 import { liveProjectIntel } from "@/lib/liveReport";
 import { breadcrumbLd, ldJson } from "@/lib/seo";
+import { relatedProjects } from "@/lib/relatedProjects";
 
 /* ONE URL per project: /projects/<seo slug>, the address truthestate.in
    has been serving and Google has indexed — see seoSlug() in lib/supabase.
@@ -312,7 +313,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         {liveFaqs.length > 0 && (
           <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(faqLdFor(liveFaqs))} />
         )}
-        <ProjectProfile p={intel} />
+        <ProjectProfile p={intel} related={relatedProjects(live, rows)} />
       </>
     );
   }

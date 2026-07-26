@@ -1,11 +1,22 @@
-/* Full-site sweep: every route, both viewports.
+/* Full-site sweep: every route, four viewports.
    Checks what can break silently — JS errors, missing/duplicate h1,
    horizontal overflow, images without alt, tap targets under 44px,
    and links pointing at a 404. */
 import { chromium } from '/home/user/Truth-Estate/node_modules/playwright/index.mjs';
 import { readdirSync } from 'fs';
 const B = 'http://127.0.0.1:8100/Truth-Estate';
-const VP = { mobile:{width:390,height:844}, desktop:{width:1440,height:900} };
+/* Four widths, chosen for where this layout actually changes rather than
+   for a list of handsets. 360 is the commonest Android width and the
+   tightest real case — the one where a fixed-width element overflows.
+   390 is iPhone. 768 sits exactly on Tailwind's md: boundary, which is
+   where a mobile treatment hands over to a desktop one and where the two
+   most recent layout regressions both lived. 1440 is the laptop. */
+const VP = {
+  'android-360': { width: 360, height: 800 },
+  mobile:        { width: 390, height: 844 },
+  tablet:        { width: 768, height: 1024 },
+  desktop:       { width: 1440, height: 900 },
+};
 
 const ROUTES = ['/', '/about', '/intelligence', '/intelligence/projects', '/intelligence/developers',
   '/intelligence/markets', '/intelligence/compare', '/shortlist', '/office', '/pricing', '/methodology',

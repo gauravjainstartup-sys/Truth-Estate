@@ -223,12 +223,55 @@ async function paywallSession(b,vp,mode){
   await ctx.close();
 }
 
+/* 7 · the two free sections — present for a guest, and the paid half of
+   the negotiation section absent until they pay. Asserted in the browser
+   as well as in verify-out because the wall that matters is what a READER
+   can reach, not what a grep over the export finds. */
+async function freeSections(b,vp){
+  const {ctx,p}=await mk(b,vp,true); const F='free sections';
+  try{
+    await p.goto(REPORT,{waitUntil:'networkidle'}); await p.waitForTimeout(1800);
+    log(F,vp,'locked · negotiation section renders', await vis(p.locator('#negotiate')));
+    log(F,vp,'locked · levers cite this project', await vis(p.getByText(/Construction is .*% complete against/i)));
+    log(F,vp,'locked · the ask is withheld', await vis(p.getByText(/What to actually ask for here/i)));
+    log(F,vp,'locked · no ask text leaks', !(await vis(p.getByText(/Delay compensation is a clause|Raise it as arithmetic|Put it to them directly/i))));
+    log(F,vp,'locked · faq renders', await vis(p.locator('#faqs')));
+    /* The answers sit inside collapsed <details>, so they are in the DOM
+       and crawlable but not "visible" to Playwright. Assert presence, not
+       visibility — and assert the QUESTION is visible, since that is what
+       a reader actually sees before opening it. */
+    log(F,vp,'locked · faq questions visible', await vis(p.locator('#faqs summary')));
+    const answers = await p.locator('#faqs details p').count();
+    log(F,vp,'locked · faq answers in the dom', answers >= 3, `${answers} answers`);
+    const opened = await p.locator('#faqs summary').first().click().then(() => true).catch(() => false);
+    log(F,vp,'locked · an answer opens on tap', opened && await vis(p.locator('#faqs details[open] p')));
+    log(F,vp,'no js errors', p.errs.length===0, p.errs[0]??'');
+  }catch(e){log(F,vp,'THREW',false,String(e).slice(0,110))}
+  await ctx.close();
+}
+
+/* the sample read is never gated — it is the one page where the asks
+   must be visible, so it proves the unlocked branch renders them. */
+async function unlockedSections(b,vp){
+  const {ctx,p}=await mk(b,vp); const F='free sections · unlocked';
+  try{
+    await p.goto(`${B}/projects/sample-read`,{waitUntil:'networkidle'}); await p.waitForTimeout(1800);
+    log(F,vp,'negotiation section renders', await vis(p.locator('#negotiate')));
+    log(F,vp,'the ask is shown', await vis(p.getByText(/Your ask/i)));
+    log(F,vp,'no withheld teaser remains', !(await vis(p.getByText(/What to actually ask for here/i))));
+    log(F,vp,'faq renders', await vis(p.locator('#faqs')));
+    log(F,vp,'no js errors', p.errs.length===0, p.errs[0]??'');
+  }catch(e){log(F,vp,'THREW',false,String(e).slice(0,110))}
+  await ctx.close();
+}
+
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
 for(const vp of ['mobile','desktop']){
   console.log(`\n──── ${vp} ────`);
   await unlockToPaid(b,vp); await chatAsk(b,vp); await dashboard(b,vp); await legacyUrl(b,vp);
   await ownerFound(b,vp); await ownerUnlisted(b,vp,'confirmed'); await ownerUnlisted(b,vp,'unverified');
   for (const m of ['none','match','other']) await paywallSession(b,vp,m);
+  await freeSections(b,vp); await unlockedSections(b,vp);
 }
 await b.close();
 const f=R.filter(r=>!r.ok).length;
