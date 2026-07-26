@@ -5,7 +5,11 @@ import { chromium } from '/home/user/Truth-Estate/node_modules/playwright/index.
 import { createRequire } from 'module'; const require = createRequire(import.meta.url);
 const B='http://127.0.0.1:8100/Truth-Estate';
 const REPORT=`${B}/projects/gurugram-real-estate-dlf-the-arbour-golf-course-road-extension-gcre-sector-63`;
-const VP={mobile:{width:390,height:844},desktop:{width:1440,height:900}};
+/* Three widths. 768 is Tailwind's md: boundary, where this journey hands
+   its sticky mobile action bar over to the inline desktop one and where
+   the report header swaps BACK for the full nav — the seam both recent
+   layout regressions lived on, and the one no flow test covered. */
+const VP={mobile:{width:390,height:844},tablet:{width:768,height:1024},desktop:{width:1440,height:900}};
 const R=[]; const log=(f,vp,step,ok,d='')=>{R.push({ok});console.log(`  ${ok?'ok  ':'FAIL'} [${vp}] ${f} · ${step}${d?' — '+d:''}`)};
 
 async function mk(b,vp,signedIn=false){
@@ -266,7 +270,7 @@ async function unlockedSections(b,vp){
 }
 
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
-for(const vp of ['mobile','desktop']){
+for(const vp of ['mobile','tablet','desktop']){
   console.log(`\n──── ${vp} ────`);
   await unlockToPaid(b,vp); await chatAsk(b,vp); await dashboard(b,vp); await legacyUrl(b,vp);
   await ownerFound(b,vp); await ownerUnlisted(b,vp,'confirmed'); await ownerUnlisted(b,vp,'unverified');

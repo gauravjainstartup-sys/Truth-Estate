@@ -14,8 +14,9 @@ SUPABASE_FIXTURES=.data-snapshot npm run build
 mkdir -p /tmp/serve && cp -r out /tmp/serve/Truth-Estate
 python3 tests/pages-server.py /tmp/serve 8100 &
 
-node tests/site-sweep.mjs      # every route · errors, h1, overflow, titles
-node tests/flows.mjs           # journeys · unlock→pay, chat, dashboard, legacy URL, owner path
+node tests/site-sweep.mjs      # every route · errors, h1, overflow, titles · 4 widths
+node tests/flows.mjs           # journeys · unlock→pay, chat, dashboard, owner path,
+                               #   paywall-follows-session, free sections · 3 widths
 node tests/auth-surfaces.mjs   # all six sign-in surfaces, incl. international
 ```
 
@@ -29,6 +30,14 @@ endpoint (`ctx.route('https://places.googleapis.com/**', …)`).
 `pages-server.py` is not a convenience — a plain file server maps `/office`
 to a directory listing while GitHub Pages maps it to `office.html`. Testing
 against the wrong one invents failures that do not exist in production.
+
+## Widths, and why these ones
+
+360 is the commonest Android width and the tightest real case — where a
+fixed-width child overflows. 390 is iPhone. **768 is Tailwind's `md:`
+boundary**, where a mobile treatment hands over to a desktop one; both
+recent layout regressions lived exactly there and neither viewport was
+being tested. 1440 is the laptop.
 
 ## Two traps that cost real time
 
