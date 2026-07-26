@@ -8,8 +8,10 @@
 import { LOCATIONS } from "./journey";
 
 /* The reasons a visitor arrives — mirrors (but is independent from) the
-   buy/sell/invest journeys so this flow can stand alone. */
-export type ConsultIntent = "buy" | "invest" | "sell" | "advice" | "research";
+   buy/invest journeys so this flow can stand alone. No "sell": we sit on
+   the buyer's side of the table, so representing a seller is a conflict,
+   not a product line. */
+export type ConsultIntent = "buy" | "invest" | "advice" | "research";
 
 /* Where the visitor came from. Preserved end-to-end so the advisor can
    "arrive prepared" — e.g. a DLF Arbour intelligence page. */
@@ -38,13 +40,11 @@ export type ConsultContext = {
 export function consultPrepLine(ctx: ConsultContext | undefined): string | null {
   if (!ctx) return null;
 
-  // Arriving from a completed buy/sell/invest journey — we already hold their DNA.
+  // Arriving from a completed buy/invest journey — we already hold their DNA.
   if (ctx.sourceKind === "journey") {
     switch (ctx.intent) {
       case "buy":
         return "We've already reviewed your Buyer DNA. Your advisor will prepare before the consultation.";
-      case "sell":
-        return "We've reviewed your selling strategy. Your advisor will prepare before the consultation.";
       case "invest":
         return "We've reviewed your investment thesis. Your advisor will prepare before the consultation.";
       default:
@@ -106,7 +106,6 @@ export type ConsultReason = { key: ConsultIntent; title: string; line: string };
 export const CONSULT_REASONS: ConsultReason[] = [
   { key: "buy", title: "Buying a Home", line: "Independent guidance before you commit." },
   { key: "invest", title: "Investing", line: "Evaluate opportunities with clear eyes." },
-  { key: "sell", title: "Selling a Property", line: "Position and time your exit well." },
   { key: "advice", title: "Need Independent Advice", line: "A considered second opinion, no agenda." },
   { key: "research", title: "Researching Options", line: "Make sense of the market first." },
 ];
@@ -136,11 +135,6 @@ export const CONSULT_FIELDS: Record<ConsultIntent, ConsultField[]> = {
     { name: "capital", label: "Capital", type: "chips", options: BUDGETS },
     { name: "horizon", label: "Investment Horizon", type: "chips", options: HORIZONS },
     { name: "goals", label: "Goals", type: "chips-multi", options: ["Capital Appreciation", "Rental Yield", "Safe Parking", "Diversification", "NRI Portfolio"] },
-  ],
-  sell: [
-    { name: "property", label: "Property", type: "text", placeholder: "Project, configuration, location" },
-    { name: "timeline", label: "Timeline", type: "chips", options: TIMELINES },
-    { name: "reason", label: "Reason for selling", type: "text", placeholder: "e.g. Upgrading, relocating, liquidity" },
   ],
   advice: [
     { name: "clarity", label: "What would you like clarity on?", type: "text", placeholder: "The one decision you're weighing right now" },
@@ -172,7 +166,6 @@ export type ConsultAdvisor = { name: string; initials: string; focus: string };
 const ADVISOR_BY_INTENT: Record<ConsultIntent, ConsultAdvisor> = {
   buy: { name: "Aarav Mehta", initials: "AM", focus: "Luxury end-use · Golf Course Extension" },
   invest: { name: "Nisha Kapoor", initials: "NK", focus: "Investment strategy · Emerging corridors" },
-  sell: { name: "Rohan Verma", initials: "RV", focus: "Exit positioning · Resale liquidity" },
   advice: { name: "Aarav Mehta", initials: "AM", focus: "Independent advisory · Decision review" },
   research: { name: "Nisha Kapoor", initials: "NK", focus: "Market intelligence · Comparative research" },
 };

@@ -190,8 +190,7 @@ export type SaleOffer = {
 
 export type OfficeThread = {
   id: string;
-  label: string; // BUY 1 / BUY 2 / SELL
-  kind: "buy" | "sell";
+  label: string; // BUY 1 / BUY 2
   title: string; // human summary of the requirement
   stage: DealStage;
   archetype: string;
@@ -475,14 +474,6 @@ export function nextStep(t: OfficeThread): { title: string; body: string; cta: s
 /* Small "micro-win" stats for the Home header. */
 export function wins(t: OfficeThread): { value: string; label: string }[] {
   const answered = `${t.questions.filter((q) => q.status === "answered").length}`;
-  if (t.kind === "sell") {
-    return [
-      { value: "7", label: "Comparable exits" },
-      { value: t.advisor.initials, label: "Advisor assigned" },
-      { value: answered, label: "Questions answered" },
-      { value: t.dna.length ? "Ready" : "—", label: "Exit brief" },
-    ];
-  }
   return [
     { value: String(t.recs.length || 3), label: "Projects investigated" },
     { value: t.advisor.initials, label: "Advisor assigned" },
@@ -542,7 +533,6 @@ const DEMO_BUY2_RECS: OfficeRec[] = [
 const DEMO_BUY2: OfficeThread = {
   id: "buy2",
   label: "BUY 2",
-  kind: "buy",
   title: "Dwarka Expressway · Investment",
   stage: "curated",
   archetype: "The Yield Seeker",
@@ -568,31 +558,6 @@ const DEMO_BUY2: OfficeThread = {
   saleOffer: buildSaleOffer(crore(3.05)),
 };
 
-const DEMO_SELL: OfficeThread = {
-  id: "sell1",
-  label: "SELL",
-  kind: "sell",
-  title: "M3M Golf Estate · 3 BHK · Exit",
-  stage: "booked",
-  archetype: "The Considered Seller",
-  dna: [
-    { label: "Property", value: "M3M Golf Estate, 3 BHK" },
-    { label: "Goal", value: "Time the exit well" },
-    { label: "Timeline", value: "3–6 months" },
-  ],
-  advisor: advisorFor("sell"),
-  call: { day: "Friday", time: "11:30 AM", format: "Phone" },
-  pastCalls: [],
-  recs: [],
-  questions: [],
-  docs: baseDocs(),
-  curation: null,
-  visits: [],
-  mandate: null,
-  negotiation: null,
-  saleOffer: null,
-};
-
 function seed(): OfficeState {
   const account = loadAccount();
   const consult = loadConsultation();
@@ -605,7 +570,6 @@ function seed(): OfficeState {
     primary = {
       id: "buy1",
       label: "BUY 1",
-      kind: "buy",
       title,
       stage: "booked",
       archetype,
@@ -636,7 +600,6 @@ function seed(): OfficeState {
     primary = {
       id: "buy1",
       label: "BUY 1",
-      kind: "buy",
       title: "Golf Course Extension · 3–4 BHK",
       stage: "booked",
       archetype: "The Discerning First-Home Buyer",
@@ -661,11 +624,14 @@ function seed(): OfficeState {
     };
   }
 
-  return { threads: [primary, DEMO_BUY2, DEMO_SELL], activeId: "buy1" };
+  return { threads: [primary, DEMO_BUY2], activeId: "buy1" };
 }
 
 /* ── Persistence ── */
-const OFFICE_KEY = "truthEstate.office.v3";
+/* v4: the SELL thread was retired. A v3 state saved before that still
+   holds it, and it would render as a buy thread with nothing in it — so
+   the bump reseeds rather than migrates. */
+const OFFICE_KEY = "truthEstate.office.v4";
 
 export function loadOffice(): OfficeState {
   if (typeof window === "undefined") return seed();
