@@ -24,10 +24,26 @@ const LOCKED: { k: string; t: string; hook: string }[] = [
   { k: "FAQs", t: "Straight answers", hook: "Blunt answers to the questions that actually decide the cheque." },
 ];
 
+/* ── Who is reading this ──────────────────────────────────────────────────
+   Someone who arrived from the owner path has ALREADY bought. Every line
+   below that is written forward — "before you sign", "should you buy it",
+   "decide the cheque" — is advice about a decision they made in 2023. It
+   does not just miss; it reads as a scolding for something they cannot undo.
+
+   The argument for paying is every bit as strong the other way round, and
+   in one respect stronger: while the tower is still going up they can still
+   act on what the report finds. Same report, same price, same layout — only
+   the sentences that assume a decision still ahead of them are replaced. */
+const OWNER_HOOKS: Record<string, string> = {
+  "Legal & compliance": "Title, RERA and litigation signals — what your agreement actually obliges them to.",
+  "The verdict": "Where this leaves you now: hold, push the developer, or get out.",
+  "Straight answers": "Blunt answers to the questions owners bring us after they've paid.",
+};
+
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
 export default function LockedReport({
-  projectName, truthScore = 0, grade = "", ticket = "", onUnlock, sampleHref,
+  projectName, truthScore = 0, grade = "", ticket = "", onUnlock, sampleHref, audience = "buyer",
 }: {
   projectName: string;
   truthScore?: number;
@@ -35,23 +51,28 @@ export default function LockedReport({
   ticket?: string;
   onUnlock: () => void;
   sampleHref: string;
+  audience?: "buyer" | "owner";
 }) {
   const lost = Math.max(0, 100 - Math.round(truthScore));
+  const owner = audience === "owner";
   return (
     <div className="mt-14 border-t border-[#1a1a1a]/8 pt-12">
       {/* ── the pitch ── */}
       <div className="mx-auto max-w-xl text-center">
         <span className="inline-flex items-center gap-2 rounded-full border border-[#b0503e]/30 bg-[#b0503e]/[0.06] px-3.5 py-1.5 text-[0.6rem] font-bold uppercase tracking-[0.16em] text-[#b0503e]">
-          <Lock className="h-3 w-3" /> The part that decides it is locked
+          <Lock className="h-3 w-3" /> {owner ? "The part that tells you where you stand is locked" : "The part that decides it is locked"}
         </span>
         <h3 className="mt-5 text-balance font-serif text-[1.95rem] font-semibold leading-[1.1] text-[#1a1a1a] md:text-[2.5rem]">
-          {ticket ? <>Don&rsquo;t stake {ticket} on a brochure.</> : <>Don&rsquo;t buy on a brochure.</>}
+          {owner
+            ? <>This is what you bought.</>
+            : ticket ? <>Don&rsquo;t stake {ticket} on a brochure.</> : <>Don&rsquo;t buy on a brochure.</>}
         </h3>
         {truthScore > 0 && (
           <p className="mt-4 text-[0.98rem] leading-relaxed text-[#1a1a1a]/65">
             {projectName} scored <b className="font-semibold text-[#1a1a1a]">{Math.round(truthScore)}/100</b>
             {grade ? <> — &ldquo;{grade}&rdquo;</> : null}. The full read shows exactly what cost it the other{" "}
-            <b className="font-semibold text-[#b0503e]">{lost} points</b> — and whether that&rsquo;s a dealbreaker for you.
+            <b className="font-semibold text-[#b0503e]">{lost} points</b>
+            {owner ? <> — and which of them you can still do something about.</> : <> — and whether that&rsquo;s a dealbreaker for you.</>}
           </p>
         )}
         <button
@@ -62,7 +83,9 @@ export default function LockedReport({
           <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
         </button>
         <p className="mt-3.5 text-[0.82rem] leading-relaxed text-[#1a1a1a]/55">
-          {ticket
+          {owner
+            ? <>While it&rsquo;s still going up, what this finds is still worth acting on.</>
+            : ticket
             ? <>That&rsquo;s a rounding error on {ticket} — one missed red flag costs a great deal more.</>
             : <>One missed red flag costs a great deal more than the read.</>}
         </p>
@@ -89,7 +112,9 @@ export default function LockedReport({
                   <span className="font-mono text-[0.55rem] uppercase tracking-[0.18em] text-[#c9a96e]">{s.k}</span>
                   <span className="font-serif text-[1.05rem] font-medium text-[#1a1a1a]">{s.t}</span>
                 </span>
-                <span className="mt-0.5 block text-[0.82rem] font-light leading-snug text-[#1a1a1a]/55">{s.hook}</span>
+                <span className="mt-0.5 block text-[0.82rem] font-light leading-snug text-[#1a1a1a]/55">
+                  {(owner && OWNER_HOOKS[s.t]) || s.hook}
+                </span>
               </span>
               <span aria-hidden className="shrink-0 text-[0.72rem] font-semibold text-[#1e6b45] opacity-60 transition-opacity group-hover:opacity-100">
                 Unlock →

@@ -25,6 +25,7 @@
    heroSearch.ts / HeroSearch.tsx already use.
    ════════════════════════════════════════════════════════════════ */
 import { fuzzySearch } from "@/lib/heroSearch";
+import { projectHref } from "@/lib/projectHref";
 import type { OmniIndex, OmniProject } from "@/lib/omni";
 
 const BASE_PATH = "/Truth-Estate";
@@ -131,6 +132,13 @@ export async function confirmWithPlaces(query: string): Promise<PlaceCandidate[]
 }
 
 /* ── Where each answer goes ────────────────────────────────────────── */
+
+/* Their report, told to address someone who has already bought. Everything
+   about the page is the same — the sections, the price, the layout; only
+   the paywall's copy stops assuming the purchase is still ahead of them. */
+export function ownerReportHref(p: { slug: string; seoSlug?: string | null }): string {
+  return `${projectHref(p)}?as=owner`;
+}
 
 /* The cities the request form offers as chips. Anything else stays in the
    address line rather than being forced into a chip that is not true. */

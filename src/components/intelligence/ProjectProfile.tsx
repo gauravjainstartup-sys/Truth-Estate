@@ -263,6 +263,22 @@ export default function ProjectProfile({
   const [challengeOpen, setChallengeOpen] = useState(false);
   useEffect(() => { setReadAccess(hasReadAccess(p.slug)); setThreeDAccess(has3DAccess(p.slug)); }, [p.slug]);
 
+  /* ?as=owner — set by the journey's owner path, which already knows this
+     visitor has bought. It reframes the paywall's copy and nothing else:
+     same sections, same price, same layout.
+
+     Read after mount rather than during render. These pages are prerendered
+     at build time and the query string does not exist then, so deriving it
+     in the render body would produce markup that disagrees with the server's
+     and React would throw the whole tree away. The paywall sits below two
+     free chapters, so the swap lands well before anyone scrolls to it. */
+  const [audience, setAudience] = useState<"buyer" | "owner">("buyer");
+  useEffect(() => {
+    try {
+      if (new URLSearchParams(window.location.search).get("as") === "owner") setAudience("owner");
+    } catch { /* a query string can never break a report */ }
+  }, []);
+
   /* The strongest intent signal the site produces: someone reading a
      specific report is further along than anything they type. Fired from
      the report rather than derived from the URL, because the page knows
@@ -931,7 +947,7 @@ export default function ProjectProfile({
                in place of the analysis; a paid reader sees everything. ── */}
             {locked ? (
               <div id="unlock" className="scroll-mt-24">
-                <LockedReport projectName={p.name} truthScore={p.truthScore} grade={scoreGrade(p.truthScore)} ticket={lockedTicket} onUnlock={() => setUnlockOpen(true)} sampleHref={SAMPLE_HREF} />
+                <LockedReport projectName={p.name} truthScore={p.truthScore} grade={scoreGrade(p.truthScore)} ticket={lockedTicket} onUnlock={() => setUnlockOpen(true)} sampleHref={SAMPLE_HREF} audience={audience} />
               </div>
             ) : (
             <>

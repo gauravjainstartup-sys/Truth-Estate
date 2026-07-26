@@ -6,8 +6,7 @@ import Logo from "../Logo";
 import BuyersOffice from "./BuyersOffice";
 import LocationPicker from "./LocationPicker";
 import OwnedProjectPicker from "./OwnedProjectPicker";
-import { auditHref } from "@/lib/ownerFlow";
-import { projectHref } from "@/lib/projectHref";
+import { auditHref, ownerReportHref } from "@/lib/ownerFlow";
 import ProjectProfile from "../intelligence/ProjectProfile";
 import ShortlistCore from "../shortlist/ShortlistCore";
 import FocusOffRamp from "../FocusOffRamp";
@@ -666,7 +665,7 @@ export default function JourneyModal({
             sub="That's the only thing we need — everything else we already hold."
           />
           <OwnedProjectPicker
-            onFound={(p) => { window.location.href = projectHref(p); }}
+            onFound={(p) => { window.location.href = ownerReportHref(p); }}
             onUnlisted={(name, place) => {
               window.location.href = auditHref({ project: name, address: place?.address ?? null });
             }}

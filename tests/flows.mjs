@@ -29,6 +29,9 @@ async function unlockToPaid(b,vp){
   try{
     await p.goto(REPORT,{waitUntil:'networkidle'}); await p.waitForTimeout(900);
     log(F,vp,'report locked initially', await vis(p.locator('#unlock')));
+    /* No ?as=owner — the buyer framing is the default and the money path.
+       The owner reframe must never leak into it. */
+    log(F,vp,'buyer framing on a plain visit', await vis(p.getByText(/on a brochure/i)));
     await p.locator('button:visible').filter({hasText:/Get Full Read|Unlock the full read/i}).first().click().catch(()=>{});
     await p.waitForTimeout(900);
     /* Scope to the modal: "Unlock full read" also exists in the page nav,
@@ -132,6 +135,9 @@ async function ownerFound(b,vp){
     await covered.click(); await p.waitForTimeout(2000);
     log(F,vp,'lands on their report', /\/projects\/gurugram-real-estate-dlf-the-arbour/.test(p.url()), p.url().slice(-44));
     log(F,vp,'report is locked', await vis(p.locator('#unlock')));
+    log(F,vp,'marked as an owner read', /\?as=owner/.test(p.url()));
+    log(F,vp,'paywall speaks to an owner', await vis(p.getByText(/This is what you bought/i)));
+    log(F,vp,'buyer framing withdrawn', !(await vis(p.getByText(/on a brochure/i))));
     log(F,vp,'no js errors', p.errs.length===0, p.errs[0]??'');
   }catch(e){log(F,vp,'THREW',false,String(e).slice(0,110))}
   await ctx.close();
