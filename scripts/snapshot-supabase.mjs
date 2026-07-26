@@ -30,12 +30,12 @@ const H = { apikey: KEY, Authorization: `Bearer ${KEY}` };
 
 // selects are supersets of every caller's query — the fixture reader
 // replays the file for whatever narrower query a caller makes.
-// v3 is the ONLY backlog view the build reads; v2/base are pulled solely as a
-// fallback when v3 is empty (the build's fetchBacklogFull tries v3 → v2 → base),
-// so we skip those two redundant 4.5 MB pulls on every healthy build.
+// v3 is the ONLY backlog view the build reads; base is pulled solely as a
+// fallback when v3 is empty (the build's fetchBacklogFull tries v3 → base),
+// so we skip that redundant pull on every healthy build. (There is no
+// backlog_listing_public_v2 — it was superseded by v3 and 404s.)
 const V3_Q = "select=*&limit=500";
 const FALLBACKS = [
-  ["backlog_listing_public_v2", "select=*&limit=500"],
   ["backlog_listing_public", "select=*&limit=500"],
 ];
 const OTHERS = [

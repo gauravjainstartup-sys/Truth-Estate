@@ -29,7 +29,7 @@ import { existsSync } from "node:fs";
 
 const DIR = process.env.SNAPSHOT_DIR || ".data-snapshot";
 const CACHE = `${DIR}/geocode-cache.json`; // lives beside the snapshot → rides the CI cache across builds; resets naturally on a snapshot refresh
-const VIEWS = ["backlog_listing_public_v3", "backlog_listing_public_v2"];
+const VIEWS = ["backlog_listing_public_v3"]; // v2 was superseded by v3 and is no longer snapshotted
 const POI_KEYS = ["hospitals", "schools_colleges", "office_spaces", "malls_shopping"];
 const UA = "TruthEstate/1.0 (buyer-side location map; contact gauravjainstartup@gmail.com)";
 // Gurugram sanity box (incl. the Sohna belt to the south) — reject any geocode outside it

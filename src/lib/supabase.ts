@@ -393,10 +393,11 @@ const BACKLOG_QUERY = 'select=*&order="truthScore".desc.nullslast&limit=500';
 export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
   // Prefer the richest view (v3 adds developer rollups, financial metrics,
   // construction velocity, legal, location and ROI detail for the project
-  // pages); fall back v3 → v2 → base so a missing view never blanks the catalog.
+  // pages); fall back v3 → base so a missing view never blanks the catalog.
+  // (There is no backlog_listing_public_v2 — it was superseded by v3; querying
+  // it 404s, so it is not in the chain.)
   const rows =
     (await sbRows("backlog_listing_public_v3", BACKLOG_QUERY)) ??
-    (await sbRows("backlog_listing_public_v2", BACKLOG_QUERY)) ??
     (await sbRows("backlog_listing_public", BACKLOG_QUERY));
   if (!rows) return null;
   // one-time shape record: the CI build log tells us the pipeline's true shapes
@@ -729,8 +730,11 @@ export async function fetchExtendedDetails(): Promise<Record<string, LiveExtende
    through the project name. */
 
 export async function fetchBacklogNameIds(): Promise<Record<string, string> | null> {
-  // the project-name column differs between pipeline versions — probe candidates
-  for (const col of ["name", "project_name", '"projectName"', "title"]) {
+  // the project-name column differs between pipeline versions — probe candidates.
+  // project_name is the current column; the others are kept only as fallbacks for
+  // older/renamed pipelines, so the real one is tried FIRST and no 400 is fired on
+  // the healthy path (backlog_projects has no `name` column).
+  for (const col of ["project_name", "name", '"projectName"', "title"]) {
     const rows = await sbRows("backlog_projects", `select=id,${col}&limit=2000`);
     if (!rows) continue; // HTTP 400 = column doesn't exist; try the next one
     const key = col.replace(/"/g, "");
