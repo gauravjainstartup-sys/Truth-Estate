@@ -424,7 +424,13 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
   }
   const out: LiveBacklogFull[] = [];
   for (const r of rows) {
-    const name = s(r.name);
+    /* Collapse internal runs of whitespace, not just the ends. One row
+       reads "Birla Navya - Avik  (PHASE-2)" with a double space: HTML
+       collapses it on the page, JSON does not, so the <h1> and the
+       JSON-LD disagreed about the project's own name. Slugs are
+       unaffected — liveSlug already collapses any run of non-alphanumerics
+       to a single hyphen — so no URL moves. */
+    const name = s(r.name)?.replace(/\s+/g, " ") ?? null;
     if (!name) continue;
     const bpd = bpdById.get(s(r.id) ?? "");
     out.push({

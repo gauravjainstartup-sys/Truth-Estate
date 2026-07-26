@@ -7,6 +7,7 @@ import Logo from "../Logo";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import { loadBuyData, hasPreferences, deriveDNA, clearAllDemoData, saveLead, hasReadAccess, has3DAccess, AUTH_EVENT } from "@/lib/journey";
 import { ENTITLEMENTS_EVENT } from "@/lib/entitlementsCache";
+import { negotiationLevers } from "@/lib/negotiation";
 import type { ConsultProfileChip } from "@/lib/consultation";
 import { TAG_CHIP } from "@/lib/heroSearch";
 import type { ScoreTag } from "@/lib/omni";
@@ -35,6 +36,7 @@ import ReportConstruction from "./ReportConstruction";
 import ReportLegal from "./ReportLegal";
 import ReportLocation from "./ReportLocation";
 import SearchPalette from "./SearchPalette";
+import ReportNegotiation from "./ReportNegotiation";
 import AccountChip from "../AccountChip";
 import ZoomStage from "./ZoomStage";
 import PdfScroller from "./PdfScroller";
@@ -346,6 +348,9 @@ export default function ProjectProfile({
   const locIntel = !!market || !!p.ops?.location;
   const roi = roiModel(p);
   const faqs = projectFaqs(p);
+  /* Computed here rather than inside the section so the table of contents
+     can ask whether there is anything to link to. */
+  const levers = negotiationLevers(p);
   const ops = p.ops;
   const usps = ops?.usps ?? [];
   const ctx = rankContext(p);
@@ -388,6 +393,7 @@ export default function ProjectProfile({
     { id: "roi", label: "Price & returns", show: !!roi },
     { id: "verdict", label: "The verdict", show: true },
     { id: "strengths", label: "Strengths & watch-outs", show: p.strengths.length > 0 || p.watchouts.length > 0 },
+    { id: "negotiate", label: "Negotiate", show: levers.length > 0 },
     { id: "faqs", label: "Straight answers", show: faqs.length > 0 },
   ]
     .filter((t) => t.show && (!locked || FREE_IDS.has(t.id)))
@@ -1059,6 +1065,32 @@ export default function ProjectProfile({
             </Section>
             )}
 
+            {/* Chapter V — the alternatives, as full report cards ranked to the
+               reader's brief when they've set one. */}
+            <Chapter n="V" title={`If not ${p.name}, then what?`} framing="Comparable projects to weigh side by side — ranked to your brief where you've set one." />
+            <section id="alternatives" className="scroll-mt-24">
+              <ReportExplore p={p} embedded={embedded} onSelect={onSelectAlternative} />
+            </section>
+            </>
+            )}
+
+            {/* ── Free on a locked report, and deliberately so ──
+               A guest who reads this far has been told what is behind the
+               wall five times. These two sections give them something
+               instead: leverage they can act on, and answers to the
+               questions they actually arrived with.
+
+               They are also the only substantial prose a crawler gets from
+               a locked page. The FAQ used to render inside the unlocked
+               branch while its FAQPage schema was emitted on every page —
+               so 97 pages claimed structured content that was not on them,
+               which is a policy violation, not an optimisation. */}
+            {levers.length > 0 && (
+              <Section id="negotiate" n={num()} title="Negotiate like a king">
+                <ReportNegotiation p={p} locked={locked} onUnlock={() => setUnlockOpen(true)} />
+              </Section>
+            )}
+
             {/* Straight answers */}
             {faqs.length > 0 && (
               <Section id="faqs" n={num()} title="Straight answers">
@@ -1091,14 +1123,6 @@ export default function ProjectProfile({
               </Section>
             )}
 
-            {/* Chapter V — the alternatives, as full report cards ranked to the
-               reader's brief when they've set one. */}
-            <Chapter n="V" title={`If not ${p.name}, then what?`} framing="Comparable projects to weigh side by side — ranked to your brief where you've set one." />
-            <section id="alternatives" className="scroll-mt-24">
-              <ReportExplore p={p} embedded={embedded} onSelect={onSelectAlternative} />
-            </section>
-            </>
-            )}
 
             {/* The Independent Desk on mobile — the desktop rail is hidden below
                xl, so the founder gets a face here, right before the CTA. When
