@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, createContext, useContext } from "react";
 import { useRouter } from "next/navigation";
 import Logo from "../Logo";
 import BuyersOffice from "./BuyersOffice";
@@ -84,6 +84,7 @@ function Shell({
   children: React.ReactNode;
 }) {
   return (
+    <BackContext.Provider value={onBack ?? null}>
     <div className="relative flex h-full w-full flex-col bg-[#F5F0E8] text-[#1a1a1a]">
       <div className="h-[2px] w-full bg-[#1a1a1a]/8">
         {progress != null && (
@@ -131,17 +132,26 @@ function Shell({
         </div>
       </div>
 
+      {/* Desktop only. On mobile this sat at bottom-6 left-6 — underneath
+          the sticky Continue bar, which rendered them on top of each other.
+          There it moves into the bar itself, beside Continue. */}
       {onBack && (
         <button
           onClick={onBack}
-          className="absolute bottom-6 left-6 text-[11px] font-light tracking-[0.16em] text-[#1a1a1a]/40 transition-colors duration-300 hover:text-[#1a1a1a] md:bottom-8 md:left-12"
+          className="absolute bottom-6 left-6 hidden text-[11px] font-light tracking-[0.16em] text-[#1a1a1a]/40 transition-colors duration-300 hover:text-[#1a1a1a] md:block md:bottom-8 md:left-12"
         >
           &larr; Back
         </button>
       )}
     </div>
+    </BackContext.Provider>
   );
 }
+
+/* Shell owns "back", NextBar owns "continue", and on mobile they now share
+   one bar — so the bar needs to know about back without 17 call sites
+   passing it down. A context is the smallest thing that does that. */
+const BackContext = createContext<(() => void) | null>(null);
 
 function ScreenHeading({
   kicker,
@@ -223,6 +233,7 @@ function NextBar({
   label?: string;
   tight?: boolean;
 }) {
+  const onBack = useContext(BackContext);
   /* STICKY ON MOBILE. Every step of this journey is a question, and on a
      phone the answer button sat below a scroll — including on screens
      where the content above it was mostly whitespace. A primary action
@@ -239,10 +250,20 @@ function NextBar({
                   ${tight ? "md:mt-6" : "md:mt-16"}`}
       style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
     >
-      <div className="w-full md:w-auto">
-        <PrimaryButton onClick={onNext} disabled={disabled} full>
-          {label}
-        </PrimaryButton>
+      <div className="flex w-full items-center gap-4 md:w-auto">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="shrink-0 py-3 text-[11px] font-light tracking-[0.16em] text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a] md:hidden"
+          >
+            &larr; Back
+          </button>
+        )}
+        <div className="min-w-0 flex-1 md:flex-none">
+          <PrimaryButton onClick={onNext} disabled={disabled} full>
+            {label}
+          </PrimaryButton>
+        </div>
       </div>
     </div>
   );
