@@ -111,7 +111,22 @@ function Shell({
       </header>
 
       <div className="flex-1 overflow-y-auto">
-        <div className={`mx-auto flex min-h-full flex-col px-6 md:px-10 ${wide ? "max-w-5xl" : "max-w-3xl"} ${align === "top" ? "justify-start py-8 md:py-9" : "justify-center py-10 md:py-14"}`}>
+        {/* `safe center`, not plain `center`.
+
+              Plain justify-center is right for a short screen and wrong for
+              a tall one: on a 390×844 phone the locations step gained ~200px
+              of dead space above the first input and pushed Continue below
+              the fold — a screen that asks a question while hiding the way
+              to answer it. Top-aligning everything instead just moved the
+              dead space to the bottom of the short screens.
+
+              `safe center` is the actual answer: centre while the content
+              fits, fall back to start alignment the moment it overflows.
+              Plain justify-center is kept first so a browser that does not
+              understand the safe keyword still centres. */}
+          <div
+            className={`mx-auto flex min-h-full flex-col px-6 md:px-10 ${wide ? "max-w-5xl" : "max-w-3xl"} ${align === "top" ? "justify-start py-8 md:py-9" : "justify-center [justify-content:safe_center] py-7 md:py-14"}`}
+          >
           {children}
         </div>
       </div>
@@ -142,7 +157,7 @@ function ScreenHeading({
   compact?: boolean;
 }) {
   return (
-    <div className={dense ? "mb-4 md:mb-5" : "mb-10 md:mb-14"}>
+    <div className={dense ? "mb-4 md:mb-5" : "mb-6 md:mb-14"}>
       {kicker && (
         <p className="mb-4 text-[10px] font-light uppercase tracking-[0.4em] text-[#c9a96e]">{kicker}</p>
       )}
@@ -208,11 +223,27 @@ function NextBar({
   label?: string;
   tight?: boolean;
 }) {
+  /* STICKY ON MOBILE. Every step of this journey is a question, and on a
+     phone the answer button sat below a scroll — including on screens
+     where the content above it was mostly whitespace. A primary action
+     that has to be hunted for is a step people abandon.
+
+     Sticky rather than fixed so it stays inside the scroll container and
+     cannot cover a field on a short screen; full-width because a
+     right-aligned button in a thumb-reach bar is a smaller target for no
+     reason. Desktop keeps the original inline, right-aligned treatment. */
   return (
-    <div className={`flex justify-end ${tight ? "mt-6" : "mt-12 md:mt-16"}`}>
-      <PrimaryButton onClick={onNext} disabled={disabled}>
-        {label}
-      </PrimaryButton>
+    <div
+      className={`sticky bottom-0 z-10 -mx-6 mt-8 flex justify-end border-t border-[#1a1a1a]/[0.07] bg-[#F5F0E8]/95 px-6 py-4 backdrop-blur
+                  md:static md:mx-0 md:border-0 md:bg-transparent md:px-0 md:py-0 md:backdrop-blur-none
+                  ${tight ? "md:mt-6" : "md:mt-16"}`}
+      style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+    >
+      <div className="w-full md:w-auto">
+        <PrimaryButton onClick={onNext} disabled={disabled} full>
+          {label}
+        </PrimaryButton>
+      </div>
     </div>
   );
 }
