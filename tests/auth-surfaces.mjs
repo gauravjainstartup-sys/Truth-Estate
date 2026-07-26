@@ -133,17 +133,48 @@ async function shortlist(b, vp) {
     log(s, vp, 'entry CTA present', await vis(start));
     await start.click().catch(() => {});
     await p.waitForTimeout(1200);
-    // walk the brief with whatever chips exist until an OTP sheet or the end
-    for (let i = 0; i < 14; i++) {
-      const num = p.locator('input[type=tel]:visible, input[inputmode=numeric]:visible').first();
+    /* SCOPE THE WALK TO THE MODAL. Unscoped, `/Continue|Next|→|…/` matched
+       "Build my brief →" — the page's own CTA, still visible BEHIND the
+       open journey — so every iteration clicked the button underneath and
+       the walk never left the first step. It looked exactly like a broken
+       sign-in flow; the journey was open and working the whole time.
+
+       Same trap as the comma-selector one in the README: a locator that is
+       not scoped to the surface under test will happily find something
+       plausible somewhere else on the page. */
+    const D = '[role="dialog"] ';
+    for (let i = 0; i < 16; i++) {
+      const num = p.locator(`${D}input[type=tel]:visible, ${D}input[inputmode=numeric]:visible`).first();
       if (await vis(num)) break;
-      const next = p.locator('button:visible').filter({ hasText: /Continue|Next|→|See my|Show/i }).first();
-      if (await vis(next)) { await next.click().catch(() => {}); await p.waitForTimeout(700); continue; }
-      const chip = p.locator('button:visible').nth(2);
-      if (await vis(chip)) { await chip.click().catch(() => {}); await p.waitForTimeout(400); } else break;
+      const next = p.locator(`${D}button:visible`).filter({ hasText: /Continue|Next|See my|Show/i }).first();
+      /* Only click if it will take the click. A disabled Continue means the
+         step still wants an answer, and the chips below are how the walk
+         supplies one — clicking it anyway just buys an actionability
+         timeout, fourteen times over. */
+      if (await vis(next) && await next.isEnabled().catch(() => false)) {
+        await next.click({ timeout: 4000 }).catch(() => {}); await p.waitForTimeout(900); continue;
+      }
+      /* Stop the moment the brief is done — the processing screen has no
+         question to answer, and blindly clicking its second button is how
+         a walk ends up dismissing the modal it is supposed to be driving. */
+      if (await vis(p.getByText(/Analysing your preferences/i))) break;
+      const chip = p.locator(`${D}button:visible`).nth(1);
+      if (await vis(chip)) { await chip.click({ timeout: 4000 }).catch(() => {}); await p.waitForTimeout(400); } else break;
     }
-    const num = p.locator('input[type=tel]:visible, input[inputmode=numeric]:visible').first();
-    const reached = await vis(num);
+    /* The processing screen runs 4.2s and the AI re-rank behind it is a
+       live call, so the sheet lands somewhere between 4 and 9 seconds.
+       Poll rather than sleep a guessed constant — a fixed wait is how this
+       assertion reported a broken sign-in on a flow that works. */
+    const phone = () => p.locator('input[type=tel]:visible, input[inputmode=numeric]:visible').first();
+    let reached = false;
+    for (let i = 0; i < 24 && !reached; i++) {
+      reached = await vis(phone());
+      if (reached) break;
+      const unlock = p.locator('button:visible').filter({ hasText: /Unlock with OTP|Unlock|Get the read|Reveal/i }).first();
+      if (await vis(unlock)) await unlock.click({ timeout: 3000 }).catch(() => {});
+      await p.waitForTimeout(600);
+    }
+    const num = phone();
     log(s, vp, 'reaches a phone step', reached);
     if (reached) await checkPhoneForm(p, s, vp, { numSel: 'input[type=tel]:visible, input[inputmode=numeric]:visible', sendName: /Send|code|Unlock|Verify/i, sel: 'select:visible' });
     log(s, vp, 'no js errors', p.errs.length === 0, p.errs[0] ?? '');
