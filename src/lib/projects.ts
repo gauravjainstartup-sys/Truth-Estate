@@ -107,6 +107,12 @@ export type ProjectIntel = Project & {
      up for pipeline projects without any UI change. */
   liveDeveloper?: DeveloperIntel;
   liveRoi?: RoiModel;
+  /* The pipeline's OWN pillar scores, 0–10, where it publishes them.
+     developer_financial_score, construction_pace_score, demand_sales_score,
+     faq_location_score and legal_score sit on every one of the 97 live rows
+     and were being ignored: the pillars were reconstructed from a
+     rating→base-number table instead. Real measurements beat a lookup. */
+  livePillars?: { dev: number; con: number; loc: number; leg: number };
   /* The pipeline's legal read for the Legal Audit section: the analyst
      headline + key flags + as-of date, and the per-category risk breakdown
      (title_disputes → "Title disputes" · Critical/High/Medium/Low). */
@@ -865,6 +871,50 @@ const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n
 
 export const PILLAR_WEIGHTS = { developer: 0.25, construction: 0.22, location: 0.26, legal: 0.15, usps: 0.12 } as const;
 
+/* ── Making the decomposition actually decompose ──────────────────────
+   The anatomy is headed "What the 86 is made of" and draws each pillar's
+   bar at its weight. It was not a decomposition of anything: the pillar
+   scores were built independently and the weighted mean missed the Truth
+   Score on 89 of 97 reports, by a median of 8.4 points and as much as
+   15.5. A section whose entire job is to show how a number is composed
+   has to compose it.
+
+   The fix is a single shift applied to every pillar, not a rescale: with
+   the weights summing to 1, adding δ to each score moves the weighted mean
+   by exactly δ, so one subtraction lands it on the Truth Score while every
+   gap between pillars survives untouched. Rescaling would have squashed
+   those gaps toward each other and quietly flattened the thing a reader
+   is looking at the chart to see.
+
+   A floor stops a shift from printing a negative score. Anything held at
+   the floor is frozen and its shortfall is redistributed across the
+   pillars still free to move, which keeps the arithmetic exact rather
+   than nearly right — the whole point of the exercise. */
+const PILLAR_FLOOR = 1;
+const PILLAR_CEIL = 10;
+
+function composeToScore(raw: number[], weights: number[], target: number): number[] {
+  const out = [...raw];
+  const frozen = new Array(raw.length).fill(false);
+  for (let pass = 0; pass < 6; pass++) {
+    let freeW = 0, fixed = 0;
+    out.forEach((v, i) => (frozen[i] ? (fixed += v * weights[i]) : (freeW += weights[i])));
+    if (freeW <= 0) break;
+    const delta = (target - fixed - out.reduce((t, v, i) => t + (frozen[i] ? 0 : v * weights[i]), 0)) / freeW;
+    if (Math.abs(delta) < 1e-9) break;
+    let clamped = false;
+    out.forEach((v, i) => {
+      if (frozen[i]) return;
+      const next = v + delta;
+      if (next < PILLAR_FLOOR) { out[i] = PILLAR_FLOOR; frozen[i] = true; clamped = true; }
+      else if (next > PILLAR_CEIL) { out[i] = PILLAR_CEIL; frozen[i] = true; clamped = true; }
+      else out[i] = next;
+    });
+    if (!clamped) break;
+  }
+  return out;
+}
+
 export function pillars(p: ProjectIntel): Pillar[] {
   const dev = developerOf(p);
   const market = marketOf(p);
@@ -907,12 +957,31 @@ export function pillars(p: ProjectIntel): Pillar[] {
   const uspScore = round1(clamp(7.2 + Math.min(2, uspCount * 0.5) + lift, 5.5, 9.2));
   const uspWhy = uspCount ? p.ops!.usps![0].title : "Standard segment specification.";
 
+  /* The pipeline's own measurement wins wherever it publishes one; the
+     heuristic above survives only as the fallback for the curated set and
+     the sample, which have no pipeline row behind them. USPs keep theirs
+     either way — nothing upstream scores them, and inventing a source
+     would be worse than admitting the input is ours. */
+  const lp = p.livePillars;
+  const rawScores = [
+    lp?.dev ?? devScore,
+    lp?.con ?? conScore,
+    lp?.loc ?? locScore,
+    lp?.leg ?? legScore,
+    uspScore,
+  ];
+  const weights = [
+    PILLAR_WEIGHTS.developer, PILLAR_WEIGHTS.construction,
+    PILLAR_WEIGHTS.location, PILLAR_WEIGHTS.legal, PILLAR_WEIGHTS.usps,
+  ];
+  const [d1, c1, l1, g1, u1] = composeToScore(rawScores, weights, p.truthScore / 10).map(round1);
+
   return [
-    { key: "developer", label: "Developer DNA", anchor: "developer", band: bandFromScore(devScore), score: devScore, weight: PILLAR_WEIGHTS.developer, why: devWhy, about: PILLAR_ABOUT.developer },
-    { key: "construction", label: "Construction & Sales", anchor: "construction", band: bandFromScore(conScore), score: conScore, weight: PILLAR_WEIGHTS.construction, why: conWhy, about: PILLAR_ABOUT.construction },
-    { key: "location", label: "Location Intelligence", anchor: "location", band: bandFromScore(locScore), score: locScore, weight: PILLAR_WEIGHTS.location, why: locWhy, about: PILLAR_ABOUT.location },
-    { key: "legal", label: "Legal & Compliance", anchor: "legal", band: bandFromScore(legScore), score: legScore, weight: PILLAR_WEIGHTS.legal, why: legWhy, about: PILLAR_ABOUT.legal },
-    { key: "usps", label: "Project USPs", anchor: "usps", band: bandFromScore(uspScore), score: uspScore, weight: PILLAR_WEIGHTS.usps, why: uspWhy, about: PILLAR_ABOUT.usps },
+    { key: "developer", label: "Developer DNA", anchor: "developer", band: bandFromScore(d1), score: d1, weight: PILLAR_WEIGHTS.developer, why: devWhy, about: PILLAR_ABOUT.developer },
+    { key: "construction", label: "Construction & Sales", anchor: "construction", band: bandFromScore(c1), score: c1, weight: PILLAR_WEIGHTS.construction, why: conWhy, about: PILLAR_ABOUT.construction },
+    { key: "location", label: "Location Intelligence", anchor: "location", band: bandFromScore(l1), score: l1, weight: PILLAR_WEIGHTS.location, why: locWhy, about: PILLAR_ABOUT.location },
+    { key: "legal", label: "Legal & Compliance", anchor: "legal", band: bandFromScore(g1), score: g1, weight: PILLAR_WEIGHTS.legal, why: legWhy, about: PILLAR_ABOUT.legal },
+    { key: "usps", label: "Project USPs", anchor: "usps", band: bandFromScore(u1), score: u1, weight: PILLAR_WEIGHTS.usps, why: uspWhy, about: PILLAR_ABOUT.usps },
   ];
 }
 

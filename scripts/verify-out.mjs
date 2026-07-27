@@ -87,6 +87,28 @@ let stubs = 0, locked = 0, samples = 0;
 const leaked = [], unlockless = [], sampleBare = [];
 const noNeg = [], noFaq = [], askLeak = [], thin = [], schemaGhost = [], stranded = [];
 const inbound = new Set();
+const badNums = [], badChapters = [], badCompose = [];
+
+/* The report numbers itself twice over: chapters in Roman, sections in
+   two digits, both counted at render so they describe what THIS reader
+   sees. Both were literals once, and a locked report showed sections 04-06
+   hanging under a chapter that had ended at the paywall. */
+const ROMAN = ["I","II","III","IV","V","VI","VII","VIII"];
+const noComments = (h) => h.replace(/<!--.*?-->/gs, "");
+const sectionNums = (h) =>
+  [...noComments(h).matchAll(/<span class="font-mono text-\[0\.8rem\] text-\[#c9a96e\]">(\d+)<\/span><h2/g)].map((m) => m[1]);
+const chapterNums = (h) =>
+  [...noComments(h).matchAll(/>Chapter ([IVX]+)<\/span><h2/g)].map((m) => m[1]);
+
+/* "What the 86 is made of", drawn at weight. It has to make 86. */
+function composition(h) {
+  const t = noComments(h).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+  const head = /What the (\d+) is made of/i.exec(t);
+  const rows = [...t.matchAll(/Weight (\d+)%.*?(\d+\.\d) \/10/g)];
+  if (!head || rows.length !== 5) return null;
+  const composed = rows.reduce((sum, m) => sum + Number(m[2]) * Number(m[1]), 0) / 10;
+  return { headline: Number(head[1]), composed: Math.round(composed * 10) / 10 };
+}
 
 for (const [dir, f] of files) {
   const s = readFileSync(`${dir}/${f}`, "utf8");
@@ -124,6 +146,18 @@ for (const [dir, f] of files) {
   );
   if (outbound.size < MIN_OUTBOUND) stranded.push(f);
   for (const t of outbound) inbound.add(t);
+
+  const secs = sectionNums(s);
+  if (secs.length && secs.some((v, i) => Number(v) !== i + 1)) badNums.push(`${f} [${secs.join(",")}]`);
+  const chs = chapterNums(s);
+  if (chs.length && chs.some((v, i) => v !== ROMAN[i])) badChapters.push(`${f} [${chs.join(",")}]`);
+
+  /* Half a point is the most five one-decimal figures can drift when
+     rounded; anything past that is the model, not the display. */
+  const comp = composition(s);
+  if (comp && Math.abs(comp.composed - comp.headline) > 0.5) {
+    badCompose.push(`${f} (${comp.headline} vs ${comp.composed})`);
+  }
 
   /* Structured data has to describe content that is ON the page. FAQPage
      schema was being emitted on all 97 locked reports while the FAQ
@@ -166,6 +200,9 @@ report(noFaq, "NO FAQ SECTION");
 report(thin, `UNDER ${MIN_WORDS} CRAWLABLE WORDS`);
 report(schemaGhost, "FAQ SCHEMA NOT VISIBLE ON THE PAGE");
 report(stranded, `UNDER ${MIN_OUTBOUND} OUTBOUND PROJECT LINKS`);
+report(badNums, "SECTION NUMBERS NOT SEQUENTIAL FROM 01");
+report(badChapters, "CHAPTER NUMERALS NOT SEQUENTIAL FROM I");
+report(badCompose, "PILLARS DO NOT COMPOSE TO THE TRUTH SCORE");
 if (locked && inbound.size < locked) {
   console.log(`[verify-out] ORPHANS: ${locked - inbound.size} report(s) have no inbound link from another report`);
 }

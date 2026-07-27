@@ -48,7 +48,12 @@ export default function ReportAnatomy({ p, locked = false, onUnlock }: { p: Proj
       <div>
         <div className="mb-3 flex items-baseline justify-between text-[0.62rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">
           <span>What the {p.truthScore} is made of</span>
-          <span className="hidden sm:inline">width = weight · colour = health</span>
+          {/* The pillars are weighted to land on the Truth Score exactly;
+              what a reader multiplying them out sees can still miss by up to
+              half a point, because each figure is shown to one decimal and
+              five roundings accumulate. Better to say so than to let someone
+              check the arithmetic and conclude we cannot do it. */}
+          <span className="hidden sm:inline">width = weight · colour = health · figures rounded to 0.1</span>
         </div>
         <div className="flex h-4 gap-0.5 overflow-hidden rounded-md">
           {rows.map((r) => (

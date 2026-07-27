@@ -409,6 +409,19 @@ export default function ProjectProfile({
   let _n = 0;
   const num = () => String(++_n).padStart(2, "0");
 
+  /* Chapter numerals were written as literals — I, II, III, IV, V — which is
+     only correct for a reader who can see all five. A guest sees Chapters I
+     and II and then the paywall, so the chapters that follow are the ones
+     they never reach; hardcoding meant the free chapter after the wall would
+     have announced itself as "Chapter VI" in a report whose second chapter
+     was the last one visible.
+
+     Counted the same way sections are, for the same reason: the numbering
+     describes what this reader is actually looking at. */
+  const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
+  let _c = 0;
+  const chap = () => ROMAN[Math.min(++_c, ROMAN.length - 1)];
+
   /* Horizontal, swipeable section index with scroll-spy. Appears only once
      the reader scrolls past the hero (Apple local-nav pattern) — an overlay,
      so showing/hiding never shifts the page. */
@@ -838,7 +851,7 @@ export default function ProjectProfile({
               </div>
             )}
 
-            <Chapter n="I" title="Project Fundamentals" framing="The facts of the asset — before we weigh trust." />
+            <Chapter n={chap()} title="What are you actually buying?" framing="The facts of the asset — before we weigh trust." />
 
             {/* Match Score now leads the report body as the "Your Fit" band (above) */}
 
@@ -983,12 +996,17 @@ export default function ProjectProfile({
                 <Source>{ops?.media?.brochure || ops?.media?.brochurePdf || ops?.media?.paymentPlan || ops?.media?.paymentPlanPdf ? "Developer documents on file — indicative until countersigned." : "Documents arrive as the desk sources them — indicative until countersigned."} GST, PLC, IFMS &amp; registration additional as applicable.</Source>
               </Section>
 
-            <Chapter n="II" title="Can we trust it?" framing="Five pillars — developer, build, location, paperwork, edge." />
+            <Chapter n={chap()} title="Can we trust it?" framing="Five pillars — developer, build, location, paperwork, edge." />
 
-            {/* Truth Score anatomy — the composition spine */}
-            <div id="anatomy" className="scroll-mt-24">
+            {/* Truth Score anatomy — the composition spine. Numbered, unlike
+                the five pillars that follow it: those carry their own
+                "Pillar I–V" labels, and a second number on top of that would
+                be two schemes competing for the same row. This is the one
+                child of the chapter that is not a pillar, and it was the only
+                unnumbered sibling in the report. */}
+            <Section id="anatomy" n={num()} title="Truth Score anatomy" flush>
               <ReportAnatomy p={p} locked={locked} onUnlock={() => setUnlockOpen(true)} />
-            </div>
+            </Section>
 
             {/* ── The paywall boundary. From Chapter II · Pillar I (Developer DNA)
                down, a guest sees the LockedReport (unlock card + redacted teaser)
@@ -1032,7 +1050,7 @@ export default function ProjectProfile({
               </div>
             )}
 
-            <Chapter n="III" title="Will it make money?" framing="The price journey — and where our model says it's headed." />
+            <Chapter n={chap()} title="Will it make money?" framing="The price journey — and where our model says it's headed." />
 
             {/* Price dynamics + projection + ROI calculator */}
             {roi && (
@@ -1041,7 +1059,7 @@ export default function ProjectProfile({
               </div>
             )}
 
-            <Chapter n="IV" title="Decision time." framing="The same evidence, read for your situation." />
+            <Chapter n={chap()} title="So should you buy it?" framing="The same evidence, read for your situation." />
 
             {/* The verdict — profile-tailored */}
             <div id="verdict" className="scroll-mt-24">
@@ -1090,10 +1108,10 @@ export default function ProjectProfile({
 
             {/* Chapter V — the alternatives, as full report cards ranked to the
                reader's brief when they've set one. */}
-            <Chapter n="V" title={`If not ${p.name}, then what?`} framing="Comparable projects to weigh side by side — ranked to your brief where you've set one." />
-            <section id="alternatives" className="scroll-mt-24">
+            <Chapter n={chap()} title={`If not ${p.name}, then what?`} framing="Comparable projects to weigh side by side — ranked to your brief where you've set one." />
+            <Section id="alternatives" n={num()} title="Weighed side by side">
               <ReportExplore p={p} embedded={embedded} onSelect={onSelectAlternative} />
-            </section>
+            </Section>
             </>
             )}
 
@@ -1108,6 +1126,15 @@ export default function ProjectProfile({
                branch while its FAQPage schema was emitted on every page —
                so 97 pages claimed structured content that was not on them,
                which is a policy violation, not an optimisation. */}
+            {/* Its own chapter, because these sections used to inherit whichever
+                one happened to precede them: on a locked report that made
+                "Negotiate like a king" and the FAQ read as part of "Can we
+                trust it?", and on an unlocked one as part of "If not this
+                project, then what?". Neither is what they answer. */}
+            {(levers.length > 0 || faqs.length > 0 || (locked && related && related.length > 0)) && (
+              <Chapter n={chap()} title="What do you do next?" framing="The leverage this file hands you, and the questions buyers actually arrive with." />
+            )}
+
             {levers.length > 0 && (
               <Section id="negotiate" n={num()} title="Negotiate like a king">
                 <ReportNegotiation p={p} locked={locked} onUnlock={() => setUnlockOpen(true)} />

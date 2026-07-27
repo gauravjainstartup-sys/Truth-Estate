@@ -886,6 +886,24 @@ export function liveProjectIntel(
     legalRisks.push({ label, level });
   }
   const legalKeyFlags = strList(row.legalKeyFlags, ["flag", "text", "title", "point"]);
+  /* ── The pipeline's own pillar scores ──
+     Published on every live row and, until now, unread: the report rebuilt
+     each pillar from a strong/moderate/weak lookup table instead, so a
+     project whose construction pace scored 90 and one that scored 62 could
+     print the same number. Only emitted when EVERY input is present —
+     a half-measured pillar next to four measured ones is worse than the
+     fallback, because it looks equally authoritative. */
+  const livePillars: ProjectIntel["livePillars"] =
+    row.devFinancialScore != null && row.paceScore != null && row.demandScore != null &&
+    row.faqLocationScore != null && row.legalScore != null
+      ? {
+          dev: row.devFinancialScore / 10,
+          con: (row.paceScore + row.demandScore) / 20,
+          loc: row.faqLocationScore / 10,
+          leg: row.legalScore / 10,
+        }
+      : undefined;
+
   const liveLegal: ProjectIntel["liveLegal"] =
     row.legalHeadline || legalKeyFlags.length || legalRisks.length
       ? {
@@ -1278,5 +1296,6 @@ export function liveProjectIntel(
     ...(liveDeveloper ? { liveDeveloper } : {}),
     ...(liveRoi ? { liveRoi } : {}),
     ...(liveLegal ? { liveLegal } : {}),
+    ...(livePillars ? { livePillars } : {}),
   };
 }
