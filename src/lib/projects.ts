@@ -889,7 +889,16 @@ export const PILLAR_WEIGHTS = { developer: 0.25, construction: 0.22, location: 0
    A floor stops a shift from printing a negative score. Anything held at
    the floor is frozen and its shortfall is redistributed across the
    pillars still free to move, which keeps the arithmetic exact rather
-   than nearly right — the whole point of the exercise. */
+   than nearly right — the whole point of the exercise.
+
+   Note which way the floor errs. It can only ever raise a score, so the
+   harshest thing this report says about a developer is never harsher than
+   the model produced. It bites on 8 of 485 pillar cells, all of them
+   projects whose pipeline financial or legal score is genuinely near the
+   bottom — Birla Estates scores 6/100 on financials with its own band
+   reading "concerning", and the old lookup table was quietly rendering
+   that as 6.8/10. Surfacing it is the point; overstating it would not
+   be. */
 const PILLAR_FLOOR = 1;
 const PILLAR_CEIL = 10;
 
