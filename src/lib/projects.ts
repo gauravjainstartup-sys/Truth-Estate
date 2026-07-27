@@ -874,8 +874,17 @@ export function pillars(p: ProjectIntel): Pillar[] {
 
   const devLift = dev ? (dev.performance.onTimePct >= 90 ? 0.7 : dev.performance.onTimePct >= 82 ? 0.25 : -0.3) : 0;
   const devScore = round1(clamp((ratingBase(a.delivery) + ratingBase(a.financials)) / 2 + devLift + lift, 4, 9.5));
+  /* "0 lapsed" was written as a literal — printed as fact on every report
+     while developer_lapsed_projects sat in the same row saying otherwise
+     for 39 of the 97, six of them with 24 lapsed registrations. A forensic
+     audit stating a number it did not check is worse than one that omits
+     it, so the count is now read, and dropped from the sentence entirely
+     when the pipeline has not published one. */
+  const lapsed = dev?.performance.lapsed;
   const devWhy = dev
-    ? `${dev.performance.launched} RERA projects, ${dev.performance.delivered} delivered, 0 lapsed · ${dev.performance.onTimePct}% on-time.`
+    ? `${dev.performance.launched} RERA projects, ${dev.performance.delivered} delivered${
+        lapsed != null ? `, ${lapsed} lapsed` : ""
+      } · ${dev.performance.onTimePct}% on-time.`
     : "Regional developer — limited public track record.";
 
   const ahead = con ? monthIndex(con.reraDate) - monthIndex(con.predictedDate) : 0;
