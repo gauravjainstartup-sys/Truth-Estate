@@ -62,6 +62,27 @@ const listAt = (root: unknown, path: string): string[] => {
    pipeline owns; read by alias, never assume, drop what doesn't parse ── */
 const asArr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 /* an array that may hold strings OR objects carrying the text under a known key */
+/* ── The address line ──
+   The pipeline stores location as the sector alone — "Sector 63" — so the
+   report hero read "Sector 63 (GCE Corridor)" with no city on it. Fine if
+   you already know where you are; useless in a search result, a shared
+   link or an AI answer, all of which are read by people who do not.
+
+   Every project we track is in Gurugram, so the city is safe to add, but
+   it is added rather than assumed: two rows already name it (one is
+   literally just "Gurugram"), and appending blindly would print
+   "Gurugram, Gurugram". Both spellings are checked — the older "Gurgaon"
+   is still what a lot of this data says.
+
+   Composed here rather than in the hero because a component should not be
+   in the business of repairing an address: the same string feeds the map,
+   the schema and the share card. */
+const CITY = "Gurugram";
+function withCity(location: string): string {
+  const t = location.trim().replace(/\s+/g, " ");
+  return /gurugram|gurgaon/i.test(t) ? t : `${t}, ${CITY}`;
+}
+
 function strList(v: unknown, keys: string[] = ["text", "title", "name", "risk", "point"]): string[] {
   const out: string[] = [];
   for (const it of asArr(v)) {
@@ -1204,7 +1225,7 @@ export function liveProjectIntel(
   if (consultants.length >= 2) usps.push({ title: "Marquee consultants on record", body: consultants.slice(0, 6).join(" · ") });
 
   const ops: ProjectOps = {
-    ...(row.location ? { address: row.location } : {}),
+    ...(row.location ? { address: withCity(row.location) } : {}),
     ...(row.totalUnits != null ? { units: Math.round(row.totalUnits) } : totalUnits != null ? { units: totalUnits } : {}),
     ...(ext?.totalTowers != null && ext.totalTowers > 0 ? { towers: Math.round(ext.totalTowers) } : {}),
     ...(landAcres != null ? { landAcres } : {}),
