@@ -112,9 +112,19 @@ export function negotiationLevers(p: ProjectIntel): Lever[] {
 
   /* ── 4. Where the price sits in its corridor ──
      Only when the ticket clears the tracked band — otherwise there is
-     nothing to argue with and the buyer should know that too. */
-  if (p.psf && p.budget?.[0] && p.ops?.carpetSqft) {
-    const impliedPsf = Math.round((p.budget[0] * 1e7) / p.ops.carpetSqft);
+     nothing to argue with and the buyer should know that too.
+
+     Compared like for like. This used to divide the ticket by CARPET area
+     and hold the result against a corridor band quoted on SUPER area,
+     which overstates by the loading — around 35% here — and would have
+     told most buyers they were paying a premium they were not. It never
+     surfaced because no live row carries ops.carpetSqft, so it fired on
+     none of the 97 and first showed itself on the sample, where the
+     numbers are dense enough to check by hand. The project's own tracked
+     rate is the honest comparison. */
+  const projectPsf = p.ops?.price?.currentHigh ?? p.ops?.price?.currentLow ?? null;
+  if (p.psf && projectPsf) {
+    const impliedPsf = Math.round(projectPsf);
     if (impliedPsf > p.psf.high) {
       out.push({
         key: "price",

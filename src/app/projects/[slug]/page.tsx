@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { projectBySlug, projectFaqs, trackedRankOf } from "@/lib/projects";
+import { projectFaqs, trackedRankOf } from "@/lib/projects";
+import { sampleProjectIntel } from "@/lib/sampleProject";
 import {
   fetchBacklogFull,
   fetchBacklogNameIds,
@@ -93,9 +94,13 @@ function lookupKey<T>(
    showcase reached from the locked report's "check a sample read" CTA. */
 const SAMPLE_SLUG = "sample-read";
 const SAMPLE_LEGACY = "sample-dlf-the-arbour"; // the old address → redirect stub
+/* An invented project — see lib/sampleProject.ts. It used to be DLF The
+   Arbour with the paywall switched off, which published one real
+   developer's entire forensic audit, litigation read included, at a free
+   URL. A sample is a marketing asset; it should not be an unpriced
+   verdict on a named company. */
 function sampleIntel() {
-  const base = projectBySlug("dlf-arbour");
-  return base ? { ...base, slug: SAMPLE_SLUG, name: "DLF The Arbour" } : undefined;
+  return sampleProjectIntel();
 }
 
 /* ── legacy addresses ──
@@ -182,7 +187,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     return {
       title: "Sample read — Project Intelligence",
       description:
-        "A fully-populated sample project read — every forensic pillar, the price journey, ROI model and verdict — on the standard Truth Estate report layout. Watermarked as a sample.",
+        "A fully-populated sample project read — every forensic pillar, the price journey, ROI model and verdict — on the standard Truth Estate report layout. The project, the developer and every figure are invented; no real project's paid read is published here.",
       robots: { index: false, follow: false },
       alternates: { canonical: `/projects/${SAMPLE_SLUG}` },
     };
@@ -325,14 +330,15 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     { name: p.name, path: `/projects/${p.slug}` },
   ]);
 
-  const productLd = productLdFor(p);
-  const faqLd = faqLdFor(projectFaqs(p));
-
+  /* No Product/Review or FAQPage schema here, unlike every real report.
+     Both would be structured data describing a product that does not
+     exist and a rating nobody issued — marking up invented facts as
+     machine-readable claims is the definition of misleading structured
+     data, whatever the page says in prose. The breadcrumb is fine: the
+     page genuinely is where it says it is. */
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(breadcrumb)} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(productLd)} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(faqLd)} />
       {/* the sample dossier ranks against the same live set as real pages;
          `sample` renders it watermarked and never paywalled */}
       <ProjectProfile p={{ ...p, trackedRank: trackedRankOf(p.truthScore, await liveScores()) }} sample />

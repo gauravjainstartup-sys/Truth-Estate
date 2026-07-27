@@ -820,6 +820,24 @@ export default function ProjectProfile({
               );
             })()}
 
+            {/* Said in words, not only in a watermark. This page carries a
+                RERA registration number, a litigation record and a set of
+                filed financials — all invented. A diagonal "SAMPLE READ"
+                tells a reader the page is illustrative; it does not tell
+                them the company named on it has never existed, and that is
+                the thing they could otherwise carry away as fact. */}
+            {sample && (
+              <div className="mb-10 rounded-xl border border-[#9a7a2e]/30 bg-[#c9a96e]/[0.08] px-5 py-4 md:px-6">
+                <p className="text-[0.62rem] font-bold uppercase tracking-[0.2em] text-[#9a7a2e]">An example, not a project</p>
+                <p className="mt-2 text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/70">
+                  <b className="font-medium text-[#1a1a1a]">{p.name} does not exist</b>, and neither does {p.developer}.
+                  Every figure below — the registration number, the construction record, the litigation, the financials — is
+                  invented, so you can see exactly what a full read contains without us publishing a real developer&rsquo;s
+                  audit for free. Real reports are built the same way, on filed and verifiable data.
+                </p>
+              </div>
+            )}
+
             <Chapter n="I" title="Project Fundamentals" framing="The facts of the asset — before we weigh trust." />
 
             {/* Match Score now leads the report body as the "Your Fit" band (above) */}
