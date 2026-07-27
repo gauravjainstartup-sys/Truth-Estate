@@ -86,7 +86,11 @@ function PillarRow({ r, weak, locked = false, onUnlock }: { r: Pillar; weak: boo
       <span className="flex justify-center" aria-hidden>{pillarIcon(r.key, r.band === "watch" ? "#b0503e" : "#9a7a2e")}</span>
       <div className="min-w-0">
         <p className="font-serif text-[1.12rem] leading-tight">{r.label}</p>
-        <p className="mt-1 text-[0.78rem] font-light leading-snug text-[#1a1a1a]/55">{r.why}</p>
+        {/* The score and the band stay; the finding does not. A guest is
+            told what this pillar examines, which is what makes the number
+            mean something — and is left wanting the number's reason,
+            which is the whole trade. */}
+        <p className="mt-1 text-[0.78rem] font-light leading-snug text-[#1a1a1a]/55">{locked ? r.about : r.why}</p>
         <p className="mt-1.5 flex items-center gap-2 text-[0.6rem] text-[#1a1a1a]/40">
           Weight {Math.round(r.weight * 100)}%
           <span className="relative inline-block h-[3px] w-[110px] overflow-hidden rounded-full bg-[#e3dccb]">

@@ -829,7 +829,23 @@ export function projectFaqs(p: ProjectIntel): { q: string; a: string }[] {
 export type PillarBand = "exceptional" | "strong" | "moderate" | "watch";
 export type Pillar = {
   key: string; label: string; anchor: string;
-  band: PillarBand; score: number; weight: number; why: string;
+  band: PillarBand; score: number; weight: number;
+  /* The finding — the numbers this pillar actually turned up. PAID. */
+  why: string;
+  /* What the pillar examines, in one line. Shown in its place to a guest.
+     The score and the band still show, so the curiosity gap stays open
+     ("why only 5.2?") — what closes is handing over the answer. Reading
+     "2 RERA projects, 0 delivered, 50% on-time" for free tells someone
+     everything they came for, and nothing is left to buy. */
+  about: string;
+};
+
+const PILLAR_ABOUT: Record<string, string> = {
+  developer: "Their delivery record, balance sheet and litigation history.",
+  construction: "Build stage against the RERA schedule, and how fast it is selling.",
+  location: "The corridor, the connectivity, and what will actually move this price.",
+  legal: "Title, RERA registration, approvals and the developer's legal signal.",
+  usps: "Which of the claims hold real value, and which are brochure gloss.",
 };
 
 const MONTHS3 = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -883,11 +899,11 @@ export function pillars(p: ProjectIntel): Pillar[] {
   const uspWhy = uspCount ? p.ops!.usps![0].title : "Standard segment specification.";
 
   return [
-    { key: "developer", label: "Developer DNA", anchor: "developer", band: bandFromScore(devScore), score: devScore, weight: PILLAR_WEIGHTS.developer, why: devWhy },
-    { key: "construction", label: "Construction & Sales", anchor: "construction", band: bandFromScore(conScore), score: conScore, weight: PILLAR_WEIGHTS.construction, why: conWhy },
-    { key: "location", label: "Location Intelligence", anchor: "location", band: bandFromScore(locScore), score: locScore, weight: PILLAR_WEIGHTS.location, why: locWhy },
-    { key: "legal", label: "Legal & Compliance", anchor: "legal", band: bandFromScore(legScore), score: legScore, weight: PILLAR_WEIGHTS.legal, why: legWhy },
-    { key: "usps", label: "Project USPs", anchor: "usps", band: bandFromScore(uspScore), score: uspScore, weight: PILLAR_WEIGHTS.usps, why: uspWhy },
+    { key: "developer", label: "Developer DNA", anchor: "developer", band: bandFromScore(devScore), score: devScore, weight: PILLAR_WEIGHTS.developer, why: devWhy, about: PILLAR_ABOUT.developer },
+    { key: "construction", label: "Construction & Sales", anchor: "construction", band: bandFromScore(conScore), score: conScore, weight: PILLAR_WEIGHTS.construction, why: conWhy, about: PILLAR_ABOUT.construction },
+    { key: "location", label: "Location Intelligence", anchor: "location", band: bandFromScore(locScore), score: locScore, weight: PILLAR_WEIGHTS.location, why: locWhy, about: PILLAR_ABOUT.location },
+    { key: "legal", label: "Legal & Compliance", anchor: "legal", band: bandFromScore(legScore), score: legScore, weight: PILLAR_WEIGHTS.legal, why: legWhy, about: PILLAR_ABOUT.legal },
+    { key: "usps", label: "Project USPs", anchor: "usps", band: bandFromScore(uspScore), score: uspScore, weight: PILLAR_WEIGHTS.usps, why: uspWhy, about: PILLAR_ABOUT.usps },
   ];
 }
 

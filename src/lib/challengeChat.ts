@@ -378,8 +378,15 @@ export function buildChallengeContext(
     o?.reraId && `RERA ${o.reraId}`,
   ].filter(Boolean).join(" · ");
 
+  /* The score and the band are the public scoreboard; the FINDING behind
+     them is not. `why` carries the audit line — "2 RERA projects, 0
+     delivered, 50% on-time" — and putting it in publicKnowledge meant an
+     unpaid visitor only had to ask the chat politely to be told what the
+     paywall was holding back. PAID_TOPICS in this same file already lists
+     "the deep, pillar-by-pillar audit behind each grade" as paid, so this
+     was the wall disagreeing with itself. */
   const pubPillars = pillars(p)
-    .map((r) => `- ${r.label}: ${r.score.toFixed(1)}/10 (${r.band}) — ${r.why}`)
+    .map((r) => `- ${r.label}: ${r.score.toFixed(1)}/10 (${r.band}) — ${locked ? r.about : r.why}`)
     .join("\n");
 
   const publicKnowledge = [
