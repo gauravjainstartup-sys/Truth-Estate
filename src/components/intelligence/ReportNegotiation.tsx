@@ -19,6 +19,29 @@
 import { FREE_LEVERS, negotiationLevers, type Lever } from "@/lib/negotiation";
 import type { ProjectIntel } from "@/lib/projects";
 
+/* What buyers advised off these files settle at against the prevailing
+   rate — a range across the whole book, not a per-project projection. */
+const SAVE_LOW = 0.05;
+const SAVE_HIGH = 0.1;
+
+/* The saving band, in the unit an Indian reader actually thinks in: lakh
+   until it stops being sensible, then crore — "₹250 lakh" is a number
+   nobody says out loud. The unit is written ONCE when both ends share it,
+   because "₹15 lakh–₹30 lakh" is how a spreadsheet writes a range and
+   "₹15–30 lakh" is how a person says it. */
+function savingRange(cr: number): string {
+  const unit = (v: number) => (v * 100 < 100 ? "lakh" : "Cr");
+  const val = (v: number) => {
+    if (v * 100 < 100) return String(Math.round(v * 100));
+    const c = Math.round(v * 10) / 10;
+    return Number.isInteger(c) ? String(c) : c.toFixed(1);
+  };
+  const lo = cr * SAVE_LOW, hi = cr * SAVE_HIGH;
+  return unit(lo) === unit(hi)
+    ? `₹${val(lo)}\u2013${val(hi)} ${unit(hi)}`
+    : `₹${val(lo)} ${unit(lo)}\u2013₹${val(hi)} ${unit(hi)}`;
+}
+
 export default function ReportNegotiation({
   p,
   locked,
@@ -34,18 +57,17 @@ export default function ReportNegotiation({
   const shown = locked ? levers.slice(0, FREE_LEVERS) : levers;
   const held = locked ? levers.slice(FREE_LEVERS) : [];
 
-  /* WHAT THIS IS WORTH, IN MONEY, WITHOUT INVENTING ANYTHING.
-     One per cent of a crore is a lakh, so a ticket in crores converts to
-     lakhs with no arithmetic to distrust — and it turns "leverage" from a
-     word into a figure the reader can hold. Where the project prices above
-     its corridor we can go further and name the premium itself, which is
-     the one lever on this page that is already denominated in rupees.
-     What we do NOT do is claim a number of buyers or an average saving:
-     we do not measure either, and a page that says "1,200 buyers saved
-     ₹18 lakh" is worth less than one that says nothing, because a reader
-     who checks finds out we made it up. */
+  /* WHAT THIS IS WORTH, IN MONEY.
+     The 5-10% band is the founder's own figure for what buyers advised off
+     these files settle at against the prevailing rate — stated as what it
+     is: a range across every project we advise on, not a promise about
+     this one. It is applied to the ENTRY ticket rather than the top of the
+     band, so the number under-promises on every configuration above the
+     smallest. What is never written here is a count of buyers or a total
+     saved: we do not measure either, and an invented one is the single
+     easiest thing on this page for a reader to disbelieve. */
   const ticketCr = p.budget?.[0] ?? 0;
-  const onePct = ticketCr > 0 ? (Math.round(ticketCr * 10) / 10).toFixed(1).replace(/\.0$/, "") : null;
+  const saving = ticketCr > 0 ? savingRange(ticketCr) : null;
   const psfNow = p.ops?.price?.currentHigh ?? p.ops?.price?.currentLow ?? null;
   const premiumPct = p.psf && psfNow && psfNow > p.psf.high ? Math.round(((psfNow - p.psf.high) / p.psf.high) * 100) : null;
 
@@ -56,8 +78,14 @@ export default function ReportNegotiation({
           The weak spots in this report are your argument.
         </p>
         <p className="mt-3 max-w-2xl text-[0.92rem] font-light leading-[1.75] text-[#1a1a1a]/65">
+          {saving ? (
+            <>
+              Across the projects we advise on, buyers typically settle <b className="font-semibold text-[#1a1a1a]">5&ndash;10% under</b> the
+              prevailing rate. On a ₹{ticketCr} Cr entry ticket that is <b className="font-semibold text-[#1a1a1a]">{saving}</b>.{" "}
+            </>
+          ) : null}
           {levers.length === 1 ? "One thing" : `${levers.length} things`} in {p.name}&rsquo;s own filings can be
-          argued with{onePct ? <> — and one per cent off a ₹{onePct} Cr ticket is ₹{onePct} lakh</> : ""}.
+          argued with.
           {/* The premium is stated as a share and left there. Multiplying it
               out reads as a prize on offer — "₹5.3 crore of premium" on DLF
               The Arbour — and nobody negotiates away the entire gap between

@@ -188,7 +188,14 @@ export default function ReportDeveloper({ p }: { p: ProjectIntel }) {
           );
         })}
       </div>
-      <p className="mt-5 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">Sources: {dev.listed ? "a listed developer's audited annual & quarterly financial reports" : "a private developer's MCA-filed financial statements"}. Independent read — not supplied by the developer.</p>
+      {/* This used to branch on dev.listed and call the result "a private
+          developer's MCA-filed financial statements". Every live dossier is
+          built with listed:false — there is no column for it — so DLF,
+          Godrej, Sobha, Oberoi and Max Estates, all of them listed, were
+          each described as private on their own page. The line now says the
+          one thing that is true of every row: these are the company's own
+          annual statements, at group level, not a project SPV's. */}
+      <p className="mt-5 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">Sources: {dev.name}&rsquo;s own audited annual financial statements, read at company level rather than project. Independent read — not supplied by the developer.</p>
     </div>
   );
 }
