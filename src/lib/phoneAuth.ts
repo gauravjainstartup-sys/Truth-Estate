@@ -153,6 +153,31 @@ export async function sendOtpIntl(_full: string): Promise<AuthResult> {
   return { ok: true };
 }
 
+/* "Have we met this number?" — the answer that decides whether the sheet
+   asks for a name. Three states, not two: `null` means we could not tell,
+   and the caller must treat that as "ask for a name" rather than assume
+   either. A lookup outage should cost a returning buyer one extra field,
+   never an account they cannot reach. */
+export async function phoneKnown(phone: string, dial: string = INDIA_DIAL): Promise<boolean | null> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/phone-known`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({ phone, countryCode: dial }),
+      signal: AbortSignal.timeout(8000),
+    });
+    const data = (await res.json().catch(() => ({}))) as { success?: boolean; known?: boolean | null };
+    if (!res.ok || data.success !== true) return null;
+    return typeof data.known === "boolean" ? data.known : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function sendOtp(phone10: string): Promise<AuthResult> {
   try {
     const { ok, data } = await callFn("send-otp", { phone: phone10 });

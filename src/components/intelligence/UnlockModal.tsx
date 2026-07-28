@@ -22,7 +22,7 @@ import {
   hasReadAccess, has3DAccess, isAllAccess,
   type PackageId,
 } from "@/lib/journey";
-import { normalisePhone, normaliseIntl, prettyPhone, sendOtp, sendOtpIntl, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
+import { normalisePhone, normaliseIntl, phoneKnown, prettyPhone, sendOtp, sendOtpIntl, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
 
 const DIAL = [
   { code: "+91", flag: "🇮🇳" }, { code: "+971", flag: "🇦🇪" }, { code: "+1", flag: "🇺🇸" },
@@ -91,6 +91,9 @@ export default function UnlockModal({
   const [num, setNum] = useState("");
   const [otp, setOtp] = useState<string[]>(Array(OTP_LEN).fill(""));
   const [sent, setSent] = useState(false);
+  /* undefined = not looked up yet; null = the lookup could not answer.
+     Only `true` skips the name field — see the note on registerSubmit. */
+  const [known, setKnown] = useState<boolean | null | undefined>(undefined);
   const [err, setErr] = useState("");
   const [paying, setPaying] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -116,7 +119,7 @@ export default function UnlockModal({
     setStep(isSignedIn() ? "plans" : "register");
     setSel(focus3D ? "read3d" : "read");
     setExpanded(null);
-    setSent(false); setOtp(Array(OTP_LEN).fill("")); setErr(""); setPaying(false);
+    setSent(false); setKnown(undefined); setOtp(Array(OTP_LEN).fill("")); setErr(""); setPaying(false);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
@@ -135,7 +138,6 @@ export default function UnlockModal({
     if (busy) return;
 
     if (!sent) {
-      if (!name.trim()) { setErr("Please enter your name."); return; }
       if (!numValid) { setErr("Enter a valid mobile number."); return; }
       /* Indian numbers get the MSG91 SMS code; international numbers take
          the WhatsApp path, dummied until those templates are live. */
@@ -143,13 +145,26 @@ export default function UnlockModal({
       if (!ten) { setErr("That number doesn't look right — mind checking it?"); return; }
 
       setErr(""); setBusy(true);
-      const r = isIndia ? await sendOtp(ten) : await sendOtpIntl(ten);
+      /* Both at once. The lookup only decides which fields the next step
+         shows, so making the code wait behind it would add a round trip to
+         every sign-in for a cosmetic answer. If the lookup loses, `known`
+         is null and the name field appears — the same as a new visitor. */
+      const [r, k] = await Promise.all([
+        isIndia ? sendOtp(ten) : sendOtpIntl(ten),
+        phoneKnown(ten, dial),
+      ]);
       setBusy(false);
       if (!r.ok) { setErr(r.error); return; }
+      setKnown(k);
       setSent(true);
       return;
     }
 
+    /* A name is required of anyone we cannot positively recognise. Note
+       this is `!== true`, not `=== false`: when the lookup could not
+       answer we ask, because sending someone through without a name is
+       how an account ends up unnamed for good. */
+    if (known !== true && !name.trim()) { setErr("Please enter your name."); return; }
     if (!otpComplete) { setErr(`Enter the ${OTP_LEN}-digit code.`); return; }
     const ten = isIndia ? normalisePhone(num) : normaliseIntl(dial, num);
     if (!ten) { setErr("That number doesn't look right — go back and check it."); return; }
@@ -161,7 +176,7 @@ export default function UnlockModal({
     setBusy(false);
     if (!r.ok) { setErr(r.error); return; }
 
-    saveLead({ name: name.trim(), email: "", phone: `${dial} ${num}`.trim(), intent: "buyer-office", createdAt: Date.now() });
+    if (name.trim()) saveLead({ name: name.trim(), email: "", phone: `${dial} ${num}`.trim(), intent: "buyer-office", createdAt: Date.now() });
     setErr("");
     setStep("plans");
   }
@@ -195,44 +210,75 @@ export default function UnlockModal({
         <div className="overflow-y-auto px-6 py-8 md:px-9">
           {step === "register" && (
             <form onSubmit={registerSubmit}>
-              <p className="text-[0.64rem] font-semibold uppercase tracking-[0.2em] text-[#9a7a2e]">Step 1 of 2 · Create your account</p>
-              <h2 className="mt-2 font-serif text-[1.7rem] font-semibold leading-tight">First, a quick sign-up</h2>
-              <p className="mt-2 text-[0.88rem] leading-snug text-[#1a1a1a]/55">We&rsquo;ll keep your reads and shortlist in your private Buyer Office.</p>
-
+              {/* THE NUMBER COMES FIRST. This asked everyone for their name
+                  before it asked for anything else, so a buyer we already
+                  knew typed it again on every unlock and we made no use of
+                  knowing them. The number alone tells us which of two
+                  people is at the sheet, and each gets the shorter form:
+                  a returning buyer gets a greeting and the code, a new one
+                  gets the name alongside it. */}
               {!sent ? (
                 <>
+                  <p className="text-[0.64rem] font-semibold uppercase tracking-[0.2em] text-[#9a7a2e]">Step 1 of 2 · Your number</p>
+                  <h2 className="mt-2 font-serif text-[1.7rem] font-semibold leading-tight">Let&rsquo;s start with your mobile</h2>
+                  <p className="mt-2 text-[0.88rem] leading-snug text-[#1a1a1a]/55">We&rsquo;ll see whether you already have a Buyer Office, and send you a code either way.</p>
                   <label className="mt-5 block">
-                    <span className="text-[0.64rem] font-semibold uppercase tracking-[0.12em] text-[#1a1a1a]/45">Full name</span>
-                    <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Rohan Mehta" autoComplete="name" className={`mt-2 ${FIELD}`} />
-                  </label>
-                  <label className="mt-4 block">
                     <span className="text-[0.64rem] font-semibold uppercase tracking-[0.12em] text-[#1a1a1a]/45">Mobile number</span>
                     <div className="mt-2 flex gap-2">
                       <select value={dial} onChange={(e) => setDial(e.target.value)} aria-label="Country code"
                         className="rounded-md border border-[#1a1a1a]/[0.16] bg-white px-3 py-3 text-[0.95rem] text-[#1a1a1a] outline-none focus:border-[#c9a96e]">
                         {DIAL.map((d) => <option key={d.code} value={d.code}>{d.flag} {d.code}</option>)}
                       </select>
-                      <input value={num} onChange={(e) => setNum(e.target.value)} inputMode="numeric" placeholder="98xxxxxx21" autoComplete="tel-national" className={`flex-1 ${FIELD}`} />
+                      <input value={num} onChange={(e) => setNum(e.target.value)} inputMode="numeric" placeholder="98xxxxxx21" autoComplete="tel-national" autoFocus className={`flex-1 ${FIELD}`} />
                     </div>
                   </label>
                 </>
               ) : (
-                <div className="mt-5">
-                  <p className="text-[0.85rem] text-[#1a1a1a]/55">Code sent to <span className="font-medium text-[#1a1a1a]">{sentTo}</span> via {isIndia ? "SMS" : "WhatsApp"}{" · "}<button type="button" onClick={() => { setSent(false); setOtp(Array(OTP_LEN).fill("")); setErr(""); }} className="font-medium text-[#9a7a2e] hover:underline">Change</button></p>
-                  <div className="mt-4">
-                    <OtpDigits
-                      value={otp} onChange={setOtp} len={OTP_LEN} autoFocus
-                      boxClass="h-14 min-w-0 flex-1 rounded-lg border border-[#1a1a1a]/[0.18] bg-white text-center font-serif text-[1.4rem] text-[#1a1a1a] outline-none focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/20"
-                    />
+                <>
+                  {/* The greeting is deliberately name-less. We know the name
+                      by now, but the code has not been checked — printing it
+                      here would tell anyone who typed a stranger's number
+                      who owns it. It goes on screen after they verify. */}
+                  <p className="text-[0.64rem] font-semibold uppercase tracking-[0.2em] text-[#9a7a2e]">
+                    Step 1 of 2 · {known === true ? "Welcome back" : "Create your account"}
+                  </p>
+                  <h2 className="mt-2 font-serif text-[1.7rem] font-semibold leading-tight">
+                    {known === true ? "Good to see you again" : "First, a quick sign-up"}
+                  </h2>
+                  <p className="mt-2 text-[0.88rem] leading-snug text-[#1a1a1a]/55">
+                    {known === true
+                      ? "Your Buyer Office is already here — enter the code and it opens where you left it."
+                      : "We\u2019ll keep your reads and shortlist in your private Buyer Office."}
+                  </p>
+
+                  {known !== true && (
+                    <label className="mt-5 block">
+                      <span className="text-[0.64rem] font-semibold uppercase tracking-[0.12em] text-[#1a1a1a]/45">Full name</span>
+                      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Rohan Mehta" autoComplete="name" className={`mt-2 ${FIELD}`} />
+                    </label>
+                  )}
+
+                  <div className="mt-5">
+                    <p className="text-[0.85rem] text-[#1a1a1a]/55">Code sent to <span className="font-medium text-[#1a1a1a]">{sentTo}</span> via {isIndia ? "SMS" : "WhatsApp"}{" · "}<button type="button" onClick={() => { setSent(false); setKnown(undefined); setOtp(Array(OTP_LEN).fill("")); setErr(""); }} className="font-medium text-[#9a7a2e] hover:underline">Change</button></p>
+                    <div className="mt-4">
+                      <OtpDigits
+                        value={otp} onChange={setOtp} len={OTP_LEN} autoFocus
+                        boxClass="h-14 min-w-0 flex-1 rounded-lg border border-[#1a1a1a]/[0.18] bg-white text-center font-serif text-[1.4rem] text-[#1a1a1a] outline-none focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/20"
+                      />
+                    </div>
                   </div>
-                </div>
+                </>
               )}
 
               {err && <p className="mt-3 text-[0.8rem] text-[#b3402a]">{err}</p>}
               <button type="submit" disabled={busy} className="mt-6 w-full rounded-md bg-[#1e6b45] px-4 py-3 text-[0.9rem] font-medium text-white transition-colors hover:bg-[#238c55] disabled:opacity-60">
-                {busy ? (sent ? "Verifying…" : "Sending…") : sent ? "Verify & continue →" : "Send code →"}
+                {busy ? (sent ? "Verifying…" : "Checking…") : !sent ? "Continue →" : known === true ? "Verify & continue →" : "Create account & continue →"}
               </button>
-              <p className="mt-3 text-[0.72rem] leading-relaxed text-[#1a1a1a]/40">By continuing you agree to our Terms &amp; Privacy Policy.</p>
+              {/* Shown to the people it applies to: someone signing up now.
+                  A returning buyer agreed at their own sign-up. */}
+              {known !== true && (
+                <p className="mt-3 text-[0.72rem] leading-relaxed text-[#1a1a1a]/40">By continuing you agree to our Terms &amp; Privacy Policy.</p>
+              )}
             </form>
           )}
 
