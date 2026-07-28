@@ -87,7 +87,7 @@ let stubs = 0, locked = 0, samples = 0;
 const leaked = [], unlockless = [], sampleBare = [];
 const noNeg = [], noFaq = [], askLeak = [], thin = [], schemaGhost = [], stranded = [];
 const inbound = new Set();
-const badNums = [], badChapters = [], badCompose = [];
+const badNums = [], badChapters = [], badCompose = [], figureLeak = [], noSignals = [];
 
 /* The report numbers itself twice over: chapters in Roman, sections in
    two digits, both counted at render so they describe what THIS reader
@@ -99,6 +99,20 @@ const sectionNums = (h) =>
   [...noComments(h).matchAll(/<span class="font-mono text-\[0\.8rem\] text-\[#c9a96e\]">(\d+)<\/span><h2/g)].map((m) => m[1]);
 const chapterNums = (h) =>
   [...noComments(h).matchAll(/>Chapter ([IVX]+)<\/span><h2/g)].map((m) => m[1]);
+
+/* The short answer's three pointers, above the paywall. They are allowed to
+   say which way a signal points and how strongly; they are not allowed to
+   say the figure, because the figure is the finding and the finding is what
+   we sell. A digit alone is fine — "M3M" and "Sector 63A" are names — so
+   this looks for a MEASURE: something counted in per cent, rupees, rates,
+   months or years. The negotiation section below the fold is deliberately
+   exempt; it carries its evidence with the numbers attached, which is what
+   earns the page its traffic. */
+const MEASURE =
+  /(?:₹|rs\.?\s*)\s*\d|\d\s*[-–]?\s*(?:%|per\s?cent|percent|cr\b|crore|lakh|lac\b|psf|k\/|\/\s*sq|sq\.?\s?ft|month|year|week|point)/i;
+const shortAnswerPointers = (h) =>
+  [...noComments(h).matchAll(/<li data-signal="(?:up|down)"[^>]*>(.*?)<\/li>/gs)]
+    .map((m) => decode(m[1].replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim());
 
 /* "What the 86 is made of", drawn at weight. It has to make 86. */
 function composition(h) {
@@ -146,6 +160,11 @@ for (const [dir, f] of files) {
   );
   if (outbound.size < MIN_OUTBOUND) stranded.push(f);
   for (const t of outbound) inbound.add(t);
+
+  const pointers = shortAnswerPointers(s);
+  if (!pointers.length) noSignals.push(f);
+  const withFigures = pointers.filter((v) => MEASURE.test(v));
+  if (withFigures.length) figureLeak.push(`${f} ("${withFigures[0].slice(0, 60)}")`);
 
   const secs = sectionNums(s);
   if (secs.length && secs.some((v, i) => Number(v) !== i + 1)) badNums.push(`${f} [${secs.join(",")}]`);
@@ -207,6 +226,8 @@ report(stranded, `UNDER ${MIN_OUTBOUND} OUTBOUND PROJECT LINKS`);
 report(badNums, "SECTION NUMBERS NOT SEQUENTIAL FROM 01");
 report(badChapters, "CHAPTER NUMERALS NOT SEQUENTIAL FROM I");
 report(badCompose, "PILLARS DO NOT COMPOSE TO THE TRUTH SCORE");
+report(figureLeak, "FIGURES IN THE SHORT ANSWER (say it in relative language)");
+report(noSignals, "SHORT ANSWER HAS NO POINTERS");
 if (locked && inbound.size < locked) {
   console.log(`[verify-out] ORPHANS: ${locked - inbound.size} report(s) have no inbound link from another report`);
 }

@@ -361,8 +361,20 @@ export default function ProjectProfile({
   const ctx = rankContext(p);
   const reviewed = reviewedOn(p);
   const mapHref = ops?.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${p.name} ${ops.address}`)}` : undefined;
+  /* The hero chip named the stage and then printed the figure it was
+     supposed to be summarising — and named it wrong: "Mid-construction"
+     was a literal, so a site at 5% built and one at 98% both carried it.
+     The stage is now read off the number, and the number stays inside. */
   const buildStatus = ops?.construction
-    ? `Mid-construction · ${ops.construction.actualPct}% built`
+    ? (() => {
+        const b = ops.construction.actualPct;
+        return b >= 95 ? "Structurally complete"
+          : b >= 75 ? "Late-stage construction"
+          : b >= 40 ? "Mid-construction"
+          : b >= 15 ? "Early construction"
+          : b > 0 ? "Groundwork underway"
+          : "Pre-construction";
+      })()
     : ops?.possession
     ? `Under construction · handover ${ops.possession}`
     : undefined;
@@ -807,14 +819,17 @@ export default function ProjectProfile({
                       rather than by a label above them. */}
                   {(signals.highlights.length > 0 || signals.cautions.length > 0) && (
                     <ul className="mt-7 space-y-4">
+                      {/* data-signal is for the build gate, not the reader: it
+                          lets verify-out find these three lines exactly and
+                          fail a build that puts a figure back into them. */}
                       {signals.highlights.map((h, i) => (
-                        <li key={`h${i}`} className="flex items-start gap-3.5">
+                        <li key={`h${i}`} data-signal="up" className="flex items-start gap-3.5">
                           <SignalMark tone="up" />
                           <span className="text-[0.92rem] leading-[1.6] text-[#1a1a1a]/80">{h}</span>
                         </li>
                       ))}
                       {signals.cautions.map((c, i) => (
-                        <li key={`c${i}`} className="flex items-start gap-3.5">
+                        <li key={`c${i}`} data-signal="down" className="flex items-start gap-3.5">
                           <SignalMark tone="down" />
                           <span className="text-[0.92rem] leading-[1.6] text-[#1a1a1a]/80">{c}</span>
                         </li>
@@ -878,7 +893,13 @@ export default function ProjectProfile({
                 {/* the registry — dotted-leader detail list */}
                 <div className="mt-9 grid border-t border-[#1a1a1a]/8 pt-4 md:grid-cols-2 md:gap-x-12">
                   {(live?.launchPsf ?? ops?.price?.launchPsf) != null && <Reg icon={VITAL_ICON.tag} k="Launch price / sq ft" v={fmtPsf(live?.launchPsf ?? ops!.price!.launchPsf)} />}
-                  <Reg icon={VITAL_ICON.psf} k="Corridor avg / sq ft" v={(live?.corridorAvg ?? p.psf?.avg) ? fmtPsf((live?.corridorAvg ?? p.psf?.avg)!) : "NA"} />
+                  {/* Only when the money row above is showing this project's
+                      own rate. Where it isn't, that row already falls back to
+                      the corridor average — and 20 of 97 reports were printing
+                      the same figure twice in the same box. */}
+                  {(live?.currentLow ?? ops?.price?.currentLow)
+                    ? <Reg icon={VITAL_ICON.psf} k="Corridor avg / sq ft" v={(live?.corridorAvg ?? p.psf?.avg) ? fmtPsf((live?.corridorAvg ?? p.psf?.avg)!) : "NA"} />
+                    : null}
                   {ops?.units != null && <Reg icon={VITAL_ICON.units} k="Total units" v={`${ops.units.toLocaleString("en-IN")}`} />}
                   <Reg icon={VITAL_ICON.towers} k="Towers" v={ops?.towers != null ? `${ops.towers}` : "NA"} />
                   <Reg icon={VITAL_ICON.land} k="Land" v={ops?.landAcres != null ? `${ops.landAcres} acre` : "NA"} />
@@ -1482,6 +1503,29 @@ function ScoreGradePill({ score }: { score: number }) {
   );
 }
 
+/* A measured figure: a percentage, a rupee amount, a rate per square foot,
+   a count of months or years. This is what the short answer may not say.
+   NOT a digit — "M3M", "Sector 63A" and "Phase 2" are names, and a rule
+   that banned digits outright would mangle every one of them. */
+const MEASURE =
+  /(?:₹|rs\.?\s*)\s*\d|\d\s*[-–]?\s*(?:%|per\s?cent|percent|cr\b|crore|lakh|lac\b|psf|k\/|\/\s*sq|sq\.?\s?ft|month|year|week|point)/i;
+
+/* The three pointers under the verdict, in words rather than figures.
+ *
+ * WHY: this card sits above the paywall, so every number in it is a number
+ * we are giving away — and "34% appreciation since launch, 100% sold" is
+ * not a teaser for the report, it IS the report's finding. A reader who
+ * takes those two facts away has no reason to unlock anything. The bands
+ * below say the same thing directionally ("well above where it launched",
+ * "sold out at the developer's desk") and leave the figure, which is the
+ * part worth paying for, on the paid side.
+ *
+ * This is deliberately NOT applied to the negotiation section further down,
+ * which carries its evidence with the figures attached. That section is
+ * free on purpose: it is what a crawler indexes and what earns the page its
+ * traffic. The rule is "not in the executive summary", not "nowhere".
+ *
+ * Order is materiality — the caution shown is the first one produced. */
 function shortAnswerSignals(p: ProjectIntel, ctx: ReturnType<typeof rankContext>, live: import("@/lib/useLiveVitals").LiveVitals | null) {
   const ops = p.ops;
   const dev = developerOf(p);
@@ -1489,47 +1533,76 @@ function shortAnswerSignals(p: ProjectIntel, ctx: ReturnType<typeof rankContext>
   const cautions: string[] = [];
 
   const cLow = live?.currentLow ?? ops?.price?.currentLow;
+  const cHigh = live?.currentHigh ?? ops?.price?.currentHigh;
   const launchPsf = live?.launchPsf ?? ops?.price?.launchPsf;
-  if (cLow && launchPsf && launchPsf > 0) {
+  /* A filed launch rate that lands exactly on a bound of the current asking
+     range, to the rupee, is the same number entered twice — 47 of the 87
+     rows carrying both do this, which no market produces. We cannot tell a
+     genuinely flat project from a copied field, so we say nothing about
+     price rather than lead the page with "no appreciation since launch",
+     which is what this used to do on 39 of 97 reports. */
+  const launchIsCopied = launchPsf != null && (launchPsf === cLow || launchPsf === cHigh);
+  if (cLow && launchPsf && launchPsf > 0 && !launchIsCopied) {
     const appr = Math.round(((cLow - launchPsf) / launchPsf) * 100);
-    if (appr > 0) highlights.push(`${appr}% price appreciation since launch`);
-    else if (appr === 0) cautions.push("No price appreciation since launch");
-    else cautions.push(`Prices down ${Math.abs(appr)}% from launch`);
+    if (appr >= 50) highlights.push("Pricing has run far ahead of where this project launched");
+    else if (appr >= 20) highlights.push("Pricing sits well above where this project launched");
+    else if (appr >= 8) highlights.push("Pricing has climbed steadily on where this project launched");
+    /* A single-digit gain over the years since a RERA registration is not a
+       strength dressed small — it is the market declining to re-rate the
+       project, and it belongs on the same side of the line as flat. */
+    else if (appr >= 0) cautions.push("Pricing has barely moved off the launch rate — the market has yet to re-rate it");
+    else if (appr > -10) cautions.push("Pricing has slipped below the launch rate — early buyers are behind");
+    else cautions.push("Pricing has fallen well below the launch rate — early buyers are underwater");
   }
 
   if (ctx.corridorRank > 0) {
-    if (ctx.corridorRank <= 3) highlights.push(`#${ctx.corridorRank} of ${ctx.corridorCount} in ${p.marketShort}`);
-    else if (ctx.bottomHalf) cautions.push(`Ranks ${ctx.corridorRank} of ${ctx.corridorCount} in ${p.marketShort}`);
+    if (ctx.corridorRank === 1) highlights.push(`The strongest-scoring project we track in ${p.marketShort}`);
+    else if (ctx.corridorRank <= 3) highlights.push(`Among the strongest-scoring projects we track in ${p.marketShort}`);
+    else if (ctx.bottomHalf) cautions.push(`Scores below most of what we track in ${p.marketShort}`);
   }
 
   if (dev) {
     const perf = dev.performance;
-    if (perf.onTimePct >= 85) highlights.push(`${dev.name}: consistent delivery across ${perf.delivered} projects`);
-    else if (perf.avgDelayMonths > 12) cautions.push(`${dev.name}: avg ${perf.avgDelayMonths}-month delays across past projects`);
+    if (perf.onTimePct >= 85) highlights.push(`${dev.name} has handed over its past projects on time, consistently`);
+    else if (perf.avgDelayMonths >= 24) cautions.push(`${dev.name} has handed over past projects years beyond the dates it committed to`);
+    else if (perf.avgDelayMonths > 12) cautions.push(`${dev.name} has handed over past projects well beyond the dates it committed to`);
   }
 
   if (ops?.construction) {
-    const pct = ops.construction.actualPct;
-    if (pct >= 50) highlights.push(`${pct}% constructed — execution on track`);
-    else if (pct < 20) cautions.push(`Only ${pct}% constructed — early-stage execution risk`);
+    const built = ops.construction.actualPct;
+    /* Pace is built-vs-due on the project's own filed plan, which is a
+       different claim from "far along" — a tower can be three-quarters up
+       and still behind, and the old wording called anything past halfway
+       "on track" without ever looking. */
+    const pace = built - ops.construction.expectedPct;
+    if (pace <= -8) cautions.push("The build is running behind the schedule the developer filed for it");
+    else if (built >= 90) highlights.push("The structure is all but finished — the execution risk is largely behind it");
+    else if (built >= 50) highlights.push(`Construction is past the halfway mark and ${pace >= 8 ? "running ahead of" : "holding to"} its filed schedule`);
+    else if (built < 20) cautions.push("The site is barely out of the ground — most of the execution risk is still ahead of you");
   }
 
   if (ops?.units && ops.construction) {
     const soldPct = ops.construction.absorptionPct;
-    if (soldPct >= 100) cautions.push(`${soldPct}% sold — no primary inventory, resale premium likely`);
-    else if (soldPct >= 80) highlights.push(`${soldPct}% sold — strong demand signal`);
-    else if (soldPct < 30) cautions.push(`Only ${soldPct}% sold — early absorption`);
+    if (soldPct >= 100) cautions.push("Sold out at the developer's desk — anything you buy now is resale, priced accordingly");
+    else if (soldPct >= 80) highlights.push("Most of the inventory has gone — demand has been strong and the choice left is thin");
+    else if (soldPct < 30) cautions.push("Most of the project is still unsold — the market has not voted on it yet");
   }
 
-  if (p.strengths.length) for (const s of p.strengths) { if (highlights.length < 3) highlights.push(s); }
-  if (p.watchouts.length) for (const w of p.watchouts) { if (cautions.length < 2) cautions.push(w); }
+  /* The rules engine's own words as filler. They are written for the paid
+     report, so anything carrying a figure is dropped rather than reworded —
+     a half-translated sentence reads worse than one fewer pointer. */
+  const plain = (s: string) => s.trim().length > 0 && !MEASURE.test(s);
+  for (const s of p.strengths) if (highlights.length < 3 && plain(s)) highlights.push(s);
+  for (const w of p.watchouts) if (cautions.length < 2 && plain(w)) cautions.push(w);
 
   /* Two up, one down. Three pointers is what a reader takes in before
      deciding whether to keep going, and a single caution among two
      strengths reads as an assessment — five bullets under two headings
-     read as a list to skim past. The one caution shown is the first the
-     engine produced, which is its most material. */
-  return { highlights: highlights.slice(0, 2), cautions: cautions.slice(0, 1) };
+     read as a list to skim past. */
+  return {
+    highlights: highlights.filter(plain).slice(0, 2),
+    cautions: cautions.filter(plain).slice(0, 1),
+  };
 }
 
 /* The short answer's three marks. Filled discs rather than a 0.7rem ✓ and
