@@ -1274,10 +1274,21 @@ export function liveProjectIntel(
     recommendation,
     confidence,
     tags,
+    /* The rules engine's verdict phrase leads — "Institution-Grade with
+       Prime Location Tailwinds" — because it is the only one of these that
+       is an assessment. `insight` came first and is a stat restatement on
+       91 of the 97 rows ("Strong Buy project. 64% construction complete.
+       1137/1137 units sold."), which both repeated the recommendation
+       printed beside it and restated the two figures already shown as
+       pointers underneath.
+
+       riskVerdictCleaned is dropped from the chain entirely: it holds a
+       JSON array, not prose, so the one row that ever fell through to it
+       would have rendered `[{"tag":"Debt Servicing Risk"…}]` as its
+       headline. */
     reason:
-      row.insight ??
-      row.riskVerdictCleaned ??
       textAt(ruleV, "verdict") ??
+      row.insight ??
       `Independently scored ${Math.round(row.truthScore ?? 0)}/100 by our pipeline from RERA filings and public records.`,
     strengths,
     watchouts,

@@ -1,5 +1,7 @@
 "use client";
 
+import OtpDigits from "@/components/auth/OtpDigits";
+
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Logo from "../Logo";
@@ -438,7 +440,6 @@ function RegisterCard({
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const isIndia = dialCode === "+91";
   const digits = num.replace(/\D/g, "");
@@ -455,7 +456,6 @@ function RegisterCard({
     setSending(false);
     if (r.ok) {
       setOtpSent(true);
-      setTimeout(() => otpRefs.current[0]?.focus(), 40);
     } else setErr(r.error ?? "We couldn't send the code. Please try again.");
   };
 
@@ -470,11 +470,6 @@ function RegisterCard({
     } else setErr(r.error ?? "That code didn't match. Please try again.");
   };
 
-  const setOtpDigit = (i: number, v: string) => {
-    const digit = v.replace(/\D/g, "").slice(-1);
-    setOtp((o) => { const n = [...o]; n[i] = digit; return n; });
-    if (digit && i < otp.length - 1) otpRefs.current[i + 1]?.focus();
-  };
 
   const inputCls =
     "w-full rounded-xl border border-[#1a1a1a]/15 bg-[#FBF8F2] px-3.5 py-3 text-[0.95rem] font-light text-[#1a1a1a] outline-none transition-colors placeholder:text-[#1a1a1a]/35 focus:border-[#1e6b45]/50 disabled:opacity-60";
@@ -548,20 +543,11 @@ function RegisterCard({
               {sending ? "Sending…" : "Resend"}
             </button>
           </div>
-          <div className="mt-2 flex gap-2">
-            {otp.map((d, i) => (
-              <input
-                key={i}
-                ref={(el) => { otpRefs.current[i] = el; }}
-                value={d}
-                onChange={(e) => setOtpDigit(i, e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Backspace" && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus(); }}
-                inputMode="numeric"
-                maxLength={1}
-                aria-label={`Digit ${i + 1}`}
-                className="h-12 w-full rounded-lg border border-[#1a1a1a]/15 bg-white text-center font-serif text-[1.25rem] font-light text-[#1a1a1a] outline-none transition-colors focus:border-[#1e6b45]/50"
-              />
-            ))}
+          <div className="mt-2">
+            <OtpDigits
+              value={otp} onChange={setOtp} len={otp.length} autoFocus
+              boxClass="h-12 w-full rounded-lg border border-[#1a1a1a]/15 bg-white text-center font-serif text-[1.25rem] font-light text-[#1a1a1a] outline-none transition-colors focus:border-[#1e6b45]/50"
+            />
           </div>
         </div>
       )}

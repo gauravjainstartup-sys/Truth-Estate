@@ -40,7 +40,10 @@ async function checkPhoneForm(p, s, vp, { numSel, sendName, sel }) {
   await p.waitForTimeout(2200);
   const blocked = await vis(p.getByText(/only verify Indian/i));
   log(s, vp, 'international not blocked', !blocked);
-  const boxes = await p.locator('input[aria-label^="Digit"], input[maxlength="1"]').count();
+  /* Selector deliberately NOT maxlength="1" any more. The boxes carry
+     maxLength={len} so the OS can hand over a whole code; keying a test on
+     the old value made it match nothing and skip itself in silence. */
+  const boxes = await p.locator('input[aria-label^="Digit"]').count();
   if (boxes) log(s, vp, 'OTP boxes = 4', boxes === 4, `got ${boxes}`);
   return true;
 }
@@ -116,12 +119,47 @@ async function consult(b, vp) {
     await p.waitForTimeout(1400);
     const num = p.locator('input[type=tel], input[inputmode=numeric], input[placeholder*="98"]').first();
     log(s, vp, 'register step renders', await vis(num));
-    if (await vis(num)) { await p.locator('input[placeholder="Full name"]').first().fill('QA Tester').catch(()=>{}); await checkPhoneForm(p, s, vp, { numSel: 'input[type=tel]', sendName: /Send|code/i, sel: 'select' }); }
+    if (await vis(num)) {
+      await p.locator('input[placeholder="Full name"]').first().fill('QA Tester').catch(()=>{});
+      await checkPhoneForm(p, s, vp, { numSel: 'input[type=tel]', sendName: /Send|code/i, sel: 'select' });
+      await checkOtpAutofill(p, s, vp);
+    }
     log(s, vp, 'no js errors', p.errs.length === 0, p.errs[0] ?? '');
   } catch (e) { log(s, vp, 'THREW', false, String(e).slice(0, 120)); }
   await ctx.close();
 }
 
+
+
+/* The keyboard's code suggestion hands the WHOLE code to the focused box.
+   Every box used to carry maxLength={1}, so the browser truncated it to one
+   character before React saw it: one digit landed, three were dropped, and
+   auto-submit never fired because the code was never complete. Filling the
+   first box with the full code is exactly what the platform does. */
+async function checkOtpAutofill(p, s, vp) {
+  const boxes = p.locator('input[aria-label^="Digit"]:visible');
+  const n = await boxes.count();
+  if (!n) return;
+  const ml = await boxes.first().getAttribute('maxlength');
+  const ac = await boxes.first().getAttribute('autocomplete');
+  log(s, vp, 'first box offers one-time-code', ac === 'one-time-code', `autocomplete=${ac}`);
+  log(s, vp, 'boxes accept a whole code', ml !== '1', `maxlength=${ml}`);
+
+  await boxes.first().fill('4827');
+  await p.waitForTimeout(400);
+  const vals = [];
+  for (let i = 0; i < n; i++) vals.push(await boxes.nth(i).inputValue());
+  log(s, vp, 'suggestion fills every box', vals.join('') === '4827', vals.join('|'));
+
+  // and ordinary typing must still advance box to box
+  for (let i = 0; i < n; i++) await boxes.nth(i).fill('');
+  await boxes.nth(0).click();
+  await p.keyboard.type('73');
+  await p.waitForTimeout(300);
+  const t = [];
+  for (let i = 0; i < n; i++) t.push(await boxes.nth(i).inputValue());
+  log(s, vp, 'typing still advances', t[0] === '7' && t[1] === '3', t.join('|'));
+}
 
 /* 5. Shortlist #1-match OTP sheet */
 async function shortlist(b, vp) {

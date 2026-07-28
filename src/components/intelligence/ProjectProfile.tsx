@@ -785,39 +785,47 @@ export default function ProjectProfile({
               return (
                 <div className="mt-11 rounded-2xl border border-[#c9a96e]/30 bg-white/70 p-8 shadow-[0_16px_50px_rgba(0,0,0,0.04)] md:p-10">
                   <Eyebrow>The short answer</Eyebrow>
-                  <p className="mt-5 font-serif text-[1.65rem] font-normal leading-[1.2] md:text-[2rem]">{p.recommendation}</p>
+                  {/* The call and the reason for it, as one sentence. The
+                      recommendation alone ("Strong Buy") states a conclusion
+                      and withholds the argument, which is the opposite of
+                      what this report is for. */}
+                  <p className="mt-5 font-serif text-[1.65rem] font-medium leading-[1.18] tracking-[-0.01em] md:text-[2.05rem]">
+                    {(() => {
+                      /* Some upstream verdicts open with the recommendation
+                         itself, and "Strong Buy: Strong Buy project" is how
+                         that reads once the two are joined. */
+                      const r = (p.reason ?? "").trim();
+                      const echoes = r.toLowerCase().startsWith(p.recommendation.toLowerCase());
+                      if (!r) return p.recommendation;
+                      if (echoes) return r;
+                      return <>{p.recommendation}: <span className="font-normal text-[#1a1a1a]/85">{r}</span></>;
+                    })()}
+                  </p>
 
-                  {signals.highlights.length > 0 && (
-                    <div className="mt-6">
-                      <p className="text-[0.7rem] font-semibold uppercase tracking-[0.15em] text-[#1e6b45]/70">Highlights</p>
-                      <ul className="mt-2.5 space-y-2">
-                        {signals.highlights.map((h, i) => (
-                          <li key={i} className="flex items-start gap-2.5 text-[0.88rem] leading-[1.55] text-[#1a1a1a]/75">
-                            <span className="mt-[3px] shrink-0 text-[0.7rem] text-[#1e6b45]">&#10003;</span>
-                            {h}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                  {/* One list, not two headed groups: two strengths and the
+                      single most material caution, told apart by the mark
+                      rather than by a label above them. */}
+                  {(signals.highlights.length > 0 || signals.cautions.length > 0) && (
+                    <ul className="mt-7 space-y-4">
+                      {signals.highlights.map((h, i) => (
+                        <li key={`h${i}`} className="flex items-start gap-3.5">
+                          <SignalMark tone="up" />
+                          <span className="text-[0.92rem] leading-[1.6] text-[#1a1a1a]/80">{h}</span>
+                        </li>
+                      ))}
+                      {signals.cautions.map((c, i) => (
+                        <li key={`c${i}`} className="flex items-start gap-3.5">
+                          <SignalMark tone="down" />
+                          <span className="text-[0.92rem] leading-[1.6] text-[#1a1a1a]/80">{c}</span>
+                        </li>
+                      ))}
+                    </ul>
                   )}
 
-                  {signals.cautions.length > 0 && (
-                    <div className="mt-5">
-                      <p className="text-[0.7rem] font-semibold uppercase tracking-[0.15em] text-[#9a7a2e]/70">Be cautious</p>
-                      <ul className="mt-2.5 space-y-2">
-                        {signals.cautions.map((c, i) => (
-                          <li key={i} className="flex items-start gap-2.5 text-[0.88rem] leading-[1.55] text-[#1a1a1a]/75">
-                            <span className="mt-[3px] shrink-0 text-[0.7rem] text-[#9a7a2e]">&#9888;</span>
-                            {c}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  <div className="mt-6 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 border-t border-[#1a1a1a]/8 pt-5">
-                    <p className="max-w-xl text-[0.86rem] font-light leading-[1.7] text-[#1a1a1a]/55">
-                      <span className="font-medium text-[#1a1a1a]/70">Best suited for:</span> {investorFit(p).replace(/^Best suited for\s+/i, "")}
+                  <div className="mt-7 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 border-t border-[#1a1a1a]/8 pt-5">
+                    <p className="max-w-xl text-[0.86rem] font-light italic leading-[1.7] text-[#1a1a1a]/55">
+                      <span className="font-medium not-italic uppercase tracking-[0.14em] text-[0.68rem] text-[#9a7a2e]">Investor fit:</span>{" "}
+                      {investorFit(p).replace(/^Best suited for\s+/i, "")}
                     </p>
                     {locked ? (
                       <button onClick={() => setUnlockOpen(true)} className="shrink-0 text-[0.78rem] font-semibold text-[#1e6b45] transition-colors hover:text-[#238c55]">
@@ -1516,7 +1524,32 @@ function shortAnswerSignals(p: ProjectIntel, ctx: ReturnType<typeof rankContext>
   if (p.strengths.length) for (const s of p.strengths) { if (highlights.length < 3) highlights.push(s); }
   if (p.watchouts.length) for (const w of p.watchouts) { if (cautions.length < 2) cautions.push(w); }
 
-  return { highlights: highlights.slice(0, 3), cautions: cautions.slice(0, 2) };
+  /* Two up, one down. Three pointers is what a reader takes in before
+     deciding whether to keep going, and a single caution among two
+     strengths reads as an assessment — five bullets under two headings
+     read as a list to skim past. The one caution shown is the first the
+     engine produced, which is its most material. */
+  return { highlights: highlights.slice(0, 2), cautions: cautions.slice(0, 1) };
+}
+
+/* The short answer's three marks. Filled discs rather than a 0.7rem ✓ and
+   ⚠: at that size the two glyphs read as the same grey speck, and the
+   whole point of the block is that a reader takes the shape of the verdict
+   in before they read a word of it. Green rising, amber falling. */
+function SignalMark({ tone }: { tone: "up" | "down" }) {
+  const up = tone === "up";
+  return (
+    <span
+      aria-hidden
+      className={`mt-[2px] grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full ${
+        up ? "bg-[#1e6b45]" : "bg-[#b0503e]"
+      } shadow-[0_2px_8px_-2px_rgba(0,0,0,0.35)]`}
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" className="h-[13px] w-[13px]">
+        {up ? <><path d="M5 12l5 5L19 7" /></> : <><path d="M12 7v6" /><path d="M12 17h.01" /></>}
+      </svg>
+    </span>
+  );
 }
 
 /* ── one consistent line-icon set for the hero (replaces ad-hoc unicode glyphs) ── */

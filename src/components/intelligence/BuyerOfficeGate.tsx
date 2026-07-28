@@ -1,5 +1,7 @@
 "use client";
 
+import OtpDigits from "@/components/auth/OtpDigits";
+
 import { useEffect, useRef, useState } from "react";
 import {
   saveLead, saveBuyData, loadBuyData, emptyBuyData,
@@ -133,7 +135,6 @@ export default function BuyerOfficeGate({
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(""));
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
-  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   // payment
   const [plan, setPlan] = useState<Plan>("single");
   const [card, setCard] = useState("");
@@ -190,11 +191,6 @@ export default function BuyerOfficeGate({
       return { ...d, [k]: n };
     });
 
-  const setOtpDigit = (i: number, v: string) => {
-    const digit = v.replace(/\D/g, "").slice(-1);
-    setOtp((o) => { const n = [...o]; n[i] = digit; return n; });
-    if (digit && i < OTP_LENGTH - 1) otpRefs.current[i + 1]?.focus();
-  };
 
   function saveBrief() {
     const buy = { ...emptyBuyData, ...(loadBuyData() ?? {}), budgetCr: draft.budgetCr, configs: draft.configs, priorities: draft.priorities };
@@ -357,13 +353,10 @@ export default function BuyerOfficeGate({
                 {sent && (
                   <div>
                     <p className={`mb-2.5 text-[0.76rem] font-light ${t.body}`}>Enter the code sent {method === "email" ? "to your email" : `on ${channelName}`}</p>
-                    <div className="flex gap-2">
-                      {otp.map((d, i) => (
-                        <input key={i} ref={(el) => { otpRefs.current[i] = el; }} value={d} onChange={(e) => setOtpDigit(i, e.target.value)}
-                          onKeyDown={(e) => { if (e.key === "Backspace" && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus(); }}
-                          inputMode="numeric" maxLength={1} className={`h-12 w-full rounded-md border text-center text-[1.1rem] font-medium outline-none ${t.otp}`} />
-                      ))}
-                    </div>
+                    <OtpDigits
+                      value={otp} onChange={setOtp} len={OTP_LENGTH} autoFocus
+                      boxClass={`h-12 w-full rounded-md border text-center text-[1.1rem] font-medium outline-none ${t.otp}`}
+                    />
                   </div>
                 )}
               </div>

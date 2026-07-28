@@ -1,5 +1,7 @@
 "use client";
 
+import OtpDigits from "@/components/auth/OtpDigits";
+
 /* ────────────────────────────────────────────────────────────────────────
    UnlockModal — the conversion surface for a paid read.
 
@@ -92,7 +94,6 @@ export default function UnlockModal({
   const [err, setErr] = useState("");
   const [paying, setPaying] = useState(false);
   const [busy, setBusy] = useState(false);
-  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const isIndia = dial === "+91";
   const numValid = num.replace(/\D/g, "").length >= (isIndia ? 10 : 6);
@@ -123,11 +124,6 @@ export default function UnlockModal({
 
   if (!open) return null;
 
-  const setOtpDigit = (i: number, v: string) => {
-    const d = v.replace(/\D/g, "").slice(-1);
-    setOtp((o) => { const n = [...o]; n[i] = d; return n; });
-    if (d && i < OTP_LEN - 1) otpRefs.current[i + 1]?.focus();
-  };
 
   /* This step used to send nothing and accept anything: pressing "Send
      code" only flipped `sent`, and any four digits walked straight
@@ -151,7 +147,6 @@ export default function UnlockModal({
       setBusy(false);
       if (!r.ok) { setErr(r.error); return; }
       setSent(true);
-      requestAnimationFrame(() => otpRefs.current[0]?.focus());
       return;
     }
 
@@ -224,14 +219,11 @@ export default function UnlockModal({
               ) : (
                 <div className="mt-5">
                   <p className="text-[0.85rem] text-[#1a1a1a]/55">Code sent to <span className="font-medium text-[#1a1a1a]">{sentTo}</span> via {isIndia ? "SMS" : "WhatsApp"}{" · "}<button type="button" onClick={() => { setSent(false); setOtp(Array(OTP_LEN).fill("")); setErr(""); }} className="font-medium text-[#9a7a2e] hover:underline">Change</button></p>
-                  <div className="mt-4 flex gap-3">
-                    {otp.map((d, i) => (
-                      <input key={i} ref={(el) => { otpRefs.current[i] = el; }} value={d}
-                        onChange={(e) => setOtpDigit(i, e.target.value)}
-                        onKeyDown={(e) => { if (e.key === "Backspace" && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus(); }}
-                        inputMode="numeric" maxLength={1} aria-label={`Digit ${i + 1}`}
-                        className="h-14 min-w-0 flex-1 rounded-lg border border-[#1a1a1a]/[0.18] bg-white text-center font-serif text-[1.4rem] text-[#1a1a1a] outline-none focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/20" />
-                    ))}
+                  <div className="mt-4">
+                    <OtpDigits
+                      value={otp} onChange={setOtp} len={OTP_LEN} autoFocus
+                      boxClass="h-14 min-w-0 flex-1 rounded-lg border border-[#1a1a1a]/[0.18] bg-white text-center font-serif text-[1.4rem] text-[#1a1a1a] outline-none focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/20"
+                    />
                   </div>
                 </div>
               )}
