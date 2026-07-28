@@ -5,7 +5,7 @@ import { track } from "@/lib/events";
 import { useRouter } from "next/navigation";
 import Logo from "../Logo";
 import { useConsultation } from "../consultation/ConsultationProvider";
-import { loadBuyData, hasPreferences, deriveDNA, clearAllDemoData, saveLead, hasReadAccess, has3DAccess, AUTH_EVENT } from "@/lib/journey";
+import { loadBuyData, hasPreferences, deriveDNA, clearAllDemoData, saveLead, hasReadAccess, has3DAccess, readStake, AUTH_EVENT } from "@/lib/journey";
 import { ENTITLEMENTS_EVENT } from "@/lib/entitlementsCache";
 import { negotiationLevers } from "@/lib/negotiation";
 import type { RelatedGroups, RelatedProject } from "@/lib/relatedProjects";
@@ -298,9 +298,14 @@ export default function ProjectProfile({
   const [audience, setAudience] = useState<"buyer" | "owner">("buyer");
   useEffect(() => {
     try {
-      if (new URLSearchParams(window.location.search).get("as") === "owner") setAudience("owner");
+      if (new URLSearchParams(window.location.search).get("as") === "owner") { setAudience("owner"); return; }
+      /* Or because they said so at the unlock. Same treatment, arrived at
+         from the reader's own answer rather than from a link the journey
+         built for them — which means it survives a fresh visit to the
+         page, where the query string does not. */
+      if (readStake(p.slug) === "invested") setAudience("owner");
     } catch { /* a query string can never break a report */ }
-  }, []);
+  }, [p.slug]);
 
   /* The strongest intent signal the site produces: someone reading a
      specific report is further along than anything they type. Fired from

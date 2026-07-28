@@ -33,7 +33,9 @@ export type EventName =
   | "payment_completed"
   | "lead_captured"
   | "office_opened"
-  | "chat_opened";
+  | "chat_opened"
+  /* Owner or prospect, declared at the unlock. */
+  | "stake_declared";
 
 type Queued = {
   name: EventName;

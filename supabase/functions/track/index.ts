@@ -39,6 +39,7 @@ const KNOWN = new Set([
   "lead_captured",
   "office_opened",
   "chat_opened",
+  "stake_declared",
 ]);
 
 const MAX_BATCH = 20;

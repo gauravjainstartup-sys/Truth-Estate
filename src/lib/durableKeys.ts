@@ -47,4 +47,8 @@ export const CLEARED_ON_SIGN_OUT: readonly string[] = [
   "truthEstate.access",
   "truthEstate.account",
   "truthEstate.unlocked",
+  /* Whether this person owns a flat in each project they unlocked. It is
+     a fact about THEM, not about the handset — the next person to sign in
+     on this phone must not inherit an owner's framing of the report. */
+  "truthEstate.stake",
 ];

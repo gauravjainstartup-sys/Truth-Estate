@@ -1174,6 +1174,38 @@ export const packageById = (id: PackageId): Package => PACKAGES.find((p) => p.id
 export const READ_FROM_INR = 999;
 
 const SIGNED_IN_KEY = "truthEstate.signedIn";
+/* ── Where the reader stands on a project ───────────────────────
+   Asked once, at the moment they unlock: do they already own here, or
+   are they weighing it? It is the one thing about a reader the site
+   cannot infer — everything else (what they read, shortlisted, compared)
+   describes someone shopping, and an owner shopping and an owner
+   checking on money already committed look identical in that data.
+
+   Stored per project, because the same person is an owner of one tower
+   and a prospect for the next one. */
+export type Stake = "invested" | "considering";
+const STAKE_KEY = "truthEstate.stake";
+
+export function readStake(slug: string): Stake | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(STAKE_KEY);
+    const map = raw ? (JSON.parse(raw) as Record<string, Stake>) : {};
+    return map[slug] ?? null;
+  } catch { return null; }
+}
+
+export function saveStake(slug: string, stake: Stake, projectName?: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = window.localStorage.getItem(STAKE_KEY);
+    const map = raw ? (JSON.parse(raw) as Record<string, Stake>) : {};
+    map[slug] = stake;
+    window.localStorage.setItem(STAKE_KEY, JSON.stringify(map));
+  } catch { /* a full quota must not block the unlock behind this */ }
+  fireEvent("stake_declared", { projectSlug: slug, projectName, props: { stake } });
+}
+
 const ACCESS_KEY = "truthEstate.access";
 type AccessState = { all: boolean; reads: string[]; threeD: string[] };
 

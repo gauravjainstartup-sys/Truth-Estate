@@ -19,8 +19,8 @@ import OtpDigits from "@/components/auth/OtpDigits";
 import { useEffect, useRef, useState } from "react";
 import {
   PACKAGES, packageById, grantPackage, isSignedIn, saveLead,
-  hasReadAccess, has3DAccess, isAllAccess,
-  type PackageId,
+  hasReadAccess, has3DAccess, isAllAccess, readStake, saveStake,
+  type PackageId, type Stake,
 } from "@/lib/journey";
 import { normalisePhone, normaliseIntl, phoneKnown, prettyPhone, sendOtp, sendOtpIntl, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
 import { fetchEntitlements } from "@/lib/entitlements";
@@ -70,7 +70,7 @@ const PLAN_CARDS: CardDef[] = [
   },
 ];
 
-type Step = "register" | "plans" | "owned" | "pay" | "done";
+type Step = "register" | "stake" | "plans" | "owned" | "pay" | "done";
 
 export default function UnlockModal({
   open, slug, projectName, focus3D = false, has3DModel = true, onClose, onUnlocked,
@@ -121,7 +121,12 @@ export default function UnlockModal({
        plans step with nothing on it — `cards` filters out what you own,
        and all-owned filters to empty. Send them to the receipt instead. */
     const entitled = isAllAccess() || (focus3D ? has3DAccess(slug) : hasReadAccess(slug));
-    setStep(!isSignedIn() ? "register" : entitled ? "owned" : "plans");
+    setStep(
+      !isSignedIn() ? "register"
+      : readStake(slug) == null ? "stake"
+      : entitled ? "owned"
+      : "plans",
+    );
     setSel(focus3D ? "read3d" : "read");
     setExpanded(null);
     setSent(false); setKnown(undefined); setOtp(Array(OTP_LEN).fill("")); setErr(""); setPaying(false);
@@ -193,12 +198,31 @@ export default function UnlockModal({
     setBusy(true);
     await fetchEntitlements().catch(() => null);
     setBusy(false);
+    afterVerified();
+  }
+
+  /* Where a verified reader goes next. The stake question comes BEFORE the
+     entitlement branch, so it is asked of buyers and owners alike — an
+     existing customer opening a second report is exactly the person whose
+     answer we most want, and they would otherwise sail past it. Asked once
+     per project and never again. */
+  function afterVerified() {
+    if (readStake(slug) == null) { setStep("stake"); return; }
+    settle();
+  }
+
+  function settle() {
     if (isAllAccess() || (focus3D ? has3DAccess(slug) : hasReadAccess(slug))) {
       setStep("owned");
       setTimeout(() => { onUnlocked(focus3D ? "read3d" : "read"); onClose(); }, 1400);
       return;
     }
     setStep("plans");
+  }
+
+  function chooseStake(v: Stake) {
+    saveStake(slug, v, projectName);
+    settle();
   }
 
   function choose(id: PackageId) { setSel(id); setStep("pay"); }
@@ -416,6 +440,45 @@ export default function UnlockModal({
               </button>
               <p className="mt-3 text-center text-[0.72rem] text-[#1a1a1a]/40">🔒 Test mode — no real charge. Razorpay integration is a demo.</p>
               <button onClick={() => setStep("plans")} className="mt-2 w-full text-center text-[0.76rem] text-[#1a1a1a]/45 hover:text-[#1a1a1a]/70">← Change package</button>
+            </div>
+          )}
+
+          {/* ONE QUESTION, ASKED ONCE, AT THE ONLY MOMENT IT IS CHEAP.
+              Everything else the site knows about a reader describes
+              someone shopping — what they opened, shortlisted, compared —
+              and an owner checking on money already committed leaves the
+              same trail as a buyer weighing the same flat. This is the
+              only thing that separates them, and it cannot be inferred.
+
+              It sits after the code and before the price: they are as
+              committed as they will get, nothing is being asked of them
+              but a tap, and the answer arrives in time to change what
+              they are shown. An owner's answer reframes the report to the
+              audience it already has an "?as=owner" treatment for. */}
+          {step === "stake" && (
+            <div>
+              <p className="text-[0.64rem] font-semibold uppercase tracking-[0.2em] text-[#9a7a2e]">Step 2 of 2 · One quick thing</p>
+              <h2 className="mt-2 font-serif text-[1.7rem] font-semibold leading-tight">Where do you stand on {projectName}?</h2>
+              <p className="mt-2 text-[0.88rem] leading-snug text-[#1a1a1a]/55">It changes which parts of this report matter to you — and we only ask once.</p>
+              <div className="mt-6 space-y-3">
+                {([
+                  { v: "considering" as Stake, t: "I'm looking to invest", s: "Weighing it up — I want the risks before I commit." },
+                  { v: "invested" as Stake, t: "I've already invested here", s: "Booked or bought — I want to know what I'm holding." },
+                ]).map((o) => (
+                  <button
+                    key={o.v}
+                    type="button"
+                    onClick={() => chooseStake(o.v)}
+                    className="group flex w-full items-center gap-4 rounded-xl border border-[#1a1a1a]/12 bg-white/60 px-5 py-4 text-left transition-colors hover:border-[#1e6b45]/40 hover:bg-[#1e6b45]/[0.05]"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-serif text-[1.08rem] font-medium text-[#1a1a1a]">{o.t}</span>
+                      <span className="mt-0.5 block text-[0.82rem] font-light leading-snug text-[#1a1a1a]/55">{o.s}</span>
+                    </span>
+                    <span aria-hidden className="shrink-0 text-[#9a7a2e] transition-transform group-hover:translate-x-0.5">→</span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 

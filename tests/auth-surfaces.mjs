@@ -58,11 +58,18 @@ async function unlock(b, vp) {
     log(s, vp, 'unlock CTA present', await vis(cta));
     await cta.click().catch(() => {});
     await p.waitForTimeout(900);
-    const reg = await vis(p.getByText(/quick sign-up|Create your account/i));
+    /* The sheet now opens on the NUMBER, not on a name: it looks the
+       phone up first and only asks for a name if it does not know it.
+       This asserted the old "quick sign-up" heading, so it failed the
+       moment that became correct — and because the whole phone-form
+       block sits behind it, eight further assertions stopped running
+       silently. Assert what step one is now supposed to be. */
+    const reg = await vis(p.getByText(/start with your mobile|quick sign-up|Create your account/i));
     log(s, vp, 'opens sign-up step', reg);
+    const noName = (await p.locator('input[autocomplete="name"]:visible').count()) === 0;
+    log(s, vp, 'step one asks for the number alone', noName);
     if (reg) {
-      await p.getByPlaceholder(/Rohan Mehta/i).first().fill('QA Tester').catch(() => {});
-      await checkPhoneForm(p, s, vp, { numSel: 'input[placeholder*="98xxxxxx"]', sendName: /Send code/i, sel: 'select[aria-label="Country code"]' });
+      await checkPhoneForm(p, s, vp, { numSel: 'input[placeholder*="98xxxxxx"]', sendName: /Continue|Send code/i, sel: 'select[aria-label="Country code"]' });
     }
     log(s, vp, 'no js errors', p.errs.length === 0, p.errs[0] ?? '');
   } catch (e) { log(s, vp, 'THREW', false, String(e).slice(0, 120)); }
@@ -235,7 +242,7 @@ async function gate(b, vp) {
     log(s, vp, 'reaches a phone step', reached, reached ? '' : 'gate may open 3D directly');
     if (reached) {
       await p.locator('input[placeholder*="name" i]:visible').first().fill('QA Tester').catch(() => {});
-      await checkPhoneForm(p, s, vp, { numSel: 'input[type=tel]:visible, input[placeholder*="98"]:visible', sendName: /Send code|Open my/i, sel: 'select:visible' });
+      await checkPhoneForm(p, s, vp, { numSel: 'input[type=tel]:visible, input[placeholder*="98"]:visible', sendName: /Continue|Send code|Open my/i, sel: 'select:visible' });
     }
     log(s, vp, 'no js errors', p.errs.length === 0, p.errs[0] ?? '');
   } catch (e) { log(s, vp, 'THREW', false, String(e).slice(0, 120)); }
