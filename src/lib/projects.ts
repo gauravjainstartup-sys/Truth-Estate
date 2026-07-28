@@ -97,7 +97,15 @@ export type ProjectIntel = Project & {
   devSlug?: string;
   marketSlug?: string;
   marketShort: string;
+  /* THE CORRIDOR's rate, not this project's. It is built from
+     avg_cost_sqft, which the pipeline stamps identically on every project
+     in a micro-market — eight distinct values across ninety-seven
+     projects. Fine for "how does this corridor price"; wrong for "what
+     does this flat cost", which is what psfOwn is for. */
   psf: { low: number; avg: number; high: number } | null;
+  /* THIS project's own filed rate per sq ft, from the developer's
+     price_range_sqft. Present on 96 of 97. */
+  psfOwn?: { low: number; high: number } | null;
   sizeBand: string | null; // indicative sq ft from ticket ÷ corridor psf
   anatomy: Record<ScoreInputKey, FinRating>;
   ops?: ProjectOps; // operational specifics for the projects we track most closely

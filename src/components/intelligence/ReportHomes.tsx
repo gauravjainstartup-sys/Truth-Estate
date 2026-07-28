@@ -60,13 +60,34 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
 
   const eff = Math.round((h.carpetSqft / h.superSqft) * 100);
   const loading = 100 - eff;
-  // the unit's cost as a clean ~figure: super area × the project's own filed avg
-  // psf (p.psf.avg). Falls back to a per-config ticket only if no psf is on file.
-  const psfAvg = p.psf?.avg ?? null;
+  /* THE UNIT'S COST — super area × THIS PROJECT'S filed rate.
+   *
+   * It used to multiply by p.psf.avg, and the comment here said that was
+   * "the project's own filed avg psf". It is not: p.psf is built from
+   * avg_cost_sqft, which the pipeline writes identically for every project
+   * in a micro-market — eight distinct values across ninety-seven projects.
+   * So every flat in Gurugram was being priced at its corridor's average
+   * rate. Signature Global Tonino Lamborghini files ₹22,000/sq ft; SPR's
+   * average is ₹15,524; its 2,050 sq ft 3 BHK therefore read ~₹3 Cr on a
+   * page whose own hero said "from ₹4.5 Cr". Across the projects that could
+   * be checked, 45 of 63 were out by more than a tenth, the worst by three
+   * quarters — in both directions, so it was not even conservative.
+   *
+   * The low end of the filed range is used for every configuration rather
+   * than interpolating up to the high end: the spread is the developer's
+   * floor-rise and preferential-location scale, which we do not know how to
+   * apportion, and understating is the safer error on a page that tells
+   * people what to pay. Where no rate is filed (1 of 97) there is no
+   * price — the corridor average is not a substitute for it. */
+  const psfOwn = p.psfOwn?.low ?? null;
   const approxCr = (superSqft: number, ticketCr: number): string | null => {
-    const cr = psfAvg ? (psfAvg * superSqft) / 1e7 : ticketCr > 0 ? ticketCr : null;
+    const cr = psfOwn ? (psfOwn * superSqft) / 1e7 : ticketCr > 0 ? ticketCr : null;
     if (cr == null) return null;
-    const r = Math.round(cr * 2) / 2; // nearest 0.5 Cr
+    /* Half a crore is the right granularity at ₹9 Cr and much too coarse at
+       ₹1.3 Cr, where it rounds to ₹1.5 Cr and overstates by ₹23 lakh — real
+       money to the buyer that price point belongs to. Tenths under ₹5 Cr,
+       halves above, so the step is never a big share of the ticket. */
+    const r = cr < 5 ? Math.round(cr * 10) / 10 : Math.round(cr * 2) / 2;
     return `~${Number.isInteger(r) ? r : r.toFixed(1)} Cr`;
   };
   const beds = h.beds ?? (parseInt(h.config, 10) || 3);

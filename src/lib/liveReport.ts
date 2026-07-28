@@ -1338,6 +1338,11 @@ export function liveProjectIntel(
       row.avgCostSqft != null && row.avgCostSqft > 0
         ? { low: corridorBand?.low ?? row.avgCostSqft, avg: Math.round(row.avgCostSqft), high: corridorBand?.high ?? row.avgCostSqft }
         : corridorBand,
+    /* The developer's own filed rate. `range` is already what the hero
+       ticket is built from, so the headline "from ₹4.5 Cr" was right while
+       the per-unit prices underneath it were being drawn at the corridor
+       average — the same page disagreeing with itself. */
+    psfOwn: range ? { low: range[0], high: range[1] } : null,
     sizeBand: ext?.superAreaRange ?? null,
     anatomy,
     ops,

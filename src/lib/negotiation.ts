@@ -129,7 +129,16 @@ export function negotiationLevers(p: ProjectIntel): Lever[] {
       out.push({
         key: "price",
         title: "You are above the corridor, and they know it",
-        evidence: `Entry here implies roughly ₹${impliedPsf.toLocaleString("en-IN")}/sq ft against a tracked ${p.marketShort} band of ₹${p.psf.low.toLocaleString("en-IN")}–${p.psf.high.toLocaleString("en-IN")}. A premium can be earned; it should still be itemised.`,
+        /* "a tracked GCE band of ₹20,050–20,050" was on the live page. The
+           corridor band is percentiles over avg_cost_sqft, and the pipeline
+           writes that identically for every project in a micro-market, so
+           p25 = p50 = p75 and the band has no width at all. Where the two
+           ends coincide it is an average, and saying so is both shorter and
+           true; a range whose ends match reads as a bug because it is one. */
+        evidence:
+          p.psf.low === p.psf.high
+            ? `Entry here implies roughly ₹${impliedPsf.toLocaleString("en-IN")}/sq ft against a tracked ${p.marketShort} average of ₹${p.psf.high.toLocaleString("en-IN")}. A premium can be earned; it should still be itemised.`
+            : `Entry here implies roughly ₹${impliedPsf.toLocaleString("en-IN")}/sq ft against a tracked ${p.marketShort} band of ₹${p.psf.low.toLocaleString("en-IN")}–${p.psf.high.toLocaleString("en-IN")}. A premium can be earned; it should still be itemised.`,
         ask: `Make them justify the premium line by line — brand, specification, open area, floor rise — and then ask which of those lines is contractual. A premium that cannot be pointed at in the agreement is a premium you are paying on trust.`,
       });
     }
