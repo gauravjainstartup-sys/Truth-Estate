@@ -8,7 +8,7 @@ import { useConsultation } from "../consultation/ConsultationProvider";
 import { loadBuyData, hasPreferences, deriveDNA, clearAllDemoData, saveLead, hasReadAccess, has3DAccess, AUTH_EVENT } from "@/lib/journey";
 import { ENTITLEMENTS_EVENT } from "@/lib/entitlementsCache";
 import { negotiationLevers } from "@/lib/negotiation";
-import type { RelatedProject } from "@/lib/relatedProjects";
+import type { RelatedGroups, RelatedProject } from "@/lib/relatedProjects";
 import type { ConsultProfileChip } from "@/lib/consultation";
 import { TAG_CHIP } from "@/lib/heroSearch";
 import type { ScoreTag } from "@/lib/omni";
@@ -46,6 +46,7 @@ import ReportUSPs from "./ReportUSPs";
 import ReportPrice from "./ReportPrice";
 import ReportVerdict from "./ReportVerdict";
 import ReportExplore from "./ReportExplore";
+import ReportAlternatives from "./ReportAlternatives";
 import ReportFeedback from "./ReportFeedback";
 import ReportHomes from "./ReportHomes";
 
@@ -245,7 +246,7 @@ export default function ProjectProfile({
   p: ProjectIntel;
   /* Comparable projects, computed at build time by the page. Present only
      on real report routes; the journey modal renders without them. */
-  related?: RelatedProject[];
+  related?: RelatedGroups;
   /* When rendered inside the journey modal: drop the page chrome, keep the
      reader in the flow, and route actions back to the journey. */
   embedded?: boolean;
@@ -420,6 +421,10 @@ export default function ProjectProfile({
      so hidden modules never leave a gap in the sequence. */
   let _n = 0;
   const num = () => String(++_n).padStart(2, "0");
+  /* The tabs render from build-time groups, so this is knowable before the
+     chapter heading is drawn — a chapter that announces alternatives and
+     then shows none is worse than no chapter. */
+  const hasAlternatives = !!related && (related.sameMarket.length > 0 || related.nearby.length > 0 || related.samePrice.length > 0);
 
   /* Chapter numerals were written as literals — I, II, III, IV, V — which is
      only correct for a reader who can see all five. A guest sees Chapters I
@@ -1135,12 +1140,6 @@ export default function ProjectProfile({
             </Section>
             )}
 
-            {/* Chapter V — the alternatives, as full report cards ranked to the
-               reader's brief when they've set one. */}
-            <Chapter n={chap()} title={`If not ${p.name}, then what?`} framing="Comparable projects to weigh side by side — ranked to your brief where you've set one." />
-            <Section id="alternatives" n={num()} title="Weighed side by side">
-              <ReportExplore p={p} embedded={embedded} onSelect={onSelectAlternative} />
-            </Section>
             </>
             )}
 
@@ -1155,23 +1154,43 @@ export default function ProjectProfile({
                branch while its FAQPage schema was emitted on every page —
                so 97 pages claimed structured content that was not on them,
                which is a policy violation, not an optimisation. */}
-            {/* Its own chapter, because these sections used to inherit whichever
-                one happened to precede them: on a locked report that made
-                "Negotiate like a king" and the FAQ read as part of "Can we
-                trust it?", and on an unlocked one as part of "If not this
-                project, then what?". Neither is what they answer. */}
-            {(levers.length > 0 || faqs.length > 0 || (locked && related && related.length > 0)) && (
-              <Chapter n={chap()} title="What do you do next?" framing="The leverage this file hands you, and the questions buyers actually arrive with." />
-            )}
+            {/* THREE CHAPTERS, NOT ONE. These were a single "What do you do
+                next?" chapter holding the leverage, the alternatives and the
+                FAQ — three different questions filed under one heading, so a
+                reader scanning the chapter marks could not tell that the
+                money answer was in there at all. Each now announces itself. */}
 
+            {/* ── Chapter · what the findings are worth at the table ── */}
             {levers.length > 0 && (
-              <Section id="negotiate" n={num()} title="Negotiate like a king">
-                <ReportNegotiation p={p} locked={locked} onUnlock={() => setUnlockOpen(true)} />
-              </Section>
+              <>
+                <Chapter n={chap()} title="Can this report save you lakhs?" framing={`Every weak spot in this file is a number you can argue with. Here is what ${p.name}'s are worth.`} />
+                <Section id="negotiate" n={num()} title="Negotiate like a king">
+                  <ReportNegotiation p={p} locked={locked} onUnlock={() => setUnlockOpen(true)} />
+                </Section>
+              </>
             )}
 
-            {/* Straight answers */}
+            {/* ── Chapter · the alternatives, three ways ── */}
+            {(hasAlternatives || !locked) && (
+              <>
+                <Chapter n={chap()} title={`If not ${p.name}, then what?`} framing="The same corridor, the same commute, or the same money somewhere else — weighed side by side." />
+                {hasAlternatives && (
+                  <Section id="comparable" n={num()} title="Three ways to compare">
+                    <ReportAlternatives groups={related!} marketShort={p.marketShort} basePath={basePath} projectName={p.name} />
+                  </Section>
+                )}
+                {!locked && (
+                  <Section id="alternatives" n={num()} title="Ranked to your brief">
+                    <ReportExplore p={p} embedded={embedded} onSelect={onSelectAlternative} />
+                  </Section>
+                )}
+              </>
+            )}
+
+            {/* ── Chapter · the questions buyers actually arrive with ── */}
             {faqs.length > 0 && (
+              <>
+              <Chapter n={chap()} title="What else do buyers ask?" framing="The questions that decide the purchase — answered from the registry, the site and the corridor." />
               <Section id="faqs" n={num()} title="Straight answers">
                 <p className="-mt-2 mb-6 max-w-2xl text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/55">
                   The questions that actually decide the purchase — answered from registry data, live construction and micro-market dynamics.
@@ -1200,38 +1219,7 @@ export default function ProjectProfile({
                   <span aria-hidden className="shrink-0 text-[#9a7a2e] transition-transform group-hover:translate-x-0.5">→</span>
                 </button>
               </Section>
-            )}
-
-
-            {/* ── Comparable projects ──
-               Only when locked: an unlocked reader already has Chapter V's
-               full cards below. These are plain links, rendered from props
-               the page computed at build time, so they are in the static
-               HTML — which is the entire point. A locked report used to
-               link to exactly one project page: its own. */}
-            {locked && related && related.length > 0 && (
-              <Section id="comparable" n={num()} title={`Others on ${p.marketShort}`}>
-                <p className="-mt-2 mb-6 max-w-2xl text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/55">
-                  The projects we would weigh against {p.name} — each with its own forensic read.
-                </p>
-                <ul className="grid gap-px overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-[#1a1a1a]/[0.07] sm:grid-cols-2">
-                  {related.map((r) => (
-                    <li key={r.seoSlug} className="bg-[#F5F0E8]">
-                      <a href={`${basePath}/projects/${r.seoSlug}`} className="group flex h-full items-center justify-between gap-3 px-5 py-4 transition-colors hover:bg-[#1e6b45]/[0.06]">
-                        <span className="min-w-0">
-                          <span className="block truncate font-serif text-[1.02rem] font-medium text-[#1a1a1a]/85">{r.name}</span>
-                          {r.microMarket && (
-                            <span className="mt-0.5 block truncate text-[0.76rem] font-light text-[#1a1a1a]/45">{r.microMarket}</span>
-                          )}
-                        </span>
-                        {r.truthScore != null && (
-                          <span className="shrink-0 font-mono text-[0.8rem] font-bold tabular-nums text-[#9a7a2e]">{Math.round(r.truthScore)}</span>
-                        )}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </Section>
+              </>
             )}
 
             {/* The Independent Desk on mobile — the desktop rail is hidden below

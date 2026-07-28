@@ -34,9 +34,43 @@ export default function ReportNegotiation({
   const shown = locked ? levers.slice(0, FREE_LEVERS) : levers;
   const held = locked ? levers.slice(FREE_LEVERS) : [];
 
+  /* WHAT THIS IS WORTH, IN MONEY, WITHOUT INVENTING ANYTHING.
+     One per cent of a crore is a lakh, so a ticket in crores converts to
+     lakhs with no arithmetic to distrust — and it turns "leverage" from a
+     word into a figure the reader can hold. Where the project prices above
+     its corridor we can go further and name the premium itself, which is
+     the one lever on this page that is already denominated in rupees.
+     What we do NOT do is claim a number of buyers or an average saving:
+     we do not measure either, and a page that says "1,200 buyers saved
+     ₹18 lakh" is worth less than one that says nothing, because a reader
+     who checks finds out we made it up. */
+  const ticketCr = p.budget?.[0] ?? 0;
+  const onePct = ticketCr > 0 ? (Math.round(ticketCr * 10) / 10).toFixed(1).replace(/\.0$/, "") : null;
+  const psfNow = p.ops?.price?.currentHigh ?? p.ops?.price?.currentLow ?? null;
+  const premiumPct = p.psf && psfNow && psfNow > p.psf.high ? Math.round(((psfNow - p.psf.high) / p.psf.high) * 100) : null;
+
   return (
     <div>
-      <p className="-mt-2 mb-6 max-w-2xl text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/55">
+      <div className="-mt-2 mb-7 rounded-2xl border border-[#c9a96e]/30 bg-[#c9a96e]/[0.07] p-6 md:p-7">
+        <p className="font-serif text-[1.24rem] font-medium leading-[1.4] text-[#1a1a1a] md:text-[1.38rem]">
+          The weak spots in this report are your argument.
+        </p>
+        <p className="mt-3 max-w-2xl text-[0.92rem] font-light leading-[1.75] text-[#1a1a1a]/65">
+          {levers.length === 1 ? "One thing" : `${levers.length} things`} in {p.name}&rsquo;s own filings can be
+          argued with{onePct ? <> — and one per cent off a ₹{onePct} Cr ticket is ₹{onePct} lakh</> : ""}.
+          {/* The premium is stated as a share and left there. Multiplying it
+              out reads as a prize on offer — "₹5.3 crore of premium" on DLF
+              The Arbour — and nobody negotiates away the entire gap between
+              a landmark project and its corridor's median. The percentage is
+              the true thing: something they should be made to itemise. */}
+          {premiumPct != null && premiumPct >= 5 ? (
+            <> Entry here also sits about {premiumPct}% above the corridor&rsquo;s tracked top — a premium worth making them itemise line by line.</>
+          ) : null}{" "}
+          A buyer who arrives with a specific number is negotiating. One who asks for the best price is waiting to be told.
+        </p>
+      </div>
+
+      <p className="mb-6 max-w-2xl text-[0.92rem] font-light leading-[1.7] text-[#1a1a1a]/55">
         Every project hands the buyer different cards. These are {p.name}&rsquo;s — read off its own construction,
         sales and registry data, not general advice about negotiating.
       </p>

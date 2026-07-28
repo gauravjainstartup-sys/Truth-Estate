@@ -21,7 +21,11 @@ const LOCKED: { k: string; t: string; hook: string }[] = [
   { k: "Pillar V", t: "Project USPs", hook: "Which claims hold real value — and which are just brochure gloss." },
   { k: "Chapter III", t: "Price & ROI model", hook: "The exact 5-year CAGR we project — and whether it beats the corridor." },
   { k: "Chapter IV", t: "The verdict", hook: "Should you buy it? Our tailored call for your budget, timeline and risk." },
-  { k: "FAQs", t: "Straight answers", hook: "Blunt answers to the questions that actually decide the cheque." },
+  /* "Straight answers" was on this list, and it is not behind the wall — the
+     FAQ renders free on every locked report, now under its own chapter. A
+     teaser that promises a section the reader can already scroll to is the
+     one thing on this page that can be checked in four seconds, and it was
+     wrong. What is genuinely withheld stays; this went. */
 ];
 
 /* ── Who is reading this ──────────────────────────────────────────────────
