@@ -7,7 +7,7 @@
    ════════════════════════════════════════════════════════════════ */
 
 import { PROJECTS, type Project } from "./journey";
-import { DEVELOPERS, type FinRating, type DeveloperIntel } from "./developers";
+import { BAND_RANK, DEVELOPERS, FIN_METRICS, type FinBand, type FinRating, type DeveloperIntel } from "./developers";
 import { MARKETS, fmtPsf, type MarketIntel } from "./markets";
 
 export { fmtPsf };
@@ -795,6 +795,30 @@ export function investorFit(p: ProjectIntel): string {
   return `Best suited for ${audience}${priorities ? ` who prioritise ${priorities}` : ""}${market ? ` — ${market.bestFor.toLowerCase()}` : ""}.`;
 }
 
+/* One honest sentence about a developer's balance sheet, from the same
+   five metrics the audit cards show. Prose already written by the pipeline
+   wins — a bare grade word ("concerning") does not, because that is what
+   produced the duplicate this replaces. */
+const FIN_ORDER: FinBand[] = ["strained", "watch", "moderate", "strong", "exceptional"];
+function financialAnswer(p: ProjectIntel, dev: DeveloperIntel): string {
+  const bands = FIN_METRICS.map((f) => dev.finBand?.[f.key]
+    ?? (dev.financials[f.key] === "strong" ? "strong" : dev.financials[f.key] === "moderate" ? "moderate" : "watch"));
+  const avg = bands.reduce((a, b) => a + BAND_RANK[b], 0) / bands.length;
+  const overall = avg >= 4.3 ? "exceptional" : avg >= 3.5 ? "strong" : avg >= 2.6 ? "adequate" : avg >= 1.8 ? "one to watch" : "under real strain";
+  const strong = bands.filter((b) => b === "strong" || b === "exceptional").length;
+  const strained = bands.filter((b) => b === "strained").length;
+  const worst = FIN_METRICS[bands.indexOf(FIN_ORDER.find((b) => bands.includes(b))!)];
+
+  const note = (dev.finNote ?? "").trim();
+  const usable = note.split(/\s+/).length > 3 && !/scoring pipeline|financial band from filings/i.test(note);
+
+  /* `label`, not `full`: `full` is the ratio's name — "OCF / EBITDA" —
+     which reads as a typo mid-sentence. The label is what it measures. */
+  return `On our five-line read of ${p.developer}'s audited annual statements — leverage, interest cover, cash conversion, operating margin and inventory cover — the balance sheet is ${overall}. ${strong} of ${bands.length} ${strong === 1 ? "line scores" : "lines score"} strong or better${
+    strained > 0 ? `, and ${strained} ${strained === 1 ? "is" : "are"} already strained` : ""
+  }${worst && (strained > 0 || strong < bands.length) ? `; the weakest is ${worst.label.toLowerCase()}` : ""}.${usable ? ` ${note}` : ""}`;
+}
+
 /* Forensic FAQ — composed from the data; also emitted as FAQPage schema. */
 export function projectFaqs(p: ProjectIntel): { q: string; a: string }[] {
   const dev = developerOf(p);
@@ -812,7 +836,12 @@ export function projectFaqs(p: ProjectIntel): { q: string; a: string }[] {
           : `On our read the delivery risk is ${risk}.`
       }`,
     });
-    faqs.push({ q: `Is ${p.developer} financially sound?`, a: `${dev.finNote} ${dev.verdict}` });
+    /* This was `${dev.finNote} ${dev.verdict}`, and on every live developer
+       BOTH of those fall back to the same one-word pipeline field. The
+       answer on the page read, in full, "concerning concerning". Composed
+       from the five-line audit instead — the same bands the Developer DNA
+       cards are drawn from, so the FAQ and the section agree. */
+    faqs.push({ q: `Is ${p.developer} financially sound?`, a: financialAnswer(p, dev) });
   }
   if (market) {
     faqs.push({

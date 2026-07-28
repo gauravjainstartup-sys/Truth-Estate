@@ -23,6 +23,7 @@ import {
   type PackageId,
 } from "@/lib/journey";
 import { normalisePhone, normaliseIntl, phoneKnown, prettyPhone, sendOtp, sendOtpIntl, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
+import { fetchEntitlements } from "@/lib/entitlements";
 
 const DIAL = [
   { code: "+91", flag: "🇮🇳" }, { code: "+971", flag: "🇦🇪" }, { code: "+1", flag: "🇺🇸" },
@@ -69,7 +70,7 @@ const PLAN_CARDS: CardDef[] = [
   },
 ];
 
-type Step = "register" | "plans" | "pay" | "done";
+type Step = "register" | "plans" | "owned" | "pay" | "done";
 
 export default function UnlockModal({
   open, slug, projectName, focus3D = false, has3DModel = true, onClose, onUnlocked,
@@ -116,7 +117,11 @@ export default function UnlockModal({
 
   useEffect(() => {
     if (!open) return;
-    setStep(isSignedIn() ? "plans" : "register");
+    /* An already-signed-in reader who owns every tier would land on a
+       plans step with nothing on it — `cards` filters out what you own,
+       and all-owned filters to empty. Send them to the receipt instead. */
+    const entitled = isAllAccess() || (focus3D ? has3DAccess(slug) : hasReadAccess(slug));
+    setStep(!isSignedIn() ? "register" : entitled ? "owned" : "plans");
     setSel(focus3D ? "read3d" : "read");
     setExpanded(null);
     setSent(false); setKnown(undefined); setOtp(Array(OTP_LEN).fill("")); setErr(""); setPaying(false);
@@ -178,6 +183,21 @@ export default function UnlockModal({
 
     if (name.trim()) saveLead({ name: name.trim(), email: "", phone: `${dial} ${num}`.trim(), intent: "buyer-office", createdAt: Date.now() });
     setErr("");
+
+    /* WHAT DO THEY ALREADY OWN? A returning buyer signing in on a new
+       handset has entitlements on the server and nothing in this
+       browser's storage, so without this they were shown the price of a
+       report they had already paid for — and if they owned every tier the
+       plans step rendered an empty list, because `cards` filters out what
+       you own. Ask the server now that there is a session to ask about. */
+    setBusy(true);
+    await fetchEntitlements().catch(() => null);
+    setBusy(false);
+    if (isAllAccess() || (focus3D ? has3DAccess(slug) : hasReadAccess(slug))) {
+      setStep("owned");
+      setTimeout(() => { onUnlocked(focus3D ? "read3d" : "read"); onClose(); }, 1400);
+      return;
+    }
     setStep("plans");
   }
 
@@ -358,9 +378,9 @@ export default function UnlockModal({
 
               {/* cross-tier trust strip */}
               <div className="mt-5 space-y-1.5 rounded-xl border border-[#1a1a1a]/8 bg-white/40 px-4 py-3.5">
-                <p className="flex items-start gap-2 text-[0.76rem] leading-snug text-[#1a1a1a]/60"><span aria-hidden className="mt-[1px] text-[#9a7a2e]">◆</span>Every material claim is <b className="font-semibold text-[#1a1a1a]/80">source-tagged</b> (RERA · QPRs · registrations) — verify it yourself.</p>
+                <p className="flex items-start gap-2 text-[0.76rem] leading-snug text-[#1a1a1a]/60"><span aria-hidden className="mt-[1px] text-[#9a7a2e]">◆</span><span>Every material claim is <b className="font-semibold text-[#1a1a1a]/80">source-tagged</b> (RERA · QPRs · registrations) — verify it yourself.</span></p>
                 <p className="flex items-start gap-2 text-[0.76rem] leading-snug text-[#1a1a1a]/60"><span aria-hidden className="mt-[1px] text-[#9a7a2e]">↻</span><span>Re-audited <b className="font-semibold text-[#1a1a1a]/80">every month</b>, saved to your Buyer Office — <b className="font-semibold text-[#1a1a1a]/80">yours for life</b> with every update.</span></p>
-                <p className="flex items-start gap-2 text-[0.76rem] leading-snug text-[#1a1a1a]/60"><span aria-hidden className="mt-[1px] text-[#9a7a2e]">⚖</span>Built to <b className="font-semibold text-[#1a1a1a]/80">negotiate</b>: buyers use the fair-price band + red flags as leverage with the developer.</p>
+                <p className="flex items-start gap-2 text-[0.76rem] leading-snug text-[#1a1a1a]/60"><span aria-hidden className="mt-[1px] text-[#9a7a2e]">⚖</span><span>Built to <b className="font-semibold text-[#1a1a1a]/80">negotiate</b>: buyers use the fair-price band + red flags as leverage with the developer.</span></p>
               </div>
               <p className="mt-3 text-center text-[0.72rem] leading-relaxed text-[#1a1a1a]/45">
                 Compare any projects — free. Need something custom? Shaped on your <span className="font-medium text-[#1a1a1a]/70">first free advisor call</span>.
@@ -396,6 +416,19 @@ export default function UnlockModal({
               </button>
               <p className="mt-3 text-center text-[0.72rem] text-[#1a1a1a]/40">🔒 Test mode — no real charge. Razorpay integration is a demo.</p>
               <button onClick={() => setStep("plans")} className="mt-2 w-full text-center text-[0.76rem] text-[#1a1a1a]/45 hover:text-[#1a1a1a]/70">← Change package</button>
+            </div>
+          )}
+
+          {/* Already paid for. Not a sale, not an error — a receipt. */}
+          {step === "owned" && (
+            <div className="py-6 text-center">
+              <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#1e6b45]/12 text-[#1e6b45]">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-7 w-7"><path d="M20 6 9 17l-5-5" /></svg>
+              </div>
+              <h2 className="mt-4 font-serif text-[1.6rem] font-semibold">You already have this one</h2>
+              <p className="mt-2 text-[0.9rem] text-[#1a1a1a]/55">
+                {isAllAccess() ? "Your All-Access covers every project." : `${projectName} is already in your Buyer Office.`} Opening it now…
+              </p>
             </div>
           )}
 
