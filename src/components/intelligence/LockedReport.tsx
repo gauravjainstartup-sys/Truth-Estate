@@ -108,10 +108,14 @@ export default function LockedReport({
                 <Lock className="h-3.5 w-3.5" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                  <span className="font-mono text-[0.55rem] uppercase tracking-[0.18em] text-[#c9a96e]">{s.k}</span>
-                  <span className="font-serif text-[1.05rem] font-medium text-[#1a1a1a]">{s.t}</span>
-                </span>
+                {/* The numeral sits ON ITS OWN LINE, always. These were flex
+                    siblings that wrapped, so whether "Pillar I" shared a line
+                    with its title came down to how long the title happened to
+                    be — "Developer DNA" and "Project USPs" fitted and sat
+                    inline, "Construction & sales" did not and dropped below.
+                    Five rows in one card, ragged three different ways. */}
+                <span className="block font-mono text-[0.55rem] uppercase tracking-[0.18em] text-[#c9a96e]">{s.k}</span>
+                <span className="mt-0.5 block font-serif text-[1.05rem] font-medium leading-tight text-[#1a1a1a]">{s.t}</span>
                 <span className="mt-0.5 block text-[0.82rem] font-light leading-snug text-[#1a1a1a]/55">
                   {(owner && OWNER_HOOKS[s.t]) || s.hook}
                 </span>
