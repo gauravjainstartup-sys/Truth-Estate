@@ -38,6 +38,16 @@ async function unlockToPaid(b,vp){
     log(F,vp,'buyer framing on a plain visit', await vis(p.getByText(/on a brochure/i)));
     await p.locator('button:visible').filter({hasText:/Get Full Read|Unlock the full read/i}).first().click().catch(()=>{});
     await p.waitForTimeout(900);
+    /* One question stands between the sheet opening and the price now:
+       owner or prospect, asked once per project. A signed-in reader meets
+       it too, which is the point — an existing customer's answer is the
+       one worth most. Answer it and carry on to the money. */
+    const asked=await vis(p.getByText(/Where do you stand on/i));
+    log(F,vp,'stake asked before the price', asked);
+    if(asked){
+      await p.getByRole('button',{name:/looking to invest/i}).first().click().catch(()=>{});
+      await p.waitForTimeout(600);
+    }
     /* Scope to the modal: "Unlock full read" also exists in the page nav,
        and .first() was picking the hidden one. */
     const plans=await vis(p.locator('text=Choose your access').or(p.locator('text=One-time, no subscription')));
