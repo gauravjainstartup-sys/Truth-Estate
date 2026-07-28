@@ -152,10 +152,14 @@ for (const [dir, f] of files) {
   const chs = chapterNums(s);
   if (chs.length && chs.some((v, i) => v !== ROMAN[i])) badChapters.push(`${f} [${chs.join(",")}]`);
 
-  /* Half a point is the most five one-decimal figures can drift when
-     rounded; anything past that is the model, not the display. */
+  /* One point, because there are two roundings between the model and the
+     page, not one. Upstream rounds the Truth Score to a whole number
+     (worth up to 0.5), and each of the five pillars is then shown to one
+     decimal (another 0.5 at worst). The pillars themselves are read
+     verbatim from the pipeline's own breakdown, so anything beyond that
+     band is a wiring fault rather than arithmetic. Observed max: 0.64. */
   const comp = composition(s);
-  if (comp && Math.abs(comp.composed - comp.headline) > 0.5) {
+  if (comp && Math.abs(comp.composed - comp.headline) > 1.0) {
     badCompose.push(`${f} (${comp.headline} vs ${comp.composed})`);
   }
 

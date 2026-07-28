@@ -799,3 +799,69 @@ export async function fetchMicroMarkets(): Promise<LiveMicroMarket[] | null> {
   }
   return out.length ? out : null;
 }
+
+/* ════════════════════════════════════════════════════════════════
+   THE TRUTH SCORE'S OWN PILLARS
+
+   The score is not a single number the pipeline hands down — it is built
+   from seven weighted sub-pillars stored per project in
+   backlog_project_data.expected_roi -> truth_score, each with its own
+   score AND its own weight. This build was inventing the five pillars it
+   displayed from a strong/moderate/weak lookup table while that
+   breakdown sat unread, which is why the chart never composed to the
+   headline it sat under.
+
+   Seven become the five a buyer weighs, per the pipeline's own grouping:
+   the developer's record and their balance sheet are one question, and
+   build pace and absorption are another. `roi` carries weight 0 and is
+   excluded — it feeds the ROI model, not the score.
+
+   Weights come from the row rather than a constant here. They are
+   (25, 22, 15, 26, 12) on all 97 today, but the pipeline treats them as
+   configurable, so reading them keeps this honest if they ever move.
+   ════════════════════════════════════════════════════════════════ */
+export type LivePillarSet = Record<"developer" | "construction" | "location" | "legal" | "usps", { score: number; weight: number }>;
+
+const PILLAR_GROUPS: Record<keyof LivePillarSet, string[]> = {
+  developer: ["past_record", "developer_financial"],
+  construction: ["construction_pace", "demand"],
+  location: ["location"],
+  legal: ["legal"],
+  usps: ["x_factors"],
+};
+
+export async function fetchProjectPillars(): Promise<Record<string, LivePillarSet> | null> {
+  const rows = await sbRows("backlog_project_data", "select=id,expected_roi&limit=2000");
+  if (!rows) return null;
+  const out: Record<string, LivePillarSet> = {};
+  let skipped = 0;
+  for (const r of rows) {
+    const id = s(r.id);
+    if (!id) continue;
+    const roi = j(r.expected_roi) as { truth_score?: { pillars?: unknown } } | null;
+    const raw = roi?.truth_score?.pillars;
+    if (!Array.isArray(raw)) { skipped++; continue; }
+    const byKey = new Map<string, { score: number; weight: number }>();
+    for (const p of raw as { key?: unknown; score?: unknown; weight?: unknown }[]) {
+      const k = s(p.key);
+      const sc = n(p.score);
+      const w = n(p.weight);
+      if (k && sc != null && w != null) byKey.set(k, { score: sc, weight: w });
+    }
+    const set = {} as LivePillarSet;
+    let ok = true;
+    for (const [group, keys] of Object.entries(PILLAR_GROUPS) as [keyof LivePillarSet, string[]][]) {
+      const members = keys.map((k) => byKey.get(k)).filter(Boolean) as { score: number; weight: number }[];
+      const weight = members.reduce((t, m) => t + m.weight, 0);
+      /* A group with no weight cannot be averaged, and a set missing one
+         of the five would compose to something other than the headline —
+         so the whole project falls back rather than showing four real
+         pillars and one invented one at equal confidence. */
+      if (!members.length || weight <= 0) { ok = false; break; }
+      set[group] = { score: members.reduce((t, m) => t + m.score * m.weight, 0) / weight, weight };
+    }
+    if (ok) out[id] = set; else skipped++;
+  }
+  console.log(`[supabase] truth-score pillars → ${Object.keys(out).length} projects (${skipped} without a usable breakdown)`);
+  return out;
+}

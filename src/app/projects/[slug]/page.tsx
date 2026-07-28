@@ -7,6 +7,7 @@ import {
   fetchBacklogNameIds,
   fetchConfigurations,
   fetchCorridorPsf,
+  fetchProjectPillars,
   fetchExtendedDetails,
   type LiveBacklogFull,
   type LiveConfiguration,
@@ -48,6 +49,14 @@ async function extended(): Promise<Record<string, LiveExtendedDetails> | null> {
   return extCache;
 }
 let cfgCache: Record<string, LiveConfiguration[]> | null | undefined;
+/* The Truth Score's own pillar breakdown, keyed by backlog id. Fetched
+   once per build like the other seams. */
+let pillarCache: Record<string, import("@/lib/supabase").LivePillarSet> | null | undefined;
+async function truthPillars() {
+  if (pillarCache === undefined) pillarCache = await fetchProjectPillars();
+  return pillarCache;
+}
+
 async function configurations(): Promise<Record<string, LiveConfiguration[]> | null> {
   if (cfgCache === undefined) cfgCache = await fetchConfigurations();
   return cfgCache;
@@ -303,12 +312,13 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       { name: "Projects", path: "/intelligence/projects" },
       { name: live.name, path: `/projects/${slug}` },
     ]);
-    const [ext, cfg, nameIds, corridorPsf] = [await extended(), await configurations(), await backlogNameIds(), await fetchCorridorPsf()];
+    const [ext, cfg, nameIds, corridorPsf, pillarSets] = [await extended(), await configurations(), await backlogNameIds(), await fetchCorridorPsf(), await truthPillars()];
     const extKey = lookupKey(live.id, live.name, ext, nameIds, live.altIds);
     const cfgKey = lookupKey(live.id, live.name, cfg, nameIds, live.altIds);
     const intel = {
       ...liveProjectIntel(live, extKey ? ext![extKey] : null, cfgKey ? cfg![cfgKey] : null, corridorPsf),
       trackedRank: trackedRankOf(live.truthScore, await liveScores()),
+      ...(pillarSets?.[live.id] ? { livePillars: pillarSets[live.id] } : {}),
     };
     const liveFaqs = projectFaqs(intel);
     return (

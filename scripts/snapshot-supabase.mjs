@@ -44,8 +44,10 @@ const OTHERS = [
   ["project_configurations", "select=*&limit=2000"],
   ["project_extended_details", "select=*&limit=300"],
   // QPR modules for the construction & sales report (expected_pct_at_qpr + R2 proof
-  // PDFs). Lean select — the table's raw_html column is large and unused here.
-  ["backlog_project_data", "select=id,construction_pace,sales_velocity&limit=2000"],
+  // PDFs), plus expected_roi, which carries the Truth Score's own pillar
+  // breakdown — the scores and weights the score is actually built from.
+  // Still a lean select: the table's raw_html column is large and unused here.
+  ["backlog_project_data", "select=id,construction_pace,sales_velocity,expected_roi&limit=2000"],
 ];
 
 const fixtures = process.env.SUPABASE_FIXTURES;

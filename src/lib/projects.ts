@@ -107,12 +107,12 @@ export type ProjectIntel = Project & {
      up for pipeline projects without any UI change. */
   liveDeveloper?: DeveloperIntel;
   liveRoi?: RoiModel;
-  /* The pipeline's OWN pillar scores, 0–10, where it publishes them.
-     developer_financial_score, construction_pace_score, demand_sales_score,
-     faq_location_score and legal_score sit on every one of the 97 live rows
-     and were being ignored: the pillars were reconstructed from a
-     rating→base-number table instead. Real measurements beat a lookup. */
-  livePillars?: { dev: number; con: number; loc: number; leg: number };
+  /* The Truth Score's own breakdown — the scores AND weights it is
+     actually built from, grouped into the five a buyer weighs. See
+     fetchProjectPillars. When present these are used verbatim and the
+     chart composes to the headline natively, because upstream computed
+     the headline from exactly these numbers. */
+  livePillars?: import("./supabase").LivePillarSet;
   /* The pipeline's legal read for the Legal Audit section: the analyst
      headline + key flags + as-of date, and the per-category risk breakdown
      (title_disputes → "Title disputes" · Critical/High/Medium/Low). */
@@ -966,31 +966,31 @@ export function pillars(p: ProjectIntel): Pillar[] {
   const uspScore = round1(clamp(7.2 + Math.min(2, uspCount * 0.5) + lift, 5.5, 9.2));
   const uspWhy = uspCount ? p.ops!.usps![0].title : "Standard segment specification.";
 
-  /* The pipeline's own measurement wins wherever it publishes one; the
-     heuristic above survives only as the fallback for the curated set and
-     the sample, which have no pipeline row behind them. USPs keep theirs
-     either way — nothing upstream scores them, and inventing a source
-     would be worse than admitting the input is ours. */
+  /* ── Where the numbers come from ──
+     With the pipeline's own breakdown present, all five scores AND all
+     five weights are read straight from it and nothing is adjusted: the
+     Truth Score upstream is the weighted mean of exactly these, so the
+     chart composes to the headline by construction rather than by
+     correction. The shift below is only for the curated set and the
+     sample, which have no pipeline row and so no breakdown to read. */
   const lp = p.livePillars;
-  const rawScores = [
-    lp?.dev ?? devScore,
-    lp?.con ?? conScore,
-    lp?.loc ?? locScore,
-    lp?.leg ?? legScore,
-    uspScore,
-  ];
-  const weights = [
-    PILLAR_WEIGHTS.developer, PILLAR_WEIGHTS.construction,
-    PILLAR_WEIGHTS.location, PILLAR_WEIGHTS.legal, PILLAR_WEIGHTS.usps,
-  ];
-  const [d1, c1, l1, g1, u1] = composeToScore(rawScores, weights, p.truthScore / 10).map(round1);
+  const weights = lp
+    ? [lp.developer.weight, lp.construction.weight, lp.location.weight, lp.legal.weight, lp.usps.weight]
+    : [PILLAR_WEIGHTS.developer, PILLAR_WEIGHTS.construction, PILLAR_WEIGHTS.location, PILLAR_WEIGHTS.legal, PILLAR_WEIGHTS.usps];
+  const wTotal = weights.reduce((t, w) => t + w, 0) || 1;
+  const wFrac = weights.map((w) => w / wTotal);
+
+  const [d1, c1, l1, g1, u1] = lp
+    ? [lp.developer.score / 10, lp.construction.score / 10, lp.location.score / 10, lp.legal.score / 10, lp.usps.score / 10].map(round1)
+    : composeToScore([devScore, conScore, locScore, legScore, uspScore], wFrac, p.truthScore / 10).map(round1);
+  const [wDev, wCon, wLoc, wLeg, wUsp] = wFrac;
 
   return [
-    { key: "developer", label: "Developer DNA", anchor: "developer", band: bandFromScore(d1), score: d1, weight: PILLAR_WEIGHTS.developer, why: devWhy, about: PILLAR_ABOUT.developer },
-    { key: "construction", label: "Construction & Sales", anchor: "construction", band: bandFromScore(c1), score: c1, weight: PILLAR_WEIGHTS.construction, why: conWhy, about: PILLAR_ABOUT.construction },
-    { key: "location", label: "Location Intelligence", anchor: "location", band: bandFromScore(l1), score: l1, weight: PILLAR_WEIGHTS.location, why: locWhy, about: PILLAR_ABOUT.location },
-    { key: "legal", label: "Legal & Compliance", anchor: "legal", band: bandFromScore(g1), score: g1, weight: PILLAR_WEIGHTS.legal, why: legWhy, about: PILLAR_ABOUT.legal },
-    { key: "usps", label: "Project USPs", anchor: "usps", band: bandFromScore(u1), score: u1, weight: PILLAR_WEIGHTS.usps, why: uspWhy, about: PILLAR_ABOUT.usps },
+    { key: "developer", label: "Developer DNA", anchor: "developer", band: bandFromScore(d1), score: d1, weight: wDev, why: devWhy, about: PILLAR_ABOUT.developer },
+    { key: "construction", label: "Construction & Sales", anchor: "construction", band: bandFromScore(c1), score: c1, weight: wCon, why: conWhy, about: PILLAR_ABOUT.construction },
+    { key: "location", label: "Location Intelligence", anchor: "location", band: bandFromScore(l1), score: l1, weight: wLoc, why: locWhy, about: PILLAR_ABOUT.location },
+    { key: "legal", label: "Legal & Compliance", anchor: "legal", band: bandFromScore(g1), score: g1, weight: wLeg, why: legWhy, about: PILLAR_ABOUT.legal },
+    { key: "usps", label: "Project USPs", anchor: "usps", band: bandFromScore(u1), score: u1, weight: wUsp, why: uspWhy, about: PILLAR_ABOUT.usps },
   ];
 }
 
