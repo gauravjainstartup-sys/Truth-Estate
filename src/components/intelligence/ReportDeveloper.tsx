@@ -1,21 +1,27 @@
 import { developerOf, type ProjectIntel } from "@/lib/projects";
-import { FIN_METRICS, type FinRating } from "@/lib/developers";
+import { BAND_RANK, FIN_METRICS, type FinBand, type FinRating } from "@/lib/developers";
 
 /* Chapter II · Pillar I — Developer DNA, in two parts:
    (a) Track record — the RERA delivery ledger, with "lapsed" flagged red
        above zero and a plain-English glossary; (b) Financial audit — the
        balance-sheet metrics as graded band cards. */
 
-type Band = "exceptional" | "strong" | "moderate" | "watch";
+/* Five grades, not four. "Strained" is the deepest — a metric that has
+   already gone wrong (negative earnings, cash burning, an inventory
+   overhang) rather than one that might. It reuses the watch hue at full
+   strength: a sixth colour would read as a new category, and this is the
+   same category further down. */
+type Band = FinBand;
 const CHIP: Record<Band, string> = {
   exceptional: "text-[#155a3a] bg-[#1e6b45]/[0.12] border-[#1e6b45]/25",
   strong: "text-[#1c7a4c] bg-[#238c55]/[0.10] border-[#238c55]/25",
   moderate: "text-[#8a6a1e] bg-[#9a7a2e]/[0.12] border-[#9a7a2e]/30",
   watch: "text-[#9a4130] bg-[#b0503e]/[0.10] border-[#b0503e]/30",
+  strained: "text-[#7e2d20] bg-[#8f3a2b]/[0.14] border-[#8f3a2b]/45",
 };
-const DOT: Record<Band, string> = { exceptional: "bg-[#1e6b45]", strong: "bg-[#238c55]", moderate: "bg-[#9a7a2e]", watch: "bg-[#b0503e]" };
-const VAL: Record<Band, string> = { exceptional: "text-[#1e6b45]", strong: "text-[#238c55]", moderate: "text-[#9a7a2e]", watch: "text-[#b0503e]" };
-const LABEL: Record<Band, string> = { exceptional: "Exceptional", strong: "Strong", moderate: "Moderate", watch: "Watch" };
+const DOT: Record<Band, string> = { exceptional: "bg-[#1e6b45]", strong: "bg-[#238c55]", moderate: "bg-[#9a7a2e]", watch: "bg-[#b0503e]", strained: "bg-[#8f3a2b]" };
+const VAL: Record<Band, string> = { exceptional: "text-[#1e6b45]", strong: "text-[#238c55]", moderate: "text-[#9a7a2e]", watch: "text-[#b0503e]", strained: "text-[#8f3a2b]" };
+const LABEL: Record<Band, string> = { exceptional: "Exceptional", strong: "Strong", moderate: "Moderate", watch: "Watch", strained: "Strained" };
 const fromRating = (r: FinRating): Band => (r === "strong" ? "strong" : r === "moderate" ? "moderate" : "watch");
 
 function BandChip({ band, label }: { band: Band; label?: string }) {
@@ -74,16 +80,24 @@ export default function ReportDeveloper({ p }: { p: ProjectIntel }) {
   // Part B · financial audit — an overall band from the metric grades, and an
   // assessment sentence: the developer's own note where it's real prose, else
   // one composed from how the balance-sheet lines score.
-  const BAND_SCORE: Record<Band, number> = { exceptional: 4, strong: 3, moderate: 2, watch: 1 };
   const finBands = FIN_METRICS.map((f) => dev.finBand?.[f.key] ?? fromRating(dev.financials[f.key]));
-  const finAvg = finBands.length ? finBands.reduce((a, b) => a + BAND_SCORE[b], 0) / finBands.length : 2;
-  const finBand: Band = finAvg >= 3.5 ? "exceptional" : finAvg >= 2.6 ? "strong" : finAvg >= 1.8 ? "moderate" : "watch";
+  const finAvg = finBands.length ? finBands.reduce((a, b) => a + BAND_RANK[b], 0) / finBands.length : 3;
+  const finBand: Band = finAvg >= 4.3 ? "exceptional" : finAvg >= 3.5 ? "strong" : finAvg >= 2.6 ? "moderate" : finAvg >= 1.8 ? "watch" : "strained";
   const finStrong = finBands.filter((b) => b === "exceptional" || b === "strong").length;
+  const finStrained = finBands.filter((b) => b === "strained").length;
   const finRaw = (dev.finNote ?? "").trim();
   const finProse = finRaw.split(/\s+/).length > 2 && !/scoring pipeline|financial band from filings/i.test(finRaw);
   const finSentence = finProse
     ? cap(finRaw)
-    : `${finStrong} of ${finBands.length} balance-sheet metric${finBands.length === 1 ? "" : "s"} score strong or better${finBand === "watch" ? ", with real strain in the weaker lines" : ""}. ${finBand === "exceptional" || finBand === "strong" ? "Well-capitalised to finish construction from its own resources." : finBand === "moderate" ? "Adequately placed to reach handover — worth monitoring." : "Balance-sheet strain worth watching before you commit."}`;
+    : `${finStrong} of ${finBands.length} balance-sheet metric${finBands.length === 1 ? "" : "s"} score strong or better${finStrained > 0 ? `, and ${finStrained} ${finStrained === 1 ? "is" : "are"} already strained` : finBand === "watch" ? ", with real strain in the weaker lines" : ""}. ${
+        finBand === "exceptional" || finBand === "strong"
+          ? "Well-capitalised to finish construction from its own resources."
+          : finBand === "moderate"
+          ? "Adequately placed to reach handover — worth monitoring."
+          : finBand === "watch"
+          ? "Balance-sheet strain worth watching before you commit."
+          : "The sheet is under real strain — ask how this project is being funded before you commit."
+      }`;
 
   return (
     <div className="mt-8">
@@ -166,6 +180,10 @@ export default function ReportDeveloper({ p }: { p: ProjectIntel }) {
                 <p className="mt-4 text-[1.1rem] font-medium text-[#1a1a1a]/25">—</p>
               )}
               <div className="mt-4"><BandChip band={band} /></div>
+              {/* only where the raw figure would mislead — see FIN_CAP */}
+              {dev.finCaveat?.[f.key] && (
+                <p className="mt-3 text-[0.66rem] font-light leading-[1.45] text-[#1a1a1a]/40">{dev.finCaveat[f.key]}</p>
+              )}
             </div>
           );
         })}

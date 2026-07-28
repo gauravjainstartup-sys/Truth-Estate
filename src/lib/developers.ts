@@ -8,6 +8,20 @@
 
 export type FinRating = "strong" | "moderate" | "weak";
 
+/* The five grades a balance-sheet metric is shown at.
+ *
+ * WHY FIVE. It was four, and "watch" was carrying two jobs that a buyer
+ * needs told apart: a thin number and a broken one. Birla Estates posts
+ * negative EBITDA, negative operating cash and twenty-seven years of
+ * inventory cover; Signature Global posts a 5% margin and clears its
+ * interest. Both read WATCH. The fifth grade separates strain that has
+ * already happened from strain that might.
+ *
+ * Ordered worst → best; BAND_RANK below is the only place that ordering
+ * lives, so an average over metrics can't drift from the labels. */
+export type FinBand = "strained" | "watch" | "moderate" | "strong" | "exceptional";
+export const BAND_RANK: Record<FinBand, number> = { strained: 1, watch: 2, moderate: 3, strong: 4, exceptional: 5 };
+
 export const FIN_METRICS = [
   { key: "leverage",  label: "Leverage",         full: "Net Debt-to-Equity", meaning: "How much debt funds the business" },
   { key: "coverage",  label: "Interest Coverage", full: "Interest Coverage",  meaning: "Ability to service debt from earnings" },
@@ -36,7 +50,11 @@ export type DeveloperIntel = {
      cards; finBand upgrades a metric to "exceptional" where the number is
      genuinely top-decile. Optional — cards fall back to the rating alone. */
   finValues?: Partial<Record<FinKey, string>>;
-  finBand?: Partial<Record<FinKey, "exceptional" | "strong" | "moderate" | "watch">>;
+  finBand?: Partial<Record<FinKey, FinBand>>;
+  /* Why a number is being shown capped or read with care — "ratio distorted
+     by a near-zero interest bill". Set only where the raw figure would
+     mislead; the card omits the line otherwise. */
+  finCaveat?: Partial<Record<FinKey, string>>;
   finNote: string;
   legal: string;
   /* Developer-level litigation on public record — surfaced in the Legal
@@ -75,7 +93,11 @@ export const DEVELOPERS: DeveloperIntel[] = [
     performance: { launched: 45, delivered: 38, ongoing: 7, onTimePct: 92, avgDelayMonths: 2, lapsed: 0 },
     financials: { leverage: "strong", coverage: "strong", cash: "moderate", margin: "strong", inventory: "strong" },
     finValues: { leverage: "−0.05×", coverage: "14.71×", cash: "2.07×", margin: "37.5%", inventory: "3.02 yr" },
-    finBand: { leverage: "exceptional", coverage: "exceptional", cash: "exceptional", margin: "strong", inventory: "moderate" },
+    /* Graded by the same bands the live path applies to these exact figures,
+       so the curated fallback and the pipeline can't tell a reader two
+       different stories about one developer. −0.05× is barely net cash, not
+       a cushion; 37.5% clears the premium-margin line. */
+    finBand: { leverage: "strong", coverage: "exceptional", cash: "exceptional", margin: "exceptional", inventory: "moderate" },
     finNote: "Consistent debt reduction over the cycle; recurring commercial rental income adds balance-sheet stability.",
     legal: "Clean RERA compliance and strong governance today — but a buyer should read DLF's history: a Supreme-Court possession-delay loss and a CCI penalty for one-sided buyer agreements both sit on the public record.",
     legalCases: [

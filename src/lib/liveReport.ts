@@ -14,7 +14,7 @@ import { fetchBacklogFull, fetchBacklogNameIds, fetchConfigurations, fetchCorrid
 import { bhkBucket, buildMarket, type MarketContext, type MatchInput, type UnitConfig } from "./matchEngine";
 import { MARKETS } from "./markets";
 import { corridorKey } from "./journey";
-import type { DeveloperIntel, FinKey, FinRating, LegalCase } from "./developers";
+import type { DeveloperIntel, FinBand, FinKey, FinRating, LegalCase } from "./developers";
 import { developerSlugOf, type ProjectIntel, type ProjectOps, type RoiModel, type ScoreInputKey } from "./projects";
 import mediaManifest from "./live-media.manifest.json";
 
@@ -172,24 +172,69 @@ const monthsAheadPrecise = (predicted: string | null, rera: string | null): numb
   return Math.round(((rd - pd) / 86400000 / 30.4375) * 10) / 10;
 };
 
-/* financial-metric ratings from the audited values (same thresholds the
-   flagship registry was graded on; conservative middles) */
-const FIN_THRESHOLDS: Record<FinKey, (v: number) => FinRating> = {
-  leverage:  (v) => (v <= 0.5 ? "strong" : v <= 1.2 ? "moderate" : "weak"),
-  coverage:  (v) => (v >= 4 ? "strong" : v >= 2 ? "moderate" : "weak"),
-  cash:      (v) => (v >= 0.8 ? "strong" : v >= 0.4 ? "moderate" : "weak"),
-  margin:    (v) => (v >= 20 ? "strong" : v >= 12 ? "moderate" : "weak"),
-  inventory: (v) => (v <= 2 ? "strong" : v <= 4 ? "moderate" : "weak"),
+/* ebitda_margin arrives as a RATIO (0.375), and every consumer downstream
+   was treating it as a percentage: the card printed "0.4%" for a developer
+   earning 37.5%, and the thresholds compared 0.375 against 20. The result
+   was that all 17 developers on file were graded WATCH on margin and none
+   could ever reach the top band — a fifth of the financial audit was a
+   constant. Normalise on the way in: no real EBITDA margin exceeds 150%,
+   so anything inside that band is a ratio, anything beyond it is already
+   a percentage. That keeps working if the column is fixed upstream. */
+const asPct = (v: number) => (Math.abs(v) <= 1.5 ? v * 100 : v);
+
+/* Where a metric is banded, and why there.
+ *
+ * The old thresholds ranked developers correctly and labelled them badly.
+ * Leverage handed EXCEPTIONAL to 11 of the 17 on file and cash conversion
+ * to 8 — a badge two-thirds of the field wears tells a buyer nothing, and
+ * it is the badge doing the most persuasive work on the page. These bands
+ * are set against Indian residential-developer norms rather than against
+ * this sample, so adding a developer doesn't reshuffle everyone else:
+ *
+ *   leverage   net cash is the post-2021 norm for the listed set, so it
+ *              takes a real cash cushion (≤ −0.25) to be exceptional
+ *   coverage   below 1× earnings do not cover the interest bill at all
+ *   cash       real estate collects advances, so > 1× is ordinary, not
+ *              remarkable; negative means cash is burning while the P&L
+ *              still shows a profit
+ *   margin     20–30% is the residential norm, 30%+ premium/land-rich
+ *   inventory  2–4 years' cover is healthy; past 8 it is an overhang */
+const FIN_BAND: Record<FinKey, (v: number) => FinBand> = {
+  leverage:  (v) => (v <= -0.25 ? "exceptional" : v <= 0.25 ? "strong" : v <= 0.75 ? "moderate" : v <= 1.5 ? "watch" : "strained"),
+  coverage:  (v) => (v >= 10 ? "exceptional" : v >= 4 ? "strong" : v >= 2 ? "moderate" : v >= 1 ? "watch" : "strained"),
+  /* above 4× the ratio is a small-EBITDA artefact rather than a stronger
+     business, so it lands at strong, not at the top of the scale */
+  cash:      (v) => (v > 4 ? "strong" : v >= 1.5 ? "exceptional" : v >= 0.85 ? "strong" : v >= 0.5 ? "moderate" : v >= 0 ? "watch" : "strained"),
+  margin:    (v) => { const p = asPct(v); return p >= 32 ? "exceptional" : p >= 18 ? "strong" : p >= 10 ? "moderate" : p >= 0 ? "watch" : "strained"; },
+  inventory: (v) => (v <= 1.75 ? "exceptional" : v <= 2.75 ? "strong" : v <= 4.5 ? "moderate" : v <= 8 ? "watch" : "strained"),
 };
-const FIN_TOP: Record<FinKey, (v: number) => boolean> = {
-  leverage: (v) => v <= 0.2, coverage: (v) => v >= 8, cash: (v) => v >= 1,
-  margin: (v) => v >= 30, inventory: (v) => v <= 1.2,
+
+/* The three-level rating the rest of the report reads (anatomy.fundamentals,
+   the FAQ, the pillar inputs). Derived from the band above so the two can
+   never disagree — they were separate ladders before. */
+const FIN_RATING: Record<FinKey, (v: number) => FinRating> = Object.fromEntries(
+  (Object.keys(FIN_BAND) as FinKey[]).map((k) => [
+    k,
+    (v: number) => { const b = FIN_BAND[k](v); return b === "exceptional" || b === "strong" ? "strong" : b === "moderate" ? "moderate" : "weak"; },
+  ]),
+) as Record<FinKey, (v: number) => FinRating>;
+
+/* Ratios built on a near-zero denominator print like precision and read
+   like strength. Tulip's 110.9× interest cover is a company that barely
+   borrows, not one that out-earns DLF seven times over; Max Estates'
+   −25.95× cash conversion is a rounding artefact on a tiny EBITDA. Cap the
+   display at the point the number stops carrying information, and say so
+   on the card rather than showing a figure we would have to defend. */
+const FIN_CAP: Partial<Record<FinKey, { at: number; over: boolean; show: string; why: string }>> = {
+  coverage:  { at: 25, over: true, show: "25×+", why: "Capped — at this level the driver is a near-zero interest bill, not earnings" },
+  cash:      { at: 4, over: true, show: "4×+", why: "Capped — the ratio is distorted by a small EBITDA base" },
+  inventory: { at: 15, over: true, show: "15 yr+", why: "Capped — cover this long usually means sales, not stock, are the small number" },
 };
 const FIN_FMT: Record<FinKey, (v: number) => string> = {
   leverage: (v) => `${Math.round(v * 100) / 100}×`,
   coverage: (v) => `${Math.round(v * 10) / 10}×`,
   cash: (v) => `${Math.round(v * 100) / 100}×`,
-  margin: (v) => `${Math.round(v * 10) / 10}%`,
+  margin: (v) => `${Math.round(asPct(v) * 10) / 10}%`,
   inventory: (v) => `${Math.round(v * 10) / 10} yrs`,
 };
 
@@ -453,7 +498,7 @@ export function liveProjectIntel(
   if (row.finInventory != null) finVals.inventory = row.finInventory;
   const finKeys = Object.keys(finVals) as FinKey[];
   const finRatings: Partial<Record<FinKey, FinRating>> = {};
-  for (const k of finKeys) finRatings[k] = FIN_THRESHOLDS[k](finVals[k]!);
+  for (const k of finKeys) finRatings[k] = FIN_RATING[k](finVals[k]!);
   const finAvg = finKeys.length
     ? finKeys.reduce((a, k) => a + (finRatings[k] === "strong" ? 3 : finRatings[k] === "moderate" ? 2 : 1), 0) / finKeys.length
     : null;
@@ -799,11 +844,20 @@ export function liveProjectIntel(
       .filter((c): c is LegalCase => !!c);
   const legalCases = [...mapCases(row.legalProjectCases, "project"), ...mapCases(row.legalDeveloperCases, "developer")];
 
+  /* Every metric now carries its own band, not just an "exceptional"
+     upgrade over a three-level rating. The card used to fall back to
+     fromRating() for anything not top-decile, which is how a five-level
+     read got flattened into three on the way to the page. */
   const finValues: Partial<Record<FinKey, string>> = {};
-  const finBand: Partial<Record<FinKey, "exceptional" | "strong" | "moderate" | "watch">> = {};
+  const finBand: Partial<Record<FinKey, FinBand>> = {};
+  const finCaveat: Partial<Record<FinKey, string>> = {};
   for (const k of finKeys) {
-    finValues[k] = FIN_FMT[k](finVals[k]!);
-    if (FIN_TOP[k](finVals[k]!)) finBand[k] = "exceptional";
+    const v = finVals[k]!;
+    const cap = FIN_CAP[k];
+    const capped = cap != null && (cap.over ? v > cap.at : v < cap.at);
+    finValues[k] = capped ? cap!.show : FIN_FMT[k](v);
+    finBand[k] = FIN_BAND[k](v);
+    if (capped) finCaveat[k] = cap!.why;
   }
   const devLedger = row.devTotal != null && row.devDelivered != null;
   const liveDeveloper: DeveloperIntel | undefined =
@@ -837,6 +891,7 @@ export function liveProjectIntel(
           },
           ...(Object.keys(finValues).length ? { finValues } : {}),
           ...(Object.keys(finBand).length ? { finBand } : {}),
+          ...(Object.keys(finCaveat).length ? { finCaveat } : {}),
           finNote:
             row.faqFinancialVerdict ??
             (row.companyType || row.devFinancialBand
