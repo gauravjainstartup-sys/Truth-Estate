@@ -1,0 +1,41 @@
+name: Publish watchdog
+
+# Is the live site actually showing the database?
+#
+# The site is a static export, so it is only as current as its last
+# rebuild. Two things keep that true — a Postgres trigger per source
+# table, and the daily cron as a backstop. Between 22 and 29 July the
+# trigger side covered two of the five tables the build reads, so edits
+# to prices, units and micro-markets waited up to a day. Nobody noticed
+# for six days BECAUSE the backstop worked: never broken, only behind.
+#
+# This runs after the daily refresh has had time to land and fails when
+# the database holds a write that no rebuild has published. A failed
+# scheduled workflow is what GitHub emails the repo owner about, so the
+# notification needs no new service, token or integration.
+on:
+  schedule:
+    # 07:00 UTC — after the 03:00 data refresh, allowing for GitHub's
+    # habit of running cron jobs well behind their nominal time.
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+
+# Read-only. It inspects run history and published Supabase views; it
+# cannot write to either.
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Has everything written been published?
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/publish-watchdog.mjs
