@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { projectHref } from "@/lib/projectHref";
+import LiveProjectCard from "./LiveProjectCard";
 import Logo from "../Logo";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import type { ConsultContext } from "@/lib/consultation";
@@ -15,11 +16,10 @@ import {
   classifyAndResearch,
   type Project,
 } from "@/lib/journey";
-import { projectSlug, projectByName, reviewedOn } from "@/lib/projects";
+import { projectSlug } from "@/lib/projects";
 import { DEVELOPERS } from "@/lib/developers";
 import { MARKETS } from "@/lib/markets";
 import { comparePairSlug } from "@/lib/compare";
-import ProjectOptionCard from "./ProjectOptionCard";
 import {
   mergeChips,
   parseAsk,
@@ -47,9 +47,16 @@ type View =
   | { type: "search-result"; query: string; result: ResearchResult }
   | { type: "canvas"; query: string; parsed: Parsed };
 
-/* Resolve an entity name to its real routed page. */
-function entityHref(name: string): { kind: "project" | "developer" | "market"; slug: string; href: string } | null {
+/* Resolve an entity name to its real routed page.
+   The live index goes first and the demo set is only a fallback: this
+   searched PROJECTS alone, so a visitor who typed the name of any of the
+   97 tracked projects got no link at all — and the handful it did match
+   were sent to the legacy /intelligence/projects/ address rather than the
+   canonical one. */
+function entityHref(name: string, live?: OmniProject[]): { kind: "project" | "developer" | "market"; slug: string; href: string } | null {
   const n = name.trim().toLowerCase();
+  const lp = live?.find((x) => x.name.toLowerCase() === n);
+  if (lp) return { kind: "project", slug: lp.slug, href: projectHref(lp) };
   const p = PROJECTS.find((x) => x.name.toLowerCase() === n);
   if (p) { const slug = projectSlug(p.name); return { kind: "project", slug, href: `${basePath}/intelligence/projects/${slug}` }; }
   const d = DEVELOPERS.find((x) => x.name.toLowerCase() === n);
@@ -70,6 +77,17 @@ function compareHref(q: string): string | null {
 }
 
 const basePath = "/Truth-Estate";
+
+/* "2026-06-30" → "30 Jun 2026". The panel used reviewedOn() against the
+   curated set, which returned "Jul 2026" for anything it could not find —
+   so five rows showed three different date shapes at once. */
+function fmtReviewed(iso: string | null | undefined): string {
+  if (!iso) return "Reviewed quarterly";
+  const d = new Date(`${iso}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return "Reviewed quarterly";
+  const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return `Reviewed ${d.getUTCDate()} ${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
 
 const INVESTMENT_THEMES = [
   "Luxury",
@@ -134,7 +152,10 @@ export default function IntelligenceWorkspace({ index = EMPTY_INDEX }: { index?:
     if (!searchQuery.trim()) return [];
     const q = searchQuery.toLowerCase();
     const results: { label: string; type: string }[] = [];
-    PROJECTS.forEach((p) => {
+    /* The tracked set, not the demo fixtures. Typing "Godrej" used to
+       offer whatever the journey mock happened to contain rather than
+       any of the 97 projects the site actually publishes. */
+    index.projects.forEach((p) => {
       if (p.name.toLowerCase().includes(q)) results.push({ label: p.name, type: "Project" });
     });
     DEVELOPER_PROFILES.forEach((d) => {
@@ -151,7 +172,7 @@ export default function IntelligenceWorkspace({ index = EMPTY_INDEX }: { index?:
         .slice(0, 3)
         .forEach((s) => results.push({ label: s, type: "Question" }));
     return results.slice(0, 8);
-  }, [searchQuery]);
+  }, [searchQuery, index.projects]);
 
   return (
     <div className="flex h-screen flex-col bg-[#F5F0E8] text-[#1a1a1a]">
@@ -229,7 +250,7 @@ export default function IntelligenceWorkspace({ index = EMPTY_INDEX }: { index?:
                 <div className="max-h-[400px] overflow-y-auto py-2">
                   {searchSuggestions.map((s) => {
                     // entity hits go straight to their real pages; questions stay in the desk
-                    const href = s.type === "Project" || s.type === "Developer" || s.type === "Location" ? entityHref(s.label)?.href : null;
+                    const href = s.type === "Project" || s.type === "Developer" || s.type === "Location" ? entityHref(s.label, index.projects)?.href : null;
                     const inner = (
                       <>
                         <span className="font-serif text-[0.95rem] font-light text-[#1a1a1a]/70">{s.label}</span>
@@ -269,7 +290,7 @@ export default function IntelligenceWorkspace({ index = EMPTY_INDEX }: { index?:
       {/* ── Main content — full width; catalogues live on their own routes ── */}
       <main ref={mainRef} className="min-h-0 flex-1 overflow-y-auto">
         {view.type === "home" && <HomeView doSearch={doSearch} recentSearches={recentSearches} index={index} />}
-        {view.type === "search-result" && <SearchResultView result={view.result} doSearch={doSearch} />}
+        {view.type === "search-result" && <SearchResultView result={view.result} doSearch={doSearch} live={index.projects} />}
         {view.type === "canvas" && (
           <CanvasView key={view.query} query={view.query} parsed={view.parsed} index={index} onFallback={fallbackToBrief} />
         )}
@@ -297,7 +318,67 @@ function HomeView({ doSearch, recentSearches, index }: { doSearch: (q: string) =
     return () => { clearInterval(blink); clearInterval(rotate); };
   }, []);
 
-  const sorted = useMemo(() => [...PROJECTS].sort((a, b) => b.truthScore - a.truthScore), []);
+  /* LIVE, not the demo set. This was `[...PROJECTS]` — the hand-written
+     journey fixtures — so the front door of the intelligence product
+     showed six projects that mostly do not exist: three of the six links
+     404'd, and every score was 9 to 30 points above the real one. The
+     live set tops out at 86; the page was advertising 94, 92 and 90. */
+  const topScored = useMemo(() => {
+    const ranked = [...index.projects].filter((p) => p.score != null).sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    /* AT MOST TWO PER DEVELOPER. Straight score order puts six DLF
+       projects in the grid — 86, 85, 83, 83, 82, 81 — which is what the
+       data says and the worst thing this page could show. A leaderboard
+       that names one developer six times reads as placement on a site
+       whose entire claim is that nothing here is placed, and it buries
+       the best of every other builder. The cap costs the reader nothing:
+       the top two are still the top two, and the four it makes room for
+       are the highest-scoring projects they would otherwise never see. */
+    const seen = new Map<string, number>();
+    const out: typeof ranked = [];
+    for (const p of ranked) {
+      const dev = p.developer ?? "—";
+      if ((seen.get(dev) ?? 0) >= 2) continue;
+      seen.set(dev, (seen.get(dev) ?? 0) + 1);
+      out.push(p);
+      if (out.length >= 6) break;
+    }
+    return out;
+  }, [index.projects]);
+  /* A panel headed "Recently Updated" was ordering by SCORE. It now
+     orders by the thing it claims to. */
+  const recentlyUpdated = useMemo(
+    () => [...index.projects].filter((p) => p.updatedAt).sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt))),
+    [index.projects],
+  );
+  /* What the tracked set actually looks like, computed here rather than
+     asserted in copy — the old headline numbers on this site were hand-set
+     and went stale the moment the pipeline moved. */
+  const facts = useMemo(() => {
+    const ps = index.projects;
+    const scores = ps.map((p) => p.score).filter((n): n is number => n != null);
+    const prices = ps.map((p) => p.minPriceCr).filter((n): n is number => n != null && n > 0);
+    const corridors = new Set(ps.map((p) => String(p.location ?? "").split(" · ").pop()).filter(Boolean));
+    const newest = ps.map((p) => p.updatedAt).filter(Boolean).sort().pop() ?? null;
+    return {
+      tracked: ps.length,
+      corridors: corridors.size,
+      scoreLo: scores.length ? Math.min(...scores) : null,
+      scoreHi: scores.length ? Math.max(...scores) : null,
+      priceLo: prices.length ? Math.min(...prices) : null,
+      priceHi: prices.length ? Math.max(...prices) : null,
+      /* NOT "how many carry a flag" — that is all 97, and a statistic
+         every row satisfies is decoration. Three or more is the line that
+         actually separates them: 55 of 97 sit above it. */
+      flagged3: ps.filter((p) => (p.redFlags ?? 0) >= 3).length,
+      medianPrice: (() => {
+        const v = prices.slice().sort((a, b) => a - b);
+        return v.length ? v[Math.floor(v.length / 2)] : null;
+      })(),
+      modelled: ps.filter((p) => p.has3D).length,
+      developers: new Set(ps.map((p) => p.developer).filter(Boolean)).size,
+      newest,
+    };
+  }, [index.projects]);
 
   /* layer 1 — instant, local, deterministic */
   const hits = useMemo(() => typeahead(query, index, 5), [query, index]);
@@ -454,12 +535,46 @@ function HomeView({ doSearch, recentSearches, index }: { doSearch: (q: string) =
         </div>
       </div>
 
+      {/* WHAT IS ACTUALLY IN HERE.
+          The page asked visitors to search 97 projects without ever
+          telling them what those 97 were — no price floor, no corridor
+          count, no sense of whether a good score is 70 or 95. Every
+          figure below is computed from the index at render, so none of
+          it can go stale the way the hand-set "127 projects · ₹7K–38K"
+          headline this site used to carry did. */}
+      {facts.tracked > 0 && (
+        <div className="mx-auto mt-14 max-w-[1000px] md:mt-20">
+          <SectionLabel>The tracked set</SectionLabel>
+          <dl className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-[#1a1a1a]/[0.07] bg-[#1a1a1a]/[0.06] sm:grid-cols-3">
+            <Fact k="Projects tracked" v={String(facts.tracked)} sub={`across ${facts.corridors} corridors`} />
+            {facts.scoreLo != null && (
+              <Fact k="Truth Scores" v={`${facts.scoreLo}–${facts.scoreHi}`} sub="no project pays for its rank" />
+            )}
+            {facts.priceLo != null && (
+              <Fact
+                k="Entry tickets"
+                v={`₹${facts.priceLo}–${facts.priceHi} Cr`}
+                sub={facts.medianPrice != null ? `median ₹${facts.medianPrice} Cr` : "smallest home, each project"}
+              />
+            )}
+            <Fact k="Three or more flags" v={String(facts.flagged3)} sub="and not one is flag-free" />
+            <Fact k="Developers" v={String(facts.developers)} sub="every delivery record audited" />
+            <Fact k="Modelled in 3D" v={String(facts.modelled)} sub="sun & vastu, per flat" />
+          </dl>
+          {facts.newest && (
+            <p className="mt-3 text-right text-[0.7rem] font-light text-[#1a1a1a]/30">
+              Most recent re-audit {fmtReviewed(facts.newest).replace("Reviewed ", "")}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Latest Intelligence */}
       <div className="mx-auto mt-16 max-w-[1000px] md:mt-24">
-        <SectionLabel>Latest Intelligence</SectionLabel>
+        <SectionLabel>Highest Truth Scores</SectionLabel>
         <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {sorted.slice(0, 6).map((p) => (
-            <ProjectCard key={p.name} project={p} href={`${basePath}/intelligence/projects/${projectSlug(p.name)}`} />
+          {topScored.slice(0, 6).map((p) => (
+            <LiveProjectCard key={p.slug} p={p} />
           ))}
         </div>
       </div>
@@ -468,25 +583,24 @@ function HomeView({ doSearch, recentSearches, index }: { doSearch: (q: string) =
       <div className="mx-auto mt-16 max-w-[1000px] md:mt-24">
         <SectionLabel>Recently Updated</SectionLabel>
         <div className="mt-6 flex flex-col gap-px overflow-hidden rounded-lg border border-[#1a1a1a]/[0.06]">
-          {sorted.slice(0, 5).map((p) => {
-            const intel = projectByName(p.name);
-            return (
-              <a
-                key={p.name}
-                href={`${basePath}/intelligence/projects/${projectSlug(p.name)}`}
-                className="flex items-center justify-between gap-4 bg-white px-6 py-4 text-left transition-colors hover:bg-[#1a1a1a]/[0.03]"
-              >
-                <div className="min-w-0">
-                  <span className="font-serif text-[1rem] font-medium text-[#1a1a1a]">{p.name}</span>
-                  <span className="ml-3 hidden text-[0.78rem] font-light text-[#1a1a1a]/35 sm:inline">{p.developer} &middot; {p.market}</span>
-                </div>
-                <div className="flex shrink-0 items-center gap-4">
-                  <span className="font-serif text-[1rem] font-medium text-[#1e6b45]">{p.truthScore}</span>
-                  <span className="text-[0.72rem] font-light text-[#1a1a1a]/25">{intel ? `Reviewed ${reviewedOn(intel)}` : "Reviewed quarterly"}</span>
-                </div>
-              </a>
-            );
-          })}
+          {recentlyUpdated.slice(0, 5).map((p) => (
+            <a
+              key={p.slug}
+              href={projectHref(p)}
+              className="flex items-center justify-between gap-4 bg-white px-6 py-4 text-left transition-colors hover:bg-[#1a1a1a]/[0.03]"
+            >
+              <div className="min-w-0">
+                <span className="font-serif text-[1rem] font-medium text-[#1a1a1a]">{p.name}</span>
+                <span className="ml-3 hidden text-[0.78rem] font-light text-[#1a1a1a]/35 sm:inline">
+                  {[p.developer, String(p.location ?? "").split(" · ").pop()].filter(Boolean).join(" · ")}
+                </span>
+              </div>
+              <div className="flex shrink-0 items-center gap-4">
+                {p.score != null && <span className="font-serif text-[1rem] font-medium text-[#1e6b45] tabular-nums">{p.score}</span>}
+                <span className="hidden text-[0.72rem] font-light text-[#1a1a1a]/25 sm:inline">{fmtReviewed(p.updatedAt)}</span>
+              </div>
+            </a>
+          ))}
         </div>
       </div>
 
@@ -515,7 +629,7 @@ function HomeView({ doSearch, recentSearches, index }: { doSearch: (q: string) =
 /* ════════════════════════════════════════════════════════════════
    SEARCH RESULT VIEW
    ════════════════════════════════════════════════════════════════ */
-function SearchResultView({ result, doSearch }: { result: ResearchResult; doSearch: (q: string) => void }) {
+function SearchResultView({ result, doSearch, live }: { result: ResearchResult; doSearch: (q: string) => void; live: OmniProject[] }) {
   const typeLabel: Record<ResearchResult["type"], string> = {
     project: "Project Analysis",
     developer: "Developer Profile",
@@ -527,7 +641,7 @@ function SearchResultView({ result, doSearch }: { result: ResearchResult; doSear
   // the brief is the appetiser — the full routed page is the meal
   const full = useMemo(() => {
     if (result.type === "project" || result.type === "developer" || result.type === "location") {
-      const e = entityHref(result.title);
+      const e = entityHref(result.title, live);
       if (e) return { href: e.href, label: result.type === "project" ? "Open the full project report" : result.type === "developer" ? "Open the developer dossier" : "Open the market profile" };
     }
     if (result.type === "comparison") {
@@ -535,7 +649,7 @@ function SearchResultView({ result, doSearch }: { result: ResearchResult; doSear
       if (href) return { href, label: "Open the full comparison" };
     }
     return null;
-  }, [result]);
+  }, [result, live]);
 
   return (
     <div className="px-6 pb-24 md:px-12 lg:px-16">
@@ -952,10 +1066,23 @@ function BrowseTile({ title, sub, onClick, href }: { title: string; sub: string;
 /* Thin wrapper over the shared project-option card so the workspace grids
    read identically to the report, shortlist and index. Resolves the light
    Project to its ProjectIntel; keeps the link / click variants. */
-function ProjectCard({ project: p, onClick, href }: { project: Project; onClick?: () => void; href?: string }) {
-  const intel = projectByName(p.name);
-  if (!intel) return null;
-  return <ProjectOptionCard p={intel} onSelect={onClick} href={href} />;
+/* ProjectCard lived here: it took a journey `Project`, resolved it through
+   projectByName() — which searches PROJECT_INTEL, itself `PROJECTS.map(enrich)`
+   — and so could only ever render the demo set. That is what put three
+   404ing links and six inflated scores on this page. Deleted rather than
+   left unused, because the next person to want a tile here would have
+   found it and used it. LiveProjectCard renders from the index. */
+
+/* One number, what it is, and what it means — the third line is what
+   stops a stat strip reading as decoration. */
+function Fact({ k, v, sub }: { k: string; v: string; sub?: string }) {
+  return (
+    <div className="bg-white px-5 py-5">
+      <dt className="font-mono text-[0.6rem] uppercase tracking-[0.12em] text-[#1a1a1a]/35">{k}</dt>
+      <dd className="mt-1.5 font-serif text-[1.5rem] font-medium leading-none tracking-[-0.01em] text-[#1a1a1a] tabular-nums">{v}</dd>
+      {sub && <dd className="mt-1.5 text-[0.68rem] font-light leading-snug text-[#1a1a1a]/35">{sub}</dd>}
+    </div>
+  );
 }
 
 function BottomCTA({ context }: { context?: ConsultContext }) {
