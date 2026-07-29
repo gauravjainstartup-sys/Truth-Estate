@@ -48,6 +48,13 @@ const OTHERS = [
   // breakdown — the scores and weights the score is actually built from.
   // Still a lean select: the table's raw_html column is large and unused here.
   ["backlog_project_data", "select=id,construction_pace,sales_velocity,expected_roi&limit=2000"],
+  /* The developers page fetches this at build and renders a whole section
+     from it. It was NOT snapshotted, so every local build was blind to
+     that section — the curated cards looked like the entire page here
+     while production also showed a live table underneath them, saying
+     something different about the same developers. A fixture set that
+     omits a view the build reads is a fixture set that hides bugs. */
+  ["developers_overview", "select=*&limit=100"],
 ];
 
 const fixtures = process.env.SUPABASE_FIXTURES;

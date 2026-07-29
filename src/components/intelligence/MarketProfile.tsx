@@ -2,18 +2,29 @@
 
 import Logo from "../Logo";
 import { useConsultation } from "../consultation/ConsultationProvider";
-import { fmtPsf, scoredProjectsIn, type MarketIntel } from "@/lib/markets";
-import { projectByName } from "@/lib/projects";
-import ProjectOptionCard from "./ProjectOptionCard";
+import { fmtPsf, type MarketIntel } from "@/lib/markets";
+import type { OmniProject } from "@/lib/omni";
+import LiveProjectCard from "./LiveProjectCard";
 
 const basePath = "/Truth-Estate";
 
-export default function MarketProfile({ m, count }: { m: MarketIntel; count?: number }) {
+export default function MarketProfile({
+  m,
+  projects,
+  cagrConfidence,
+  potential,
+  supplyPressure,
+}: {
+  m: MarketIntel;
+  projects: OmniProject[];
+  cagrConfidence?: string | null;
+  potential?: number | null;
+  supplyPressure?: string | null;
+}) {
   const { openConsult } = useConsultation();
   // Advice sought from a corridor page is about that market — the
   // consultation opens knowing it ("We'll prepare the SPR market picture…").
   const open = () => openConsult({ source: m.name, sourceKind: "location" });
-  const scored = scoredProjectsIn(m.name);
 
   return (
     <div className="min-h-svh bg-[#F5F0E8] text-[#1a1a1a]">
@@ -50,15 +61,21 @@ export default function MarketProfile({ m, count }: { m: MarketIntel; count?: nu
         </div>
 
         {/* Numbers */}
+        {/* Same four slots, resolved against the pipeline. The last one held
+            a hand-set three-year band; it now holds the corridor's own
+            five-year CAGR estimate, so the label moved with the number. */}
         <div className="mt-8 grid grid-cols-2 gap-x-6 gap-y-8 rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-8 md:grid-cols-4 md:p-10">
-          <Num v={`${count ?? m.projectCount}`} k="Projects tracked" />
+          <Num v={`${m.projectCount}`} k="Projects tracked" />
           <Num v={fmtPsf(m.psf.avg)} k="Avg / sq ft" />
           <Num v={m.unitBand} k="Typical ticket" />
-          <Num v={m.appreciation3Y} k="3-Year trend" accent />
+          <Num v={m.appreciation3Y} k="Expected CAGR" accent />
         </div>
-        <div className="mt-3 flex items-center gap-3 text-[0.78rem] font-light text-[#1a1a1a]/45">
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-[0.78rem] font-light text-[#1a1a1a]/45">
           <span>Price range</span>
-          <span className="h-px flex-1 bg-[#1a1a1a]/10" />
+          {cagrConfidence && <span className="font-mono text-[0.66rem] uppercase tracking-[0.08em] text-[#1a1a1a]/35">CAGR confidence {cagrConfidence.toLowerCase()}</span>}
+          {potential != null && <span className="font-mono text-[0.66rem] uppercase tracking-[0.08em] text-[#1a1a1a]/35">Corridor potential {potential}/100</span>}
+          {supplyPressure && <span className="font-mono text-[0.66rem] uppercase tracking-[0.08em] text-[#1a1a1a]/35">Supply pressure {supplyPressure.toLowerCase()}</span>}
+          <span className="h-px min-w-6 flex-1 bg-[#1a1a1a]/10" />
           <span className="font-mono text-[#1a1a1a]/70">{fmtPsf(m.psf.low)} <span className="text-[#1a1a1a]/35">low</span> &nbsp;·&nbsp; {fmtPsf(m.psf.high)} <span className="text-[#1a1a1a]/35">high</span></span>
         </div>
 
@@ -82,26 +99,39 @@ export default function MarketProfile({ m, count }: { m: MarketIntel; count?: nu
 
         {/* Projects in this market */}
         <section className="mt-16 border-t border-[#1a1a1a]/8 pt-12">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <span className="font-mono text-[0.8rem] text-[#c9a96e]">→</span>
             <h2 className="font-serif text-[1.7rem] font-medium tracking-[-0.01em] md:text-[2.1rem]">Projects in {m.short}</h2>
+            {projects.length > 0 && (
+              <span className="font-mono text-[0.66rem] uppercase tracking-[0.1em] text-[#1a1a1a]/35">{projects.length} tracked</span>
+            )}
           </div>
 
-          {scored.length > 0 && (
+          {/* The grid used to run on the hand-written journey dataset —
+              half of whose entries have no row in the database, so their
+              links 404 and their scores were invented. These are the
+              corridor's real tracked projects, best first. */}
+          {projects.length > 0 ? (
             <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {scored.map((p, i) => {
-                const intel = projectByName(p.name);
-                return intel ? <ProjectOptionCard key={p.name} p={intel} rank={i + 1} /> : null;
-              })}
+              {projects.slice(0, 12).map((p) => (
+                <LiveProjectCard key={p.slug} p={p} />
+              ))}
             </div>
+          ) : (
+            <p className="mt-6 text-[0.9rem] font-light leading-[1.7] text-[#1a1a1a]/50">
+              No project in this corridor is under coverage yet. <a href={`${basePath}/intelligence/projects`} className="underline decoration-[#1a1a1a]/20 underline-offset-4 transition-colors hover:text-[#1a1a1a]/80">Browse every tracked project →</a>
+            </p>
           )}
 
-          <p className="mt-6 text-[10px] font-medium uppercase tracking-[0.24em] text-[#1a1a1a]/40">Notable addresses</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {m.projectNames.map((n) => (
-              <span key={n} className="rounded-full border border-[#1a1a1a]/10 px-3.5 py-1.5 text-[0.78rem] font-light text-[#1a1a1a]/55">{n}</span>
-            ))}
-          </div>
+          {/* Seeds the grid's search box. The SHORT label, not the name: the
+              index searches the corridor as the pipeline files it ("Golf
+              Course Road Extension (GCRE)"), which the curated name "Golf
+              Course Extension" does not appear inside. */}
+          {projects.length > 12 && (
+            <a href={`${basePath}/intelligence/projects?q=${encodeURIComponent(m.short)}`} className="mt-6 inline-block text-[0.82rem] font-light text-[#1e6b45] underline decoration-[#1e6b45]/25 underline-offset-4 transition-colors hover:decoration-[#1e6b45]">
+              See all {projects.length} projects in {m.short} →
+            </a>
+          )}
         </section>
 
         {/* CTA */}

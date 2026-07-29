@@ -3,9 +3,9 @@
 import Logo from "../Logo";
 import GurugramMap from "./GurugramMap";
 import { useJourney } from "../journey/JourneyProvider";
-import { MARKETS, GURUGRAM_OVERVIEW, fmtPsf } from "@/lib/markets";
-import { corridorKey } from "@/lib/journey";
-import type { LiveMicroMarket, TrackedOverview } from "@/lib/supabase";
+import { GURUGRAM_OVERVIEW, fmtPsf } from "@/lib/markets";
+import type { MarketCard } from "@/lib/marketsLive";
+import type { TrackedOverview } from "@/lib/supabase";
 
 const basePath = "/Truth-Estate";
 
@@ -31,7 +31,15 @@ const TIER_TONE: Record<string, string> = {
   Emerging: "border-[#1a1a1a]/15 text-[#1a1a1a]/45",
 };
 
-export default function MarketsIndex({ live, overview }: { live?: LiveMicroMarket[] | null; overview?: TrackedOverview | null }) {
+export default function MarketsIndex({
+  markets,
+  uncovered,
+  overview,
+}: {
+  markets: MarketCard[];
+  uncovered: { name: string; count: number }[];
+  overview?: TrackedOverview | null;
+}) {
   const { open } = useJourney();
   const stats = liveStats(overview);
   return (
@@ -66,13 +74,13 @@ export default function MarketsIndex({ live, overview }: { live?: LiveMicroMarke
 
         {/* Interactive map */}
         <div className="mt-14">
-          <GurugramMap counts={overview?.byCorridor} />
+          <GurugramMap markets={markets} />
         </div>
 
         {/* All micro-markets */}
         <h2 className="mt-20 font-serif text-[1.8rem] font-medium tracking-[-0.01em] md:text-[2.2rem]">Every micro-market</h2>
         <div className="mt-8 grid gap-5 sm:grid-cols-2">
-          {MARKETS.map((m) => (
+          {markets.map((m) => (
             <a key={m.slug} href={`${basePath}/intelligence/markets/${m.slug}`}
                className="group rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-7 transition-all duration-300 hover:border-[#c9a96e]/40 hover:bg-white/80">
               <div className="flex items-start justify-between">
@@ -83,29 +91,42 @@ export default function MarketsIndex({ live, overview }: { live?: LiveMicroMarke
                 <span className={`mt-1 rounded-full border px-2.5 py-1 text-[0.6rem] font-medium uppercase tracking-[0.1em] ${TIER_TONE[m.tier]}`}>{m.tier}</span>
               </div>
               <p className="mt-4 text-[0.88rem] font-light leading-[1.6] text-[#1a1a1a]/55">{m.info}</p>
+              {/* Same three slots, now filled from the pipeline: the tracked
+                  count, the corridor's own average rate, and its five-year
+                  CAGR estimate. The label moved with the number — the value
+                  in this slot is no longer a three-year band. */}
               <div className="mt-6 grid grid-cols-3 gap-3 border-t border-[#1a1a1a]/8 pt-5">
-                <Mini v={`${overview?.byCorridor[corridorKey(m.name)] ?? m.projectCount}`} k="Projects" />
+                <Mini v={`${m.projectCount}`} k="Projects" />
                 <Mini v={fmtPsf(m.psf.avg)} k="Avg/sqft" />
-                <Mini v={m.appreciation3Y} k="3Y" accent />
+                <Mini v={m.appreciation3Y} k="5Y CAGR" accent />
               </div>
             </a>
           ))}
         </div>
 
-        {/* ── Corridors under live pipeline coverage ── */}
-        {live && live.length > 0 && (
+        {/* ── Corridors tracked but not yet profiled ──
+            This strip used to list all eight corridors under coverage —
+            including the six already profiled directly above it — so the
+            two that were genuinely new were indistinguishable from the
+            repeats, and the copy promising "the rest" pointed at nothing.
+            Now it lists only what is missing from the grid, with the number
+            of projects already tracked in each. */}
+        {uncovered.length > 0 && (
           <div className="mt-16">
             <div className="flex items-center gap-3">
-              <span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">Under live coverage</span>
+              <span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">Tracked, profile in progress</span>
               <span className="rounded-full border border-[#1e6b45]/35 bg-[#1e6b45]/[0.06] px-2.5 py-0.5 font-mono text-[0.54rem] tracking-[0.14em] text-[#1e6b45]">LIVE · FROM THE PIPELINE</span>
               <span className="h-px flex-1 bg-[#1a1a1a]/10" />
             </div>
             <p className="mt-2 text-[0.8rem] font-light leading-[1.6] text-[#1a1a1a]/50">
-              Micro-markets our data pipeline tracks continuously — infrastructure, supply and potential, refreshed with every deploy. Deep profiles above; the rest graduate as coverage completes.
+              These corridors are already under continuous coverage — infrastructure, supply and potential, refreshed with every deploy — and their projects are scored and searchable today. The written profiles land as coverage completes.
             </p>
             <div className="mt-5 flex flex-wrap gap-2.5">
-              {live.map((m) => (
-                <span key={m.slug} className="rounded-full border border-[#1a1a1a]/12 bg-white/70 px-4 py-2 text-[0.8rem] font-light text-[#1a1a1a]/65">{m.name}</span>
+              {uncovered.map((m) => (
+                <span key={m.name} className="rounded-full border border-[#1a1a1a]/12 bg-white/70 px-4 py-2 text-[0.8rem] font-light text-[#1a1a1a]/65">
+                  {m.name}
+                  {m.count > 0 && <span className="ml-2 font-mono text-[0.66rem] text-[#1a1a1a]/35">{m.count}</span>}
+                </span>
               ))}
             </div>
           </div>

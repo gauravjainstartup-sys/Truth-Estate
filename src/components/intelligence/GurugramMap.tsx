@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { MARKETS, fmtPsf, type MarketIntel } from "@/lib/markets";
-import { corridorKey } from "@/lib/journey";
 
 const basePath = "/Truth-Estate";
 
@@ -78,11 +77,16 @@ const TIER_COLOR: Record<MarketIntel["tier"], string> = {
   Emerging: "#b9a989",
 };
 
-export default function GurugramMap({ counts }: { counts?: Record<string, number> }) {
+/* The map took a live per-corridor COUNT but kept the curated rate, so it
+   printed "Dwarka Expy 30 · ₹12,000" directly above cards reading ₹18,250 —
+   the same screen disagreeing with itself by a third on the headline number.
+   It now takes the fully resolved markets (see lib/marketsLive.ts) and the
+   curated set is only the fallback when the caller passes nothing. */
+export default function GurugramMap({ markets }: { markets?: MarketIntel[] }) {
+  const set = markets && markets.length ? markets : MARKETS;
   const [active, setActive] = useState<string>("golf-course-extension");
-  const m = MARKETS.find((x) => x.slug === active)!;
-  // live per-corridor project count where we have it, else the curated number
-  const projCount = (mk: MarketIntel) => counts?.[corridorKey(mk.name)] ?? mk.projectCount;
+  const m = set.find((x) => x.slug === active) ?? set[0];
+  const projCount = (mk: MarketIntel) => mk.projectCount;
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1.25fr_1fr] lg:items-center">
@@ -90,7 +94,7 @@ export default function GurugramMap({ counts }: { counts?: Record<string, number
       <div className="relative overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-[#EFE9DE] p-2">
         <svg viewBox="0 0 640 600" className="h-auto w-full">
           {/* zones — boundaries shared along the partition seams */}
-          {MARKETS.map((mk) => {
+          {set.map((mk) => {
             const on = mk.slug === active;
             const col = TIER_COLOR[mk.tier];
             const g = geoOf(mk.slug);
@@ -126,7 +130,7 @@ export default function GurugramMap({ counts }: { counts?: Record<string, number
           <text x="600" y="96" fontSize="9" fill="#1a1a1a" fillOpacity="0.3" fontFamily="monospace" textAnchor="end">DELHI →</text>
 
           {/* labels — name + projects · avg price, per zone */}
-          {MARKETS.map((mk) => {
+          {set.map((mk) => {
             const on = mk.slug === active;
             const g = geoOf(mk.slug);
             return (
@@ -166,7 +170,7 @@ export default function GurugramMap({ counts }: { counts?: Record<string, number
           </div>
           <div>
             <p className="font-mono text-[1.5rem] font-light leading-none text-[#3e8e62]">{m.appreciation3Y}</p>
-            <p className="mt-1.5 text-[0.62rem] uppercase tracking-[0.12em] text-[#1a1a1a]/40">3Y trend</p>
+            <p className="mt-1.5 text-[0.62rem] uppercase tracking-[0.12em] text-[#1a1a1a]/40">5Y CAGR</p>
           </div>
         </div>
 

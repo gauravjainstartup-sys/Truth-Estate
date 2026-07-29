@@ -321,6 +321,22 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       ...(pillarSets?.[live.id] ? { livePillars: pillarSets[live.id] } : {}),
     };
     const liveFaqs = projectFaqs(intel);
+
+    /* The brief-ranked section runs client-side, after a reader unlocks —
+       so it never appeared in a prerendered page, and it was still reading
+       the ten-project demo set. Same comparables the tabs above it use,
+       built as full report records so the ranking and the links are real. */
+    const related = relatedProjects(live, rows);
+    const bySeo = new Map((rows ?? []).map((r) => [r.seoSlug, r]));
+    const alternatives = related.all
+      .map((a) => bySeo.get(a.seoSlug))
+      .filter((r): r is NonNullable<typeof r> => !!r && r.id !== live.id)
+      .map((r) => {
+        const eK = lookupKey(r.id, r.name, ext, nameIds, r.altIds);
+        const cK = lookupKey(r.id, r.name, cfg, nameIds, r.altIds);
+        return liveProjectIntel(r, eK ? ext![eK] : null, cK ? cfg![cK] : null, corridorPsf);
+      });
+
     return (
       <>
         <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(liveBreadcrumb)} />
@@ -328,7 +344,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         {liveFaqs.length > 0 && (
           <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(faqLdFor(liveFaqs))} />
         )}
-        <ProjectProfile p={intel} related={relatedProjects(live, rows)} />
+        <ProjectProfile p={intel} related={related} alternatives={alternatives} />
       </>
     );
   }

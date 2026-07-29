@@ -235,6 +235,7 @@ function configsDisplay(list: string[]): string {
 export default function ProjectProfile({
   p,
   related,
+  alternatives,
   embedded = false,
   sample = false,
   onClose,
@@ -247,6 +248,9 @@ export default function ProjectProfile({
   /* Comparable projects, computed at build time by the page. Present only
      on real report routes; the journey modal renders without them. */
   related?: RelatedGroups;
+  /* The same comparables as full report records — what the brief-ranked
+     section needs, and the reason it can stop reading the demo set. */
+  alternatives?: ProjectIntel[];
   /* When rendered inside the journey modal: drop the page chrome, keep the
      reader in the flow, and route actions back to the journey. */
   embedded?: boolean;
@@ -1186,7 +1190,7 @@ export default function ProjectProfile({
                 )}
                 {!locked && (
                   <Section id="alternatives" n={num()} title="Ranked to your brief">
-                    <ReportExplore p={p} embedded={embedded} onSelect={onSelectAlternative} />
+                    <ReportExplore p={p} pool={alternatives} embedded={embedded} onSelect={onSelectAlternative} />
                   </Section>
                 )}
               </>

@@ -798,9 +798,18 @@ export function liveProjectIntel(
   // investment axis
   if ((row.expectedCagrNum ?? 0) >= 12 || (row.roiIdealCagr ?? 0) >= 12) tags.push("Capital Appreciation");
   if (/High Momentum/i.test(row.sectionTag ?? "")) tags.push("Construction Progress");
-  // value — a strong ROI read, or an average psf in the corridor's cheapest
-  // band (below its 25th-percentile — genuinely under-priced for where it sits)
-  if (bandRating(bands.roi) === "strong" || (corridorBand != null && row.avgCostSqft != null && row.avgCostSqft < corridorBand.low)) tags.push("Value Buying");
+  /* THE RATE THESE TWO TAGS COMPARE HAS TO BE THE PROJECT'S OWN.
+     row.avgCostSqft is the CORRIDOR average — the same number on every
+     project in Dwarka — so measuring it against a corridor band asked
+     whether the corridor is above or below itself. Combined with a band
+     that had collapsed to a point (see fetchCorridorPsf), it tagged all 97
+     reports "Luxury Lifestyle" and none "Value Buying" on price. The filed
+     rate band is per project and present on 96 of 97, so its mid-point is
+     what gets compared; avg_cost_sqft is only the fallback. */
+  const ownPsf = range ? (range[0] + range[1]) / 2 : row.avgCostSqft;
+  // value — a strong ROI read, or a psf in the corridor's cheapest band
+  // (below its 25th-percentile — genuinely under-priced for where it sits)
+  if (bandRating(bands.roi) === "strong" || (corridorBand != null && ownPsf != null && ownPsf < corridorBand.low)) tags.push("Value Buying");
   // early-entry — still early in the build, before the price ladder climbs
   if (row.constructionProgressPct != null && row.constructionProgressPct <= 25) tags.push("Early-Entry Pricing");
   // low-density / green — sparse density or generous open area on record
@@ -811,7 +820,7 @@ export function liveProjectIntel(
   if (usp(/amenit|wellness|clubhouse|\bclub\b|\bspa\b|\bpool\b|\bgym\b|sports|landscap/)) tags.push("Amenities & Wellness");
   // luxury lifestyle — priced at/above the corridor's top band (75th-percentile),
   // or USP-stated (bare "premium" is too common a word to trust as a signal)
-  if ((corridorBand != null && row.avgCostSqft != null && row.avgCostSqft >= corridorBand.high) || usp(/luxur|ultra-?luxur|signature living|bespoke|exclusiv|palatial/)) tags.push("Luxury Lifestyle");
+  if ((corridorBand != null && ownPsf != null && ownPsf >= corridorBand.high) || usp(/luxur|ultra-?luxur|signature living|bespoke|exclusiv|palatial/)) tags.push("Luxury Lifestyle");
   // construction quality — USP-stated build / finish
   if (usp(/build quality|construction quality|\bfinish\b|specification|craftsman|imported fitting/)) tags.push("Construction Quality");
   // vaastu — USP-stated

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DEVELOPERS, developerBySlug } from "@/lib/developers";
+import { resolveDeveloperBySlug } from "@/lib/developersLive";
 import DeveloperProfile from "@/components/intelligence/DeveloperProfile";
 import { breadcrumbLd, ldJson } from "@/lib/seo";
 
@@ -22,7 +23,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const dev = developerBySlug(slug);
+  /* The ledger comes from the filings, the prose from the desk — see
+     lib/developersLive.ts for what had drifted and by how much. */
+  const dev = await resolveDeveloperBySlug(slug);
   if (!dev) notFound();
 
   const breadcrumb = breadcrumbLd([

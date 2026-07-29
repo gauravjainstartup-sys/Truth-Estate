@@ -16,6 +16,26 @@ const bandTone = (b: string | null) =>
 
 export default function DevelopersIndex({ live }: { live?: LiveDeveloper[] | null }) {
   const { open } = useJourney();
+
+  /* THE SAME PAGE WAS PUBLISHING TWO ANSWERS.
+     The dossier cards carried hand-written performance — DLF 92% on-time
+     and 38 delivered, Godrej 90% and 22 — while the table beneath them
+     printed the pipeline's: DLF 84% and 31, Godrej 37% and ONE. Both
+     were on screen at once, about the same developers, and the project
+     reports elsewhere on the site agree with the table, not the cards.
+     The filings win; the cards are editorial about a builder, not a
+     second opinion on its record. */
+  const byName = new Map((live ?? []).map((d) => [d.name.toLowerCase(), d]));
+  const bySlug = new Map((live ?? []).map((d) => [(d.slug ?? "").toLowerCase(), d]));
+  const record = (name: string, slug: string) => {
+    const l = byName.get(name.toLowerCase()) ?? bySlug.get(slug.toLowerCase());
+    if (!l) return null;
+    return {
+      onTimePct: l.delayedPct != null ? Math.round(100 - l.delayedPct) : null,
+      delivered: l.delivered ?? null,
+    };
+  };
+
   return (
     <div className="min-h-svh bg-[#F5F0E8] text-[#1a1a1a]">
       <header className="sticky top-0 z-40 border-b border-[#1a1a1a]/6 bg-[#F5F0E8]/90 backdrop-blur-sm">
@@ -53,11 +73,18 @@ export default function DevelopersIndex({ live }: { live?: LiveDeveloper[] | nul
               </div>
               <p className="mt-2 text-[0.78rem] font-light text-[#1a1a1a]/40">Established {d.est}</p>
               <p className="mt-4 font-serif text-[1.02rem] font-light italic leading-[1.5] text-[#1a1a1a]/60">{d.tagline}</p>
-              <div className="mt-6 flex items-center gap-6 border-t border-[#1a1a1a]/8 pt-5">
-                <span className="font-mono text-[0.8rem] text-[#1a1a1a]/55">{d.performance.onTimePct}% <span className="text-[0.62rem] uppercase tracking-[0.08em] text-[#1a1a1a]/35">on-time</span></span>
-                <span className="font-mono text-[0.8rem] text-[#1a1a1a]/55">{d.performance.delivered} <span className="text-[0.62rem] uppercase tracking-[0.08em] text-[#1a1a1a]/35">delivered</span></span>
-                <span className="ml-auto text-[0.8rem] text-[#c9a96e] transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
-              </div>
+              {(() => {
+                const r = record(d.name, d.slug);
+                const onTime = r?.onTimePct ?? d.performance.onTimePct;
+                const delivered = r?.delivered ?? d.performance.delivered;
+                return (
+                  <div className="mt-6 flex items-center gap-6 border-t border-[#1a1a1a]/8 pt-5">
+                    <span className="font-mono text-[0.8rem] text-[#1a1a1a]/55">{onTime}% <span className="text-[0.62rem] uppercase tracking-[0.08em] text-[#1a1a1a]/35">on-time</span></span>
+                    <span className="font-mono text-[0.8rem] text-[#1a1a1a]/55">{delivered} <span className="text-[0.62rem] uppercase tracking-[0.08em] text-[#1a1a1a]/35">delivered</span></span>
+                    <span className="ml-auto text-[0.8rem] text-[#c9a96e] transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
+                  </div>
+                );
+              })()}
             </a>
           ))}
         </div>

@@ -12,22 +12,37 @@ import ProjectOptionCard from "./ProjectOptionCard";
 
 const basePath = "/Truth-Estate";
 
-export default function ReportExplore({ p, embedded, onSelect }: { p: ProjectIntel; embedded?: boolean; onSelect?: (name: string) => void }) {
+export default function ReportExplore({ p, pool: live, embedded, onSelect }: { p: ProjectIntel; pool?: ProjectIntel[]; embedded?: boolean; onSelect?: (name: string) => void }) {
   const [buy, setBuy] = useState<BuyData | null>(null);
   useEffect(() => { try { setBuy(loadBuyData()); } catch {} }, []);
   const hasBrief = !!buy && (buy.locations.length > 0 || buy.budgetCr > 0 || buy.configs.length > 0 || buy.priorities.length > 0);
 
+  /* THIS SECTION ONLY EXISTS FOR READERS WHO HAVE PAID, and it was the one
+     place on a report still drawing from the demo set. PROJECT_INTEL is
+     PROJECTS.map(enrich) — ten hand-written projects, five of which have no
+     row in the database at all, so an unlocked reader's "ranked to your
+     brief" could recommend three addresses whose report links 404, at
+     scores nobody computed. It renders after hydration, so no prerendered
+     page ever showed it and the earlier sweeps did not catch it.
+
+     The page now passes the corridor/nearby/same-ticket comparables it
+     already computes, as full live records. The curated pool is kept only
+     for the watermarked sample read, which has no live neighbours. */
   const picks = useMemo(() => {
     const pool = new Map<string, ProjectIntel>();
-    alternativesIn(p.market, p.name).forEach((x) => pool.set(x.name, x));
-    PROJECT_INTEL.filter((x) => x.developer === p.developer && x.name !== p.name).forEach((x) => pool.set(x.name, x));
-    PROJECT_INTEL.filter((x) => x.name !== p.name && x.budget[0] <= p.budget[1] && x.budget[1] >= p.budget[0]).forEach((x) => pool.set(x.name, x));
+    if (live && live.length) {
+      live.forEach((x) => pool.set(x.name, x));
+    } else {
+      alternativesIn(p.market, p.name).forEach((x) => pool.set(x.name, x));
+      PROJECT_INTEL.filter((x) => x.developer === p.developer && x.name !== p.name).forEach((x) => pool.set(x.name, x));
+      PROJECT_INTEL.filter((x) => x.name !== p.name && x.budget[0] <= p.budget[1] && x.budget[1] >= p.budget[0]).forEach((x) => pool.set(x.name, x));
+    }
     pool.delete(p.name);
     return [...pool.values()]
       .map((x) => ({ x, m: hasBrief ? matchScoreFor(x, buy!) : x.truthScore }))
       .sort((a, b) => b.m - a.m || b.x.truthScore - a.x.truthScore)
       .slice(0, 3);
-  }, [p, buy, hasBrief]);
+  }, [p, buy, hasBrief, live]);
 
   const links = [
     p.marketSlug ? { label: `All of ${p.marketShort}`, href: `${basePath}/intelligence/markets/${p.marketSlug}` } : null,

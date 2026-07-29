@@ -369,8 +369,15 @@ function MarketCompare({ r }: { r: Extract<ResolvedCompare, { kind: "market" }> 
     <>
       <div className="mt-10 rounded-2xl border border-[#c9a96e]/30 bg-white/70 p-8 shadow-[0_16px_50px_rgba(0,0,0,0.04)] md:p-10">
         <Eyebrow>Our read</Eyebrow>
+        {/* Two corridors on the same tier made this read "Dwarka Expressway
+            is the growth play; SPR the growth one." The sentence only works
+            when the tiers differ; when they match, the tier is the thing
+            they have in common, not the thing that separates them. */}
         <p className="mt-5 font-serif text-[1.3rem] font-normal leading-[1.5] md:text-[1.6rem]">
-          {a.name} is the {a.tier.toLowerCase()} play; {b.name} the {b.tier.toLowerCase()} one. {a.short} for {a.bestFor.split("·")[0]?.trim().toLowerCase()}; {b.short} for {b.bestFor.split("·")[0]?.trim().toLowerCase()}.
+          {a.tier === b.tier
+            ? `Both are ${a.tier.toLowerCase()} corridors — the difference is what each rewards.`
+            : `${a.name} is the ${a.tier.toLowerCase()} play; ${b.name} the ${b.tier.toLowerCase()} one.`}{" "}
+          {a.short} for {a.bestFor.split("·")[0]?.trim().toLowerCase()}; {b.short} for {b.bestFor.split("·")[0]?.trim().toLowerCase()}.
         </p>
       </div>
 
@@ -382,7 +389,9 @@ function MarketCompare({ r }: { r: Extract<ResolvedCompare, { kind: "market" }> 
         <Row label="Projects tracked" a={a.projectCount} b={b.projectCount} win={winHigher(a.projectCount, b.projectCount)} />
         <Row label="Avg ₹/sq ft" a={fmtPsf(a.psf.avg)} b={fmtPsf(b.psf.avg)} />
         <Row label="Price range" a={`${fmtPsf(a.psf.low)}–${fmtPsf(a.psf.high)}`} b={`${fmtPsf(b.psf.low)}–${fmtPsf(b.psf.high)}`} />
-        <Row label="3-year trend" a={a.appreciation3Y} b={b.appreciation3Y} />
+        {/* Was a hand-set three-year band; now the corridor's own five-year
+            CAGR estimate from the pipeline, so the label moved with it. */}
+        <Row label="Expected CAGR" a={a.appreciation3Y} b={b.appreciation3Y} />
         <Row label="Typical ticket" a={a.unitBand} b={b.unitBand} />
       </div>
 

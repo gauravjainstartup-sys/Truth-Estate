@@ -178,7 +178,8 @@ export type LiveDeveloper = {
 export async function fetchDevelopersOverview(): Promise<LiveDeveloper[] | null> {
   const rows = await sbRows(
     "developers_overview",
-    "select=developer_name,developer_slug,total_projects,delivered,ongoing,delayed_pct,avg_delay_months,financial_band,legal_band&order=delivered.desc.nullslast&limit=12",
+    // 17 developers are filed; a limit of 12 silently dropped five of them
+    "select=developer_name,developer_slug,total_projects,delivered,ongoing,delayed_pct,avg_delay_months,financial_band,legal_band&order=delivered.desc.nullslast&limit=50",
   );
   if (!rows) return null;
   const out: LiveDeveloper[] = [];
@@ -615,29 +616,86 @@ function percentile(sorted: number[], p: number): number {
   return lo === hi ? sorted[lo] : sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
 }
 
+/* "15,500 - 25,500" → [15500, 25500]. project_extended_details carries this
+   filed rate band on 96 of 96 rows; it is the only per-PROJECT rate the
+   pipeline publishes (avg_cost_sqft is per corridor). */
+const parseFiledBand = (v: string | null): [number, number] | null => {
+  const m = /(\d{4,6})\s*[^\d]{1,6}(\d{4,6})/.exec((v ?? "").replace(/,/g, ""));
+  if (!m) return null;
+  const lo = Number(m[1]), hi = Number(m[2]);
+  return lo > 0 && hi >= lo ? [lo, hi] : null;
+};
+
+/* A BAND BUILT FROM ONE NUMBER IS NOT A BAND.
+   This took percentiles of avg_cost_sqft, which the pipeline files as a
+   single value per corridor — every project in Dwarka carries 18250. The
+   25th, 50th and 75th percentiles of one repeated number are that number,
+   so the band was a point, and the two tags that read it could not
+   discriminate: `psf >= band.high` was true for all 97 projects and
+   `psf < band.low` for none. Every report on the site was tagged "Luxury
+   Lifestyle" and not one was tagged "Value Buying" on price.
+
+   The projects' own filed rate bands DO vary, so the percentiles are taken
+   over each project's mid-rate instead, and avg_cost_sqft is only the
+   fallback for a corridor whose projects have filed nothing. */
 export async function fetchCorridorPsf(): Promise<CorridorPsf> {
   if (corridorPsfCache !== undefined) return corridorPsfCache;
-  const rows = (await fetchBacklogFull()) ?? [];
+  const [rows, ext, nameIds] = await Promise.all([fetchBacklogFull(), fetchExtendedDetails(), fetchBacklogNameIds()]);
   const byKey: Record<string, number[]> = {};
-  for (const r of rows) {
-    const psf = r.avgCostSqft;
-    if (psf == null || psf <= 0) continue;
+  const fallback: Record<string, number[]> = {};
+  for (const r of rows ?? []) {
     const key = corridorKey(r.microMarket ?? r.location ?? "");
-    (byKey[key] ??= []).push(psf);
+    if (r.avgCostSqft != null && r.avgCostSqft > 0) (fallback[key] ??= []).push(r.avgCostSqft);
+    const id = ext?.[r.id] ? r.id : (r.altIds ?? []).find((a) => ext?.[a]) ?? nameIds?.[r.name];
+    const band = id && ext ? parseFiledBand(ext[id]?.priceRangeSqft ?? null) : null;
+    if (band) (byKey[key] ??= []).push((band[0] + band[1]) / 2);
   }
   const out: CorridorPsf = {};
-  for (const [key, arr] of Object.entries(byKey)) {
-    if (arr.length < MIN_FOR_LIVE) continue;
-    arr.sort((a, b) => a - b);
+  for (const key of new Set([...Object.keys(byKey), ...Object.keys(fallback)])) {
+    const arr = (byKey[key]?.length ?? 0) >= MIN_FOR_LIVE ? byKey[key] : fallback[key];
+    if (!arr || arr.length < MIN_FOR_LIVE) continue;
+    const sorted = [...arr].sort((a, b) => a - b);
     out[key] = {
-      low: Math.round(percentile(arr, 25)),
-      avg: Math.round(percentile(arr, 50)),
-      high: Math.round(percentile(arr, 75)),
+      low: Math.round(percentile(sorted, 25)),
+      avg: Math.round(percentile(sorted, 50)),
+      high: Math.round(percentile(sorted, 75)),
     };
   }
-  console.log(`[supabase] corridor psf bands computed from live avg_cost_sqft for ${Object.keys(out).length} corridor(s)`);
+  const spread = Object.entries(out).filter(([, b]) => b.high > b.low).length;
+  console.log(`[supabase] corridor psf bands for ${Object.keys(out).length} corridor(s) · ${spread} with a real spread`);
   corridorPsfCache = out;
   return out;
+}
+
+/* ── the corridor's REAL spread, from what each project files ──
+   avg_cost_sqft is one number per corridor — every project in Dwarka
+   carries 18250 — so percentiles over it collapse to a point and cannot
+   describe a range. project_extended_details.price_range_sqft is the
+   per-project filed band ("15,500 - 25,500"), present on 96 of 96 rows,
+   and it is what the corridor's low/high should be read from: Dwarka
+   spans ₹11,000–37,000, not a single ₹18,250. Joined by project name
+   through backlog_projects, the same bridge the report pages use. */
+export type CorridorBand = { low: number; high: number; n: number };
+let filedPsfCache: Record<string, CorridorBand> | undefined;
+
+export async function fetchCorridorFiledPsf(): Promise<Record<string, CorridorBand>> {
+  if (filedPsfCache !== undefined) return filedPsfCache;
+  const [rows, ext, nameIds] = await Promise.all([fetchBacklogFull(), fetchExtendedDetails(), fetchBacklogNameIds()]);
+  const out: Record<string, CorridorBand> = {};
+  if (rows && ext) {
+    for (const r of rows) {
+      const id = ext[r.id] ? r.id : (r.altIds ?? []).find((a) => ext[a]) ?? nameIds?.[r.name];
+      const band = id ? parseFiledBand(ext[id]?.priceRangeSqft ?? null) : null;
+      if (!band) continue;
+      const key = corridorKey(r.microMarket ?? r.location ?? "");
+      const cur = out[key];
+      out[key] = cur
+        ? { low: Math.min(cur.low, band[0]), high: Math.max(cur.high, band[1]), n: cur.n + 1 }
+        : { low: band[0], high: band[1], n: 1 };
+    }
+  }
+  console.log(`[supabase] corridor filed-rate bands for ${Object.keys(out).length} corridor(s)`);
+  return (filedPsfCache = out);
 }
 
 /* ── tracked-universe headline stats, computed from the live set ──
@@ -666,11 +724,18 @@ export async function fetchTrackedOverview(): Promise<TrackedOverview | null> {
     byCorridor[key] = (byCorridor[key] ?? 0) + 1;
     if (r.avgCostSqft != null && r.avgCostSqft > 0) psfs.push(r.avgCostSqft);
   }
+  /* The headline said "Price range ₹13K–28K" off avg_cost_sqft — which is
+     one number per corridor, so that was the range of eight CORRIDOR
+     AVERAGES, not of what anything costs. The projects' own filed bands run
+     ₹8K–₹48K, and the corridor pages beneath this line already print those.
+     A headline narrower than every page under it is the headline that is
+     wrong. Falls back to the averages if no band parsed. */
+  const filed = Object.values(await fetchCorridorFiledPsf());
   trackedOverviewCache = {
     activeProjects: rows.length,
     microMarkets: Object.keys(byCorridor).length,
-    psfMin: psfs.length ? Math.min(...psfs) : null,
-    psfMax: psfs.length ? Math.max(...psfs) : null,
+    psfMin: filed.length ? Math.min(...filed.map((b) => b.low)) : psfs.length ? Math.min(...psfs) : null,
+    psfMax: filed.length ? Math.max(...filed.map((b) => b.high)) : psfs.length ? Math.max(...psfs) : null,
     byCorridor,
   };
   console.log(`[supabase] tracked overview: ${trackedOverviewCache.activeProjects} projects across ${trackedOverviewCache.microMarkets} corridor(s)`);
@@ -798,6 +863,72 @@ export async function fetchMicroMarkets(): Promise<LiveMicroMarket[] | null> {
     if (slug && name) out.push({ slug, name });
   }
   return out.length ? out : null;
+}
+
+/* ── the corridor file the pipeline actually keeps ──
+   micro_market_data holds far more than the name we were reading off it:
+   a corridor average rate, a scored potential out of 100 with its own
+   breakdown, a five-year CAGR estimate with a stated confidence, a
+   supply-pressure read, and the named growth drivers and risks behind
+   both. The location pages were rendering hand-set numbers on top of all
+   of it — Dwarka Expressway priced at ₹12,000/sq ft here while the same
+   corridor's project reports quoted ₹18,250. Keyed by corridorKey so it
+   lines up with the tracked set and the curated registry. */
+export type LiveMarketIntel = {
+  key: string; // corridorKey(name)
+  slug: string;
+  name: string;
+  avgPsf: number | null;
+  potential: number | null; // /100
+  cagr5y: number | null; // expected_5yr_cagr_percent
+  cagrConfidence: string | null;
+  cagrBasis: string | null;
+  supplyPressure: string | null;
+  supplyReasoning: string | null;
+  risks: string[];
+  drivers: string[];
+  notes: string | null;
+  asOf: string | null;
+};
+
+const strList = (v: unknown, cap = 3): string[] =>
+  Array.isArray(v) ? v.map((x) => s(x)).filter((x): x is string => !!x).slice(0, cap) : [];
+
+let marketIntelCache: Record<string, LiveMarketIntel> | null | undefined;
+
+export async function fetchMarketIntel(): Promise<Record<string, LiveMarketIntel> | null> {
+  if (marketIntelCache !== undefined) return marketIntelCache;
+  const rows = await sbRows("micro_market_data", "select=slug,name,avg_cost_sqft,mm_potential&limit=24");
+  if (!rows) return (marketIntelCache = null);
+  const out: Record<string, LiveMarketIntel> = {};
+  for (const r of rows) {
+    const slug = s(r.slug), name = s(r.name);
+    if (!slug || !name) continue;
+    const p = (j(r.mm_potential) ?? {}) as Record<string, unknown>;
+    const growth = (p.growth_estimate ?? {}) as Record<string, unknown>;
+    const analysis = (p.analysis ?? {}) as Record<string, unknown>;
+    const sd = (analysis.supply_demand ?? {}) as Record<string, unknown>;
+    const score = (p.score ?? {}) as Record<string, unknown>;
+    out[corridorKey(name)] = {
+      key: corridorKey(name),
+      slug,
+      name,
+      avgPsf: n(r.avg_cost_sqft),
+      potential: n(score.final_score),
+      cagr5y: n(growth.expected_5yr_cagr_percent),
+      cagrConfidence: s(growth.confidence),
+      cagrBasis: s(growth.justification),
+      supplyPressure: s(sd.supply_pressure),
+      supplyReasoning: s(sd.reasoning),
+      risks: strList(analysis.key_risks),
+      drivers: strList(analysis.key_growth_drivers),
+      notes: s(p.notes),
+      asOf: s(p.retrieval_date),
+    };
+  }
+  const keys = Object.keys(out);
+  console.log(`[supabase] market intel → ${keys.length} corridor(s): ${keys.join(", ")}`);
+  return (marketIntelCache = keys.length ? out : null);
 }
 
 /* ════════════════════════════════════════════════════════════════

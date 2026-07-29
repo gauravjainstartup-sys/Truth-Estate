@@ -90,6 +90,29 @@ export function resolvePair(pair: string): ResolvedCompare | null {
   return null;
 }
 
+/* THE SAME TWO REGISTRIES, RESOLVED AGAINST THE PIPELINE.
+   Comparison is where a stale number does the most damage: a reader
+   picks a winner from it. Before this, "DLF vs Godrej" scored 92% vs 90%
+   on-time off the hand-written dossiers when the filings say 84% vs 37%
+   — the comparison did not merely mislead, it inverted. Markets were the
+   same story on price: Dwarka Expressway was compared at ₹12,000/sq ft
+   against a live ₹18,250. Same shape out, so ComparePage is untouched. */
+export async function resolvePairLive(pair: string): Promise<ResolvedCompare | null> {
+  const sp = splitPair(pair);
+  if (!sp) return null;
+  const [x, y] = sp;
+
+  const { resolveDeveloperBySlug } = await import("./developersLive");
+  const [da, db] = await Promise.all([resolveDeveloperBySlug(x), resolveDeveloperBySlug(y)]);
+  if (da && db) return { kind: "developer", a: da, b: db };
+
+  const { resolveMarketBySlug } = await import("./marketsLive");
+  const [ma, mb] = await Promise.all([resolveMarketBySlug(x), resolveMarketBySlug(y)]);
+  if (ma && mb) return { kind: "market", a: ma.m, b: mb.m };
+
+  return null;
+}
+
 export const compareTitle = (r: ResolvedCompare): string => `${r.a.name} vs ${r.b.name}`;
 
 /* Picker entries for the developer/market kinds (project kind is fed live) */

@@ -15,7 +15,7 @@ import { trackedRankOf } from "@/lib/projects";
 import {
   DEV_PAIRS,
   MARKET_PAIRS,
-  resolvePair,
+  resolvePairLive,
   compareTitle,
   scoredProjectOptions,
   projectComparePairs,
@@ -102,7 +102,7 @@ async function resolveProjectPair(pair: string): Promise<ResolvedCompare | null>
 }
 
 async function resolve(pair: string): Promise<ResolvedCompare | null> {
-  return (await resolveProjectPair(pair)) ?? resolvePair(pair);
+  return (await resolveProjectPair(pair)) ?? (await resolvePairLive(pair));
 }
 
 export async function generateStaticParams() {

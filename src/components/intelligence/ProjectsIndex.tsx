@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import type { ProjectIntel } from "@/lib/projects";
@@ -36,6 +36,15 @@ export default function ProjectsIndex({ projects, stats }: { projects: ProjectIn
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<Sort>("score");
   const [corridor, setCorridor] = useState<string | null>(null);
+
+  /* ?q=SPR lands here pre-filtered — the corridor pages link straight into
+     the grid rather than dropping the reader at all ninety-seven. Read on
+     mount rather than during render: the server has no URL, and seeding
+     state from window during render is a hydration mismatch. */
+  useEffect(() => {
+    const seed = new URLSearchParams(window.location.search).get("q");
+    if (seed) setQ(seed);
+  }, []);
 
   const scores = projects.map((p) => p.truthScore).filter((s) => s > 0);
   const lo = scores.length ? Math.min(...scores) : 0;
