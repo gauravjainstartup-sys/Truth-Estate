@@ -116,7 +116,16 @@ async function staticRoutes(root = "src/app") {
   return [...new Set(out)];
 }
 
-/* ── the old site's addresses ── */
+/* ── the old site's addresses ──
+   CAP=20000, was 2000, and the first real crawl returned exactly 2000
+   paths. A round number equal to the limit is not a measurement, it is
+   the limit — and a truncated crawl is the worst possible input here,
+   because the pages it silently drops are indistinguishable from pages
+   that do not exist. The map would have looked complete and quietly
+   omitted whatever the crawl reached last. It now says so when it stops
+   early, and the ceiling is high enough that a site of this size will
+   not touch it. */
+const CAP = Number(process.env.CRAWL_MAX ?? 20000);
 async function crawl(origin) {
   const seen = new Set(), queue = ["/"], found = new Set();
   /* Seed from the sitemap when there is one — a crawl that only follows
@@ -127,7 +136,7 @@ async function crawl(origin) {
     if (r.ok) for (const m of (await r.text()).matchAll(/<loc>([^<]+)<\/loc>/g)) queue.push(pathOf(m[1]));
   } catch { /* no sitemap is normal */ }
 
-  while (queue.length && seen.size < 2000) {
+  while (queue.length && seen.size < CAP) {
     const p = queue.shift();
     if (!p || seen.has(p)) continue;
     seen.add(p);
@@ -149,6 +158,13 @@ async function crawl(origin) {
     if (found.size % 25 === 0) process.stdout.write(`\r  crawled ${found.size}…`);
   }
   process.stdout.write(`\r  crawled ${found.size} page(s)\n`);
+  if (seen.size >= CAP) {
+    console.warn(
+      `\n  ⚠ THE CRAWL STOPPED AT ITS LIMIT OF ${CAP} — ${queue.length} link(s) were still queued.\n` +
+      `    This map is incomplete and the pages it is missing look exactly like\n` +
+      `    pages that do not exist. Re-run with CRAWL_MAX set higher.\n`,
+    );
+  }
   return [...found];
 }
 
@@ -177,10 +193,27 @@ const NOISE = new Set([
   "gurugram", "real", "estate", "projects", "project", "report", "reports",
   "property", "properties", "developer", "developers", "builder",
   "location", "locations", "market", "markets", "area", "micro",
-  "sector", "corridor", "road", "expressway", "spr", "gcre", "gcr",
-  "dwarka", "sohna", "new", "phase", "intelligence",
+  "sector", "corridor", "intelligence", "new", "phase", "best",
 ]);
-const tokens = (p) => new Set(slugify(p).split("-").filter((t) => t && !NOISE.has(t) && !/^\d+[a-z]?$/.test(t)));
+
+/* PLACE WORDS ARE NOISE FOR A PROJECT AND IDENTITY FOR A MARKET, and
+   keeping them in one list got that backwards for every corridor page.
+   On a project slug the corridor is a suffix that differs between the two
+   sites and carries no identity — dropping it is what lets
+   /project/dlf-the-arbour reach the long new address. On a market page
+   the corridor IS the page: /best-projects/dwarka-expressway reduced to
+   {best} once every meaningful word had been discarded as noise, and
+   /intelligence/markets/dwarka-expressway reduced to the empty set, so a
+   pair of URLs naming the same corridor twice had nothing left to compare.
+
+   They are dropped when the candidate is anything else and kept when the
+   candidate is a market. */
+const PLACE = new Set(["road", "expressway", "spr", "gcre", "gcr", "dwarka", "sohna"]);
+const tokens = (p, keepPlace = false) => new Set(
+  slugify(p).split("-").filter((t) =>
+    t && !NOISE.has(t) && (keepPlace || !PLACE.has(t)) && !/^\d+[a-z]?$/.test(t)),
+);
+const IS_MARKET = (p) => p.startsWith("/intelligence/markets/");
 
 /* CONTAINMENT, NOT SIMILARITY — and uniqueness as the guard.
 
@@ -191,27 +224,53 @@ const tokens = (p) => new Set(slugify(p).split("-").filter((t) => t && !NOISE.ha
    extra tokens count against a match they have nothing to do with. Every
    report would have been reported unmatched.
 
-   What actually identifies a report is that every name token of the old
-   path appears in the new one. So: require full containment, then insist
-   the winner is the ONLY one — /project/dlf-privana is contained in
+   What actually identifies a page is that one side's name tokens all
+   appear in the other's. So: require full containment, then insist the
+   winner is the ONLY one — /project/dlf-privana is contained in
    privana-north, -south and -west alike, and picking the shortest would
    be a coin toss dressed as a decision. Ambiguity is reported, never
    resolved silently, because an incorrect 301 tells Google two different
    pages are one page and takes a re-crawl of both to undo.
 
+   EITHER DIRECTION, because the crawl showed both. The old-is-shorter
+   assumption above is true of project pages and precisely inverted for
+   developer pages: /developers/gurugram-real-estate-dlf-review-track-
+   record-financials reduces to {dlf, review, track, record, financials}
+   against a new /intelligence/developers/dlf of {dlf}. Nothing was
+   missing from the match — the old URL simply spells out in its slug
+   what the new one puts in the page. Sixteen developer pages came back
+   unmatched for want of testing the subset the other way round.
+
+   The reverse direction is allowed only inside a section-scoped pool,
+   and that restriction is the whole safety of it. A one-token new path is
+   a subset of almost any descriptive old one: /office reduces to
+   {office}, so an unscoped reverse match would hand
+   /dlf-cyber-city-office-space to the client portal and call it a
+   redirect. Scoped to /intelligence/developers/, {dlf} standing alone is
+   not a coincidence — it is the page. Unscoped, both sides must bring at
+   least two tokens.
+
    A single token is never enough on its own: "/project/dlf" contains
    only "dlf" and would swallow every DLF project. */
-function bestMatch(oldPath, news) {
-  const a = tokens(oldPath);
-  if (a.size === 0) return null;
+function bestMatch(oldPath, news, scoped) {
+  const aPlain = tokens(oldPath), aPlace = tokens(oldPath, true);
+  if (aPlain.size === 0 && aPlace.size === 0) return null;
 
+  const subset = (x, y) => { for (const t of x) if (!y.has(t)) return false; return true };
   const contained = [];
   for (const n of news) {
-    const b = tokens(n);
-    if (b.size === 0) continue;
-    let all = true;
-    for (const t of a) if (!b.has(t)) { all = false; break; }
-    if (all) contained.push({ path: n, extra: b.size - a.size });
+    /* Both sides tokenised the same way, chosen by what the candidate is. */
+    const place = IS_MARKET(n);
+    const a = place ? aPlace : aPlain;
+    const b = tokens(n, place);
+    if (a.size === 0 || b.size === 0) continue;
+    /* Markets count as scoped wherever they appear. There are six of them,
+       curated by hand, so a lone "spr" or "sohna" inside an old URL is not
+       a coincidence the way a lone "office" is. Without this,
+       /best-projects/under-5-cr-spr-corridor missed the SPR market page
+       for the sole reason that its slug is one token long. */
+    const reverseOk = scoped || place || b.size >= 2;
+    if (subset(a, b) || (reverseOk && subset(b, a))) contained.push({ path: n, extra: Math.abs(b.size - a.size) });
   }
   if (contained.length === 0) return null;
 
@@ -221,17 +280,69 @@ function bestMatch(oldPath, news) {
   if (exact.length === 1) return { path: exact[0].path, score: "exact" };
   if (exact.length > 1) return { ambiguous: exact.map((c) => c.path) };
 
-  if (a.size < 2) return { ambiguous: contained.slice(0, 5).map((c) => c.path) };
-  if (contained.length > 1) return { ambiguous: contained.slice(0, 5).map((c) => c.path) };
-  return { path: contained[0].path, score: `contains ${a.size} token(s)` };
+  if (Math.max(aPlain.size, aPlace.size) < 2) return { ambiguous: contained.slice(0, 5).map((c) => c.path) };
+
+  /* CLOSEST WINS, when one candidate is strictly closer than the rest.
+     /best-projects/golf-course-extension reduces to {best,golf,course,
+     extension} and both market pages contain it — "road" is a noise word,
+     so /markets/golf-course-road reduces to {golf,course} and is a subset
+     too. Reporting that as a coin toss is wrong: one candidate leaves one
+     token unaccounted for and the other leaves two, and the difference is
+     the whole answer. A tie stays ambiguous — dlf-privana against north,
+     south and west is three candidates one token apart, which is exactly
+     the case this must never resolve. */
+  const closest = Math.min(...contained.map((c) => c.extra));
+  const best = contained.filter((c) => c.extra === closest);
+  if (best.length === 1) return { path: best[0].path, score: `contains ${aPlain.size || aPlace.size} token(s)` };
+  return { ambiguous: best.slice(0, 5).map((c) => c.path) };
 }
 
+/* COMPARISON PAGES ARE PAIRS, and nothing else about them matters.
+   /compare/a-vs-b succeeds /intelligence/compare/a-vs-b, or the same pair
+   written the other way round, or nothing. Letting the token matcher near
+   them produced 1,458 "ambiguous" rows in the first real run, every one
+   of them a list of five unrelated pairs that happened to share a project
+   name — noise that buries the thirty-four entries a human actually has
+   to decide. The old site published pairs for all 97 projects and the new
+   one scores 52, so a pair with no counterpart is a genuine gap and is
+   reported as one rather than dressed up as a near-match. */
+function comparePair(oldPath, newSet) {
+  const slug = oldPath.replace(/^\/(intelligence\/)?compare\//, "");
+  const at = `/intelligence/compare/${slug}`;
+  if (newSet.has(at)) return { path: at, why: "section" };
+  const i = slug.indexOf("-vs-");
+  if (i > 0) {
+    const flipped = `/intelligence/compare/${slug.slice(i + 4)}-vs-${slug.slice(0, i)}`;
+    if (newSet.has(flipped)) return { path: flipped, why: "same pair, reversed" };
+  }
+  return null;
+}
+
+/* SECTION RENAMES, from the crawl rather than from imagination.
+   The first version of this list was guesswork — /project/, /report/,
+   /developer/, all singular — written before anyone had seen the old
+   site. The crawl found 2,000 paths and not one of them matched a single
+   rule here, because the site uses /compare/ and /developers/. Rules
+   inferred from a URL scheme you have not looked at are decoration.
+
+   Both spellings stay: the plural forms are what the crawl proved, the
+   singular ones cost nothing and cover a stray inbound link. */
 const SECTION = [
-  [/^\/project\//, "/projects/"],
-  [/^\/report\//, "/projects/"],
-  [/^\/developer\//, "/intelligence/developers/"],
-  [/^\/location\//, "/intelligence/markets/"],
-  [/^\/market\//, "/intelligence/markets/"],
+  [/^\/compare\//, "/intelligence/compare/"],
+  [/^\/projects?\//, "/projects/"],
+  [/^\/reports?\//, "/projects/"],
+  [/^\/developers?\//, "/intelligence/developers/"],
+  [/^\/locations?\//, "/intelligence/markets/"],
+  [/^\/markets?\//, "/intelligence/markets/"],
+  /* Section INDEXES, last so it never shadows a more specific rule. The
+     old site's hubs live at the root — /developers, /compare — and this
+     build files them under /intelligence. Tokens cannot see it: every one
+     of those words is a section word and reduces to nothing, so /developers
+     tokenised to the empty set and was reported unmatched while its exact
+     successor sat at /intelligence/developers. Each rewrite is still
+     checked against the real path list, so this can only fire on a page
+     that exists. */
+  [/^\//, "/intelligence/"],
 ];
 
 /* WHERE A GIVEN OLD PAGE IS ALLOWED TO LAND.
@@ -245,18 +356,28 @@ const SECTION = [
    numerical. A page about one project resolves to that project's report,
    full stop.
 
-   Comparison pages are excluded from EVERY search. They are combinatorial
-   — 40 projects make 780 of them — so they dominate any candidate set
-   they are allowed into, and none of them is the heir to a single page. */
+   Comparison pages are excluded from every search EXCEPT their own. They
+   are combinatorial — 97 projects make 1,864 of them — so they dominate
+   any candidate set they are allowed into, and none of them is the heir
+   to a single project's page.
+
+   Blanket-excluding them was still wrong, and the crawl is what showed
+   it: 1,864 of the 1,898 unmatched paths were /compare/<a>-vs-<b>, whose
+   successor is /intelligence/compare/<a>-vs-<b> and nothing else. A
+   comparison page is not the heir to a project page; it is very much the
+   heir to a comparison page. The exclusion belongs on the candidate pool
+   for other sections, not on the section itself. */
+const IS_COMPARE = (p) => /^\/(intelligence\/)?compare\//.test(p);
 const CANDIDATES = [
-  [/^\/(project|report|properties|property)\//, (n) => n.startsWith("/projects/")],
-  [/^\/(developer|builder)\//, (n) => n.startsWith("/intelligence/developers/")],
-  [/^\/(location|market|area|micro-?market)\//, (n) => n.startsWith("/intelligence/markets/")],
+  [/^\/compare\//, (n) => n.startsWith("/intelligence/compare/")],
+  [/^\/(projects?|reports?|properties|property)\//, (n) => n.startsWith("/projects/")],
+  [/^\/(developers?|builders?)\//, (n) => n.startsWith("/intelligence/developers/")],
+  [/^\/(locations?|markets?|areas?|micro-?markets?)\//, (n) => n.startsWith("/intelligence/markets/")],
 ];
 const candidatesFor = (oldPath, news) => {
   const rule = CANDIDATES.find(([re]) => re.test(oldPath));
   const pool = rule ? news.filter(rule[1]) : news;
-  return pool.filter((n) => !n.startsWith("/intelligence/compare/"));
+  return { scoped: Boolean(rule), pool: IS_COMPARE(oldPath) ? pool : pool.filter((n) => !IS_COMPARE(n)) };
 };
 
 /* --sitemap is pulled out first so it can sit anywhere on the line; what
@@ -303,6 +424,14 @@ for (const p of olds) {
   if (p === "/") continue;
   if (newSet.has(p)) { same.push(p); continue; }
 
+  /* Comparison pages resolve by pair or not at all — never by tokens. */
+  if (IS_COMPARE(p)) {
+    const hit = comparePair(p, newSet);
+    if (hit) mapped.push({ from: p, to: hit.path, why: hit.why });
+    else unmatched.push(p);
+    continue;
+  }
+
   let target = null, why = "";
   for (const [re, to] of SECTION) {
     if (!re.test(p)) continue;
@@ -314,7 +443,8 @@ for (const p of olds) {
     if (sq) { target = sq; why = "same words, different hyphenation"; }
   }
   if (!target) {
-    const m = bestMatch(p, candidatesFor(p, news));
+    const { pool, scoped } = candidatesFor(p, news);
+    const m = bestMatch(p, pool, scoped);
     if (m?.ambiguous) { ambiguous.push({ from: p, options: m.ambiguous }); continue; }
     if (m?.path) { target = m.path; why = m.score; }
   }
