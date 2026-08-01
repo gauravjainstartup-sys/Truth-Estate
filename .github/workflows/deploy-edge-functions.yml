@@ -10,6 +10,21 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # ONE env for the whole job, not one per step.
+    #
+    # Every deploy line used to carry its own two-line `env:` block. That
+    # reads as boilerplate right up until something is inserted in the
+    # middle of a pair — which is exactly what happened adding the Razorpay
+    # functions: the new steps landed between `phone-known`'s `run` and its
+    # `env`, so phone-known silently lost its token, one new step had none,
+    # and the other inherited a block that was never meant for it. Nothing
+    # about the diff looked wrong.
+    #
+    # At the job level the credential cannot be detached from the step that
+    # needs it, and adding a function is one line with nothing to get
+    # between.
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
@@ -19,32 +34,16 @@ jobs:
       # function has to be added here consciously — and so one function
       # failing to bundle cannot silently skip the others.
       - run: supabase functions deploy challenge-router --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       - run: supabase functions deploy capture-lead --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       - run: supabase functions deploy chat-signin --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       - run: supabase functions deploy phone-known --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
       # Razorpay. --no-verify-jwt because the browser calls these with the
       # anon key like every other public function; the real authorisation
-      # is the verified anon→user claim inside, and for the grant, the
-      # HMAC signature that only Razorpay and this function can produce.
+      # is the verified anon→user claim inside, and for the grant, the HMAC
+      # signature that only Razorpay and this function can produce.
       - run: supabase functions deploy razorpay-order --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
       - run: supabase functions deploy razorpay-verify --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       - run: supabase functions deploy track --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       - run: supabase functions deploy brief --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       - run: supabase functions deploy claim-events --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       - run: supabase functions deploy entitlements --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
