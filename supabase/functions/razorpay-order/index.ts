@@ -136,8 +136,13 @@ Deno.serve(async (req: Request) => {
     );
     if (prior.ok) {
       const rows = await prior.json() as { package_name?: string; project_name?: string }[];
+      /* Compared through the slug, not by string equality: project_name
+         holds the readable project name on rows written since the ledger
+         was matched to the table, and the raw slug on the ones before it.
+         Both slugify to the same thing, so both credit correctly. */
+      const asSlug = (v: string) => v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
       for (const r of rows) {
-        if ((r.project_name ?? "") !== slug) continue;
+        if (asSlug(r.project_name ?? "") !== slug) continue;
         const paid = PRICE_INR[String(r.package_name ?? "")];
         if (paid && paid.scope === "project" && paid.inr > creditInr) creditInr = paid.inr;
       }

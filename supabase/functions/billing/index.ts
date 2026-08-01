@@ -126,7 +126,11 @@ Deno.serve(async (req: Request) => {
   const rows = await payRes.json() as Row[];
 
   const payments = rows.map((r) => {
-    const slug = r.project_name ?? "";
+    /* project_name is a readable name on new rows and a raw slug on the
+       old ones. Slugify before the lookup so both resolve, and fall back
+       to whatever was stored rather than showing a blank. */
+    const stored = r.project_name ?? "";
+    const slug = stored ? liveSlug(stored) : "";
     const amt = typeof r.amount === "string" ? parseFloat(r.amount) : (r.amount ?? 0);
     return {
       id: r.id ?? r.razorpay_payment_id ?? "",
@@ -134,7 +138,7 @@ Deno.serve(async (req: Request) => {
       packageId: r.package_name ?? null,
       packageLabel: PACKAGE_LABEL[String(r.package_name ?? "")] ?? r.package_name ?? "Report access",
       projectSlug: slug || null,
-      projectName: slug ? (names[slug] ?? slug) : null,
+      projectName: stored ? (names[slug] ?? stored) : null,
       amountInr: Number.isFinite(amt) ? Math.round(amt as number) : 0,
       paidAt: r.created_at ?? null,
       orderId: r.razorpay_order_id ?? null,

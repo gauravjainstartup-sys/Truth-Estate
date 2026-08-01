@@ -367,6 +367,13 @@ Deno.serve(async (req: Request) => {
 
   /* All-Access is a plan, not 97 grants. A project purchase appends one
      entry in prod's existing shape. */
+  /* Resolved once and used by both writes: the grant needs the name and
+     the SEO slug, the ledger needs the id — project_id is NOT NULL. */
+  const proj = pkg.scope === "project" ? await projectBySlug(slug) : null;
+  if (pkg.scope === "project" && !proj) {
+    console.warn(`[razorpay-verify] ${slug} not in the catalogue — falling back to the slug`);
+  }
+
   let granted = true;
   if (pkg.scope === "site") {
     const r = await sbFetch(`user_profiles?id=eq.${encodeURIComponent(userId)}`, {
@@ -387,8 +394,6 @@ Deno.serve(async (req: Request) => {
        resolves — entitlements compares slugify(projectName) against the
        internal slug and a slug slugifies to itself — so a buyer is never
        left holding a grant that names nothing. */
-    const proj = await projectBySlug(slug);
-    if (!proj) console.warn(`[razorpay-verify] ${slug} not in the catalogue — writing the slug in all three fields`);
     const entry = grantEntry({
       projectId: proj?.id ?? slug,
       projectName: proj?.name ?? slug,
@@ -408,17 +413,34 @@ Deno.serve(async (req: Request) => {
   }
 
   /* The ledger, best-effort and after the fact. */
+  /* Matched to the table as it actually is, which is what the first
+     rejection was about: project_id is NOT NULL with no default and was
+     simply absent. All-Access buys no single project, so it carries the
+     sentinel "all-access" rather than a fabricated id — NOT NULL wants a
+     value, not a lie shaped like a key.
+
+     project_name carries the REAL project name, not the slug.
+     entitlements/core.ts slugifies this column to match an entitlement,
+     and a name slugifies to its own slug, so both forms resolve — but
+     only one of them is readable on a receipt.
+
+     razorpay_signature exists on this table and had been left empty. It
+     is the proof the payment was ours; storing it means a dispute can be
+     re-verified from the row alone. */
   const payRes = await sbFetch("payments", {
     method: "POST",
     headers: { Prefer: "return=minimal" },
     body: JSON.stringify({
       user_id: userId,
-      status: "completed",
-      project_name: pkg.scope === "project" ? slug : null,
+      project_id: pkg.scope === "project" ? (proj?.id ?? slug) : "all-access",
+      project_name: pkg.scope === "project" ? (proj?.name ?? slug) : null,
       package_name: packageId,
       amount: amountInr,
+      currency: payment.currency ?? "INR",
+      status: "completed",
       razorpay_order_id: orderId,
       razorpay_payment_id: paymentId,
+      razorpay_signature: signature,
     }),
   });
   const ledgerWritten = payRes.ok;
