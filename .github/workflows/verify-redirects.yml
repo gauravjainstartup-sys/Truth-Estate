@@ -126,8 +126,18 @@ jobs:
             canon=$(printf '%s' "$body" | grep -o 'rel="canonical" href="[^"]*"' | head -1 | sed 's/.*href="//;s/"$//')
             # Cards are server-rendered; a landing page with no projects on it
             # is thin content whatever its status code says.
-            cards=$(printf '%s' "$body" | grep -o 'href="[^"]*/projects/gurugram-real-estate-[^"]*"' | wc -l)
-            want="$BASE/best-projects/$slug"
+            # grep -o piped to wc -l, because the page is one long line and
+            # grep -c would answer "1". Braced with || true because under
+            # `set -e -o pipefail` a grep that matches nothing returns 1 and
+            # takes the whole script down — which is to say the assertion
+            # would die exactly when it had something to report.
+            cards=$({ printf '%s' "$body" | grep -o 'href="[^"]*/projects/gurugram-real-estate-[^"]*"' || true; } | wc -l)
+            # THE CANONICAL NAMES PRODUCTION, NOT WHATEVER HOST ANSWERED.
+            # This asserted $BASE and failed all seven pages, which were
+            # right — the whole reason a canonical is emitted on a .run.app
+            # preview is to point at the domain the site will live on. The
+            # deploy's own smoke test has always asserted it this way for /.
+            want="https://www.truthestate.in/best-projects/$slug"
             if [ "$code" != "200" ]; then echo "  FAIL $slug → HTTP $code"; fail=1; continue; fi
             if [ "$canon" != "$want" ] && [ "$canon" != "$want/" ]; then echo "  FAIL $slug canonical → ${canon:-none}"; fail=1; continue; fi
             if [ "$cards" -lt 5 ]; then echo "  FAIL $slug renders only $cards project card(s)"; fail=1; continue; fi
@@ -149,8 +159,13 @@ jobs:
         run: |
           set -uo pipefail
           body=$(curl -s --max-time 30 "$BASE/intelligence/projects")
-          stubs=$(printf '%s' "$body" | grep -o 'href="[^"]*/intelligence/projects/[^"]*"' | wc -l)
-          good=$(printf '%s' "$body" | grep -o 'href="[^"]*/projects/gurugram-real-estate-[^"]*"' | wc -l)
+          # Braced || true, or a clean page kills the check that proves it is
+          # clean: zero stub links means grep exits 1, and under pipefail
+          # that ends the script before the assertion ever runs. This step
+          # failed on its first outing for exactly that reason, reporting
+          # nothing — the success case was the one it could not survive.
+          stubs=$({ printf '%s' "$body" | grep -o 'href="[^"]*/intelligence/projects/[^"]*"' || true; } | wc -l)
+          good=$({ printf '%s' "$body" | grep -o 'href="[^"]*/projects/gurugram-real-estate-[^"]*"' || true; } | wc -l)
           echo "catalogue: $good report link(s), $stubs stub link(s)"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "Catalogue links: \`$good\` to reports, \`$stubs\` to legacy stubs." >> "$GITHUB_STEP_SUMMARY"

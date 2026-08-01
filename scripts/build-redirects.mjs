@@ -34,6 +34,7 @@ import { readFile, writeFile, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 
 const OUT = "deploy/redirects.conf";
+const OLD_URLS = "deploy/old-urls.txt";
 const SITEMAP = "out/sitemap.xml";
 
 const slugify = (s) => String(s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -431,6 +432,22 @@ const newSet = new Set(news);
 const olds = arg === "--crawl"
   ? await crawl(argv[1] ?? "https://www.truthestate.in")
   : await fromFile(arg);
+
+/* THE CRAWL IS THE EXPENSIVE, PERISHABLE HALF. Keep it.
+   A crawl takes minutes and needs the old site still answering; the
+   matching takes a second and depends on the build being shipped. Tying
+   them together meant the map was made against one build and deployed
+   with another — and the compare set is derived from live data, so 77
+   pairs the map pointed at did not exist in the image that shipped. 77
+   permanent redirects into 404s, live, and every check we had said green.
+
+   Writing the crawl out makes the two halves independent: crawl when the
+   old site changes, and regenerate the map at every deploy from that
+   deploy's OWN sitemap, which cannot disagree with itself. */
+if (arg === "--crawl") {
+  await writeFile(OLD_URLS, `${olds.slice().sort().join("\n")}\n`);
+  console.log(`  → ${OLD_URLS} (${olds.length} path(s) — the input to every future rebuild)`);
+}
 
 console.log(`\n  old: ${olds.length} path(s)   new: ${news.length} path(s)\n`);
 
