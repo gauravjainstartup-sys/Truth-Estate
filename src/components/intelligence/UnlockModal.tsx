@@ -86,7 +86,7 @@ export default function UnlockModal({
   onUnlocked: (pkg: PackageId) => void;
 }) {
   const [step, setStep] = useState<Step>("plans");
-  const [sel, setSel] = useState<PackageId>(focus3D ? "read3d" : "read");
+  const [sel, setSel] = useState<PackageId>(focus3D ? "all" : "read");
   const [expanded, setExpanded] = useState<PackageId | null>(null);
   // register state
   const [name, setName] = useState("");
@@ -117,7 +117,11 @@ export default function UnlockModal({
     (id === "read" && hasReadAccess(slug)) || (id === "read3d" && has3DAccess(slug)) || (id === "all" && isAllAccess());
   const amountFor = (id: PackageId) => Math.max(packageById(id).inr - credit, 0);
   const isUpgrade = (id: PackageId) => credit > 0 && !owns(id);
-  const cards = PLAN_CARDS.filter((c) => !owns(c.id));
+  /* Tied to what we actually SELL, not to this hand-written list. PLAN_CARDS
+     still describes the retired ₹1,499 read+3D tier, and without this filter
+     withdrawing it from PACKAGES would have removed its price from the
+     pricing page and left its card sitting here. One table decides. */
+  const cards = PLAN_CARDS.filter((c) => !owns(c.id) && PACKAGES.some((pk) => pk.id === c.id));
 
   useEffect(() => {
     if (!open) return;
@@ -131,7 +135,9 @@ export default function UnlockModal({
       : entitled ? "owned"
       : "plans",
     );
-    setSel(focus3D ? "read3d" : "read");
+    /* All-Access, because the standalone 3D tier is withdrawn and it is
+       now the only way to buy the Sun & Vastu advisor. */
+    setSel(focus3D ? "all" : "read");
     setExpanded(null);
     setSent(false); setKnown(undefined); setOtp(Array(OTP_LEN).fill("")); setErr(""); setPaying(false); setPayErr(""); setReceipt(null);
     const prev = document.body.style.overflow;
@@ -218,7 +224,7 @@ export default function UnlockModal({
   function settle() {
     if (isAllAccess() || (focus3D ? has3DAccess(slug) : hasReadAccess(slug))) {
       setStep("owned");
-      setTimeout(() => { onUnlocked(focus3D ? "read3d" : "read"); onClose(); }, 1400);
+      setTimeout(() => { onUnlocked(focus3D ? "all" : "read"); onClose(); }, 1400);
       return;
     }
     setStep("plans");

@@ -104,58 +104,6 @@ function Source({ children }: { children: React.ReactNode }) {
   return <p className="mt-6 text-[0.68rem] font-light italic leading-[1.5] text-[#1a1a1a]/35">{children}</p>;
 }
 
-/* A document slot with nothing on file — same card silhouette as a real
-   document, honest "not on file yet" cover, per-document request CTA that
-   captures a lead (one contact field, doc type implicit). */
-function DocSlot({ project, title, sub }: { project: string; title: string; sub: string }) {
-  const [open, setOpen] = useState(false);
-  const [contact, setContact] = useState("");
-  const [sent, setSent] = useState(false);
-  return (
-    <div className={`overflow-hidden rounded-2xl border bg-white/50 ${sent ? "border-[#1e6b45]/30" : "border-dashed border-[#9a7a2e]/40"}`}>
-      <div className="relative aspect-[16/10] bg-[#f5f0e5]/70">
-        <div className="absolute inset-0 grid place-items-center">
-          <div className="text-center">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#9a7a2e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto h-8 w-8 opacity-70" aria-hidden>
-              <path d="M6 2.5h8L19.5 8v13a1 1 0 0 1-1 1h-12a1 1 0 0 1-1-1v-17a1 1 0 0 1 1-1Z" /><path d="M14 2.5V8h5.5M9 13h6M9 17h6" />
-            </svg>
-            <p className="mt-2.5 text-[0.58rem] font-bold uppercase tracking-[0.18em] text-[#9a7a2e]/80">{sent ? "Requested" : "Not on file yet"}</p>
-          </div>
-        </div>
-      </div>
-      <div className="px-5 py-4">
-        {sent ? (
-          <p className="text-[0.8rem] font-medium leading-[1.5] text-[#1e6b45]">✓ Requested — the desk sources it and sends it to you, usually the same day.</p>
-        ) : open ? (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              saveLead({ name: "", email: contact, project, intent: "documents", docs: [title], createdAt: Date.now() });
-              setSent(true);
-            }}
-            className="flex gap-2"
-          >
-            <input
-              required autoFocus value={contact} onChange={(e) => setContact(e.target.value)}
-              placeholder="Phone / WhatsApp / email"
-              className="w-full min-w-0 flex-1 rounded-lg border border-[#1a1a1a]/12 bg-white px-3 py-2.5 text-[0.78rem] outline-none transition-colors focus:border-[#1e6b45]"
-            />
-            <button type="submit" className="shrink-0 rounded-lg bg-[#1e6b45] px-3.5 py-2.5 text-[0.76rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Send →</button>
-          </form>
-        ) : (
-          <button onClick={() => setOpen(true)} className="group flex w-full items-center justify-between gap-4 text-left">
-            <span>
-              <span className="block text-[0.92rem] font-semibold text-[#1a1a1a]/85">{title}</span>
-              <span className="mt-0.5 block text-[0.7rem] font-light text-[#1a1a1a]/45">{sub}</span>
-            </span>
-            <span className="shrink-0 text-[0.78rem] font-semibold text-[#9a7a2e] transition-colors group-hover:text-[#7a5f1e]">Request →</span>
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
 /* Compact ₹-thousands: 18500 → "18.5", 21000 → "21". */
 function kpsf(n: number): string {
   return (n / 1000).toFixed(n % 1000 === 0 ? 0 : 1).replace(/\.0$/, "");
@@ -367,6 +315,13 @@ export default function ProjectProfile({
      can ask whether there is anything to link to. */
   const levers = negotiationLevers(p);
   const ops = p.ops;
+  /* Is there a single document on file? Decides both the section-nav entry
+     and whether the section renders at all — they must agree, or the nav
+     links to an anchor that is not on the page. */
+  const hasAnyDoc = Boolean(
+    ops?.media?.brochure?.length || ops?.media?.brochurePdf ||
+    ops?.media?.paymentPlan || ops?.media?.paymentPlanPdf || ops?.media?.masterplan,
+  );
   const usps = ops?.usps ?? [];
   const ctx = rankContext(p);
   const reviewed = reviewedOn(p);
@@ -410,7 +365,7 @@ export default function ProjectProfile({
     { id: "masterplan", label: "Masterplan", show: !!ops?.media?.masterplan },
     { id: "homes", label: "Homes & floor plans", show: (ops?.homes?.length ?? 0) > 0 },
     { id: "tower-intel", label: "Sun & Vastu 3D", show: true },
-    { id: "documents", label: "Brochure & payment plan", show: true },
+    { id: "documents", label: "Brochure & payment plan", show: hasAnyDoc },
     { id: "anatomy", label: "Truth Score anatomy", show: true },
     { id: "developer", label: "Developer DNA", show: !!dev },
     { id: "construction", label: "Construction & sales", show: !!con },
@@ -960,8 +915,20 @@ export default function ProjectProfile({
                unit, in 3D. A product tier that belongs with the homes. */}
             <TowerIntel project={p} meta={towerIntelMeta(p)} />
 
-            {/* 04 · Brochure & payment plan — documents on file render as cards;
-               whatever is missing becomes an honest request tile (lead capture). */}
+            {/* 04 · Brochure & payment plan — ONLY what is on file.
+               Missing documents used to render a dashed "Not on file yet"
+               request tile. Sixty-nine of the ninety-six tracked projects
+               have none of the three, so on most reports the section was
+               three placeholders and no content: a page about how much we
+               know, mostly showing what we do not.
+
+               Founder's call is to drop the empty slot. The section goes
+               with it when all three are empty, because the alternative is
+               a titled, numbered heading over nothing — still a div, still
+               shown, on seventy-two per cent of the catalogue. Where even
+               one document exists the section renders as before, minus the
+               placeholders beside it. */}
+            {hasAnyDoc && (
             <Section id="documents" n={num()} title="Brochure & payment plan">
                 <div className="grid gap-5 sm:grid-cols-2">
                   {ops?.media?.brochure?.length ? (
@@ -995,9 +962,7 @@ export default function ProjectProfile({
                         <span className="shrink-0 text-[0.78rem] font-semibold text-[#9a7a2e] transition-colors group-hover:text-[#7a5f1e]">Open →</span>
                       </div>
                     </button>
-                  ) : (
-                    <DocSlot project={p.name} title="Project brochure" sub="The developer&rsquo;s full brochure" />
-                  )}
+                  ) : null}
                   {ops?.media?.paymentPlan ? (
                     <button
                       onClick={() => setDoc({ title: "Payment plan", pages: [ops.media!.paymentPlan!.src], idx: 0 })}
@@ -1029,15 +994,12 @@ export default function ProjectProfile({
                         <span className="shrink-0 text-[0.78rem] font-semibold text-[#9a7a2e] transition-colors group-hover:text-[#7a5f1e]">Open →</span>
                       </div>
                     </button>
-                  ) : (
-                    <DocSlot project={p.name} title="Payment plan" sub="Milestones and due percentages" />
-                  )}
-                  {/* Master plan appears here as a slot only when it lacks its own section above */}
-                  {!ops?.media?.masterplan && <DocSlot project={p.name} title="Master plan / site map" sub="The RERA-approved site layout" />}
+                  ) : null}
                   {/* Floor plans intentionally omitted here — they live in The Homes section above. */}
                 </div>
                 <Source>{ops?.media?.brochure || ops?.media?.brochurePdf || ops?.media?.paymentPlan || ops?.media?.paymentPlanPdf ? "Developer documents on file — indicative until countersigned." : "Documents arrive as the desk sources them — indicative until countersigned."} GST, PLC, IFMS &amp; registration additional as applicable.</Source>
               </Section>
+            )}
 
             <Chapter n={chap()} title="Can we trust it?" framing="Five pillars — developer, build, location, paperwork, edge." />
 

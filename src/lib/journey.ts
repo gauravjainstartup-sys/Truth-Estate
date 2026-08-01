@@ -1171,12 +1171,33 @@ export function hasFullAccess(slug: string): boolean {
 
 export type PackageId = "read" | "read3d" | "all";
 export type Package = { id: PackageId; label: string; inr: number; scope: "project" | "site"; includes3D: boolean; blurb: string };
+/* WHAT WE SELL. Iterated by the unlock modal and the pricing page, so
+   anything absent here is simply not offered anywhere. */
 export const PACKAGES: Package[] = [
   { id: "read", label: "Full Read", inr: 999, scope: "project", includes3D: false, blurb: "This project's complete forensic read — every pillar, the price journey, ROI model and verdict." },
-  { id: "read3d", label: "Read + Sun & Vastu 3D", inr: 1499, scope: "project", includes3D: true, blurb: "The full read plus the interactive Sun & Vastu 3D advisor for this project." },
   { id: "all", label: "All-Access", inr: 9999, scope: "site", includes3D: true, blurb: "Every read and every 3D across the site — plus 2 on-demand project reports & 3Ds." },
 ];
-export const packageById = (id: PackageId): Package => PACKAGES.find((p) => p.id === id) ?? PACKAGES[0];
+
+/* WHAT WE STILL HONOUR. Retired from sale, never from the ledger.
+   The Sun & Vastu 3D advisor exists for a handful of projects and is
+   still in beta, so a ₹1,499 SKU built around it was selling a promise
+   the catalogue could not keep for most of it — founder's call to
+   withdraw it. 3D does not disappear: All-Access includes it, and every
+   3D the tier has already sold stays exactly where it is.
+
+   It lives here rather than being deleted because deleting it would have
+   been silent and expensive. packageById is what prices an upgrade, and
+   with read3d gone it falls through to PACKAGES[0] — so a returning buyer
+   who paid ₹1,499 for the 3D tier would have been credited ₹999 against
+   All-Access instead of ₹1,499, quietly overcharging exactly the
+   customers who bought the thing we withdrew. The server's own price
+   table keeps its read3d row for the same reason. */
+export const RETIRED_PACKAGES: Package[] = [
+  { id: "read3d", label: "Read + Sun & Vastu 3D", inr: 1499, scope: "project", includes3D: true, blurb: "The full read plus the interactive Sun & Vastu 3D advisor for this project." },
+];
+
+export const packageById = (id: PackageId): Package =>
+  PACKAGES.find((p) => p.id === id) ?? RETIRED_PACKAGES.find((p) => p.id === id) ?? PACKAGES[0];
 export const READ_FROM_INR = 999;
 
 const SIGNED_IN_KEY = "truthEstate.signedIn";

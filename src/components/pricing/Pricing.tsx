@@ -457,9 +457,14 @@ export default function Pricing() {
               pay for exactly what you need.
             </p>
 
-            <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-3">
+            {/* Two tiers, not three: the ₹1,499 read+3D SKU is withdrawn while the
+                Sun & Vastu advisor is in beta on a handful of projects. The grid
+                and the featured tier both followed the retired one, so a bare
+                filter would have left a three-column layout with a hole in it
+                and nothing highlighted. */}
+            <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-2">
               {PACKAGES.map((pkg) => {
-                const featured = pkg.id === "read3d";
+                const featured = pkg.id === "all";
                 return (
                   <div
                     key={pkg.id}
