@@ -41,13 +41,16 @@ const PLAN_CARDS: CardDef[] = [
   {
     id: "read", scope: "this project",
     features: [
-      "150+ signals audited — including the faint early-warning ones most brokers miss",
-      "Price band · 5-year ROI model · the verdict for your budget",
-      "Every material claim source-tagged — verify it yourself",
-      "Ask TruthGuide anything · a free advisor call",
+      "150+ checks — the red flags brokers skip",
+      "Fair-price band, 5-year ROI, a clear verdict",
+      "Every claim sourced — verify it yourself",
+      "Unlimited TruthGuide + a free advisor call",
     ],
-    limits: ["No Sun & Vastu 3D", "This project only"],
-    more: "The complete forensic read: developer track record & financials, construction vs the RERA schedule, location & connectivity, legal / title / litigation, and USPs — 150+ signals, each material claim sourced so you can check it. Re-audited every month and saved to your Buyer Office for life. Buyers use the fair-price band and the red flags as leverage to negotiate with the developer.",
+    /* "No Sun & Vastu 3D" is gone — the standalone 3D tier is withdrawn,
+       so listing its absence flagged a product nobody can buy. The only
+       real boundary left is scope: this project, not the whole site. */
+    limits: ["This project only"],
+    more: "The full forensic read — developer financials, construction against the RERA schedule, location, legal and title, and what sets the project apart. 150+ signals, every claim sourced. Re-audited monthly and saved to your Buyer Office for life, so the fair-price band and red flags are yours to negotiate with.",
   },
   {
     id: "read3d", scope: "this project",
@@ -62,13 +65,16 @@ const PLAN_CARDS: CardDef[] = [
   },
   {
     id: "all", scope: "every project",
+    /* 3D dropped from the pitch while it is in beta — All-Access still
+       includes it, but the tier sells on the thing that actually
+       separates it from Full Read: every project, not one. */
     features: [
-      "Every read + every Sun & Vastu 3D, across all projects",
-      "2 on-demand new reports & 3Ds (~2-day delivery)",
+      "Every project on the site — the full read",
+      "2 custom reports on demand (~2 days)",
       "Priority advisor line",
     ],
     limits: [],
-    more: "Everything, everywhere: every read and every Sun & Vastu 3D on the site, plus 2 on-demand project reports & 3Ds you can request anytime. Comparing 3+ projects? All-Access pays for itself.",
+    more: "Every read on the site, plus 2 custom project reports whenever you want them. Comparing three or more projects? All-Access pays for itself.",
   },
 ];
 
@@ -439,7 +445,7 @@ export default function UnlockModal({
                   );
                 })}
                 {cards.length === 0 && (
-                  <p className="rounded-xl border border-[#1e6b45]/25 bg-[#1e6b45]/[0.06] px-4 py-3 text-[0.85rem] font-medium text-[#1e6b45]">You have All-Access — every read and 3D is already yours.</p>
+                  <p className="rounded-xl border border-[#1e6b45]/25 bg-[#1e6b45]/[0.06] px-4 py-3 text-[0.85rem] font-medium text-[#1e6b45]">You have All-Access — every project on the site is already yours.</p>
                 )}
               </div>
 
