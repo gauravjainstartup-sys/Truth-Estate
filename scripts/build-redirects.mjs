@@ -30,7 +30,7 @@
    human to decide.
    ════════════════════════════════════════════════════════════════ */
 
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 
 const OUT = "deploy/redirects.conf";
@@ -72,7 +72,48 @@ async function newPaths(src) {
   }
   const paths = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => pathOf(m[1]));
   if (paths.length === 0) { console.error(`\n  no <loc> entries in the sitemap — wrong URL?\n`); process.exit(1); }
-  return [...new Set(paths)];
+
+  /* THE SITEMAP IS NOT THE SITE, and using it as the candidate list was a
+     quiet mistake. sitemap.ts lists what we ask Google to index; the build
+     serves more than that. /premiumbuyeroffice, /investors, /deal-room,
+     /get-custom-project-report, /sun-vastu, /shortlist and the /office
+     portal are all real, reachable pages that appear in no <loc>. An old
+     URL whose successor is one of them would have come back UNMATCHED —
+     reported as "this 404s at cutover" while the page it wanted was
+     sitting right there, served, one directory away.
+
+     The routes are read from src/app, which is the actual definition of
+     what exists. Sitemap membership is an SEO decision and has nothing to
+     do with whether an address resolves. */
+  const routes = await staticRoutes();
+  const all = [...new Set([...paths, ...routes])];
+  const extra = all.length - new Set(paths).size;
+  console.log(`  new: ${new Set(paths).size} sitemap URL(s)` + (extra ? ` + ${extra} unlisted route(s) from src/app` : ""));
+  return all;
+}
+
+/* Every non-dynamic page.tsx under src/app, as a path. Dynamic segments
+   are skipped: their real addresses are the sitemap's, and "/projects/[slug]"
+   is not somewhere a browser can go. Route groups — (marketing) and the
+   like — contribute no URL segment, so they are dropped rather than
+   emitted as a directory nobody serves. */
+async function staticRoutes(root = "src/app") {
+  if (!existsSync(root)) return [];
+  const out = [];
+  async function walk(dir, url) {
+    let items;
+    try { items = await readdir(dir, { withFileTypes: true }); } catch { return }
+    for (const it of items) {
+      if (it.isFile() && /^page\.(tsx|ts|jsx|js|mdx)$/.test(it.name)) out.push(url || "/");
+      if (!it.isDirectory()) continue;
+      const n = it.name;
+      if (n.startsWith("_") || n.startsWith("@") || n.includes("[")) continue; // private, parallel, dynamic
+      const seg = n.startsWith("(") && n.endsWith(")") ? "" : `/${n}`;        // route group adds nothing
+      await walk(`${dir}/${n}`, url + seg);
+    }
+  }
+  await walk(root, "");
+  return [...new Set(out)];
 }
 
 /* ── the old site's addresses ── */
@@ -240,6 +281,23 @@ const olds = arg === "--crawl"
 
 console.log(`\n  old: ${olds.length} path(s)   new: ${news.length} path(s)\n`);
 
+/* SAME WORDS, DIFFERENT PUNCTUATION. /premium-buyer-office and
+   /premiumbuyeroffice are the same address written two ways, and every
+   signal below misses it: the strings differ, no section rule applies,
+   and tokenising gives {premium,buyer,office} against the single token
+   "premiumbuyeroffice", so containment finds nothing. Word boundaries are
+   a stylistic choice a site makes once and often changes; they carry no
+   identity. Comparing the letters with the separators removed catches it
+   with effectively no risk of a false positive — and only where exactly
+   one new path squashes to the same string, so an accidental collision is
+   declined rather than resolved. */
+const squash = (p) => slugify(p).replace(/-/g, "");
+const bySquash = new Map();
+for (const n of news) {
+  const k = squash(n);
+  bySquash.set(k, bySquash.has(k) ? null : n); // null marks "more than one"
+}
+
 const same = [], mapped = [], unmatched = [], ambiguous = [];
 for (const p of olds) {
   if (p === "/") continue;
@@ -250,6 +308,10 @@ for (const p of olds) {
     if (!re.test(p)) continue;
     const candidate = p.replace(re, to);
     if (newSet.has(candidate)) { target = candidate; why = "section"; break; }
+  }
+  if (!target) {
+    const sq = bySquash.get(squash(p));
+    if (sq) { target = sq; why = "same words, different hyphenation"; }
   }
   if (!target) {
     const m = bestMatch(p, candidatesFor(p, news));
