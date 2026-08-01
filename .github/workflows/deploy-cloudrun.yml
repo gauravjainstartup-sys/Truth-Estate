@@ -44,10 +44,18 @@ env:
   #    → Actions → Variables). They are not secrets; the WIF binding is
   #    what grants access, and keeping them visible makes the deploy
   #    auditable. ──
-  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-  GCP_REGION: ${{ vars.GCP_REGION }}
-  AR_REPOSITORY: ${{ vars.AR_REPOSITORY }}
-  SERVICE_NAME: ${{ vars.CLOUD_RUN_SERVICE }}
+  # Defaults are the founder's existing Cloud Run setup, read off the
+  # console. Repository variables override them, so nothing has to be
+  # configured for the common case and nothing is hardcoded either.
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'gen-lang-client-0356808352' }}
+  GCP_REGION: ${{ vars.GCP_REGION || 'asia-southeast1' }}
+  AR_REPOSITORY: ${{ vars.AR_REPOSITORY || 'truthestate' }}
+  # NOT the live service. The existing `truthestate-with-supabase` keeps
+  # serving truthestate.in until its domain mapping is moved by hand — so
+  # a bad deploy costs a .run.app URL nobody has, not the live site. The
+  # cutover is then a domain mapping change, which is instant and
+  # reversible, rather than a rebuild under pressure.
+  SERVICE_NAME: ${{ vars.CLOUD_RUN_SERVICE || 'truthestate-web' }}
 
 jobs:
   deploy:
@@ -55,17 +63,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fail early if the deploy is not configured
+      - name: Show what this run will deploy to
         run: |
-          missing=""
-          for v in GCP_PROJECT_ID GCP_REGION AR_REPOSITORY SERVICE_NAME; do
-            [ -n "${!v}" ] || missing="$missing $v"
-          done
-          if [ -n "$missing" ]; then
-            echo "::error::Missing repository variables:$missing"
-            echo "Set them under Settings → Secrets and variables → Actions → Variables."
-            exit 1
-          fi
+          echo "project : $GCP_PROJECT_ID"
+          echo "region  : $GCP_REGION"
+          echo "registry: $AR_REPOSITORY"
+          echo "service : $SERVICE_NAME"
 
       - uses: actions/setup-node@v4
         with:
@@ -118,6 +121,16 @@ jobs:
 
       - name: Build and push the image
         run: |
+          # Created on first run rather than asked for. The existing service
+          # was deployed from AI Studio, which does not necessarily leave a
+          # Docker repository behind, and "which Artifact Registry repo?" is
+          # a question with no good answer when there isn't one yet.
+          gcloud artifacts repositories describe "$AR_REPOSITORY" \
+            --location "$GCP_REGION" --project "$GCP_PROJECT_ID" >/dev/null 2>&1 || \
+          gcloud artifacts repositories create "$AR_REPOSITORY" \
+            --repository-format=docker --location "$GCP_REGION" \
+            --project "$GCP_PROJECT_ID" --description "Truth Estate static site images" --quiet
+
           IMAGE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${AR_REPOSITORY}/${SERVICE_NAME}:${GITHUB_SHA::12}"
           echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
           gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
