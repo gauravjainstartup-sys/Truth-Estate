@@ -509,7 +509,24 @@ export default function ProjectProfile({
             </>
           ) : (
             <>
-              <a href={homeHref} aria-label="Home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
+              {/* Mobile: BACK on the extreme left, as an icon. The old
+                 "← BACK" wordmark sat on the right and ate the width the
+                 search field needed; a chevron at the leading edge is where
+                 a phone reader reaches for it and costs one tap target, not
+                 a word. Hidden on md+, which keeps its own layout below.
+                 -ml-2 pulls the tap area to the true edge without shifting
+                 the glyph off the text column. */}
+              <button onClick={() => router.back()} aria-label="Back" className="-ml-2 grid h-9 w-9 shrink-0 place-items-center text-[#1a1a1a]/55 transition-colors hover:text-[#1a1a1a] md:hidden">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+              </button>
+
+              {/* Home. Full wordmark on desktop; the window mark alone on
+                 mobile, where the 420×80 lockup would crowd the search. */}
+              <a href={homeHref} aria-label="Home" className="shrink-0">
+                <Logo color="#1a1a1a" className="hidden h-7 w-auto md:block" />
+                <Logo color="#1a1a1a" markOnly className="h-[26px] w-[26px] md:hidden" />
+              </a>
+
               <SearchPalette className="ml-auto" current={p.name} />
               {/* This is the page behind the paywall, so "am I signed in"
                  and "why can I read this" are the same question. It had no
@@ -517,12 +534,6 @@ export default function ProjectProfile({
               <AccountChip onSignIn={() => setUnlockOpen(true)} />
               <button onClick={primaryCta.onClick} className="hidden rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.74rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] md:inline-block md:px-5">
                 {primaryCta.label}
-              </button>
-              {/* Mobile: a BACK affordance mirroring the embedded CLOSE — same
-                 quiet treatment, right-aligned. Returns to wherever the reader
-                 came from (journey, shortlist, another report, or the site). */}
-              <button onClick={() => router.back()} aria-label="Back" className="inline-flex items-center gap-1.5 text-[11px] font-light tracking-[0.18em] text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a] md:hidden">
-                <span aria-hidden="true" className="text-[13px] leading-none">←</span> BACK
               </button>
             </>
           )}
