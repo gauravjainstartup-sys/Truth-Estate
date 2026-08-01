@@ -32,6 +32,14 @@ export type BestProjectsPage = {
   description: string;
   intro: string;
   match: (r: LiveBacklogFull) => boolean;
+  /* THIS PAGE'S WHOLE CLAIM IS THE PRICE. Set on the four bands, and it
+     makes the route drop any project whose listed price its own filed rate
+     contradicts — see fetchPriceEnvelopes. Delphine Central Park Estates
+     Phase 2 lists ₹2.8 Cr against filings whose cheapest possible flat is
+     ₹11.88 Cr, and it was appearing under "₹3 Cr". The CAGR, delay and
+     launch pages do not assert anything about price, so they are unaffected
+     and still list it. */
+  pricePage?: true;
 };
 
 /* REGISTRATION DATES ARRIVE IN TWO SHAPES. Most rows carry "25 Nov 2025",
@@ -86,6 +94,7 @@ export const BEST_PROJECTS: BestProjectsPage[] = [
     intro:
       "Every project we track whose entry price sits under ₹3 Cr — each one carrying the same Truth Score, built from the same six audited inputs as the rest of the catalogue. No developer pays to appear here, and none can move a score.",
     match: underCr(3),
+    pricePage: true,
   },
   {
     slug: "under-5-cr-gurugram",
@@ -96,6 +105,7 @@ export const BEST_PROJECTS: BestProjectsPage[] = [
     intro:
       "Every project we track whose entry price sits under ₹5 Cr — each one carrying the same Truth Score, built from the same six audited inputs as the rest of the catalogue. No developer pays to appear here, and none can move a score.",
     match: underCr(5),
+    pricePage: true,
   },
   {
     slug: "under-8-cr-gurugram",
@@ -106,6 +116,7 @@ export const BEST_PROJECTS: BestProjectsPage[] = [
     intro:
       "Every project we track whose entry price sits under ₹8 Cr — each one carrying the same Truth Score, built from the same six audited inputs as the rest of the catalogue. No developer pays to appear here, and none can move a score.",
     match: underCr(8),
+    pricePage: true,
   },
   {
     slug: "luxury-above-10-cr",
@@ -116,6 +127,7 @@ export const BEST_PROJECTS: BestProjectsPage[] = [
     intro:
       "The projects we track that start at ₹10 Cr and above. A larger cheque buys a bigger flat, not a safer one — every project here is scored on the same six audited inputs as everything else in the catalogue.",
     match: (r) => r.minPriceCr != null && r.minPriceCr >= 10,
+    pricePage: true,
   },
   {
     slug: "high-appreciation-cagr",

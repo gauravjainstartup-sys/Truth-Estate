@@ -35,6 +35,21 @@ export const SITE_URL = `${ORIGIN}${BASE_PATH}`;
    at the call site: `${basePath}/intelligence`. */
 export const basePath = BASE_PATH;
 
+/* THE HOME PAGE'S HREF, WHICH IS NOT basePath.
+
+   Sixteen components wrote `<a href={basePath}>` around the logo. Under the
+   preview that is "/Truth-Estate" and works. In production BASE_PATH is the
+   empty string, React renders `href=""`, and an empty href resolves to the
+   CURRENT document — so the logo, which is the only way back to the home
+   page from a report, a market, a comparison or a landing page, quietly
+   becomes a button that reloads the page you are already on.
+
+   It could not surface before cutover, because the only build anyone had
+   clicked through was the preview, where BASE_PATH is non-empty. That is
+   the character of the bug: correct everywhere it was tested and wrong
+   everywhere it was about to ship. */
+export const homeHref = BASE_PATH || "/";
+
 /* Is this the deployment search engines should index?
 
    Only the real production origin. Everything else — the GitHub Pages

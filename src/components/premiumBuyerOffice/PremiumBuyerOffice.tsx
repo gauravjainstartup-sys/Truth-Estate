@@ -3,7 +3,7 @@
 import Logo from "../Logo";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import { CONSULT_FEE, CONSULT_FEE_NOTE, inr } from "@/lib/consultation";
-import { basePath } from "@/lib/site";
+import { basePath, homeHref } from "@/lib/site";
 
 const PRICE = CONSULT_FEE ?? 9999;
 
@@ -100,7 +100,7 @@ export default function PremiumBuyerOffice() {
       {/* ═══ HERO ═══ */}
       <section className="relative flex min-h-svh flex-col bg-[#0a0a0a]">
         <nav className="px-6 pt-10 md:px-12 md:pt-14">
-          <a href={basePath} aria-label="Truth Estate — home">
+          <a href={homeHref} aria-label="Truth Estate — home">
             <Logo className="h-9 w-auto opacity-75 md:h-[3rem]" />
           </a>
         </nav>

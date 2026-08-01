@@ -34,7 +34,7 @@ import {
   type RouterAnswer,
 } from "@/lib/omni";
 import { askRouter } from "@/lib/router";
-import { basePath } from "@/lib/site";
+import { basePath, homeHref } from "@/lib/site";
 
 const EMPTY_INDEX: OmniIndex = { projects: [], units: {}, live: false };
 
@@ -180,7 +180,7 @@ export default function IntelligenceWorkspace({ index = EMPTY_INDEX }: { index?:
       <nav className="flex shrink-0 items-center justify-between border-b border-[#1a1a1a]/[0.06] px-4 py-4 md:px-10">
         <div className="flex items-center gap-8">
           <a
-            href={basePath}
+            href={homeHref}
             aria-label="Truth Estate — Home"
             className="transition-opacity duration-300 hover:opacity-70"
           >

@@ -105,7 +105,7 @@ export default function OsmLocationMap({ geo, projectName, slug }: { geo: Locati
             const exact = lp.pv === "verified" || lp.pv === "consistent";
             const km = kmBetween(geo.center.lat, geo.center.lng, lp.lat, lp.lng);
             L.marker([lp.lat, lp.lng], { icon: pinIcon(trackedPinHtml(lp.n, d3)), riseOnHover: true, zIndexOffset: d3 ? 800 : 0 })
-              .addTo(liveLayer).on("click", () => setSel({ kind: "tracked", name: lp.n, slug: lp.s, km, ts: lp.ts, m: lp.m, d3, exact }));
+              .addTo(liveLayer).on("click", () => setSel({ kind: "tracked", name: lp.n, slug: lp.s, seoSlug: lp.q, km, ts: lp.ts, m: lp.m, d3, exact }));
           }
         }
       } catch { /* the layer is optional — the map stands without it */ }

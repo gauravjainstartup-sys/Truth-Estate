@@ -210,8 +210,23 @@ const NOISE = new Set([
    They are dropped when the candidate is anything else and kept when the
    candidate is a market. */
 const PLACE = new Set(["road", "expressway", "spr", "gcre", "gcr", "dwarka", "sohna"]);
+
+/* A PHASE NUMBER IS IDENTITY HERE, NOT NOISE.
+   "phase" is a section word and bare digits are sector numbers, so both
+   were discarded — which made Ashiana Mulberry Phase 4 and Phase 2 the
+   same bag of tokens, {ashiana, mulberry}. They are different projects in
+   different micro-markets, and the tie-break then handed Phase 4's URL to
+   Phase 2's report and labelled it "exact": the one outcome this file
+   exists to prevent, telling Google two unrelated pages are one page.
+
+   Nine of the ninety-seven tracked projects are phased — Amarah runs to
+   five, Navya Avik and Golf Hills to two — so this is not an edge case.
+   The phase designator is folded into a single token before the split, so
+   "phase-1-1a" survives as one unit and sector numbers, which really are
+   noise, keep being dropped. */
+const foldPhase = (s) => s.replace(/-phase-((?:\d+[a-z]?)(?:-\d+[a-z]?)*)/g, (_, n) => `-phase${n.replace(/-/g, "")}`);
 const tokens = (p, keepPlace = false) => new Set(
-  slugify(p).split("-").filter((t) =>
+  foldPhase(slugify(p)).split("-").filter((t) =>
     t && !NOISE.has(t) && (keepPlace || !PLACE.has(t)) && !/^\d+[a-z]?$/.test(t)),
 );
 const IS_MARKET = (p) => p.startsWith("/intelligence/markets/");
@@ -479,7 +494,7 @@ const toReport = projectResolver(news);
 
    Four paths, each with a reason:
 
-   The two price-and-corridor pages ask two questions at once and the new
+   The three price-and-corridor pages ask two questions at once and the new
    site answers them on separate pages. The tokeniser cannot choose —
    "under-3-cr" and "under-5-cr" both reduce to {under, cr} once the digit
    is dropped, so all three price bands look identical to it, which is
@@ -498,6 +513,7 @@ const toReport = projectResolver(news);
 const OVERRIDES = {
   "/best-projects/under-3-cr-dwarka-expressway": "/best-projects/under-3-cr-gurugram?q=Dwarka%20Expressway",
   "/best-projects/under-5-cr-spr-corridor": "/best-projects/under-5-cr-gurugram?q=SPR",
+  "/best-projects/under-8-cr-golf-course-extension": "/best-projects/under-8-cr-gurugram?q=Golf%20Course%20Extension",
   "/under-construction-projects-in-gurugram": "/intelligence/projects",
   "/contact": "/premiumbuyeroffice",
 };

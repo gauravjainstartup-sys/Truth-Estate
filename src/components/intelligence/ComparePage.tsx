@@ -7,7 +7,7 @@ import { RATING_META, FIN_METRICS, type FinRating } from "@/lib/developers";
 import { fmtPsf, pillars, priceJourney, deliveryOutlook, roiModel, type ProjectIntel, type Pillar } from "@/lib/projects";
 import { streetAddress } from "./ProjectOptionCard";
 import { compareTitle, type ResolvedCompare } from "@/lib/compare";
-import { basePath } from "@/lib/site";
+import { basePath, homeHref } from "@/lib/site";
 
 
 const rateVal = (r: FinRating) => (r === "strong" ? 3 : r === "moderate" ? 2 : 1);
@@ -107,7 +107,7 @@ export default function ComparePage({ r }: { r: ResolvedCompare }) {
     <div className="min-h-svh bg-[#F5F0E8] text-[#1a1a1a]">
       <header className="sticky top-0 z-40 border-b border-[#1a1a1a]/6 bg-[#F5F0E8]/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-5xl items-center gap-4 px-6 py-4 md:px-10">
-          <a href={basePath} aria-label="Home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
+          <a href={homeHref} aria-label="Home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
           <button onClick={() => open()} className="ml-auto rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.74rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] md:px-5">
             Request Independent Advice
           </button>

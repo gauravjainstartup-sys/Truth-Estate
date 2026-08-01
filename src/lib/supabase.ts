@@ -698,6 +698,73 @@ export async function fetchCorridorFiledPsf(): Promise<Record<string, CorridorBa
   return (filedPsfCache = out);
 }
 
+/* ── CAN THE LISTED PRICE BE TRUE? ────────────────────────────────
+   A project files a rate band and a super-area band. The cheapest flat it
+   can possibly sell is the lowest rate times the smallest unit, and the
+   dearest is the highest times the largest. min_price_cr should sit inside
+   that envelope. Seven of the eighty-five projects that file both do not,
+   and one is not close:
+
+     Delphine Central Park Estates Phase 2 lists ₹2.8 Cr against a filed
+     ₹28,000–32,000/sqft and a smallest unit of 4,242 sqft. The cheapest
+     flat that can exist there is ₹11.88 Cr. Its own Phase 1 and Phase 3
+     file the same rate and list ₹10.5 Cr, so the ₹2.8 Cr is the number
+     that is wrong, by a factor of four.
+
+   That matters because min_price_cr is what the /best-projects/ price
+   pages filter on, so the site was offering an ₹11.9 Cr project to someone
+   who asked for something under ₹3 Cr — on a site whose entire claim is
+   that the numbers are checked.
+
+   This is a SAFETY NET, not a correction. It cannot tell which of the
+   three figures is wrong, so it does not pretend to: it reports that they
+   cannot all be true, and the price pages decline to make a claim they
+   cannot stand behind. The project keeps its report and its place in the
+   catalogue, where a reader sees every number and can judge. The real fix
+   is upstream, in the pipeline. */
+export type PriceEnvelope = { floorCr: number; ceilCr: number; listedCr: number; credible: boolean };
+
+const parseAreaBand = (v: string | null): [number, number] | null => {
+  const m = /(\d{3,6})\s*[^\d]{1,6}(\d{3,6})/.exec((v ?? "").replace(/,/g, ""));
+  if (!m) return null;
+  const lo = Number(m[1]), hi = Number(m[2]);
+  return lo > 0 && hi >= lo ? [lo, hi] : null;
+};
+
+let envelopeCache: Record<string, PriceEnvelope> | undefined;
+
+/* Keyed by the internal slug. A project that files no rate or no area band
+   is ABSENT rather than false — twelve of them, and "we cannot check this"
+   is not the same claim as "this is wrong". Callers treat absent as fine.
+   The 5% tolerance is there because a listed price is usually the base and
+   a filed rate often carries charges; without it, two projects a nickel
+   outside their own envelope would be reported as contradictions. */
+export async function fetchPriceEnvelopes(): Promise<Record<string, PriceEnvelope>> {
+  if (envelopeCache !== undefined) return envelopeCache;
+  const [rows, ext, nameIds] = await Promise.all([fetchBacklogFull(), fetchExtendedDetails(), fetchBacklogNameIds()]);
+  const out: Record<string, PriceEnvelope> = {};
+  for (const r of rows ?? []) {
+    if (r.minPriceCr == null || r.minPriceCr <= 0) continue;
+    const id = ext?.[r.id] ? r.id : (r.altIds ?? []).find((a) => ext?.[a]) ?? nameIds?.[r.name];
+    const e = id ? ext?.[id] : undefined;
+    const rate = parseFiledBand(e?.priceRangeSqft ?? null);
+    const area = parseAreaBand(e?.superAreaRange ?? null);
+    if (!rate || !area) continue;
+    const floorCr = (rate[0] * area[0]) / 1e7;
+    const ceilCr = (rate[1] * area[1]) / 1e7;
+    out[r.slug] = {
+      floorCr, ceilCr, listedCr: r.minPriceCr,
+      credible: r.minPriceCr >= floorCr * 0.95 && r.minPriceCr <= ceilCr * 1.05,
+    };
+  }
+  const bad = Object.entries(out).filter(([, v]) => !v.credible);
+  console.log(`[supabase] price envelopes: ${Object.keys(out).length} checkable · ${bad.length} listed price(s) outside their own filed rate`);
+  for (const [slug, v] of bad) {
+    console.warn(`[supabase]   ${slug}: lists ₹${v.listedCr}Cr, filings allow ₹${v.floorCr.toFixed(2)}–${v.ceilCr.toFixed(2)}Cr`);
+  }
+  return (envelopeCache = out);
+}
+
 /* ── tracked-universe headline stats, computed from the live set ──
    Retires the hand-set "127 active projects / 6 micro-markets / ₹7K–38K"
    headline (and the site-wide ACTIVE_PROJECT_COUNT) to real numbers: the

@@ -28,7 +28,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { loadBuyerBrief, type BuyerBrief, type BriefProject } from "@/lib/buyerBrief";
 import { fitFor, rankByFit, verdictFor } from "@/lib/fit";
-import { projectHref } from "@/lib/projectHref";
+/* projectPath, not projectHref: next/link applies basePath itself, so a
+   href that already carries it comes out doubled — /Truth-Estate/Truth-
+   Estate/projects/… on any build with a non-empty base path. */
+import { projectPath } from "@/lib/projectHref";
 import { loadBuyData, saveBuyData, emptyBuyData } from "@/lib/journey";
 import { useJourney } from "@/components/journey/JourneyProvider";
 
@@ -253,7 +256,7 @@ function StateB({ brief, name, onEditBrief }: { brief: BuyerBrief; name?: string
               <p className="mt-2 max-w-[54ch] text-[0.86rem] font-light leading-relaxed text-[#1a1a1a]/55">
                 Worth knowing before you visit. The full read tells you whether that gap is negotiable.
               </p>
-              <Link href={projectHref(weakest.p)} className="mt-5 inline-block rounded-sm bg-[#1e6b45] px-6 py-3 text-[0.82rem] font-medium text-white transition-colors hover:bg-[#238c55]">
+              <Link href={projectPath(weakest.p)} className="mt-5 inline-block rounded-sm bg-[#1e6b45] px-6 py-3 text-[0.82rem] font-medium text-white transition-colors hover:bg-[#238c55]">
                 Open the read on {weakest.p.name} →
               </Link>
             </>
@@ -265,7 +268,7 @@ function StateB({ brief, name, onEditBrief }: { brief: BuyerBrief; name?: string
               <p className="mt-2 max-w-[54ch] text-[0.86rem] font-light leading-relaxed text-[#1a1a1a]/55">
                 ₹999 — about 0.01% of the ticket you&rsquo;re considering.
               </p>
-              <Link href={projectHref(best.p)} className="mt-5 inline-block rounded-sm bg-[#1e6b45] px-6 py-3 text-[0.82rem] font-medium text-white transition-colors hover:bg-[#238c55]">
+              <Link href={projectPath(best.p)} className="mt-5 inline-block rounded-sm bg-[#1e6b45] px-6 py-3 text-[0.82rem] font-medium text-white transition-colors hover:bg-[#238c55]">
                 Unlock the full read →
               </Link>
             </>
@@ -294,7 +297,7 @@ function FitTable({ ranked }: { ranked: ReturnType<typeof rankByFit> }) {
       <div className={`mt-3 overflow-hidden ${CARD}`}>
         <div className="divide-y divide-[#1a1a1a]/[0.06]">
           {ranked.map(({ p, fit }) => (
-            <Link key={p.slug} href={projectHref(p)} className="block px-5 py-5 transition-colors hover:bg-[#1a1a1a]/[0.015] md:px-7">
+            <Link key={p.slug} href={projectPath(p)} className="block px-5 py-5 transition-colors hover:bg-[#1a1a1a]/[0.015] md:px-7">
               <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
                 <div className="min-w-0 flex-1 basis-[13rem]">
                   <p className="truncate font-serif text-[1.08rem] leading-tight text-[#1a1a1a]">{p.name}</p>

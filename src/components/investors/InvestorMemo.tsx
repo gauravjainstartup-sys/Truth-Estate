@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Logo from "../Logo";
-import { basePath } from "@/lib/site";
+import { basePath, homeHref } from "@/lib/site";
 
 /* ════════════════════════════════════════════════════════════════
    INVESTOR DECK — six scroll-snap frames, sized for the room.
@@ -379,7 +379,7 @@ export default function InvestorMemo() {
 
       {/* chrome */}
       <div className="pointer-events-none fixed inset-x-0 top-0 z-40 flex items-center justify-between px-5 py-4 sm:px-8 print:hidden">
-        <a href={basePath} aria-label="Truth Estate — Home" className="pointer-events-auto"><Logo color={onDark ? "#F7F3EA" : "#1a1a1a"} className="h-6 w-auto sm:h-7" /></a>
+        <a href={homeHref} aria-label="Truth Estate — Home" className="pointer-events-auto"><Logo color={onDark ? "#F7F3EA" : "#1a1a1a"} className="h-6 w-auto sm:h-7" /></a>
         <span className="flex items-center gap-4">
           <span className={`font-mono text-[0.52rem] uppercase tracking-[0.2em] sm:text-[0.56rem] lg:text-[0.64rem] ${onDark ? "text-[#F7F3EA]/50" : "text-[#1a1a1a]/40"}`}>Private memorandum</span>
           <button onClick={toggleFs} aria-label={fs ? "Exit fullscreen" : "Present fullscreen"}

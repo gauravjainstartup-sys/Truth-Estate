@@ -49,7 +49,7 @@ import ReportExplore from "./ReportExplore";
 import ReportAlternatives from "./ReportAlternatives";
 import ReportFeedback from "./ReportFeedback";
 import ReportHomes from "./ReportHomes";
-import { basePath } from "@/lib/site";
+import { basePath, homeHref } from "@/lib/site";
 
 
 /* media paths are repo-relative for the flagship files; pipeline rows may
@@ -554,7 +554,7 @@ export default function ProjectProfile({
             </>
           ) : (
             <>
-              <a href={basePath} aria-label="Home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
+              <a href={homeHref} aria-label="Home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
               <SearchPalette className="ml-auto" />
               {/* This is the page behind the paywall, so "am I signed in"
                  and "why can I read this" are the same question. It had no

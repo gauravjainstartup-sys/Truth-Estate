@@ -117,7 +117,7 @@ export default function GmapLocationMap({ geo, projectName, slug }: { geo: Locat
               const km = kmBetween(geo.center.lat, geo.center.lng, lp.lat, lp.lng);
               const m = new AdvancedMarkerElement({ map, position: { lat: lp.lat, lng: lp.lng }, zIndex: d3 ? 800 : 500,
                 content: el(trackedPinHtml(lp.n, d3)) });
-              m.addListener("click", () => setSel({ kind: "tracked", name: lp.n, slug: lp.s, km, ts: lp.ts, m: lp.m, d3, exact }));
+              m.addListener("click", () => setSel({ kind: "tracked", name: lp.n, slug: lp.s, seoSlug: lp.q, km, ts: lp.ts, m: lp.m, d3, exact }));
               hoverRise(m, d3 ? 800 : 500);
               liveMarkersRef.current.push(m);
             }

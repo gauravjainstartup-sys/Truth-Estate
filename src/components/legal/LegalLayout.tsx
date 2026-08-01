@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, type ReactNode } from "react";
 import Logo from "../Logo";
-import { basePath } from "@/lib/site";
+import { basePath, homeHref } from "@/lib/site";
 
 
 /* ── Shared style tokens ── */
@@ -129,12 +129,12 @@ export default function LegalLayout({
       <nav className="sticky top-0 z-40 border-b border-[#1a1a1a]/6 bg-[#F5F0E8]/95 backdrop-blur-sm print:static print:border-none">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 md:px-10">
           <div className="flex min-w-0 items-center gap-3">
-            <a href={basePath} aria-label="Home" className="shrink-0">
+            <a href={homeHref} aria-label="Home" className="shrink-0">
               <Logo color="#1a1a1a" className="h-7 w-auto md:h-8" />
             </a>
             <span className="hidden text-[#1a1a1a]/12 sm:inline">|</span>
             <div className="hidden items-center gap-1.5 text-[0.72rem] font-light text-[#1a1a1a]/30 sm:flex">
-              <a href={basePath} className="transition-colors hover:text-[#1a1a1a]/55">
+              <a href={homeHref} className="transition-colors hover:text-[#1a1a1a]/55">
                 Home
               </a>
               <span className="text-[#1a1a1a]/15">/</span>

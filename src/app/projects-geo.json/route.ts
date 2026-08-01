@@ -7,7 +7,12 @@ import { TOWER_INTEL, tiSlug } from "@/lib/projects";
 
 export const dynamic = "force-static";
 
-type G = { n: string; s: string; lat: number; lng: number; ts?: number; m?: string; pv?: string; d3?: number };
+/* `q` is the SEO slug — the report's public address.
+   Without it the map's popup had only the internal slug, so projectHref()
+   took its legacy fallback and both CTAs pointed at /intelligence/projects/
+   <slug>: a noindex redirect stub, one extra hop, and no link equity. The
+   feed is the only thing the map has, so the address has to travel in it. */
+type G = { n: string; s: string; q?: string; lat: number; lng: number; ts?: number; m?: string; pv?: string; d3?: number };
 
 export async function GET() {
   // 3D-enabled = has a Sun & Vastu advisor in the registry; drives the gold
@@ -22,6 +27,7 @@ export async function GET() {
     out.push({
       n: r.name,
       s: r.slug,
+      ...(r.seoSlug ? { q: r.seoSlug } : {}),
       lat: r.latitude,
       lng: r.longitude,
       ...(r.truthScore != null ? { ts: r.truthScore } : {}),

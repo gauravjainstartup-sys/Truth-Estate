@@ -22,7 +22,11 @@ export const CAT: Record<GeoCat, { label: string; color: string; glyph: string }
 };
 export const CAT_ORDER: GeoCat[] = ["schools", "offices", "hospitals", "retail", "projects"];
 
-export type LiveProject = { n: string; s: string; lat: number; lng: number; ts?: number; m?: string; pv?: string; d3?: number };
+/* Mirrors projects-geo.json exactly. `q` is the report's public address;
+   `s` stays the internal slug because that is what the 3D registry and the
+   distance maths key on. Optional, so a feed cached from an older deploy
+   still parses and simply falls back to the legacy address. */
+export type LiveProject = { n: string; s: string; q?: string; lat: number; lng: number; ts?: number; m?: string; pv?: string; d3?: number };
 
 /* ── glyph library (24-box stroke icons, inherit currentColor) ─────── */
 const GLYPHS: Record<string, string> = {
@@ -82,7 +86,7 @@ export const kmBetween = (aLat: number, aLng: number, bLat: number, bLng: number
 export type MapSel =
   | { kind: "subject"; approx: boolean }
   | { kind: "poi"; name: string; sub?: string; cat: GeoCat; km: number; rating?: number }
-  | { kind: "tracked"; name: string; slug: string; km: number; ts?: number; m?: string; d3: boolean; exact: boolean };
+  | { kind: "tracked"; name: string; slug: string; seoSlug?: string | null; km: number; ts?: number; m?: string; d3: boolean; exact: boolean };
 
 export function MapCard({ sel, projectName, onClose }: { sel: MapSel; projectName: string; onClose: () => void }) {
   return (
@@ -127,13 +131,13 @@ export function MapCard({ sel, projectName, onClose }: { sel: MapSel; projectNam
           </div>
           <div className="mt-3 flex gap-2">
             {sel.d3 && (
-              <a href={`${projectHref(sel)}/#tower-intel`}
+              <a href={`${projectHref(sel)}#tower-intel`}
                 className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-[#B29668] bg-[#0B1F1A] px-3 py-2.5 text-[0.72rem] font-bold text-white transition-opacity hover:opacity-90">
                 <GlyphIcon name="sun" className="h-3.5 w-3.5 text-[#B29668]" />
                 Sun &amp; Vastu 3D
               </a>
             )}
-            <a href={`${basePath}/intelligence/projects/${sel.slug}/`}
+            <a href={projectHref(sel)}
               className={`inline-flex items-center justify-center rounded-xl border border-[#1a1a1a]/15 px-3 py-2.5 text-[0.72rem] font-semibold text-[#1a1a1a] transition-colors hover:border-[#B29668] ${sel.d3 ? "flex-none" : "flex-1"}`}>
               {sel.d3 ? "Report" : "Open report →"}
             </a>

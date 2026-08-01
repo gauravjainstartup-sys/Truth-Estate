@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
-import { basePath } from "@/lib/site";
+import { basePath, homeHref } from "@/lib/site";
 import {
   COMPARE_OPTIONS,
   POPULAR_COMPARISONS,
@@ -64,7 +64,7 @@ export default function CompareIndex({ projectOptions }: { projectOptions: Proje
     <div className="min-h-svh bg-[#F5F0E8] text-[#1a1a1a]">
       <header className="sticky top-0 z-40 border-b border-[#1a1a1a]/6 bg-[#F5F0E8]/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-5xl items-center gap-4 px-6 py-4 md:px-10">
-          <a href={basePath} aria-label="Home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
+          <a href={homeHref} aria-label="Home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
           <button onClick={() => open()} className="ml-auto rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.74rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] md:px-5">
             Request Independent Advice
           </button>

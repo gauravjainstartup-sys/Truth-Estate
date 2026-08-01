@@ -3,7 +3,7 @@
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import { PRIMARY_CTA } from "@/lib/journey";
-import { basePath } from "@/lib/site";
+import { basePath, homeHref } from "@/lib/site";
 
 
 /* ── Beliefs data ── */
@@ -118,7 +118,7 @@ export default function About() {
       {/* ═══ HERO ═══ */}
       <section className="relative flex min-h-svh flex-col bg-[#0a0a0a]">
         <nav className="px-6 pt-10 md:px-12 md:pt-14">
-          <a href={basePath}>
+          <a href={homeHref}>
             <Logo className="h-9 w-auto opacity-75 md:h-[3rem]" />
           </a>
         </nav>

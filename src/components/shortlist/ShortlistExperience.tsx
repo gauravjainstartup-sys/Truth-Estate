@@ -9,7 +9,7 @@ import { loadBuyData, hasPreferences, deriveDNA } from "@/lib/journey";
 import { rankProjectsIntel } from "@/lib/shortlist";
 import { useMatchCatalog, useMatchMarket } from "@/lib/useMatchCatalog";
 import { useAiRerank } from "@/lib/useAiRerank";
-import { basePath } from "@/lib/site";
+import { basePath, homeHref } from "@/lib/site";
 
 /* ════════════════════════════════════════════════════════════════
    THE STANDALONE /shortlist ROUTE — the direct-land entry.
@@ -64,7 +64,7 @@ export default function ShortlistExperience() {
       {/* ── Header — identity chip once verified, otherwise a quiet sign-in ── */}
       <header className="sticky top-0 z-40 border-b border-[#1a1a1a]/[0.06] bg-[#F5F0E8]/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-5xl items-center gap-4 px-6 py-4 md:px-10">
-          <a href={basePath} aria-label="Truth Estate — home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
+          <a href={homeHref} aria-label="Truth Estate — home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
           {mounted && verified && (
             <span className="ml-auto inline-flex items-center gap-2 rounded-full border border-[#1e6b45]/35 bg-[#1e6b45]/[0.06] px-3.5 py-2 font-mono text-[0.68rem] tracking-[0.02em] text-[#1e6b45]">
               <span className="h-1.5 w-1.5 rounded-full bg-[#1e6b45]" aria-hidden /> {maskContact(verified)}

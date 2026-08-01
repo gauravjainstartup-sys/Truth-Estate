@@ -5,7 +5,7 @@ import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import { PRIMARY_CTA, PACKAGES, type Package } from "@/lib/journey";
-import { basePath } from "@/lib/site";
+import { basePath, homeHref } from "@/lib/site";
 import {
   CONSULT_FEE,
   CONSULT_FEE_ORIGINAL,
@@ -178,7 +178,7 @@ export default function Pricing() {
       {/* ═══ HERO ═══ */}
       <section className="relative flex min-h-svh flex-col bg-[#0a0a0a]">
         <nav className="px-6 pt-10 md:px-12 md:pt-14">
-          <a href={basePath}>
+          <a href={homeHref}>
             <Logo className="h-9 w-auto opacity-75 md:h-[3rem]" />
           </a>
         </nav>

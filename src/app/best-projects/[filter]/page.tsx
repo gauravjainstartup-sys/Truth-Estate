@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ProjectsIndex from "@/components/intelligence/ProjectsIndex";
 import { BEST_PROJECTS, bestProjectsBySlug } from "@/lib/bestProjects";
-import { fetchBacklogFull, fetchCorridorPsf, fetchTrackedStats } from "@/lib/supabase";
+import { fetchBacklogFull, fetchCorridorPsf, fetchPriceEnvelopes, fetchTrackedStats } from "@/lib/supabase";
 import { liveProjectIntel } from "@/lib/liveReport";
 import type { ProjectIntel } from "@/lib/projects";
 
@@ -53,18 +53,49 @@ export default async function Page({ params }: { params: Promise<{ filter: strin
   const page = bestProjectsBySlug(filter);
   if (!page) notFound();
 
-  const [rows, stats, corridorPsf] = await Promise.all([
+  const [rows, stats, corridorPsf, envelopes] = await Promise.all([
     fetchBacklogFull(),
     fetchTrackedStats(),
     fetchCorridorPsf(),
+    fetchPriceEnvelopes(),
   ]);
-  const matched = (rows ?? []).filter(page.match);
+  let matched = (rows ?? []).filter(page.match);
+
+  /* THE TEST IS WHETHER THIS PAGE'S CLAIM SURVIVES, not whether the data
+     is tidy. Seven projects list a price their own filed rate and area
+     cannot produce, but for most of them it changes nothing: Ashiana
+     Amarah Phase 2 lists ₹1.9 Cr against a floor of ₹2.01 Cr, and both
+     are under ₹3 Cr, so "under ₹3 Cr" is true either way and dropping it
+     would hide a project that belongs there. Only Delphine Central Park
+     Estates Phase 2 — ₹2.8 Cr listed, ₹11.88 Cr floor — actually breaks
+     the claim.
+
+     So the page's own predicate is re-run against the most conservative
+     reading of the project's filings, the cheapest flat that can exist
+     there, and the project stays only if the claim holds under both. A
+     project we cannot check is kept: absent filings are not evidence. */
+  let dropped: string[] = [];
+  if (page.pricePage) {
+    const before = matched;
+    matched = before.filter((r) => {
+      const env = envelopes[r.slug];
+      return !env || env.credible || page.match({ ...r, minPriceCr: env.floorCr });
+    });
+    dropped = before.filter((r) => !matched.includes(r)).map((r) => {
+      const env = envelopes[r.slug];
+      return `${r.slug} (lists ₹${r.minPriceCr}Cr, cheapest possible ₹${env.floorCr.toFixed(2)}Cr)`;
+    });
+  }
   const projects: ProjectIntel[] = matched.map((r) => liveProjectIntel(r, null, null, corridorPsf));
 
   /* Say what came back. A filter that matches nothing is a data problem,
      and finding out from a silently empty page after it has shipped is
-     how a landing page stays empty for a month. */
+     how a landing page stays empty for a month. A silent DROP is worse
+     still, so those are named. */
   console.log(`[urls] /best-projects/${page.slug}: ${projects.length} of ${(rows ?? []).length} project(s)`);
+  if (dropped.length) {
+    console.warn(`[urls]   withheld from this price page (listed price contradicts its own filed rate): ${dropped.join(", ")}`);
+  }
 
   return (
     <ProjectsIndex
