@@ -437,7 +437,15 @@ try {
      Baked same-origin, keyed by project id under manifest.__satellite, and
      cached deterministically so Google is hit once per centre. Fail-soft. */
   try {
-    const GKEY = process.env.NEXT_PUBLIC_GMAPS_KEY || process.env.GMAPS_KEY || "";
+    /* GMAPS_SERVER_KEY FIRST, and the reason is that this call is not a
+       browser call. The key that serves the location maps is locked to
+       website referrers, which is exactly right for a key sitting in a
+       client bundle — and exactly why it cannot sign this request, which
+       leaves a CI runner with no Referer header at all and comes back 403.
+       A key restricted by API rather than referrer is the supported answer.
+       Falls through to the browser key when there is no server key, because
+       an unrestricted key works for both and that is where this started. */
+    const GKEY = process.env.GMAPS_SERVER_KEY || process.env.NEXT_PUBLIC_GMAPS_KEY || process.env.GMAPS_KEY || "";
     const SAT_ZOOM = 17; // site-level framing; the cache key tracks this so a change re-bakes
     const fix = process.env.SUPABASE_FIXTURES;
     let geoRows = [];
@@ -465,6 +473,17 @@ try {
       }
       if (baked) manifest.__satellite = sat;
       console.log(`[materialize] satellite: ${baked} hero(es) baked · ${suspect} suspect-skipped · ${skipped} miss`);
+      /* "0 baked, 97 miss" and "0 baked, 0 candidates" print almost the same
+         and mean entirely different things. Say which, and say what to do —
+         a bare http-403 reads as a network blip when it is a key that was
+         locked down and is now being asked to sign a request it cannot. */
+      if (!baked && skipped) {
+        console.warn(
+          `[materialize] satellite: every request failed. If those are http-403, the key is ` +
+          `referrer-restricted and this call has no referrer — set GMAPS_SERVER_KEY to a key ` +
+          `restricted by API instead. Heroes fall back to gradient for this build.`,
+        );
+      }
     }
   } catch (e) { console.warn(`[materialize] satellite pass skipped (${e instanceof Error ? e.message : "error"}) — heroes stay gradient`); }
 

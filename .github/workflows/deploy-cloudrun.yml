@@ -89,11 +89,43 @@ jobs:
           key: supabase-snapshot-${{ github.run_id }}
           restore-keys: supabase-snapshot-
 
+      - name: Refuse to build production without the Maps key
+        # THE SECRET IS CALLED GMAPS_KEY. This workflow asked for
+        # NEXT_PUBLIC_GMAPS_KEY, which does not exist, and GitHub resolves a
+        # missing secret to an empty string without a word of complaint. The
+        # build then took the every-fallback-worked path: no key means
+        # materialize-media skips the satellite bake and every project hero
+        # renders as a plain gradient, and it means HAS_GMAPS is false at
+        # compile time so all 97 location maps ship as OpenStreetMap. Both
+        # degradations are deliberate and both are silent — the build was
+        # green, the smoke test passed, and the site went live visibly worse
+        # than the Pages one with nothing anywhere saying why.
+        #
+        # An absent key is a configuration mistake, never an intent, so it
+        # stops the run here instead of shipping the consolation prize.
+        env:
+          GMAPS: ${{ secrets.GMAPS_KEY || secrets.NEXT_PUBLIC_GMAPS_KEY }}
+        run: |
+          if [ -z "$GMAPS" ]; then
+            echo "::error::Neither GMAPS_KEY nor NEXT_PUBLIC_GMAPS_KEY is set on this repository."
+            echo "Production would ship gradient heroes and OpenStreetMap fallbacks."
+            echo "Settings → Secrets and variables → Actions → New repository secret."
+            exit 1
+          fi
+          echo "Maps key present (${#GMAPS} chars)."
+
       - name: Build the production export
         env:
           NEXT_PUBLIC_BASE_PATH: ""
           NEXT_PUBLIC_ORIGIN: https://www.truthestate.in
-          NEXT_PUBLIC_GMAPS_KEY: ${{ secrets.NEXT_PUBLIC_GMAPS_KEY }}
+          # Either name, because deploy.yml has always used the short one.
+          NEXT_PUBLIC_GMAPS_KEY: ${{ secrets.GMAPS_KEY || secrets.NEXT_PUBLIC_GMAPS_KEY }}
+          # Static Maps runs server-side, from this runner, with no Referer
+          # header — so a browser key locked to website referrers is rejected
+          # for the satellite bake even while it works perfectly in the page.
+          # Set GMAPS_SERVER_KEY to a second key restricted by API instead of
+          # referrer and the bake uses it; leave it unset and nothing changes.
+          GMAPS_SERVER_KEY: ${{ secrets.GMAPS_SERVER_KEY }}
           SNAPSHOT_REFRESH: ${{ inputs.refresh_snapshot && '1' || '0' }}
           REQUIRE_SNAPSHOT: "1"
           # READ THE SNAPSHOT THE PREBUILD JUST DOWNLOADED.
@@ -134,6 +166,41 @@ jobs:
             exit 1
           fi
           echo "Snapshot honoured: $fixtures fixture read(s), no live per-page fetching."
+
+      - name: Report what the satellite bake actually managed
+        # Warns rather than fails, and the distinction is deliberate. A
+        # missing key is a mistake with a thirty-second fix, so the step
+        # above stops the run. A key that Google refuses is a different
+        # animal: the likeliest cause is a referrer restriction, which is
+        # correct security applied to a request that legitimately has no
+        # referrer, and the remedy is a second key — not something to
+        # discover mid-launch with the deploy held hostage.
+        #
+        # It goes to the step summary, not just the log. The last run said
+        # "no GMAPS key set" in line 4,112 of a green build and the first
+        # anyone knew of it was a founder looking at a gradient where a
+        # satellite should have been.
+        run: |
+          line=$(grep -m1 "\[materialize\] satellite:" "$RUNNER_TEMP/build.log" || echo "(no satellite line in the build log)")
+          echo "$line"
+          if echo "$line" | grep -qE "hero\(es\) baked"; then
+            baked=$(echo "$line" | sed -n 's/.*satellite: \([0-9]*\) hero.*/\1/p')
+            echo "🛰️  Satellite heroes baked: **$baked**" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::No satellite heroes were baked — project heroes ship as gradients."
+            {
+              echo "### 🛰️ No satellite heroes in this build"
+              echo ""
+              echo '```'
+              echo "$line"
+              grep -m3 "\[materialize\] satellite " "$RUNNER_TEMP/build.log" || true
+              echo '```'
+              echo ""
+              echo "\`http-403\` here means Google refused the key. Static Maps is called"
+              echo "from the runner with no Referer, so a referrer-restricted key cannot"
+              echo "work — add a second key restricted by API and set \`GMAPS_SERVER_KEY\`."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Refuse to ship a build addressed to the preview
         # The single failure mode that would take the live domain down and
