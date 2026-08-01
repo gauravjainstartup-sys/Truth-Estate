@@ -5,6 +5,7 @@ import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import { PRIMARY_CTA, PACKAGES, type Package } from "@/lib/journey";
+import { basePath } from "@/lib/site";
 import {
   CONSULT_FEE,
   CONSULT_FEE_ORIGINAL,
@@ -13,7 +14,6 @@ import {
   inr,
 } from "@/lib/consultation";
 
-const basePath = "/Truth-Estate";
 
 /* The included-features matrix for a report/3D package card — ₹999 excludes
    the 3D (a dash), ₹1,499 adds it, ₹9,999 opens the whole site. */

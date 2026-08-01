@@ -8,8 +8,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 
 type P = { n: string; s: string; m?: string; d?: string; ts?: number };
 type D = { n: string; s: string; c?: number };

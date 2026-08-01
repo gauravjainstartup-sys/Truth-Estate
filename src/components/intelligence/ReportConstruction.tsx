@@ -1,11 +1,11 @@
 import { deliveryOutlook, type ProjectIntel } from "@/lib/projects";
 import RenderVsReality from "./RenderVsReality";
+import { basePath } from "@/lib/site";
 
 /* Chapter II · Pillar II — Construction & Sales. Reads the QPR: build % vs
    the RERA-due %, absorption, and a delivery forecast (predicted vs RERA,
    delay probability) — in the warm report language, not the old dark card. */
 
-const basePath = "/Truth-Estate";
 
 /* a proof link: an absolute R2/CDN URL as-is, else same-origin under basePath. */
 function pdfHref(u: string): string {

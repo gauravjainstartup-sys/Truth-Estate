@@ -1,6 +1,7 @@
 "use client";
 
 import LegalLayout, { S, Bullet, Todo } from "./LegalLayout";
+import { basePath } from "@/lib/site";
 
 const SECTIONS = [
   { id: "acceptance", title: "Acceptance of Terms" },
@@ -127,7 +128,7 @@ export default function TermsContent() {
           </ul>
           <p>
             TruthGuide does not constitute professional advice. See our{" "}
-            <a href="/Truth-Estate/disclaimer" className={S.link}>
+            <a href={`${basePath}/disclaimer`} className={S.link}>
               Disclaimer
             </a>{" "}
             for important limitations.
@@ -167,7 +168,7 @@ export default function TermsContent() {
           <p>
             While we provide research-backed analysis and recommendations, all
             advisory output is subject to the limitations described in our{" "}
-            <a href="/Truth-Estate/disclaimer" className={S.link}>
+            <a href={`${basePath}/disclaimer`} className={S.link}>
               Disclaimer
             </a>
             . We strongly encourage you to supplement our analysis with
@@ -277,7 +278,7 @@ export default function TermsContent() {
           <p>
             Our use of third-party data in our research is subject to the
             accuracy limitations described in our{" "}
-            <a href="/Truth-Estate/disclaimer" className={S.link}>
+            <a href={`${basePath}/disclaimer`} className={S.link}>
               Disclaimer
             </a>
             .
@@ -323,7 +324,7 @@ export default function TermsContent() {
             or completely secure, or that any information provided will be
             accurate or complete. For a detailed explanation of the limitations
             of our information, please refer to our full{" "}
-            <a href="/Truth-Estate/disclaimer" className={S.link}>
+            <a href={`${basePath}/disclaimer`} className={S.link}>
               Disclaimer
             </a>
             .

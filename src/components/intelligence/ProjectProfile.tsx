@@ -49,8 +49,8 @@ import ReportExplore from "./ReportExplore";
 import ReportAlternatives from "./ReportAlternatives";
 import ReportFeedback from "./ReportFeedback";
 import ReportHomes from "./ReportHomes";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 
 /* media paths are repo-relative for the flagship files; pipeline rows may
    carry absolute (storage) URLs — pass those through untouched */

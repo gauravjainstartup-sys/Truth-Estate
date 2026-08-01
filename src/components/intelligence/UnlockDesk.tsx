@@ -19,8 +19,8 @@
    ──────────────────────────────────────────────────────────────────────── */
 
 import { READ_FROM_INR } from "@/lib/journey";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
 const INCLUDED: { t: string; bonus?: boolean }[] = [

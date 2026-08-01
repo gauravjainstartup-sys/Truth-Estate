@@ -5,6 +5,7 @@ import OtpDigits from "@/components/auth/OtpDigits";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Logo from "../Logo";
+import { basePath } from "@/lib/site";
 import {
   CONSULT_DAYPARTS,
   CONSULT_DAYS,
@@ -37,7 +38,6 @@ import {
   type Verified,
 } from "@/lib/shortlistAuth";
 
-const basePath = "/Truth-Estate";
 
 type Step = "intro" | "payment" | "confirm" | "office";
 

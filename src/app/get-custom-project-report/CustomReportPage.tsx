@@ -6,6 +6,7 @@ import OtpDigits from "@/components/auth/OtpDigits";
 import { saveLead, emptyBuyData, type BuyData } from "@/lib/journey";
 import { pushDemand } from "@/lib/heroSearch";
 import { sendOtp, verifyOtp, maskContact, OTP_LENGTH, type Verified } from "@/lib/shortlistAuth";
+import { basePath } from "@/lib/site";
 
 /* ════════════════════════════════════════════════════════════════
    GET A CUSTOM PROJECT REPORT — the destination for the homepage
@@ -213,7 +214,7 @@ export default function CustomReportPage() {
     <main className="min-h-svh bg-[#F5F0E8] text-[#1a1a1a]">
       <header className="border-b border-[#1a1a1a]/[0.07]">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 md:px-8">
-          <a href="/Truth-Estate" aria-label="Truth Estate — home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
+          <a href={`${basePath}`} aria-label="Truth Estate — home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
           <span className="font-mono text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#9a7a2e]">The Independent Buyer&rsquo;s Office</span>
         </div>
       </header>
@@ -504,7 +505,7 @@ function Success({ project, contact }: { project: string; contact: string }) {
         ))}
       </div>
 
-      <a href="/Truth-Estate" className="mt-9 inline-block font-mono text-[0.74rem] tracking-[0.02em] text-[#1e6b45] underline underline-offset-4 hover:opacity-70">
+      <a href={`${basePath}`} className="mt-9 inline-block font-mono text-[0.74rem] tracking-[0.02em] text-[#1e6b45] underline underline-offset-4 hover:opacity-70">
         ← Back to Truth Estate
       </a>
     </div>

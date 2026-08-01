@@ -6,8 +6,8 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useJourney } from "./journey/JourneyProvider";
 import { useConsultation } from "./consultation/ConsultationProvider";
 import { PRIMARY_CTA } from "@/lib/journey";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 
 /* ── Shared reveal: any [data-r] child fades up on intersect ── */
 function useReveal(ref: React.RefObject<HTMLElement | null>, threshold = 0.25) {
@@ -732,7 +732,7 @@ function ExperienceIntelligence() {
 
           <div className="mt-10">
             <a
-              href="/Truth-Estate/intelligence"
+              href={`${basePath}/intelligence`}
               className="group/btn inline-flex items-center gap-2 text-[0.82rem] font-light tracking-[0.14em] text-[#1a1a1a]/65 transition-colors duration-400 hover:text-[#1a1a1a]"
             >
               Explore Intelligence
@@ -799,7 +799,7 @@ function ExperienceIntelligence() {
 
           <div className="mt-10">
             <a
-              href="/Truth-Estate/sun-vastu"
+              href={`${basePath}/sun-vastu`}
               className="group/btn inline-flex items-center gap-2 text-[0.82rem] font-light tracking-[0.14em] text-[#1a1a1a]/65 transition-colors duration-400 hover:text-[#1a1a1a]"
             >
               Explore Sun &amp; Vastu 3D

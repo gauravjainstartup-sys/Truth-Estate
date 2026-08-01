@@ -1,4 +1,5 @@
 import type { ProjectIntel } from "@/lib/projects";
+import { basePath } from "@/lib/site";
 
 /* The one project-option card, used everywhere we surface projects as a
    comparable set — the report's "If not this, then what?", the journey
@@ -8,7 +9,6 @@ import type { ProjectIntel } from "@/lib/projects";
    address, ticket, and the % fit when a brief is set — gathered at the base.
    Minimal, near-monochrome, one green accent. */
 
-const basePath = "/Truth-Estate";
 
 /* verdict as coloured text — green for a buy, gold for a hold. */
 const recoText = (reco: string) =>

@@ -4,13 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { PROJECT_INTEL, alternativesIn, type ProjectIntel } from "@/lib/projects";
 import { loadBuyData, matchScoreFor, type BuyData } from "@/lib/journey";
 import ProjectOptionCard from "./ProjectOptionCard";
+import { basePath } from "@/lib/site";
 
 /* Chapter V — if not this, then what. The strongest alternatives as the
    shared project-option card, ranked to the reader's brief when they've set
    one, then a "widen the lens" row to the developer / corridor / compare.
    Every card is a real report link — the evidence layer never breaks. */
 
-const basePath = "/Truth-Estate";
 
 export default function ReportExplore({ p, pool: live, embedded, onSelect }: { p: ProjectIntel; pool?: ProjectIntel[]; embedded?: boolean; onSelect?: (name: string) => void }) {
   const [buy, setBuy] = useState<BuyData | null>(null);

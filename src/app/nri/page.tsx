@@ -3,6 +3,10 @@ import NRIDesk from "@/components/nri/NRIDesk";
 import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
+  /* Without this the route inherits metadataBase and Next emits the bare
+     ROOT url as the canonical — telling Google this page is a duplicate of
+     the home page. 25 pages in the sitemap were doing exactly that. */
+  alternates: { canonical: "/nri" },
   title: "The NRI Desk — Buy Property in India from Abroad",
   description:
     "Independent, forensic property advice for NRIs and OCIs buying in India from the UK, USA, Canada, UAE, Singapore and Australia. Your eyes on the ground: due diligence, site visits, negotiation, FEMA, TDS, repatriation and Power of Attorney — represented only by you.",

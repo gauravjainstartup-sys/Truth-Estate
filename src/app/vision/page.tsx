@@ -8,6 +8,10 @@ import TruthGuidePreview from "@/components/vision/TruthGuidePreview";
 import TrustClose from "@/components/vision/TrustClose";
 
 export const metadata: Metadata = {
+  /* Without this the route inherits metadataBase and Next emits the bare
+     ROOT url as the canonical — telling Google this page is a duplicate of
+     the home page. 25 pages in the sitemap were doing exactly that. */
+  alternates: { canonical: "/vision" },
   title: "Truth Estate — Independent Real Estate Intelligence",
   description:
     "Bloomberg-grade intelligence and independent advisory for high-value property decisions in India. Proof, not promises.",

@@ -6,8 +6,8 @@ import { useJourney } from "../journey/JourneyProvider";
 import { GURUGRAM_OVERVIEW, fmtPsf } from "@/lib/markets";
 import type { MarketCard } from "@/lib/marketsLive";
 import type { TrackedOverview } from "@/lib/supabase";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 
 /* The headline stats, live from the tracked set where available (fallback to the
    curated overview). Keeps the labels; swaps the hand-set numbers for real ones. */

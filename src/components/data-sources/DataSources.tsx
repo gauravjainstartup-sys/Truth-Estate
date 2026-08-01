@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import { useConsultation } from "../consultation/ConsultationProvider";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 
 /* ── Table of contents ── */
 const CONTENTS: [string, string][] = [

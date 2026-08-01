@@ -13,8 +13,8 @@
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import { useConsultation } from "../consultation/ConsultationProvider";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 
 const GEOS: { place: string; note: string }[] = [
   { place: "United Kingdom", note: "Your mornings are our evenings — we work to your clock. UK–India DTAA aware." },

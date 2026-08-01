@@ -4,8 +4,8 @@ import Logo from "./Logo";
 import { useJourney } from "./journey/JourneyProvider";
 import { useConsultation } from "./consultation/ConsultationProvider";
 import { clearAllDemoData } from "@/lib/journey";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 
 /* ── Column definitions ── */
 const columns: {

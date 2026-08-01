@@ -3,6 +3,10 @@ import DevelopersIndex from "@/components/intelligence/DevelopersIndex";
 import { fetchDevelopersOverview } from "@/lib/supabase";
 
 export const metadata: Metadata = {
+  /* Without this the route inherits metadataBase and Next emits the bare
+     ROOT url as the canonical — telling Google this page is a duplicate of
+     the home page. 25 pages in the sitemap were doing exactly that. */
+  alternates: { canonical: "/intelligence/developers" },
   title: "Developer Intelligence",
   description:
     "Independent developer dossiers for Gurugram real estate — track record, delivery performance and financial health. No paid rankings.",

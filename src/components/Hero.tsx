@@ -20,8 +20,8 @@ import HeroSearch from "./HeroSearch";
 import { useJourney } from "./journey/JourneyProvider";
 import { AUTH_EVENT, isSignedIn, loadAccount } from "@/lib/journey";
 import type { OmniIndex } from "@/lib/omni";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 const IMG = `${basePath}/images`;
 
 /* ── header icons — simple line marks, sized by the caller ── */

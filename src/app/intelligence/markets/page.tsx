@@ -4,6 +4,10 @@ import { fetchTrackedOverview } from "@/lib/supabase";
 import { marketCards, uncoveredMarkets } from "@/lib/marketsLive";
 
 export const metadata: Metadata = {
+  /* Without this the route inherits metadataBase and Next emits the bare
+     ROOT url as the canonical — telling Google this page is a duplicate of
+     the home page. 25 pages in the sitemap were doing exactly that. */
+  alternates: { canonical: "/intelligence/markets" },
   title: "Location Intelligence",
   description:
     "Independent location intelligence for Gurugram real estate — every micro-market mapped, with project counts, price bands and outlook. No paid rankings.",

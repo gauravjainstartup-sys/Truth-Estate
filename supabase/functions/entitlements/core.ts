@@ -70,6 +70,46 @@ const ALL_ACCESS_PLANS = new Set(["all-access", "all", "unlimited"]);
    are {projectId, projectName, projectSlug, unlockedAt}; one also carries
    {amountPaid, paymentId}. A bare string is handled too — the column is
    text[], so nothing guarantees the JSON. */
+/* A grant carries THREE keys to the same project, and reading only the
+   weakest one loses real customers.
+
+   Measured against production's 111 grants and the 97 live rows:
+   projectName alone resolves 53 of 57 distinct grants. The four it drops
+   are not junk — every one is recoverable from a field already sitting in
+   the same object:
+
+     projectId "d9c43f91-…"   → Signature Global Tonino Lamborghini
+        Residences, whose grant records the name as "Tonino Lambhorgini
+        Residences" — truncated at the front and misspelt in the middle.
+     projectId "37f9b22b-…"   → DLF The Arbour, on a grant whose name and
+        slug fields were both written as the bare UUID.
+     projectSlug "gurugram-real-estate-whiteland-blissville-phase-2-…"
+        and "…-dlf-the-arbour-…" → valid SEO slugs on grants whose
+        projectName was overwritten with the slug.
+
+   So resolution goes strongest key first: the database id, then the SEO
+   slug, then the name. A name is a label somebody typed; an id is a
+   foreign key. Ordering them the other way round is what put four paying
+   customers in front of a paywall on reports they own. */
+export type Catalogue = {
+  /* backlog id → internal slug */
+  byId?: Record<string, string>;
+  /* SEO slug → internal slug */
+  bySeoSlug?: Record<string, string>;
+};
+
+function grantKeys(entry: unknown): { id: string | null; seoSlug: string | null } {
+  const o = (typeof entry === "string" ? safeParse(entry) : entry) as
+    | { projectId?: unknown; projectSlug?: unknown }
+    | null;
+  const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
+  return { id: str(o?.projectId), seoSlug: str(o?.projectSlug) };
+}
+
+function safeParse(s: string): unknown {
+  try { return JSON.parse(s); } catch { return null; }
+}
+
 function nameFromGrant(entry: unknown): { name: string | null; raw: string } {
   const raw = typeof entry === "string" ? entry : JSON.stringify(entry ?? "");
   if (typeof entry !== "string") {
@@ -102,7 +142,11 @@ function looksLikeProjectName(s: string): boolean {
   return /^[\p{L}\p{N}][\p{L}\p{N} .,'&()/-]*$/u.test(t);
 }
 
-export function entitlementsFrom(profile: ProfileRow | null, payments: PaymentRow[]): Entitlements {
+export function entitlementsFrom(
+  profile: ProfileRow | null,
+  payments: PaymentRow[],
+  catalogue: Catalogue = {},
+): Entitlements {
   const unlocked = new Set<string>();
   const unmapped: string[] = [];
   let grants = 0;
@@ -110,7 +154,15 @@ export function entitlementsFrom(profile: ProfileRow | null, payments: PaymentRo
   const list = Array.isArray(profile?.unlocked_reports) ? profile!.unlocked_reports : [];
   for (const entry of list) {
     const { name, raw } = nameFromGrant(entry);
-    const slug = name ? slugify(name) : "";
+    const { id, seoSlug: seo } = grantKeys(entry);
+    /* id → seo slug → name. See Catalogue above for the four production
+       grants that only the first two keys can rescue. Without a catalogue
+       (the offline test's default) this degrades to the old name-only
+       behaviour rather than failing. */
+    const slug =
+      (id && catalogue.byId?.[id]) ||
+      (seo && catalogue.bySeoSlug?.[seo]) ||
+      (name ? slugify(name) : "");
     if (slug) { unlocked.add(slug); grants++; }
     else unmapped.push(raw.slice(0, 200));
   }

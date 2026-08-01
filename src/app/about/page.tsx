@@ -3,6 +3,10 @@ import About from "@/components/about/About";
 import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
+  /* Without this the route inherits metadataBase and Next emits the bare
+     ROOT url as the canonical — telling Google this page is a duplicate of
+     the home page. 25 pages in the sitemap were doing exactly that. */
+  alternates: { canonical: "/about" },
   title: "About Truth Estate — Independent Real Estate Advisory",
   description:
     "Why Truth Estate exists. Independent intelligence, buyer representation and evidence-first research for life's biggest real estate decisions.",

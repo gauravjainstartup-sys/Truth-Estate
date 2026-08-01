@@ -5,6 +5,7 @@ import { projectHref } from "@/lib/projectHref";
 import type { ProjectIntel } from "@/lib/projects";
 import type { BuyData, DNA } from "@/lib/journey";
 import { fitPoints, beatsReason } from "@/lib/shortlist";
+import { basePath } from "@/lib/site";
 
 /* The #1 match — the gated card. It deliberately mirrors the live
    ProjectOptionCard's score-corner family (verdict top-left, Truth Score
@@ -15,7 +16,6 @@ import { fitPoints, beatsReason } from "@/lib/shortlist";
    ProjectOptionCard is never touched. On reveal the blur lifts, the street
    address resolves, and the CTA hands off to the full file. */
 
-const basePath = "/Truth-Estate";
 
 /* verdict colour — matches ProjectOptionCard exactly (green buy / gold hold). */
 const recoText = (reco: string) =>

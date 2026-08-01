@@ -1,3 +1,5 @@
+import { basePath as BASE } from "@/lib/site";
+
 /* ════════════════════════════════════════════════════════════════
    The one place that knows a project's public address.
 
@@ -14,7 +16,6 @@
    no seoSlug, and the old address still resolves — as a redirect stub —
    so a stale index degrades to one extra hop rather than a broken link.
    ════════════════════════════════════════════════════════════════ */
-const BASE = "/Truth-Estate";
 
 export function projectPath(p: { slug: string; seoSlug?: string | null }): string {
   return p.seoSlug ? `/projects/${p.seoSlug}` : `/intelligence/projects/${p.slug}`;

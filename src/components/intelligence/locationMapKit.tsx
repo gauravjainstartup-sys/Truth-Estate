@@ -2,6 +2,7 @@
 
 import type { GeoCat } from "@/lib/projects";
 import { projectHref } from "@/lib/projectHref";
+import { basePath } from "@/lib/site";
 
 /* Shared kit for the two street-map editions (Google + OSM fallback), so the
    founder-approved 2030 treatment exists exactly once: category glyphs that
@@ -10,7 +11,6 @@ import { projectHref } from "@/lib/projectHref";
    (ghost = coverage, gold sun = Sun & Vastu 3D live — the conversion tier),
    and the tap card that replaces hover popups on touch. */
 
-export const basePath = "/Truth-Estate";
 
 /* ── category meta — chip and pin share glyph + colour 1:1 ─────────── */
 export const CAT: Record<GeoCat, { label: string; color: string; glyph: string }> = {
@@ -217,3 +217,5 @@ export const MAP_CSS = `
 `;
 
 export const MapStyles = () => <style dangerouslySetInnerHTML={{ __html: MAP_CSS }} />;
+
+export { basePath };

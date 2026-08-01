@@ -12,8 +12,8 @@ import { useEffect, useState } from "react";
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import { useConsultation } from "../consultation/ConsultationProvider";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 
 const CONTENTS: [string, string][] = [
   ["why-we-exist", "Why We Exist"],

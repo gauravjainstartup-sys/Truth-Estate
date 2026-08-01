@@ -25,8 +25,8 @@ import {
   rowMeta, TAG_CHIP, getRecentSlugs, pushRecentSlug, pushDemand,
 } from "@/lib/heroSearch";
 import { projectHref } from "@/lib/projectHref";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 const DEBOUNCE_MS = 150;
 const MOBILE_MQ = "(max-width: 767px)";
 

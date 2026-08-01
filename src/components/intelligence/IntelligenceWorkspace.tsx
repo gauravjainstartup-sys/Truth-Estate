@@ -34,6 +34,7 @@ import {
   type RouterAnswer,
 } from "@/lib/omni";
 import { askRouter } from "@/lib/router";
+import { basePath } from "@/lib/site";
 
 const EMPTY_INDEX: OmniIndex = { projects: [], units: {}, live: false };
 
@@ -76,7 +77,6 @@ function compareHref(q: string): string | null {
   return `${basePath}/intelligence/compare/${comparePairSlug(a.slug, b.slug)}`;
 }
 
-const basePath = "/Truth-Estate";
 
 /* "2026-06-30" → "30 Jun 2026". The panel used reviewedOn() against the
    curated set, which returned "Jul 2026" for anything it could not find —

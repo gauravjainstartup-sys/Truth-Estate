@@ -25,6 +25,7 @@
    ════════════════════════════════════════════════════════════════ */
 import { isSignedIn, isAllAccess, isMember, loadUnlocks, PROJECTS } from "@/lib/journey";
 import type { OmniIndex } from "@/lib/omni";
+import { basePath as BASE_PATH } from "@/lib/site";
 
 export type TruthGuideTier = "anonymous" | "registered" | "paid";
 
@@ -46,7 +47,6 @@ const MSG_COUNT_KEY = "truthEstate.tgMsgCount";
 const DAY_KEY = "truthEstate.tgDay";
 const DAY_COUNT_KEY = "truthEstate.tgDayCount";
 
-const BASE_PATH = "/Truth-Estate";
 /* How many tracked rows ride in the prompt. The whole scoreboard is ~100 rows
    ≈ 12 KB ≈ 3k tokens, which is nothing against Flash's window — so this cap
    is only a runaway guard for a much larger future backlog. Keep it well above

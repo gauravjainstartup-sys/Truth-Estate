@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
+import { basePath } from "@/lib/site";
 import {
   COMPARE_OPTIONS,
   POPULAR_COMPARISONS,
@@ -11,7 +12,6 @@ import {
   type ProjectCompareOption,
 } from "@/lib/compare";
 
-const basePath = "/Truth-Estate";
 
 const KIND_LABEL: Record<CompareKind, string> = { project: "Projects", developer: "Developers", market: "Markets" };
 

@@ -30,6 +30,7 @@ import {
 } from "@/lib/projects";
 import { AREA_ALIASES, type OmniIndex, type OmniUnit } from "@/lib/omni";
 import { READ_FROM_INR, PROJECT_UNLOCK_INR } from "@/lib/journey";
+import { basePath as BASE_PATH } from "@/lib/site";
 
 export type ChatRole = "user" | "bot";
 /* the gate a bot message carries: the ₹999 read, the ₹1,499 Sun & Vastu 3D, or none */
@@ -44,7 +45,6 @@ export type UnitIntel = OmniUnit;
 /* access the chat needs to gate correctly */
 export type ChatAccess = { has3DModel: boolean; has3DAccess: boolean };
 
-const BASE_PATH = "/Truth-Estate";
 
 /* which corridor a free-text location belongs to (reuses the omni aliases) */
 function corridorKey(loc: string | null | undefined): string | null {

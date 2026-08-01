@@ -11,8 +11,8 @@
 import { useEffect, useRef, useState } from "react";
 import Logo from "../Logo";
 import { useConsultation } from "../consultation/ConsultationProvider";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 
 /* subtle scroll reveal — a restrained fade-up, honours reduced-motion */
 function useReveal<T extends HTMLElement>() {

@@ -24,7 +24,7 @@
    serve gated content without first knowing who is entitled — and
    isEntitled() in core.ts is the seam the content step plugs into.
    ════════════════════════════════════════════════════════════════ */
-import { entitlementsFrom, isEntitled, type PaymentRow, type ProfileRow } from "./core.ts";
+import { entitlementsFrom, isEntitled, slugify, type Catalogue, type PaymentRow, type ProfileRow } from "./core.ts";
 
 const DB_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -52,6 +52,39 @@ const sb = (path: string) =>
     headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
     signal: AbortSignal.timeout(8000),
   });
+
+/* The id/slug → internal-slug map a grant is resolved through. Built once
+   per cold start from the same listing view the site renders, so it can
+   never disagree with the pages it is granting access to. Failing to load
+   it is not fatal: entitlementsFrom falls back to name matching, which
+   still resolves 53 of production's 57 distinct grants. */
+let catalogueCache: Catalogue | undefined;
+
+const liveSlug = (v: string) => v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+const seoSlugOf = (name: string, mm: string | null, loc: string | null) =>
+  ["gurugram-real-estate", liveSlug(name), liveSlug(mm ?? ""), liveSlug(loc ?? "")].filter(Boolean).join("-");
+
+async function catalogue(): Promise<Catalogue> {
+  if (catalogueCache) return catalogueCache;
+  const empty: Catalogue = { byId: {}, bySeoSlug: {} };
+  try {
+    const res = await sb(`backlog_listing_public_v3?select=id,name,microMarket,location&limit=500`);
+    if (!res.ok) { console.error(`[entitlements] catalogue ${res.status} — name matching only`); return empty; }
+    const rows = await res.json() as { id?: string; name?: string; microMarket?: string; location?: string }[];
+    const byId: Record<string, string> = {};
+    const bySeoSlug: Record<string, string> = {};
+    for (const r of rows) {
+      if (!r?.name) continue;
+      const slug = slugify(r.name);
+      if (r.id) byId[r.id] = slug;
+      bySeoSlug[seoSlugOf(r.name, r.microMarket ?? null, r.location ?? null)] = slug;
+    }
+    console.info(`[entitlements] catalogue: ${Object.keys(byId).length} ids, ${Object.keys(bySeoSlug).length} seo slugs`);
+    return (catalogueCache = { byId, bySeoSlug });
+  } catch {
+    return empty;
+  }
+}
 
 /* The account this device was confirmed to be. Identical rule to track's
    resolver, and identical reason: a claim only lands after a verified
@@ -99,9 +132,10 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const [pRes, payRes] = await Promise.all([
+    const [pRes, payRes, cat] = await Promise.all([
       sb(`user_profiles?select=id,plan,unlocked_reports&id=eq.${userId}&limit=1`),
       sb(`payments?select=status,project_name,package_name,amount&user_id=eq.${userId}`),
+      catalogue(),
     ]);
 
     const profile = pRes.ok ? ((await pRes.json() as ProfileRow[])[0] ?? null) : null;
@@ -113,7 +147,7 @@ Deno.serve(async (req: Request) => {
     if (!pRes.ok) console.error(`[entitlements] profile ${pRes.status} for ${userId}`);
     if (!payRes.ok) console.error(`[entitlements] payments ${payRes.status} for ${userId}`);
 
-    const ent = entitlementsFrom(profile, payments);
+    const ent = entitlementsFrom(profile, payments, cat);
     if (ent.unmapped.length) {
       console.warn(`[entitlements] ${userId.slice(0, 8)}… ${ent.unmapped.length} unmapped: ${ent.unmapped[0]}`);
     }

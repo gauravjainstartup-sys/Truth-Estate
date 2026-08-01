@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Logo from "../Logo";
+import { basePath } from "@/lib/site";
 
 /* ════════════════════════════════════════════════════════════════
    INVESTOR DECK — six scroll-snap frames, sized for the room.
@@ -13,7 +14,6 @@ import Logo from "../Logo";
    Cmd+P still yields a page-per-slide PDF.
    ════════════════════════════════════════════════════════════════ */
 
-const basePath = "/Truth-Estate";
 
 /* the one accent (emerald) + the ink field; everything else is neutral */
 const ACCENT = "#1e6b45";

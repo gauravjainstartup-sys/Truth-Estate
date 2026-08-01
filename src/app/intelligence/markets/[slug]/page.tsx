@@ -17,6 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const m = marketBySlug(slug);
   if (!m) return { title: "Location Intelligence" };
   return {
+    alternates: { canonical: `/intelligence/markets/${m.slug}` },
     title: `${m.name} — Location Intelligence`,
     description: `Independent intelligence on ${m.name}, Gurugram: verdict, project count, price band, current and future trends, and the projects we track. ${m.info}`,
   };

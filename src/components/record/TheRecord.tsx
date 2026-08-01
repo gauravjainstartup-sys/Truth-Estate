@@ -14,8 +14,8 @@
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import { useConsultation } from "../consultation/ConsultationProvider";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 
 const PAINS: string[] = [
   "The call where the sales manager promised the park-facing unit — that no one can find in writing three months later.",

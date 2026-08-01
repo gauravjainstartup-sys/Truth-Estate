@@ -3,8 +3,8 @@
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import { PRIMARY_CTA } from "@/lib/journey";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 
 /* ── Beliefs data ── */
 const BELIEFS: { principle: string; detail: string }[] = [

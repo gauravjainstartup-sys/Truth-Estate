@@ -17,6 +17,7 @@ import ProjectProfile from "@/components/intelligence/ProjectProfile";
 import { liveProjectIntel } from "@/lib/liveReport";
 import { breadcrumbLd, ldJson } from "@/lib/seo";
 import { relatedProjects } from "@/lib/relatedProjects";
+import { basePath as BASE } from "@/lib/site";
 
 /* ONE URL per project: /projects/<seo slug>, the address truthestate.in
    has been serving and Google has indexed — see seoSlug() in lib/supabase.
@@ -143,7 +144,6 @@ async function legacyTarget(slug: string): Promise<string | null | undefined> {
   return undefined;
 }
 
-const BASE = "/Truth-Estate";
 /* The old address keeps working: rel=canonical carries the SEO equity to the
    new URL and the script hops humans there instantly; the visible link covers
    anything that doesn't run scripts. GitHub Pages cannot 301 — this is the

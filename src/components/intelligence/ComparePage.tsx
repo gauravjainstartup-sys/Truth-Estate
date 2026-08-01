@@ -7,8 +7,8 @@ import { RATING_META, FIN_METRICS, type FinRating } from "@/lib/developers";
 import { fmtPsf, pillars, priceJourney, deliveryOutlook, roiModel, type ProjectIntel, type Pillar } from "@/lib/projects";
 import { streetAddress } from "./ProjectOptionCard";
 import { compareTitle, type ResolvedCompare } from "@/lib/compare";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 
 const rateVal = (r: FinRating) => (r === "strong" ? 3 : r === "moderate" ? 2 : 1);
 const winHigher = (a: number, b: number): Win => (a === b ? undefined : a > b ? "a" : "b");

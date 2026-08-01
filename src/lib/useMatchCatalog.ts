@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { PROJECTS } from "./journey";
 import { projectByName, type ProjectIntel } from "./projects";
 import { emptyMarket, type MarketContext } from "./matchEngine";
+import { basePath } from "@/lib/site";
 
 /* ════════════════════════════════════════════════════════════════
    LIVE MATCH CATALOG — the client-side hook the shortlist ranks against.
@@ -18,7 +19,6 @@ import { emptyMarket, type MarketContext } from "./matchEngine";
    use for projects-geo.json.
    ════════════════════════════════════════════════════════════════ */
 
-const basePath = "/Truth-Estate";
 
 /* The mock PROJECTS, resolved to their enriched ProjectIntel — the fallback
    whenever the baked catalog can't be fetched or comes back empty. Exported so

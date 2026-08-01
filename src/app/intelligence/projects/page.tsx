@@ -5,6 +5,10 @@ import { liveProjectIntel } from "@/lib/liveReport";
 import type { ProjectIntel } from "@/lib/projects";
 
 export const metadata: Metadata = {
+  /* Without this the route inherits metadataBase and Next emits the bare
+     ROOT url as the canonical — telling Google this page is a duplicate of
+     the home page. 25 pages in the sitemap were doing exactly that. */
+  alternates: { canonical: "/intelligence/projects" },
   title: "Project Intelligence",
   description:
     "Independent Truth Scores for Gurugram residential projects — built from six audited inputs: delivery, legal, developer strength, liquidity, pricing and construction. No paid rankings.",

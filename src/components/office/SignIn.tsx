@@ -17,8 +17,8 @@ import { useJourney } from "../journey/JourneyProvider";
 import OtpDigits from "../auth/OtpDigits";
 import { saveLead } from "@/lib/journey";
 import { normalisePhone, normaliseIntl, prettyPhone, sendOtp, sendOtpIntl, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 
 const DIAL = [
   { code: "+91", flag: "🇮🇳" }, { code: "+971", flag: "🇦🇪" }, { code: "+1", flag: "🇺🇸" },

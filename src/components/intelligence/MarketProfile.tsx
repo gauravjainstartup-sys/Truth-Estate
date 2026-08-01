@@ -5,8 +5,8 @@ import { useConsultation } from "../consultation/ConsultationProvider";
 import { fmtPsf, type MarketIntel } from "@/lib/markets";
 import type { OmniProject } from "@/lib/omni";
 import LiveProjectCard from "./LiveProjectCard";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 
 export default function MarketProfile({
   m,

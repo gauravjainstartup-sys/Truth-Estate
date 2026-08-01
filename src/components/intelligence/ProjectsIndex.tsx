@@ -6,8 +6,8 @@ import { useJourney } from "../journey/JourneyProvider";
 import type { ProjectIntel } from "@/lib/projects";
 import type { TrackedStats } from "@/lib/supabase";
 import ProjectOptionCard, { streetAddress } from "./ProjectOptionCard";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 
 type Sort = "score" | "priceAsc" | "priceDesc" | "name";
 

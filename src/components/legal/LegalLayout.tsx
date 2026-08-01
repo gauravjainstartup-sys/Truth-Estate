@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback, type ReactNode } from "react";
 import Logo from "../Logo";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 
 /* ── Shared style tokens ── */
 export const S = {

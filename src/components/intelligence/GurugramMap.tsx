@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { MARKETS, fmtPsf, type MarketIntel } from "@/lib/markets";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 
 /* ════════════════════════════════════════════════════════════════
    A schematic of Gurugram drawn as a CONTIGUOUS partition — every

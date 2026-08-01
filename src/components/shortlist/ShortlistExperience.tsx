@@ -9,6 +9,7 @@ import { loadBuyData, hasPreferences, deriveDNA } from "@/lib/journey";
 import { rankProjectsIntel } from "@/lib/shortlist";
 import { useMatchCatalog, useMatchMarket } from "@/lib/useMatchCatalog";
 import { useAiRerank } from "@/lib/useAiRerank";
+import { basePath } from "@/lib/site";
 
 /* ════════════════════════════════════════════════════════════════
    THE STANDALONE /shortlist ROUTE — the direct-land entry.
@@ -21,7 +22,6 @@ import { useAiRerank } from "@/lib/useAiRerank";
    in-app "Start Your Journey" modal — see ShortlistCore.
    ════════════════════════════════════════════════════════════════ */
 
-const basePath = "/Truth-Estate";
 
 export default function ShortlistExperience() {
   const { open, isOpen } = useJourney();

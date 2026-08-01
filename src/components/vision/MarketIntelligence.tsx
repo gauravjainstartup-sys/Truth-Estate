@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { PROJECTS, MARKET_PROFILES } from "@/lib/journey";
+import { basePath } from "@/lib/site";
 
 /* The signature proof: an institutional intelligence terminal. Pick a
    micro-market, see the read and the ranked projects — independent Truth
@@ -113,7 +114,7 @@ export default function MarketIntelligence() {
 
         <p className="mt-5 text-[0.72rem] font-light text-white/25">
           Truth Score weights delivery record, pricing position and legal/financial risk —
-          never developer marketing. <a href="/Truth-Estate/methodology" className="text-[#c9a96e]/70 underline underline-offset-4 hover:text-[#c9a96e]">See the methodology →</a>
+          never developer marketing. <a href={`${basePath}/methodology`} className="text-[#c9a96e]/70 underline underline-offset-4 hover:text-[#c9a96e]">See the methodology →</a>
         </p>
       </div>
     </section>

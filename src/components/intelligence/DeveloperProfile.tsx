@@ -4,8 +4,8 @@ import Logo from "../Logo";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import { FIN_METRICS, type DeveloperIntel } from "@/lib/developers";
 import RatingMeter from "./RatingMeter";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return <p className="text-[11px] font-medium uppercase tracking-[0.34em] text-[#c9a96e]">{children}</p>;

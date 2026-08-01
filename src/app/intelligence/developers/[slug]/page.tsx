@@ -16,6 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const dev = developerBySlug(slug);
   if (!dev) return { title: "Developer Intelligence" };
   return {
+    alternates: { canonical: `/intelligence/developers/${dev.slug}` },
     title: `${dev.name} — Developer Intelligence`,
     description: `Independent developer intelligence on ${dev.name}: track record, delivery performance and financial health. ${dev.tagline}`,
   };

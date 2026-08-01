@@ -4,7 +4,7 @@ import { Playfair_Display } from "next/font/google";
 import "./globals.css";
 import JourneyProvider from "@/components/journey/JourneyProvider";
 import ConsultationProvider from "@/components/consultation/ConsultationProvider";
-import { SITE_URL } from "@/lib/site";
+import { IS_PRODUCTION_ORIGIN, SITE_URL } from "@/lib/site";
 import { KEEP_ON_RELOAD } from "@/lib/durableKeys";
 import EventTracker from "@/components/EventTracker";
 
@@ -70,11 +70,33 @@ export const metadata: Metadata = {
       "Forensic, independent property intelligence and advisory for NRIs buying in India. Evidence over marketing.",
     images: [OG_IMAGE],
   },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
-  },
+  /* ONE INDEXABLE COPY OF THIS SITE, EVER.
+
+     The GitHub Pages preview serves the same 935 pages as production.
+     Left crawlable it competes with truthestate.in for truthestate.in's
+     own rankings and splits the link equity across two hosts, and Google
+     decides the winner, not us. So indexing is granted to the production
+     origin and to nothing else — a preview, a branch deploy or a local
+     build all ship noindex,nofollow site-wide.
+
+     This is the ONLY `robots` key in the root metadata, and it has to
+     stay that way: metadata is a plain object literal, so a second
+     `robots` further down silently wins over the first no matter which
+     one carries the intent. That is exactly what happened on the first
+     attempt here — the conditional was added above an existing
+     `index: true` block and every page still shipped "index, follow".
+
+     Flips automatically with NEXT_PUBLIC_ORIGIN, so nobody has to
+     remember to remove anything at cutover. Routes that set their own
+     robots (/office, /shortlist, the legacy stubs) still win — this is
+     the floor, not a ceiling. */
+  robots: IS_PRODUCTION_ORIGIN
+    ? {
+        index: true,
+        follow: true,
+        googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
+      }
+    : { index: false, follow: false, nocache: true, googleBot: { index: false, follow: false } },
 };
 
 /* Site-wide structured data — an Organization entity (strong for AI/GEO

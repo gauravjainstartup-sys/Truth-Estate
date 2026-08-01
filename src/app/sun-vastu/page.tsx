@@ -3,6 +3,10 @@ import SunVastu from "@/components/sunvastu/SunVastu";
 import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
+  /* Without this the route inherits metadataBase and Next emits the bare
+     ROOT url as the canonical — telling Google this page is a duplicate of
+     the home page. 25 pages in the sitemap were doing exactly that. */
+  alternates: { canonical: "/sun-vastu" },
   title: "Sun & Vastu 3D Simulation — See the light before you buy",
   description:
     "Truth Estate's Sun & Vastu 3D Simulation shows how a specific home in Gurugram meets the sun through every hour and season, and how it sits on the Vastu compass — floor by floor, unit by unit, before you buy. Seven towers modelled and interactive today.",

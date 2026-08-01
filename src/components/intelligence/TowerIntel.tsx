@@ -5,8 +5,8 @@ import { has3DAccess, grantPackage, saveLead } from "@/lib/journey";
 import BuyerOfficeGate from "./BuyerOfficeGate";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import type { ProjectIntel, TowerIntelMeta } from "@/lib/projects";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 /* Cache-bust for the embedded advisor HTML — bump whenever a tower-intel/*.html
    advisor changes so mobile Safari refetches instead of serving the stale iframe. */
 const ADVISOR_V = "20260719e";

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { fetchBacklogFull } from "@/lib/supabase";
+import { basePath as BASE } from "@/lib/site";
 
 /* ════════════════════════════════════════════════════════════════
    The address this build served before the reports moved.
@@ -15,7 +16,6 @@ import { fetchBacklogFull } from "@/lib/supabase";
    and the same device the retired curated URLs already use.
    ════════════════════════════════════════════════════════════════ */
 
-const BASE = "/Truth-Estate";
 
 let cache: Awaited<ReturnType<typeof fetchBacklogFull>> | undefined;
 async function rows() {

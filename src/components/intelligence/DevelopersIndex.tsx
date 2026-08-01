@@ -4,8 +4,8 @@ import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import { DEVELOPERS } from "@/lib/developers";
 import type { LiveDeveloper } from "@/lib/supabase";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 
 const bandTone = (b: string | null) =>
   b && /strong|good|high/i.test(b)

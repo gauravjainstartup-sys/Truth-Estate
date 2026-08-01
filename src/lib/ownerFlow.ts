@@ -27,8 +27,8 @@
 import { fuzzySearch } from "@/lib/heroSearch";
 import { projectHref } from "@/lib/projectHref";
 import type { OmniIndex, OmniProject } from "@/lib/omni";
+import { basePath as BASE_PATH } from "@/lib/site";
 
-const BASE_PATH = "/Truth-Estate";
 /* Already public by design, and already shipped: three components call
    Places with this key today. Restriction is by HTTP referrer at the
    Google end, which is the only control a static export can have. */

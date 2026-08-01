@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { ProjectIntel } from "@/lib/projects";
 import { saveLead } from "@/lib/journey";
 import ZoomStage from "./ZoomStage";
+import { basePath } from "@/lib/site";
 
 /* Chapter I — the homes. One plan on screen at a time: BHK tabs pick the
    configuration, a size slider moves through the variants offered under it.
@@ -12,7 +13,6 @@ import ZoomStage from "./ZoomStage";
    efficiency read and the ticket. Dimensioned plan + 3D + sun/air/Vastu
    live inside Unit Intelligence — the gated layer. */
 
-const basePath = "/Truth-Estate";
 const asset = (s: string) => (/^(https?:\/\/|data:)/i.test(s) ? s : `${basePath}/${s}`);
 
 export default function ReportHomes({ p }: { p: ProjectIntel }) {

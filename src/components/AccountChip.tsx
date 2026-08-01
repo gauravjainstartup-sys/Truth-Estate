@@ -20,8 +20,8 @@
 import { useEffect, useRef, useState } from "react";
 import { AUTH_EVENT, isSignedIn, loadAccount, signOut } from "@/lib/journey";
 import { getSession } from "@/lib/phoneAuth";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 
 function maskPhone(p: string | null | undefined): string {
   const d = (p ?? "").replace(/\D/g, "");

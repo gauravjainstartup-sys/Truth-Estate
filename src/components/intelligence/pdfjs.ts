@@ -1,3 +1,5 @@
+import { basePath } from "@/lib/site";
+
 /* Single source of truth for booting pdf.js in the browser. Both the inline
    viewer (PdfScroller) and the card cover thumbnail (PdfThumb) load through
    here so the worker path is defined once.
@@ -7,7 +9,6 @@
    emits a hashed _next/static .mjs that GitHub Pages serves with a MIME/path
    browsers reject for a module worker, so it silently never boots. */
 
-const basePath = "/Truth-Estate";
 
 let pdfjsPromise: Promise<typeof import("pdfjs-dist")> | null = null;
 

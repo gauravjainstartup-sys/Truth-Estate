@@ -4,8 +4,8 @@ import Logo from "../Logo";
 import MarketPulse from "./MarketPulse";
 import { useJourney } from "../journey/JourneyProvider";
 import { PRIMARY_CTA, ACTIVE_PROJECT_COUNT } from "@/lib/journey";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 
 export default function VisionHero({ activeProjects }: { activeProjects?: number }) {
   const { open } = useJourney();

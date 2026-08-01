@@ -3,8 +3,8 @@
 import Logo from "../Logo";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import { CONSULT_FEE, CONSULT_FEE_NOTE, inr } from "@/lib/consultation";
+import { basePath } from "@/lib/site";
 
-const basePath = "/Truth-Estate";
 const PRICE = CONSULT_FEE ?? 9999;
 
 /* ── The eight offices ── */

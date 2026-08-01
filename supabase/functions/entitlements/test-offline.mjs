@@ -125,5 +125,56 @@ console.log("\nempty and malformed input");
   t("isEntitled on an empty set", isEntitled(entitlementsFrom(null, []), "dlf-the-arbour") === false);
 }
 
+
+/* ── The four production grants that name matching alone loses ──
+   Copied verbatim from user_profiles. Each one belongs to a real customer
+   who paid; before the id/slug resolution order they all landed in
+   `unmapped`, which is a paywall on a report they own. */
+console.log("\nthe four grants that only id / seo-slug can rescue");
+const CAT = {
+  byId: {
+    "d9c43f91-0caa-4e09-a827-51297c59651e": "signature-global-tonino-lamborghini-residences",
+    "37f9b22b-ccbb-41e8-9e42-009f1d9c2cb6": "dlf-the-arbour",
+    "a41bd6c7-aa6a-4507-b8db-5aa72144ad3f": "whiteland-blissville-phase-2",
+  },
+  bySeoSlug: {
+    "gurugram-real-estate-dlf-the-arbour-golf-course-road-extension-gcre-sector-63": "dlf-the-arbour",
+    "gurugram-real-estate-whiteland-blissville-phase-2-southern-peripheral-road-spr-corridor-sector-76":
+      "whiteland-blissville-phase-2",
+  },
+};
+const prod = (o) => entitlementsFrom({ unlocked_reports: [JSON.stringify(o)] }, [], CAT);
+
+// name is truncated at the front AND misspelt ("Lambhorgini"); only the id knows
+let e = prod({ projectId: "d9c43f91-0caa-4e09-a827-51297c59651e", projectName: "Tonino Lambhorgini Residences",
+               projectSlug: "gurugram-real-estate-tonino-lambhorgini-residences-southern-peripheral-road-spr-corridor-sector-71" });
+t("misspelt name resolves by projectId", e.unlocked[0] === "signature-global-tonino-lamborghini-residences", e.unlocked.join());
+t("  and is not reported unmapped", e.unmapped.length === 0);
+
+// name and slug were both overwritten with the bare UUID
+e = prod({ projectId: "37f9b22b-ccbb-41e8-9e42-009f1d9c2cb6", projectName: "37f9b22b-ccbb-41e8-9e42-009f1d9c2cb6",
+           projectSlug: "37f9b22b-ccbb-41e8-9e42-009f1d9c2cb6" });
+t("UUID-as-name resolves by projectId", e.unlocked[0] === "dlf-the-arbour", e.unlocked.join());
+
+// projectName overwritten with the SEO slug; the id is absent, the slug is good
+e = prod({ projectId: "gurugram-real-estate-whiteland-blissville-phase-2-southern-peripheral-road-spr-corridor-sector-76",
+           projectName: "gurugram-real-estate-whiteland-blissville-phase-2-southern-peripheral-road-spr-corridor-sector-76",
+           projectSlug: "gurugram-real-estate-whiteland-blissville-phase-2-southern-peripheral-road-spr-corridor-sector-76",
+           paymentId: "pay_THERHgiU6rLsnx", amountPaid: 999 });
+t("slug-as-name resolves by projectSlug", e.unlocked[0] === "whiteland-blissville-phase-2", e.unlocked.join());
+t("  the ₹999 payment is not lost", e.from.grants === 1 && e.unmapped.length === 0);
+
+// a healthy grant must still resolve identically, and prefer the id
+e = prod({ projectId: "37f9b22b-ccbb-41e8-9e42-009f1d9c2cb6", projectName: "DLF The Arbour",
+           projectSlug: "gurugram-real-estate-dlf-the-arbour-golf-course-road-extension-gcre-sector-63" });
+t("a healthy grant is unchanged", e.unlocked[0] === "dlf-the-arbour");
+
+// an id we do not know must fall through to the name, not vanish
+e = prod({ projectId: "p3", projectName: "Godrej Zenith", projectSlug: "gurugram-real-estate-godrej-zenith-new-gurgaon-sector-89" });
+t("unknown demo id falls back to the name", e.unlocked[0] === "godrej-zenith", e.unlocked.join());
+
+// no catalogue at all → old behaviour, never a crash
+e = entitlementsFrom({ unlocked_reports: [JSON.stringify({ projectName: "DLF The Arbour" })] }, []);
+t("no catalogue still resolves by name", e.unlocked[0] === "dlf-the-arbour");
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
