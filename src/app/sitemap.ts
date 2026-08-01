@@ -3,6 +3,7 @@ import { SITE_URL } from "@/lib/site";
 import { DEVELOPERS } from "@/lib/developers";
 import { MARKETS } from "@/lib/markets";
 import { DEV_PAIRS, MARKET_PAIRS, scoredProjectOptions, projectComparePairs } from "@/lib/compare";
+import { BEST_PROJECTS } from "@/lib/bestProjects";
 import { fetchBacklogFull } from "@/lib/supabase";
 
 export const dynamic = "force-static";
@@ -31,6 +32,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   add("/intelligence/developers", 0.7, "weekly");
   add("/intelligence/markets", 0.7, "weekly");
   add("/intelligence/compare", 0.6, "monthly");
+
+  /* The /best-projects/ landing pages. They carry the old site's rankings
+     for the queries buyers actually type, so they belong in the sitemap
+     at a priority above the hubs they filter — a page answering "under ₹3
+     Cr" is a more useful entry point than the catalogue it draws from. */
+  BEST_PROJECTS.forEach((p) => add(`/best-projects/${p.slug}`, 0.7, "weekly"));
 
   // Legal
   add("/privacy", 0.2, "yearly");

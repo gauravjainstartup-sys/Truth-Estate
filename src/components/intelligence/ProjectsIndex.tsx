@@ -30,8 +30,28 @@ function haystack(p: ProjectIntel): string {
 
 /* The projects index — the entire tracked universe, live from the pipeline.
    Every project is a real backlog_listing_public row adapted onto the shared
-   ProjectOptionCard; no seed/demo entries. */
-export default function ProjectsIndex({ projects, stats }: { projects: ProjectIntel[]; stats?: TrackedStats | null }) {
+   ProjectOptionCard; no seed/demo entries.
+
+   THE THREE COPY PROPS ARE OPTIONAL AND DEFAULT TO WHAT THIS PAGE HAS
+   ALWAYS SAID, so /intelligence/projects renders byte-identically and no
+   layout, style or element changed. They exist because the
+   /best-projects/ pages are this same grid over a filtered set, and a
+   landing page for "under ₹3 Cr" that is headed "Every project,
+   independently scored" is a duplicate of the index in Google's eyes and
+   an answer to the wrong question in the reader's. Only the words differ. */
+export default function ProjectsIndex({
+  projects,
+  stats,
+  crumb = "Projects",
+  heading = "Every project, independently scored.",
+  intro = "One Truth Score per project, built from six audited inputs — delivery, legal, developer strength, liquidity, pricing and construction. No developer pays to appear here, and none can move a score. Open any project to see exactly how it’s built.",
+}: {
+  projects: ProjectIntel[];
+  stats?: TrackedStats | null;
+  crumb?: string;
+  heading?: string;
+  intro?: string;
+}) {
   const { open } = useJourney();
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<Sort>("score");
@@ -97,13 +117,13 @@ export default function ProjectsIndex({ projects, stats }: { projects: ProjectIn
       <div className="mx-auto max-w-5xl px-6 pb-[14vh] pt-[7vh] md:px-10">
         <div className="flex items-center gap-2 text-[0.74rem] font-light text-[#1a1a1a]/35">
           <a href={`${basePath}/intelligence`} className="transition-colors hover:text-[#1a1a1a]/70">Intelligence</a>
-          <span className="text-[#1a1a1a]/20">/</span><span className="text-[#1a1a1a]/55">Projects</span>
+          <span className="text-[#1a1a1a]/20">/</span><span className="text-[#1a1a1a]/55">{crumb}</span>
         </div>
 
         <p className="mt-8 text-[11px] font-medium uppercase tracking-[0.34em] text-[#c9a96e]">Project Intelligence</p>
-        <h1 className="mt-5 max-w-2xl font-serif text-[2.6rem] font-medium leading-[1.04] tracking-[-0.02em] md:text-[4rem]">Every project, independently scored.</h1>
+        <h1 className="mt-5 max-w-2xl font-serif text-[2.6rem] font-medium leading-[1.04] tracking-[-0.02em] md:text-[4rem]">{heading}</h1>
         <p className="mt-6 max-w-2xl text-[1rem] font-light leading-[1.85] text-[#1a1a1a]/60 md:text-[1.05rem]">
-          One Truth Score per project, built from six audited inputs — delivery, legal, developer strength, liquidity, pricing and construction. No developer pays to appear here, and none can move a score. Open any project to see exactly how it&rsquo;s built.
+          {intro}
         </p>
         <div className="mt-8 flex flex-wrap gap-x-10 gap-y-3">
           {/* The fallback was ACTIVE_PROJECT_COUNT — a hand-set 127 against a
