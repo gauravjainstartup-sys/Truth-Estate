@@ -63,7 +63,7 @@ export default function ShortlistExperience() {
     <div className="min-h-svh bg-[#F5F0E8] text-[#1a1a1a]">
       {/* ── Header — identity chip once verified, otherwise a quiet sign-in ── */}
       <header className="sticky top-0 z-40 border-b border-[#1a1a1a]/[0.06] bg-[#F5F0E8]/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-5xl items-center gap-4 px-6 py-4 md:px-10">
+        <div className="mx-auto flex max-w-7xl items-center gap-4 px-6 py-4 md:px-10">
           <a href={homeHref} aria-label="Truth Estate — home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
           {mounted && verified && (
             <span className="ml-auto inline-flex items-center gap-2 rounded-full border border-[#1e6b45]/35 bg-[#1e6b45]/[0.06] px-3.5 py-2 font-mono text-[0.68rem] tracking-[0.02em] text-[#1e6b45]">
@@ -73,7 +73,7 @@ export default function ShortlistExperience() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 pb-24 pt-8 md:px-10 md:pt-12">
+      <main className="mx-auto max-w-7xl px-6 pb-24 pt-8 md:px-10 md:pt-12">
         {!mounted ? null : !buy || !dna || !hasPreferences(buy) ? (
           <EmptyState onStart={() => open("buy")} />
         ) : !catalog || !settled ? null /* catalog / re-rank settling — hold so cards never shuffle after reveal */ : recs.length >= 1 ? (

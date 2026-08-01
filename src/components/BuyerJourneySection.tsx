@@ -207,7 +207,7 @@ export default function BuyerJourneySection() {
     <div ref={ref} className="relative h-svh w-full overflow-hidden">
       <div data-bg className="absolute inset-0" style={{ backgroundColor: BG[0] }} />
 
-      <div className="relative z-10 mx-auto flex h-full max-w-6xl flex-col px-6 md:flex-row md:items-center md:px-10">
+      <div className="relative z-10 mx-auto flex h-full max-w-7xl flex-col px-6 md:flex-row md:items-center md:px-10">
         {/* ── The family + emotion ── */}
         <div className="flex h-[48%] w-full flex-col items-center justify-end md:h-full md:w-[52%] md:justify-center">
           <svg viewBox="0 0 360 380" className="h-auto w-full max-w-[380px]" aria-hidden="true">

@@ -63,7 +63,7 @@ export default function CompareIndex({ projectOptions }: { projectOptions: Proje
   return (
     <div className="min-h-svh bg-[#F5F0E8] text-[#1a1a1a]">
       <header className="sticky top-0 z-40 border-b border-[#1a1a1a]/6 bg-[#F5F0E8]/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-5xl items-center gap-4 px-6 py-4 md:px-10">
+        <div className="mx-auto flex max-w-7xl items-center gap-4 px-6 py-4 md:px-10">
           <a href={homeHref} aria-label="Home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
           <button onClick={() => open()} className="ml-auto rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.74rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] md:px-5">
             Request Independent Advice
@@ -71,7 +71,7 @@ export default function CompareIndex({ projectOptions }: { projectOptions: Proje
         </div>
       </header>
 
-      <div className="mx-auto max-w-5xl px-6 pb-[14vh] pt-6 md:px-10 md:pt-[7vh]">
+      <div className="mx-auto max-w-7xl px-6 pb-[14vh] pt-6 md:px-10 md:pt-[7vh]">
         <div className="flex items-center gap-2 text-[0.74rem] font-light text-[#1a1a1a]/35">
           <a href={`${basePath}/intelligence`} className="transition-colors hover:text-[#1a1a1a]/70">Intelligence</a>
           <span className="text-[#1a1a1a]/20">/</span><span className="text-[#1a1a1a]/55">Compare</span>

@@ -19,7 +19,7 @@ export default function TruthGuidePreview() {
 
   return (
     <section id="truthguide" className="relative bg-[#F5F0E8] px-6 py-24 text-[#1a1a1a] md:px-10 md:py-32">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-7xl">
         <p className="text-[11px] font-medium uppercase tracking-[0.4em] text-[#c9a96e]">TruthGuide</p>
         <h2 className="mt-6 max-w-3xl font-serif text-[2.3rem] font-medium leading-[1.1] tracking-[-0.015em] md:text-[3.4rem]">
           Ask anything. Get the truth.

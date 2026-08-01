@@ -94,10 +94,19 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
     if (msg) cheer(msg);
   };
 
+  /* THE WHOLE PORTAL SITS IN THE HOME PAGE'S COLUMN.
+     Full-bleed cream at the page level; the sidebar + content flex row is
+     then centred at max-w-7xl — the exact measure the home header uses — so
+     the run from the logo (top of the sidebar) to the right edge of the
+     content lines up with the marketing site instead of stretching edge to
+     edge. The earlier attempt only widened the content INSIDE the sidebar's
+     offset, which made the span wider, not aligned; the cap belongs on the
+     shell, not the column within it. */
   return (
-    <div className="flex min-h-svh w-full flex-col bg-[#F5F0E8] text-[#1a1a1a] md:flex-row">
+    <div className="min-h-svh w-full bg-[#F5F0E8] text-[#1a1a1a]">
+     <div className="mx-auto flex min-h-svh max-w-7xl flex-col md:flex-row">
       {/* ── Sidebar ── */}
-      <aside className="sticky top-0 z-30 flex shrink-0 flex-col border-b border-[#1a1a1a]/8 bg-[#F5F0E8]/95 px-5 py-4 backdrop-blur-sm md:h-svh md:w-64 md:border-b-0 md:border-r md:px-6 md:py-7">
+      <aside className="sticky top-0 z-30 flex shrink-0 flex-col border-b border-[#1a1a1a]/8 bg-[#F5F0E8]/95 px-5 py-4 backdrop-blur-sm md:h-svh md:w-60 md:border-b-0 md:border-r md:px-6 md:py-7">
         <div className="flex items-center justify-between">
           <Link href="/" aria-label="Home">
             <Logo color="#1a1a1a" className="h-7 w-auto opacity-80" />
@@ -139,13 +148,10 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
 
       {/* ── Main ── */}
       <main className="min-w-0 flex-1">
-        {/* max-w-7xl + md:px-10 — the home page's own measure. The office
-           sat at max-w-5xl behind a md:px-12 gutter, so its content column
-           was both narrower than the rest of the site and inset by two extra
-           px, which read as a different page rather than the same site with
-           a sidebar. The prose inside is already ch-capped, so widening the
-           shell changes the frame, not the line length. */}
-        <div className="mx-auto max-w-7xl px-6 py-9 md:px-10 md:py-12">
+        {/* No max-width here any more — the shell above is already capped at
+           max-w-7xl, so the content just needs its gutters. A second cap
+           here is what pushed the column narrow-and-offset before. */}
+        <div className="px-6 py-9 md:px-10 md:py-12">
           {/* Thread switcher + preview control.
               HIDDEN ON THE DASHBOARD HOME. The switcher is demo scaffolding
               — three seeded threads and a "PREVIEW · stage" dropdown that
@@ -194,6 +200,7 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
         {payOpen && <PaymentSheet thread={active} onClose={() => setPayOpen(false)} onPay={activate} />}
         {celebrate && <Celebrate message={celebrate} />}
       </main>
+     </div>
     </div>
   );
 }

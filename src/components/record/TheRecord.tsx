@@ -116,7 +116,7 @@ export default function TheRecord() {
     <div className="bg-[#F5F0E8] text-[#1a1a1a]">
       {/* ───────────── HEADER ───────────── */}
       <header className="sticky top-0 z-30 border-b border-[#1a1a1a]/[0.07] bg-[#F5F0E8]/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1180px] items-center justify-between px-5 py-3.5 md:px-10">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 md:px-10">
           <a href={`${basePath}/`} aria-label="Truth Estate home">
             <Logo className="h-7 w-auto md:h-9" color="#1a1a1a" />
           </a>
@@ -145,7 +145,7 @@ export default function TheRecord() {
 
       {/* ───────────── HERO ───────────── */}
       <section className="border-b border-[#1a1a1a]/[0.07]">
-        <div className="mx-auto max-w-[1180px] px-5 pb-14 pt-16 md:px-10 md:pb-20 md:pt-28">
+        <div className="mx-auto max-w-7xl px-5 pb-14 pt-16 md:px-10 md:pb-20 md:pt-28">
           <p className="text-[10px] font-medium uppercase tracking-[0.34em] text-[#c9a96e]">
             The Record · For Buyers Who Can&apos;t Be In The Room
           </p>
@@ -176,7 +176,7 @@ export default function TheRecord() {
       </section>
 
       {/* ───────────── 01 · THE FEAR ───────────── */}
-      <section className="mx-auto max-w-[1180px] px-5 py-16 md:px-10 md:py-24">
+      <section className="mx-auto max-w-7xl px-5 py-16 md:px-10 md:py-24">
         <SectionHead n="01" kicker="Why This Exists" title="From 7,000 miles away, the truth has a way of changing." />
         <p className="mt-6 max-w-[640px] text-[1rem] font-light leading-[1.85] text-[#1a1a1a]/60 md:text-[1.08rem]">
           Almost every NRI has a version of the same story — a promise made warmly on a call, and
@@ -194,7 +194,7 @@ export default function TheRecord() {
 
       {/* ───────────── 02 · WHAT GOES ON RECORD ───────────── */}
       <section className="border-y border-[#1a1a1a]/[0.07] bg-[#efe8dc]">
-        <div className="mx-auto max-w-[1180px] px-5 py-16 md:px-10 md:py-24">
+        <div className="mx-auto max-w-7xl px-5 py-16 md:px-10 md:py-24">
           <SectionHead n="02" kicker="What Goes On Record" title="Everything that shapes your decision — captured." />
           <div className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-3">
             {RECORDED.map((r) => (
@@ -211,7 +211,7 @@ export default function TheRecord() {
       </section>
 
       {/* ───────────── 03 · WHY IT MATTERS FROM ABROAD ───────────── */}
-      <section className="mx-auto max-w-[1180px] px-5 py-16 md:px-10 md:py-24">
+      <section className="mx-auto max-w-7xl px-5 py-16 md:px-10 md:py-24">
         <SectionHead n="03" kicker="Why It Matters More From Abroad" title="You can&apos;t be in the room. Your record can." />
         <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-14">
           <p className="text-[1rem] font-light leading-[1.9] text-[#1a1a1a]/65 md:text-[1.08rem]">
@@ -230,7 +230,7 @@ export default function TheRecord() {
 
       {/* ───────────── 04 · ACCOUNTABILITY BOTH WAYS ───────────── */}
       <section className="border-y border-[#1a1a1a]/[0.07] bg-[#efe8dc]">
-        <div className="mx-auto max-w-[1180px] px-5 py-16 md:px-10 md:py-24">
+        <div className="mx-auto max-w-7xl px-5 py-16 md:px-10 md:py-24">
           <SectionHead n="04" kicker="Accountability, Both Ways" title="A record keeps everyone honest — including us." />
           <div className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-3">
             {THREE_WAYS.map((t) => (
@@ -270,7 +270,7 @@ export default function TheRecord() {
       </section>
 
       {/* ───────────── CLOSING CTA ───────────── */}
-      <section className="mx-auto max-w-[1180px] px-5 py-16 md:px-10 md:py-24">
+      <section className="mx-auto max-w-7xl px-5 py-16 md:px-10 md:py-24">
         <div className="overflow-hidden rounded-2xl bg-[#1a1a1a] px-7 py-14 text-center text-white md:px-10 md:py-20">
           <p className="text-[10px] font-medium uppercase tracking-[0.32em] text-[#c9a96e]">Start Here</p>
           <h2 className="mx-auto mt-5 max-w-[20ch] font-serif text-[2rem] font-medium leading-[1.15] md:text-[3rem]">

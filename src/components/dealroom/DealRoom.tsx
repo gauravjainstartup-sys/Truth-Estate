@@ -75,7 +75,7 @@ export default function DealRoom() {
   return (
     <div className="min-h-screen bg-[#14110d] text-[#f4efe6]" style={{ fontFeatureSettings: '"ss01"' }}>
       {/* ── nav ── */}
-      <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-7 md:px-10">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-7 md:px-10">
         <a href={`${basePath}/`} aria-label="Truth Estate — home"><Logo className="h-9 w-auto opacity-80 md:h-10" /></a>
         <div className="flex items-center gap-6 text-[12px] font-medium tracking-[0.12em] text-[#a9a196]">
           <a href={`${basePath}/intelligence`} className="hidden transition-colors hover:text-[#f4efe6] sm:inline">Truth Intelligence</a>
@@ -86,7 +86,7 @@ export default function DealRoom() {
       {/* ═══ 1 · HERO ═══ */}
       <header className="relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse 60% 50% at 18% 0%, rgba(201,162,75,0.06) 0%, transparent 60%)" }} />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-14 px-6 pb-24 pt-10 md:grid-cols-[1.05fr_0.95fr] md:px-10 md:pb-32 md:pt-16">
+        <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-6 pb-24 pt-10 md:grid-cols-[1.05fr_0.95fr] md:px-10 md:pb-32 md:pt-16">
           <Reveal>
             <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-[#c9a24b]">The Deal Room · buyer-side negotiation</p>
             <h1 className="mt-7 font-serif text-[2.9rem] font-semibold leading-[1.08] tracking-[-0.01em] text-[#f4efe6] md:text-[4.1rem]">
@@ -112,7 +112,7 @@ export default function DealRoom() {
 
       {/* ═══ 2 · VALUE / SAVINGS ═══ */}
       <section className="border-t border-[#f4efe6]/[0.07] bg-[#161309]">
-        <div className="mx-auto max-w-6xl px-6 py-24 md:px-10 md:py-28">
+        <div className="mx-auto max-w-7xl px-6 py-24 md:px-10 md:py-28">
           <Reveal>
             <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#a07d2c]">What it’s worth</p>
             <h2 className="mt-6 max-w-3xl font-serif text-[2.1rem] font-medium leading-[1.2] text-[#f4efe6] md:text-[2.9rem]">
@@ -150,7 +150,7 @@ export default function DealRoom() {
 
       {/* ═══ 3 · HOW IT WORKS ═══ */}
       <section className="border-t border-[#f4efe6]/[0.07]">
-        <div className="mx-auto max-w-6xl px-6 py-24 md:px-10 md:py-28">
+        <div className="mx-auto max-w-7xl px-6 py-24 md:px-10 md:py-28">
           <Reveal>
             <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#a07d2c]">How the room works</p>
             <h2 className="mt-6 max-w-2xl font-serif text-[2.1rem] font-medium leading-[1.2] text-[#f4efe6] md:text-[2.9rem]">
@@ -180,7 +180,7 @@ export default function DealRoom() {
 
       {/* ═══ 4 · WHY IT'S DIFFERENT ═══ */}
       <section className="border-t border-[#f4efe6]/[0.07] bg-[#161309]">
-        <div className="mx-auto max-w-6xl px-6 py-24 md:px-10 md:py-28">
+        <div className="mx-auto max-w-7xl px-6 py-24 md:px-10 md:py-28">
           <Reveal>
             <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#a07d2c]">Whose side they’re on</p>
             <h2 className="mt-6 max-w-2xl font-serif text-[2.1rem] font-medium leading-[1.2] text-[#f4efe6] md:text-[2.9rem]">
@@ -230,7 +230,7 @@ export default function DealRoom() {
 
       {/* ═══ 6 · PROOF ARTIFACT ═══ */}
       <section className="border-t border-[#f4efe6]/[0.07] bg-[#161309]">
-        <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 py-24 md:grid-cols-[0.95fr_1.05fr] md:px-10 md:py-28">
+        <div className="mx-auto grid max-w-7xl items-center gap-14 px-6 py-24 md:grid-cols-[0.95fr_1.05fr] md:px-10 md:py-28">
           <Reveal>
             <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#a07d2c]">What you walk away with</p>
             <h2 className="mt-6 font-serif text-[2.1rem] font-medium leading-[1.2] text-[#f4efe6] md:text-[2.9rem]">

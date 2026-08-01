@@ -209,7 +209,7 @@ export default function DataSources() {
     <div className="bg-[#F5F0E8] text-[#1a1a1a]">
       {/* ───────── HEADER ───────── */}
       <header className="sticky top-0 z-30 border-b border-[#1a1a1a]/[0.07] bg-[#F5F0E8]/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1180px] items-center justify-between px-5 py-3.5 md:px-10">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 md:px-10">
           <a href={`${basePath}/`} aria-label="Truth Estate home">
             <Logo className="h-7 w-auto md:h-9" color="#1a1a1a" />
           </a>
@@ -237,7 +237,7 @@ export default function DataSources() {
       </header>
 
       {/* ───────── TITLE ───────── */}
-      <section className="mx-auto max-w-[1180px] px-5 pb-4 pt-16 md:px-10 md:pt-28">
+      <section className="mx-auto max-w-7xl px-5 pb-4 pt-16 md:px-10 md:pt-28">
         <p className="text-[10px] font-medium uppercase tracking-[0.34em] text-[#c9a96e]">
           Research Transparency
         </p>
@@ -250,7 +250,7 @@ export default function DataSources() {
       </section>
 
       {/* ───────── BODY: sidebar + content ───────── */}
-      <div className="mx-auto flex max-w-[1180px] gap-12 px-5 pb-32 pt-10 md:px-10 md:pt-16">
+      <div className="mx-auto flex max-w-7xl gap-12 px-5 pb-32 pt-10 md:px-10 md:pt-16">
         {/* Sticky sidebar */}
         <aside className="hidden w-[200px] shrink-0 md:block">
           <nav className="sticky top-20">

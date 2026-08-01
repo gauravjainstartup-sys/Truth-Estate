@@ -158,7 +158,7 @@ export default function Methodology() {
     <div className="bg-[#F5F0E8] text-[#1a1a1a]">
       {/* ───────────── HEADER ───────────── */}
       <header className="sticky top-0 z-30 border-b border-[#1a1a1a]/[0.07] bg-[#F5F0E8]/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1180px] items-center justify-between px-5 py-3.5 md:px-10">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 md:px-10">
           <a href={`${basePath}/`} aria-label="Truth Estate home">
             <Logo className="h-7 w-auto md:h-9" color="#1a1a1a" />
           </a>
@@ -186,7 +186,7 @@ export default function Methodology() {
       </header>
 
       {/* ───────────── TITLE ───────────── */}
-      <section className="mx-auto max-w-[1180px] px-5 pb-4 pt-16 md:px-10 md:pt-28">
+      <section className="mx-auto max-w-7xl px-5 pb-4 pt-16 md:px-10 md:pt-28">
         <p className="text-[10px] font-medium uppercase tracking-[0.34em] text-[#c9a96e]">Research Methodology</p>
         <h1 className="mt-5 max-w-[14ch] font-serif text-[2.7rem] font-medium leading-[1.04] text-[#1a1a1a] md:text-[4.6rem]">
           Our Research Methodology
@@ -198,7 +198,7 @@ export default function Methodology() {
       </section>
 
       {/* ───────────── BODY: contents + article ───────────── */}
-      <div className="mx-auto grid max-w-[1180px] grid-cols-1 gap-0 px-5 md:px-10 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-14">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-0 px-5 md:px-10 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-14">
         {/* Sticky contents */}
         <nav className="hidden lg:block" aria-label="On this page">
           <div className="sticky top-24 py-16">

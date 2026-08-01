@@ -39,7 +39,7 @@ export default function DevelopersIndex({ live }: { live?: LiveDeveloper[] | nul
   return (
     <div className="min-h-svh bg-[#F5F0E8] text-[#1a1a1a]">
       <header className="sticky top-0 z-40 border-b border-[#1a1a1a]/6 bg-[#F5F0E8]/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-5xl items-center gap-4 px-6 py-4 md:px-10">
+        <div className="mx-auto flex max-w-7xl items-center gap-4 px-6 py-4 md:px-10">
           <a href={homeHref} aria-label="Home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
           <button onClick={() => open()} className="ml-auto rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.74rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] md:px-5">
             Request Independent Advice
@@ -47,7 +47,7 @@ export default function DevelopersIndex({ live }: { live?: LiveDeveloper[] | nul
         </div>
       </header>
 
-      <div className="mx-auto max-w-5xl px-6 pb-[14vh] pt-[7vh] md:px-10">
+      <div className="mx-auto max-w-7xl px-6 pb-[14vh] pt-[7vh] md:px-10">
         <p className="text-[11px] font-medium uppercase tracking-[0.34em] text-[#c9a96e]">Developer Intelligence</p>
         <h1 className="mt-5 max-w-2xl font-serif text-[2.6rem] font-medium leading-[1.05] tracking-[-0.02em] md:text-[3.8rem]">
           Every developer, x-rayed.

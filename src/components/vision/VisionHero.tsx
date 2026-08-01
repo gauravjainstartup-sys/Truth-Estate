@@ -28,7 +28,7 @@ export default function VisionHero({ activeProjects }: { activeProjects?: number
       />
 
       {/* Nav */}
-      <nav className="relative z-10 mx-auto flex w-full max-w-6xl items-center px-6 py-7 md:px-10">
+      <nav className="relative z-10 mx-auto flex w-full max-w-7xl items-center px-6 py-7 md:px-10">
         <Logo className="h-9 w-auto opacity-90" />
         <div className="ml-auto hidden items-center gap-10 text-[11px] font-medium tracking-[0.14em] text-white/45 md:flex">
           <a href="#intelligence" className="transition-colors hover:text-white/85">Intelligence</a>
@@ -45,7 +45,7 @@ export default function VisionHero({ activeProjects }: { activeProjects?: number
       </nav>
 
       {/* Centerpiece */}
-      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-6 py-12 md:px-10">
+      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col justify-center px-6 py-12 md:px-10">
         <p className="animate-fade-up text-[11px] font-medium uppercase tracking-[0.4em] text-[#c9a96e]">
           Independent Real Estate Intelligence
         </p>

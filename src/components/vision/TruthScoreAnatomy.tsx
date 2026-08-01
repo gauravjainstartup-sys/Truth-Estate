@@ -41,7 +41,7 @@ export default function TruthScoreAnatomy() {
 
   return (
     <section id="score" className="relative bg-[#F5F0E8] px-6 py-24 text-[#1a1a1a] md:px-10 md:py-32">
-      <div ref={ref} className="mx-auto grid max-w-6xl items-center gap-16 lg:grid-cols-[1fr_1.1fr]">
+      <div ref={ref} className="mx-auto grid max-w-7xl items-center gap-16 lg:grid-cols-[1fr_1.1fr]">
         {/* Left — the argument */}
         <div>
           <p className="text-[11px] font-medium uppercase tracking-[0.4em] text-[#c9a96e]">The Truth Score</p>

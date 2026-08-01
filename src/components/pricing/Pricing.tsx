@@ -177,7 +177,7 @@ export default function Pricing() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       {/* ═══ HERO ═══ */}
       <section className="relative flex min-h-svh flex-col bg-[#0a0a0a]">
-        <nav className="px-6 pt-10 md:px-12 md:pt-14">
+        <nav className="mx-auto max-w-7xl px-6 pt-10 md:px-10 md:pt-14">
           <a href={homeHref}>
             <Logo className="h-9 w-auto opacity-75 md:h-[3rem]" />
           </a>

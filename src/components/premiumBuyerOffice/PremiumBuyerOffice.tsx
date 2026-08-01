@@ -99,7 +99,7 @@ export default function PremiumBuyerOffice() {
     <div>
       {/* ═══ HERO ═══ */}
       <section className="relative flex min-h-svh flex-col bg-[#0a0a0a]">
-        <nav className="px-6 pt-10 md:px-12 md:pt-14">
+        <nav className="mx-auto max-w-7xl px-6 pt-10 md:px-10 md:pt-14">
           <a href={homeHref} aria-label="Truth Estate — home">
             <Logo className="h-9 w-auto opacity-75 md:h-[3rem]" />
           </a>

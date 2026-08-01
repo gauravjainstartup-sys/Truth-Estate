@@ -142,7 +142,7 @@ export default function NRIDesk() {
     <div className="bg-[#F5F0E8] text-[#1a1a1a]">
       {/* ───────────── HEADER ───────────── */}
       <header className="sticky top-0 z-30 border-b border-[#1a1a1a]/[0.07] bg-[#F5F0E8]/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1180px] items-center justify-between px-5 py-3.5 md:px-10">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 md:px-10">
           <a href={`${basePath}/`} aria-label="Truth Estate home">
             <Logo className="h-7 w-auto md:h-9" color="#1a1a1a" />
           </a>
@@ -171,7 +171,7 @@ export default function NRIDesk() {
 
       {/* ───────────── HERO ───────────── */}
       <section className="border-b border-[#1a1a1a]/[0.07]">
-        <div className="mx-auto max-w-[1180px] px-5 pb-14 pt-16 md:px-10 md:pb-20 md:pt-28">
+        <div className="mx-auto max-w-7xl px-5 pb-14 pt-16 md:px-10 md:pb-20 md:pt-28">
           <p className="text-[10px] font-medium uppercase tracking-[0.34em] text-[#c9a96e]">
             The NRI Desk · For NRIs &amp; OCIs
           </p>
@@ -221,7 +221,7 @@ export default function NRIDesk() {
       </section>
 
       {/* ───────────── THE REALITY (concerns → answers) ───────────── */}
-      <section className="mx-auto max-w-[1180px] px-5 py-16 md:px-10 md:py-24">
+      <section className="mx-auto max-w-7xl px-5 py-16 md:px-10 md:py-24">
         <SectionHead
           n="01"
           kicker="The Reality of Buying From Abroad"
@@ -255,7 +255,7 @@ export default function NRIDesk() {
 
       {/* ───────────── ONE PRINCIPAL ON THE GROUND ───────────── */}
       <section className="border-y border-[#1a1a1a]/[0.07] bg-[#efe8dc]">
-        <div className="mx-auto max-w-[1180px] px-5 py-16 md:px-10 md:py-24">
+        <div className="mx-auto max-w-7xl px-5 py-16 md:px-10 md:py-24">
           <SectionHead n="02" kicker="How We Stand In For You" title="One principal on the ground — working only for you." />
           <p className="mt-6 max-w-[640px] text-[1rem] font-light leading-[1.85] text-[#1a1a1a]/65 md:text-[1.08rem]">
             Most NRIs are handed to a broker whose loyalty is split and whose fee grows with the price you pay. We work
@@ -283,7 +283,7 @@ export default function NRIDesk() {
       </section>
 
       {/* ───────────── BUILT FOR WHERE YOU LIVE ───────────── */}
-      <section className="mx-auto max-w-[1180px] px-5 py-16 md:px-10 md:py-24">
+      <section className="mx-auto max-w-7xl px-5 py-16 md:px-10 md:py-24">
         <SectionHead n="03" kicker="Built For Where You Live" title="Wherever you are, we work to your clock." />
         <p className="mt-6 max-w-[600px] text-[1rem] font-light leading-[1.85] text-[#1a1a1a]/60 md:text-[1.08rem]">
           Distance and time zones are logistics, not obstacles. We shape the entire engagement around the city you
@@ -304,7 +304,7 @@ export default function NRIDesk() {
 
       {/* ───────────── THE RULES, HANDLED ───────────── */}
       <section className="border-y border-[#1a1a1a]/[0.07] bg-[#1a1a1a] text-white">
-        <div className="mx-auto max-w-[1180px] px-5 py-16 md:px-10 md:py-24">
+        <div className="mx-auto max-w-7xl px-5 py-16 md:px-10 md:py-24">
           <p className="text-[10px] font-medium uppercase tracking-[0.32em] text-[#c9a96e]">
             <span className="mr-3 text-white/30">04</span>FEMA, Tax &amp; the Fine Print
           </p>
@@ -337,7 +337,7 @@ export default function NRIDesk() {
       </section>
 
       {/* ───────────── CUSTOM MANDATES ───────────── */}
-      <section className="mx-auto max-w-[1180px] px-5 py-16 md:px-10 md:py-24">
+      <section className="mx-auto max-w-7xl px-5 py-16 md:px-10 md:py-24">
         <SectionHead n="05" kicker="Tailored To Your Reason" title="No two NRIs are buying for the same reason." />
         <p className="mt-6 max-w-[600px] text-[1rem] font-light leading-[1.85] text-[#1a1a1a]/60 md:text-[1.08rem]">
           A home for ageing parents is not an investment flat, and neither is the anchor you plan to retire into. We
@@ -379,7 +379,7 @@ export default function NRIDesk() {
       </section>
 
       {/* ───────────── CLOSING CTA ───────────── */}
-      <section className="mx-auto max-w-[1180px] px-5 py-16 md:px-10 md:py-24">
+      <section className="mx-auto max-w-7xl px-5 py-16 md:px-10 md:py-24">
         <div className="overflow-hidden rounded-2xl bg-[#1a1a1a] px-7 py-14 text-center text-white md:px-10 md:py-20">
           <p className="text-[10px] font-medium uppercase tracking-[0.32em] text-[#c9a96e]">Start Here</p>
           <h2 className="mx-auto mt-5 max-w-[18ch] font-serif text-[2rem] font-medium leading-[1.15] md:text-[3rem]">

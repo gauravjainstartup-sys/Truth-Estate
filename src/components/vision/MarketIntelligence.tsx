@@ -33,7 +33,7 @@ export default function MarketIntelligence() {
 
   return (
     <section id="intelligence" className="relative bg-[#0b0b0c] px-6 py-24 md:px-10 md:py-32">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-7xl">
         {/* Header */}
         <p className="text-[11px] font-medium uppercase tracking-[0.4em] text-[#c9a96e]">Market Intelligence</p>
         <h2 className="mt-6 max-w-3xl font-serif text-[2.3rem] font-medium leading-[1.1] tracking-[-0.015em] text-white md:text-[3.4rem]">

@@ -418,7 +418,7 @@ export default function SunVastu() {
   return (
     <div className="min-h-screen bg-[#14110d] text-[#f4efe6]" style={{ fontFeatureSettings: '"ss01"' }}>
       {/* ── nav ── */}
-      <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-7 md:px-10">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-7 md:px-10">
         <a href={`${basePath}/`} aria-label="Truth Estate — home"><Logo className="h-9 w-auto opacity-80 md:h-10" /></a>
         <div className="flex items-center gap-6 text-[12px] font-medium tracking-[0.12em] text-[#a9a196]">
           <a href={`${basePath}/intelligence`} className="hidden transition-colors hover:text-[#f4efe6] sm:inline">Truth Intelligence</a>
@@ -429,7 +429,7 @@ export default function SunVastu() {
       {/* ═══ 1 · HERO ═══ */}
       <header className="relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse 55% 45% at 78% 8%, rgba(246,182,75,0.10) 0%, transparent 62%)" }} />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 pb-20 pt-8 md:grid-cols-[1fr_1.02fr] md:px-10 md:pb-28 md:pt-14">
+        <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-6 pb-20 pt-8 md:grid-cols-[1fr_1.02fr] md:px-10 md:pb-28 md:pt-14">
           <Reveal>
             <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#c9a96e]">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke={C.sun} strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
@@ -462,7 +462,7 @@ export default function SunVastu() {
 
       {/* ═══ 2 · THE PROBLEM ═══ */}
       <section className="border-t border-white/[0.06] bg-[#161209]">
-        <div className="mx-auto max-w-5xl px-6 py-20 md:px-10 md:py-28">
+        <div className="mx-auto max-w-7xl px-6 py-20 md:px-10 md:py-28">
           <Reveal>
             <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#a07d2c]">The blind spot</p>
             <h2 className="mt-5 max-w-3xl font-serif text-3xl font-medium leading-[1.12] text-[#f4efe6] sm:text-[2.6rem]">
@@ -476,7 +476,7 @@ export default function SunVastu() {
       </section>
 
       {/* ═══ 3 · SUNLIGHT ═══ */}
-      <section className="mx-auto max-w-6xl px-6 py-20 md:px-10 md:py-28">
+      <section className="mx-auto max-w-7xl px-6 py-20 md:px-10 md:py-28">
         <Reveal>
           <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#c9a96e]">Sunlight</p>
           <h2 className="mt-5 max-w-3xl font-serif text-3xl font-medium leading-[1.12] text-[#f4efe6] sm:text-[2.6rem]">
@@ -506,7 +506,7 @@ export default function SunVastu() {
 
       {/* ═══ 4 · VASTU ═══ */}
       <section className="border-y border-white/[0.06] bg-[#161209]">
-        <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 py-20 md:grid-cols-[0.9fr_1.1fr] md:px-10 md:py-28">
+        <div className="mx-auto grid max-w-7xl items-center gap-14 px-6 py-20 md:grid-cols-[0.9fr_1.1fr] md:px-10 md:py-28">
           <Reveal className="order-2 flex justify-center md:order-1">
             <VastuCompass />
           </Reveal>
@@ -526,7 +526,7 @@ export default function SunVastu() {
       </section>
 
       {/* ═══ 5 · HOW IT WORKS ═══ */}
-      <section id="how" className="mx-auto max-w-6xl px-6 py-20 md:px-10 md:py-28">
+      <section id="how" className="mx-auto max-w-7xl px-6 py-20 md:px-10 md:py-28">
         <Reveal>
           <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#c9a96e]">How it works</p>
           <h2 className="mt-5 max-w-2xl font-serif text-3xl font-medium leading-[1.12] text-[#f4efe6] sm:text-[2.6rem]">
@@ -548,7 +548,7 @@ export default function SunVastu() {
 
       {/* ═══ 6 · WORKED SAMPLE ═══ */}
       <section className="border-t border-white/[0.06] bg-[#161209]">
-        <div className="mx-auto max-w-6xl px-6 py-20 md:px-10 md:py-28">
+        <div className="mx-auto max-w-7xl px-6 py-20 md:px-10 md:py-28">
           <Reveal>
             <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#a07d2c]">A worked example</p>
             <h2 className="mt-5 max-w-3xl font-serif text-3xl font-medium leading-[1.12] text-[#f4efe6] sm:text-[2.6rem]">
@@ -627,7 +627,7 @@ export default function SunVastu() {
       </section>
 
       {/* ═══ 7 · LIVE NOW ═══ */}
-      <section id="live" className="mx-auto max-w-6xl px-6 py-20 md:px-10 md:py-28">
+      <section id="live" className="mx-auto max-w-7xl px-6 py-20 md:px-10 md:py-28">
         <Reveal>
           <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#c9a96e]">Live now</p>
           <h2 className="mt-5 max-w-3xl font-serif text-3xl font-medium leading-[1.12] text-[#f4efe6] sm:text-[2.6rem]">

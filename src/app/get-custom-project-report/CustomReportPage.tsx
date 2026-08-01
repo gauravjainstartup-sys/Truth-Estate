@@ -213,7 +213,7 @@ export default function CustomReportPage() {
   return (
     <main className="min-h-svh bg-[#F5F0E8] text-[#1a1a1a]">
       <header className="border-b border-[#1a1a1a]/[0.07]">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 md:px-8">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 md:px-8">
           <a href={`${basePath}`} aria-label="Truth Estate — home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
           <span className="font-mono text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#9a7a2e]">The Independent Buyer&rsquo;s Office</span>
         </div>
@@ -224,7 +224,7 @@ export default function CustomReportPage() {
           <Success project={project} contact={verified ? maskContact(verified) : ""} />
         </div>
       ) : (
-        <div className="mx-auto max-w-6xl px-6 pb-32 pt-10 md:px-8 md:pt-14 lg:grid lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1fr)] lg:items-start lg:gap-14 lg:pb-24 xl:gap-20">
+        <div className="mx-auto max-w-7xl px-6 pb-32 pt-10 md:px-8 md:pt-14 lg:grid lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1fr)] lg:items-start lg:gap-14 lg:pb-24 xl:gap-20">
           {/* ── LEFT · the pitch (sticky on desktop) ── */}
           <div className="lg:sticky lg:top-14 lg:self-start">
             <p className="font-mono text-[0.66rem] font-semibold uppercase tracking-[0.24em] text-[#9a7a2e]">Custom Report</p>
@@ -411,7 +411,7 @@ export default function CustomReportPage() {
           className="fixed inset-x-0 bottom-0 z-40 border-t border-[#1a1a1a]/10 bg-[#F5F0E8]/95 backdrop-blur-sm lg:hidden"
           style={{ paddingBottom: "max(0.7rem, env(safe-area-inset-bottom))" }}
         >
-          <div className="mx-auto flex max-w-6xl items-center gap-3 px-5 pt-3">
+          <div className="mx-auto flex max-w-7xl items-center gap-3 px-5 pt-3">
             {step === 2 && (
               <button
                 type="button"

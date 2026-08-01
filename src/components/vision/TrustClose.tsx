@@ -19,7 +19,7 @@ export default function TrustClose() {
         className="pointer-events-none absolute inset-0"
         style={{ background: "radial-gradient(ellipse 55% 45% at 50% 100%, rgba(201,169,110,0.08) 0%, transparent 60%)" }}
       />
-      <div className="relative z-10 mx-auto max-w-6xl">
+      <div className="relative z-10 mx-auto max-w-7xl">
         {/* Advisory */}
         <p className="text-[11px] font-medium uppercase tracking-[0.4em] text-[#c9a96e]">The Human Layer</p>
         <h2 className="mt-6 max-w-3xl font-serif text-[2.3rem] font-medium leading-[1.1] tracking-[-0.015em] text-white md:text-[3.4rem]">
