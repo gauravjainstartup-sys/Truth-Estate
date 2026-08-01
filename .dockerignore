@@ -1,0 +1,45 @@
+# ════════════════════════════════════════════════════════════════
+#  WHAT THE IMAGE DOES NOT NEED — which is nearly everything.
+#
+#  `docker build .` sends the whole context to the daemon before it
+#  executes a single instruction. Without this file that is 2.1 GB, of
+#  which the image copies 590 MB and uses none of the rest:
+#
+#      node_modules   811 MB   the build already ran, in CI
+#      .next          620 MB   intermediate output; `out/` is the artifact
+#      .git            54 MB
+#      public          15 MB   already inlined into out/ by the export
+#
+#  The first production push spent over twenty minutes on this step. The
+#  image is nginx plus a static directory; it has no use for a toolchain.
+# ════════════════════════════════════════════════════════════════
+
+node_modules
+.next
+.git
+.github
+.data-snapshot
+.claude
+
+# Sources and tooling — the export is prebuilt in CI and copied in whole.
+src
+tests
+scripts
+supabase
+db3d
+public
+deploy/*.md
+*.md
+package*.json
+tsconfig.json
+next.config.*
+eslint.config.*
+postcss.config.*
+
+# Local noise
+.env*
+.DS_Store
+*.log
+coverage
+playwright-report
+test-results
