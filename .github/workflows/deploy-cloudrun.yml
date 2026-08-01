@@ -60,6 +60,11 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # A hung step used to sit here burning runner minutes until GitHub's
+    # six-hour default killed it. Nothing in this job legitimately takes
+    # more than a few minutes; the full run above did its work in under
+    # two and then stalled.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -91,7 +96,44 @@ jobs:
           NEXT_PUBLIC_GMAPS_KEY: ${{ secrets.NEXT_PUBLIC_GMAPS_KEY }}
           SNAPSHOT_REFRESH: ${{ inputs.refresh_snapshot && '1' || '0' }}
           REQUIRE_SNAPSHOT: "1"
-        run: npm run build
+          # READ THE SNAPSHOT THE PREBUILD JUST DOWNLOADED.
+          #
+          # Omitting this did not fail the build — it made it fetch every
+          # view live, once per page, and then hang. The first run took a
+          # correct snapshot, ignored it, made several hundred HTTPS calls
+          # to Supabase, finished all 1255 pages in 97 seconds, and never
+          # exited: keep-alive sockets in the connection pool hold the Node
+          # process open, so the step sat "in progress" for thirty minutes
+          # with all its work done.
+          #
+          # The hang was the symptom. The two real faults were the read
+          # egress the snapshot exists to avoid, and the race it exists to
+          # prevent — independent per-page fetches can straddle the
+          # pipeline's table rewrite, which is how a previous build
+          # rendered half its pages from a half-written view.
+          #
+          # deploy.yml has always set this. This workflow was written from
+          # scratch and did not.
+          SUPABASE_FIXTURES: ".data-snapshot"
+        # Tee'd so the next step can assert on what the build actually did.
+        run: npm run build 2>&1 | tee "$RUNNER_TEMP/build.log"
+
+      - name: Prove the build read the snapshot, not the network
+        # Reverting to live fetching looks like nothing but a slow build,
+        # and it costs both the read egress and the consistency guarantee.
+        # The two log formats are distinguishable, so assert on them.
+        #   fixtures:  [supabase] fixtures · <view> → N rows
+        #   network:   [supabase] <view> → N rows
+        run: |
+          log="$RUNNER_TEMP/build.log"
+          fixtures=$(grep -c "\[supabase\] fixtures ·" "$log" || true)
+          if [ "$fixtures" -eq 0 ]; then
+            echo "::error::The build never read the snapshot — it fetched every view live."
+            echo "SUPABASE_FIXTURES is unset or pointing at the wrong directory."
+            grep -m5 "\[supabase\]" "$log" || true
+            exit 1
+          fi
+          echo "Snapshot honoured: $fixtures fixture read(s), no live per-page fetching."
 
       - name: Refuse to ship a build addressed to the preview
         # The single failure mode that would take the live domain down and
