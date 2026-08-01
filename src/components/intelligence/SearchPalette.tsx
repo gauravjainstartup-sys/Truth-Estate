@@ -9,9 +9,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { basePath } from "@/lib/site";
+import { projectHref } from "@/lib/projectHref";
 
 
-type P = { n: string; s: string; m?: string; d?: string; ts?: number };
+type P = { n: string; s: string; q?: string; m?: string; d?: string; ts?: number };
 type D = { n: string; s: string; c?: number };
 type Index = { p: P[]; d: D[] };
 
@@ -32,7 +33,7 @@ function filter(ix: Index, q: string): Hit[] {
       n: x.n,
       sub: [x.m, x.d].filter(Boolean).join(" · ") || "project file",
       chip: x.ts != null ? `${x.ts}/100` : "file",
-      href: `${basePath}/intelligence/projects/${x.s}`,
+      href: projectHref({ slug: x.s, seoSlug: x.q }),
     }));
   const ds = ix.d
     .map((x) => ({ x, r: rank(x.n.toLowerCase()) }))
@@ -49,7 +50,17 @@ function filter(ix: Index, q: string): Hit[] {
   return [...ps, ...ds];
 }
 
-export default function SearchPalette({ className = "" }: { className?: string }) {
+/* `current` is the project whose page this is. Given it, the header stops
+   being a bare magnifier and says where you are — the reader arriving from
+   a search result had no confirmation on the page that the file they opened
+   was the one they picked. Founder's mock: the project name sitting in the
+   search field, with a way to start a new one.
+
+   Opening ALWAYS starts empty rather than seeding the field with the
+   current project. Seeding reads as a filter — search within this project —
+   and the one thing a reader wants from a control labelled with where they
+   already are is somewhere else. */
+export default function SearchPalette({ className = "", current }: { className?: string; current?: string }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [ix, setIx] = useState<Index | null>(cached);
@@ -105,16 +116,33 @@ export default function SearchPalette({ className = "" }: { className?: string }
 
   return (
     <>
-      <button
-        onClick={show}
-        aria-label="Search projects and developers"
-        title="Search (⌘K)"
-        className={`grid h-9 w-9 place-items-center rounded-[10px] text-[#1a1a1a]/60 transition-colors hover:bg-white hover:text-[#1a1a1a] hover:ring-1 hover:ring-[#1a1a1a]/15 ${className}`}
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-[17px] w-[17px]">
-          <circle cx="11" cy="11" r="7" /><path d="m20 20-3.4-3.4" />
-        </svg>
-      </button>
+      {current ? (
+        <button
+          onClick={show}
+          aria-label={`Currently viewing ${current}. Search for another project or developer`}
+          title="Search (⌘K)"
+          className={`group flex h-9 min-w-0 max-w-[15rem] items-center gap-2 rounded-[10px] px-2.5 text-left text-[#1a1a1a]/60 ring-1 ring-[#1a1a1a]/12 transition-colors hover:bg-white hover:text-[#1a1a1a] hover:ring-[#1a1a1a]/20 sm:max-w-[22rem] ${className}`}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-[15px] w-[15px] shrink-0">
+            <circle cx="11" cy="11" r="7" /><path d="m20 20-3.4-3.4" />
+          </svg>
+          <span className="truncate text-[0.82rem] font-medium text-[#1a1a1a]/85">{current}</span>
+          <span className="ml-auto hidden shrink-0 rounded-[6px] bg-[#1a1a1a]/[0.06] px-1.5 py-0.5 text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-[#1a1a1a]/50 transition-colors group-hover:bg-[#1e6b45]/10 group-hover:text-[#1e6b45] sm:block">
+            Change
+          </span>
+        </button>
+      ) : (
+        <button
+          onClick={show}
+          aria-label="Search projects and developers"
+          title="Search (⌘K)"
+          className={`grid h-9 w-9 place-items-center rounded-[10px] text-[#1a1a1a]/60 transition-colors hover:bg-white hover:text-[#1a1a1a] hover:ring-1 hover:ring-[#1a1a1a]/15 ${className}`}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-[17px] w-[17px]">
+            <circle cx="11" cy="11" r="7" /><path d="m20 20-3.4-3.4" />
+          </svg>
+        </button>
+      )}
 
       {/* portalled to <body>: the sticky header's transform would otherwise
           become the containing block for this fixed overlay */}

@@ -510,7 +510,7 @@ export default function ProjectProfile({
           ) : (
             <>
               <a href={homeHref} aria-label="Home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
-              <SearchPalette className="ml-auto" />
+              <SearchPalette className="ml-auto" current={p.name} />
               {/* This is the page behind the paywall, so "am I signed in"
                  and "why can I read this" are the same question. It had no
                  answer here until now. */}
