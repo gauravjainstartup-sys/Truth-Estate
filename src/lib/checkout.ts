@@ -38,9 +38,24 @@ export type CheckoutFailure =
   | "verification"      // paid, but the grant could not be confirmed
   | "network";
 
+export type Receipt = {
+  paymentId: string;
+  orderId: string;
+  amountInr: number;
+  label: string;
+  method: string | null;
+  projectName: string | null;
+  paidAt: string;
+};
+
 export type CheckoutResult =
-  | { ok: true; packageId: string; slug: string | null; all: boolean }
-  | { ok: false; reason: CheckoutFailure; paymentId?: string };
+  | { ok: true; packageId: string; slug: string | null; all: boolean; receipt?: Receipt }
+  /* `code` is the server's own reason, carried through to the customer as
+     a support code. The first live test failed on an order-status race and
+     the screen could only say "we couldn't confirm it" — true, useless to
+     both of us. A payment id plus a reason is a ticket somebody can
+     actually action. */
+  | { ok: false; reason: CheckoutFailure; paymentId?: string; code?: string };
 
 type RzpSuccess = { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string };
 type RzpCtor = new (opts: Record<string, unknown>) => { open: () => void; on: (e: string, cb: (x: unknown) => void) => void };
@@ -134,7 +149,7 @@ export async function payForPackage(
 
   if (!success) return { ok: false, reason: "dismissed" };
 
-  const verified = await fn<{ ok?: boolean; reason?: string; granted?: boolean; duplicate?: boolean; slug?: string | null; all?: boolean; paymentId?: string }>(
+  const verified = await fn<{ ok?: boolean; reason?: string; granted?: boolean; duplicate?: boolean; slug?: string | null; all?: boolean; receipt?: Receipt }>(
     "razorpay-verify",
     { anonId, ...success },
   );
@@ -144,7 +159,13 @@ export async function payForPackage(
      failure, and never a grant handed out to paper over it. */
   if (!verified?.ok) {
     console.error("[checkout] verification failed", verified?.reason);
-    return { ok: false, reason: "verification", paymentId: success.razorpay_payment_id };
+    return { ok: false, reason: "verification", paymentId: success.razorpay_payment_id, code: verified?.reason };
   }
-  return { ok: true, packageId, slug: verified.slug ?? slug ?? null, all: verified.all === true };
+  return {
+    ok: true,
+    packageId,
+    slug: verified.slug ?? slug ?? null,
+    all: verified.all === true,
+    receipt: verified.receipt,
+  };
 }

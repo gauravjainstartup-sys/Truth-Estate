@@ -254,7 +254,7 @@ export default function UnlockModal({
       if (res.reason === "unverified") { setStep("register"); setErr("Please confirm your number before paying."); return; }
       setPayErr(
         res.reason === "not_configured" ? "Card payments are briefly unavailable. Your advisor can complete this for you — we'll call."
-        : res.reason === "verification" ? `Your payment went through${res.paymentId ? ` (${res.paymentId})` : ""} but we couldn't confirm it here. Nothing is lost — we'll unlock it within the hour.`
+        : res.reason === "verification" ? `Your payment went through${res.paymentId ? ` (${res.paymentId})` : ""} but we couldn't confirm it here. Nothing is lost — we'll unlock it within the hour.${res.code ? ` [${res.code}]` : ""}`
         : "That didn't go through. No money has left your account — please try again.",
       );
       return;

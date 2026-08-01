@@ -138,6 +138,57 @@ async function fetchOrder(orderId: string): Promise<RzpOrder | null> {
   }
 }
 
+/* THE PAYMENT IS THE AUTHORITY, NOT THE ORDER'S STATUS.
+
+   First live test: a real card was captured — pay_TKQg22nCAb54ee — and
+   verification refused it. The check was `order.status === "paid"`, and
+   Razorpay's browser handler fires the moment its client confirms, which
+   is BEFORE the order's server-side status has flipped from "attempted".
+   A genuine payment, rejected by a race with itself.
+
+   The payment object does not have that problem: it is `captured` the
+   instant the money is taken, it carries its own amount, and it names the
+   order it belongs to — which is also the binding that stops a payment
+   from one order being presented against another.
+
+   AUTHORIZED IS NOT CAPTURED. If the account is on manual capture the
+   payment arrives `authorized`, and an authorised payment that is never
+   captured is auto-refunded days later. Granting access against one would
+   hand over the report and give the money back. So we capture it here and
+   only continue if that succeeds. */
+type RzpPayment = { id: string; status?: string; amount?: number; currency?: string; order_id?: string; method?: string; email?: string; contact?: string };
+
+async function rzp(path: string, init: RequestInit = {}): Promise<Response> {
+  return fetch(`https://api.razorpay.com/v1${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Basic ${btoa(`${RZP_KEY_ID}:${RZP_KEY_SECRET}`)}`,
+      "content-type": "application/json",
+      ...(init.headers ?? {}),
+    },
+    signal: AbortSignal.timeout(10000),
+  });
+}
+
+async function fetchPayment(paymentId: string): Promise<RzpPayment | null> {
+  try {
+    const res = await rzp(`/payments/${encodeURIComponent(paymentId)}`);
+    if (!res.ok) { console.error(`[razorpay-verify] payment fetch ${res.status}`); return null; }
+    return await res.json() as RzpPayment;
+  } catch { return null; }
+}
+
+async function capture(paymentId: string, amountPaise: number, currency: string): Promise<RzpPayment | null> {
+  try {
+    const res = await rzp(`/payments/${encodeURIComponent(paymentId)}/capture`, {
+      method: "POST",
+      body: JSON.stringify({ amount: amountPaise, currency }),
+    });
+    if (!res.ok) { console.error(`[razorpay-verify] capture ${res.status}: ${(await res.text()).slice(0, 200)}`); return null; }
+    return await res.json() as RzpPayment;
+  } catch { return null; }
+}
+
 /* THE GRANT HAS TO NAME THE PROJECT, NOT THE PACKAGE.
 
    First cut wrote projectName from the order's `label` note — which is
@@ -211,12 +262,28 @@ Deno.serve(async (req: Request) => {
     return done({ ok: false, reason: "bad_signature" }, 400);
   }
 
-  // ── 2. the order, from Razorpay itself ──
-  const order = await fetchOrder(orderId);
-  if (!order) return done({ ok: false, reason: "gateway" }, 502);
-  if (order.status !== "paid") {
-    console.warn(`[razorpay-verify] ${orderId} status=${order.status} — not granting`);
-    return done({ ok: false, reason: "not_paid" }, 402);
+  // ── 2. the payment and the order, both from Razorpay itself ──
+  const [order, payment0] = await Promise.all([fetchOrder(orderId), fetchPayment(paymentId)]);
+  if (!order || !payment0) return done({ ok: false, reason: "gateway" }, 502);
+
+  /* The payment must belong to the order whose signature we just checked.
+     Without this, a genuine payment for a ₹999 read could be presented
+     against a ₹9,999 All-Access order. */
+  if (payment0.order_id && payment0.order_id !== orderId) {
+    console.error(`[razorpay-verify] ${paymentId} belongs to ${payment0.order_id}, not ${orderId}`);
+    return done({ ok: false, reason: "order_mismatch" }, 400);
+  }
+
+  let payment = payment0;
+  if (payment.status === "authorized") {
+    console.info(`[razorpay-verify] ${paymentId} authorized — capturing`);
+    const captured = await capture(paymentId, payment.amount ?? 0, payment.currency ?? "INR");
+    if (!captured) return done({ ok: false, reason: "capture_failed" }, 502);
+    payment = captured;
+  }
+  if (payment.status !== "captured") {
+    console.warn(`[razorpay-verify] ${paymentId} status=${payment.status} — not granting`);
+    return done({ ok: false, reason: `not_captured:${payment.status ?? "unknown"}` }, 402);
   }
 
   const packageId = String(order.notes?.packageId ?? "");
@@ -232,7 +299,9 @@ Deno.serve(async (req: Request) => {
      razorpay-order). Falling back to list price when notes are absent
      keeps an older order from being under-verified. */
   const expectedPaise = Number(order.notes?.expectedPaise ?? "") || pkg.inr * 100;
-  const paidPaise = order.amount_paid ?? order.amount ?? 0;
+  /* From the PAYMENT — what was actually taken — rather than the order's
+     running total, which is subject to the same lag as its status. */
+  const paidPaise = payment.amount ?? 0;
   if (paidPaise < expectedPaise) {
     console.error(`[razorpay-verify] ${orderId} underpaid: ${paidPaise} < ${expectedPaise}`);
     return done({ ok: false, reason: "amount_mismatch" }, 402);
@@ -323,5 +392,16 @@ Deno.serve(async (req: Request) => {
   }
 
   console.info(`[razorpay-verify] granted ${packageId}${slug ? ` ${slug}` : ""} to ${userId.slice(0, 8)}… (${paymentId})`);
-  return done({ ok: true, granted: true, packageId, slug: slug || null, all: pkg.scope === "site" });
+  return done({
+    ok: true, granted: true, packageId, slug: slug || null, all: pkg.scope === "site",
+    /* Everything the receipt needs, so the client does not have to ask a
+       second endpoint for what this call already knows. */
+    receipt: {
+      paymentId, orderId, amountInr,
+      label: pkg.label,
+      method: payment.method ?? null,
+      projectName: pkg.scope === "project" ? (await projectBySlug(slug))?.name ?? slug : null,
+      paidAt: new Date().toISOString(),
+    },
+  });
 });
