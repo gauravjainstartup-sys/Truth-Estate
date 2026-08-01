@@ -19,6 +19,8 @@ import {
 import { isSignedIn } from "@/lib/journey";
 import { normalisePhone, prettyPhone, sendOtp, verifyOtp, saveName, OTP_LENGTH } from "@/lib/phoneAuth";
 import { track } from "@/lib/events";
+import HelpCentre from "./HelpCentre";
+import { fetchBilling } from "@/lib/billing";
 
 export default function TruthGuideChat({
   onClose,
@@ -41,6 +43,12 @@ export default function TruthGuideChat({
   const [authBusy, setAuthBusy] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  /* The Help Centre is a panel over the thread rather than a route: the
+     reader is mid-conversation and a navigation would lose it. */
+  const [helpOpen, setHelpOpen] = useState(false);
+  /* Paid-audience only, and "paid" is the server's word. Asked once on
+     mount; null until we know, so the entry never flickers in and out. */
+  const [hasPurchases, setHasPurchases] = useState<boolean | null>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -49,6 +57,9 @@ export default function TruthGuideChat({
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 350);
     trackedProjectCount().then(setProjectCount).catch(() => {});
+    fetchBilling()
+      .then((b) => setHasPurchases(!!b?.payments.some((x) => x.status === "completed")))
+      .catch(() => setHasPurchases(false));
     track("chat_opened");
   }, []);
 
@@ -149,17 +160,39 @@ export default function TruthGuideChat({
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <span className="rounded-full border border-white/15 px-2.5 py-1 text-[0.6rem] font-medium text-white/50">
-            {remaining} left{tier === "anonymous" ? "" : " today"}
-          </span>
+          {/* Shown only to accounts with a completed payment. The quota
+              pill is what a free reader watches; a customer who has paid
+              is far likelier to want their receipt, so it takes the slot
+              rather than crowding in beside it. */}
+          {hasPurchases ? (
+            <button
+              onClick={() => setHelpOpen(true)}
+              className="rounded-full border border-[#c9a96e]/40 bg-[#c9a96e]/10 px-3 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-[#e6cf9b] transition-colors hover:bg-[#c9a96e]/20"
+            >
+              Help Centre
+            </button>
+          ) : (
+            <span className="rounded-full border border-white/15 px-2.5 py-1 text-[0.6rem] font-medium text-white/50">
+              {remaining} left{tier === "anonymous" ? "" : " today"}
+            </span>
+          )}
           <button onClick={onClose} aria-label="Close" className="-mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white/55 transition-colors hover:bg-white/10 hover:text-white">
             &#10005;
           </button>
         </div>
       </div>
 
+      {helpOpen && (
+        <div className="min-h-0 flex-1">
+          <HelpCentre
+            onClose={() => setHelpOpen(false)}
+            onAskAdvisor={(q) => { setHelpOpen(false); void send(q); }}
+          />
+        </div>
+      )}
+
       {/* Thread */}
-      <div ref={scrollRef} className="relative min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-5">
+      <div ref={scrollRef} className={`relative min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-5 ${helpOpen ? "hidden" : ""}`}>
         {msgs.length === 0 && !typing && (
           <div>
             <Bubble>

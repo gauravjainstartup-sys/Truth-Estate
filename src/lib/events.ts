@@ -34,6 +34,9 @@ export type EventName =
   | "lead_captured"
   | "office_opened"
   | "chat_opened"
+  /* Help Centre — paid readers checking what they bought. Worth its own
+     name: a spike here is usually a payment that did not land. */
+  | "help_centre_opened"
   /* Owner or prospect, declared at the unlock. */
   | "stake_declared";
 

@@ -320,48 +320,64 @@ Deno.serve(async (req: Request) => {
   }
   const userId = orderUserId;
 
-  // ── idempotency: has this payment already been recorded? ──
-  const seen = await sbFetch(
-    `payments?select=id&razorpay_payment_id=eq.${encodeURIComponent(paymentId)}&limit=1`,
-  );
-  if (seen.ok && ((await seen.json()) as unknown[]).length > 0) {
-    console.info(`[razorpay-verify] ${paymentId} already recorded — no double grant`);
+  /* ── idempotency ──
+     Checked against the GRANT, not only the ledger. The ledger is the
+     accounting record and it can fail (it just did — a payments insert
+     rejected, and the customer was told their money was in limbo while
+     the report stayed locked). The grant is the thing that must not be
+     written twice, so that is what is checked. The ledger is consulted
+     too, cheaply, because it catches the all-access case where no grant
+     entry is written. */
+  const already = async (): Promise<boolean> => {
+    const prof = await sbFetch(`user_profiles?select=unlocked_reports&id=eq.${encodeURIComponent(userId)}&limit=1`);
+    if (prof.ok) {
+      const rows = await prof.json() as { unlocked_reports?: string[] }[];
+      const list = Array.isArray(rows[0]?.unlocked_reports) ? rows[0].unlocked_reports! : [];
+      if (list.some((e) => typeof e === "string" && e.includes(paymentId))) return true;
+    }
+    const led = await sbFetch(`payments?select=id&razorpay_payment_id=eq.${encodeURIComponent(paymentId)}&limit=1`);
+    return led.ok && ((await led.json()) as unknown[]).length > 0;
+  };
+  if (await already()) {
+    console.info(`[razorpay-verify] ${paymentId} already applied — no double grant`);
     return done({ ok: true, granted: false, duplicate: true });
   }
 
   const slug = String(order.notes?.slug ?? "");
   const amountInr = Math.round(paidPaise / 100);
 
-  /* Ledger first, then the grant. If the second write fails the customer
-     has a recorded payment we can reconcile from; the other order would
-     leave money taken with nothing on file. */
-  const payRes = await sbFetch("payments", {
-    method: "POST",
-    headers: { Prefer: "return=minimal" },
-    body: JSON.stringify({
-      user_id: userId,
-      status: "completed",
-      project_name: pkg.scope === "project" ? slug : null,
-      package_name: packageId,
-      amount: amountInr,
-      razorpay_order_id: orderId,
-      razorpay_payment_id: paymentId,
-    }),
-  });
-  if (!payRes.ok) {
-    console.error(`[razorpay-verify] payments insert ${payRes.status}: ${(await payRes.text()).slice(0, 300)}`);
-    return done({ ok: false, reason: "ledger_write_failed" }, 500);
-  }
+  /* ── ACCESS FIRST. THE LEDGER IS OUR PAPERWORK, NOT THEIR PROBLEM. ──
+
+     This ran the other way round and it cost a real customer their
+     report: the payments insert was rejected by the table's own
+     constraints, and because the grant was gated on it the buyer saw
+     "your payment went through but we couldn't confirm it" while
+     Razorpay held their money. Every check that matters had already
+     passed — signature, capture, amount, account. The only thing that
+     failed was our bookkeeping.
+
+     entitlements/core.ts already states the principle for the read side:
+     "someone whose payment succeeded but whose grant failed to write has
+     paid, and refusing them access because of our bookkeeping would be
+     indefensible." The write side now agrees with it.
+
+     So: grant, then record. A ledger failure is logged at error with the
+     payment id and the reason, and reported back as `ledgerWritten:false`
+     — visible, reconcilable, and not the customer's emergency. */
 
   /* All-Access is a plan, not 97 grants. A project purchase appends one
      entry in prod's existing shape. */
+  let granted = true;
   if (pkg.scope === "site") {
     const r = await sbFetch(`user_profiles?id=eq.${encodeURIComponent(userId)}`, {
       method: "PATCH",
       headers: { Prefer: "return=minimal" },
       body: JSON.stringify({ plan: "all-access" }),
     });
-    if (!r.ok) console.error(`[razorpay-verify] plan write ${r.status}`);
+    if (!r.ok) {
+      console.error(`[razorpay-verify] PLAN WRITE FAILED ${r.status} for ${paymentId} — reconcile manually`);
+      granted = false;
+    }
   } else {
     const cur = await sbFetch(`user_profiles?select=unlocked_reports&id=eq.${encodeURIComponent(userId)}&limit=1`);
     const rows = cur.ok ? (await cur.json()) as { unlocked_reports?: string[] }[] : [];
@@ -386,14 +402,41 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({ unlocked_reports: [...list, entry] }),
     });
     if (!r.ok) {
-      console.error(`[razorpay-verify] grant write ${r.status} — payment IS recorded, reconcile ${paymentId}`);
-      return done({ ok: false, reason: "grant_write_failed", paymentId }, 500);
+      console.error(`[razorpay-verify] GRANT WRITE FAILED ${r.status} for ${paymentId} — reconcile manually`);
+      granted = false;
     }
   }
 
-  console.info(`[razorpay-verify] granted ${packageId}${slug ? ` ${slug}` : ""} to ${userId.slice(0, 8)}… (${paymentId})`);
+  /* The ledger, best-effort and after the fact. */
+  const payRes = await sbFetch("payments", {
+    method: "POST",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({
+      user_id: userId,
+      status: "completed",
+      project_name: pkg.scope === "project" ? slug : null,
+      package_name: packageId,
+      amount: amountInr,
+      razorpay_order_id: orderId,
+      razorpay_payment_id: paymentId,
+    }),
+  });
+  const ledgerWritten = payRes.ok;
+  if (!ledgerWritten) {
+    console.error(
+      `[razorpay-verify] LEDGER WRITE FAILED ${payRes.status} for ${paymentId} ` +
+      `(user ${userId}, ${packageId}, ₹${amountInr}): ${(await payRes.text()).slice(0, 400)}`,
+    );
+  }
+
+  /* Access failed AND the money is taken — the one state worth a 500, so
+     the client shows the payment id rather than a success it cannot back
+     up. */
+  if (!granted) return done({ ok: false, reason: "grant_write_failed", paymentId }, 500);
+
+  console.info(`[razorpay-verify] granted ${packageId}${slug ? ` ${slug}` : ""} to ${userId.slice(0, 8)}… (${paymentId})${ledgerWritten ? "" : " [LEDGER MISSING]"}`);
   return done({
-    ok: true, granted: true, packageId, slug: slug || null, all: pkg.scope === "site",
+    ok: true, granted: true, ledgerWritten, packageId, slug: slug || null, all: pkg.scope === "site",
     /* Everything the receipt needs, so the client does not have to ask a
        second endpoint for what this call already knows. */
     receipt: {

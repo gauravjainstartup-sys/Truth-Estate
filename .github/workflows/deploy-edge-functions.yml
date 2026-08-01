@@ -47,3 +47,4 @@ jobs:
       - run: supabase functions deploy brief --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
       - run: supabase functions deploy claim-events --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
       - run: supabase functions deploy entitlements --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
+      - run: supabase functions deploy billing --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy

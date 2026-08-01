@@ -24,7 +24,8 @@ import {
 } from "@/lib/journey";
 import { normalisePhone, normaliseIntl, phoneKnown, prettyPhone, sendOtp, sendOtpIntl, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
 import { fetchEntitlements } from "@/lib/entitlements";
-import { payForPackage, prewarmCheckout } from "@/lib/checkout";
+import { payForPackage, prewarmCheckout, type Receipt } from "@/lib/checkout";
+import { openReceipt, invalidateBilling, inr as inrFmt } from "@/lib/billing";
 
 const DIAL = [
   { code: "+91", flag: "🇮🇳" }, { code: "+971", flag: "🇦🇪" }, { code: "+1", flag: "🇺🇸" },
@@ -99,6 +100,7 @@ export default function UnlockModal({
   const [err, setErr] = useState("");
   const [paying, setPaying] = useState(false);
   const [payErr, setPayErr] = useState("");
+  const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [busy, setBusy] = useState(false);
 
   const isIndia = dial === "+91";
@@ -131,7 +133,7 @@ export default function UnlockModal({
     );
     setSel(focus3D ? "read3d" : "read");
     setExpanded(null);
-    setSent(false); setKnown(undefined); setOtp(Array(OTP_LEN).fill("")); setErr(""); setPaying(false); setPayErr("");
+    setSent(false); setKnown(undefined); setOtp(Array(OTP_LEN).fill("")); setErr(""); setPaying(false); setPayErr(""); setReceipt(null);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
@@ -262,8 +264,15 @@ export default function UnlockModal({
 
     grantPackage(sel, slug);
     void fetchEntitlements();
+    /* The Help Centre caches the payment list; it is one short until this
+       clears. */
+    invalidateBilling();
+    setReceipt(res.receipt ?? null);
     setStep("done");
-    setTimeout(() => { onUnlocked(sel); onClose(); }, 1400);
+    /* A receipt nobody can act on before the sheet closes is not a
+       receipt. With one on screen the reader dismisses it themselves; the
+       auto-close stays only for the case where verify returned none. */
+    if (!res.receipt) setTimeout(() => { onUnlocked(sel); onClose(); }, 1400);
   }
 
   const FIELD = "w-full rounded-md border border-[#1a1a1a]/[0.16] bg-white px-4 py-3 text-[0.95rem] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#1a1a1a]/35 focus:border-[#c9a96e]";
@@ -532,7 +541,41 @@ export default function UnlockModal({
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-7 w-7"><path d="M20 6 9 17l-5-5" /></svg>
               </div>
               <h2 className="mt-4 font-serif text-[1.6rem] font-semibold">You&rsquo;re unlocked</h2>
-              <p className="mt-2 text-[0.9rem] text-[#1a1a1a]/55">Opening your full read for {projectName}…</p>
+              <p className="mt-2 text-[0.9rem] text-[#1a1a1a]/55">
+                {receipt ? `${projectName} is open whenever you are.` : `Opening your full read for ${projectName}…`}
+              </p>
+
+              {/* The money just left their account — the reference for it
+                  belongs on this screen, not only in an inbox we have not
+                  sent yet. It is also in the Help Centre for ever. */}
+              {receipt && (
+                <>
+                  <div className="mx-auto mt-6 max-w-[380px] rounded-xl border border-[#1a1a1a]/10 bg-white/70 p-4 text-left">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="text-[0.84rem] font-medium">{receipt.label}</span>
+                      <span className="font-mono text-[0.95rem] tabular-nums">{inrFmt(receipt.amountInr)}</span>
+                    </div>
+                    <p className="mt-2 break-all font-mono text-[0.62rem] uppercase tracking-[0.06em] text-[#1a1a1a]/35">
+                      {receipt.paymentId}
+                    </p>
+                  </div>
+                  <div className="mt-5 flex flex-col items-center gap-2.5">
+                    <button onClick={() => { onUnlocked(sel); onClose(); }}
+                      className="w-full max-w-[380px] rounded-md bg-[#1e6b45] px-4 py-3 text-[0.9rem] font-medium text-white transition-colors hover:bg-[#238c55]">
+                      Read the report
+                    </button>
+                    <button onClick={() => openReceipt({
+                        id: receipt.paymentId, status: "completed", packageId: sel,
+                        packageLabel: receipt.label, projectSlug: slug ?? null,
+                        projectName: receipt.projectName, amountInr: receipt.amountInr,
+                        paidAt: receipt.paidAt, orderId: receipt.orderId, paymentId: receipt.paymentId,
+                      })}
+                      className="text-[0.8rem] font-medium text-[#1e6b45] underline decoration-[#1e6b45]/25 underline-offset-4 hover:decoration-[#1e6b45]">
+                      Download receipt
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
