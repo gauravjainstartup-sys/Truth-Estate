@@ -211,6 +211,28 @@ jobs:
           check "/robots.txt" 200
           check "/sitemap.xml" 200
           check "/definitely-not-a-page" 404
-          curl -s "$URL/" | grep -q 'rel="canonical" href="https://www.truthestate.in/"' \
-            && echo "  ok   canonical" || { echo "  FAIL canonical"; fail=1; }
+          # The canonical must name PRODUCTION, whatever host answered the
+          # request — that is the whole point of it on a .run.app URL.
+          #
+          # Trailing slash is optional and deliberately not asserted.
+          # metadataBase resolves `canonical: "/"` differently depending on
+          # whether the base URL carries a path, so the preview emits
+          # ".../Truth-Estate/" and production emits "https://www.truthestate.in"
+          # with no slash. Google normalises the two; a test that insists on
+          # one shape fails a correct page, which is what happened on the
+          # first successful deploy.
+          canon=$(curl -s "$URL/" | grep -o 'rel="canonical" href="[^"]*"' | head -1 | sed 's/.*href="//;s/"$//')
+          case "$canon" in
+            https://www.truthestate.in|https://www.truthestate.in/)
+              echo "  ok   canonical → $canon" ;;
+            *)
+              echo "  FAIL canonical → ${canon:-(none)} (want https://www.truthestate.in)"; fail=1 ;;
+          esac
+
+          # The image is the site, so prove the page is the one we built
+          # rather than a stale revision Cloud Run kept serving.
+          curl -s "$URL/intelligence" | grep -q "Truth Intelligence" \
+            && echo "  ok   content served from this image" \
+            || { echo "  FAIL /intelligence has no expected content"; fail=1; }
+
           exit $fail
