@@ -41,6 +41,31 @@ const PRICE_INR: Record<string, { inr: number; label: string; scope: "project" |
 
 const packageIdIsAll = (id: unknown): boolean => id === "all";
 
+/* WHAT TIER A PAST PAYMENT WAS, INCLUDING THE ONES FROM THE OLD SITE.
+
+   package_name is a package ID on rows this build writes ("read"), and a
+   sentence on the ones truthestate.in has been writing since May:
+   "Project Intelligence Access: DLF Privana West". A straight lookup
+   misses every legacy row, and the consequence is not cosmetic — the
+   upgrade credit silently becomes zero, so a customer who bought the
+   ₹999 read on the old site would be charged the full ₹1,499 for the 3D
+   instead of the ₹500 difference. Overcharging a returning customer is
+   the worst possible way to greet them.
+
+   So: the id when it is one, otherwise the tier is inferred from what
+   they actually paid. The amount is the honest fact in either format,
+   and the tolerance is tight enough that no two tiers can be confused. */
+function tierOf(packageName: unknown, amount: unknown): { inr: number; scope: "project" | "site" } | null {
+  const direct = PRICE_INR[String(packageName ?? "")];
+  if (direct) return direct;
+  const amt = typeof amount === "string" ? parseFloat(amount) : typeof amount === "number" ? amount : NaN;
+  if (!Number.isFinite(amt)) return null;
+  /* Nearest tier within ₹1, so 999.00 from a numeric column matches and a
+     part-payment or an unrelated figure does not. */
+  for (const p of Object.values(PRICE_INR)) if (Math.abs(amt - p.inr) < 1) return p;
+  return null;
+}
+
 const ALLOW_ORIGIN = [
   /^https:\/\/gauravjainstartup-sys\.github\.io$/,
   /^https:\/\/(www\.)?truthestate\.in$/,
@@ -143,7 +168,7 @@ Deno.serve(async (req: Request) => {
       const asSlug = (v: string) => v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
       for (const r of rows) {
         if (asSlug(r.project_name ?? "") !== slug) continue;
-        const paid = PRICE_INR[String(r.package_name ?? "")];
+        const paid = tierOf(r.package_name, r.amount);
         if (paid && paid.scope === "project" && paid.inr > creditInr) creditInr = paid.inr;
       }
     } else {

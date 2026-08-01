@@ -67,6 +67,17 @@ const PACKAGE_LABEL: Record<string, string> = {
   read3d: "Read + Sun & Vastu 3D",
   all: "All-Access",
 };
+const PRICE_LABEL: Record<number, string> = { 999: "Full Read", 1499: "Read + Sun & Vastu 3D", 9999: "All-Access" };
+
+/* Legacy rows store a sentence where new rows store an id — "Project
+   Intelligence Access: DLF Privana West". Printed verbatim next to the
+   project name it reads as a stutter, so the tier is recovered from the
+   amount and the sentence is only the last resort. */
+function labelFor(packageName: string | null | undefined, amountInr: number): string {
+  const direct = PACKAGE_LABEL[String(packageName ?? "")];
+  if (direct) return direct;
+  return PRICE_LABEL[amountInr] ?? String(packageName ?? "") ?? "Report access";
+}
 
 const liveSlug = (v: string) => v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 
@@ -132,14 +143,15 @@ Deno.serve(async (req: Request) => {
     const stored = r.project_name ?? "";
     const slug = stored ? liveSlug(stored) : "";
     const amt = typeof r.amount === "string" ? parseFloat(r.amount) : (r.amount ?? 0);
+    const amountInr = Number.isFinite(amt) ? Math.round(amt as number) : 0;
     return {
       id: r.id ?? r.razorpay_payment_id ?? "",
       status: (r.status ?? "").toLowerCase(),
       packageId: r.package_name ?? null,
-      packageLabel: PACKAGE_LABEL[String(r.package_name ?? "")] ?? r.package_name ?? "Report access",
+      packageLabel: labelFor(r.package_name, amountInr),
       projectSlug: slug || null,
       projectName: stored ? (names[slug] ?? stored) : null,
-      amountInr: Number.isFinite(amt) ? Math.round(amt as number) : 0,
+      amountInr,
       paidAt: r.created_at ?? null,
       orderId: r.razorpay_order_id ?? null,
       paymentId: r.razorpay_payment_id ?? null,
