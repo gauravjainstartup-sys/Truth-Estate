@@ -138,6 +138,40 @@ async function fetchOrder(orderId: string): Promise<RzpOrder | null> {
   }
 }
 
+/* THE GRANT HAS TO NAME THE PROJECT, NOT THE PACKAGE.
+
+   First cut wrote projectName from the order's `label` note — which is
+   the PACKAGE label, "Full Read". entitlements/core.ts resolves a grant by
+   projectId, then projectSlug, then slugify(projectName); the internal
+   slug matches none of the first two here, so it would have fallen
+   through to slugify("Full Read") = "full-read", which is not a project.
+   The buyer pays, the ledger records it, and the report stays locked.
+
+   So the project is looked up by its internal slug — slugify(name), the
+   same identity the site's own routes and isEntitled() use — and the
+   entry is written with the real name, the real backlog id and the real
+   SEO slug, so all three resolution keys hit. */
+const liveSlug = (v: string) => v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+const seoSlugOf = (name: string, mm: string | null, loc: string | null) =>
+  ["gurugram-real-estate", liveSlug(name), liveSlug(mm ?? ""), liveSlug(loc ?? "")].filter(Boolean).join("-");
+
+type ProjectRef = { id: string; name: string; seoSlug: string };
+
+async function projectBySlug(slug: string): Promise<ProjectRef | null> {
+  try {
+    const res = await sbFetch(`backlog_listing_public_v3?select=id,name,microMarket,location&limit=500`);
+    if (!res.ok) return null;
+    const rows = await res.json() as { id?: string; name?: string; microMarket?: string; location?: string }[];
+    for (const r of rows) {
+      if (!r?.name || liveSlug(r.name) !== slug) continue;
+      return { id: r.id ?? slug, name: r.name, seoSlug: seoSlugOf(r.name, r.microMarket ?? null, r.location ?? null) };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 /* The grant, in the exact shape prod has been writing since May, so the
    two sites' records stay one record. entitlements/core.ts resolves it by
    projectId first, then projectSlug, then projectName. */
@@ -227,7 +261,6 @@ Deno.serve(async (req: Request) => {
   }
 
   const slug = String(order.notes?.slug ?? "");
-  const projectName = String(order.notes?.label ?? pkg.label);
   const amountInr = Math.round(paidPaise / 100);
 
   /* Ledger first, then the grant. If the second write fails the customer
@@ -264,8 +297,19 @@ Deno.serve(async (req: Request) => {
     const cur = await sbFetch(`user_profiles?select=unlocked_reports&id=eq.${encodeURIComponent(userId)}&limit=1`);
     const rows = cur.ok ? (await cur.json()) as { unlocked_reports?: string[] }[] : [];
     const list = Array.isArray(rows[0]?.unlocked_reports) ? rows[0].unlocked_reports! : [];
+    /* Unresolvable means the catalogue is unreachable or the slug is not
+       a project. Falling back to the slug in all three fields still
+       resolves — entitlements compares slugify(projectName) against the
+       internal slug and a slug slugifies to itself — so a buyer is never
+       left holding a grant that names nothing. */
+    const proj = await projectBySlug(slug);
+    if (!proj) console.warn(`[razorpay-verify] ${slug} not in the catalogue — writing the slug in all three fields`);
     const entry = grantEntry({
-      projectId: slug, projectName, projectSlug: slug, paymentId, amountPaid: amountInr,
+      projectId: proj?.id ?? slug,
+      projectName: proj?.name ?? slug,
+      projectSlug: proj?.seoSlug ?? slug,
+      paymentId,
+      amountPaid: amountInr,
     });
     const r = await sbFetch(`user_profiles?id=eq.${encodeURIComponent(userId)}`, {
       method: "PATCH",
