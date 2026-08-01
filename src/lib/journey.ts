@@ -1137,11 +1137,17 @@ export function unlockProject(slug: string): void {
 
 /* ── Tower & Unit Intelligence pricing (freemium wedge) ──
    Exploring the live 3D and the sample unit is free. The full per-unit
-   verdict is paid: a single project (unlockProject) or the ₹11,000 Buyer
-   Office membership (isMember) that also carries the advisory consultation —
-   the same fee, repackaged. The single-project fee is credited toward it. */
+   verdict is paid: a single project (unlockProject) or site-wide
+   All-Access (isMember), which also carries the advisory consultation.
+   The single-project fee is credited toward it.
+
+   MEMBERSHIP_INR is gone rather than corrected. It held ₹11,000 from an
+   earlier membership price, PACKAGES later put All-Access at ₹9,999, and
+   the two sat a hundred and eighty lines apart agreeing about nothing.
+   Deleting it leaves one price for All-Access — PACKAGES, which is also
+   what razorpay-order charges from — instead of a second one waiting to
+   be picked up by the next thing that needs a number. */
 export const PROJECT_UNLOCK_INR = 1499;
-export const MEMBERSHIP_INR = 11000;
 
 /* Full unit-intelligence access = a paid single-project unlock OR membership. */
 export function hasFullAccess(slug: string): boolean {
@@ -1321,12 +1327,25 @@ export function grantPackage(pkg: PackageId, slug?: string): void {
   saveAccess(a);
   setSignedIn();
   /* The money moment. Every purchase path reaches here, so this is the
-     one place the funnel needs to know about. */
+     one place the funnel needs to know about.
+
+     PRICED FROM THE PACKAGE TABLE, not from three separate constants. The
+     ternary this replaces read a MEMBERSHIP_INR of ₹11,000 for All-Access,
+     a figure from an earlier membership price that PACKAGES was later set
+     below and nobody reconciled. Razorpay prices server-side from the
+     packageId, so buyers were correctly charged ₹9,999 throughout; what
+     was wrong was the number we then recorded, which overstated every
+     All-Access sale by ₹1,001 in our own analytics. The other two arms
+     happened to agree with the table, which is why it went unseen.
+
+     Note this is the LIST price. A returning buyer paying the upgrade
+     difference is charged less, and `payments` is the authority on what
+     was actually collected — this event is the funnel's, not finance's. */
   fireEvent("payment_completed", {
     projectSlug: slug,
     props: {
       package: pkg,
-      amountInr: pkg === "all" ? MEMBERSHIP_INR : pkg === "read3d" ? PROJECT_UNLOCK_INR : READ_FROM_INR,
+      amountInr: packageById(pkg).inr,
     },
   });
   /* …and the access it bought. There are two unlock stores: unlockProject
