@@ -1,5 +1,5 @@
 import type { ProjectIntel } from "@/lib/projects";
-import { basePath } from "@/lib/site";
+import { projectHref } from "@/lib/projectHref";
 
 /* The one project-option card, used everywhere we surface projects as a
    comparable set — the report's "If not this, then what?", the journey
@@ -67,9 +67,14 @@ export default function ProjectOptionCard({
   );
 
   const cls = "group relative flex min-h-[380px] flex-col overflow-hidden rounded-[12px] border border-[#1a1a1a]/[0.13] bg-[#FBF8F2] p-6 text-left transition-colors duration-300 hover:border-[#1e6b45]/45";
+  /* projectHref, not a hand-built path. This fallback had the old address
+     inlined, so every caller that did not pass an href — the catalogue,
+     the corridor pages, the report's alternatives — linked to a redirect
+     stub instead of the report. One helper knows a project's public
+     address; this is now one of the places that asks it. */
   return onSelect ? (
     <button onClick={onSelect} className={cls}>{inner}</button>
   ) : (
-    <a href={href ?? `${basePath}/intelligence/projects/${p.slug}`} className={cls}>{inner}</a>
+    <a href={href ?? projectHref(p)} className={cls}>{inner}</a>
   );
 }

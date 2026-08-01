@@ -1339,6 +1339,16 @@ export function liveProjectIntel(
     strengths,
     watchouts,
     slug: row.slug,
+    /* THE PUBLIC ADDRESS, carried alongside the internal id.
+       Dropping it here cost the site 1,936 internal links. projectHref()
+       falls back to the old /intelligence/projects/<slug> whenever seoSlug
+       is absent — correct, because that address still resolves — and every
+       card built from a ProjectIntel therefore pointed at a redirect stub
+       rather than the report. The catalogue's 97 cards, the alternatives
+       on every report, the corridor pages: all of them linking into
+       noindex stubs that pass nothing on. The reports were reachable and
+       indexed via the sitemap, so nothing looked broken. */
+    seoSlug: row.seoSlug,
     matchInput: toMatchInput(row, extRaw, cfgs),
     devSlug: row.devSlug ?? (row.developer ? developerSlugOf(row.developer) : undefined),
     marketSlug: market?.slug,

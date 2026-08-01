@@ -91,6 +91,10 @@ function legalRating(p: Project): FinRating {
 /* ── Enriched project ──────────────────────────────────────────── */
 export type ProjectIntel = Project & {
   slug: string;
+  /* The public address, when this came from the live pipeline. Optional
+     because the mock fallback set has none — projectHref() then serves the
+     old address, which still resolves as a redirect stub. */
+  seoSlug?: string | null;
   /* Pure inputs for the match engine (scoreMatch). Present on live-pipeline
      projects (built in liveProjectIntel); absent on the mock fallback set. */
   matchInput?: import("./matchEngine").MatchInput;
