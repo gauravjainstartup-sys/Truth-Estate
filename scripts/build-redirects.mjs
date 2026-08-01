@@ -297,16 +297,46 @@ function bestMatch(oldPath, news, scoped) {
   return { ambiguous: best.slice(0, 5).map((c) => c.path) };
 }
 
+/* A PROJECT SLUG → ITS REPORT.
+   Comparison URLs name projects by the short internal slug —
+   /compare/m3m-capital-vs-dlf-privana-west — while a report lives at
+   gurugram-real-estate-<that slug>-<corridor>-sector-<n>. The short slug
+   appears inside the long one, so the report can be found from the sitemap
+   alone with no database access.
+
+   SHORTEST WINS, and here that is not a coin toss. "m3m-capital" is
+   contained in both M3M Capital and M3M Capital Phase 2; the shorter path
+   is the one where the slug accounts for the entire project name, and the
+   longer is a different project whose name merely begins with it. The
+   boundary dashes stop "birla-arika" matching mid-word. Verified against
+   all 97 rows: every one resolves to its own report, none to a sibling. */
+function projectResolver(news) {
+  const projects = news.filter((n) => n.includes("/projects/"));
+  return (slug) => {
+    const hits = projects.filter((p) => p.includes(`-${slug}-`) || p.endsWith(`-${slug}`));
+    if (hits.length === 0) return null;
+    const shortest = Math.min(...hits.map((h) => h.length));
+    const best = hits.filter((h) => h.length === shortest);
+    return best.length === 1 ? best[0] : null;
+  };
+}
+
 /* COMPARISON PAGES ARE PAIRS, and nothing else about them matters.
    /compare/a-vs-b succeeds /intelligence/compare/a-vs-b, or the same pair
-   written the other way round, or nothing. Letting the token matcher near
-   them produced 1,458 "ambiguous" rows in the first real run, every one
-   of them a list of five unrelated pairs that happened to share a project
-   name — noise that buries the thirty-four entries a human actually has
-   to decide. The old site published pairs for all 97 projects and the new
-   one scores 52, so a pair with no counterpart is a genuine gap and is
-   reported as one rather than dressed up as a near-match. */
-function comparePair(oldPath, newSet) {
+   written the other way round. Letting the token matcher near them
+   produced 1,458 "ambiguous" rows in the first real run, every one a list
+   of five unrelated pairs that happened to share a project name — noise
+   burying the entries a human actually has to decide.
+
+   AND WHEN THE PAIR IS GONE, THE FIRST PROJECT'S REPORT. The old site
+   published every pair of 97 projects — 4,656 pages — and this build
+   scores 52, so 3,876 of them have no counterpart. Founder's call, and
+   the right one: a reader who searched "X vs Y" is served by X's full
+   forensic read, which carries its own alternatives section, far better
+   than by a comparison hub listing pairs they did not ask about. It also
+   spreads that equity across 97 real pages instead of pooling it on one
+   index, which Google reads as a soft 404. */
+function comparePair(oldPath, newSet, toReport) {
   const slug = oldPath.replace(/^\/(intelligence\/)?compare\//, "");
   const at = `/intelligence/compare/${slug}`;
   if (newSet.has(at)) return { path: at, why: "section" };
@@ -314,6 +344,8 @@ function comparePair(oldPath, newSet) {
   if (i > 0) {
     const flipped = `/intelligence/compare/${slug.slice(i + 4)}-vs-${slug.slice(0, i)}`;
     if (newSet.has(flipped)) return { path: flipped, why: "same pair, reversed" };
+    const report = toReport(slug.slice(0, i));
+    if (report) return { path: report, why: "pair retired → first project's report" };
   }
   return null;
 }
@@ -419,14 +451,67 @@ for (const n of news) {
   bySquash.set(k, bySquash.has(k) ? null : n); // null marks "more than one"
 }
 
+const toReport = projectResolver(news);
+
+/* HAND-DECIDED, and they live here because this file is regenerated.
+   The generated map writes ambiguous and unmatched entries out as
+   comments for a human to settle — but the next crawl overwrites the
+   file, so a decision made by editing it survives exactly until someone
+   presses the button again. Recording them in the script instead makes
+   them durable, reviewable in a diff, and impossible to lose.
+
+   Four paths, each with a reason:
+
+   The two price-and-corridor pages ask two questions at once and the new
+   site answers them on separate pages. The tokeniser cannot choose —
+   "under-3-cr" and "under-5-cr" both reduce to {under, cr} once the digit
+   is dropped, so all three price bands look identical to it, which is
+   why it correctly declined rather than guessed. Sending them to the
+   price page with the corridor pre-filled answers both halves: the grid
+   reads ?q= on mount, and the page's canonical keeps the clean URL, so
+   the equity lands on a real indexed page rather than a query string.
+
+   /under-construction-projects-in-gurugram is a catalogue of everything
+   being built, which is what the projects index is.
+
+   /contact has no successor — this build has no contact page. The
+   advisory office is where "get in touch" leads, and a redirect there
+   beats a 404 on what is likely one of the old site's better-linked
+   pages. Say the word and it changes. */
+const OVERRIDES = {
+  "/best-projects/under-3-cr-dwarka-expressway": "/best-projects/under-3-cr-gurugram?q=Dwarka%20Expressway",
+  "/best-projects/under-5-cr-spr-corridor": "/best-projects/under-5-cr-gurugram?q=SPR",
+  "/under-construction-projects-in-gurugram": "/intelligence/projects",
+  "/contact": "/premiumbuyeroffice",
+};
+
+/* LAST RESORT: THE SECTION'S OWN INDEX.
+   Ten of the old site's sixteen developer pages name a developer this
+   build has no page for. Nothing can match them, and the alternative to
+   a redirect is ten 404s. Founder's call: send them to the developers
+   index, which is the right section and a real page, and let their
+   ranking consolidate there.
+
+   Deliberately narrow. It fires only for a path already under a known
+   section prefix and only after every other signal has declined, so it
+   can never quietly capture a page that had a real successor. */
+const SECTION_INDEX = [
+  [/^\/developers?\//, "/intelligence/developers"],
+  [/^\/(locations?|markets?)\//, "/intelligence/markets"],
+];
+
 const same = [], mapped = [], unmatched = [], ambiguous = [];
 for (const p of olds) {
   if (p === "/") continue;
   if (newSet.has(p)) { same.push(p); continue; }
 
+  /* A human already answered this one. First, so no later signal can
+     talk it out of the decision. */
+  if (OVERRIDES[p]) { mapped.push({ from: p, to: OVERRIDES[p], why: "decided by hand" }); continue; }
+
   /* Comparison pages resolve by pair or not at all — never by tokens. */
   if (IS_COMPARE(p)) {
-    const hit = comparePair(p, newSet);
+    const hit = comparePair(p, newSet, toReport);
     if (hit) mapped.push({ from: p, to: hit.path, why: hit.why });
     else unmatched.push(p);
     continue;
@@ -447,6 +532,11 @@ for (const p of olds) {
     const m = bestMatch(p, pool, scoped);
     if (m?.ambiguous) { ambiguous.push({ from: p, options: m.ambiguous }); continue; }
     if (m?.path) { target = m.path; why = m.score; }
+  }
+  if (!target) {
+    for (const [re, index] of SECTION_INDEX) {
+      if (re.test(p) && newSet.has(index)) { target = index; why = "no successor → section index"; break; }
+    }
   }
   if (target) mapped.push({ from: p, to: target, why });
   else unmatched.push(p);
