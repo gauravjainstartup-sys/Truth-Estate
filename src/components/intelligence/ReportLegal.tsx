@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { developerOf, legalStatus, type ProjectIntel } from "@/lib/projects";
+import { developerOf, lastUpdatedOn, legalStatus, type ProjectIntel } from "@/lib/projects";
 
 /* Chapter II · Pillar IV — Legal & Compliance. The signature "project clean,
    developer history" split, a risk matrix, the developer's public cases each
@@ -52,6 +52,7 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
         <div>
           <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Pillar IV · Legal &amp; Compliance</p>
           <h3 className="mt-2 font-serif text-[1.7rem] font-medium leading-tight md:text-[2rem]">{flagged ? "This one has problems of its own." : watch ? "The project needs a closer look. And the developer?" : "The project is clean. Is the developer?"}</h3>
+          <p className="mt-2 text-[0.72rem] font-light italic text-[#1a1a1a]/40">Updated {lastUpdatedOn(p, p.liveLegal?.lastUpdated)}</p>
           <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">Land title, RERA status, and every court that&apos;s ruled on this builder.</p>
         </div>
       </div>
@@ -70,7 +71,7 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
               ))}
             </ul>
           )}
-          <p className="mt-3 text-[0.72rem] font-light italic text-[#1a1a1a]/40">Updated {p.liveLegal?.lastUpdated ?? `${new Date().getFullYear()}`} · Source: e-Courts + RERA litigation repositories · independently verifiable.</p>
+          <p className="mt-3 text-[0.72rem] font-light italic text-[#1a1a1a]/40">Source: e-Courts + RERA litigation repositories · independently verifiable.</p>
         </div>
       )}
 
@@ -95,7 +96,7 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
               ? "This project has active issues on record — read the cases below before committing any capital."
               : watch
               ? <>The legal read here isn&apos;t top-tier clean. Confirm the HRERA registration and the latest QPR{p.ops?.reraId ? <> (<b className="font-medium text-[#1a1a1a]">{p.ops.reraId}</b>)</> : ""}, and have the Agreement to Sell reviewed before you commit any capital.</>
-              : <>Registered under HRERA{p.ops?.reraId ? <> <b className="font-medium text-[#1a1a1a]">{p.ops.reraId}</b></> : ""} ({p.ops?.launch ?? "on launch"}). No consumer complaints or regulatory orders against {p.name} in public databases as of {new Date().getFullYear()}.</>}
+              : <>Registered under HRERA{p.ops?.reraId ? <> <b className="font-medium text-[#1a1a1a]">{p.ops.reraId}</b></> : ""} ({p.ops?.launch ?? "on launch"}). No consumer complaints or regulatory orders against {p.name} in public databases as of {lastUpdatedOn(p, p.liveLegal?.lastUpdated)}.</>}
           </p>
           <p className={`mt-3.5 text-[0.8rem] font-semibold ${flagged ? "text-[#b0503e]" : watch ? "text-[#9a7a2e]" : "text-[#1e6b45]"}`}>{flagged ? "The risk IS the address." : watch ? "Verify the paperwork before you sign." : "Baseline buyer protection is in place."}</p>
         </div>

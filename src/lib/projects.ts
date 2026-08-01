@@ -196,6 +196,7 @@ export type LocationGeo = {
 export type ProjectOps = {
   address?: string; // street-level address for the hero + map
   reviewed?: string; // when we last re-checked this project's data ("3 Jul 2026")
+  lastUpdated?: string; // DB-driven latest refresh across dimensions ("30 Jun 2026")
   units?: number;
   towers?: number;
   floors?: string; // indicative floor count, may be a range ("34–38")
@@ -252,6 +253,7 @@ export type ProjectOps = {
     predictedDateFull?: string; // predicted delivery, day-precision where derived
     aheadMonths?: number; // forecast lead over the RERA promise, months (1 dp, + ahead)
     qpr: string; // QPR the read is drawn from
+    lastUpdated?: string; // day-precision date of the QPR this read is drawn from ("30 Jun 2026")
     delayChancePct?: number; // pipeline-scored delay probability (live rows)
     paceMonths?: number; // build pace vs schedule, months (+ ahead / − behind)
     constructionProofPdf?: string; // R2 link — the RERA QPR document
@@ -1097,7 +1099,16 @@ export function legalStatus(p: ProjectIntel): "clean" | "watch" | "flagged" {
 /* When this report's data was last re-checked. Per-project where we track it,
    else the corridor data vintage. Surfaced in the hero + disclaimer. */
 export const DATA_AS_OF = "Jul 2026";
-export const reviewedOn = (p: ProjectIntel): string => p.ops?.reviewed ?? DATA_AS_OF;
+/* The date the hero shows. Prefer a hand-set review date, then the DB-driven
+   latest-refresh across dimensions, and only then the static fallback — so a
+   live project with no curated review date still shows a real filed date, not
+   the hard-coded month. */
+export const reviewedOn = (p: ProjectIntel): string => p.ops?.reviewed ?? p.ops?.lastUpdated ?? DATA_AS_OF;
+/* The date a pillar shows. Callers pass the pillar's own dimension date first
+   (legal read, construction QPR); this resolves the shared fallback chain when
+   that dimension has none. */
+export const lastUpdatedOn = (p: ProjectIntel, dimensionDate?: string | null): string =>
+  dimensionDate ?? p.ops?.lastUpdated ?? p.ops?.reviewed ?? DATA_AS_OF;
 
 /* Price-history read for the PSF journey (Chapter III). */
 export function priceJourney(p: ProjectIntel) {

@@ -754,6 +754,9 @@ export default function ProjectProfile({
                           {ctx.rank > 0 && <p className="flex items-center gap-2 text-[0.72rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]"><IconTiers /></span><span>{ctx.bottomHalf ? <><b className="font-semibold text-[#1a1a1a]">Ranks {ctx.rank} of {ctx.total}</b> tracked projects</> : <><b className="font-semibold text-[#1a1a1a]">Top {ctx.topPct}%</b> of {ctx.total} tracked projects</>}</span></p>}
                           <p className="flex items-center gap-2 text-[0.72rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]"><IconShieldCheck /></span><span><b className="font-semibold text-[#1a1a1a]">{p.confidence}</b> confidence · re-scored quarterly</span></p>
                         </div>
+                        {/* Last-updated date — surfaced in the score card so it
+                            reads at a glance, not only in the fine-print caption. */}
+                        <p className="mt-2.5 flex items-center gap-2 border-t border-[#1a1a1a]/8 pt-2.5 text-[0.72rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]"><IconClock /></span><span>Last updated <b className="font-semibold text-[#1a1a1a]">{reviewed}</b></span></p>
                       </div>
                     </div>
                     {/* one small readable line of provenance closes the stacked hero */}

@@ -1029,6 +1029,7 @@ export function liveProjectIntel(
           reraDate,
           predictedDate,
           qpr: quarterLabel(row.lastQprDate) ?? "latest QPR",
+          ...(fullDateLabel(row.lastQprDate) ? { lastUpdated: fullDateLabel(row.lastQprDate)! } : {}),
           ...(row.paceVsScheduleMonths != null ? { paceMonths: row.paceVsScheduleMonths } : {}),
           ...(fullDateLabel(row.reraPromiseDate) ? { reraDateFull: fullDateLabel(row.reraPromiseDate)! } : {}),
           ...(fullDateLabel(row.predictedDeliveryDate) ? { predictedDateFull: fullDateLabel(row.predictedDeliveryDate)! } : {}),
@@ -1288,6 +1289,22 @@ export function liveProjectIntel(
   const consultants = strList(row.uspConsultants, ["name", "title", "consultant"]);
   if (consultants.length >= 2) usps.push({ title: "Marquee consultants on record", body: consultants.slice(0, 6).join(" · ") });
 
+  /* Project-level "last updated" — the most recent of the dated dimensions
+     we actually refresh (hero review · legal read · construction QPR). It is
+     DB-driven with real coverage (legal_last_updated_date is filed on every
+     live row), so the hero and the pillars no longer fall back to a
+     hard-coded month for the projects whose hero_date is blank. */
+  const lastUpdated = (() => {
+    let bestT = -Infinity;
+    let bestSv: string | null = null;
+    for (const sv of [ext?.heroDate, row.legalLastUpdated, row.lastQprDate]) {
+      if (!sv) continue;
+      const t = new Date(sv).getTime();
+      if (!Number.isNaN(t) && t > bestT) { bestT = t; bestSv = sv; }
+    }
+    return bestSv ? heroDateLabel(bestSv) ?? undefined : undefined;
+  })();
+
   const ops: ProjectOps = {
     ...(row.location ? { address: withCity(row.location) } : {}),
     ...(row.totalUnits != null ? { units: Math.round(row.totalUnits) } : totalUnits != null ? { units: totalUnits } : {}),
@@ -1299,6 +1316,7 @@ export function liveProjectIntel(
     ...(launchLabel ? { launch: launchLabel } : {}),
     ...(ext?.floorsRange ? { floors: ext.floorsRange } : {}),
     ...(heroDateLabel(ext?.heroDate ?? null) ? { reviewed: heroDateLabel(ext!.heroDate)! } : {}),
+    ...(lastUpdated ? { lastUpdated } : {}),
     ...(row.reraId ? { reraId: row.reraId } : {}),
     ...(row.reraUrl ? { reraUrl: row.reraUrl } : {}),
     ...(row.legalHeadline ? { reraNote: row.legalHeadline } : {}),

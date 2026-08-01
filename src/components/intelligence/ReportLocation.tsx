@@ -1,4 +1,4 @@
-import { pillars, type LocationGeo, type PillarBand, type ProjectIntel } from "@/lib/projects";
+import { lastUpdatedOn, pillars, type LocationGeo, type PillarBand, type ProjectIntel } from "@/lib/projects";
 import LocationMaps from "./LocationMaps";
 
 /* grade chip — same treatment as the Developer / Anatomy pillar cards */
@@ -36,6 +36,7 @@ export default function ReportLocation({ p }: { p: ProjectIntel }) {
         <div>
           <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Pillar III · Location Intelligence</p>
           <h3 className="mt-2 font-serif text-[1.7rem] font-medium leading-tight md:text-[2rem]">Will this address still be winning in 2035?</h3>
+          <p className="mt-2 text-[0.72rem] font-light italic text-[#1a1a1a]/40">Updated {lastUpdatedOn(p)}</p>
           <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">What&apos;s funded and coming, what&apos;s on the ground today, and how you get around.</p>
         </div>
       </div>

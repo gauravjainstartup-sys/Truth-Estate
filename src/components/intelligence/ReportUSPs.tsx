@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ProjectIntel } from "@/lib/projects";
+import { lastUpdatedOn, type ProjectIntel } from "@/lib/projects";
 
 /* Chapter II · Pillar V — Project USPs. Evidence-led differentiators, not
    brochure adjectives — each card is a substantiated advantage that moves
@@ -32,6 +32,7 @@ export default function ReportUSPs({ p }: { p: ProjectIntel }) {
     <div className="mt-8">
       <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Pillar V · Project USPs</p>
       <h3 className="mt-2 font-serif text-[1.7rem] font-medium leading-tight md:text-[2rem]">What actually makes it different?</h3>
+      <p className="mt-2 text-[0.72rem] font-light italic text-[#1a1a1a]/40">Updated {lastUpdatedOn(p)}</p>
       <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">Not brochure adjectives — real edges on livability, safety and resale.</p>
 
       <div className="mt-6 grid items-stretch gap-4 md:grid-cols-2 lg:grid-cols-3">
