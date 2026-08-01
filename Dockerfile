@@ -9,9 +9,20 @@
 # ════════════════════════════════════════════════════════════════
 FROM nginx:1.27-alpine
 
-# nginx:alpine already runs envsubst over anything in this directory at
-# container start, which is how ${PORT} gets substituted — Cloud Run picks
-# the port and injects it, and a hardcoded 8080 breaks the day it doesn't.
+# nginx:alpine runs envsubst over /etc/nginx/templates at start, which is
+# how ${PORT} is filled in — Cloud Run chooses the port and injects it, and
+# a hardcoded 8080 breaks the day it doesn't.
+#
+# THE FILTER IS NOT OPTIONAL. Left unset, that entrypoint substitutes EVERY
+# environment variable it can see, and the config is full of things that
+# look exactly like variables to it: $uri, $host, $request_uri,
+# $http_x_forwarded_proto, $cache_control. Any environment variable sharing
+# one of those names — or anything setting HOST, which plenty of build
+# tooling does — would blank that token before nginx ever parsed it, and
+# the failure is a config that is still syntactically valid. Restricted to
+# PORT, which is the only one meant to be substituted.
+ENV NGINX_ENVSUBST_FILTER=PORT
+
 COPY deploy/nginx.conf.template /etc/nginx/templates/default.conf.template
 
 # The 301 map from the old truthestate.in URLs. Shipped as its own file so
