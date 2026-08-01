@@ -126,7 +126,7 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
                   <>You&apos;re in. Enter your office to schedule your advisor call and track your intelligence.</>
                 )
               ) : meta ? (
-                <>Explore the 3D site &amp; sun study, then unlock every unit — ₹1,499 a project.</>
+                <>Explore the 3D site &amp; sun study, then unlock every unit with All-Access.</>
               ) : (
                 <>The 3D layer that decides <span className="italic">which</span> home — graded by sun, Vastu, light, ventilation &amp; value.</>
               )}

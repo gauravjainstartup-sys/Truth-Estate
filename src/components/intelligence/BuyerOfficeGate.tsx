@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   saveLead, saveBuyData, loadBuyData, emptyBuyData,
   loadMemberCall, saveMemberCall, type MemberCall,
-  PROJECT_UNLOCK_INR, packageById,
+  packageById,
 } from "@/lib/journey";
 import { CONSULT_DAYS, CONSULT_DAYPARTS, CONSULT_FORMATS, advisorFor } from "@/lib/consultation";
 import { normalisePhone, normaliseIntl, sendOtp, sendOtpIntl, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
@@ -136,7 +136,9 @@ export default function BuyerOfficeGate({
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   // payment
-  const [plan, setPlan] = useState<Plan>("single");
+  /* "membership" is the only card the plans step renders now; a "single"
+     default would make the pay step charge a plan the reader never saw. */
+  const [plan, setPlan] = useState<Plan>("membership");
   const [card, setCard] = useState("");
   const [exp, setExp] = useState("");
   const [cvv, setCvv] = useState("");
@@ -179,7 +181,7 @@ export default function BuyerOfficeGate({
   const hasIntro = start === "intro";
   const stepTotal = hasIntro ? 3 : 2;
   const stepNo = step === "intro" ? 1 : step === "req" ? (hasIntro ? 2 : 1) : step === "verify" ? (hasIntro ? 3 : 2) : 0;
-  const amount = plan === "single" ? PROJECT_UNLOCK_INR : ALL_INR;
+  const amount = plan === "single" ? packageById("read3d").inr : ALL_INR;
   const contactValid = name.trim() !== "" && (method === "email" ? emailOk(email) : numValid);
   const cardValid = card.replace(/\D/g, "").length >= 12 && exp.length >= 4 && cvv.length >= 3;
 
@@ -370,12 +372,13 @@ export default function BuyerOfficeGate({
               <h2 className={`font-serif text-[1.7rem] font-medium leading-[1.12] ${t.h2}`}>Unlock the full verdict.</h2>
               <p className={`mt-2.5 text-[0.86rem] font-light leading-[1.6] ${t.body}`}>You&apos;ve seen the model and a sample. Open every unit in {project} — graded on sun, Vastu, light, ventilation and value.</p>
               <div className="mt-6 flex flex-col gap-3">
-                <PlanCard t={t} on={plan === "single"} onClick={() => setPlan("single")}
-                  title="This project" price={inr(PROJECT_UNLOCK_INR)} unit="one-time"
-                  desc={`The full read + Sun & Vastu 3D for ${project} — every unit graded, yours to keep.`} />
+                {/* The single-project 3D tier is withdrawn while the advisor is
+                    in beta — All-Access is the one way to buy the 3D now, so the
+                    gate offers exactly what the unlock modal offers and nothing
+                    the checkout would refuse. */}
                 <PlanCard t={t} on={plan === "membership"} onClick={() => setPlan("membership")}
                   title="All-Access" price={inr(ALL_INR)} unit="whole site" badge="Best value"
-                  desc="Every read and every 3D across the site — plus 2 on-demand reports & 3Ds, and your 45-min advisory call. We credit your ₹1,499 if you start with one project." />
+                  desc="Every read and every 3D across the site — plus 2 on-demand reports & 3Ds, and your 45-min advisory call." />
               </div>
               <button onClick={() => setStep("pay")} className={`mt-6 ${primaryBtn}`}>Continue · {inr(amount)}</button>
               <button onClick={onSeeUnitIntel} className={`mt-3 ${backLink}`}>← Keep exploring free</button>

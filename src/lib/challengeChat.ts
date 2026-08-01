@@ -29,7 +29,7 @@ import {
   rankContext,
 } from "@/lib/projects";
 import { AREA_ALIASES, type OmniIndex, type OmniUnit } from "@/lib/omni";
-import { READ_FROM_INR, PROJECT_UNLOCK_INR } from "@/lib/journey";
+import { READ_FROM_INR } from "@/lib/journey";
 import { basePath as BASE_PATH } from "@/lib/site";
 
 export type ChatRole = "user" | "bot";
@@ -396,7 +396,7 @@ export function buildChallengeContext(
     vitals && `VITALS: ${vitals}.`,
     `PILLAR SUMMARY (weights: location 26%, developer 25%, construction 22%, legal 15%, USPs 12%):\n${pubPillars}`,
     `COMPARISON: Truth Estate DOES compare projects — buyers can line up any two side-by-side in the Compare tool, and the full read carries a ranked side-by-side vs the closest alternatives. This project ranks ${ctx.topPct <= 25 ? `in the top ${ctx.topPct}%` : `#${ctx.rank} of ${ctx.total}`} of all tracked projects${market ? ` and #${ctx.corridorRank} in the ${p.marketShort} corridor` : ""}.${peers.length ? ` ${peerLine(p, peers)} (These peer names + Truth Scores are the PUBLIC scoreboard — use them for a head-to-head. You may say how ${p.name} ranks vs them by score.)` : ""} You hold only the SCORE-level scoreboard for other projects (name + Truth Score), NOT their deep audit/verdict/ROI — for those, point the buyer to that project's own read or the Compare tool. NEVER say Truth Estate doesn't compare.`,
-    `SUN & VASTU: Per-unit sunlight/daylight hours, Vastu scores with room-by-room reasoning, and cross-ventilation are the "Sun & Vastu 3D" model — a SEPARATE ₹${PROJECT_UNLOCK_INR.toLocaleString("en-IN")} tier, NOT part of the ₹999 read. ${access.has3DModel ? `It is available for ${p.name}.` : `Its 3D model is still in production for ${p.name}.`}${!access.has3DAccess ? ` This visitor has NOT unlocked it — if they ask about sun/daylight/Vastu/ventilation/facing, describe what the 3D model covers and point them to it; do NOT give per-unit specifics.` : ""}`,
+    `SUN & VASTU: Per-unit sunlight/daylight hours, Vastu scores with room-by-room reasoning, and cross-ventilation are the "Sun & Vastu 3D" model — included with All-Access, NOT part of the ₹999 read. ${access.has3DModel ? `It is available for ${p.name}.` : `Its 3D model is still in production for ${p.name}.`}${!access.has3DAccess ? ` This visitor has NOT unlocked it — if they ask about sun/daylight/Vastu/ventilation/facing, describe what the 3D model covers and point them to it; do NOT give per-unit specifics.` : ""}`,
     `METHODOLOGY: Truth Estate is buyer-side only — no inventory, no developer commission, no paid placement. The score is a weighted composite of five pillars, re-scored quarterly; no builder can pay to move it.`,
   ].filter(Boolean).join("\n");
 
@@ -432,4 +432,6 @@ export const msgId = () => `m${Date.now().toString(36)}${(n++).toString(36)}`;
 
 /* the gate CTA copy, shared with the UI — one per gate kind */
 export const GATE_CTA = `Unlock the full read — ${inr(READ_FROM_INR)}`;
-export const GATE_CTA_3D = `Unlock Sun & Vastu 3D — ${inr(PROJECT_UNLOCK_INR)}`;
+/* The 3D rides on All-Access now; naming the retired ₹1,499 here would
+   promise a price the checkout no longer offers. */
+export const GATE_CTA_3D = `Unlock Sun & Vastu 3D — with All-Access`;
