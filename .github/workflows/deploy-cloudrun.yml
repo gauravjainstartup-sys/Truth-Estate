@@ -1,0 +1,161 @@
+name: Deploy to Cloud Run (production)
+
+# ════════════════════════════════════════════════════════════════
+#  PRODUCTION — www.truthestate.in.
+#
+#  Distinct from deploy.yml, which publishes the GitHub Pages PREVIEW.
+#  The two differ in the only two things that matter about where a build
+#  lives, and both are environment variables here:
+#
+#    NEXT_PUBLIC_BASE_PATH=""                     served from the root
+#    NEXT_PUBLIC_ORIGIN=https://www.truthestate.in  canonicals, sitemap,
+#                                                   JSON-LD, and the
+#                                                   noindex switch
+#
+#  Note the empty string is passed EXPLICITLY. src/lib/site.ts and
+#  next.config.ts both read it with `??`, so "" survives as the
+#  production value; leaving the variable unset would silently produce a
+#  build addressed to /Truth-Estate and 404 every link on the live domain.
+#
+#  Manual dispatch only, deliberately. A production cutover is a decision
+#  someone makes, not a side effect of a push.
+# ════════════════════════════════════════════════════════════════
+
+on:
+  workflow_dispatch:
+    inputs:
+      refresh_snapshot:
+        description: "Re-pull the Supabase snapshot (otherwise reuse the cache)"
+        type: boolean
+        default: true
+
+# Never two production deploys at once, and never cancel one midway —
+# a half-pushed image is worse than a queued one.
+concurrency:
+  group: cloudrun-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write # Workload Identity Federation — no service-account key in the repo
+
+env:
+  # ── set these as repository VARIABLES (Settings → Secrets and variables
+  #    → Actions → Variables). They are not secrets; the WIF binding is
+  #    what grants access, and keeping them visible makes the deploy
+  #    auditable. ──
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  GCP_REGION: ${{ vars.GCP_REGION }}
+  AR_REPOSITORY: ${{ vars.AR_REPOSITORY }}
+  SERVICE_NAME: ${{ vars.CLOUD_RUN_SERVICE }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fail early if the deploy is not configured
+        run: |
+          missing=""
+          for v in GCP_PROJECT_ID GCP_REGION AR_REPOSITORY SERVICE_NAME; do
+            [ -n "${!v}" ] || missing="$missing $v"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository variables:$missing"
+            echo "Set them under Settings → Secrets and variables → Actions → Variables."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Restore the Supabase snapshot
+        uses: actions/cache@v4
+        with:
+          path: .data-snapshot
+          key: supabase-snapshot-${{ github.run_id }}
+          restore-keys: supabase-snapshot-
+
+      - name: Build the production export
+        env:
+          NEXT_PUBLIC_BASE_PATH: ""
+          NEXT_PUBLIC_ORIGIN: https://www.truthestate.in
+          NEXT_PUBLIC_GMAPS_KEY: ${{ secrets.NEXT_PUBLIC_GMAPS_KEY }}
+          SNAPSHOT_REFRESH: ${{ inputs.refresh_snapshot && '1' || '0' }}
+          REQUIRE_SNAPSHOT: "1"
+        run: npm run build
+
+      - name: Refuse to ship a build addressed to the preview
+        # The single failure mode that would take the live domain down and
+        # look fine in CI: BASE_PATH not applied, so every href and every
+        # asset points at /Truth-Estate on a host that has no such path.
+        run: |
+          if grep -rqs "/Truth-Estate" out --include="*.html"; then
+            echo "::error::out/ still contains /Truth-Estate — NEXT_PUBLIC_BASE_PATH did not apply."
+            grep -rls "/Truth-Estate" out --include="*.html" | head -5
+            exit 1
+          fi
+          grep -q "https://www.truthestate.in/sitemap.xml" out/robots.txt \
+            || { echo "::error::robots.txt is not pointing at the production origin"; cat out/robots.txt; exit 1; }
+          if grep -q 'name="robots" content="noindex' out/index.html; then
+            echo "::error::the home page is noindexed — NEXT_PUBLIC_ORIGIN is not the production origin"
+            exit 1
+          fi
+          echo "Export verified: root-relative, production origin, indexable."
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and push the image
+        run: |
+          IMAGE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${AR_REPOSITORY}/${SERVICE_NAME}:${GITHUB_SHA::12}"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+
+      - name: Deploy
+        run: |
+          gcloud run deploy "$SERVICE_NAME" \
+            --image "$IMAGE" \
+            --region "$GCP_REGION" \
+            --project "$GCP_PROJECT_ID" \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 8080 \
+            --cpu 1 --memory 512Mi \
+            --min-instances 0 --max-instances 10 \
+            --quiet
+
+      - name: Smoke-test what actually went live
+        # A green deploy is not a working site. These are the four things
+        # that have actually broken on this kind of cutover before.
+        run: |
+          URL=$(gcloud run services describe "$SERVICE_NAME" --region "$GCP_REGION" \
+                --project "$GCP_PROJECT_ID" --format='value(status.url)')
+          echo "Service: $URL"
+          fail=0
+          check() {
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$URL$1")
+            [ "$code" = "$2" ] && echo "  ok   $1 → $code" || { echo "  FAIL $1 → $code (want $2)"; fail=1; }
+          }
+          check "/" 200
+          check "/intelligence" 200
+          check "/intelligence/markets/spr" 200          # extensionless route → markets/spr.html
+          check "/projects/gurugram-real-estate-dlf-the-arbour-golf-course-road-extension-gcre-sector-63" 200
+          check "/robots.txt" 200
+          check "/sitemap.xml" 200
+          check "/definitely-not-a-page" 404
+          curl -s "$URL/" | grep -q 'rel="canonical" href="https://www.truthestate.in/"' \
+            && echo "  ok   canonical" || { echo "  FAIL canonical"; fail=1; }
+          exit $fail

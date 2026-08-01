@@ -28,6 +28,12 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       - run: supabase functions deploy phone-known --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
+      # Razorpay. --no-verify-jwt because the browser calls these with the
+      # anon key like every other public function; the real authorisation
+      # is the verified anon→user claim inside, and for the grant, the
+      # HMAC signature that only Razorpay and this function can produce.
+      - run: supabase functions deploy razorpay-order --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
+      - run: supabase functions deploy razorpay-verify --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       - run: supabase functions deploy track --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy

@@ -1,0 +1,91 @@
+# ════════════════════════════════════════════════════════════════
+#  Static export, served from Cloud Run.
+#
+#  The build output is 1259 files of prerendered HTML. The only reasons
+#  it needs a server rather than a bucket are the two things a bucket
+#  cannot do and GitHub Pages could never do either:
+#
+#    301s. The old truthestate.in URLs have to arrive at the new ones
+#    with their ranking intact. This repo already carries 294 JS-redirect
+#    "legacy stubs" precisely because GitHub Pages cannot issue a 301;
+#    behind nginx they become real ones.
+#
+#    Headers. Immutable caching for hashed assets, revalidation for HTML,
+#    and the security headers a static host will not set for you.
+#
+#  ${PORT} is substituted by envsubst at container start — Cloud Run
+#  chooses the port and injects it, and hardcoding 8080 breaks the day
+#  it doesn't.
+# ════════════════════════════════════════════════════════════════
+
+server {
+  listen ${PORT};
+  server_name _;
+  root /usr/share/nginx/html;
+
+  # Cloud Run terminates TLS at the edge and forwards the original scheme
+  # here. Without reading it, any redirect below would send an https
+  # visitor to http and cost them a round trip through a warning.
+  set $fwd_proto $http_x_forwarded_proto;
+  if ($fwd_proto = "") { set $fwd_proto "https"; }
+
+  # ── canonical host ──
+  # One host serves the site: www. Everything else 301s to it, so the
+  # canonical tags, the sitemap and the actual reachable URL agree.
+  # (Google treats apex and www as different sites; two live copies of
+  # 935 pages is the same split-equity problem as the preview.)
+  if ($host = "truthestate.in") {
+    return 301 $fwd_proto://www.truthestate.in$request_uri;
+  }
+
+  # ── the shape GitHub Pages served, preserved ──
+  # /office resolves to office.html, /intelligence/markets to
+  # markets.html. The test harness (tests/pages-server.py) exists because
+  # a plain file server maps /office to a directory listing instead — the
+  # difference invents failures that production never had, so production
+  # has to keep behaving the way the tests assume.
+  location / {
+    try_files $uri $uri.html $uri/index.html $uri/ =404;
+  }
+
+  # ── caching ──
+  # Next fingerprints everything under /_next/static, so it is safe to
+  # cache for a year and never revalidate.
+  location /_next/static/ {
+    add_header Cache-Control "public, max-age=31536000, immutable";
+    try_files $uri =404;
+  }
+  location ~* \.(?:png|jpe?g|webp|avif|svg|ico|woff2?)$ {
+    add_header Cache-Control "public, max-age=2592000";
+    try_files $uri =404;
+  }
+  # HTML must revalidate: the data pipeline rebuilds these pages daily and
+  # a cached report is a stale report.
+  location ~* \.html$ {
+    add_header Cache-Control "public, max-age=0, must-revalidate";
+  }
+
+  # ── 301s from the old site ──
+  # Generated into this file at build time from deploy/redirects.map.
+  # Kept out of the image as a literal block so the map can be edited
+  # without touching the server config.
+  include /etc/nginx/redirects.conf;
+
+  # ── headers ──
+  add_header X-Content-Type-Options "nosniff" always;
+  add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+  add_header X-Frame-Options "SAMEORIGIN" always;
+
+  gzip on;
+  gzip_types text/plain text/css application/javascript application/json image/svg+xml application/xml;
+  gzip_min_length 1024;
+
+  error_page 404 /404.html;
+
+  # Cloud Run's own health probe. Kept out of the access log so it does
+  # not drown the real traffic.
+  location = /_healthz {
+    access_log off;
+    return 200 "ok\n";
+  }
+}

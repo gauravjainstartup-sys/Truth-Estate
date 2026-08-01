@@ -20,6 +20,20 @@ async function mk(b,vp,signedIn=false){
   await ctx.route('**/functions/v1/**',r=>r.fulfill({status:200,contentType:'application/json',body:'{"ok":true,"stored":0}'}));
   await ctx.route('**/functions/v1/entitlements',r=>r.fulfill({status:200,contentType:'application/json',body:'{"ok":true,"userId":"u","unlocked":[],"all":false,"plan":"Free"}'}));
   await ctx.route('**/functions/v1/brief',r=>r.fulfill({status:200,contentType:'application/json',body:require('fs').readFileSync('/tmp/fixture-brief.json','utf8')}));
+  /* ── Razorpay, stubbed at the seam the real flow uses ──
+     Payment is no longer a setTimeout in the component: pay() calls
+     razorpay-order, loads Razorpay's checkout.js, and only grants after
+     razorpay-verify says the signature and the captured amount were good.
+     Stubbing those three lets the test drive the REAL client path — order
+     → sheet → verify → unmask — against a fake gateway, instead of
+     asserting a simulation. The script stub stands in for
+     checkout.razorpay.com, which the sandbox cannot reach anyway. */
+  await ctx.route('**/functions/v1/razorpay-order',r=>r.fulfill({status:200,contentType:'application/json',
+    body:'{"ok":true,"orderId":"order_TEST","amountPaise":99900,"currency":"INR","keyId":"rzp_test_key","label":"Full Read"}'}));
+  await ctx.route('**/functions/v1/razorpay-verify',r=>r.fulfill({status:200,contentType:'application/json',
+    body:'{"ok":true,"granted":true,"slug":null,"all":false}'}));
+  await ctx.route('**/checkout.razorpay.com/**',r=>r.fulfill({status:200,contentType:'application/javascript',
+    body:`window.Razorpay=function(o){this.open=function(){setTimeout(function(){o.handler({razorpay_order_id:'order_TEST',razorpay_payment_id:'pay_TEST',razorpay_signature:'sig_TEST'})},10)};this.on=function(){}};`}));
   const p=await ctx.newPage(); p.errs=[];
   p.on('pageerror',e=>p.errs.push(String(e).slice(0,120)));
   p.on('console',m=>{if(m.type()==='error'&&!/ERR_|font|favicon|Failed to load resource/i.test(m.text()))p.errs.push(m.text().slice(0,120))});

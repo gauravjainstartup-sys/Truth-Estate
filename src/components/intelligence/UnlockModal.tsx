@@ -24,6 +24,7 @@ import {
 } from "@/lib/journey";
 import { normalisePhone, normaliseIntl, phoneKnown, prettyPhone, sendOtp, sendOtpIntl, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
 import { fetchEntitlements } from "@/lib/entitlements";
+import { payForPackage, prewarmCheckout } from "@/lib/checkout";
 
 const DIAL = [
   { code: "+91", flag: "🇮🇳" }, { code: "+971", flag: "🇦🇪" }, { code: "+1", flag: "🇺🇸" },
@@ -97,6 +98,7 @@ export default function UnlockModal({
   const [known, setKnown] = useState<boolean | null | undefined>(undefined);
   const [err, setErr] = useState("");
   const [paying, setPaying] = useState(false);
+  const [payErr, setPayErr] = useState("");
   const [busy, setBusy] = useState(false);
 
   const isIndia = dial === "+91";
@@ -129,7 +131,7 @@ export default function UnlockModal({
     );
     setSel(focus3D ? "read3d" : "read");
     setExpanded(null);
-    setSent(false); setKnown(undefined); setOtp(Array(OTP_LEN).fill("")); setErr(""); setPaying(false);
+    setSent(false); setKnown(undefined); setOtp(Array(OTP_LEN).fill("")); setErr(""); setPaying(false); setPayErr("");
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
@@ -225,17 +227,43 @@ export default function UnlockModal({
     settle();
   }
 
-  function choose(id: PackageId) { setSel(id); setStep("pay"); }
+  function choose(id: PackageId) { setSel(id); setPayErr(""); prewarmCheckout(); setStep("pay"); }
 
-  function pay() {
+  /* REAL MONEY, AND THE GRANT IS NOT OURS TO MAKE.
+
+     What was here: a 900ms setTimeout standing in for the Razorpay round
+     trip, then grantPackage() — a client-side write that unmasked the
+     report. Free to anyone who waited out the fake spinner.
+
+     Now: our function prices the package and opens a real order, Razorpay
+     takes the money, and our function verifies the signature, confirms
+     with Razorpay that the order is actually paid, and writes the grant
+     against the service role. grantPackage() still runs, but only AFTER
+     the server said yes, and only as the local cache of a decision made
+     elsewhere — fetchEntitlements() is the authority and is re-read
+     immediately so a refresh shows the same answer. */
+  async function pay() {
     setPaying(true);
-    // simulate the Razorpay round-trip, then grant
-    setTimeout(() => {
-      grantPackage(sel, slug);
-      setPaying(false);
-      setStep("done");
-      setTimeout(() => { onUnlocked(sel); onClose(); }, 1400);
-    }, 900);
+    setPayErr("");
+    const res = await payForPackage(sel, slug, { name: name || null, /* Razorpay prefills the contact field; it wants the dialling code. */
+      phone: num ? `${dial}${num.replace(/\D/g, "")}` : null });
+    setPaying(false);
+
+    if (!res.ok) {
+      if (res.reason === "dismissed") return;                  // they closed it; say nothing
+      if (res.reason === "unverified") { setStep("register"); setErr("Please confirm your number before paying."); return; }
+      setPayErr(
+        res.reason === "not_configured" ? "Card payments are briefly unavailable. Your advisor can complete this for you — we'll call."
+        : res.reason === "verification" ? `Your payment went through${res.paymentId ? ` (${res.paymentId})` : ""} but we couldn't confirm it here. Nothing is lost — we'll unlock it within the hour.`
+        : "That didn't go through. No money has left your account — please try again.",
+      );
+      return;
+    }
+
+    grantPackage(sel, slug);
+    void fetchEntitlements();
+    setStep("done");
+    setTimeout(() => { onUnlocked(sel); onClose(); }, 1400);
   }
 
   const FIELD = "w-full rounded-md border border-[#1a1a1a]/[0.16] bg-white px-4 py-3 text-[0.95rem] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#1a1a1a]/35 focus:border-[#c9a96e]";
@@ -427,18 +455,21 @@ export default function UnlockModal({
                 <span className="font-serif text-[1.5rem] font-semibold">{inr(amountFor(sel))}</span>
               </div>
               {isUpgrade(sel) && <p className="mt-1 text-[0.72rem] text-[#1a1a1a]/45">{inr(packageById(sel).inr)} tier · {inr(credit)} already paid credited.</p>}
-              <div className="mt-4 space-y-2">
-                {["UPI — GPay / PhonePe / Paytm", "Credit / Debit card", "Netbanking"].map((m, i) => (
-                  <div key={m} className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-[0.85rem] ${i === 0 ? "border-[#1e6b45]/40 bg-[#1e6b45]/[0.05]" : "border-[#1a1a1a]/12 bg-white/60"}`}>
-                    <span className={`grid h-4 w-4 place-items-center rounded-full border ${i === 0 ? "border-[#1e6b45]" : "border-[#1a1a1a]/25"}`}>{i === 0 && <span className="h-2 w-2 rounded-full bg-[#1e6b45]" />}</span>
-                    {m}
-                  </div>
-                ))}
+              {/* The three payment methods used to be rendered here as
+                  static rows with the first one pre-selected — a picture of
+                  a checkout. Razorpay's own sheet offers the real ones, so
+                  listing them here would now be a second, fictional choice
+                  in front of the real one. */}
+              <div className="mt-4 space-y-2 text-[0.85rem] text-[#1a1a1a]/60">
+                <p>UPI, credit &amp; debit cards, netbanking and wallets — all handled by Razorpay on the next screen.</p>
               </div>
+              {payErr && (
+                <p role="alert" className="mt-4 rounded-lg border border-[#b0503e]/30 bg-[#b0503e]/[0.06] px-4 py-3 text-[0.82rem] leading-snug text-[#8f3a2b]">{payErr}</p>
+              )}
               <button onClick={pay} disabled={paying} className="mt-6 w-full rounded-md bg-[#1e6b45] px-4 py-3.5 text-[0.92rem] font-medium text-white transition-colors hover:bg-[#238c55] disabled:opacity-60">
-                {paying ? "Processing…" : `Pay ${inr(amountFor(sel))}`}
+                {paying ? "Opening secure checkout…" : `Pay ${inr(amountFor(sel))}`}
               </button>
-              <p className="mt-3 text-center text-[0.72rem] text-[#1a1a1a]/40">🔒 Test mode — no real charge. Razorpay integration is a demo.</p>
+              <p className="mt-3 text-center text-[0.72rem] text-[#1a1a1a]/40">🔒 Secured by Razorpay. Your card details never touch our servers.</p>
               <button onClick={() => setStep("plans")} className="mt-2 w-full text-center text-[0.76rem] text-[#1a1a1a]/45 hover:text-[#1a1a1a]/70">← Change package</button>
             </div>
           )}
