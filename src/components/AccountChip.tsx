@@ -93,7 +93,17 @@ export default function AccountChip({
     );
   }
 
-  const initial = (who.name.trim().charAt(0) || "•").toUpperCase();
+  /* Founder's I2: an outlined green ring on the cream, not a solid disc —
+     the CTA button stays the header's one solid green. The initial remains
+     when a name exists, because it is the only personal touch up here.
+
+     And no more "•". Most sign-ups never leave a name (the OTP flow does
+     not ask), so the old fallback — a bare bullet in a green circle — was
+     the COMMON case, and it read as an unlabelled dot nobody could parse.
+     The founder screenshotted it as "what is this?" within a day of it
+     shipping. No name now renders the person glyph: still clearly an
+     account, never a mystery. */
+  const name = who.name.trim();
 
   return (
     <div ref={box} className={`relative ${className}`}>
@@ -102,9 +112,9 @@ export default function AccountChip({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Your account"
-        className="grid h-8 w-8 place-items-center rounded-full bg-[#1e6b45] text-[12px] font-bold text-white transition-opacity hover:opacity-85"
+        className="grid h-8 w-8 place-items-center rounded-full bg-[#1e6b45]/10 text-[12px] font-bold text-[#1e6b45] shadow-[inset_0_0_0_1.5px_#1e6b45] transition-opacity hover:opacity-80"
       >
-        {initial}
+        {name ? name.charAt(0).toUpperCase() : <UserIcon className="h-[15px] w-[15px]" />}
       </button>
 
       {open && (

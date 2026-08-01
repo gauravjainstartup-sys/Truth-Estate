@@ -40,9 +40,14 @@ function IconGlobe({ className }: IconProps) { // globe — NRI / overseas
   return <svg className={className} {...svgBase}><circle cx="12" cy="12" r="8.5" /><path d="M3.5 12h17" /><path d="M12 3.5c2.6 2.4 2.6 14.6 0 17M12 3.5c-2.6 2.4-2.6 14.6 0 17" /></svg>;
 }
 function Initial({ name }: { name: string }) {
+  /* Same fallback fix as AccountChip: most accounts carry no name, and a
+     bare "\u2022" in a gold circle read as an unlabelled dot. The person
+     glyph says "account" without one. The gold-on-dark styling is this
+     hero's own palette and stays. */
+  const ch = name.trim().charAt(0).toUpperCase();
   return (
     <span className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-[#c9a24b] text-[9px] font-bold text-[#0b1a12]">
-      {name.trim().charAt(0).toUpperCase() || "\u2022"}
+      {ch || <IconUser className="h-[10px] w-[10px]" />}
     </span>
   );
 }
@@ -222,7 +227,7 @@ export default function Hero({ index }: { index: OmniIndex }) {
                 <><IconUser className="h-6 w-6 shrink-0 opacity-80" />Sign in</>
               ) : (
                 <><span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#c9a24b] text-[11px] font-bold text-[#0b1a12]">
-                    {firstName.charAt(0).toUpperCase() || "\u2022"}
+                    {firstName.charAt(0).toUpperCase() || <IconUser className="h-3 w-3" />}
                   </span>{firstName || "My Office"}</>
               )}
             </a>
