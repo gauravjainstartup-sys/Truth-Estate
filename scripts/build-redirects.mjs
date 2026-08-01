@@ -42,15 +42,36 @@ const pathOf = (u) => {
   catch { return String(u).trim().replace(/\/+$/, "") || "/"; }
 };
 
-/* ── the new site's addresses, from the build we are about to ship ── */
-async function newPaths() {
-  if (!existsSync(SITEMAP)) {
-    console.error(`\n  ${SITEMAP} not found — run a production build first:\n` +
-                  `    NEXT_PUBLIC_BASE_PATH="" NEXT_PUBLIC_ORIGIN=https://www.truthestate.in npm run build\n`);
-    process.exit(1);
+/* ── the new site's addresses ──
+   From `out/sitemap.xml` after a local build, or straight off a deployed
+   site with --sitemap <url>.
+
+   The URL form exists because requiring a build put a four-minute barrier
+   in front of a job that is really one HTTP request: a full production
+   build needs the Supabase snapshot, pulls a few hundred megabytes of
+   media, and produces — for this purpose — a single XML file that the
+   running site is already serving. Reading it from the deployment is also
+   the more honest answer, since the redirect targets we emit are then the
+   URLs that demonstrably exist rather than the ones a rebuild predicts. */
+async function newPaths(src) {
+  let xml;
+  if (src && /^https?:\/\//.test(src)) {
+    const res = await fetch(src, { signal: AbortSignal.timeout(30000) });
+    if (!res.ok) { console.error(`\n  ${src} → HTTP ${res.status}\n`); process.exit(1); }
+    xml = await res.text();
+  } else {
+    const file = src || SITEMAP;
+    if (!existsSync(file)) {
+      console.error(`\n  ${file} not found. Either point at a deployed sitemap:\n` +
+                    `    node scripts/build-redirects.mjs --crawl https://www.truthestate.in --sitemap https://<host>/sitemap.xml\n` +
+                    `  or build first:\n` +
+                    `    NEXT_PUBLIC_BASE_PATH="" NEXT_PUBLIC_ORIGIN=https://www.truthestate.in npm run build\n`);
+      process.exit(1);
+    }
+    xml = await readFile(file, "utf8");
   }
-  const xml = await readFile(SITEMAP, "utf8");
   const paths = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => pathOf(m[1]));
+  if (paths.length === 0) { console.error(`\n  no <loc> entries in the sitemap — wrong URL?\n`); process.exit(1); }
   return [...new Set(paths)];
 }
 
@@ -197,16 +218,24 @@ const candidatesFor = (oldPath, news) => {
   return pool.filter((n) => !n.startsWith("/intelligence/compare/"));
 };
 
-const arg = process.argv[2];
+/* --sitemap is pulled out first so it can sit anywhere on the line; what
+   remains is the positional source of old URLs, as before. */
+const argv = process.argv.slice(2);
+const sitemapAt = argv.indexOf("--sitemap");
+const sitemapSrc = sitemapAt === -1 ? undefined : argv.splice(sitemapAt, 2)[1];
+
+const arg = argv[0];
 if (!arg) {
-  console.error("usage: build-redirects.mjs <old-urls.txt|--crawl https://www.truthestate.in>");
+  console.error(
+    "usage: build-redirects.mjs <old-urls.txt|--crawl https://www.truthestate.in> [--sitemap <url|path>]",
+  );
   process.exit(1);
 }
 
-const news = await newPaths();
+const news = await newPaths(sitemapSrc);
 const newSet = new Set(news);
 const olds = arg === "--crawl"
-  ? await crawl(process.argv[3] ?? "https://www.truthestate.in")
+  ? await crawl(argv[1] ?? "https://www.truthestate.in")
   : await fromFile(arg);
 
 console.log(`\n  old: ${olds.length} path(s)   new: ${news.length} path(s)\n`);
