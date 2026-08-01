@@ -48,3 +48,15 @@ jobs:
       - run: supabase functions deploy claim-events --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
       - run: supabase functions deploy entitlements --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
       - run: supabase functions deploy billing --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
+      # The browser calls this one too (src/lib/rerank.ts) and it was live
+      # while absent from this list, so its source drifted out of CI's reach:
+      # editing the file here changed nothing in production and nothing said
+      # so. It fails soft — a blocked call just leaves the deterministic
+      # shortlist order standing — which is exactly why it could go unnoticed.
+      - run: supabase functions deploy shortlist-rerank --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
+      # NOT deployed here, deliberately: omni-router. It currently 404s on
+      # the project — never deployed — and the canvas treats that as its
+      # normal fallback (src/lib/router.ts resolves any failure to null).
+      # Adding the line would turn the Ask router on for the first time,
+      # which is a product decision and needs ANTHROPIC_API_KEY set first,
+      # not a side effect of a CORS fix.

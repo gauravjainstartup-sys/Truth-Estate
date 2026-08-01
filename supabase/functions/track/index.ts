@@ -47,6 +47,15 @@ const MAX_BATCH = 20;
 const ALLOW_ORIGIN = [
   /^https:\/\/gauravjainstartup-sys\.github\.io$/,
   /^https:\/\/(www\.)?truthestate\.in$/,
+  /* Cloud Run. The site now runs from a container before the domain is
+     cut over, and its .run.app host was on no allowlist — so sign-up
+     failed at chat-signin with "couldn't reach us" while send-otp, which
+     lives outside this repo and is permissive, had already sent the code.
+     A CORS rejection is indistinguishable from a dead network in the UI.
+     Both URL forms Cloud Run issues: the newer hash style and the older
+     project-number style the existing service still uses. */
+  /^https:\/\/truthestate-[a-z0-9-]+\.a\.run\.app$/,
+  /^https:\/\/truthestate-[a-z0-9-]+\.[a-z0-9-]+\.run\.app$/,
   /^http:\/\/localhost(:\d+)?$/,
   /^http:\/\/127\.0\.0\.1(:\d+)?$/,
 ];

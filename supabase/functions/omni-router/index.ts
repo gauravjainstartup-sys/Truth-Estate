@@ -24,7 +24,17 @@ const INDEX_TTL_MS = 10 * 60 * 1000;
 
 /* browser origins allowed to call the router */
 const ALLOW_ORIGIN = [
+  /* THE PRODUCTION DOMAIN WAS NEVER ON THIS LIST.
+     Three functions — challenge-router, omni-router, shortlist-rerank —
+     allowed only github.io and localhost, so each would have started
+     failing the moment the site answered on truthestate.in, whether or
+     not Cloud Run was involved. A CORS rejection reads as a dead network
+     in the UI, so they would have looked like an outage with nothing in
+     any log to say otherwise. */
   /^https:\/\/gauravjainstartup-sys\.github\.io$/,
+  /^https:\/\/(www\.)?truthestate\.in$/,
+  /^https:\/\/truthestate-[a-z0-9-]+\.a\.run\.app$/,
+  /^https:\/\/truthestate-[a-z0-9-]+\.[a-z0-9-]+\.run\.app$/,
   /^http:\/\/localhost(:\d+)?$/,
   /^http:\/\/127\.0\.0\.1(:\d+)?$/,
 ];
