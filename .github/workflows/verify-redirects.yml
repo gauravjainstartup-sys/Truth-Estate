@@ -37,6 +37,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Reconstruct the map the service is actually serving
+        # VERIFY WHAT SHIPPED, NOT WHAT IS COMMITTED.
+        #
+        # This read deploy/redirects.conf out of the repo and reported 154
+        # wrong redirects and 77 dead targets against a service that was
+        # right about every one of them. The deploy regenerates the map
+        # from its own build and bakes that into the image; the committed
+        # copy is a snapshot of some earlier build. Comparing the two just
+        # measures how long ago the snapshot was taken.
+        #
+        # The deployed sitemap IS that build's sitemap, so regenerating
+        # from it plus the committed crawl reproduces the shipped map
+        # exactly — and if it ever does not, that disagreement is itself
+        # the bug worth finding.
+        env:
+          BASE: ${{ inputs.base }}
+        run: |
+          node scripts/build-redirects.mjs deploy/old-urls.txt --sitemap "$BASE/sitemap.xml"
+          echo "reconstructed $(grep -c '^location' deploy/redirects.conf) directive(s) from the live sitemap"
+
       - name: Every redirect returns 301 to exactly its target
         env:
           BASE: ${{ inputs.base }}
