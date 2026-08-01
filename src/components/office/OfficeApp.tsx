@@ -139,7 +139,13 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
 
       {/* ── Main ── */}
       <main className="min-w-0 flex-1">
-        <div className="mx-auto max-w-5xl px-6 py-9 md:px-12 md:py-12">
+        {/* max-w-7xl + md:px-10 — the home page's own measure. The office
+           sat at max-w-5xl behind a md:px-12 gutter, so its content column
+           was both narrower than the rest of the site and inset by two extra
+           px, which read as a different page rather than the same site with
+           a sidebar. The prose inside is already ch-capped, so widening the
+           shell changes the frame, not the line length. */}
+        <div className="mx-auto max-w-7xl px-6 py-9 md:px-10 md:py-12">
           {/* Thread switcher + preview control.
               HIDDEN ON THE DASHBOARD HOME. The switcher is demo scaffolding
               — three seeded threads and a "PREVIEW · stage" dropdown that
