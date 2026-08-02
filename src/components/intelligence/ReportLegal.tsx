@@ -57,6 +57,32 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
         </div>
       </div>
 
+      {/* Occupancy / Completion Certificate — shown when the project has its OC
+          on record (delivered_oc_date / delivered_certificate_url from the DB).
+          It is the strongest compliance signal a delivered project carries, so
+          it leads the pillar, and the document opens in a new tab. */}
+      {(p.ops?.ocDate || p.ops?.ocCertificateUrl) && (
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#1e6b45]/25 bg-[#1e6b45]/[0.05] p-5 md:p-6">
+          <div className="min-w-0">
+            <p className="text-[0.62rem] font-medium uppercase tracking-[0.16em] text-[#1e6b45]">Occupancy / Completion Certificate</p>
+            <p className="mt-1.5 text-[0.92rem] font-light leading-[1.55] text-[#1a1a1a]/70">
+              {p.ops?.ocDate
+                ? <>Granted <b className="font-medium text-[#1a1a1a]">{p.ops.ocDate}</b> — the project is delivered and cleared for possession.</>
+                : <>On record — the project is delivered and cleared for possession.</>}
+            </p>
+          </div>
+          {p.ops?.ocCertificateUrl && (
+            <a href={p.ops.ocCertificateUrl} target="_blank" rel="noopener noreferrer"
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#1e6b45] px-4 py-2.5 text-[0.8rem] font-semibold text-white transition-colors hover:bg-[#17573a]">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M9 13h6M9 17h6" />
+              </svg>
+              View OC Certificate <span aria-hidden>↗</span>
+            </a>
+          )}
+        </div>
+      )}
+
       {(p.liveLegal?.headline || dev) && (
         <div className="mt-6 rounded-2xl border-l-2 border-[#9a7a2e]/50 bg-white/50 p-6 md:p-7">
           <p className="text-[0.62rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/40">Analyst assessment</p>

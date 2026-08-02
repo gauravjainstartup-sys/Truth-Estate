@@ -1309,13 +1309,13 @@ export function liveProjectIntel(
     return bestSv ? heroDateLabel(bestSv) ?? undefined : undefined;
   })();
 
-  /* Hero status tag. Delivered wins — a project filed at 100% construction is
-     in OC/CC territory and is never a "new launch". Otherwise a RERA
-     registration within three months of today reads as a new launch. Computed
-     against the real build date, so "New Launch" ages out on its own with each
-     redeploy rather than sticking to a project forever. */
+  /* Hero status tag. Delivered wins — a project with its Occupancy/Completion
+     Certificate on record (delivered_oc_date, override-aware) is done and is
+     never a "new launch". Otherwise a RERA registration within three months of
+     today reads as a new launch — computed against the real build date, so
+     "New Launch" ages out on its own with each redeploy. */
   const lifecycle: ProjectOps["lifecycle"] = (() => {
-    if (row.constructionProgressPct === 100) return "delivered";
+    if (row.deliveredOcDate) return "delivered";
     if (row.registrationDate) {
       const reg = new Date(row.registrationDate);
       if (!Number.isNaN(reg.getTime())) {
@@ -1329,6 +1329,8 @@ export function liveProjectIntel(
 
   const ops: ProjectOps = {
     ...(lifecycle ? { lifecycle } : {}),
+    ...(row.deliveredOcDate && fullDateLabel(row.deliveredOcDate) ? { ocDate: fullDateLabel(row.deliveredOcDate)! } : {}),
+    ...(row.deliveredCertificateUrl ? { ocCertificateUrl: row.deliveredCertificateUrl } : {}),
     ...(row.location ? { address: withCity(row.location) } : {}),
     ...(row.totalUnits != null ? { units: Math.round(row.totalUnits) } : totalUnits != null ? { units: totalUnits } : {}),
     ...(ext?.totalTowers != null && ext.totalTowers > 0 ? { towers: Math.round(ext.totalTowers) } : {}),

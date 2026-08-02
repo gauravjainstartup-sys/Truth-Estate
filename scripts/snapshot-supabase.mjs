@@ -180,6 +180,22 @@ if (!v3Rows || v3Rows.length === 0) {
 // supporting + media-heavy views
 for (const [v, q] of OTHERS) await snap(v, q);
 
+/* Enrich backlog_project_data with the OC/CC columns, resiliently. They are new,
+   so if they don't exist in the DB yet the select 400s — in which case we keep
+   the OC-free snapshot already written above rather than lose the whole table
+   (it carries the construction/sales QPR modules every report reads). Only a
+   successful OC pull overwrites the file. */
+{
+  const BPD_BASE = "id,construction_pace,sales_velocity,expected_roi";
+  const withOc = await getJson(`backlog_project_data?select=${BPD_BASE},delivered_oc_date,delivered_certificate_url,overrides&limit=2000`);
+  if (withOc && withOc.length) {
+    await snap("backlog_project_data", `select=${BPD_BASE}&limit=2000`, withOc);
+    console.log("[snapshot] backlog_project_data enriched with OC/CC columns");
+  } else {
+    console.warn("[snapshot] backlog_project_data OC/CC columns unavailable — kept OC-free snapshot (columns may not exist yet)");
+  }
+}
+
 console.log(`[snapshot] ⇢ DB read egress this build ≈ ${MB(totalBytes)} MB across ${wrote} view(s)`);
 
 // tracked stats read counts over projects_basic_public (HEAD + content-range)

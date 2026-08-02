@@ -246,6 +246,11 @@ export type LiveBacklogFull = {
   /* module payloads — shapes owned by the pipeline */
   modConstruction: unknown;
   modSales: unknown;
+  /* Delivery / OC-CC — from backlog_project_data, with the row's own
+     `overrides` JSONB winning over the base columns. Present ⇒ the project
+     has its Occupancy/Completion Certificate on record. */
+  deliveredOcDate: string | null;
+  deliveredCertificateUrl: string | null;
   modTrackRecord: unknown;
   modLegal: unknown;
   modFinancial: unknown;
@@ -425,6 +430,21 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
     const id = s(b.id);
     if (id) bpdById.set(id, b);
   }
+  /* OC/CC — fetched in its OWN query so a missing column (these are new)
+     400s to null and only hides OC data; the construction/sales join above is
+     never affected. In fixture mode both reads return the same snapshot file.
+     `overrides` JSONB wins over the base columns, matching dbService. */
+  const ocById = new Map<string, { ocDate: string | null; ocUrl: string | null }>();
+  for (const b of (await sbRows("backlog_project_data", "select=id,delivered_oc_date,delivered_certificate_url,overrides&limit=2000")) ?? []) {
+    const id = s(b.id);
+    if (!id) continue;
+    const o = j(b.overrides);
+    const ovr: Record<string, unknown> = o && typeof o === "object" && !Array.isArray(o) ? (o as Record<string, unknown>) : {};
+    ocById.set(id, {
+      ocDate: s(ovr.delivered_oc_date) ?? s(b.delivered_oc_date),
+      ocUrl: s(ovr.delivered_certificate_url) ?? s(b.delivered_certificate_url),
+    });
+  }
   const out: LiveBacklogFull[] = [];
   for (const r of rows) {
     /* Collapse internal runs of whitespace, not just the ends. One row
@@ -436,6 +456,7 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
     const name = s(r.name)?.replace(/\s+/g, " ") ?? null;
     if (!name) continue;
     const bpd = bpdById.get(s(r.id) ?? "");
+    const oc = ocById.get(s(r.id) ?? "");
     out.push({
       id: s(r.id) ?? liveSlug(name),
       slug: liveSlug(name),
@@ -471,6 +492,8 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
       landAcres: n(r.land_acres),
       modConstruction: j(bpd?.construction_pace),
       modSales: j(bpd?.sales_velocity),
+      deliveredOcDate: oc?.ocDate ?? null,
+      deliveredCertificateUrl: oc?.ocUrl ?? null,
       modTrackRecord: j(r.developer_track_record),
       modLegal: j(r.legal_risks),
       modFinancial: j(r.financial_subscores),
