@@ -49,6 +49,8 @@ import ReportExplore from "./ReportExplore";
 import ReportAlternatives from "./ReportAlternatives";
 import ReportFeedback from "./ReportFeedback";
 import ReportHomes from "./ReportHomes";
+import SampleSheet from "./SampleSheet";
+import { ReportStaticContext } from "./reportStatic";
 import { basePath, homeHref } from "@/lib/site";
 
 
@@ -186,6 +188,7 @@ export default function ProjectProfile({
   alternatives,
   embedded = false,
   sample = false,
+  frozen = false,
   onClose,
   onBack,
   onConsult,
@@ -204,6 +207,10 @@ export default function ProjectProfile({
   embedded?: boolean;
   /* The watermarked sample read — never paywalled. */
   sample?: boolean;
+  /* Frozen mode — the sample rendered as a static document inside the bottom
+     sheet: no clickable buttons, sections show their full content inline. Builds
+     on `embedded` for the container layout. */
+  frozen?: boolean;
   onClose?: () => void;
   onBack?: () => void;
   onConsult?: () => void;
@@ -223,6 +230,7 @@ export default function ProjectProfile({
   const [unlockFocus3D, setUnlockFocus3D] = useState(false);
   const [threeDAccess, setThreeDAccess] = useState(false);
   const [challengeOpen, setChallengeOpen] = useState(false);
+  const [sampleOpen, setSampleOpen] = useState(false);
   /* Re-check when the server's answer lands, and when the session changes.
      Mount alone is too early: fetchEntitlements is still in flight, so a
      reader who owns this report was shown the paywall and only let in on
@@ -498,6 +506,7 @@ export default function ProjectProfile({
   }, [active]);
 
   return (
+    <ReportStaticContext.Provider value={frozen}>
     <div className={`${embedded ? "h-full overflow-y-auto" : "min-h-svh"} bg-[#F5F0E8] text-[#1a1a1a]`}>
       {/* Standalone mobile: the header is a fixed OVERLAY (out of flow) so the
          hero bleeds to the very top of the viewport — hiding it leaves no gap,
@@ -576,7 +585,7 @@ export default function ProjectProfile({
           {!embedded && (
             <aside className="hidden self-start xl:col-start-2 xl:row-start-2 xl:sticky xl:top-[132px] xl:block">
               {locked ? (
-                <UnlockDesk onUnlock={() => setUnlockOpen(true)} sampleHref={SAMPLE_HREF} />
+                <UnlockDesk onUnlock={() => setUnlockOpen(true)} onSample={() => setSampleOpen(true)} />
               ) : (
               <>
               <div className="rounded-2xl border border-[#1a1a1a]/10 bg-[#FBF8F2] p-6">
@@ -1040,7 +1049,7 @@ export default function ProjectProfile({
                in place of the analysis; a paid reader sees everything. ── */}
             {locked ? (
               <div id="unlock" className="scroll-mt-24">
-                <LockedReport projectName={p.name} truthScore={p.truthScore} grade={scoreGrade(p.truthScore)} ticket={lockedTicket} onUnlock={() => setUnlockOpen(true)} sampleHref={SAMPLE_HREF} audience={audience} />
+                <LockedReport projectName={p.name} truthScore={p.truthScore} grade={scoreGrade(p.truthScore)} ticket={lockedTicket} onUnlock={() => setUnlockOpen(true)} onSample={() => setSampleOpen(true)} audience={audience} />
               </div>
             ) : (
             <>
@@ -1221,7 +1230,7 @@ export default function ProjectProfile({
                the price-forward UnlockDesk instead. */}
             {locked ? (
               <div className="mt-12 xl:hidden">
-                <UnlockDesk onUnlock={() => setUnlockOpen(true)} sampleHref={SAMPLE_HREF} />
+                <UnlockDesk onUnlock={() => setUnlockOpen(true)} onSample={() => setSampleOpen(true)} />
               </div>
             ) : (
             <div className="mt-12 rounded-2xl border border-[#1a1a1a]/10 bg-[#FBF8F2] p-6 xl:hidden">
@@ -1279,6 +1288,7 @@ export default function ProjectProfile({
       {/* Mobile: a single, clean primary CTA. When unlocked, the founder's face
           rides beside the advisor call (advice reads as a person); when locked,
           a clean full-width "Get Full Read" drives the sale. */}
+      {!frozen && (
       <div className="sticky bottom-0 z-40 flex items-center gap-3 border-t border-[#1a1a1a]/10 bg-[#F5F0E8]/95 px-6 py-3 backdrop-blur md:hidden">
         {!locked && (
           /* eslint-disable-next-line @next/next/no-img-element */
@@ -1288,6 +1298,7 @@ export default function ProjectProfile({
           {primaryCta.label}
         </button>
       </div>
+      )}
 
       {/* Document viewer — masterplan / brochure pages / payment plan */}
       {doc && (
@@ -1400,7 +1411,7 @@ export default function ProjectProfile({
 
       {/* Sample read — a faint diagonal tiled watermark + a persistent badge so
           the dummy report can never be mistaken for a paid one. */}
-      {sample && (
+      {sample && !frozen && (
         <>
           <div aria-hidden className="pointer-events-none fixed inset-0 z-[120] overflow-hidden">
             <div
@@ -1416,6 +1427,8 @@ export default function ProjectProfile({
         </>
       )}
     </div>
+    {!frozen && sampleOpen && <SampleSheet onClose={() => setSampleOpen(false)} />}
+    </ReportStaticContext.Provider>
   );
 }
 

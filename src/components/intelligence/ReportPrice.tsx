@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { priceJourney, roiModel, fmtPsf, lastUpdatedOn, type ProjectIntel } from "@/lib/projects";
 import { hasReadAccess } from "@/lib/journey";
 import { openUnitIntel } from "./TowerIntel";
+import { useReportStatic } from "./reportStatic";
 
 /* Chapter III — "Will it make money?"
    a · The price since launch (PSF journey + what moved it)
@@ -31,6 +32,9 @@ function xirrAnnual(cf: number[]): number {
 export default function ReportPrice({ p, sample = false }: { p: ProjectIntel; sample?: boolean }) {
   const journey = priceJourney(p);
   const roi = roiModel(p);
+  /* Frozen sample: the ROI calculator is interactive-only (sliders, plan/mode
+     toggles) — drop it and keep the record + projection, which read fine static. */
+  const isStatic = useReportStatic();
   // The projection is part of the paid read — any read entitlement (₹999 up)
   // unlocks it. The watermarked sample read always shows it.
   const [unlocked] = useState(() => sample || (typeof window !== "undefined" ? hasReadAccess(p.slug) : false));
@@ -188,7 +192,8 @@ export default function ReportPrice({ p, sample = false }: { p: ProjectIntel; sa
         </>
       )}
 
-      {/* ── c · the calculator ── */}
+      {/* ── c · the calculator (interactive; omitted from the frozen sample) ── */}
+      {!isStatic && (<>
       <div className="mt-10 flex items-center gap-3"><span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">Model your money — cash flow and all</span><span className="h-px flex-1 bg-[#1a1a1a]/10" /></div>
 
       <div className="mt-4 grid overflow-hidden rounded-2xl border border-[#1a1a1a]/10 lg:grid-cols-[360px_minmax(0,1fr)]">
@@ -285,6 +290,7 @@ export default function ReportPrice({ p, sample = false }: { p: ProjectIntel; sa
           <p className="mt-3 text-[0.62rem] font-light italic text-[#1a1a1a]/35">Modelled on the corridor-anchored, execution-adjusted CAGR of {projCagr.toFixed(1)}% — an estimate, not a promise. Taxes, stamp duty &amp; charges excluded.</p>
         </div>
       </div>
+      </>)}
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { developerOf, lastUpdatedOn, legalStatus, type ProjectIntel } from "@/lib/projects";
+import { useReportStatic } from "./reportStatic";
 
 /* Chapter II · Pillar IV — Legal & Compliance. The signature "project clean,
    developer history" split, a risk matrix, the developer's public cases each
@@ -34,6 +35,12 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
   const pickScope = (s: "project" | "developer") => { setCaseScope(s); setCaseLimit(3); };
 
   const [ddLimit, setDdLimit] = useState(3);
+
+  /* Frozen sample: the toggle and load-more get hidden with every other button,
+     so render ALL cases (both scopes) inline — otherwise the sheet would show
+     only the default scope's first three and silently drop the rest. */
+  const isStatic = useReportStatic();
+  const shownCases = isStatic ? cases : activeCases.slice(0, caseLimit);
 
   /* Pipeline risk_breakdown (title_disputes → "Title disputes" · severity) when
      the legal payload carries one; else the heuristic read. */
@@ -175,13 +182,13 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
             })}
           </div>
 
-          {activeCases.length === 0 ? (
+          {(!isStatic && activeCases.length === 0) ? (
             <div className="mt-4 rounded-2xl border border-[#1e6b45]/25 bg-[#1e6b45]/[0.05] p-6 text-[0.86rem] font-light leading-[1.6] text-[#1a1a1a]/70">
               <span className="font-semibold text-[#1e6b45]">✓ No litigation on record against this project.</span> The history that matters here sits with the developer — see <button onClick={() => pickScope("developer")} className="font-medium text-[#1e6b45] underline decoration-[#1e6b45]/30 underline-offset-2">This developer · {devCases.length}</button>.
             </div>
           ) : (
             <>
-              {activeCases.slice(0, caseLimit).map((c) => (
+              {shownCases.map((c) => (
                 <div key={c.title} className="mt-4 rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-6 md:p-7">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
@@ -190,7 +197,7 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
                     </div>
                     <div className="flex max-w-full shrink-0 flex-wrap gap-1.5">
                       <Chip>Status: {c.status}</Chip>
-                      {caseScope === "developer" && <Chip>Relevance: {c.relevance}</Chip>}
+                      {(isStatic ? c.scope === "developer" : caseScope === "developer") && <Chip>Relevance: {c.relevance}</Chip>}
                       <Chip hi>Impact: {c.impact}</Chip>
                     </div>
                   </div>
@@ -207,7 +214,7 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
                   )}
                 </div>
               ))}
-              {activeCases.length > caseLimit && (
+              {!isStatic && activeCases.length > caseLimit && (
                 <button onClick={() => setCaseLimit(activeCases.length)}
                   className="mt-4 w-full rounded-2xl border border-dashed border-[#1a1a1a]/20 py-3.5 text-[0.8rem] font-semibold text-[#1a1a1a]/60 transition-colors hover:border-[#1a1a1a]/40 hover:text-[#1a1a1a]/85">
                   Load {activeCases.length - caseLimit} more {activeCases.length - caseLimit === 1 ? "case" : "cases"} ↓
@@ -252,7 +259,7 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
           <>Confirm a bank or HFC has approved the project for home loans — an <b className="font-medium text-[#1a1a1a]">APF number</b> is a strong third-party check on title and approvals.</>,
           <>Read the <b className="font-medium text-[#1a1a1a]">maintenance &amp; IFMS terms</b> and who controls the RWA handover timeline after possession.</>,
         ];
-        const visible = ddSteps.slice(0, ddLimit);
+        const visible = isStatic ? ddSteps : ddSteps.slice(0, ddLimit);
         return (
           <div className="mt-6 rounded-2xl border border-[#9a7a2e]/28 bg-[#FBF8F2] p-6 md:p-7">
             <p className="flex items-center gap-2 text-[0.66rem] font-bold uppercase tracking-[0.1em] text-[#9a7a2e]">⚑ Before you sign — your due-diligence plan</p>

@@ -47,14 +47,14 @@ const OWNER_HOOKS: Record<string, string> = {
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
 export default function LockedReport({
-  projectName, truthScore = 0, grade = "", ticket = "", onUnlock, sampleHref, audience = "buyer",
+  projectName, truthScore = 0, grade = "", ticket = "", onUnlock, onSample, audience = "buyer",
 }: {
   projectName: string;
   truthScore?: number;
   grade?: string;
   ticket?: string;
   onUnlock: () => void;
-  sampleHref: string;
+  onSample: () => void;
   audience?: "buyer" | "owner";
 }) {
   const lost = Math.max(0, 100 - Math.round(truthScore));
@@ -93,9 +93,9 @@ export default function LockedReport({
             ? <>That&rsquo;s a rounding error on {ticket} — one missed red flag costs a great deal more.</>
             : <>One missed red flag costs a great deal more than the read.</>}
         </p>
-        <a href={sampleHref} className="mt-4 inline-block text-[0.82rem] font-semibold text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]">
+        <button type="button" onClick={onSample} className="mt-4 inline-block text-[0.82rem] font-semibold text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]">
           See a full sample read first →
-        </a>
+        </button>
       </div>
 
       {/* ── what's behind the wall — every row taps to unlock ── */}

@@ -18,6 +18,7 @@ import {
 import { scoreMatch, type MarketContext } from "@/lib/matchEngine";
 import { useMatchMarket } from "@/lib/useMatchCatalog";
 import { saveVerified, loadVerified, maskContact, type Verified } from "@/lib/shortlistAuth";
+import { useReportStatic } from "./reportStatic";
 import OtpSheet from "@/components/shortlist/OtpSheet";
 import type { ProjectIntel } from "@/lib/projects";
 
@@ -71,6 +72,10 @@ export default function MatchScore({ project, initialBuy, variant = "card" }: { 
   const [member, setMemberFlag] = useState(false);
   const [verified, setVerified] = useState<Verified | null>(null);
   const [otp, setOtp] = useState<null | "login" | "save">(null);
+  /* The frozen sample renders MatchScore for its hero, but must not carry the
+     phone-signup machinery — those sheets are fixed overlays that escape the
+     sheet's button-hiding, so gate them out entirely in static mode. */
+  const isStatic = useReportStatic();
 
   useEffect(() => {
     if (!initialBuy) {
@@ -206,31 +211,35 @@ export default function MatchScore({ project, initialBuy, variant = "card" }: { 
         </button>
       )}
 
-      <MatchSheet
-        open={sheet}
-        project={project}
-        market={market}
-        seed={seed}
-        computed={!!computed}
-        existing={buy}
-        member={member}
-        verified={verified}
-        onClose={() => setSheet(false)}
-        onSave={onSave}
-        onLogin={() => setOtp("login")}
-        onSaveBrief={() => setOtp("save")}
-      />
-      <OtpSheet
-        open={otp !== null}
-        onClose={() => setOtp(null)}
-        onVerified={handleVerified}
-        title={otp === "login" ? "Log in to Truth Estate" : "Save your brief"}
-        subtitle={
-          otp === "login"
-            ? "Verify your number and we'll bring your saved requirements across."
-            : "Verify once — your brief stays saved to you and follows you across every project."
-        }
-      />
+      {!isStatic && (
+        <>
+          <MatchSheet
+            open={sheet}
+            project={project}
+            market={market}
+            seed={seed}
+            computed={!!computed}
+            existing={buy}
+            member={member}
+            verified={verified}
+            onClose={() => setSheet(false)}
+            onSave={onSave}
+            onLogin={() => setOtp("login")}
+            onSaveBrief={() => setOtp("save")}
+          />
+          <OtpSheet
+            open={otp !== null}
+            onClose={() => setOtp(null)}
+            onVerified={handleVerified}
+            title={otp === "login" ? "Log in to Truth Estate" : "Save your brief"}
+            subtitle={
+              otp === "login"
+                ? "Verify your number and we'll bring your saved requirements across."
+                : "Verify once — your brief stays saved to you and follows you across every project."
+            }
+          />
+        </>
+      )}
     </section>
   );
 }

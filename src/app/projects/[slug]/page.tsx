@@ -304,8 +304,12 @@ function faqLdFor(faqs: { q: string; a: string }[]) {
 
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  // the old sample address redirects to the clean /sample-read
-  if (slug === SAMPLE_LEGACY) return <LegacyStub href={`${BASE}/projects/${SAMPLE_SLUG}`} />;
+  // The sample read is now a bottom sheet opened from the locked report — the
+  // standalone page is retired. The sample address and its legacy alias both
+  // redirect to the projects index.
+  if (slug === SAMPLE_SLUG || slug === SAMPLE_LEGACY) return <LegacyStub href={`${BASE}/intelligence/projects`} />;
+  // Retired above; the ternary stays only so the (now unreachable) sample-render
+  // tail below keeps its types. slug is a string, so TS won't fold this to never.
   const p = slug === SAMPLE_SLUG ? sampleIntel() : undefined;
 
   if (!p) {

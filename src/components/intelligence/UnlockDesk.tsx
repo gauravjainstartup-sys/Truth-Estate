@@ -30,7 +30,7 @@ const INCLUDED: { t: string; bonus?: boolean }[] = [
   { t: "A 1:1 call with the founder who signed it off", bonus: true },
 ];
 
-export default function UnlockDesk({ onUnlock, sampleHref }: { onUnlock: () => void; sampleHref: string }) {
+export default function UnlockDesk({ onUnlock, onSample }: { onUnlock: () => void; onSample: () => void }) {
   return (
     <div className="rounded-2xl border border-[#1a1a1a]/10 bg-[#FBF8F2] p-6">
       {/* founder as a trust seal — not a free-call offer */}
@@ -71,9 +71,9 @@ export default function UnlockDesk({ onUnlock, sampleHref }: { onUnlock: () => v
         <span aria-hidden className="inline-block transition-transform group-hover:translate-x-0.5">→</span>
       </button>
 
-      <a href={sampleHref} className="mt-3 block text-center text-[0.72rem] font-medium text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]">
+      <button type="button" onClick={onSample} className="mt-3 block w-full text-center text-[0.72rem] font-medium text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]">
         See a full sample read first →
-      </a>
+      </button>
 
       <p className="mt-5 border-t border-[#1a1a1a]/8 pt-3.5 text-[0.64rem] font-light leading-[1.5] text-[#1a1a1a]/40">
         Priced once — no subscription. Independent: no inventory, no builder commission.
