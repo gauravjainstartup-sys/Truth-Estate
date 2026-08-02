@@ -9,6 +9,8 @@ import {
   fetchCorridorPsf,
   fetchProjectPillars,
   fetchExtendedDetails,
+  fetchDeveloperLedger,
+  devKey,
   type LiveBacklogFull,
   type LiveConfiguration,
   type LiveExtendedDetails,
@@ -56,6 +58,14 @@ let pillarCache: Record<string, import("@/lib/supabase").LivePillarSet> | null |
 async function truthPillars() {
   if (pillarCache === undefined) pillarCache = await fetchProjectPillars();
   return pillarCache;
+}
+/* The developer's full project ledger, keyed by normalised developer name.
+   Fetched once per build like the other seams; attached to the developer on
+   each report so Developer DNA can list the whole RERA portfolio. */
+let ledgerCache: Record<string, import("@/lib/developers").DevLedgerItem[]> | null | undefined;
+async function developerLedger() {
+  if (ledgerCache === undefined) ledgerCache = await fetchDeveloperLedger();
+  return ledgerCache;
 }
 
 async function configurations(): Promise<Record<string, LiveConfiguration[]> | null> {
@@ -320,6 +330,13 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       trackedRank: trackedRankOf(live.truthScore, await liveScores()),
       ...(pillarSets?.[live.id] ? { livePillars: pillarSets[live.id] } : {}),
     };
+    /* Attach the developer's project ledger by matching the normalised
+       developer name — the report reads it verbatim under Developer DNA. */
+    const ledgerMap = await developerLedger();
+    if (intel.liveDeveloper && ledgerMap) {
+      const items = ledgerMap[devKey(intel.liveDeveloper.name)];
+      if (items?.length) intel.liveDeveloper = { ...intel.liveDeveloper, ledger: items };
+    }
     const liveFaqs = projectFaqs(intel);
 
     /* The brief-ranked section runs client-side, after a reader unlocks —

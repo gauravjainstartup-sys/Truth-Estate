@@ -50,6 +50,10 @@ const OTHERS = [
   // `overrides` JSONB carries the delivered_oc_date / delivered_certificate_url
   // (OC/CC) keys the Legal pillar reads.
   ["backlog_project_data", "select=id,construction_pace,sales_velocity,expected_roi,overrides&limit=2000"],
+  /* The developer's full RERA project ledger (name · location · type ·
+     status · delivery timing), grouped by developer in fetchDeveloperLedger.
+     Powers the "see the developer's projects" list under Developer DNA. */
+  ["projects", "select=project_name,developer_name,location,type,status,oc_cc_available,actual_oc_date,is_delayed,delay_months&limit=2000"],
   /* The developers page fetches this at build and renders a whole section
      from it. It was NOT snapshotted, so every local build was blind to
      that section — the curated cards looked like the entire page here

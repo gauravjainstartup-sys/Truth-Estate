@@ -1,5 +1,6 @@
 import { developerOf, lastUpdatedOn, type ProjectIntel } from "@/lib/projects";
 import { BAND_RANK, FIN_METRICS, type FinBand, type FinRating } from "@/lib/developers";
+import DeveloperLedger from "./DeveloperLedger";
 
 /* Chapter II · Pillar I — Developer DNA, in two parts:
    (a) Track record — the RERA delivery ledger, with "lapsed" flagged red
@@ -128,6 +129,10 @@ export default function ReportDeveloper({ p }: { p: ProjectIntel }) {
       {perf.avgDelayMonths > 0 && (
         <p className="mt-3 text-[0.72rem] font-light leading-[1.5] text-[#1a1a1a]/40">When {dev.name} is late, it&apos;s late by ~{perf.avgDelayMonths} months on average — price that buffer into your plans.</p>
       )}
+
+      {/* The full RERA project ledger behind these stats — every project the
+          developer has filed, with status and delivery timing. */}
+      {dev.ledger && dev.ledger.length > 0 && <DeveloperLedger items={dev.ledger} developer={dev.name} />}
 
       {/* definitions */}
       <details className="group mt-5 overflow-hidden rounded-2xl border border-[#1a1a1a]/8">

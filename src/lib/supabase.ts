@@ -16,6 +16,7 @@
    ════════════════════════════════════════════════════════════════ */
 
 import { corridorKey } from "./journey";
+import type { DevLedgerItem } from "./developers";
 
 const SUPABASE_URL = "https://lyetvabfgaidvqrbmaoy.supabase.co";
 const SUPABASE_ANON_KEY =
@@ -1087,5 +1088,41 @@ export async function fetchProjectPillars(): Promise<Record<string, LivePillarSe
     if (ok) out[id] = set; else skipped++;
   }
   console.log(`[supabase] truth-score pillars → ${Object.keys(out).length} projects (${skipped} without a usable breakdown)`);
+  return out;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   DEVELOPER PROJECT LEDGER — every RERA project a developer has filed,
+   grouped by developer, from the `projects` table (the source of truth
+   for the track-record counts). The report reads it verbatim; the UI
+   does display-only formatting. Keyed by a normalised developer name so
+   projects.developer_name joins the report's developer field regardless
+   of case / spacing / punctuation.
+   ════════════════════════════════════════════════════════════════ */
+export const devKey = (name: string): string => name.toLowerCase().replace(/[^a-z0-9]+/g, "");
+
+export async function fetchDeveloperLedger(): Promise<Record<string, DevLedgerItem[]> | null> {
+  const rows = await sbRows(
+    "projects",
+    "select=project_name,developer_name,location,type,status,oc_cc_available,actual_oc_date,is_delayed,delay_months&limit=2000",
+  );
+  if (!rows) return null;
+  const yn = (v: unknown): boolean | null => (v == null ? null : String(v).trim().toLowerCase() === "yes");
+  const out: Record<string, DevLedgerItem[]> = {};
+  for (const r of rows) {
+    const dev = s(r.developer_name);
+    const name = s(r.project_name);
+    if (!dev || !name) continue;
+    (out[devKey(dev)] ??= []).push({
+      name,
+      location: s(r.location),
+      type: s(r.type),
+      status: s(r.status),
+      ocDate: s(r.actual_oc_date),
+      isDelayed: yn(r.is_delayed),
+      delayMonths: n(r.delay_months),
+    });
+  }
+  console.log(`[supabase] developer ledger → ${Object.keys(out).length} developers, ${rows.length} projects`);
   return out;
 }

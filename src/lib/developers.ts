@@ -62,6 +62,21 @@ export type DeveloperIntel = {
      developer carries history). Cited; not project-level defects. */
   legalCases?: LegalCase[];
   verdict: string;
+  /* The developer's full RERA project ledger (from the `projects` table,
+     grouped by developer). Optional — attached only on live report pages. */
+  ledger?: DevLedgerItem[];
+};
+
+/* One row of the developer's project ledger — a RERA-registered project with
+   its status and delivery timing. Raw-ish; the UI formats for display. */
+export type DevLedgerItem = {
+  name: string; // project_name (the UI title-cases and de-prefixes)
+  location: string | null;
+  type: string | null; // "Residential" | "Commercial"
+  status: string | null; // "Delivered" | "Ongoing" | "Lapsed"
+  ocDate: string | null; // actual_oc_date, where delivered
+  isDelayed: boolean | null;
+  delayMonths: number | null;
 };
 
 export type LegalCase = {
