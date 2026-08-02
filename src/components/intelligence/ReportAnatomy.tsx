@@ -46,14 +46,26 @@ export default function ReportAnatomy({ p, locked = false, onUnlock }: { p: Proj
 
       {/* Composition + pillar rows */}
       <div>
-        <div className="mb-3 flex items-baseline justify-between text-[0.62rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[0.62rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">
           <span>What the {p.truthScore} is made of</span>
-          {/* The pillars are weighted to land on the Truth Score exactly;
-              what a reader multiplying them out sees can still miss by up to
-              half a point, because each figure is shown to one decimal and
-              five roundings accumulate. Better to say so than to let someone
-              check the arithmetic and conclude we cannot do it. */}
-          <span className="hidden sm:inline">width = weight · colour = health · figures rounded to 0.1</span>
+          {/* The legend as a glanceable key rather than a run-on sentence: a
+              health gradient (healthy green → watch red) and a width mark, with
+              the rounding note kept — the pillars are weighted to land on the
+              Truth Score exactly, but each figure shows one decimal, so five
+              roundings can make a reader's hand-multiplication miss by up to
+              half a point. Better to say so than let someone check the
+              arithmetic and conclude we cannot do it. */}
+          <span className="flex items-center gap-3 text-[0.58rem] tracking-[0.1em] text-[#1a1a1a]/45">
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+              <span aria-hidden className="h-[7px] w-[26px] rounded-[2px]" style={{ background: "linear-gradient(90deg,#1e6b45,#2f9a68,#9a7a2e,#b0503e)" }} />
+              = health
+            </span>
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+              <span aria-hidden className="text-[0.72rem] leading-none text-[#1a1a1a]/50">↔</span>
+              = weight
+            </span>
+            <span className="hidden text-[#1a1a1a]/30 sm:inline">rounded 0.1</span>
+          </span>
         </div>
         <div className="flex h-4 gap-0.5 overflow-hidden rounded-md">
           {rows.map((r) => (
