@@ -12,9 +12,28 @@ function pdfHref(u: string): string {
   return /^https?:\/\//i.test(u) ? u : `${basePath}/${u.replace(/^\//, "")}`;
 }
 
+/* The QPR vintage behind the construction read — "Month Year", pulled from the
+   QPR's own date so the bracket tracks the data itself, not the row's refresh
+   date. Falls back to the quarter label, then to nothing. Keeps the header
+   honest: the "Updated" date is when the DB last changed, the bracket is how
+   old the underlying filing is. */
+const QPR_MONTHS: Record<string, string> = {
+  jan: "January", feb: "February", mar: "March", apr: "April", may: "May", jun: "June",
+  jul: "July", aug: "August", sep: "September", oct: "October", nov: "November", dec: "December",
+};
+function qprVintage(o: { lastUpdated?: string; qpr?: string }): string | null {
+  const m = o.lastUpdated?.match(/([A-Za-z]{3})[a-z]*\s+(\d{4})/);
+  if (m) {
+    const full = QPR_MONTHS[m[1].toLowerCase()];
+    if (full) return `${full} ${m[2]}`;
+  }
+  return o.qpr ?? null;
+}
+
 export default function ReportConstruction({ p }: { p: ProjectIntel }) {
   const o = deliveryOutlook(p);
   if (!o) return null;
+  const qprBasis = qprVintage(o);
   // A delivered project (OC/CC on record) reports actuals, not a forecast:
   // the predicted-delivery + delay-chance read is moot and, worse, contradicts
   // the certificate. Switch it for the delivered fact everywhere below.
@@ -65,7 +84,7 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
     <div className="mt-8">
       <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Pillar II · Construction &amp; Sales</p>
       <h3 className="mt-2 font-serif text-[1.7rem] font-medium leading-tight md:text-[2rem]">Is it actually getting built — and sold?</h3>
-      <p className="mt-2 text-[0.72rem] font-light italic text-[#1a1a1a]/40">Updated {lastUpdatedOn(p, o.lastUpdated)}</p>
+      <p className="mt-2 text-[0.72rem] font-light italic text-[#1a1a1a]/40">Updated {lastUpdatedOn(p)}{qprBasis ? ` (based on ${qprBasis} QPR)` : ""}</p>
       <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">Build progress against the RERA filings — and the Expected OC date.</p>
 
       <div className="mt-6 rounded-2xl border-l-2 border-[#1e6b45]/40 bg-white/50 p-6 md:p-7">
