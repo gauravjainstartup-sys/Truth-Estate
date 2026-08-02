@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { priceJourney, roiModel, fmtPsf, type ProjectIntel } from "@/lib/projects";
+import { priceJourney, roiModel, fmtPsf, lastUpdatedOn, type ProjectIntel } from "@/lib/projects";
 import { hasReadAccess } from "@/lib/journey";
 import { openUnitIntel } from "./TowerIntel";
 
@@ -121,6 +121,7 @@ export default function ReportPrice({ p, sample = false }: { p: ProjectIntel; sa
         <>
           <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Price Dynamics · a — the record</p>
           <h3 className="mt-2 font-serif text-[1.7rem] font-medium leading-tight md:text-[2rem]">The price, since launch</h3>
+          <p className="mt-2 text-[0.72rem] font-light italic text-[#1a1a1a]/40">Updated {lastUpdatedOn(p)}</p>
 
           <div className="mt-5 grid grid-cols-2 overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-white/60 lg:grid-cols-3">
             <PStat v={fmtPsf(journey.launchPsf)} sub="/sqft" k={`Launch · ${journey.launchDate}`} />

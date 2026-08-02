@@ -163,6 +163,7 @@ export default function ReportDeveloper({ p }: { p: ProjectIntel }) {
       <div className="mt-12">
         <p className="text-[0.66rem] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]/40">Pillar I · Developer DNA — b</p>
         <h3 className="mt-2 font-serif text-[1.7rem] font-medium leading-tight md:text-[2rem]">Can the balance sheet finish the building?</h3>
+        <p className="mt-2 text-[0.72rem] font-light italic text-[#1a1a1a]/40">Updated {lastUpdatedOn(p)}</p>
         <p className="mt-2.5 max-w-xl text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/55">The numbers behind whether the money actually reaches handover.</p>
       </div>
 
