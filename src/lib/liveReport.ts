@@ -1289,15 +1289,19 @@ export function liveProjectIntel(
   const consultants = strList(row.uspConsultants, ["name", "title", "consultant"]);
   if (consultants.length >= 2) usps.push({ title: "Marquee consultants on record", body: consultants.slice(0, 6).join(" · ") });
 
-  /* Project-level "last updated" — the most recent of the dated dimensions
-     we actually refresh (hero review · legal read · construction QPR). It is
-     DB-driven with real coverage (legal_last_updated_date is filed on every
-     live row), so the hero and the pillars no longer fall back to a
-     hard-coded month for the projects whose hero_date is blank. */
+  /* Project-level "last updated" — the most recent change across every dated
+     section: the hero review, the legal read, the construction QPR and the
+     location refresh. These are the DB's own per-section "last updated"
+     columns, so the value is the latest date on which any part of the report
+     actually changed. DB-driven with real coverage (legal_last_updated_date is
+     filed on every live row), so the hero and pillars never fall back to a
+     hard-coded month. The row's own updated_at is deliberately NOT used: it is
+     a bulk data-build timestamp (82 of 96 rows stamped the same day), which
+     would overwrite the honest per-section dates with one uniform value. */
   const lastUpdated = (() => {
     let bestT = -Infinity;
     let bestSv: string | null = null;
-    for (const sv of [ext?.heroDate, row.legalLastUpdated, row.lastQprDate]) {
+    for (const sv of [ext?.heroDate, row.legalLastUpdated, row.lastQprDate, row.locationLastUpdated]) {
       if (!sv) continue;
       const t = new Date(sv).getTime();
       if (!Number.isNaN(t) && t > bestT) { bestT = t; bestSv = sv; }
@@ -1305,7 +1309,26 @@ export function liveProjectIntel(
     return bestSv ? heroDateLabel(bestSv) ?? undefined : undefined;
   })();
 
+  /* Hero status tag. Delivered wins — a project filed at 100% construction is
+     in OC/CC territory and is never a "new launch". Otherwise a RERA
+     registration within three months of today reads as a new launch. Computed
+     against the real build date, so "New Launch" ages out on its own with each
+     redeploy rather than sticking to a project forever. */
+  const lifecycle: ProjectOps["lifecycle"] = (() => {
+    if (row.constructionProgressPct === 100) return "delivered";
+    if (row.registrationDate) {
+      const reg = new Date(row.registrationDate);
+      if (!Number.isNaN(reg.getTime())) {
+        const now = new Date();
+        const cutoff = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+        if (reg >= cutoff && reg <= now) return "new-launch";
+      }
+    }
+    return undefined;
+  })();
+
   const ops: ProjectOps = {
+    ...(lifecycle ? { lifecycle } : {}),
     ...(row.location ? { address: withCity(row.location) } : {}),
     ...(row.totalUnits != null ? { units: Math.round(row.totalUnits) } : totalUnits != null ? { units: totalUnits } : {}),
     ...(ext?.totalTowers != null && ext.totalTowers > 0 ? { towers: Math.round(ext.totalTowers) } : {}),

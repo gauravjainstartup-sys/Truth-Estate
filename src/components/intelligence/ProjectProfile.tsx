@@ -330,7 +330,10 @@ export default function ProjectProfile({
      supposed to be summarising — and named it wrong: "Mid-construction"
      was a literal, so a site at 5% built and one at 98% both carried it.
      The stage is now read off the number, and the number stays inside. */
-  const buildStatus = ops?.construction
+  const buildStatus =
+    ops?.lifecycle === "delivered" ? "OC/CC Received"
+    : ops?.lifecycle === "new-launch" ? "New Launch"
+    : ops?.construction
     ? (() => {
         const b = ops.construction.actualPct;
         return b >= 95 ? "Structurally complete"
@@ -699,11 +702,6 @@ export default function ProjectProfile({
                           </span>
                         )}
                       </div>
-                      {/* caption in the left column on wide screens only — it's what
-                         the score card bottom-aligns to when the two sit side-by-side */}
-                      <p className="mt-6 hidden items-center gap-2 text-[0.62rem] font-light text-white/45 xl:flex">
-                        <IconClock /> {heroImage ? "Satellite view of the site · construction as last observed" : "Independent assessment · re-scored quarterly"} · data reviewed {reviewed}
-                      </p>
                     </div>
                     {/* stacked bottom group — the chips, the score card and the
                        one-line provenance gather at the base of the canvas */}
@@ -759,10 +757,6 @@ export default function ProjectProfile({
                         <p className="mt-2.5 flex items-center gap-2 border-t border-[#1a1a1a]/8 pt-2.5 text-[0.72rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]"><IconClock /></span><span>Last updated <b className="font-semibold text-[#1a1a1a]">{reviewed}</b></span></p>
                       </div>
                     </div>
-                    {/* one small readable line of provenance closes the stacked hero */}
-                    <p className="mt-3 flex items-center gap-2 text-[0.6rem] font-light text-white/50 xl:hidden">
-                      <IconClock /> <span className="truncate">{heroImage ? "Satellite view of the site" : "Independent assessment"} · data reviewed {reviewed}</span>
-                    </p>
                     </div>
                   </div>
                 </div>

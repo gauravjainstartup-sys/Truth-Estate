@@ -197,6 +197,10 @@ export type ProjectOps = {
   address?: string; // street-level address for the hero + map
   reviewed?: string; // when we last re-checked this project's data ("3 Jul 2026")
   lastUpdated?: string; // DB-driven latest refresh across dimensions ("30 Jun 2026")
+  /* Hero status tag. "delivered" once construction is filed at 100% (OC/CC
+     territory); "new-launch" while the RERA registration is within 3 months
+     of today. Both override the build-percentage / handover labels. */
+  lifecycle?: "delivered" | "new-launch";
   units?: number;
   towers?: number;
   floors?: string; // indicative floor count, may be a range ("34–38")
@@ -1099,11 +1103,13 @@ export function legalStatus(p: ProjectIntel): "clean" | "watch" | "flagged" {
 /* When this report's data was last re-checked. Per-project where we track it,
    else the corridor data vintage. Surfaced in the hero + disclaimer. */
 export const DATA_AS_OF = "Jul 2026";
-/* The date the hero shows. Prefer a hand-set review date, then the DB-driven
-   latest-refresh across dimensions, and only then the static fallback — so a
-   live project with no curated review date still shows a real filed date, not
-   the hard-coded month. */
-export const reviewedOn = (p: ProjectIntel): string => p.ops?.reviewed ?? p.ops?.lastUpdated ?? DATA_AS_OF;
+/* The date the hero shows as "last updated". It must be the LATEST change to
+   any section, so the DB-driven max across dimensions (which already folds in
+   the hero-review date) wins first; the bare hand-set review date is only a
+   fallback for curated rows that have no computed max; the static constant is
+   the last resort. Ordering matters: a project whose legal read was refreshed
+   after its hero image was set must show the legal date, not the older one. */
+export const reviewedOn = (p: ProjectIntel): string => p.ops?.lastUpdated ?? p.ops?.reviewed ?? DATA_AS_OF;
 /* The date a pillar shows. Callers pass the pillar's own dimension date first
    (legal read, construction QPR); this resolves the shared fallback chain when
    that dimension has none. */

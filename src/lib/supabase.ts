@@ -292,6 +292,7 @@ export type LiveBacklogFull = {
   legalHeadline: string | null;
   legalKeyFlags: unknown;
   legalLastUpdated: string | null;
+  locationLastUpdated: string | null;
   legalProjectCases: unknown;
   legalDeveloperCases: unknown;
   legalTopRisks: unknown;
@@ -512,6 +513,7 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
       legalHeadline: s(r.legal_assessment_headline),
       legalKeyFlags: j(r.legal_key_flags),
       legalLastUpdated: s(r.legal_last_updated_date),
+      locationLastUpdated: s(r.location_last_updated_date),
       legalProjectCases: j(r.legal_project_litigation_cases),
       legalDeveloperCases: j(r.legal_developer_litigation_cases),
       legalTopRisks: j(r.legal_top_risks),
