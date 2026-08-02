@@ -304,6 +304,11 @@ export type LiveBacklogFull = {
   legalTopRisks: unknown;
   legalWhatThisMeans: unknown;
   legalBuyerChecks: unknown;
+  /* The forensic legal read — backlog_project_data.legal_health, the single
+     source of truth for the Legal pillar (headline, flags, risk_breakdown,
+     case_entries w/ per-case source_url, sources, retrieval_date). Joined by id;
+     the flattened legal_* view columns above are NOT read by the pillar. */
+  legalHealth: unknown;
   /* location intelligence */
   locVerdict: string | null;
   locKeyStrengths: unknown;
@@ -427,7 +432,7 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
      numeric scores. Join them in so the construction & sales report reads the
      FILED expected-% and the proof links instead of a pace-vs-schedule estimate. */
   const bpdById = new Map<string, Row>();
-  for (const b of (await sbRows("backlog_project_data", "select=id,construction_pace,sales_velocity&limit=2000")) ?? []) {
+  for (const b of (await sbRows("backlog_project_data", "select=id,construction_pace,sales_velocity,legal_health&limit=2000")) ?? []) {
     const id = s(b.id);
     if (id) bpdById.set(id, b);
   }
@@ -494,6 +499,7 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
       landAcres: n(r.land_acres),
       modConstruction: j(bpd?.construction_pace),
       modSales: j(bpd?.sales_velocity),
+      legalHealth: j(bpd?.legal_health),
       deliveredOcDate: oc?.ocDate ?? null,
       deliveredCertificateUrl: oc?.ocUrl ?? null,
       modTrackRecord: j(r.developer_track_record),

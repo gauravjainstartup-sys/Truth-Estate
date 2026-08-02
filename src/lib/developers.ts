@@ -88,7 +88,8 @@ export type LegalCase = {
   scope?: "project" | "developer"; // filed against this exact project vs the developer at large (default: developer)
   summary: string;
   buyerImpact: string;
-  ref?: string;
+  ref?: string; // human-readable case reference (case number / citation label)
+  sourceUrl?: string; // the case's source_url — RERA / court / news record, opened in a new tab
 };
 
 export const DEVELOPERS: DeveloperIntel[] = [

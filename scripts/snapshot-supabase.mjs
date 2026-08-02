@@ -48,8 +48,10 @@ const OTHERS = [
   // breakdown — the scores and weights the score is actually built from.
   // Still a lean select: the table's raw_html column is large and unused here.
   // `overrides` JSONB carries the delivered_oc_date / delivered_certificate_url
-  // (OC/CC) keys the Legal pillar reads.
-  ["backlog_project_data", "select=id,construction_pace,sales_velocity,expected_roi,overrides&limit=2000"],
+  // (OC/CC) keys the Legal pillar reads. `legal_health` is the forensic legal
+  // read — the single source of truth for the Legal pillar (headline, flags,
+  // risk_breakdown, case_entries w/ per-case source_url, sources, retrieval_date).
+  ["backlog_project_data", "select=id,construction_pace,sales_velocity,expected_roi,overrides,legal_health&limit=2000"],
   /* The developer's full RERA project ledger (name · location · type ·
      status · delivery timing), grouped by developer in fetchDeveloperLedger.
      Powers the "see the developer's projects" list under Developer DNA. */

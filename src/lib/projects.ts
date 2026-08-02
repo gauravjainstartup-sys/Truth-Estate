@@ -141,6 +141,10 @@ export type LiveLegalRead = {
   keyFlags: string[];
   lastUpdated?: string;
   risks: { label: string; level: LegalRiskLevel }[];
+  /* The public records behind the legal read — legal_sources_summary, each a
+     {source_type, link}. Section-level (the pool the analyst used), not mapped
+     claim-by-claim; litigation cases carry their own per-case source_url. */
+  sources?: { label: string; url: string }[];
 };
 
 function sizeBand(p: Project, avgPsf: number | undefined): string | null {

@@ -107,7 +107,9 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
               ))}
             </ul>
           )}
-          <p className="mt-3 text-[0.72rem] font-light italic text-[#1a1a1a]/40">Source: e-Courts + RERA litigation repositories · independently verifiable.</p>
+          {!(p.liveLegal?.sources?.length) && (
+            <p className="mt-3 text-[0.72rem] font-light italic text-[#1a1a1a]/40">Source: e-Courts + RERA litigation repositories · independently verifiable.</p>
+          )}
         </div>
       )}
 
@@ -197,7 +199,12 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
                     <p className="text-[0.58rem] font-bold uppercase tracking-[0.1em] text-[#9a7a2e]">What it means for you</p>
                     <p className="mt-1 text-[0.84rem] font-medium leading-[1.55] text-[#1a1a1a]/80">{c.buyerImpact}</p>
                   </div>
-                  {c.ref && <p className="mt-3 text-[0.66rem] font-light text-[#1a1a1a]/35">{c.ref} · view source ↗</p>}
+                  {(c.sourceUrl || c.ref) && (
+                    <p className="mt-3 text-[0.66rem] font-light text-[#1a1a1a]/35">
+                      {c.ref}
+                      {c.sourceUrl && <>{c.ref ? " · " : ""}<a href={c.sourceUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-[#9a7a2e] underline decoration-[#9a7a2e]/30 underline-offset-2 hover:text-[#8a6a1e]">View source ↗</a></>}
+                    </p>
+                  )}
                 </div>
               ))}
               {activeCases.length > caseLimit && (
@@ -208,6 +215,29 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
               )}
             </>
           )}
+        </>
+      )}
+
+      {/* Sources — the public records behind this legal read (legal_sources_summary).
+          Section-level citations for the pillar; each litigation case above also
+          links its own source. Rendered only when the DB carries them. */}
+      {(p.liveLegal?.sources?.length ?? 0) > 0 && (
+        <>
+          <div className="mt-8 flex items-center gap-3">
+            <span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">Sources</span>
+            <span className="h-px flex-1 bg-[#1a1a1a]/10" />
+          </div>
+          <p className="mt-3 text-[0.8rem] font-light leading-[1.6] text-[#1a1a1a]/50">The public records this legal read is built on — each opens in a new tab so you can verify it yourself.</p>
+          <ul className="mt-3.5 grid gap-2 sm:grid-cols-2">
+            {p.liveLegal!.sources!.map((s, i) => (
+              <li key={`${s.url}-${i}`} className="flex gap-2.5 rounded-xl border border-[#1a1a1a]/8 bg-white/50 px-3.5 py-2.5 text-[0.8rem] font-light leading-[1.45]">
+                <span className="mt-[6px] h-[5px] w-[5px] shrink-0 rounded-full bg-[#9a7a2e]" aria-hidden />
+                <a href={s.url} target="_blank" rel="noopener noreferrer" className="min-w-0 break-words text-[#1a1a1a]/70 transition-colors hover:text-[#1a1a1a]">
+                  {s.label} <span className="whitespace-nowrap text-[#9a7a2e]">↗</span>
+                </a>
+              </li>
+            ))}
+          </ul>
         </>
       )}
 

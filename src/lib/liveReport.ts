@@ -864,12 +864,23 @@ export function liveProjectIntel(
           impact: /high/i.test(impactRaw) ? "High" : /low/i.test(impactRaw) ? "Low" : "Medium",
           scope,
           summary: tIn(c, ["summary", "details", "description", "note"]) ?? "",
-          buyerImpact: tIn(c, ["buyer_impact", "buyerImpact", "what_this_means", "implication"]) ?? "",
-          ...(tIn(c, ["ref", "link", "url", "case_no", "case_number"]) ? { ref: tIn(c, ["ref", "link", "url", "case_no", "case_number"])! } : {}),
+          buyerImpact: tIn(c, ["buyer_impact", "buyer_signal", "buyerImpact", "what_this_means", "implication"]) ?? "",
+          ...(tIn(c, ["ref", "case_no", "case_number"]) ? { ref: tIn(c, ["ref", "case_no", "case_number"])! } : {}),
+          ...(tIn(c, ["source_url", "url", "link"]) ? { sourceUrl: tIn(c, ["source_url", "url", "link"])! } : {}),
         };
       })
       .filter((c): c is LegalCase => !!c);
-  const legalCases = [...mapCases(row.legalProjectCases, "project"), ...mapCases(row.legalDeveloperCases, "developer")];
+  /* Legal cases come from backlog_project_data.legal_health.case_entries ONLY —
+     one list carrying a per-entry `level` (project | developer). Split on it so
+     the pillar's project/developer toggle keeps working, sourced entirely from
+     legal_health rather than the view's two flattened case columns. */
+  const lh = obj(row.legalHealth) ?? {};
+  const lhCaseEntries = asArr(pick(lh, "case_entries"));
+  const isProjectEntry = (c: unknown) => /project/i.test(tIn(c, ["level", "scope"]) ?? "");
+  const legalCases = [
+    ...mapCases(lhCaseEntries.filter(isProjectEntry), "project"),
+    ...mapCases(lhCaseEntries.filter((c) => !isProjectEntry(c)), "developer"),
+  ];
 
   /* Every metric now carries its own band, not just an "exceptional"
      upgrade over a three-level rating. The card used to fall back to
@@ -934,29 +945,31 @@ export function liveProjectIntel(
         }
       : undefined;
 
-  /* ── the pipeline's legal read — analyst headline, key flags, as-of date
-     and the per-category risk breakdown (from the legal_risks payload) ── */
+  /* ── the forensic legal read — analyst headline, key flags, as-of date and
+     the per-category risk breakdown. Sourced ONLY from backlog_project_data.
+     legal_health (the `lh` object above): quick_summary / risk_breakdown /
+     sources / retrieval_date. The flattened legal_* view columns are no longer
+     read here — legal_health is the single source of truth for this pillar. ── */
   const legalUpdated = (() => {
-    const sv = row.legalLastUpdated;
+    const sv = tIn(lh, ["retrieval_date", "retrievalDate", "as_of"]);
     if (!sv) return undefined;
     const dm = sv.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
     if (dm) return `${+dm[3]} ${MON3[+dm[2] - 1]} ${dm[1]}`;
     return monthLabel(sv) ?? undefined;
   })();
-  /* The v3 legal_risks column holds the breakdown FLAT at the root —
-     {"title_risk":"LOW","developer_risk":"MODERATE",…} — with nested
+  /* legal_health.quick_summary — analyst headline + key flags. */
+  const lhQuick = obj(pick(lh, "quick_summary")) ?? {};
+  const legalHeadline = tIn(lhQuick, ["headline"]);
+  const legalKeyFlags = strList(pick(lhQuick, "key_flags"), ["flag", "text", "title", "point"]);
+  /* legal_health.risk_breakdown — flat {"title_risk":"MEDIUM",…}, with nested
      risk_breakdown shapes accepted as fallbacks. */
   const SEV_RE = /^(critical|high|medium|moderate|low)$/i;
-  const rbNested = obj(pick(row.modLegal, "risk_breakdown")) ?? obj(pick(row.modLegal, "score.risk_breakdown"));
-  let rbEntries: [string, unknown][] = rbNested ? Object.entries(rbNested) : [];
-  if (!rbEntries.length) {
-    const root = obj(row.modLegal);
-    if (root) rbEntries = Object.entries(root).filter(([, v]) => typeof v === "string" && SEV_RE.test(v.trim()));
-  }
+  const rbNested = obj(pick(lh, "risk_breakdown")) ?? obj(pick(lh, "score.risk_breakdown"));
+  const rbEntries: [string, unknown][] = rbNested ? Object.entries(rbNested) : [];
   const legalRisks: NonNullable<ProjectIntel["liveLegal"]>["risks"] = [];
   for (const [k, v] of rbEntries.slice(0, 8)) {
     const sev = typeof v === "string" ? v : tIn(v, ["level", "severity", "risk"]);
-    if (!sev) continue;
+    if (!sev || !SEV_RE.test(sev.trim())) continue;
     const level =
       /critical/i.test(sev) ? "Critical"
       : /high/i.test(sev) ? "High"
@@ -967,14 +980,30 @@ export function liveProjectIntel(
     const label = k.replace(/_/g, " ").replace(/^\w/, (ch) => ch.toUpperCase());
     legalRisks.push({ label, level });
   }
-  const legalKeyFlags = strList(row.legalKeyFlags, ["flag", "text", "title", "point"]);
+  /* legal_health.sources — the public records behind the read {source_type,
+     link}. Deduped by URL and http(s)-only, so a blank or malformed cite never
+     renders as a dead "source". Section-level: the pool the analyst drew on,
+     not a per-claim citation (only case_entries carry those). */
+  const legalSources = (() => {
+    const seen = new Set<string>();
+    const out: { label: string; url: string }[] = [];
+    for (const sv of asArr(pick(lh, "sources"))) {
+      const url = tIn(sv, ["link", "url", "source_url", "href"]);
+      if (!url || !/^https?:\/\//i.test(url) || seen.has(url)) continue;
+      seen.add(url);
+      out.push({ label: tIn(sv, ["source_type", "type", "label", "name"]) ?? "Source", url });
+      if (out.length >= 12) break;
+    }
+    return out;
+  })();
   const liveLegal: ProjectIntel["liveLegal"] =
-    row.legalHeadline || legalKeyFlags.length || legalRisks.length
+    legalHeadline || legalKeyFlags.length || legalRisks.length || legalSources.length
       ? {
-          ...(row.legalHeadline ? { headline: row.legalHeadline } : {}),
+          ...(legalHeadline ? { headline: legalHeadline } : {}),
           keyFlags: legalKeyFlags.slice(0, 6),
           ...(legalUpdated ? { lastUpdated: legalUpdated } : {}),
           risks: legalRisks,
+          ...(legalSources.length ? { sources: legalSources } : {}),
         }
       : undefined;
 
@@ -1320,7 +1349,7 @@ export function liveProjectIntel(
   const lastUpdated = (() => {
     let bestT = -Infinity;
     let bestSv: string | null = null;
-    for (const sv of [ext?.heroDate, row.legalLastUpdated, row.lastQprDate, row.locationLastUpdated]) {
+    for (const sv of [ext?.heroDate, tIn(lh, ["retrieval_date"]), row.lastQprDate, row.locationLastUpdated]) {
       if (!sv) continue;
       const t = new Date(sv).getTime();
       if (!Number.isNaN(t) && t > bestT) { bestT = t; bestSv = sv; }
@@ -1366,7 +1395,7 @@ export function liveProjectIntel(
     ...(lastUpdated ? { lastUpdated } : {}),
     ...(row.reraId ? { reraId: row.reraId } : {}),
     ...(row.reraUrl ? { reraUrl: row.reraUrl } : {}),
-    ...(row.legalHeadline ? { reraNote: row.legalHeadline } : {}),
+    ...(legalHeadline ? { reraNote: legalHeadline } : {}),
     ...(price ? { price } : {}),
     ...(homes.length ? { homes } : {}),
     ...(Object.keys(media).length ? { media } : {}),
