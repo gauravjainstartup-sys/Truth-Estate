@@ -51,4 +51,13 @@ export const CLEARED_ON_SIGN_OUT: readonly string[] = [
      a fact about THEM, not about the handset — the next person to sign in
      on this phone must not inherit an owner's framing of the report. */
   "truthEstate.stake",
+  /* The Office's own record of this person — the reports they opened, the
+     homes they self-declared, their ratings, invoices and feature votes.
+     Facts about THEM, cleared with their session for the same reason as the
+     stake above: the next person to sign in must start clean. */
+  "truthEstate.office.views",
+  "truthEstate.office.owned",
+  "truthEstate.office.ratings",
+  "truthEstate.office.payments",
+  "truthEstate.office.votes",
 ];

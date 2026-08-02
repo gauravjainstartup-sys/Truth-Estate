@@ -20,7 +20,6 @@ import {
   DealStage,
   DEAL_PHASES,
   Negotiation,
-  OfficeDoc,
   OfficeRec,
   OfficeState,
   OfficeThread,
@@ -35,18 +34,38 @@ import {
   MANDATE_FEE,
   activateMandate,
   callDone,
-  dealDocs,
   dealPhaseIndex,
   isCurated,
   isPaid,
   loadOffice,
-  newQuestion,
   nextStep,
   reseedOffice,
   saveOffice,
   stageIndex,
   wins,
 } from "@/lib/office";
+import { basePath } from "@/lib/site";
+import {
+  recordReportView,
+  listPurchased,
+  listViewed,
+  listOwned,
+  listPayments,
+  getRating,
+  rateReport,
+  unmarkOwned,
+  getVote,
+  setVote,
+  loadReportDates,
+  reportUpdates,
+  type Payment,
+  type Vote,
+  type ReportDates,
+  type SectionUpdate,
+  type PurchasedRow,
+  type ViewRecord,
+  type OwnedRecord,
+} from "@/lib/officeReports";
 
 /* ════════════════════════════════════════════════════════════════
    THE PRIVATE OFFICE — routed client portal (Phase 1)
@@ -191,11 +210,8 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
           {section === "recommendations" && <RecommendationsSection thread={active} onActivate={() => setPayOpen(true)} />}
           {section === "deal" && <DealSection thread={active} onAdvance={advanceTo} onActivate={() => setPayOpen(true)} />}
           {section === "advice" && <AdviceSection thread={active} onReschedule={(c) => patchThread(active.id, { call: c })} />}
-          {section === "questions" && (
-            <QuestionsSection thread={active} onAsk={(q) => patchThread(active.id, { questions: q })} />
-          )}
-          {section === "documents" && <DocumentsSection thread={active} />}
-          {section === "portfolio" && <PortfolioSection thread={active} />}
+          {section === "documents" && <DocumentsSection />}
+          {section === "portfolio" && <PortfolioSection />}
         </div>
         {payOpen && <PaymentSheet thread={active} onClose={() => setPayOpen(false)} onPay={activate} />}
         {celebrate && <Celebrate message={celebrate} />}
@@ -1182,192 +1198,515 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
 }
 
 /* ════════════════════════════════════════════════════════════════
-   QUESTIONS — submit → drafting → answered
+   DOCUMENTS & REPORTS + MY PORTFOLIO
+   Rebuilt on real data: purchased entitlements, viewed (preview) reports,
+   client-generated invoices, self-declared ownership, date-based "see new
+   update" flags and per-report feedback. See src/lib/officeReports.ts.
    ════════════════════════════════════════════════════════════════ */
-function QuestionsSection({ thread, onAsk }: { thread: OfficeThread; onAsk: (q: OfficeThread["questions"]) => void }) {
-  const [draft, setDraft] = useState("");
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
-  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+const MONTHS3 = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function fmtDate(v: number | string | null | undefined): string {
+  if (v == null || v === "") return "";
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${d.getDate()} ${MONTHS3[d.getMonth()]} ${d.getFullYear()}`;
+}
+/* Initials for the report thumbnail — first letters of the first two words. */
+function initialsOf(name: string): string {
+  const w = name.trim().split(/\s+/).filter(Boolean);
+  if (!w.length) return "—";
+  return ((w[0]?.[0] ?? "") + (w[1]?.[0] ?? w[0]?.[1] ?? "")).toUpperCase();
+}
+const reportHref = (seoSlug: string | null): string =>
+  seoSlug ? `${basePath}/projects/${seoSlug}` : `${basePath}/intelligence/projects`;
 
-  const ask = () => {
-    const text = draft.trim();
-    if (!text) return;
-    const q = newQuestion(text);
-    const next = [q, ...thread.questions];
-    onAsk(next);
-    setDraft("");
-    // Simulate an answer landing.
-    const t = setTimeout(() => {
-      onAsk(
-        next.map((x) =>
-          x.id === q.id
-            ? {
-                ...x,
-                status: "answered",
-                by: "TruthGuide AI",
-                a: "Here's our independent read on that — grounded in the evidence we hold for your decision. Your advisor will go deeper on the call if it needs a judgement call.",
-              }
-            : x
-        )
-      );
-    }, 1800);
-    timers.current.push(t);
+function Thumb({ initials }: { initials: string }) {
+  return (
+    <div className="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[#0b1f1a] to-[#173d2e] font-serif text-[1.05rem] text-[#cbb98a]">
+      {initials}
+    </div>
+  );
+}
+
+function Pill({ tone = "neutral", children }: { tone?: "neutral" | "green"; children: React.ReactNode }) {
+  const cls =
+    tone === "green"
+      ? "border-[#1e6b45]/30 bg-[#1e6b45]/[0.08] text-[#1e6b45]"
+      : "border-[#1a1a1a]/12 text-[#1a1a1a]/55";
+  return <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.68rem] font-medium ${cls}`}>{children}</span>;
+}
+
+/* Interactive ★ rating — click a star to set it; read-only when onRate is absent. */
+function Stars({ value, onRate }: { value: number; onRate?: (n: number) => void }) {
+  return (
+    <span className="inline-flex gap-0.5">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button
+          key={n}
+          type="button"
+          disabled={!onRate}
+          onClick={() => onRate?.(n)}
+          aria-label={`${n} star${n > 1 ? "s" : ""}`}
+          className={`text-[1.05rem] leading-none transition-colors ${onRate ? "cursor-pointer" : "cursor-default"} ${n <= value ? "text-[#c9a96e]" : "text-[#1a1a1a]/25"}`}
+        >
+          ★
+        </button>
+      ))}
+    </span>
+  );
+}
+
+/* ★ + optional free-text feedback for one report (Documents & Portfolio). */
+function RatingRow({ slug, label }: { slug: string; label: string }) {
+  const [rating, setRating] = useState(() => getRating(slug));
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(rating?.comment ?? "");
+  const [saved, setSaved] = useState(false);
+  const rate = (n: number) => {
+    rateReport(slug, n, rating?.comment);
+    setRating(getRating(slug));
   };
-
+  const saveComment = () => {
+    rateReport(slug, rating?.stars ?? 0, draft);
+    setRating(getRating(slug));
+    setOpen(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2600);
+  };
   return (
-    <div className="animate-fade-up">
-      <SectionHead kicker="Questions" title="Ask anything" sub="Get an instant independent read from TruthGuide — your advisor weighs in on the judgement calls." />
-
-      <Card>
-        <textarea
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          rows={3}
-          placeholder="e.g. Is DLF Privana South worth the floor-rise premium?"
-          className="w-full resize-none bg-transparent font-serif text-[1.1rem] font-light leading-relaxed text-[#1a1a1a] outline-none placeholder:text-[#1a1a1a]/25 md:text-[1.2rem]"
-        />
-        <div className="mt-4 flex justify-end border-t border-[#1a1a1a]/[0.06] pt-4">
-          <button
-            onClick={ask}
-            disabled={!draft.trim()}
-            className="rounded-sm bg-[#1e6b45] px-6 py-2.5 text-[0.8rem] font-medium tracking-[0.04em] text-white transition-colors enabled:hover:bg-[#238c55] disabled:cursor-not-allowed disabled:opacity-30"
-          >
-            Ask →
-          </button>
-        </div>
-      </Card>
-
-      <div className="mt-8 flex flex-col gap-4">
-        {thread.questions.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-[#1a1a1a]/15 px-6 py-6 text-[0.86rem] font-light text-[#1a1a1a]/40">
-            No questions yet. Ask anything about your decision — there&apos;s no such thing as too small.
-          </p>
-        ) : (
-          thread.questions.map((q) => (
-            <div key={q.id} className="rounded-xl border border-[#1a1a1a]/[0.08] bg-white p-6">
-              <p className="font-serif text-[1.15rem] font-medium text-[#1a1a1a]">{q.q}</p>
-              {q.status === "pending" ? (
-                <p className="mt-3 flex items-center gap-2 text-[0.85rem] font-light italic text-[#1a1a1a]/45">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#c9a96e]" />
-                  TruthGuide is drafting an answer…
-                </p>
-              ) : (
-                <div className="mt-4 border-t border-[#1a1a1a]/[0.06] pt-4">
-                  <p className="text-[0.9rem] font-light leading-relaxed text-[#1a1a1a]/70">{q.a}</p>
-                  <p className="mt-3 text-[0.72rem] font-light uppercase tracking-[0.12em] text-[#c9a96e]">— {q.by}</p>
-                </div>
-              )}
-            </div>
-          ))
-        )}
+    <div className="mt-3.5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span className="text-[0.72rem] font-medium text-[#1a1a1a]/40">{label}</span>
+        <Stars value={rating?.stars ?? 0} onRate={rate} />
+        <button onClick={() => setOpen((v) => !v)} className="text-[0.78rem] font-medium text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]">
+          {rating?.comment ? "Edit feedback" : "Leave feedback"}
+        </button>
+        {saved && <span className="text-[0.74rem] font-light text-[#1e6b45]">✓ Thanks — noted.</span>}
       </div>
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   DOCUMENTS & REPORTS
-   ════════════════════════════════════════════════════════════════ */
-function DocumentsSection({ thread }: { thread: OfficeThread }) {
-  const groups: OfficeDoc["group"][] = ["Project Reports", "Legal & BBA", "Letters & Allotment"];
-  const paid = isPaid(thread.stage);
-  const allDocs = [...dealDocs(thread), ...thread.docs];
-  return (
-    <div className="animate-fade-up">
-      <SectionHead kicker="Documents & Reports" title="Everything in one place" sub="Independent reports we prepare, and the paperwork you share — reviewed and annotated by your advisor." />
-      <div className="flex flex-col gap-8">
-        {groups.map((g) => {
-          const docs = allDocs.filter((d) => d.group === g);
-          return (
-            <div key={g}>
-              <p className="mb-3 text-[10px] font-light uppercase tracking-[0.28em] text-[#1a1a1a]/40">{g}</p>
-              <div className="overflow-hidden rounded-xl border border-[#1a1a1a]/[0.08]">
-                {docs.map((d, i) => {
-                  const report = d.group === "Project Reports";
-                  const note = report && paid && d.status !== "uploaded" ? "Prepared by your advisor · open any time" : d.note;
-                  return (
-                    <div key={d.id} className={`flex items-center justify-between gap-4 px-5 py-4 ${i % 2 === 0 ? "bg-white" : "bg-[#F5F0E8]/60"}`}>
-                      <div className="min-w-0">
-                        <p className="text-[0.95rem] font-light text-[#1a1a1a]/80">{d.name}</p>
-                        {note && <p className="mt-0.5 text-[0.76rem] font-light italic text-[#1a1a1a]/40">{note}</p>}
-                      </div>
-                      {d.status === "uploaded" ? (
-                        <span className="shrink-0 text-[0.74rem] font-light text-[#1e6b45]">Uploaded ✓</span>
-                      ) : d.status === "ready" || (report && paid) ? (
-                        <span className="shrink-0 text-[0.74rem] font-light text-[#1e6b45]">Open →</span>
-                      ) : paid ? (
-                        <span className="shrink-0 text-[0.74rem] font-light text-[#1e6b45]">Upload →</span>
-                      ) : (
-                        <LockBadge />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <p className="mt-7 text-[0.8rem] font-light italic text-[#1a1a1a]/40">
-        {paid
-          ? "Your mandate is active — upload anything and your advisor reviews and annotates it for you."
-          : "Upload unlocks once your mandate is active — your advisor reviews and annotates everything you share."}
-      </p>
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   MY PORTFOLIO
-   ════════════════════════════════════════════════════════════════ */
-function PortfolioSection({ thread }: { thread: OfficeThread }) {
-  const owned = stageIndex(thread.stage) >= stageIndex("closed");
-  const name = thread.mandate?.project ?? thread.recs[0]?.name ?? "Your property";
-  const developer = thread.mandate?.developer ?? thread.recs[0]?.developer ?? "";
-  const stats: { value: string; label: string }[] = [
-    { value: thread.saleOffer ? INR(thread.saleOffer.price) : "—", label: "Acquired for" },
-    { value: thread.mandate?.tower ?? "—", label: "Tower" },
-    { value: thread.mandate?.carpet ?? "—", label: "Carpet" },
-    { value: thread.saleOffer ? `${thread.negotiation?.offers[0]?.vsQuoted ?? 18} L` : "—", label: "Saved vs quoted" },
-  ];
-  return (
-    <div className="animate-fade-up">
-      <SectionHead kicker="My Portfolio" title="What you own" sub="Every property you close with us lives here — with the documents, the numbers, and our ongoing read." />
-      {owned ? (
-        <div className="overflow-hidden rounded-2xl border border-[#1e6b45]/25 bg-white">
-          <div className="flex items-center justify-between border-b border-[#1a1a1a]/[0.06] px-6 py-6 md:px-8">
-            <div>
-              <p className="font-serif text-[1.6rem] font-medium text-[#1a1a1a] md:text-[1.9rem]">{name}</p>
-              <p className="mt-1 text-[0.85rem] font-light text-[#1a1a1a]/50">{developer} · {thread.mandate?.config ?? ""} · {thread.recs[0]?.market}</p>
-            </div>
-            <span className="shrink-0 rounded-full border border-[#1e6b45]/30 bg-[#1e6b45]/8 px-3.5 py-1.5 text-[0.66rem] font-medium uppercase tracking-[0.1em] text-[#1e6b45]">★ Owned</span>
+      {open && (
+        <div className="mt-3 max-w-[440px]">
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            rows={3}
+            placeholder="Tell us where we were right or wrong…"
+            className="w-full resize-y rounded-lg border border-[#1a1a1a]/15 bg-white px-3.5 py-2.5 text-[0.85rem] font-light text-[#1a1a1a] outline-none transition-colors focus:border-[#1e6b45]/50"
+          />
+          <div className="mt-2 flex gap-2">
+            <button onClick={saveComment} className="rounded-sm bg-[#1e6b45] px-4 py-2 text-[0.78rem] font-medium text-white transition-colors hover:bg-[#238c55]">Save feedback</button>
+            <button onClick={() => { setOpen(false); setDraft(rating?.comment ?? ""); }} className="rounded-sm border border-[#1a1a1a]/15 px-4 py-2 text-[0.78rem] font-light text-[#1a1a1a]/60 transition-colors hover:border-[#1a1a1a]/30">Cancel</button>
           </div>
-          <div className="grid grid-cols-2 gap-px bg-[#1a1a1a]/[0.06] md:grid-cols-4">
-            {stats.map((s) => (
-              <div key={s.label} className="bg-white px-5 py-6 text-center">
-                <p className="font-serif text-[1.35rem] font-medium leading-none text-[#1a1a1a]">{s.value}</p>
-                <p className="mt-2 text-[0.64rem] font-light uppercase tracking-[0.12em] text-[#1a1a1a]/45">{s.label}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const SECTION_SHORT: Record<string, string> = { legal: "Legal", construction: "Construction", location: "Location", hero: "Report" };
+/* Gold pulsing "See new update" badge — names the changed sections, expands to
+   per-section detail on click. Renders nothing when nothing has moved. */
+function UpdateBadge({ updates, since }: { updates: SectionUpdate[]; since?: number }) {
+  const [open, setOpen] = useState(false);
+  if (!updates.length) return null;
+  const summary = updates.map((u) => SECTION_SHORT[u.key] ?? u.label).join(", ");
+  return (
+    <div className="mt-3">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-2 rounded-full border border-[#9a7a2e]/40 bg-[#c9a96e]/[0.12] px-3 py-1 text-[0.68rem] font-semibold text-[#9a7a2e] transition-colors hover:bg-[#c9a96e]/20"
+      >
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#9a7a2e]" />
+        Updated · {summary}
+      </button>
+      {open && (
+        <div className="mt-3 border-t border-dashed border-[#1a1a1a]/12 pt-3">
+          <p className="mb-2 text-[0.78rem] font-semibold text-[#1a1a1a]">
+            {updates.length} section{updates.length > 1 ? "s" : ""} changed{since ? ` since you last opened this (${fmtDate(since)})` : ""}
+          </p>
+          <div className="flex flex-col gap-1.5">
+            {updates.map((u) => (
+              <div key={u.key} className="flex gap-2.5 text-[0.82rem] font-light leading-snug text-[#1a1a1a]/70">
+                <span className="mt-[6px] h-2 w-2 shrink-0 rounded-[2px]" style={{ background: u.key === "legal" ? "#b0503e" : "#9a7a2e" }} />
+                <span>
+                  <b className="font-medium text-[#1a1a1a]">{u.label}</b> — the record refreshed <b className="font-medium text-[#1a1a1a]">{fmtDate(u.iso)}</b>.
+                </span>
               </div>
             ))}
           </div>
-          <div className="flex flex-col gap-3 px-6 py-6 sm:flex-row sm:items-center sm:justify-between md:px-8">
-            <p className="text-[0.86rem] font-light leading-relaxed text-[#1a1a1a]/60">
-              Your documents, pricing history and our continued independent read all live here — so you never start from scratch again.
-            </p>
-            <Link href="/office/documents" className="shrink-0 text-[0.82rem] font-light text-[#1e6b45] transition-colors hover:text-[#238c55]">
-              View documents →
-            </Link>
-          </div>
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-dashed border-[#1a1a1a]/15 p-10 text-center">
-          <p className="mx-auto mb-4 flex w-fit"><LockBadge label="Begins at handover" /></p>
-          <p className="font-serif text-[1.4rem] font-medium text-[#1a1a1a]">Nothing here yet — and that&apos;s the point.</p>
-          <p className="mx-auto mt-3 max-w-[440px] text-[0.9rem] font-light leading-relaxed text-[#1a1a1a]/55">
-            When you close with us, the property lands here with its BBA, allotment, pricing history and our continued independent view — so you never start from scratch again.
-          </p>
         </div>
       )}
+    </div>
+  );
+}
+
+/* The label · rule · count sub-header used inside Documents & Portfolio. */
+function SubHead({ title, count }: { title: string; count?: string }) {
+  return (
+    <div className="mb-3.5 flex items-center gap-3.5">
+      <h2 className="whitespace-nowrap text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-[#1a1a1a]/55">{title}</h2>
+      <span className="h-px flex-1 bg-[#1a1a1a]/10" />
+      {count != null && <span className="whitespace-nowrap text-[0.7rem] font-medium text-[#1a1a1a]/35">{count}</span>}
+    </div>
+  );
+}
+
+/* Row action column (Open / Invoice etc.). */
+function ReportShell({ initials, children, acts }: { initials: string; children: React.ReactNode; acts: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-4 rounded-2xl border border-[#1a1a1a]/[0.08] bg-white p-5 sm:flex-row sm:items-start">
+      <Thumb initials={initials} />
+      <div className="min-w-0 flex-1">{children}</div>
+      <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">{acts}</div>
+    </div>
+  );
+}
+
+function DocumentsSection() {
+  const [dates, setDates] = useState<ReportDates>({});
+  const [purchased, setPurchased] = useState<PurchasedRow[]>([]);
+  const [viewed, setViewed] = useState<(ViewRecord & { slug: string })[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [invoice, setInvoice] = useState<Payment | null>(null);
+
+  useEffect(() => {
+    setPurchased(listPurchased());
+    setViewed(listViewed());
+    setPayments(listPayments());
+    loadReportDates().then(setDates);
+  }, []);
+
+  /* Opening the report from here refreshes the "last opened" clock so the
+     update badge is already cleared when the buyer comes back. */
+  const touch = (row: { slug: string; name: string; market: string; seoSlug: string | null }) =>
+    recordReportView(row.slug, row.name, row.market, row.seoSlug);
+
+  return (
+    <div className="animate-fade-up">
+      <SectionHead
+        kicker="Documents & Reports"
+        title="Every report you've bought or opened, in one place."
+        sub="Your purchased reports and their invoices, plus the ones you've previewed. We flag any report whose findings have moved since you last read it."
+      />
+      <div className="mb-8 rounded-xl border border-dashed border-[#9a7a2e]/40 bg-[#c9a96e]/[0.07] px-4 py-3 text-[0.82rem] font-light leading-relaxed text-[#1a1a1a]/60">
+        Reports and invoices only, driven by your real purchase &amp; view data. Document uploads and agreement workflows aren&apos;t part of this tab.
+      </div>
+
+      {/* ── Purchased ── */}
+      <section className="mt-2">
+        <SubHead title="Purchased" count={purchased.length ? `${purchased.length} report${purchased.length > 1 ? "s" : ""}` : undefined} />
+        {purchased.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-[#1a1a1a]/15 px-6 py-8 text-center">
+            <p className="text-[0.9rem] font-light text-[#1a1a1a]/55">No reports unlocked yet — buy any full read and it lands here with its invoice.</p>
+            <a href={`${basePath}/intelligence/projects`} className="mt-3 inline-block text-[0.84rem] font-medium text-[#1e6b45] transition-colors hover:text-[#238c55]">Browse reports →</a>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {purchased.map((row) => {
+              const upd = row.allAccess ? [] : reportUpdates(dates[row.seoSlug ?? ""], row.at);
+              const pay = row.allAccess
+                ? payments.find((p) => p.slug === null || /all-access/i.test(p.item))
+                : payments.find((p) => p.slug === row.slug);
+              const meta = row.allAccess
+                ? `Every report & 3D across the site${pay ? ` · ${INR(pay.amountInr)}` : ""}${pay ? ` · unlocked ${fmtDate(pay.date)}` : ""}`
+                : `${row.market ? `${row.market} · ` : ""}Full read${pay ? ` · ${INR(pay.amountInr)}` : ""}${pay ? ` · unlocked ${fmtDate(pay.date)}` : row.at ? ` · opened ${fmtDate(row.at)}` : ""}`;
+              return (
+                <ReportShell
+                  key={row.slug}
+                  initials={row.allAccess ? "TE" : initialsOf(row.name)}
+                  acts={
+                    <>
+                      <a
+                        href={reportHref(row.seoSlug)}
+                        onClick={() => !row.allAccess && touch(row as { slug: string; name: string; market: string; seoSlug: string | null })}
+                        className="rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.8rem] font-medium text-white transition-colors hover:bg-[#238c55]"
+                      >
+                        {row.allAccess ? "Browse reports →" : "Open report →"}
+                      </a>
+                      {pay && (
+                        <button onClick={() => setInvoice(pay)} className="text-[0.78rem] font-medium text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]">
+                          Invoice ↗
+                        </button>
+                      )}
+                    </>
+                  }
+                >
+                  <p className="font-serif text-[1.1rem] font-medium leading-tight text-[#1a1a1a]">{row.name}</p>
+                  <p className="mt-1 text-[0.78rem] font-light text-[#1a1a1a]/40">{meta}</p>
+                  <div className="mt-2.5 flex flex-wrap gap-2">
+                    <Pill tone="green">✓ Purchased{row.allAccess ? " · All-Access" : ""}</Pill>
+                    {!row.allAccess && upd.length === 0 && row.at && <Pill>No change since {fmtDate(row.at)}</Pill>}
+                  </div>
+                  <UpdateBadge updates={upd} since={row.at} />
+                  {!row.allAccess && <RatingRow slug={row.slug} label="Rate this report" />}
+                </ReportShell>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* ── Viewed (opened, not bought) ── */}
+      <section className="mt-8">
+        <SubHead title="Viewed" count="opened, not bought" />
+        {viewed.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-[#1a1a1a]/15 px-6 py-8 text-center">
+            <p className="text-[0.9rem] font-light text-[#1a1a1a]/55">Reports you open — but haven&apos;t unlocked — show up here as previews.</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {viewed.map((v) => {
+              const upd = reportUpdates(dates[v.seoSlug ?? ""], v.at);
+              return (
+                <ReportShell
+                  key={v.slug}
+                  initials={initialsOf(v.name)}
+                  acts={
+                    <>
+                      <a
+                        href={reportHref(v.seoSlug)}
+                        onClick={() => touch({ slug: v.slug, name: v.name, market: v.market, seoSlug: v.seoSlug })}
+                        className="rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.8rem] font-medium text-white transition-colors hover:bg-[#238c55]"
+                      >
+                        Unlock · ₹999 →
+                      </a>
+                      <a
+                        href={reportHref(v.seoSlug)}
+                        onClick={() => touch({ slug: v.slug, name: v.name, market: v.market, seoSlug: v.seoSlug })}
+                        className="text-[0.78rem] font-medium text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]"
+                      >
+                        Reopen preview →
+                      </a>
+                    </>
+                  }
+                >
+                  <p className="font-serif text-[1.1rem] font-medium leading-tight text-[#1a1a1a]">{v.name}</p>
+                  <p className="mt-1 text-[0.78rem] font-light text-[#1a1a1a]/40">
+                    {v.market ? `${v.market} · ` : ""}opened {fmtDate(v.at)} · preview only
+                  </p>
+                  <div className="mt-2.5 flex flex-wrap gap-2">
+                    <Pill>Preview</Pill>
+                  </div>
+                  <UpdateBadge updates={upd} since={v.at} />
+                </ReportShell>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* ── Invoices ── */}
+      {payments.length > 0 && (
+        <section className="mt-8">
+          <SubHead title="Invoices" count={String(payments.length)} />
+          <div className="flex flex-col gap-3">
+            {[...payments].sort((a, b) => b.date - a.date).map((p) => (
+              <div key={p.id} className="flex flex-col gap-2 rounded-2xl border border-[#1a1a1a]/[0.08] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-[0.92rem] font-medium text-[#1a1a1a]">Invoice {p.invoiceNo} — {p.item}</p>
+                  <p className="mt-0.5 text-[0.78rem] font-light text-[#1a1a1a]/45">{fmtDate(p.date)} · {INR(p.amountInr)} · paid via Razorpay</p>
+                </div>
+                <button onClick={() => setInvoice(p)} className="shrink-0 self-start text-[0.78rem] font-medium text-[#9a7a2e] transition-colors hover:text-[#7a5f1e] sm:self-auto">
+                  View / download ↗
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {invoice && <InvoiceModal payment={invoice} onClose={() => setInvoice(null)} />}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   INVOICE — client-side, Truth Estate seller, no GST
+   ════════════════════════════════════════════════════════════════ */
+function InvoiceModal({ payment, onClose }: { payment: Payment; onClose: () => void }) {
+  const account = loadAccount();
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <div className="fixed inset-0 z-[140] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+      <button aria-label="Close" onClick={onClose} className="absolute inset-0 cursor-default bg-[#0a0a0a]/55 backdrop-blur-sm" />
+      <div className="animate-fade-up relative max-h-[92svh] w-full max-w-[520px] overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl shadow-black/30">
+        <button onClick={onClose} className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full border border-[#1a1a1a]/12 text-[#1a1a1a]/50 transition-colors hover:text-[#1a1a1a]">✕</button>
+
+        <div className="flex items-start justify-between gap-4 border-b border-[#1a1a1a]/10 pb-5">
+          <div>
+            <Logo color="#1a1a1a" className="h-6 w-auto" />
+            <p className="mt-2 text-[0.72rem] font-light text-[#1a1a1a]/45">Independent real-estate intelligence</p>
+          </div>
+          <div className="text-right text-[0.7rem] leading-relaxed tracking-[0.08em] text-[#1a1a1a]/45">
+            INVOICE
+            <br />
+            <span className="font-mono text-[0.9rem] font-medium tracking-normal text-[#1a1a1a]">{payment.invoiceNo}</span>
+            <br />
+            {fmtDate(payment.date)}
+          </div>
+        </div>
+
+        <div className="mt-5 flex justify-between gap-6 text-[0.82rem] leading-relaxed text-[#1a1a1a]/60">
+          <div>
+            <p className="text-[0.6rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">Billed to</p>
+            <p className="mt-1 font-medium text-[#1a1a1a]">{account?.name || "Your account"}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-[0.6rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">Seller</p>
+            <p className="mt-1 font-medium text-[#1a1a1a]">Truth Estate</p>
+            <p className="text-[0.74rem]">Paid via Razorpay{payment.razorpayId ? ` · ${payment.razorpayId}` : ""}</p>
+          </div>
+        </div>
+
+        <table className="mt-6 w-full border-collapse text-[0.86rem]">
+          <tbody>
+            <tr>
+              <td className="border-b border-[#1a1a1a]/[0.07] py-3 pr-3 text-[#1a1a1a]/80">{payment.item}</td>
+              <td className="border-b border-[#1a1a1a]/[0.07] py-3 text-right font-medium tabular-nums text-[#1a1a1a]">{INR(payment.amountInr)}</td>
+            </tr>
+            <tr>
+              <td className="border-b border-[#1a1a1a]/[0.07] py-3 pr-3 text-[#1a1a1a]/40">Tax</td>
+              <td className="border-b border-[#1a1a1a]/[0.07] py-3 text-right text-[#1a1a1a]/40">—</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div className="mt-4 flex items-baseline justify-between">
+          <span className="font-serif text-[1.3rem] font-medium text-[#1a1a1a]">Total paid</span>
+          <span className="font-serif text-[1.3rem] font-medium tabular-nums text-[#1a1a1a]">{INR(payment.amountInr)}</span>
+        </div>
+
+        <p className="mt-4 rounded-lg bg-[#c9a96e]/[0.1] px-3.5 py-3 text-[0.74rem] font-light leading-relaxed text-[#1a1a1a]/55">
+          No GST is charged at present. This receipt confirms your payment to Truth Estate; the authoritative record is held against your account{payment.razorpayId ? " and the Razorpay reference above" : ""}.
+        </p>
+
+        <div className="mt-5 flex gap-2.5">
+          <button onClick={() => window.print()} className="rounded-sm bg-[#1e6b45] px-5 py-2.5 text-[0.8rem] font-medium text-white transition-colors hover:bg-[#238c55]">Download PDF</button>
+          <button onClick={onClose} className="rounded-sm border border-[#1a1a1a]/15 px-5 py-2.5 text-[0.8rem] font-light text-[#1a1a1a]/60 transition-colors hover:border-[#1a1a1a]/30">Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   MY PORTFOLIO — the homes you self-declare you own
+   ════════════════════════════════════════════════════════════════ */
+function PortfolioSection() {
+  const [owned, setOwned] = useState<(OwnedRecord & { slug: string })[]>([]);
+  const [dates, setDates] = useState<ReportDates>({});
+  const [showAdd, setShowAdd] = useState(false);
+  const [vote, setVoteState] = useState<Vote | null>(null);
+
+  useEffect(() => {
+    setOwned(listOwned());
+    setVoteState(getVote("add-property"));
+    loadReportDates().then(setDates);
+  }, []);
+
+  const remove = (slug: string) => { unmarkOwned(slug); setOwned(listOwned()); };
+  const castVote = (v: Vote) => { setVote("add-property", v); setVoteState(v); };
+  const expanded = showAdd || vote != null;
+
+  return (
+    <div className="animate-fade-up">
+      <SectionHead
+        kicker="My Portfolio"
+        title="The homes you actually own."
+        sub="Mark a project as owned and its report lives here, kept current. If our read on it changes, you'll see which sections moved — and you can rate the report or tell us where we were right or wrong."
+      />
+
+      <section>
+        <SubHead title="Owned" count={owned.length ? `${owned.length} propert${owned.length > 1 ? "ies" : "y"}` : undefined} />
+        {owned.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-[#1a1a1a]/15 px-6 py-9 text-center">
+            <p className="font-serif text-[1.3rem] font-medium text-[#1a1a1a]">Nothing here yet.</p>
+            <p className="mx-auto mt-2 max-w-[440px] text-[0.9rem] font-light leading-relaxed text-[#1a1a1a]/55">
+              Open any report and hit &ldquo;I&apos;ve invested / I own this&rdquo; — it lands here, kept current, with a flag whenever our read on it changes.
+            </p>
+            <a href={`${basePath}/intelligence/projects`} className="mt-4 inline-block text-[0.84rem] font-medium text-[#1e6b45] transition-colors hover:text-[#238c55]">Browse reports →</a>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {owned.map((o) => {
+              const upd = reportUpdates(dates[o.seoSlug ?? ""], o.at);
+              return (
+                <ReportShell
+                  key={o.slug}
+                  initials={initialsOf(o.name)}
+                  acts={
+                    <>
+                      <a
+                        href={reportHref(o.seoSlug)}
+                        onClick={() => recordReportView(o.slug, o.name, o.market, o.seoSlug)}
+                        className="rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.8rem] font-medium text-white transition-colors hover:bg-[#238c55]"
+                      >
+                        Open report →
+                      </a>
+                      <button onClick={() => remove(o.slug)} className="text-[0.78rem] font-light text-[#1a1a1a]/40 transition-colors hover:text-[#b0503e]">
+                        Remove
+                      </button>
+                    </>
+                  }
+                >
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <p className="font-serif text-[1.1rem] font-medium leading-tight text-[#1a1a1a]">{o.name}</p>
+                    <span className="inline-flex items-center gap-1.5 rounded-md border border-[#1e6b45]/30 bg-[#1e6b45]/[0.08] px-2.5 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-[#1e6b45]">
+                      ● Owned · marked {fmtDate(o.at)}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[0.78rem] font-light text-[#1a1a1a]/40">{o.market ? `${o.market} · ` : ""}self-declared{o.note ? ` · ${o.note}` : ""}</p>
+                  <UpdateBadge updates={upd} since={o.at} />
+                  <RatingRow slug={o.slug} label="Your rating" />
+                </ReportShell>
+              );
+            })}
+          </div>
+        )}
+
+        {/* + Add a property you own → upcoming-feature vote (not built) */}
+        {!expanded ? (
+          <div className="mt-3 rounded-2xl border border-dashed border-[#1a1a1a]/15 p-6 text-center">
+            <p className="text-[0.9rem] font-light text-[#1a1a1a]/55">Own something else? We&apos;re building a way to add any home you own.</p>
+            <button onClick={() => setShowAdd(true)} className="mt-3 rounded-sm border border-[#1a1a1a]/15 px-5 py-2.5 text-[0.8rem] font-medium text-[#1a1a1a] transition-colors hover:border-[#1a1a1a]/35">
+              + Add a property you own
+            </button>
+          </div>
+        ) : (
+          <div className="mt-3 rounded-2xl border border-[#9a7a2e]/30 bg-[#c9a96e]/[0.06] p-6">
+            <Eyebrow>Upcoming feature</Eyebrow>
+            <h3 className="mt-1.5 font-serif text-[1.25rem] font-medium text-[#1a1a1a]">Add a home you already own.</h3>
+            <p className="mt-2 max-w-[56ch] text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/60">
+              Pull its live report into your portfolio, get told when our read changes, and keep it on your radar — even if you didn&apos;t buy through us. We&apos;re gauging interest before we build it.
+            </p>
+            {vote ? (
+              <p className="mt-4 text-[0.84rem] font-medium text-[#1e6b45]">
+                Thanks — your vote is in ({vote === "in" ? "interested" : "not for me"}). We prioritise what buyers actually ask for.
+              </p>
+            ) : (
+              <div className="mt-4 flex flex-wrap gap-2.5">
+                <button onClick={() => castVote("in")} className="rounded-lg border border-[#1e6b45]/40 px-4 py-2.5 text-[0.82rem] font-medium text-[#1e6b45] transition-colors hover:bg-[#1e6b45]/[0.06]">
+                  👍 Yes, I&apos;d use this
+                </button>
+                <button onClick={() => castVote("no")} className="rounded-lg border border-[#1a1a1a]/15 px-4 py-2.5 text-[0.82rem] font-medium text-[#1a1a1a]/70 transition-colors hover:border-[#1a1a1a]/35">
+                  Not for me
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
+      <section className="mt-8">
+        <SubHead title="How a project lands here" />
+        <div className="rounded-2xl border border-[#1a1a1a]/[0.08] bg-white p-6">
+          <p className="text-[0.9rem] font-light leading-relaxed text-[#1a1a1a]/65">
+            Anywhere you read a report, an <b className="font-medium text-[#1a1a1a]">&ldquo;I&apos;ve invested / I own this&rdquo;</b> button adds it to your portfolio — self-declared, no proof needed. From then on we watch the report&apos;s section dates and tell you when anything material moves.
+          </p>
+        </div>
+      </section>
     </div>
   );
 }
@@ -1418,7 +1757,7 @@ function PaymentSheet({ thread, onClose, onPay }: { thread: OfficeThread; onClos
             <p className="font-serif text-[2rem] font-medium leading-none text-[#1a1a1a]">{INR(MANDATE_FEE)}</p>
             <p className="mt-2 text-[0.78rem] font-light text-[#1a1a1a]/50">Fully adjustable against our fee at closing</p>
           </div>
-          <span className="text-[0.72rem] font-light text-[#1a1a1a]/40">GST included</span>
+          <span className="text-[0.72rem] font-light text-[#1a1a1a]/40">No GST charged</span>
         </div>
 
         <button

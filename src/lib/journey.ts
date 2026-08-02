@@ -1381,6 +1381,26 @@ export function grantPackage(pkg: PackageId, slug?: string): void {
   } else if (slug) {
     fireEvent("report_unlocked", { projectSlug: slug, props: { package: pkg, scope: "project" } });
   }
+  /* Client-side payment record — the Office's Documents tab generates the
+     buyer's invoice from this (no server round-trip in the demo). Best-effort
+     and dynamically imported so an invoice write can never break a purchase,
+     and so journey.ts keeps no static dependency on the office layer (which
+     reads the entitlement store this function just wrote). The report name is
+     resolved from the view recorded when the buyer opened the report. */
+  void import("@/lib/officeReports")
+    .then((m) => {
+      const amountInr = packageById(pkg).inr;
+      if (pkg === "all") {
+        m.addPayment({ slug: null, item: "All-Access — every report & 3D across the site", amountInr });
+      } else if (slug) {
+        const v = m.getView(slug);
+        const item = v?.name ? `Full read — ${v.name}${v.market ? ` (${v.market})` : ""}` : "Full read";
+        m.addPayment({ slug, item, amountInr });
+      }
+    })
+    .catch(() => {
+      /* an invoice record must never break a purchase */
+    });
   // fire-and-forget backend entitlement (dormant until the gate URL is set)
   if (pkg === "all") grantModelAccess(PROJECTS.map((p) => modelSlugFor(p.name)), resolveModelSubject(), "member");
   else if (slug) grantModelAccess(slug, resolveModelSubject(), "paid");

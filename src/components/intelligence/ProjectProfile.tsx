@@ -52,6 +52,7 @@ import ReportHomes from "./ReportHomes";
 import SampleSheet from "./SampleSheet";
 import { ReportStaticContext } from "./reportStatic";
 import { basePath, homeHref } from "@/lib/site";
+import { recordReportView, markOwned, unmarkOwned, isOwned } from "@/lib/officeReports";
 
 
 /* media paths are repo-relative for the flagship files; pipeline rows may
@@ -279,6 +280,27 @@ export default function ProjectProfile({
     if (sample) return;
     track("report_viewed", { projectSlug: p.slug, projectName: p.name });
   }, [p.slug, p.name, sample]);
+
+  /* Record the open in the buyer's Office — this is the "last opened" clock the
+     Documents & Portfolio "See new update" badge reads against each report's
+     per-section DB dates. Only real reads count: not the watermarked sample,
+     not the frozen sheet, not the embedded shortlist modal. Opening a report
+     refreshes this timestamp, which is what clears the badge. */
+  useEffect(() => {
+    if (sample || frozen || embedded) return;
+    recordReportView(p.slug, p.name, p.market, p.seoSlug ?? null);
+  }, [sample, frozen, embedded, p.slug, p.name, p.market, p.seoSlug]);
+
+  /* Self-declared ownership — the "I've invested / I own this" button adds this
+     report to My Portfolio (no proof needed). Read after mount so the
+     prerendered markup and the client agree. */
+  const [owned, setOwned] = useState(false);
+  useEffect(() => { setOwned(isOwned(p.slug)); }, [p.slug]);
+  const toggleOwned = () => {
+    if (owned) { unmarkOwned(p.slug); setOwned(false); }
+    else { markOwned(p.slug, { name: p.name, market: p.market, seoSlug: p.seoSlug ?? null }); setOwned(true); }
+  };
+
   const live = useLiveVitals(p.name);
   const locked = !sample && !readAccess;
   const SAMPLE_HREF = `${basePath}/projects/sample-read`;
@@ -1101,6 +1123,34 @@ export default function ProjectProfile({
             <div id="verdict" className="scroll-mt-24">
               <ReportVerdict p={p} onConsult={consult} />
             </div>
+
+            {/* Self-declared ownership — adds this report to My Portfolio, kept
+                current, with the "See new update" flags. No proof, and never on
+                the watermarked sample or the frozen sheet. */}
+            {!sample && !frozen && (
+              <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-[#1a1a1a]/[0.08] bg-white px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-serif text-[1.15rem] font-medium text-[#1a1a1a]">
+                    {owned ? "This home is in your portfolio." : "Own — or about to own — here?"}
+                  </p>
+                  <p className="mt-1 max-w-[46ch] text-[0.84rem] font-light leading-relaxed text-[#1a1a1a]/55">
+                    {owned
+                      ? "We keep watching this report and flag any section that moves — see it in your Office."
+                      : "Add it to My Portfolio and we'll keep its report current, telling you when our read changes."}
+                  </p>
+                </div>
+                <button
+                  onClick={toggleOwned}
+                  className={`shrink-0 self-start rounded-sm px-6 py-3 text-[0.82rem] font-medium tracking-[0.04em] transition-colors sm:self-auto ${
+                    owned
+                      ? "border border-[#1e6b45]/30 bg-[#1e6b45]/[0.06] text-[#1e6b45] hover:bg-[#1e6b45]/[0.1]"
+                      : "bg-[#1e6b45] text-white hover:bg-[#238c55]"
+                  }`}
+                >
+                  {owned ? "✓ In your portfolio" : "I've invested / I own this"}
+                </button>
+              </div>
+            )}
 
             {/* Strengths & watch-outs */}
             {(p.strengths.length > 0 || p.watchouts.length > 0) && (

@@ -75,7 +75,6 @@ export type SectionKey =
   | "requirements"
   | "recommendations"
   | "advice"
-  | "questions"
   | "deal"
   | "documents"
   | "portfolio";
@@ -85,7 +84,6 @@ export const SECTIONS: { key: SectionKey; label: string; path: string; paidOnly?
   { key: "requirements", label: "My Requirements", path: "/office/requirements" },
   { key: "recommendations", label: "Recommendations", path: "/office/recommendations" },
   { key: "advice", label: "Independent Advice", path: "/office/advice" },
-  { key: "questions", label: "Questions", path: "/office/questions" },
   { key: "deal", label: "My Deal", path: "/office/deal", paidOnly: true },
   { key: "documents", label: "Documents & Reports", path: "/office/documents" },
   { key: "portfolio", label: "My Portfolio", path: "/office/portfolio" },
@@ -377,7 +375,7 @@ export const dealPhaseIndex = (stage: DealStage) => {
 export function dealDocs(t: OfficeThread): OfficeDoc[] {
   const out: OfficeDoc[] = [];
   if (isPaid(t.stage)) {
-    out.push({ id: "inv", group: "Letters & Allotment", name: `Invoice — Mandate activation · ${INR(MANDATE_FEE)}`, status: "uploaded", note: "Paid · GST included · adjustable against closing fee" });
+    out.push({ id: "inv", group: "Letters & Allotment", name: `Invoice — Mandate activation · ${INR(MANDATE_FEE)}`, status: "uploaded", note: "Paid · No GST charged · adjustable against closing fee" });
   }
   if (stageIndex(t.stage) >= stageIndex("token")) {
     out.push({ id: "tok", group: "Letters & Allotment", name: "Token receipt + allotment", status: "uploaded", note: "Paid to RERA escrow · countersigned" });
@@ -473,11 +471,9 @@ export function nextStep(t: OfficeThread): { title: string; body: string; cta: s
 
 /* Small "micro-win" stats for the Home header. */
 export function wins(t: OfficeThread): { value: string; label: string }[] {
-  const answered = `${t.questions.filter((q) => q.status === "answered").length}`;
   return [
     { value: String(t.recs.length || 3), label: "Projects investigated" },
     { value: t.advisor.initials, label: "Advisor assigned" },
-    { value: answered, label: "Questions answered" },
     { value: t.dna.length ? "Complete" : "—", label: "Buyer DNA" },
   ];
 }
