@@ -858,8 +858,11 @@ export default function ProjectProfile({
 
             {/* Match Score now leads the report body as the "Your Fit" band (above) */}
 
-            {/* 01 · Vitals — one uniform grid, one type language */}
-            <Section id="vitals" n={num()} title="Vitals">
+            {/* 01 · Vitals — one uniform grid, one type language. `flush`, like
+                every first-section-under-a-chapter (cf. Truth Score anatomy under
+                Chapter II): the chapter already draws its own top rule, so the
+                section skips its margin/rule/pad and hugs the header. */}
+            <Section id="vitals" n={num()} title="Vitals" flush>
               <div className="rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-8 md:p-10">
                 {/* money facts — value-first, serif, 2×2 on mobile / 4-up on desktop */}
                 <div className="grid grid-cols-2 gap-x-8 gap-y-8 lg:grid-cols-4">
