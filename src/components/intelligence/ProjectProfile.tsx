@@ -727,7 +727,13 @@ export default function ProjectProfile({
                     </div>
                     {/* Truth Score — light readout card floated on the canvas */}
                     <div className="w-full max-w-[300px] rounded-2xl border border-white/20 bg-[#FBF8F2]/95 p-4 shadow-[0_22px_55px_-18px_rgba(0,0,0,0.6)] backdrop-blur-md sm:w-[290px] sm:p-5">
-                      <p className="text-[0.5rem] font-medium uppercase tracking-[0.22em] text-[#1a1a1a]/40">Truth Score</p>
+                      {/* The label row carries the last-updated date on its right
+                          edge — it reads at a glance without adding a row, so the
+                          score card is exactly as tall as before. */}
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="text-[0.5rem] font-medium uppercase tracking-[0.22em] text-[#1a1a1a]/40">Truth Score</span>
+                        <span className="whitespace-nowrap text-[0.58rem] font-medium text-[#1a1a1a]/45">Updated {reviewed}</span>
+                      </div>
                       <p className="mt-1 flex items-baseline">
                         <span className="font-serif text-[3.2rem] font-normal leading-[0.82] text-[#1e6b45]">{p.truthScore}</span>
                         <span className="ml-1.5 font-mono text-[0.95rem] text-[#1a1a1a]/30">/100</span>
@@ -752,9 +758,6 @@ export default function ProjectProfile({
                           {ctx.rank > 0 && <p className="flex items-center gap-2 text-[0.72rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]"><IconTiers /></span><span>{ctx.bottomHalf ? <><b className="font-semibold text-[#1a1a1a]">Ranks {ctx.rank} of {ctx.total}</b> tracked projects</> : <><b className="font-semibold text-[#1a1a1a]">Top {ctx.topPct}%</b> of {ctx.total} tracked projects</>}</span></p>}
                           <p className="flex items-center gap-2 text-[0.72rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]"><IconShieldCheck /></span><span><b className="font-semibold text-[#1a1a1a]">{p.confidence}</b> confidence · re-scored quarterly</span></p>
                         </div>
-                        {/* Last-updated date — surfaced in the score card so it
-                            reads at a glance, not only in the fine-print caption. */}
-                        <p className="mt-2.5 flex items-center gap-2 border-t border-[#1a1a1a]/8 pt-2.5 text-[0.72rem] text-[#1a1a1a]/60"><span className="text-[#9a7a2e]"><IconClock /></span><span>Last updated <b className="font-semibold text-[#1a1a1a]">{reviewed}</b></span></p>
                       </div>
                     </div>
                     </div>
@@ -1623,7 +1626,4 @@ function IconTiers({ className = "" }: { className?: string }) {
 }
 function IconShieldCheck({ className = "" }: { className?: string }) {
   return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={`${ICN} ${className}`} aria-hidden><path d="M12 3 5 5.8v5.5c0 4 3 6.9 7 8.2 4-1.3 7-4.2 7-8.2V5.8L12 3Z" /><path d="M9 11.6 11 13.6 15 9.4" /></svg>);
-}
-function IconClock({ className = "" }: { className?: string }) {
-  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={`${ICN} ${className}`} aria-hidden><circle cx="12" cy="12" r="8.2" /><path d="M12 7.6V12l3 1.8" /></svg>);
 }
