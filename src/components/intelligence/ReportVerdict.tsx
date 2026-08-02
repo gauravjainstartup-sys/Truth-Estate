@@ -34,30 +34,50 @@ function buildCalls(p: ProjectIntel): Record<ProfileKey, Call> {
   const supplyRisk = p.watchouts.find((w) => /supply|inventory|liquid/i.test(w));
   const legalWatch = hasHistory ? "Have a lawyer vet the Agreement to Sell — this developer's contracts have lost in court before." : "Standard legal checks still apply — verify RERA yourself.";
   const handover = out?.predictedDate ?? p.ops?.possession ?? "handover";
+  /* A delivered project has its OC: there is no handover date to bet on, no
+     construction to sit through, no under-construction capital lock. The calls
+     below correct only those now-false statements — the tone selection and
+     every number are unchanged; non-delivered reports read byte-identically. */
+  const delivered = p.ops?.lifecycle === "delivered";
 
   const investor: Call = cagr >= 8
     ? { tone: "buy", short: "Strong buy", head: "Strong buy — with a clock on it.",
-        body: `The maths works: a construction-linked entry models a real (cash-flow) return above the ~${cagr}% price CAGR on a ${out && out.absorptionPct >= 98 ? "sold-out, " : ""}${out && out.aheadOfPlan > 0 ? "ahead-of-schedule " : ""}tower. Treat it as buy-and-exit, not hold-forever${supplyRisk ? " — new corridor supply will cap the late-decade premium" : ""}.`,
-        fits: [`Models ~${cagr}% CAGR — and higher XIRR on a staged plan`, out && out.absorptionPct >= 98 ? "Fully absorbed — exit demand is proven" : "Healthy absorption at current velocity", `${p.truthScore} Truth Score — ${ctx.bottomHalf ? `ranks ${ctx.rank} of ${ctx.total} tracked projects` : `top ${ctx.topPct}% of tracked projects`}`],
+        body: delivered
+          ? `The maths works: entry at today's price models a real return above the ~${cagr}% price CAGR on a delivered, ${out && out.absorptionPct >= 98 ? "sold-out" : "well-absorbed"} tower — a completed asset, so no construction risk sits between you and resale. Treat it as buy-and-exit, not hold-forever${supplyRisk ? " — new corridor supply will cap the late-decade premium" : ""}.`
+          : `The maths works: a construction-linked entry models a real (cash-flow) return above the ~${cagr}% price CAGR on a ${out && out.absorptionPct >= 98 ? "sold-out, " : ""}${out && out.aheadOfPlan > 0 ? "ahead-of-schedule " : ""}tower. Treat it as buy-and-exit, not hold-forever${supplyRisk ? " — new corridor supply will cap the late-decade premium" : ""}.`,
+        fits: [delivered ? `Models ~${cagr}% CAGR on a ready, rentable asset` : `Models ~${cagr}% CAGR — and higher XIRR on a staged plan`, out && out.absorptionPct >= 98 ? "Fully absorbed — exit demand is proven" : "Healthy absorption at current velocity", `${p.truthScore} Truth Score — ${ctx.bottomHalf ? `ranks ${ctx.rank} of ${ctx.total} tracked projects` : `top ${ctx.topPct}% of tracked projects`}`],
         watch: [supplyRisk ? `Plan the exit: ${supplyRisk.toLowerCase()}` : "Plan your exit window before you enter", legalWatch] }
     : { tone: "consider", short: "Consider", head: "Consider — the return is fair, not exceptional.",
         body: `Modelled at ~${cagr}% CAGR, this compounds respectably but doesn't beat the corridor. Buy it for the asset quality, not for outsized returns.`,
-        fits: ["Quality asset in a tracked corridor", `${p.truthScore} Truth Score — execution risk is contained`],
+        fits: ["Quality asset in a tracked corridor", `${p.truthScore} Truth Score — execution risk is ${delivered ? "behind it" : "contained"}`],
         watch: ["Returns hug the corridor benchmark — negotiate entry hard", legalWatch] };
 
   const first: Call = ticketMid >= 4
-    ? { tone: "stretch", short: "Stretch", head: `A stretch — ₹${p.budget[0]}–${p.budget[1]} Cr locks your capital till ${handover}.`,
-        body: `As a first home this parks a very large share of net worth in one under-construction asset with no rental income until ${handover}. If your finances absorb that comfortably, the quality is real — but a first-timer usually shouldn't need to prove it.`,
-        fits: ["If bought, delivery certainty protects a first purchase", "Strong resale depth if plans change"],
-        watch: ["Capital locked through construction — stress-test the EMIs", "Consider the corridor's ready or near-ready options first"] }
+    ? { tone: "stretch", short: "Stretch",
+        head: delivered
+          ? `A stretch — ₹${p.budget[0]}–${p.budget[1]} Cr in a single asset, even a ready one.`
+          : `A stretch — ₹${p.budget[0]}–${p.budget[1]} Cr locks your capital till ${handover}.`,
+        body: delivered
+          ? `As a first home this parks a very large share of net worth in one asset. It's delivered, so you can move in or let it out from day one — but a first-timer usually shouldn't need to stretch this far to prove the quality is real.`
+          : `As a first home this parks a very large share of net worth in one under-construction asset with no rental income until ${handover}. If your finances absorb that comfortably, the quality is real — but a first-timer usually shouldn't need to prove it.`,
+        fits: delivered
+          ? ["It's delivered — zero construction risk on a first purchase", "Strong resale depth if plans change"]
+          : ["If bought, delivery certainty protects a first purchase", "Strong resale depth if plans change"],
+        watch: delivered
+          ? ["A large share of net worth in one asset — stress-test the EMIs", "You're paying a ready-property premium — weigh under-construction entries too"]
+          : ["Capital locked through construction — stress-test the EMIs", "Consider the corridor's ready or near-ready options first"] }
     : { tone: "fit", short: "Sound first buy", head: "A sound first home — with the boxes ticked.",
-        body: `Ticket size is manageable for the segment and the delivery record de-risks the wait. Verify the paperwork and buy the stack you'd live in, not the cheapest.`,
-        fits: ["Manageable ticket for the corridor", "Delivery record protects a first purchase"],
+        body: delivered
+          ? `Ticket size is manageable for the segment, and it's already delivered — no construction wait to sit through. Verify the paperwork and buy the stack you'd live in, not the cheapest.`
+          : `Ticket size is manageable for the segment and the delivery record de-risks the wait. Verify the paperwork and buy the stack you'd live in, not the cheapest.`,
+        fits: delivered
+          ? ["Manageable ticket for the corridor", "Delivered — no construction risk on a first purchase"]
+          : ["Manageable ticket for the corridor", "Delivery record protects a first purchase"],
         watch: ["Don't skip the legal read", "Match the payment plan to your income, not the discount"] };
 
   const upgrader: Call = p.truthScore >= 86
     ? { tone: "fit", short: "Strong fit", head: "Strong fit — a durable upgrade.",
-        body: `Bridging from an existing home, you're trading into a ${ctx.corridorRank === 1 ? "corridor-leading" : "top-tier"} address with real scarcity value. Your existing asset funds the equity; the delivery record protects the bridge.`,
+        body: `Bridging from an existing home, you're trading into a ${ctx.corridorRank === 1 ? "corridor-leading" : "top-tier"} address with real scarcity value. Your existing asset funds the equity; ${delivered ? "it's delivered, so the trade-in is immediate — no construction wait between selling and moving" : "the delivery record protects the bridge"}.`,
         fits: ["Corridor-leading quality — the upgrade holds value", "Sell-side liquidity on your current home does the funding"],
         watch: ["Sequence the sale → purchase bridge carefully", legalWatch] }
     : { tone: "consider", short: "Consider", head: "A fair upgrade — compare within the corridor first.",
@@ -65,7 +85,12 @@ function buildCalls(p: ProjectIntel): Record<ProfileKey, Call> {
         fits: ["Sound asset; genuine lifestyle uplift"],
         watch: ["Compare against the corridor's top-scored peer", legalWatch] };
 
-  const enduser: Call = (out?.delayChance ?? 30) <= 25
+  const enduser: Call = delivered
+    ? { tone: "fit", short: "Strong fit", head: "Strong fit — it's ready to move into now.",
+        body: `For living in (or moving back to), a delivered project is the ideal case: it's ready now, OC on record, so there's no handover date to bet on — you inspect the actual unit, not a sample flat. NRIs: we handle the paperwork end-to-end.`,
+        fits: ["Ready to move in — OC on record, no handover risk", "Low-density, end-user-grade specification"],
+        watch: ["Inspect the delivered unit and OC papers before you pay", "NRI: plan TDS/222A paperwork for a ready-property purchase"] }
+    : (out?.delayChance ?? 30) <= 25
     ? { tone: "fit", short: "Strong fit", head: `Strong fit — low handover risk for a ${handover} move.`,
         body: `For living in (or moving back to), the risk that matters is the handover date — and this one models ${out ? `${out.delayChance}% delay risk` : "contained delay risk"} with a ${out && out.ahead > 0 ? `forecast ${Math.abs(out.ahead)} months early` : "credible forecast"}. NRIs: we handle the paperwork and remote milestones end-to-end.`,
         fits: [out ? `Forecast handover ${out.predictedDate} — ${out.delayChance}% delay risk` : "Credible handover forecast", "Low-density, end-user-grade specification"],
