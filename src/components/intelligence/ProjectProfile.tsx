@@ -728,8 +728,8 @@ export default function ProjectProfile({
                       </span>
                       )}
                       {buildStatus && (
-                        <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-white/12 bg-white/10 px-3.5 py-1.5 text-[0.7rem] font-light text-white/70 backdrop-blur-sm">
-                          <IconBuilding className="text-[#d8b978]" />{buildStatus}
+                        <span className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-[0.7rem] font-light backdrop-blur-sm ${buildTagCls}`}>
+                          <IconBuilding className={buildTagIconCls} />{buildStatus}
                         </span>
                       )}
                     </div>
