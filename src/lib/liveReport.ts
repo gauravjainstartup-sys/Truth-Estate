@@ -226,7 +226,7 @@ const FIN_RATING: Record<FinKey, (v: number) => FinRating> = Object.fromEntries(
    display at the point the number stops carrying information, and say so
    on the card rather than showing a figure we would have to defend. */
 const FIN_CAP: Partial<Record<FinKey, { at: number; over: boolean; show: string; why: string }>> = {
-  coverage:  { at: 25, over: true, show: "25×+", why: "Capped — at this level the driver is a near-zero interest bill, not earnings" },
+  coverage:  { at: 25, over: true, show: "25×+", why: "Capped — near-zero debt leaves almost no interest bill to cover, so earnings clear it many times over" },
   cash:      { at: 4, over: true, show: "4×+", why: "Capped — the ratio is distorted by a small EBITDA base" },
   inventory: { at: 15, over: true, show: "15 yr+", why: "Capped — cover this long usually means sales, not stock, are the small number" },
 };
