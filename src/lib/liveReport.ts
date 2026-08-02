@@ -252,6 +252,24 @@ const riskRating = (r: string | null): FinRating | null =>
 
 const dedupe = (xs: string[]): string[] => [...new Set(xs.map((x) => x.trim()).filter(Boolean))];
 
+/* The location verdict headline is authored upstream and, for roughly two in
+   three projects, currently arrives broken — a sentence cut off mid-word, or a
+   stray scraped fragment like "5★, 1,226 reviews) at 0". We render the DB
+   string verbatim, so a broken value renders broken. Accept a headline only
+   when it reads as a finished sentence; otherwise treat it as absent so the
+   card falls back to its band + market-stage note (its existing
+   hide-when-missing behaviour). A display guard, not a rewrite: it never
+   invents copy and self-clears the moment the upstream text is regenerated. */
+const coherentHeadline = (t: string | null | undefined): string | null => {
+  const s = (t ?? "").trim();
+  if (s.length < 25) return null;                                                    // stray fragment
+  if (/★|reviews\s*\)|https?:/i.test(s)) return null;                                // scraped-snippet garbage
+  if (/\/100\b|refactored|\boverall score\b/i.test(s)) return null;                  // leaked scoring-pipeline meta
+  if ((s.match(/\(/g)?.length ?? 0) !== (s.match(/\)/g)?.length ?? 0)) return null;   // unbalanced parens → truncated
+  if (!/[.!?]["'’”)]?$/.test(s)) return null;                                         // not a finished sentence
+  return s;
+};
+
 /* Media columns now hold a Supabase Storage PUBLIC URL — the founder's
    current upload path, e.g.
      https://<ref>.supabase.co/storage/v1/object/public/project_assets/general/<file>
@@ -1228,6 +1246,7 @@ export function liveProjectIntel(
     };
     const insightsStrengths = strList(row.locKeyStrengths).concat(strList(row.locConnStrengths)).slice(0, 5);
     const insightsGaps = strList(row.locConnConstraints).concat(strList(row.locRisks)).slice(0, 4);
+    const locVerdictOk = coherentHeadline(row.locVerdict);
     geo = {
       center: { lat: centerLat!, lng: centerLng! },
       ...(row.geoProvenance ? { provenance: row.geoProvenance } : {}),
@@ -1247,10 +1266,10 @@ export function liveProjectIntel(
       ...(row.faqLocationScore != null || Object.keys(byCat).length
         ? { scores: { ...(row.faqLocationScore != null ? { overall: Math.round(row.faqLocationScore) } : {}), ...(Object.keys(byCat).length ? { byCat } : {}) } }
         : {}),
-      ...(row.locVerdict || row.locMarketStage || insightsStrengths.length || insightsGaps.length
+      ...(locVerdictOk || row.locMarketStage || insightsStrengths.length || insightsGaps.length
         ? {
             insights: {
-              ...(row.locVerdict ? { verdict: row.locVerdict } : {}),
+              ...(locVerdictOk ? { verdict: locVerdictOk } : {}),
               ...(row.locMarketStage ? { marketStage: row.locMarketStage } : {}),
               ...(insightsStrengths.length ? { strengths: insightsStrengths } : {}),
               ...(insightsGaps.length ? { gaps: insightsGaps } : {}),
