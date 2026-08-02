@@ -430,19 +430,20 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
     const id = s(b.id);
     if (id) bpdById.set(id, b);
   }
-  /* OC/CC — fetched in its OWN query so a missing column (these are new)
-     400s to null and only hides OC data; the construction/sales join above is
-     never affected. In fixture mode both reads return the same snapshot file.
-     `overrides` JSONB wins over the base columns, matching dbService. */
+  /* OC/CC — the certificate lives INSIDE the `overrides` JSONB on
+     backlog_project_data (keys delivered_oc_date / delivered_certificate_url),
+     not as top-level columns. Fetched in its own query so it never touches the
+     construction/sales join above. A project with delivered_oc_date set is
+     delivered. */
   const ocById = new Map<string, { ocDate: string | null; ocUrl: string | null }>();
-  for (const b of (await sbRows("backlog_project_data", "select=id,delivered_oc_date,delivered_certificate_url,overrides&limit=2000")) ?? []) {
+  for (const b of (await sbRows("backlog_project_data", "select=id,overrides&limit=2000")) ?? []) {
     const id = s(b.id);
     if (!id) continue;
     const o = j(b.overrides);
     const ovr: Record<string, unknown> = o && typeof o === "object" && !Array.isArray(o) ? (o as Record<string, unknown>) : {};
     ocById.set(id, {
-      ocDate: s(ovr.delivered_oc_date) ?? s(b.delivered_oc_date),
-      ocUrl: s(ovr.delivered_certificate_url) ?? s(b.delivered_certificate_url),
+      ocDate: s(ovr.delivered_oc_date),
+      ocUrl: s(ovr.delivered_certificate_url),
     });
   }
   const out: LiveBacklogFull[] = [];
