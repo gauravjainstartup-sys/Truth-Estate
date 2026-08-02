@@ -20,6 +20,9 @@ export default function ReportAnatomy({ p, locked = false, onUnlock }: { p: Proj
   const filled = Math.round(p.truthScore / 10);
   const weakest = rows.reduce((a, b) => (b.score < a.score ? b : a), rows[0]);
   const strong = rows.filter((r) => r.band === "exceptional" || r.band === "strong").length;
+  /* Delivered reframes how the score READS — the execution risk it prices is
+     resolved — without changing the number or the pillar bands. */
+  const delivered = p.ops?.lifecycle === "delivered";
 
   return (
     <div className="mt-9 grid gap-11 lg:grid-cols-[280px_minmax(0,1fr)]">
@@ -85,9 +88,15 @@ export default function ReportAnatomy({ p, locked = false, onUnlock }: { p: Proj
         <p className="mt-5 text-[0.8rem] font-light leading-[1.6] text-[#1a1a1a]/55">
           <span className="font-medium text-[#1a1a1a]">The one-line read:</span>{" "}
           {strong} of {rows.length} pillars land strong or better
-          {weakest.band === "watch"
-            ? <>, with one to watch — <span className="font-medium text-[#b0503e]">{weakest.label}</span>. That&apos;s the section we&apos;d read before signing.</>
-            : <>. A clean read across the board — the detail is below.</>}
+          {delivered ? (
+            weakest.band === "watch"
+              ? <>. The project is already delivered — OC on record — so the execution risk this score prices is behind it; what&apos;s left to weigh is <span className="font-medium text-[#b0503e]">{weakest.label}</span>.</>
+              : <>, and the project is already delivered (OC on record) — the execution risk is behind it, a clean read across the board.</>
+          ) : weakest.band === "watch" ? (
+            <>, with one to watch — <span className="font-medium text-[#b0503e]">{weakest.label}</span>. That&apos;s the section we&apos;d read before signing.</>
+          ) : (
+            <>. A clean read across the board — the detail is below.</>
+          )}
         </p>
       </div>
     </div>

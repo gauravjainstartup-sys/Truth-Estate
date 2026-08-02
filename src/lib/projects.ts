@@ -1000,8 +1000,14 @@ export function pillars(p: ProjectIntel): Pillar[] {
   const conScore = con
     ? round1(clamp(ratingBase(a.construction) + (con.actualPct - con.expectedPct) / 12 + (con.absorptionPct >= 95 ? 0.4 : 0) + lift, 4, 9.4))
     : round1(clamp(ratingBase(a.construction) + lift, 4, 9));
+  /* A delivered project's construction line reports the OC, not a build-vs-due
+     percentage that no longer means anything — narrative only; the score and
+     band come from the pipeline unchanged. */
+  const delivered = p.ops?.lifecycle === "delivered";
   const conWhy = con
-    ? `${con.actualPct}% built vs ${con.expectedPct}% due${ahead > 0 ? ` · ~${ahead} mo ahead of RERA` : ""} · ${con.absorptionPct}% sold.`
+    ? delivered
+      ? `Delivered — OC ${p.ops?.ocDate ?? "on record"} · ${con.absorptionPct}% sold.`
+      : `${con.actualPct}% built vs ${con.expectedPct}% due${ahead > 0 ? ` · ~${ahead} mo ahead of RERA` : ""} · ${con.absorptionPct}% sold.`
     : "Construction tracking not yet published for this project.";
 
   const locScore = round1(clamp((ratingBase(a.liquidity) + ratingBase(a.pricing)) / 2 + (market?.tier === "Established" ? 0.6 : market?.tier === "Growth" ? 0.3 : 0) + lift, 4, 9.5));
