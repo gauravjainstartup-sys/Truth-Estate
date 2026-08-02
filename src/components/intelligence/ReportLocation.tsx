@@ -55,13 +55,15 @@ function GeoLayout({ p, geo }: { p: ProjectIntel; geo: LocationGeo }) {
   return (
     <>
       {/* analyst assessment — same shape as the Developer cards: label + grade
-         chip + the verdict; the corridor supply note rides underneath, quiet */}
-      {ins?.verdict && (
+         chip + the verdict; the corridor supply note rides underneath, quiet.
+         The card stands on the grade + note, so it holds even when the adapter
+         withholds a broken verdict headline — only that one line drops. */}
+      {(ins?.verdict || ins?.marketStage) && (
         <div className="mt-6 rounded-2xl border-l-2 border-[#1e6b45]/40 bg-white/50 p-6 md:p-7">
           <p className="text-[0.62rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/40">Analyst assessment</p>
           {locBand && <div className="mt-2.5"><BandChip band={locBand} /></div>}
-          <p className="mt-3 font-serif text-[1.2rem] leading-[1.45] md:text-[1.3rem]">{ins.verdict}</p>
-          {ins.marketStage && <p className="mt-3.5 text-[0.82rem] font-light leading-[1.6] text-[#1a1a1a]/55">{ins.marketStage}</p>}
+          {ins?.verdict && <p className="mt-3 font-serif text-[1.2rem] leading-[1.45] md:text-[1.3rem]">{ins.verdict}</p>}
+          {ins?.marketStage && <p className="mt-3.5 text-[0.82rem] font-light leading-[1.6] text-[#1a1a1a]/55">{ins.marketStage}</p>}
         </div>
       )}
 
