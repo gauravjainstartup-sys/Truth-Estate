@@ -83,6 +83,16 @@ export default function ReportLegal({ p }: { p: ProjectIntel }) {
         </div>
       )}
 
+      {/* An OC clears completion & possession risk — NOT title risk. So for a
+          delivered project we frame the flags below: the delivery-timeline
+          worries are moot, but a mortgage on the land or a governance flag
+          survives possession and still needs diligence before registration. */}
+      {p.ops?.lifecycle === "delivered" && (p.liveLegal?.headline || dev) && (
+        <p className="mt-3.5 rounded-r-lg border-l-2 border-[#1e6b45]/40 bg-[#1e6b45]/[0.04] px-4 py-3 text-[0.82rem] font-light leading-[1.55] text-[#1a1a1a]/60">
+          <b className="font-medium text-[#1a1a1a]">Delivery &amp; completion risk is resolved</b> by the OC on record. The points below are <b className="font-medium text-[#1a1a1a]">title &amp; governance</b> matters that persist regardless of possession — read them before you register.
+        </p>
+      )}
+
       {(p.liveLegal?.headline || dev) && (
         <div className="mt-6 rounded-2xl border-l-2 border-[#9a7a2e]/50 bg-white/50 p-6 md:p-7">
           <p className="text-[0.62rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/40">Analyst assessment</p>

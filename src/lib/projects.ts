@@ -203,6 +203,7 @@ export type ProjectOps = {
   lifecycle?: "delivered" | "new-launch";
   ocDate?: string; // Occupancy/Completion Certificate date, day-precision ("9 Jun 2026")
   ocCertificateUrl?: string; // link to the signed OC/CC document, opened in a new tab
+  deliveredAheadMonths?: number; // for a delivered project: months the OC beat the RERA promise (+ = early, − = late)
   units?: number;
   towers?: number;
   floors?: string; // indicative floor count, may be a range ("34–38")

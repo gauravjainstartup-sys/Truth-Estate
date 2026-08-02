@@ -346,6 +346,14 @@ export default function ProjectProfile({
     : ops?.possession
     ? `Under construction · handover ${ops.possession}`
     : undefined;
+  /* Delivered reads as a verified, positive state — give its hero tag a green
+     "cleared" tint instead of the neutral glass every other build stage wears.
+     Placement/shape unchanged; only colour + icon tone shift. */
+  const buildTagCls =
+    ops?.lifecycle === "delivered"
+      ? "border-[#8fd6ac]/35 bg-[#1e6b45]/30 text-[#d6ecdd]"
+      : "border-white/12 bg-white/10 text-white/70";
+  const buildTagIconCls = ops?.lifecycle === "delivered" ? "text-[#9fdcb6]" : "text-[#d8b978]";
   const heroImage = ops?.media?.heroImage;
   const has3D = !!towerIntelMeta(p)?.file;
 
@@ -697,8 +705,8 @@ export default function ProjectProfile({
                         </span>
                         )}
                         {buildStatus && (
-                          <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-white/12 bg-white/10 px-3.5 py-1.5 text-[0.7rem] font-light text-white/70 backdrop-blur-sm">
-                            <IconBuilding className="text-[#d8b978]" />{buildStatus}
+                          <span className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-[0.7rem] font-light backdrop-blur-sm ${buildTagCls}`}>
+                            <IconBuilding className={buildTagIconCls} />{buildStatus}
                           </span>
                         )}
                       </div>
@@ -1543,15 +1551,20 @@ function shortAnswerSignals(p: ProjectIntel, ctx: ReturnType<typeof rankContext>
 
   if (ops?.construction) {
     const built = ops.construction.actualPct;
-    /* Pace is built-vs-due on the project's own filed plan, which is a
-       different claim from "far along" — a tower can be three-quarters up
-       and still behind, and the old wording called anything past halfway
-       "on track" without ever looking. */
-    const pace = built - ops.construction.expectedPct;
-    if (pace <= -8) cautions.push("The build is running behind the schedule the developer filed for it");
-    else if (built >= 90) highlights.push("The structure is all but finished — the execution risk is largely behind it");
-    else if (built >= 50) highlights.push(`Construction is past the halfway mark and ${pace >= 8 ? "running ahead of" : "holding to"} its filed schedule`);
-    else if (built < 20) cautions.push("The site is barely out of the ground — most of the execution risk is still ahead of you");
+    if (ops.lifecycle === "delivered") {
+      // Delivered (OC on record): execution risk isn't "largely" behind it — it's gone.
+      highlights.push("Delivered — the execution risk is behind it entirely, with the OC on record");
+    } else {
+      /* Pace is built-vs-due on the project's own filed plan, which is a
+         different claim from "far along" — a tower can be three-quarters up
+         and still behind, and the old wording called anything past halfway
+         "on track" without ever looking. */
+      const pace = built - ops.construction.expectedPct;
+      if (pace <= -8) cautions.push("The build is running behind the schedule the developer filed for it");
+      else if (built >= 90) highlights.push("The structure is all but finished — the execution risk is largely behind it");
+      else if (built >= 50) highlights.push(`Construction is past the halfway mark and ${pace >= 8 ? "running ahead of" : "holding to"} its filed schedule`);
+      else if (built < 20) cautions.push("The site is barely out of the ground — most of the execution risk is still ahead of you");
+    }
   }
 
   if (ops?.units && ops.construction) {

@@ -1331,6 +1331,9 @@ export function liveProjectIntel(
     ...(lifecycle ? { lifecycle } : {}),
     ...(row.deliveredOcDate && fullDateLabel(row.deliveredOcDate) ? { ocDate: fullDateLabel(row.deliveredOcDate)! } : {}),
     ...(row.deliveredCertificateUrl ? { ocCertificateUrl: row.deliveredCertificateUrl } : {}),
+    ...(lifecycle === "delivered" && monthsAheadPrecise(row.deliveredOcDate, row.reraPromiseDate) != null
+      ? { deliveredAheadMonths: monthsAheadPrecise(row.deliveredOcDate, row.reraPromiseDate)! }
+      : {}),
     ...(row.location ? { address: withCity(row.location) } : {}),
     ...(row.totalUnits != null ? { units: Math.round(row.totalUnits) } : totalUnits != null ? { units: totalUnits } : {}),
     ...(ext?.totalTowers != null && ext.totalTowers > 0 ? { towers: Math.round(ext.totalTowers) } : {}),

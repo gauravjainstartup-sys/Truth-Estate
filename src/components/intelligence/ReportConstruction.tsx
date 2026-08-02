@@ -15,6 +15,11 @@ function pdfHref(u: string): string {
 export default function ReportConstruction({ p }: { p: ProjectIntel }) {
   const o = deliveryOutlook(p);
   if (!o) return null;
+  // A delivered project (OC/CC on record) reports actuals, not a forecast:
+  // the predicted-delivery + delay-chance read is moot and, worse, contradicts
+  // the certificate. Switch it for the delivered fact everywhere below.
+  const delivered = p.ops?.lifecycle === "delivered";
+  const ocDate = p.ops?.ocDate;
   // Absorption in absolute terms: units sold of the total launched.
   const totalUnits = p.ops?.units;
   const unitsSold = totalUnits != null ? Math.round((totalUnits * o.absorptionPct) / 100) : null;
@@ -24,7 +29,8 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
   const builtPct = Math.round(o.actualPct); // whole-number, for the render-vs-reality captions
   const siteAsOf = site ? `◉ ${site.asOf} · on site` : `▦ schematic · ${builtPct}% built`;
   const assess =
-    o.aheadOfPlan > 0 && o.absorptionPct >= 95 ? "Ahead of schedule, and already sold out."
+    delivered ? `Delivered — the project is complete and handed over${ocDate ? ` (OC ${ocDate})` : ""}.`
+    : o.aheadOfPlan > 0 && o.absorptionPct >= 95 ? "Ahead of schedule, and already sold out."
     : o.aheadOfPlan > 0 ? "Tracking ahead of the RERA plan."
     : o.aheadOfPlan < 0 ? "Running behind the RERA plan — watch closely."
     : "Building on plan.";
@@ -39,6 +45,15 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
     : `${Math.abs(paceMo)} Month${Math.abs(paceMo) === 1 ? "" : "s"} ${paceMo > 0 ? "Ahead" : "Behind"}`;
   const predicted = o.predictedDateFull ?? o.predictedDate;
   const rera = o.reraDateFull ?? o.reraDate;
+  // Delivered: the OC date measured against the RERA promise (+ early / − late).
+  const aheadM = p.ops?.deliveredAheadMonths;
+  const deliveredVsRera = aheadM == null ? null : (() => {
+    const n = Math.round(Math.abs(aheadM));
+    const unit = `${n} month${n === 1 ? "" : "s"}`;
+    if (aheadM >= 0.5) return `${unit} ahead of the RERA promise${rera ? ` (${rera})` : ""}`;
+    if (aheadM <= -0.5) return `${unit} after the RERA promise${rera ? ` (${rera})` : ""}`;
+    return `on the RERA promise${rera ? ` (${rera})` : ""}`;
+  })();
   const aheadMo = o.aheadMonths ?? o.ahead; // + = forecast beats the RERA promise
   const aheadPos = aheadMo > 0;
   const aheadTxt =
@@ -146,16 +161,28 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
         {/* Construction progress vs plan */}
         <div className="flex flex-col rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-6">
           <div className="flex-1">
-            <span className="text-[0.66rem] font-semibold uppercase tracking-[0.15em] text-[#1a1a1a]/45">Construction progress vs plan</span>
-            <p className={`mt-4 font-serif text-[1.65rem] font-medium leading-tight ${paceAhead ? "text-[#1e6b45]" : "text-[#9a4130]"}`}>{paceHeadline}</p>
-            <div className="mt-5">
-              <div className="flex items-baseline justify-between"><span className="text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-[#1a1a1a]/70">Actual progress</span><span className="font-mono text-[0.9rem] font-bold text-[#1e6b45]">{o.actualPct}%</span></div>
-              <div className="mt-2 h-[9px] overflow-hidden rounded-full bg-[#e9e2d3]"><div className="h-full rounded-full" style={{ width: `${clampPct(o.actualPct)}%`, background: "linear-gradient(90deg,#1e6b45,#238c55)" }} /></div>
-            </div>
-            <div className="mt-4">
-              <div className="flex items-baseline justify-between"><span className="text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-[#1a1a1a]/40">Expected progress</span><span className="font-mono text-[0.9rem] font-bold text-[#1a1a1a]/55">{o.expectedPct}%</span></div>
-              <div className="mt-2 h-[9px] overflow-hidden rounded-full bg-[#e9e2d3]"><div className="h-full rounded-full bg-[#c4bcab]" style={{ width: `${clampPct(o.expectedPct)}%` }} /></div>
-            </div>
+            <span className="text-[0.66rem] font-semibold uppercase tracking-[0.15em] text-[#1a1a1a]/45">{delivered ? "Construction" : "Construction progress vs plan"}</span>
+            {delivered ? (
+              <>
+                <p className="mt-4 font-serif text-[1.65rem] font-medium leading-tight text-[#1e6b45]">Complete</p>
+                <div className="mt-5">
+                  <div className="flex items-baseline justify-between"><span className="text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-[#1a1a1a]/70">Build complete</span><span className="font-mono text-[0.9rem] font-bold text-[#1e6b45]">{o.actualPct}%</span></div>
+                  <div className="mt-2 h-[9px] overflow-hidden rounded-full bg-[#e9e2d3]"><div className="h-full rounded-full" style={{ width: "100%", background: "linear-gradient(90deg,#1e6b45,#238c55)" }} /></div>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className={`mt-4 font-serif text-[1.65rem] font-medium leading-tight ${paceAhead ? "text-[#1e6b45]" : "text-[#9a4130]"}`}>{paceHeadline}</p>
+                <div className="mt-5">
+                  <div className="flex items-baseline justify-between"><span className="text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-[#1a1a1a]/70">Actual progress</span><span className="font-mono text-[0.9rem] font-bold text-[#1e6b45]">{o.actualPct}%</span></div>
+                  <div className="mt-2 h-[9px] overflow-hidden rounded-full bg-[#e9e2d3]"><div className="h-full rounded-full" style={{ width: `${clampPct(o.actualPct)}%`, background: "linear-gradient(90deg,#1e6b45,#238c55)" }} /></div>
+                </div>
+                <div className="mt-4">
+                  <div className="flex items-baseline justify-between"><span className="text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-[#1a1a1a]/40">Expected progress</span><span className="font-mono text-[0.9rem] font-bold text-[#1a1a1a]/55">{o.expectedPct}%</span></div>
+                  <div className="mt-2 h-[9px] overflow-hidden rounded-full bg-[#e9e2d3]"><div className="h-full rounded-full bg-[#c4bcab]" style={{ width: `${clampPct(o.expectedPct)}%` }} /></div>
+                </div>
+              </>
+            )}
           </div>
           {o.constructionProofPdf && (
             <a href={pdfHref(o.constructionProofPdf)} target="_blank" rel="noopener noreferrer" className="mt-6 flex items-center justify-center gap-2.5 rounded-xl border border-[#1a1a1a]/12 bg-white/70 px-4 py-3 text-[0.72rem] font-semibold uppercase tracking-[0.06em] text-[#1a1a1a]/70 transition-colors hover:border-[#1e6b45]/40 hover:text-[#1e6b45]">
@@ -164,30 +191,57 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
             </a>
           )}
           <div className="-mx-6 mt-5 flex items-center gap-2.5 border-t border-[#1a1a1a]/8 px-6 pt-4">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={paceAhead ? "#1e6b45" : "#9a4130"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 15c0-5.5 3-10.5 7-12.5 4 2 7 7 7 12.5l-3.6-1.6L12 20l-3.4-6.6z" /><circle cx="12" cy="8.5" r="1.5" /></svg>
-            <span className={`text-[0.72rem] font-semibold uppercase tracking-[0.1em] ${paceAhead ? "text-[#1e6b45]" : "text-[#9a4130]"}`}>{paceAhead ? "Ahead of schedule" : "Behind schedule"}</span>
-            <span title="Actual build against the % RERA required by the last quarterly progress report." className="ml-auto grid h-[15px] w-[15px] cursor-help place-items-center rounded-full border border-[#1a1a1a]/25 font-serif text-[0.55rem] italic text-[#1a1a1a]/40">i</span>
+            {delivered ? (
+              <>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1e6b45" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M20 6 9 17l-5-5" /></svg>
+                <span className="text-[0.72rem] font-semibold uppercase tracking-[0.1em] text-[#1e6b45]">Complete{ocDate ? ` · handed over ${ocDate}` : ""}</span>
+              </>
+            ) : (
+              <>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={paceAhead ? "#1e6b45" : "#9a4130"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 15c0-5.5 3-10.5 7-12.5 4 2 7 7 7 12.5l-3.6-1.6L12 20l-3.4-6.6z" /><circle cx="12" cy="8.5" r="1.5" /></svg>
+                <span className={`text-[0.72rem] font-semibold uppercase tracking-[0.1em] ${paceAhead ? "text-[#1e6b45]" : "text-[#9a4130]"}`}>{paceAhead ? "Ahead of schedule" : "Behind schedule"}</span>
+                <span title="Actual build against the % RERA required by the last quarterly progress report." className="ml-auto grid h-[15px] w-[15px] cursor-help place-items-center rounded-full border border-[#1a1a1a]/25 font-serif text-[0.55rem] italic text-[#1a1a1a]/40">i</span>
+              </>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Delivery verdict — the calendar read: our forecast vs the RERA promise,
-          and the modelled chance of any slip. */}
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-6 overflow-hidden rounded-2xl bg-gradient-to-br from-[#17130e] to-[#241d15] px-7 py-7 text-[#f3ecdd]">
-        <div className="min-w-0">
-          <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[#f3ecdd]/55">Predicted delivery date</p>
-          <p className="mt-2 font-serif text-[2.3rem] font-medium leading-none md:text-[2.6rem]">{predicted}</p>
-          <p className="mt-2.5 text-[0.82rem] text-[#f3ecdd]/60">RERA promise: {rera}</p>
-          <span className={`mt-4 inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-[0.75rem] font-bold ${aheadPos ? "border-[#7abe96]/40 bg-[#238c55]/[0.16] text-[#8fd6ac]" : "border-[#d99a86]/40 bg-[#9a4130]/25 text-[#e6a892]"}`}>
-            <span aria-hidden>{aheadMo === 0 ? "◆" : aheadPos ? "▲" : "▼"}</span> {aheadTxt}
-          </span>
+      {/* Delivery verdict. Delivered → the OC on record (deep-green banner);
+          otherwise the forecast (predicted date vs RERA promise + delay chance).
+          Once the certificate exists, predicting a date the project already met
+          is not just moot, it contradicts the OC — so we report, not forecast. */}
+      {delivered ? (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-6 overflow-hidden rounded-2xl bg-gradient-to-br from-[#13341f] to-[#1e5133] px-7 py-7 text-[#eaf3ec]">
+          <div className="min-w-0">
+            <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[#eaf3ec]/60">Delivered · OC on record</p>
+            <p className="mt-2 font-serif text-[2.3rem] font-medium leading-none md:text-[2.6rem]">{ocDate ?? "Delivered"}</p>
+            {deliveredVsRera && <p className="mt-2.5 text-[0.82rem] text-[#eaf3ec]/70">Handed over {deliveredVsRera}.</p>}
+          </div>
+          {p.ops?.ocCertificateUrl && (
+            <a href={p.ops.ocCertificateUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2.5 rounded-xl bg-[#eef3ee] px-4 py-3 text-[0.75rem] font-bold uppercase tracking-[0.06em] text-[#17402c] transition-transform hover:-translate-y-px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z" /></svg>
+              View OC Certificate <span aria-hidden>↗</span>
+            </a>
+          )}
         </div>
-        <div className="flex items-center gap-3 sm:border-l sm:border-[#f3ecdd]/15 sm:pl-6">
-          <span className="font-serif text-[2rem] font-semibold leading-none text-[#e9c675]">{o.delayChance}%</span>
-          <span className="max-w-[84px] text-[0.66rem] font-semibold uppercase leading-[1.3] tracking-[0.1em] text-[#f3ecdd]/70">Chance of delay</span>
-          <span title="Our pipeline's modelled probability the project slips past its RERA date." className="grid h-[15px] w-[15px] cursor-help place-items-center rounded-full border border-[#f3ecdd]/40 font-serif text-[0.55rem] italic text-[#f3ecdd]/60">i</span>
+      ) : (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-6 overflow-hidden rounded-2xl bg-gradient-to-br from-[#17130e] to-[#241d15] px-7 py-7 text-[#f3ecdd]">
+          <div className="min-w-0">
+            <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[#f3ecdd]/55">Predicted delivery date</p>
+            <p className="mt-2 font-serif text-[2.3rem] font-medium leading-none md:text-[2.6rem]">{predicted}</p>
+            <p className="mt-2.5 text-[0.82rem] text-[#f3ecdd]/60">RERA promise: {rera}</p>
+            <span className={`mt-4 inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-[0.75rem] font-bold ${aheadPos ? "border-[#7abe96]/40 bg-[#238c55]/[0.16] text-[#8fd6ac]" : "border-[#d99a86]/40 bg-[#9a4130]/25 text-[#e6a892]"}`}>
+              <span aria-hidden>{aheadMo === 0 ? "◆" : aheadPos ? "▲" : "▼"}</span> {aheadTxt}
+            </span>
+          </div>
+          <div className="flex items-center gap-3 sm:border-l sm:border-[#f3ecdd]/15 sm:pl-6">
+            <span className="font-serif text-[2rem] font-semibold leading-none text-[#e9c675]">{o.delayChance}%</span>
+            <span className="max-w-[84px] text-[0.66rem] font-semibold uppercase leading-[1.3] tracking-[0.1em] text-[#f3ecdd]/70">Chance of delay</span>
+            <span title="Our pipeline's modelled probability the project slips past its RERA date." className="grid h-[15px] w-[15px] cursor-help place-items-center rounded-full border border-[#f3ecdd]/40 font-serif text-[0.55rem] italic text-[#f3ecdd]/60">i</span>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
