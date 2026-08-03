@@ -26,7 +26,6 @@ import {
   SaleOffer,
   SiteVisit,
   STAGE_ARC,
-  STAGE_ORDER,
   STAGE_LABEL,
   SECTIONS,
   SectionKey,
@@ -39,7 +38,6 @@ import {
   isPaid,
   loadOffice,
   nextStep,
-  reseedOffice,
   saveOffice,
   stageIndex,
   wins,
@@ -98,7 +96,6 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
   const patchThread = (id: string, patch: Partial<OfficeThread>) =>
     update({ ...state, threads: state.threads.map((t) => (t.id === id ? { ...t, ...patch } : t)) });
   const setActive = (id: string) => update({ ...state, activeId: id });
-  const setStage = (stage: DealStage) => patchThread(active.id, { stage });
   const cheer = (msg: string) => {
     setCelebrate(msg);
     setTimeout(() => setCelebrate(null), 4200);
@@ -171,40 +168,6 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
            max-w-7xl, so the content just needs its gutters. A second cap
            here is what pushed the column narrow-and-offset before. */}
         <div className="px-6 py-9 md:px-10 md:py-12">
-          {/* Thread switcher + preview control.
-              HIDDEN ON THE DASHBOARD HOME. The switcher is demo scaffolding
-              — three seeded threads and a "PREVIEW · stage" dropdown that
-              lets you fast-forward the journey — and it sat directly above
-              the verdict, which is the one thing on that page a real buyer
-              is meant to read first. A control for inspecting a demo has no
-              business being the first thing on the page that tells someone
-              what to do about a seven-crore decision. The deal sections
-              still need it, so it stays everywhere else. */}
-          <div className={`mb-9 flex-wrap items-center justify-between gap-4 ${section === "home" ? "hidden" : "flex"}`}>
-            <div className="flex flex-wrap gap-2">
-              {state.threads.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => setActive(t.id)}
-                  className={`rounded-full border px-4 py-1.5 text-[0.78rem] font-light tracking-[0.02em] transition-all duration-200 ${
-                    t.id === active.id
-                      ? "border-[#1e6b45] bg-[#1e6b45] text-white"
-                      : "border-[#1a1a1a]/15 text-[#1a1a1a]/55 hover:border-[#1a1a1a]/35 hover:text-[#1a1a1a]"
-                  }`}
-                >
-                  {t.label}
-                  <span className="ml-2 opacity-70">{t.title.split(" · ")[0]}</span>
-                </button>
-              ))}
-              {isPaid(active.stage) && (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#c9a96e]/50 bg-[#c9a96e]/[0.12] px-3 py-1.5 text-[0.7rem] font-medium uppercase tracking-[0.1em] text-[#9a7a2e]">
-                  <span aria-hidden>★</span> Mandate Active
-                </span>
-              )}
-            </div>
-            <PreviewStage value={active.stage} onChange={setStage} onReset={() => update(reseedOffice())} />
-          </div>
-
           {section === "home" && <DashboardHome name={loadAccount()?.name ?? null} />}
           {section === "requirements" && <RequirementsSection state={state} activeId={active.id} onPick={setActive} />}
           {section === "recommendations" && <RecommendationsSection thread={active} onActivate={() => setPayOpen(true)} />}
@@ -304,29 +267,6 @@ function StageArc({ stage }: { stage: DealStage }) {
           );
         })}
       </div>
-    </div>
-  );
-}
-
-/* Preview-stage control — lets the demo reach later (locked / paid) states. */
-function PreviewStage({ value, onChange, onReset }: { value: DealStage; onChange: (s: DealStage) => void; onReset: () => void }) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="text-[0.66rem] font-light uppercase tracking-[0.16em] text-[#1a1a1a]/35">Preview</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value as DealStage)}
-        className="rounded-full border border-[#1a1a1a]/15 bg-white px-3 py-1.5 text-[0.74rem] font-light text-[#1a1a1a]/70 outline-none transition-colors hover:border-[#1a1a1a]/30"
-      >
-        {STAGE_ORDER.map((s) => (
-          <option key={s} value={s}>
-            {STAGE_LABEL[s]}
-          </option>
-        ))}
-      </select>
-      <button onClick={onReset} title="Reset demo" className="text-[0.7rem] font-light text-[#1a1a1a]/35 transition-colors hover:text-[#1a1a1a]/70">
-        ↺
-      </button>
     </div>
   );
 }
