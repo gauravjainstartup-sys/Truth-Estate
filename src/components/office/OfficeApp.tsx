@@ -55,6 +55,7 @@ import {
   fetchMyPaymentsRemote,
   syncOwnedRemote,
   primeSessionUnlocked,
+  loadReportCatalog,
   getRating,
   rateReport,
   unmarkOwned,
@@ -1338,11 +1339,13 @@ function DocumentsSection() {
        paid for lands under Purchased (with its invoice) and drops out of the
        "opened, not bought" Viewed list, instead of showing an Unlock button
        for something they already own. */
-    void Promise.all([fetchMyPaymentsRemote(), fetchEntitlements()]).then(([p]) => {
+    void Promise.all([fetchMyPaymentsRemote(), fetchEntitlements(), loadReportCatalog()]).then(([p]) => {
       if (p) {
         setPayments(p);
         primeSessionUnlocked(p.map((x) => x.slug).filter((s): s is string => !!s));
       }
+      // Catalogue is loaded now, so listPurchased / fetchMyViewedRemote resolve
+      // each report's real page + name from its slug.
       setPurchased(listPurchased());
       void fetchMyViewedRemote().then((v) => { if (v) setViewed(v); });
     });
@@ -1524,7 +1527,7 @@ function InvoiceModal({ payment, onClose }: { payment: Payment; onClose: () => v
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" /></svg>
         </button>
 
-        <div className="flex items-start justify-between gap-4 border-b border-[#1a1a1a]/10 pb-5">
+        <div className="flex items-start justify-between gap-4 border-b border-[#1a1a1a]/10 pb-5 pr-9">
           <div>
             <Logo color="#1a1a1a" className="h-6 w-auto" />
             <p className="mt-2 text-[0.72rem] font-light text-[#1a1a1a]/45">Independent real-estate intelligence</p>
@@ -1599,7 +1602,9 @@ function PortfolioSection() {
     setOwned(listOwned());
     setVoteState(getVote("add-property"));
     loadReportDates().then(setDates);
-    void syncOwnedRemote().then((o) => { if (o) setOwned(o); });
+    /* Sync the account's owned set AND load the catalogue, then re-read via
+       listOwned so each card resolves its report's real page + name. */
+    void Promise.all([loadReportCatalog(), syncOwnedRemote()]).then(() => setOwned(listOwned()));
   }, []);
 
   const remove = (slug: string) => { unmarkOwned(slug); setOwned(listOwned()); };

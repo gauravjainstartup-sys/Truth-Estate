@@ -137,7 +137,16 @@ export function isOwned(slug: string): boolean {
 export function listOwned(): (OwnedRecord & { slug: string })[] {
   const map = readJSON<Record<string, OwnedRecord>>(OWNED_KEY, {});
   return Object.entries(map)
-    .map(([slug, rec]) => ({ slug, ...rec }))
+    .map(([slug, rec]) => {
+      const cat = catalogEntry(slug);
+      return {
+        slug,
+        ...rec,
+        name: rec.name || cat?.name || prettySlug(slug),
+        market: rec.market || cat?.market || "",
+        seoSlug: rec.seoSlug ?? cat?.seoSlug ?? null,
+      };
+    })
     .sort((a, b) => b.at - a.at);
 }
 
@@ -264,11 +273,12 @@ export function listPurchased(): PurchasedRow[] {
     if (seen.has(slug)) continue;
     seen.add(slug);
     const rec = views[slug] ?? ownedMap[slug];
+    const cat = catalogEntry(slug);
     rows.push({
       slug,
-      name: rec?.name ?? prettySlug(slug),
-      market: rec?.market ?? "",
-      seoSlug: rec?.seoSlug ?? null,
+      name: rec?.name ?? cat?.name ?? prettySlug(slug),
+      market: rec?.market ?? cat?.market ?? "",
+      seoSlug: rec?.seoSlug ?? cat?.seoSlug ?? null,
       ...(rec?.at ? { at: rec.at } : {}),
     });
   }
@@ -281,7 +291,16 @@ export function listViewed(): (ViewRecord & { slug: string })[] {
   const ownedMap = readJSON<Record<string, OwnedRecord>>(OWNED_KEY, {});
   return Object.entries(views)
     .filter(([slug]) => !hasPurchase(slug) && !ownedMap[slug])
-    .map(([slug, v]) => ({ slug, ...v }))
+    .map(([slug, v]) => {
+      const cat = catalogEntry(slug);
+      return {
+        slug,
+        ...v,
+        name: v.name || cat?.name || prettySlug(slug),
+        market: v.market || cat?.market || "",
+        seoSlug: v.seoSlug ?? cat?.seoSlug ?? null,
+      };
+    })
     .sort((a, b) => b.at - a.at);
 }
 
@@ -492,11 +511,12 @@ export async function fetchMyViewedRemote(): Promise<(ViewRecord & { slug: strin
       if (hasPurchase(slug) || ownedMap[slug]) continue; // same filter as listViewed()
       const p = asProps(r.props);
       const local = localViews[slug];
-      const seoSlug = typeof p.seoSlug === "string" && p.seoSlug ? p.seoSlug : local?.seoSlug ?? null;
-      const market = typeof p.market === "string" && p.market ? p.market : local?.market ?? "";
+      const cat = catalogEntry(slug);
+      const seoSlug = (typeof p.seoSlug === "string" && p.seoSlug ? p.seoSlug : local?.seoSlug) ?? cat?.seoSlug ?? null;
+      const market = (typeof p.market === "string" && p.market ? p.market : local?.market) || cat?.market || "";
       out.push({
         slug,
-        name: r.project_name || local?.name || prettySlug(slug),
+        name: r.project_name || local?.name || cat?.name || prettySlug(slug),
         market,
         seoSlug,
         at: r.created_at ? new Date(r.created_at).getTime() : local?.at ?? Date.now(),
@@ -609,6 +629,40 @@ export async function syncOwnedRemote(): Promise<(OwnedRecord & { slug: string }
   if (changed) writeJSON(OWNED_KEY, map);
   for (const [slug, rec] of Object.entries(map)) if (!remoteSlugs.has(slug)) ownedPut(slug, rec);
   return Object.entries(map).map(([slug, rec]) => ({ slug, ...rec })).sort((a, b) => b.at - a.at);
+}
+
+/* ════════ slug → public page + name (search-index.json) ════════
+   The build emits search-index.json ({ p: [{ s: slug, q: seoSlug, n: name,
+   m: market }] }) — the same index the project palette uses. The office loads
+   it so it can link a report to its REAL page (and label it correctly) even
+   when the row it holds carries only the internal slug: a payment, or an old
+   report_viewed event from before the seo slug rode along in the event props.
+   Without it, reportHref falls back to the catalogue for every such row — the
+   "all CTAs point at /intelligence/projects" bug. */
+type CatalogEntry = { name: string; seoSlug: string | null; market: string | null };
+let _catalog: Record<string, CatalogEntry> | null = null;
+let _catalogInflight: Promise<Record<string, CatalogEntry>> | null = null;
+export async function loadReportCatalog(): Promise<Record<string, CatalogEntry>> {
+  if (_catalog) return _catalog;
+  if (typeof window === "undefined") return {};
+  if (_catalogInflight) return _catalogInflight;
+  _catalogInflight = fetch(`${basePath}/search-index.json`)
+    .then((r) => (r.ok ? r.json() : { p: [] }))
+    .then((j: { p?: { s?: string; q?: string; n?: string; m?: string }[] }) => {
+      const map: Record<string, CatalogEntry> = {};
+      for (const p of j.p ?? []) {
+        if (p.s) map[p.s] = { name: p.n || prettySlug(p.s), seoSlug: p.q ?? null, market: p.m ?? null };
+      }
+      _catalog = map;
+      return map;
+    })
+    .catch(() => (_catalog = {}));
+  return _catalogInflight;
+}
+/* Synchronous lookup against the cache loadReportCatalog() fills; null until
+   it has loaded, so every caller degrades to whatever it already held. */
+function catalogEntry(slug: string): CatalogEntry | null {
+  return (_catalog && _catalog[slug]) || null;
 }
 
 /* ════════ report-dates.json — fetch once, cache ════════ */
