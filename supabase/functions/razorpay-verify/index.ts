@@ -375,7 +375,14 @@ Deno.serve(async (req: Request) => {
      — visible, reconcilable, and not the customer's emergency. */
 
   /* All-Access is a plan, not 97 grants. A project purchase appends one
-     entry in prod's existing shape. */
+     entry in prod's existing shape.
+
+     The plan value is `Premium` — the only all-access tier the
+     user_profiles.plan CHECK constraint (Free / Pro / Premium) permits,
+     and the value entitlements/core.ts treats as all-access. Writing the
+     lowercase "all-access" here was a live bug: the constraint would have
+     rejected the PATCH, the buyer's ₹9,999 would have been captured with
+     no plan written, and `granted` would have flipped false. */
   /* Resolved once and used by both writes: the grant needs the name and
      the SEO slug, the ledger needs the id — project_id is NOT NULL. */
   const proj = pkg.scope === "project" ? await projectBySlug(slug) : null;
@@ -388,7 +395,7 @@ Deno.serve(async (req: Request) => {
     const r = await sbFetch(`user_profiles?id=eq.${encodeURIComponent(userId)}`, {
       method: "PATCH",
       headers: { Prefer: "return=minimal" },
-      body: JSON.stringify({ plan: "all-access" }),
+      body: JSON.stringify({ plan: "Premium" }),
     });
     if (!r.ok) {
       console.error(`[razorpay-verify] PLAN WRITE FAILED ${r.status} for ${paymentId} — reconcile manually`);

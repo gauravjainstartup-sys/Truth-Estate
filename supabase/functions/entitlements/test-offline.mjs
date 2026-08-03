@@ -86,6 +86,11 @@ console.log("\nplans");
   /* The trap this guards: a "not Free" test would hand over everything. */
   t("an unknown plan is not all", entitlementsFrom({ plan: "Free Trial" }, []).all === false);
   t("all-access is", entitlementsFrom({ plan: "All-Access" }, []).all === true);
+  /* Premium is the LIVE all-access value — the ₹9,999 tier razorpay-verify
+     writes and the only all-access plan the user_profiles.plan CHECK
+     constraint (Free / Pro / Premium) permits. */
+  t("Premium is all-access (the live tier)", entitlementsFrom({ plan: "Premium" }, []).all === true);
+  t("Pro is a mid-tier, not all-access", entitlementsFrom({ plan: "Pro" }, []).all === false);
   t("case and spacing ignored", entitlementsFrom({ plan: "  UNLIMITED " }, []).all === true);
   t("all-access entitles anything", isEntitled(entitlementsFrom({ plan: "all" }, []), "anything-at-all") === true);
 }

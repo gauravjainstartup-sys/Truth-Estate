@@ -59,12 +59,14 @@ export type Entitlements = {
   from: { grants: number; payments: number };
 };
 
-/* Plans that mean "everything". Deliberately an explicit list, not a
-   "not Free" test: a new plan named "Free Trial" or "Founder" would
-   otherwise silently hand over the whole catalogue. Every profile in the
-   database today is "Free", so this list is currently unexercised —
-   which is exactly when a wrong default would go unnoticed. */
-const ALL_ACCESS_PLANS = new Set(["all-access", "all", "unlimited"]);
+/* Plans that mean "everything unlocked". `Premium` is the LIVE value — the
+   ₹9,999 All-Access tier razorpay-verify writes, and the only all-access
+   plan the user_profiles.plan CHECK constraint (Free / Pro / Premium)
+   permits. `Pro` is a mid-tier, deliberately NOT all-access. The lowercase
+   aliases are legacy — the constraint means they can no longer occur, but
+   they stay harmless. Explicit list, not a "not Free" test: a new tier must
+   never silently hand over the whole catalogue. */
+const ALL_ACCESS_PLANS = new Set(["premium", "all-access", "all", "unlimited"]);
 
 /* Entries are JSON strings inside a text[]. 110 of the 111 in production
    are {projectId, projectName, projectSlug, unlockedAt}; one also carries
