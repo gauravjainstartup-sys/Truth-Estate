@@ -118,6 +118,7 @@ export function markOwned(slug: string, meta: { name: string; market: string; se
     ...(meta.note ? { note: meta.note } : map[slug]?.note ? { note: map[slug].note } : {}),
   };
   writeJSON(OWNED_KEY, map);
+  ownedPut(slug, map[slug]); // sync to the account when signed in; a no-op otherwise
 }
 export function unmarkOwned(slug: string): void {
   if (typeof window === "undefined" || !slug) return;
@@ -126,6 +127,7 @@ export function unmarkOwned(slug: string): void {
     delete map[slug];
     writeJSON(OWNED_KEY, map);
   }
+  ownedDel(slug); // clear the account's copy too; a no-op when signed out
 }
 export function isOwned(slug: string): boolean {
   if (typeof window === "undefined" || !slug) return false;
@@ -309,6 +311,20 @@ function accessToken(): string | null {
   }
 }
 
+/* The account id in the same session blob — owned writes scope the row to
+   the signed-in user. RLS with-check re-enforces this server-side, so a
+   tampered id buys nothing; sending it just lets the row land in one shot. */
+function sessionUserId(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem("truthEstate.sbSession");
+    const s = raw ? (JSON.parse(raw) as { user_id?: string | null }) : null;
+    return s?.user_id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /* liveSlug, inlined — the internal id events and entitlements key on is the
    slugified project name. Kept local so this module never imports the
    build-time supabase layer just for one string transform. */
@@ -461,6 +477,103 @@ export async function fetchMyViewedRemote(): Promise<(ViewRecord & { slug: strin
   } catch {
     return null;
   }
+}
+
+/* ── My Portfolio, per account (owned_properties, migration 0012) ──
+   Owned is self-declared and READ-WRITE, so unlike invoices/views it needs
+   a write path too — markOwned / unmarkOwned mirror every change up. All
+   three helpers are no-ops without a session and fail soft: before the
+   table exists (0012 not yet run) the read 404s to null and the writes are
+   swallowed, so the office simply stays on its localStorage copy. */
+type OwnedRow = { slug?: string; name?: string | null; market?: string | null; seo_slug?: string | null; note?: string | null; created_at?: string | null };
+
+async function ownedGet(): Promise<(OwnedRecord & { slug: string })[] | null> {
+  const token = accessToken();
+  if (!token) return null;
+  try {
+    const res = await fetch(
+      `${SB_URL}/rest/v1/owned_properties?select=slug,name,market,seo_slug,note,created_at&order=created_at.desc`,
+      { headers: { apikey: SB_ANON, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
+    );
+    if (!res.ok) return null; // 404 until 0012 is run ⇒ keep the local copy
+    const rows = (await res.json().catch(() => null)) as OwnedRow[] | null;
+    if (!Array.isArray(rows)) return null;
+    return rows
+      .filter((r) => r.slug)
+      .map((r) => ({
+        slug: r.slug as string,
+        name: r.name || prettySlug(r.slug as string),
+        market: r.market || "",
+        seoSlug: r.seo_slug ?? null,
+        at: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
+        ...(r.note ? { note: r.note } : {}),
+      }));
+  } catch {
+    return null;
+  }
+}
+
+/* Upsert on (user_id, slug). created_at carries the ORIGINAL mark time
+   (markOwned preserves it) so the "marked <date>" label survives the trip
+   to a second device; updated_at moves on every write. Fire-and-forget —
+   the local copy already drives the UI. */
+function ownedPut(slug: string, rec: OwnedRecord): void {
+  const token = accessToken();
+  const uid = sessionUserId();
+  if (!token || !uid) return;
+  void fetch(`${SB_URL}/rest/v1/owned_properties?on_conflict=user_id,slug`, {
+    method: "POST",
+    headers: {
+      apikey: SB_ANON,
+      Authorization: `Bearer ${token}`,
+      "content-type": "application/json",
+      Prefer: "resolution=merge-duplicates,return=minimal",
+    },
+    body: JSON.stringify({
+      user_id: uid,
+      slug,
+      name: rec.name,
+      market: rec.market,
+      seo_slug: rec.seoSlug,
+      note: rec.note ?? null,
+      created_at: new Date(rec.at).toISOString(),
+      updated_at: new Date().toISOString(),
+    }),
+    signal: AbortSignal.timeout(8000),
+  }).catch(() => { /* local copy is authoritative for the UI */ });
+}
+
+function ownedDel(slug: string): void {
+  const token = accessToken();
+  const uid = sessionUserId();
+  if (!token || !uid) return;
+  void fetch(
+    `${SB_URL}/rest/v1/owned_properties?user_id=eq.${encodeURIComponent(uid)}&slug=eq.${encodeURIComponent(slug)}`,
+    { method: "DELETE", headers: { apikey: SB_ANON, Authorization: `Bearer ${token}`, Prefer: "return=minimal" }, signal: AbortSignal.timeout(8000) },
+  ).catch(() => { /* local delete already happened */ });
+}
+
+/* My Portfolio, reconciled across devices. Pull anything the account holds
+   that this browser is missing DOWN into the local copy (so it persists
+   here), push anything this browser holds that the account is missing UP
+   (so a portfolio declared before sessions still propagates), and return
+   the merged, de-duplicated list for display. Null (keep local) when signed
+   out, offline, or before 0012 creates the table. */
+export async function syncOwnedRemote(): Promise<(OwnedRecord & { slug: string })[] | null> {
+  const remote = await ownedGet();
+  if (!remote) return null;
+  const map = readJSON<Record<string, OwnedRecord>>(OWNED_KEY, {});
+  const remoteSlugs = new Set(remote.map((r) => r.slug));
+  let changed = false;
+  for (const r of remote) {
+    if (!map[r.slug]) {
+      map[r.slug] = { name: r.name, market: r.market, seoSlug: r.seoSlug, at: r.at, ...(r.note ? { note: r.note } : {}) };
+      changed = true;
+    }
+  }
+  if (changed) writeJSON(OWNED_KEY, map);
+  for (const [slug, rec] of Object.entries(map)) if (!remoteSlugs.has(slug)) ownedPut(slug, rec);
+  return Object.entries(map).map(([slug, rec]) => ({ slug, ...rec })).sort((a, b) => b.at - a.at);
 }
 
 /* ════════ report-dates.json — fetch once, cache ════════ */

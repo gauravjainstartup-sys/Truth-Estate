@@ -52,6 +52,7 @@ import {
   listPayments,
   fetchMyViewedRemote,
   fetchMyPaymentsRemote,
+  syncOwnedRemote,
   getRating,
   rateReport,
   unmarkOwned,
@@ -1560,9 +1561,14 @@ function PortfolioSection() {
   const [vote, setVoteState] = useState<Vote | null>(null);
 
   useEffect(() => {
+    /* Local copy first for an instant paint, then reconcile with the
+       account: owned properties then follow the buyer across devices.
+       Returns null (keep local) when signed out or before the table
+       exists, so this can never blank the portfolio. */
     setOwned(listOwned());
     setVoteState(getVote("add-property"));
     loadReportDates().then(setDates);
+    void syncOwnedRemote().then((o) => { if (o) setOwned(o); });
   }, []);
 
   const remove = (slug: string) => { unmarkOwned(slug); setOwned(listOwned()); };
