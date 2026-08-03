@@ -205,7 +205,11 @@ async function mintSession(
   if (!JWT_SECRET) return null;
   try {
     const now = Math.floor(Date.now() / 1000);
-    const ttl = 60 * 60; // 1 hour
+    /* Interim session length so it doesn't silently expire mid-use. The
+       proper big-tech fix — a short access token with revocable refresh
+       rotation — is the security-hardening step; this is still a real,
+       signed, RLS-enforced session, just not yet revocable. */
+    const ttl = 7 * 24 * 60 * 60; // 7 days
     const data =
       `${b64url(JSON.stringify({ alg: "HS256", typ: "JWT" }))}.` +
       `${b64url(JSON.stringify({
