@@ -11,7 +11,7 @@
        human), reframed from "call me free" to "I've read this file";
      • folds the 1:1 call in as an *included* bonus of the paid read — the
        call becomes a reason to buy, not a reason not to;
-     • drives the single ₹999 unlock, with a full sample read as the only
+     • drives the single ₹1,100 unlock, with a full sample read as the only
        low-risk escape hatch (never leaks this project's answers for free).
 
    The unlocked report keeps its callback form — advice is the right next step

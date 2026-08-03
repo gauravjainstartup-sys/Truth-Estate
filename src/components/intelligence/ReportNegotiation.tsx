@@ -10,7 +10,7 @@
    That split is the honest one. Telling someone "you have a card here,
    and here is the number that proves it" is worth reading on its own and
    is true whether or not they ever pay us. Telling them exactly how to
-   play it is the work, and the work is what the ₹999 buys.
+   play it is the work, and the work is what the ₹1,100 buys.
 
    It is also the section that gives a locked report something for a
    crawler to index that is unique to this project: every figure below
@@ -155,7 +155,7 @@ export default function ReportNegotiation({
 
 /* The remaining levers, named but not spent. Naming them matters: a
    "3 more" counter is a claim, whereas a titled row is checkable, and
-   the reader can judge for themselves whether it is worth ₹999. */
+   the reader can judge for themselves whether it is worth ₹1,100. */
 function Withheld({ levers, onUnlock, start }: { levers: Lever[]; onUnlock: () => void; start: number }) {
   return (
     <div className="mt-4 overflow-hidden rounded-2xl border border-[#9a7a2e]/25 bg-[#c9a96e]/[0.06]">

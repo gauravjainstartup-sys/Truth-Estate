@@ -8,7 +8,7 @@ import OtpDigits from "@/components/auth/OtpDigits";
    Flow: [register — only if not signed in] → pick a package (3-card value
    ladder) → dummy Razorpay checkout → grant entitlement → unmask.
 
-   Packages (from journey.ts): read ₹999 · read+3D ₹1,499 · all-access ₹9,999.
+   Packages (from journey.ts): read ₹1,100 · all-access ₹5,100. (read+3D retired.)
    The plans step is a value ladder: each tier shows what's IN, what's NOT, a
    "know more" accordion, and its own CTA. Cross-tier promises (sources,
    living report, negotiation) sit in a trust strip. Owners see pay-the-

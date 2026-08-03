@@ -11,7 +11,7 @@
      • PAID findings (the verdict, ROI numbers, the deep pillar audit,
        the developer track record, the legal read) get a real, true
        TEASER when locked — proof the answer exists — then a gate to the
-       ₹999 read. Once unlocked, the same question answers in full.
+       ₹1,100 read. Once unlocked, the same question answers in full.
 
    This is the deterministic Phase-1 brain (works offline, ships today).
    Phase 2 swaps `answerChallenge` for a Gemini call in the Edge Function
@@ -33,7 +33,7 @@ import { READ_FROM_INR } from "@/lib/journey";
 import { basePath as BASE_PATH } from "@/lib/site";
 
 export type ChatRole = "user" | "bot";
-/* the gate a bot message carries: the ₹999 read, the ₹1,499 Sun & Vastu 3D, or none */
+/* the gate a bot message carries: the ₹1,100 read, the Sun & Vastu 3D (All-Access), or none */
 export type Gate = "read" | "3d" | null;
 export type ChatMsg = { id: string; role: ChatRole; text: string; gate?: Gate };
 export type ChallengeAnswer = { text: string; gate: Gate };
@@ -184,14 +184,14 @@ export function answerChallenge(
   const ticket = ticketLabel(p);
   const psf = psfLabel(p);
 
-  const gate = (text: string): ChallengeAnswer => ({ text, gate: "read" }); // ₹999 read wall
-  const gate3D = (text: string): ChallengeAnswer => ({ text, gate: "3d" }); // ₹1,499 Sun & Vastu 3D wall
+  const gate = (text: string): ChallengeAnswer => ({ text, gate: "read" }); // ₹1,100 read wall
+  const gate3D = (text: string): ChallengeAnswer => ({ text, gate: "3d" }); // Sun & Vastu 3D wall (via All-Access)
   const open = (text: string): ChallengeAnswer => ({ text, gate: null });
 
   switch (intent) {
     case "sunvastu": {
-      // Sun / daylight / Vastu / ventilation = the ₹1,499 Sun & Vastu 3D tier,
-      // a SEPARATE gate from the ₹999 read. Even a read-only buyer hits it.
+      // Sun / daylight / Vastu / ventilation = the Sun & Vastu 3D tier (via
+      // All-Access), a SEPARATE gate from the ₹1,100 read. Even a read-only buyer hits it.
       if (!access.has3DModel)
         return open(`${p.name}'s Sun & Vastu 3D model isn't live yet — it's in production, so I can't grade daylight or Vastu per unit for it right now. Everything else about the project I can answer.`);
       if (!access.has3DAccess)
@@ -396,7 +396,7 @@ export function buildChallengeContext(
     vitals && `VITALS: ${vitals}.`,
     `PILLAR SUMMARY (weights: location 26%, developer 25%, construction 22%, legal 15%, USPs 12%):\n${pubPillars}`,
     `COMPARISON: Truth Estate DOES compare projects — buyers can line up any two side-by-side in the Compare tool, and the full read carries a ranked side-by-side vs the closest alternatives. This project ranks ${ctx.topPct <= 25 ? `in the top ${ctx.topPct}%` : `#${ctx.rank} of ${ctx.total}`} of all tracked projects${market ? ` and #${ctx.corridorRank} in the ${p.marketShort} corridor` : ""}.${peers.length ? ` ${peerLine(p, peers)} (These peer names + Truth Scores are the PUBLIC scoreboard — use them for a head-to-head. You may say how ${p.name} ranks vs them by score.)` : ""} You hold only the SCORE-level scoreboard for other projects (name + Truth Score), NOT their deep audit/verdict/ROI — for those, point the buyer to that project's own read or the Compare tool. NEVER say Truth Estate doesn't compare.`,
-    `SUN & VASTU: Per-unit sunlight/daylight hours, Vastu scores with room-by-room reasoning, and cross-ventilation are the "Sun & Vastu 3D" model — included with All-Access, NOT part of the ₹999 read. ${access.has3DModel ? `It is available for ${p.name}.` : `Its 3D model is still in production for ${p.name}.`}${!access.has3DAccess ? ` This visitor has NOT unlocked it — if they ask about sun/daylight/Vastu/ventilation/facing, describe what the 3D model covers and point them to it; do NOT give per-unit specifics.` : ""}`,
+    `SUN & VASTU: Per-unit sunlight/daylight hours, Vastu scores with room-by-room reasoning, and cross-ventilation are the "Sun & Vastu 3D" model — included with All-Access, NOT part of the ${inr(READ_FROM_INR)} read. ${access.has3DModel ? `It is available for ${p.name}.` : `Its 3D model is still in production for ${p.name}.`}${!access.has3DAccess ? ` This visitor has NOT unlocked it — if they ask about sun/daylight/Vastu/ventilation/facing, describe what the 3D model covers and point them to it; do NOT give per-unit specifics.` : ""}`,
     `METHODOLOGY: Truth Estate is buyer-side only — no inventory, no developer commission, no paid placement. The score is a weighted composite of five pillars, re-scored quarterly; no builder can pay to move it.`,
   ].filter(Boolean).join("\n");
 
@@ -415,8 +415,8 @@ export function buildChallengeContext(
   const faqs = projectFaqs(p).map((f) => `Q: ${f.q}\nA: ${f.a}`).join("\n");
   if (faqs) paid.push(`FAQs:\n${faqs}`);
 
-  // Per-unit Sun/Vastu is the ₹1,499 3D tier — include it ONLY for a 3D-access
-  // visitor (a ₹999 read-only buyer is NOT unlocked here, so it never leaks).
+  // Per-unit Sun/Vastu is the Sun & Vastu 3D tier (via All-Access) — include it ONLY for a
+  // 3D-access visitor (a ₹1,100 read-only buyer is NOT unlocked here, so it never leaks).
   if (access.has3DAccess && units.length) {
     const top = [...units].sort((a, b) => (b.sunWinterH ?? 0) - (a.sunWinterH ?? 0)).slice(0, 8);
     const lines = top.map((u) => `${u.tower}-${u.unit} (${u.config}, ${u.facing}): ~${u.sunWinterH ?? "?"}h winter sun, Vastu ${u.vastu ?? "?"}/10, view ${u.view ?? "?"}/10, overall ${u.grade}`).join("\n");

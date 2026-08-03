@@ -7,7 +7,7 @@
 
    1. One real project's ENTIRE paid read — the developer audit, the
       legal signals, the ROI model — sat at a public URL for free. Every
-      argument for charging ₹999 for the other ninety-six applied to it
+      argument for charging ₹1,100 for the other ninety-six applied to it
       too.
 
    2. It published a named developer's forensic audit, including its
@@ -22,7 +22,7 @@
    an invented corridor would break the location map and read as absurd.
 
    ── Why the numbers are shaped the way they are ──
-   A sample has one job: show a buyer what ₹999 buys — and what it saves
+   A sample has one job: show a buyer what ₹1,100 buys — and what it saves
    them from. So this is deliberately a project that LOOKS good and reads
    badly once the file is opened: a genuinely strong address undermined by
    a developer who delivers late one time in two, a balance sheet under
@@ -30,7 +30,7 @@
    an ROI model that lands well below its corridor benchmark. The flags are
    stacked on purpose. A buyer should finish it thinking: if MY shortlisted
    project's report came back with this many red flags, I could lose money —
-   which is exactly the ₹999 question.
+   which is exactly the ₹1,100 question.
 
    Rendered STATIC in a bottom sheet (frozen ProjectProfile) — the browsing
    preview — and never as a live page. Watermarked "SAMPLE READ · illustrative"

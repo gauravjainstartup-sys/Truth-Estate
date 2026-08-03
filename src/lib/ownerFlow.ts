@@ -4,7 +4,7 @@
    One question, asked once: which project. Two answers.
 
      FOUND     → their report, locked. The Truth Score and the score
-                 anatomy are free; the five pillars are the ₹999.
+                 anatomy are free; the five pillars are the ₹1,100.
      NOT FOUND → Google Places confirms the project is real, then the
                  custom-report request that already exists, prefilled.
 

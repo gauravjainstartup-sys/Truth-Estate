@@ -5,7 +5,7 @@
    down. NOT a dead-end. It:
      • names exactly what's behind the wall (curiosity-gap FOMO), each row a
        tap-to-unlock;
-     • anchors the ₹999 price against the ticket at stake;
+     • anchors the ₹1,100 price against the ticket at stake;
      • ties the *visible* Truth Score to the locked detail ("why only X?").
    ──────────────────────────────────────────────────────────────────────── */
 

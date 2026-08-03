@@ -15,7 +15,7 @@
    would make the chat useless without protecting anything. What the paid
    read actually sells is the FORENSIC AUDIT behind each score (pillar
    breakdown, ROI model, legal read, developer record) — that is what the
-   tiers gate, mirroring the ₹999 wall on the project reports.
+   tiers gate, mirroring the ₹1,100 wall on the project reports.
 
    Context comes from the LIVE index (the same rows the site renders),
    never a hand-typed list, so the chat can never drift from the database.
@@ -216,7 +216,7 @@ function publicLine(p: GuideProject): string {
 }
 
 /* Forensic signals — the paid layer. Counts and risk flags are the hooks
-   the ₹999 read explains in full. */
+   the ₹1,100 read explains in full. */
 function forensicLine(p: GuideProject): string | null {
   const bits: string[] = [];
   if (p.redFlags != null && p.redFlags > 0) bits.push(`${p.redFlags} red flag${p.redFlags === 1 ? "" : "s"} logged`);

@@ -16,8 +16,8 @@ import {
 } from "@/lib/consultation";
 
 
-/* The included-features matrix for a report/3D package card — ₹999 excludes
-   the 3D (a dash), ₹1,499 adds it, ₹9,999 opens the whole site. */
+/* The included-features matrix for a package card — the ₹1,100 read excludes
+   the 3D (a dash); All-Access opens the whole site, 3D included. */
 function featureLines(pkg: Package): { t: string; on: boolean }[] {
   const lines: { t: string; on: boolean }[] = [
     { t: "Complete forensic read", on: true },

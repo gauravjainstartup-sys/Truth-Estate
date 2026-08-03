@@ -5,7 +5,7 @@ import { track } from "@/lib/events";
 import { useRouter } from "next/navigation";
 import Logo from "../Logo";
 import { useConsultation } from "../consultation/ConsultationProvider";
-import { loadBuyData, hasPreferences, deriveDNA, clearAllDemoData, saveLead, hasReadAccess, has3DAccess, readStake, AUTH_EVENT } from "@/lib/journey";
+import { loadBuyData, hasPreferences, deriveDNA, clearAllDemoData, saveLead, hasReadAccess, has3DAccess, readStake, packageById, AUTH_EVENT } from "@/lib/journey";
 import { ENTITLEMENTS_EVENT } from "@/lib/entitlementsCache";
 import { negotiationLevers } from "@/lib/negotiation";
 import type { RelatedGroups, RelatedProject } from "@/lib/relatedProjects";
@@ -1321,7 +1321,7 @@ export default function ProjectProfile({
                   <p className="mt-2 text-[0.88rem] font-light text-white/55">Get an independent read — the right price, the right stack, the honest risks — before you commit.</p>
                 </div>
                 <div className="mt-7 grid gap-3 md:grid-cols-2">
-                  <ActionCell tone="primary" icon="●" title={primaryCta.label} desc={locked ? "The full report · from ₹999" : "45-min advisor call · free"} onClick={primaryCta.onClick} />
+                  <ActionCell tone="primary" icon="●" title={primaryCta.label} desc={locked ? `The full report · from ₹${packageById("read").inr.toLocaleString("en-IN")}` : "45-min advisor call · free"} onClick={primaryCta.onClick} />
                   <ActionCell tone="secondary" icon={<IconCube className="h-[0.95rem] w-[0.95rem]" />} title="Sun & Vastu 3D" desc="3D sun & unit model · with All-Access" onClick={openUnitIntel} />
                 </div>
                 <p className="mt-6 flex items-center gap-2 border-t border-white/10 pt-4 text-[0.72rem] font-light text-white/40">

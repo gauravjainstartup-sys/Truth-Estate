@@ -35,7 +35,7 @@ export default function ReportPrice({ p, sample = false }: { p: ProjectIntel; sa
   /* Frozen sample: the ROI calculator is interactive-only (sliders, plan/mode
      toggles) — drop it and keep the record + projection, which read fine static. */
   const isStatic = useReportStatic();
-  // The projection is part of the paid read — any read entitlement (₹999 up)
+  // The projection is part of the paid read — any read entitlement (₹1,100 up)
   // unlocks it. The watermarked sample read always shows it.
   const [unlocked] = useState(() => sample || (typeof window !== "undefined" ? hasReadAccess(p.slug) : false));
 
