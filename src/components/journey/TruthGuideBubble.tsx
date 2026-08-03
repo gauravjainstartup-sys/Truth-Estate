@@ -35,11 +35,15 @@ export default function TruthGuideBubble() {
 
       {/* Mobile — a miniature echo of the desktop pill: the guiding-star FAB.
          The star gently rolls in and out; a label peeks out then tucks back so
-         first-timers know what it opens. Both motions are motion-safe only. */}
+         first-timers know what it opens. Both motions are motion-safe only.
+         The bottom offset clears the mobile browser's bottom toolbar plus the
+         home-indicator safe area (env inset), so it never sits jammed against
+         the chrome the way a flat bottom-5 did. */}
       <button
         onClick={() => open("research")}
         aria-label="Ask TruthGuide"
-        className="fixed bottom-5 right-5 z-30 h-12 w-12 md:hidden"
+        className="fixed right-5 z-30 h-12 w-12 md:hidden"
+        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 2.5rem)" }}
       >
         <span
           aria-hidden="true"
