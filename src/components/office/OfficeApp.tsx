@@ -12,6 +12,7 @@ import {
   CONSULT_DAYPARTS,
   CONSULT_DAYS,
   CONSULT_FORMATS,
+  loadConsultation,
 } from "@/lib/consultation";
 import {
   BuyMandate,
@@ -64,6 +65,9 @@ import {
   type ViewRecord,
   type OwnedRecord,
 } from "@/lib/officeReports";
+import { getSession, saveName } from "@/lib/phoneAuth";
+import { loadBuyerBrief, briefSentence, type BuyerBrief } from "@/lib/buyerBrief";
+import { useJourney } from "@/components/journey/JourneyProvider";
 
 /* ════════════════════════════════════════════════════════════════
    THE PRIVATE OFFICE — routed client portal (Phase 1)
@@ -175,6 +179,11 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
           {section === "advice" && <AdviceSection thread={active} onReschedule={(c) => patchThread(active.id, { call: c })} />}
           {section === "documents" && <DocumentsSection />}
           {section === "portfolio" && <PortfolioSection />}
+          {section === "account" && (
+            <AccountSection
+              onSignOut={() => { clearAllDemoData(); setState(null); setAuthed(false); setNavOpen(false); }}
+            />
+          )}
         </div>
         {payOpen && <PaymentSheet thread={active} onClose={() => setPayOpen(false)} onPay={activate} />}
         {celebrate && <Celebrate message={celebrate} />}
@@ -1721,6 +1730,205 @@ function Celebrate({ message }: { message: string }) {
       <div className="animate-fade-up flex items-center gap-2.5 rounded-full bg-[#1a1a1a] px-6 py-3 text-white shadow-xl shadow-black/25">
         <span className="text-[#c9a96e]">★</span>
         <span className="text-[0.84rem] font-light tracking-[0.02em]">{message}</span>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   MY ACCOUNT — the person behind the office.
+
+   A dedicated home for who you are to us: your details (name editable,
+   verified mobile, and an email if we already hold one from a
+   consultation), a read-only recap of your brief, and sign-out. It
+   reads the same client stores the rest of the office does; anything we
+   don't hold renders as "NA". The only write is the existing name
+   re-verify path (saveName) — the browser holds no session token, so it
+   cannot PATCH user_profiles directly, and this page invents no new
+   server path.
+   ════════════════════════════════════════════════════════════════ */
+const PANEL = "rounded-xl border border-[#1a1a1a]/[0.08] bg-white";
+const ACCOUNT_FIELD =
+  "w-full rounded-md border border-[#1a1a1a]/[0.16] bg-white px-4 py-3 text-[0.95rem] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#1a1a1a]/35 focus:border-[#c9a96e]";
+
+/* +91 99587 77313 from a bare 10-digit store. Anything already carrying
+   a country code (a leading + or a 12-digit 91… form) is respected; an
+   unexpected shape is shown verbatim rather than mangled. */
+function prettyMobile(raw: string): string {
+  const t = raw.trim();
+  const d = t.replace(/\D/g, "");
+  if (t.startsWith("+")) return t;
+  if (d.length === 10) return `+91 ${d.slice(0, 5)} ${d.slice(5)}`;
+  if (d.length === 12 && d.startsWith("91")) return `+91 ${d.slice(2, 7)} ${d.slice(7)}`;
+  return t;
+}
+
+function AccountRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1.5 py-4 md:flex-row md:items-center md:gap-6">
+      <p className="w-[8.5rem] shrink-0 text-[0.7rem] font-light uppercase tracking-[0.14em] text-[#1a1a1a]/40">{label}</p>
+      <div className="min-w-0 flex-1">{children}</div>
+    </div>
+  );
+}
+
+function AccountSection({ onSignOut }: { onSignOut: () => void }) {
+  const { open: openJourney } = useJourney();
+  const [name, setName] = useState<string>(() => (loadAccount()?.name ?? "").trim());
+  const [phone] = useState<string>(() => getSession()?.phone ?? "");
+  const [email] = useState<string>(() => (loadConsultation()?.email ?? "").trim());
+  const [brief, setBrief] = useState<BuyerBrief | null>(null);
+
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => { void loadBuyerBrief().then(setBrief); }, []);
+
+  async function saveDisplayName() {
+    const clean = draft.trim().slice(0, 120);
+    if (!clean || clean === name) { setEditing(false); return; }
+    setSaving(true);
+    try { await saveName(clean); } finally { setSaving(false); }
+    setName(clean);
+    setEditing(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2600);
+  }
+
+  const lead = brief ? briefSentence(brief) : null;
+  const briefRows = brief
+    ? [
+        { label: "Purpose", value: brief.purchaseType.display },
+        { label: "Corridor", value: brief.corridor.display },
+        { label: "Budget", value: brief.budgetCr.display },
+        { label: "Configuration", value: brief.config.display },
+        { label: "Timeline", value: brief.timeline.display },
+      ]
+    : [];
+
+  return (
+    <div className="animate-fade-up max-w-[720px]">
+      <SectionHead kicker="Your Account" title="Account" sub="Your details, your brief, and how we reach you." />
+
+      {/* Identity */}
+      <div className="mb-8 flex items-center gap-4">
+        <Thumb initials={initialsOf(name || "—")} />
+        <div className="min-w-0">
+          <p className="truncate font-serif text-[1.4rem] leading-tight text-[#1a1a1a]">{name || "Your account"}</p>
+          <p className="mt-0.5 text-[0.8rem] font-light text-[#1a1a1a]/45">Private Office · signed in</p>
+        </div>
+      </div>
+
+      {/* Personal details */}
+      <div className={`overflow-hidden ${PANEL}`}>
+        <div className="border-b border-[#1a1a1a]/[0.07] px-6 py-4">
+          <Eyebrow>Personal details</Eyebrow>
+        </div>
+        <div className="divide-y divide-[#1a1a1a]/[0.06] px-6">
+          <AccountRow label="Name">
+            {editing ? (
+              <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+                <input
+                  autoFocus
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  placeholder="Your full name"
+                  className={`sm:max-w-[280px] ${ACCOUNT_FIELD}`}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={saveDisplayName}
+                    disabled={saving}
+                    className="rounded-sm bg-[#1e6b45] px-5 py-2.5 text-[0.8rem] font-medium tracking-[0.02em] text-white transition-colors hover:bg-[#238c55] disabled:opacity-60"
+                  >
+                    {saving ? "Saving…" : "Save"}
+                  </button>
+                  <button
+                    onClick={() => setEditing(false)}
+                    className="rounded-sm border border-[#1a1a1a]/15 px-5 py-2.5 text-[0.8rem] font-light text-[#1a1a1a]/60 transition-colors hover:border-[#1a1a1a]/35"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-3">
+                <span className={`text-[0.95rem] ${name ? "text-[#1a1a1a]" : "text-[#1a1a1a]/35"}`}>{name || "NA"}</span>
+                <button
+                  onClick={() => { setDraft(name); setEditing(true); }}
+                  className="text-[0.78rem] font-medium text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]"
+                >
+                  Edit
+                </button>
+                {saved && <span className="text-[0.74rem] font-light text-[#1e6b45]">✓ Saved</span>}
+              </div>
+            )}
+          </AccountRow>
+
+          <AccountRow label="Mobile">
+            {phone ? (
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className="text-[0.95rem] text-[#1a1a1a]">{prettyMobile(phone)}</span>
+                <Pill tone="green">✓ Verified</Pill>
+              </div>
+            ) : (
+              <span className="text-[0.95rem] text-[#1a1a1a]/35">NA</span>
+            )}
+          </AccountRow>
+
+          <AccountRow label="Email">
+            {email && email.includes("@") ? (
+              <span className="text-[0.95rem] text-[#1a1a1a]">{email}</span>
+            ) : (
+              <span className="text-[0.95rem] text-[#1a1a1a]/35">NA</span>
+            )}
+          </AccountRow>
+        </div>
+      </div>
+
+      {/* Your brief */}
+      <div className={`mt-6 overflow-hidden ${PANEL}`}>
+        <div className="flex items-center justify-between border-b border-[#1a1a1a]/[0.07] px-6 py-4">
+          <Eyebrow>Your brief</Eyebrow>
+          <button
+            onClick={() => openJourney()}
+            className="text-[0.78rem] font-medium text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]"
+          >
+            Update
+          </button>
+        </div>
+        {!brief ? (
+          <p className="px-6 py-5 text-[0.85rem] font-light text-[#1a1a1a]/40">Loading your brief…</p>
+        ) : !brief.known ? (
+          <p className="px-6 py-5 text-[0.9rem] font-light leading-relaxed text-[#1a1a1a]/55">
+            You haven&rsquo;t set your brief yet — tell us what you&rsquo;re looking for and every report starts answering your question.
+          </p>
+        ) : (
+          <>
+            {lead && (
+              <p className="border-b border-[#1a1a1a]/[0.06] px-6 py-4 font-serif text-[1.05rem] leading-snug text-[#1a1a1a]">{lead}</p>
+            )}
+            <div className="divide-y divide-[#1a1a1a]/[0.06] px-6">
+              {briefRows.map((r) => (
+                <AccountRow key={r.label} label={r.label}>
+                  <span className={`text-[0.95rem] ${r.value && r.value !== "NA" ? "text-[#1a1a1a]" : "text-[#1a1a1a]/35"}`}>{r.value}</span>
+                </AccountRow>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Sign out */}
+      <div className="mt-8">
+        <button
+          onClick={onSignOut}
+          className="rounded-sm border border-[#1a1a1a]/15 px-7 py-3 text-[0.85rem] font-light text-[#1a1a1a]/70 transition-colors hover:border-[#b0503e]/40 hover:text-[#b0503e]"
+        >
+          Sign out
+        </button>
       </div>
     </div>
   );

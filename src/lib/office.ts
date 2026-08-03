@@ -77,7 +77,8 @@ export type SectionKey =
   | "advice"
   | "deal"
   | "documents"
-  | "portfolio";
+  | "portfolio"
+  | "account";
 
 export const SECTIONS: { key: SectionKey; label: string; path: string; paidOnly?: boolean }[] = [
   { key: "home", label: "Home", path: "/office" },
@@ -87,6 +88,7 @@ export const SECTIONS: { key: SectionKey; label: string; path: string; paidOnly?
   { key: "deal", label: "My Deal", path: "/office/deal", paidOnly: true },
   { key: "documents", label: "Documents & Reports", path: "/office/documents" },
   { key: "portfolio", label: "My Portfolio", path: "/office/portfolio" },
+  { key: "account", label: "My Account", path: "/office/account" },
 ];
 
 /* ── Building blocks ── */
