@@ -3,6 +3,7 @@
 import Link from "next/link";
 import DashboardHome from "./DashboardHome";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Logo from "../Logo";
 import SignIn from "./SignIn";
 import { isSignedIn, clearAllDemoData, loadAccount } from "@/lib/journey";
@@ -1496,16 +1497,32 @@ function DocumentsSection() {
    ════════════════════════════════════════════════════════════════ */
 function InvoiceModal({ payment, onClose }: { payment: Payment; onClose: () => void }) {
   const account = loadAccount();
+  const [mounted, setMounted] = useState(false);
   useEffect(() => {
+    setMounted(true);
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    /* Lock the page behind the receipt so only the invoice scrolls. */
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
   }, [onClose]);
-  return (
+  /* Portalled to <body>. The office sits inside an animate-fade-up transform,
+     which is a containing block for position:fixed — so an in-tree modal
+     anchored to that tall box instead of the viewport, and the receipt opened
+     far down the page behind a full-height backdrop. Rendering into <body>
+     puts it back in the viewport, always centred, with nothing to scroll. */
+  if (!mounted) return null;
+  return createPortal(
     <div className="fixed inset-0 z-[140] flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <button aria-label="Close" onClick={onClose} className="absolute inset-0 cursor-default bg-[#0a0a0a]/55 backdrop-blur-sm" />
       <div className="animate-fade-up relative max-h-[92svh] w-full max-w-[520px] overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl shadow-black/30">
-        <button onClick={onClose} className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full border border-[#1a1a1a]/12 text-[#1a1a1a]/50 transition-colors hover:text-[#1a1a1a]">✕</button>
+        <button aria-label="Close" onClick={onClose} className="absolute right-3.5 top-3.5 grid h-9 w-9 place-items-center rounded-full text-[#1a1a1a]/45 transition-colors hover:bg-[#1a1a1a]/[0.06] hover:text-[#1a1a1a]">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
+        </button>
 
         <div className="flex items-start justify-between gap-4 border-b border-[#1a1a1a]/10 pb-5">
           <div>
@@ -1560,7 +1577,8 @@ function InvoiceModal({ payment, onClose }: { payment: Payment; onClose: () => v
           <button onClick={onClose} className="rounded-sm border border-[#1a1a1a]/15 px-5 py-2.5 text-[0.8rem] font-light text-[#1a1a1a]/60 transition-colors hover:border-[#1a1a1a]/30">Close</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
