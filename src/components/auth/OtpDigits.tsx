@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 /* ────────────────────────────────────────────────────────────────────────
    OtpDigits — the shared code-entry for every OTP surface on the site, so
@@ -41,10 +41,23 @@ export default function OtpDigits({
 }) {
   const refs = useRef<(HTMLInputElement | null)[]>([]);
 
+  /* Fire onComplete AFTER the parent has re-rendered with the finished code,
+     not synchronously inside commit(). commit() calls onChange(next) to set
+     the parent's `otp`, but that state update has not applied yet — so a
+     verify() called on the same tick still reads a code one digit short and
+     rejects it ("Enter the 4-digit code"). Watching `value` defers the call
+     by a render, so the parent reads the complete code. `fired` makes it fire
+     once per completion and resets when the code goes incomplete (a retry). */
+  const fired = useRef(false);
+  useEffect(() => {
+    const complete = value.length === len && value.every((d) => d !== "");
+    if (complete && !fired.current) { fired.current = true; onComplete?.(); }
+    else if (!complete) fired.current = false;
+  }, [value, len, onComplete]);
+
   const commit = (next: string[], focusIdx: number) => {
     onChange(next);
     refs.current[Math.max(0, Math.min(focusIdx, len - 1))]?.focus();
-    if (next.length === len && next.every((d) => d !== "")) onComplete?.();
   };
 
   const onInput = (i: number, raw: string) => {
