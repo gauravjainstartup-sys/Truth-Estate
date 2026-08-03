@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { priceJourney, roiModel, fmtPsf, lastUpdatedOn, type ProjectIntel } from "@/lib/projects";
-import { hasReadAccess } from "@/lib/journey";
+import { hasReadAccess, packageById } from "@/lib/journey";
 import { openUnitIntel } from "./TowerIntel";
 import { useReportStatic } from "./reportStatic";
 
@@ -184,7 +184,7 @@ export default function ReportPrice({ p, sample = false }: { p: ProjectIntel; sa
                   </span>
                   <p className="text-[0.68rem] font-light leading-[1.5] text-[#1a1a1a]/45">The exact projected CAGR, bull / base / bear scenarios and the ideal exit window are inside.</p>
                   <button onClick={openUnitIntel} className="mt-1 rounded-lg bg-[#1e6b45] px-4 py-2 text-[0.74rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Unlock the 5-year projection →</button>
-                  <p className="text-[0.56rem] text-[#1a1a1a]/35">Free with membership · or ₹1,499 this project</p>
+                  <p className="text-[0.56rem] text-[#1a1a1a]/35">Free with membership · or ₹{packageById("read").inr.toLocaleString("en-IN")} this project</p>
                 </>
               )}
             </div>

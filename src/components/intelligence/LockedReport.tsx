@@ -9,7 +9,7 @@
      • ties the *visible* Truth Score to the locked detail ("why only X?").
    ──────────────────────────────────────────────────────────────────────── */
 
-import { READ_FROM_INR } from "@/lib/journey";
+import { packageById } from "@/lib/journey";
 
 /* Each locked section framed as the burning question it answers — the pull is
    the question, not a data dump. Generic-but-true (no fabricated findings). */
@@ -83,7 +83,7 @@ export default function LockedReport({
           onClick={onUnlock}
           className="group mt-7 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#1e6b45] px-6 py-4 text-[1rem] font-semibold tracking-[0.01em] text-white shadow-[0_18px_40px_-16px_rgba(30,107,69,0.6)] transition-all hover:bg-[#238c55] sm:w-auto sm:px-10"
         >
-          Get the full read — from {inr(READ_FROM_INR)}
+          Get the full read — from {inr(packageById("read").inr)}
           <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
         </button>
         <p className="mt-3.5 text-[0.82rem] leading-relaxed text-[#1a1a1a]/55">

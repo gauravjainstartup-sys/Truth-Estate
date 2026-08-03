@@ -8,8 +8,10 @@
    most hand-rolled checkouts get drained: the browser is not a trusted
    party, so "amount" in a request body means "the number the buyer chose
    to send". Anyone could buy All-Access for ₹1. The client sends a
-   PACKAGE ID; the rupee figure comes from the table below, which is the
-   same one the pricing UI renders from.
+   PACKAGE ID; the rupee figure is read from the `pricing` table in the
+   database (migration 0013) — the same rows the pricing UI renders from,
+   so the strike-through the buyer saw and the amount the card is charged
+   come from one source and cannot drift. Never an amount from the body.
 
    IDENTITY is the verified anon→user claim — a row this anon_id has
    already had claimed, which on this site only happens after MSG91 has
@@ -28,42 +30,58 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const RZP_KEY_ID = Deno.env.get("RAZORPAY_KEY_ID") ?? "";
 const RZP_KEY_SECRET = Deno.env.get("RAZORPAY_KEY_SECRET") ?? "";
 
-/* Mirrors PACKAGES in src/lib/journey.ts. Duplicated deliberately rather
-   than imported: the client copy is what the UI *offers*, this copy is
-   what the buyer is *charged*, and the second must not be reachable from
-   the first. If they ever disagree the server wins and the order simply
-   costs what it says here. */
-const PRICE_INR: Record<string, { inr: number; label: string; scope: "project" | "site" }> = {
-  read:   { inr: 999,  label: "Full Read",              scope: "project" },
-  read3d: { inr: 1499, label: "Read + Sun & Vastu 3D",  scope: "project" },
-  all:    { inr: 9999, label: "All-Access",             scope: "site" },
+/* FALLBACK ONLY. The live prices are in the `pricing` table (migration
+   0013) and this function reads them per order; the client's PACKAGES is
+   what the UI *offers*, the table is what the buyer is *charged*, and the
+   two must not be reachable from each other. This copy exists so a
+   momentary failure to read the table creates a correct, current order
+   rather than turning a paying customer away — it mirrors the seeded
+   baseline and the table always wins when it is reachable. */
+type Price = { mrp: number; price: number; label: string; scope: "project" | "site"; discountLabel: string | null };
+const DEFAULT_PRICING: Record<string, Omit<Price, "discountLabel">> = {
+  read:   { mrp: 2100,  price: 1100,  label: "Full Read",              scope: "project" },
+  read3d: { mrp: 1499,  price: 1499,  label: "Read + Sun & Vastu 3D",  scope: "project" },
+  all:    { mrp: 21000, price: 11000, label: "All-Access",             scope: "site" },
+};
+const fallbackPrice = (id: string): Price | null => {
+  const f = DEFAULT_PRICING[id];
+  return f ? { ...f, discountLabel: f.mrp > f.price ? "Inaugural offer" : null } : null;
 };
 
 const packageIdIsAll = (id: unknown): boolean => id === "all";
 
-/* WHAT TIER A PAST PAYMENT WAS, INCLUDING THE ONES FROM THE OLD SITE.
-
-   package_name is a package ID on rows this build writes ("read"), and a
-   sentence on the ones truthestate.in has been writing since May:
-   "Project Intelligence Access: DLF Privana West". A straight lookup
-   misses every legacy row, and the consequence is not cosmetic — the
-   upgrade credit silently becomes zero, so a customer who bought the
-   ₹999 read on the old site would be charged the full ₹1,499 for the 3D
-   instead of the ₹500 difference. Overcharging a returning customer is
-   the worst possible way to greet them.
-
-   So: the id when it is one, otherwise the tier is inferred from what
-   they actually paid. The amount is the honest fact in either format,
-   and the tolerance is tight enough that no two tiers can be confused. */
-function tierOf(packageName: unknown, amount: unknown): { inr: number; scope: "project" | "site" } | null {
-  const direct = PRICE_INR[String(packageName ?? "")];
-  if (direct) return direct;
-  const amt = typeof amount === "string" ? parseFloat(amount) : typeof amount === "number" ? amount : NaN;
-  if (!Number.isFinite(amt)) return null;
-  /* Nearest tier within ₹1, so 999.00 from a numeric column matches and a
-     part-payment or an unrelated figure does not. */
-  for (const p of Object.values(PRICE_INR)) if (Math.abs(amt - p.inr) < 1) return p;
-  return null;
+/* THE PRICE, READ LIVE FROM THE TABLE. price_inr is charged, mrp_inr is
+   the struck list price, and a discount past its end date is no discount.
+   The table is authority when reachable: an id that is absent or inactive
+   is simply not on sale (null → unknown_package), NOT quietly rescued by
+   the fallback. The fallback fires only when the READ itself fails, so an
+   outage cannot take checkout down. */
+type PricingRow = {
+  label: string; scope: "project" | "site";
+  mrp_inr: number; price_inr: number;
+  discount_label: string | null; discount_ends_at: string | null;
+};
+async function priceOf(packageId: string): Promise<Price | null> {
+  try {
+    const res = await sb(
+      `pricing?select=label,scope,mrp_inr,price_inr,discount_label,discount_ends_at` +
+      `&package_id=eq.${encodeURIComponent(packageId)}&active=eq.true&limit=1`,
+    );
+    if (res.ok) {
+      const r = (await res.json() as PricingRow[])[0];
+      if (!r) return null;                                   // the table says: not an active offer
+      const ended = r.discount_ends_at ? Date.parse(r.discount_ends_at) < Date.now() : false;
+      const price = ended ? r.mrp_inr : r.price_inr;
+      return {
+        mrp: r.mrp_inr, price, label: r.label, scope: r.scope,
+        discountLabel: ended || price >= r.mrp_inr ? null : r.discount_label,
+      };
+    }
+    console.warn(`[razorpay-order] pricing read ${res.status} — using fallback`);
+  } catch (e) {
+    console.warn(`[razorpay-order] pricing read failed — using fallback: ${e instanceof Error ? e.message : "error"}`);
+  }
+  return fallbackPrice(packageId);
 }
 
 const ALLOW_ORIGIN = [
@@ -130,7 +148,8 @@ Deno.serve(async (req: Request) => {
   let body: { anonId?: string; packageId?: string; slug?: string };
   try { body = await req.json(); } catch { return done({ ok: false, reason: "bad_json" }, 400); }
 
-  const pkg = PRICE_INR[String(body.packageId ?? "")];
+  const packageId = String(body.packageId ?? "");
+  const pkg = await priceOf(packageId);
   if (!pkg) return done({ ok: false, reason: "unknown_package" }, 400);
 
   /* A project package without a project is not a purchase we can honour —
@@ -151,41 +170,45 @@ Deno.serve(async (req: Request) => {
 
   /* UPGRADE CREDIT, COMPUTED HERE.
 
-     The sheet offers "pay the difference": someone who bought the ₹999
-     read and now wants the 3D is shown ₹500, not ₹1,499. That subtraction
-     was happening in the browser off localStorage, which makes the
-     discount a client-supplied number — the same class of problem as a
-     client-supplied price, just wearing a friendlier face.
+     "Pay the difference": someone who already bought this project's read
+     and now buys All-Access is charged the balance, not the full price
+     again. That subtraction used to happen in the browser off
+     localStorage, which makes the discount a client-supplied number — the
+     same class of problem as a client-supplied price, just wearing a
+     friendlier face.
 
-     The credit is derived from this account's own completed payments for
-     this project: the highest tier already paid for. Nothing the caller
-     sends is involved. If the ledger is unreachable the credit is zero,
-     which errs toward charging full price rather than giving the
-     catalogue away — and is visible to the buyer before they pay. */
+     The credit is the rupees this account has already paid for this
+     project, read from the ledger. Nothing the caller sends is involved.
+     If the ledger is unreachable the credit is zero, which errs toward
+     charging full price rather than giving the catalogue away — and is
+     visible to the buyer before they pay. */
   let creditInr = 0;
-  if (pkg.scope === "project" || packageIdIsAll(body.packageId)) {
+  if (pkg.scope === "project" || packageIdIsAll(packageId)) {
     const prior = await sb(
-      `payments?select=package_name,project_name,status&user_id=eq.${encodeURIComponent(userId)}` +
+      `payments?select=project_id,project_name,amount&user_id=eq.${encodeURIComponent(userId)}` +
       `&status=eq.completed&limit=200`,
     );
     if (prior.ok) {
-      const rows = await prior.json() as { package_name?: string; project_name?: string }[];
-      /* Compared through the slug, not by string equality: project_name
-         holds the readable project name on rows written since the ledger
-         was matched to the table, and the raw slug on the ones before it.
-         Both slugify to the same thing, so both credit correctly. */
+      const rows = await prior.json() as { project_id?: string; project_name?: string; amount?: number | string }[];
+      /* Credit the actual rupees already paid for THIS project, read from
+         the ledger, so the upgrade price is right regardless of what the
+         list price is today. Matched through the slug because project_name
+         is the readable name on new rows and the raw slug on old ones and
+         both slugify the same. The site-wide sentinel is skipped —
+         All-Access is not a per-project credit. */
       const asSlug = (v: string) => v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
       for (const r of rows) {
+        if ((r.project_id ?? "") === "all-access") continue;
         if (asSlug(r.project_name ?? "") !== slug) continue;
-        const paid = tierOf(r.package_name, r.amount);
-        if (paid && paid.scope === "project" && paid.inr > creditInr) creditInr = paid.inr;
+        const amt = typeof r.amount === "string" ? parseFloat(r.amount) : r.amount ?? 0;
+        if (Number.isFinite(amt) && (amt as number) > creditInr) creditInr = Math.round(amt as number);
       }
     } else {
       console.warn(`[razorpay-order] ledger ${prior.status} — no credit applied`);
     }
   }
 
-  const amountPaise = Math.max(pkg.inr - creditInr, 0) * 100;
+  const amountPaise = Math.max(pkg.price - creditInr, 0) * 100;
   /* Razorpay will not create a zero-value order, and an account that has
      already paid for an equal or better tier should not be here at all —
      the sheet filters owned tiers out. Fail loudly rather than take ₹0. */
@@ -212,7 +235,7 @@ Deno.serve(async (req: Request) => {
            the buyer's own entitlements — two tabs, or a webhook arriving
            after a second purchase — and could reject a payment that was
            correct when it was made. */
-        notes: { userId, packageId: body.packageId, slug, label: pkg.label, expectedPaise: String(amountPaise), creditInr: String(creditInr) },
+        notes: { userId, packageId, slug, label: pkg.label, expectedPaise: String(amountPaise), creditInr: String(creditInr), mrpInr: String(pkg.mrp), discountLabel: pkg.discountLabel ?? "" },
       }),
       signal: AbortSignal.timeout(10000),
     });
@@ -221,7 +244,7 @@ Deno.serve(async (req: Request) => {
       return done({ ok: false, reason: "gateway" }, 502);
     }
     const order = await res.json() as { id: string; amount: number; currency: string };
-    console.info(`[razorpay-order] ${order.id} ₹${amountPaise / 100} ${body.packageId}${creditInr ? ` (₹${creditInr} credited)` : ""} for ${userId.slice(0, 8)}…`);
+    console.info(`[razorpay-order] ${order.id} ₹${amountPaise / 100} ${packageId}${creditInr ? ` (₹${creditInr} credited)` : ""} for ${userId.slice(0, 8)}…`);
     return done({
       ok: true,
       orderId: order.id,
@@ -229,6 +252,10 @@ Deno.serve(async (req: Request) => {
       currency: order.currency,
       keyId: RZP_KEY_ID,
       label: pkg.label,
+      /* So the checkout UI can show the strike-through the buyer saw on the
+         paywall. mrp is the list price; amountPaise is the true charge. */
+      mrp: pkg.mrp,
+      discountLabel: pkg.discountLabel,
     });
   } catch (e) {
     console.error(`[razorpay-order] ${e instanceof Error ? e.message : "error"}`);

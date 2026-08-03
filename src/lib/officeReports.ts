@@ -35,7 +35,9 @@ export type Payment = {
   id: string;
   slug: string | null; // null for the site-wide All-Access purchase
   item: string;
-  amountInr: number;
+  amountInr: number;      // what was actually paid
+  mrpInr?: number;        // list price, when an offer was on (struck on the receipt)
+  discountLabel?: string | null;
   date: number;
   razorpayId?: string;
   invoiceNo: string; // "TE-YYYY-NNNN"
@@ -404,6 +406,7 @@ function asProps(v: unknown): Record<string, unknown> {
 type PaymentRow = {
   id?: string; status?: string | null; project_name?: string | null; package_name?: string | null;
   amount?: number | string | null; created_at?: string | null;
+  mrp_inr?: number | string | null; discount_label?: string | null;
   razorpay_order_id?: string | null; razorpay_payment_id?: string | null;
 };
 
@@ -419,7 +422,7 @@ export async function fetchMyPaymentsRemote(): Promise<Payment[] | null> {
   try {
     const res = await fetch(
       `${SB_URL}/rest/v1/payments` +
-        `?select=id,status,project_name,package_name,amount,created_at,razorpay_order_id,razorpay_payment_id` +
+        `?select=id,status,project_name,package_name,amount,mrp_inr,discount_label,created_at,razorpay_order_id,razorpay_payment_id` +
         `&order=created_at.asc&limit=200`,
       { headers: { apikey: SB_ANON, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
     );
@@ -435,6 +438,10 @@ export async function fetchMyPaymentsRemote(): Promise<Payment[] | null> {
       if ((r.status ?? "").toLowerCase() !== "completed") continue;
       const amt = typeof r.amount === "string" ? parseFloat(r.amount) : r.amount ?? 0;
       const amountInr = Number.isFinite(amt) ? Math.round(amt as number) : 0;
+      /* List price, only when it exceeds what was paid — a struck price ≤ the
+         total would be noise on the receipt. */
+      const mrpRaw = typeof r.mrp_inr === "string" ? parseFloat(r.mrp_inr) : r.mrp_inr ?? 0;
+      const mrpInr = Number.isFinite(mrpRaw) && (mrpRaw as number) > amountInr ? Math.round(mrpRaw as number) : undefined;
       const date = r.created_at ? new Date(r.created_at).getTime() : Date.now();
       /* All-Access carries the "all" package and no single project. */
       const allAccess = (r.package_name ?? "").toLowerCase() === "all" || !r.project_name;
@@ -456,6 +463,7 @@ export async function fetchMyPaymentsRemote(): Promise<Payment[] | null> {
         slug,
         item: allAccess ? "All-Access — every report & 3D across the site" : `Full read${name ? ` — ${name}` : ""}`,
         amountInr,
+        ...(mrpInr ? { mrpInr, discountLabel: r.discount_label ?? "Offer" } : {}),
         date,
         ...(r.razorpay_payment_id ? { razorpayId: r.razorpay_payment_id } : {}),
         invoiceNo,

@@ -1159,9 +1159,10 @@ export function hasFullAccess(slug: string): boolean {
 
    Registration (signed in) is free and opens the Private Office but
    unlocks no reads. Content access is bought:
-     • read    ₹999    — one project's full read (no 3D)
-     • read3d  ₹1,499  — one project's read + its Sun & Vastu 3D
-     • all     ₹9,999  — every read + every 3D (+ 2 on-demand)
+     • read    ₹1,100 (list ₹2,100)   — one project's full read (no 3D)
+     • read3d  ₹1,499                 — retired; read + its Sun & Vastu 3D
+     • all     ₹11,000 (list ₹21,000) — every read + every 3D (+ 2 on-demand)
+   Seeded fallback only; the pricing table is the live authority.
    Custom packages (and any Deal-Room mandate fee) are set after the
    first free advisor call — never a fixed number on the site.
 
@@ -1170,12 +1171,19 @@ export function hasFullAccess(slug: string): boolean {
    will be server-verified after Razorpay; this is the demo seam. */
 
 export type PackageId = "read" | "read3d" | "all";
-export type Package = { id: PackageId; label: string; inr: number; scope: "project" | "site"; includes3D: boolean; blurb: string };
+/* `inr` is the effective (charged) price; `mrp` is the struck list price
+   when an offer is running, and the gap is the discount. Both are served
+   live from the pricing table — see the overlay below. */
+export type Package = { id: PackageId; label: string; inr: number; mrp?: number; discountLabel?: string | null; scope: "project" | "site"; includes3D: boolean; blurb: string };
 /* WHAT WE SELL. Iterated by the unlock modal and the pricing page, so
    anything absent here is simply not offered anywhere. */
+/* Effective prices + the inaugural discount, kept in step with the seed in
+   migration 0013. This is the FALLBACK the bundle ships with; getPackages()
+   / packageById() return the live overlay below, which the `pricing`
+   function refreshes from the table without a redeploy. */
 export const PACKAGES: Package[] = [
-  { id: "read", label: "Full Read", inr: 999, scope: "project", includes3D: false, blurb: "This project's complete forensic read — every pillar, the price journey, ROI model and verdict." },
-  { id: "all", label: "All-Access", inr: 9999, scope: "site", includes3D: true, blurb: "Every read and every 3D across the site — plus 2 on-demand project reports & 3Ds." },
+  { id: "read", label: "Full Read", inr: 1100, mrp: 2100, discountLabel: "Inaugural offer", scope: "project", includes3D: false, blurb: "This project's complete forensic read — every pillar, the price journey, ROI model and verdict." },
+  { id: "all", label: "All-Access", inr: 11000, mrp: 21000, discountLabel: "Inaugural offer", scope: "site", includes3D: true, blurb: "Every read and every 3D across the site — plus 2 on-demand project reports & 3Ds." },
 ];
 
 /* WHAT WE STILL HONOUR. Retired from sale, never from the ledger.
@@ -1193,12 +1201,91 @@ export const PACKAGES: Package[] = [
    customers who bought the thing we withdrew. The server's own price
    table keeps its read3d row for the same reason. */
 export const RETIRED_PACKAGES: Package[] = [
-  { id: "read3d", label: "Read + Sun & Vastu 3D", inr: 1499, scope: "project", includes3D: true, blurb: "The full read plus the interactive Sun & Vastu 3D advisor for this project." },
+  { id: "read3d", label: "Read + Sun & Vastu 3D", inr: 1499, mrp: 1499, scope: "project", includes3D: true, blurb: "The full read plus the interactive Sun & Vastu 3D advisor for this project." },
 ];
 
+/* ── LIVE PRICING OVERLAY ────────────────────────────────────────
+   The prices and the inaugural discount live in the `pricing` table
+   (migration 0013) and are served by the `pricing` function, so changing a
+   number or ending the offer is a SQL update, not a redeploy. `_pricing`
+   starts as the shipped fallback (PACKAGES), is hydrated from the last good
+   response on load for an instant correct paint, and is replaced on the
+   first fetch. The charge is always the server's — razorpay-order reads the
+   table live — so a momentarily stale display can never mis-charge a card. */
+const PRICING_URL = "https://lyetvabfgaidvqrbmaoy.supabase.co/functions/v1/pricing";
+export const PRICING_EVENT = "truthEstate:pricing";
+
+type EndpointPackage = {
+  id: string; label: string; scope: "project" | "site";
+  mrp: number; price: number; discountLabel: string | null;
+  includes3D: boolean; blurb: string;
+};
+
+function mergePricing(rows: EndpointPackage[]): Package[] {
+  const out: Package[] = [];
+  for (const r of rows) {
+    if (r.id !== "read" && r.id !== "read3d" && r.id !== "all") continue;
+    const fb = PACKAGES.find((p) => p.id === r.id);
+    out.push({
+      id: r.id, label: r.label || fb?.label || r.id,
+      inr: r.price, mrp: r.mrp, discountLabel: r.discountLabel ?? null,
+      scope: r.scope, includes3D: !!r.includes3D, blurb: r.blurb || fb?.blurb || "",
+    });
+  }
+  return out.length ? out : PACKAGES;
+}
+
+/* Starts — and stays, until a fetch — at the shipped fallback, on the
+   server AND on the client's first render. That is what keeps static HTML
+   and hydration byte-identical: the live overlay is only ever applied after
+   mount (fetchPricing runs from a useEffect), never during SSR or the first
+   paint, so a price changed in the database can never cause a hydration
+   mismatch — it just updates a beat later. */
+let _pricing: Package[] = PACKAGES;
+
+let _pricingAt = 0;
+let _pricingInflight: Promise<Package[]> | null = null;
+
+/* Fetch live prices at most once a minute; the paywall calls this on mount.
+   Never throws and never blanks the offer — any failure keeps whatever
+   _pricing already holds. Fires PRICING_EVENT so mounted price displays
+   re-read. */
+export async function fetchPricing(): Promise<Package[]> {
+  if (typeof window === "undefined") return _pricing;
+  if (Date.now() - _pricingAt < 60_000) return _pricing;
+  if (_pricingInflight) return _pricingInflight;
+  _pricingInflight = (async () => {
+    try {
+      const res = await fetch(PRICING_URL, { signal: AbortSignal.timeout(8000) });
+      if (res.ok) {
+        const data = await res.json().catch(() => null) as { ok?: boolean; packages?: EndpointPackage[] } | null;
+        if (data?.ok && Array.isArray(data.packages) && data.packages.length) {
+          _pricing = mergePricing(data.packages);
+          _pricingAt = Date.now();
+          window.dispatchEvent(new Event(PRICING_EVENT));
+        }
+      }
+    } catch { /* keep current _pricing */ }
+    finally { _pricingInflight = null; }
+    return _pricing;
+  })();
+  return _pricingInflight;
+}
+
+export function getPackages(): Package[] { return _pricing; }
+
 export const packageById = (id: PackageId): Package =>
-  PACKAGES.find((p) => p.id === id) ?? RETIRED_PACKAGES.find((p) => p.id === id) ?? PACKAGES[0];
-export const READ_FROM_INR = 999;
+  _pricing.find((p) => p.id === id) ?? RETIRED_PACKAGES.find((p) => p.id === id) ?? _pricing[0];
+/* Fallback only; live callers read packageById("read").inr. */
+export const READ_FROM_INR = 1100;
+
+/* The discount to render, or null when the list price equals the charge.
+   One definition so every strike-through (pricing page, unlock modal,
+   paywall, receipt) agrees on what "on offer" means and what % to show. */
+export function discountOf(p: { inr: number; mrp?: number | null; discountLabel?: string | null }): { mrp: number; label: string; pct: number } | null {
+  if (!p.mrp || p.mrp <= p.inr) return null;
+  return { mrp: p.mrp, label: p.discountLabel || "Offer", pct: Math.round((1 - p.inr / p.mrp) * 100) };
+}
 
 const SIGNED_IN_KEY = "truthEstate.signedIn";
 /* ── Where the reader stands on a project ───────────────────────

@@ -18,7 +18,7 @@
    there. This card is locked-only.
    ──────────────────────────────────────────────────────────────────────── */
 
-import { READ_FROM_INR } from "@/lib/journey";
+import { packageById } from "@/lib/journey";
 import { basePath } from "@/lib/site";
 
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
@@ -67,7 +67,7 @@ export default function UnlockDesk({ onUnlock, onSample }: { onUnlock: () => voi
         onClick={onUnlock}
         className="group mt-5 block w-full rounded-xl bg-[#1e6b45] px-5 py-3.5 text-center text-[0.85rem] font-semibold text-white transition-colors hover:bg-[#238c55]"
       >
-        Unlock the full read — {inr(READ_FROM_INR)}{" "}
+        Unlock the full read — {inr(packageById("read").inr)}{" "}
         <span aria-hidden className="inline-block transition-transform group-hover:translate-x-0.5">→</span>
       </button>
 

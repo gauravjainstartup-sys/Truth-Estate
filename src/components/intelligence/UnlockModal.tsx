@@ -18,10 +18,11 @@ import OtpDigits from "@/components/auth/OtpDigits";
 
 import { useEffect, useRef, useState } from "react";
 import {
-  PACKAGES, packageById, grantPackage, isSignedIn, saveLead,
-  hasReadAccess, has3DAccess, isAllAccess, readStake, saveStake,
+  packageById, grantPackage, isSignedIn, saveLead,
+  hasReadAccess, has3DAccess, isAllAccess, readStake, saveStake, discountOf,
   type PackageId, type Stake,
 } from "@/lib/journey";
+import { usePricing } from "@/lib/usePricing";
 import { normalisePhone, normaliseIntl, phoneKnown, prettyPhone, sendOtp, sendOtpIntl, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
 import { fetchEntitlements } from "@/lib/entitlements";
 import { payForPackage, prewarmCheckout, type Receipt } from "@/lib/checkout";
@@ -108,6 +109,9 @@ export default function UnlockModal({
   const [payErr, setPayErr] = useState("");
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [busy, setBusy] = useState(false);
+  /* Live prices — triggers the pricing fetch and re-renders when the table's
+     numbers arrive; the offered set and every packageById() below follow it. */
+  const pkgs = usePricing();
 
   const isIndia = dial === "+91";
   const numValid = num.replace(/\D/g, "").length >= (isIndia ? 10 : 6);
@@ -123,11 +127,12 @@ export default function UnlockModal({
     (id === "read" && hasReadAccess(slug)) || (id === "read3d" && has3DAccess(slug)) || (id === "all" && isAllAccess());
   const amountFor = (id: PackageId) => Math.max(packageById(id).inr - credit, 0);
   const isUpgrade = (id: PackageId) => credit > 0 && !owns(id);
+  const selDiscount = discountOf(packageById(sel));
   /* Tied to what we actually SELL, not to this hand-written list. PLAN_CARDS
      still describes the retired ₹1,499 read+3D tier, and without this filter
      withdrawing it from PACKAGES would have removed its price from the
      pricing page and left its card sitting here. One table decides. */
-  const cards = PLAN_CARDS.filter((c) => !owns(c.id) && PACKAGES.some((pk) => pk.id === c.id));
+  const cards = PLAN_CARDS.filter((c) => !owns(c.id) && pkgs.some((pk) => pk.id === c.id));
 
   useEffect(() => {
     if (!open) return;
@@ -389,6 +394,7 @@ export default function UnlockModal({
                 {cards.map((c) => {
                   const recommended = c.id === "read3d";
                   const amount = amountFor(c.id);
+                  const d = discountOf(packageById(c.id));
                   const build3d = c.id === "read3d" && !has3DModel;
                   return (
                     <div key={c.id} className={`flex h-full flex-col rounded-2xl border bg-white/70 p-4 ${recommended ? "border-[#1e6b45] ring-1 ring-[#1e6b45]/25" : "border-[#1a1a1a]/12"}`}>
@@ -402,8 +408,13 @@ export default function UnlockModal({
                           <p className="mt-0.5 text-[0.62rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/40">{c.scope}</p>
                         </div>
                         <div className="shrink-0 text-right">
-                          <p className="font-serif text-[1.35rem] font-semibold leading-none text-[#1e6b45]">{inr(amount)}</p>
-                          {isUpgrade(c.id) && <p className="mt-1 text-[0.58rem] font-medium uppercase tracking-[0.08em] text-[#9a7a2e]">upgrade · {inr(credit)} credited</p>}
+                          {d && !isUpgrade(c.id) && (
+                            <p className="text-[0.72rem] font-light leading-none text-[#1a1a1a]/35 line-through">{inr(d.mrp)}</p>
+                          )}
+                          <p className="mt-0.5 font-serif text-[1.35rem] font-semibold leading-none text-[#1e6b45]">{inr(amount)}</p>
+                          {isUpgrade(c.id)
+                            ? <p className="mt-1 text-[0.58rem] font-medium uppercase tracking-[0.08em] text-[#9a7a2e]">upgrade · {inr(credit)} credited</p>
+                            : d && <p className="mt-1 text-[0.56rem] font-medium uppercase tracking-[0.08em] text-[#1e6b45]">{d.label} · {d.pct}% off</p>}
                         </div>
                       </div>
 
@@ -473,9 +484,14 @@ export default function UnlockModal({
               </div>
               <div className="flex items-baseline justify-between">
                 <span className="text-[0.8rem] text-[#1a1a1a]/55">{packageById(sel).label}{isUpgrade(sel) ? " · upgrade" : ""}</span>
-                <span className="font-serif text-[1.5rem] font-semibold">{inr(amountFor(sel))}</span>
+                <span className="flex items-baseline gap-2">
+                  {selDiscount && !isUpgrade(sel) && <span className="text-[0.95rem] font-light text-[#1a1a1a]/35 line-through">{inr(selDiscount.mrp)}</span>}
+                  <span className="font-serif text-[1.5rem] font-semibold">{inr(amountFor(sel))}</span>
+                </span>
               </div>
-              {isUpgrade(sel) && <p className="mt-1 text-[0.72rem] text-[#1a1a1a]/45">{inr(packageById(sel).inr)} tier · {inr(credit)} already paid credited.</p>}
+              {isUpgrade(sel)
+                ? <p className="mt-1 text-[0.72rem] text-[#1a1a1a]/45">{inr(packageById(sel).inr)} tier · {inr(credit)} already paid credited.</p>
+                : selDiscount && <p className="mt-1 text-[0.72rem] text-[#1e6b45]">{selDiscount.label} — {selDiscount.pct}% off list {inr(selDiscount.mrp)}.</p>}
               {/* The three payment methods used to be rendered here as
                   static rows with the first one pre-selected — a picture of
                   a checkout. Razorpay's own sheet offers the real ones, so

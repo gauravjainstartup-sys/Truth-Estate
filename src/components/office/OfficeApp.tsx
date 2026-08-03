@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Logo from "../Logo";
 import SignIn from "./SignIn";
-import { isSignedIn, clearAllDemoData, loadAccount } from "@/lib/journey";
+import { isSignedIn, clearAllDemoData, loadAccount, packageById } from "@/lib/journey";
 import { projectByName } from "@/lib/projects";
 import ProjectOptionCard from "../intelligence/ProjectOptionCard";
 import {
@@ -1382,9 +1382,10 @@ function DocumentsSection() {
               const pay = row.allAccess
                 ? payments.find((p) => p.slug === null || /all-access/i.test(p.item))
                 : payments.find((p) => p.slug === row.slug);
+              const paidBit = pay ? ` · ${INR(pay.amountInr)}${pay.mrpInr && pay.mrpInr > pay.amountInr ? ` (was ${INR(pay.mrpInr)})` : ""}` : "";
               const meta = row.allAccess
-                ? `Every report & 3D across the site${pay ? ` · ${INR(pay.amountInr)}` : ""}${pay ? ` · unlocked ${fmtDate(pay.date)}` : ""}`
-                : `${row.market ? `${row.market} · ` : ""}Full read${pay ? ` · ${INR(pay.amountInr)}` : ""}${pay ? ` · unlocked ${fmtDate(pay.date)}` : row.at ? ` · opened ${fmtDate(row.at)}` : ""}`;
+                ? `Every report & 3D across the site${paidBit}${pay ? ` · unlocked ${fmtDate(pay.date)}` : ""}`
+                : `${row.market ? `${row.market} · ` : ""}Full read${paidBit}${pay ? ` · unlocked ${fmtDate(pay.date)}` : row.at ? ` · opened ${fmtDate(row.at)}` : ""}`;
               return (
                 <ReportShell
                   key={row.slug}
@@ -1443,7 +1444,7 @@ function DocumentsSection() {
                         onClick={() => touch({ slug: v.slug, name: v.name, market: v.market, seoSlug: v.seoSlug })}
                         className="rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.8rem] font-medium text-white transition-colors hover:bg-[#238c55]"
                       >
-                        Unlock · ₹999 →
+                        Unlock · {INR(packageById("read").inr)} →
                       </a>
                       <a
                         href={reportHref(v.seoSlug)}
@@ -1557,8 +1558,14 @@ function InvoiceModal({ payment, onClose }: { payment: Payment; onClose: () => v
           <tbody>
             <tr>
               <td className="border-b border-[#1a1a1a]/[0.07] py-3 pr-3 text-[#1a1a1a]/80">{payment.item}</td>
-              <td className="border-b border-[#1a1a1a]/[0.07] py-3 text-right font-medium tabular-nums text-[#1a1a1a]">{INR(payment.amountInr)}</td>
+              <td className="border-b border-[#1a1a1a]/[0.07] py-3 text-right font-medium tabular-nums text-[#1a1a1a]">{INR(payment.mrpInr ?? payment.amountInr)}</td>
             </tr>
+            {payment.mrpInr != null && payment.mrpInr > payment.amountInr && (
+              <tr>
+                <td className="border-b border-[#1a1a1a]/[0.07] py-3 pr-3 text-[#1e6b45]">{payment.discountLabel || "Discount"}</td>
+                <td className="border-b border-[#1a1a1a]/[0.07] py-3 text-right font-medium tabular-nums text-[#1e6b45]">−{INR(payment.mrpInr - payment.amountInr)}</td>
+              </tr>
+            )}
             <tr>
               <td className="border-b border-[#1a1a1a]/[0.07] py-3 pr-3 text-[#1a1a1a]/40">Tax</td>
               <td className="border-b border-[#1a1a1a]/[0.07] py-3 text-right text-[#1a1a1a]/40">—</td>

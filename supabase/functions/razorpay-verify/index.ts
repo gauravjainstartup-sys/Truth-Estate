@@ -41,10 +41,16 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const RZP_KEY_ID = Deno.env.get("RAZORPAY_KEY_ID") ?? "";
 const RZP_KEY_SECRET = Deno.env.get("RAZORPAY_KEY_SECRET") ?? "";
 
+/* Structural + fallback, NOT the live price. `scope` decides plan-vs-grant
+   and never changes; the rupee figure is only a FLOOR for the underpayment
+   check when a legacy order carries no expectedPaise. Every current order
+   carries expectedPaise (razorpay-order read it from the pricing table) and
+   that value wins — this is kept in step with the table's baseline only so
+   the rare fallback is never far off. */
 const PRICE_INR: Record<string, { inr: number; label: string; scope: "project" | "site" }> = {
-  read:   { inr: 999,  label: "Full Read",             scope: "project" },
-  read3d: { inr: 1499, label: "Read + Sun & Vastu 3D", scope: "project" },
-  all:    { inr: 9999, label: "All-Access",            scope: "site" },
+  read:   { inr: 1100,  label: "Full Read",             scope: "project" },
+  read3d: { inr: 1499,  label: "Read + Sun & Vastu 3D", scope: "project" },
+  all:    { inr: 11000, label: "All-Access",            scope: "site" },
 };
 
 const ALLOW_ORIGIN = [
@@ -128,7 +134,7 @@ type RzpOrder = {
   amount?: number;
   amount_paid?: number;
   currency?: string;
-  notes?: { userId?: string; packageId?: string; slug?: string; label?: string; expectedPaise?: string; creditInr?: string };
+  notes?: { userId?: string; packageId?: string; slug?: string; label?: string; expectedPaise?: string; creditInr?: string; mrpInr?: string; discountLabel?: string };
 };
 
 async function fetchOrder(orderId: string): Promise<RzpOrder | null> {
@@ -443,6 +449,19 @@ Deno.serve(async (req: Request) => {
      razorpay_signature exists on this table and had been left empty. It
      is the proof the payment was ours; storing it means a dispute can be
      re-verified from the row alone. */
+  /* The receipt's discount is frozen here from the order's notes, which
+     razorpay-order stamped from the pricing table at order time — so a
+     later price change never rewrites this invoice. mrp_inr is the list
+     price; the discount line is mrp − amount, named for the inaugural
+     offer, an upgrade credit, or both. Both stay NULL when nothing was
+     reduced (mrp ≤ what was paid). */
+  const mrpInr = Number(order.notes?.mrpInr ?? "") || null;
+  const creditInr = Number(order.notes?.creditInr ?? "") || 0;
+  const baseDiscount = (order.notes?.discountLabel ?? "").trim() || null;
+  const discountLabel = mrpInr && mrpInr > amountInr
+    ? ([baseDiscount, creditInr > 0 ? "upgrade credit" : null].filter(Boolean).join(" + ") || "Discount")
+    : null;
+
   const payRes = await sbFetch("payments", {
     method: "POST",
     headers: { Prefer: "return=minimal" },
@@ -452,6 +471,8 @@ Deno.serve(async (req: Request) => {
       project_name: pkg.scope === "project" ? (proj?.name ?? slug) : null,
       package_name: packageId,
       amount: amountInr,
+      mrp_inr: mrpInr,
+      discount_label: discountLabel,
       currency: payment.currency ?? "INR",
       status: "completed",
       razorpay_order_id: orderId,

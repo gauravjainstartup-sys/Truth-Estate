@@ -4,7 +4,8 @@ import { useState } from "react";
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import { useConsultation } from "../consultation/ConsultationProvider";
-import { PRIMARY_CTA, PACKAGES, type Package } from "@/lib/journey";
+import { PRIMARY_CTA, discountOf, type Package } from "@/lib/journey";
+import { usePricing } from "@/lib/usePricing";
 import { basePath, homeHref } from "@/lib/site";
 import {
   CONSULT_FEE,
@@ -156,6 +157,8 @@ export default function Pricing() {
   const { open } = useJourney();
   const { openConsult } = useConsultation();
   const [openFaqs, setOpenFaqs] = useState<Set<number>>(new Set());
+  /* Live prices + the inaugural discount from the pricing table. */
+  const packages = usePricing();
 
   const toggleFaq = (i: number) => {
     setOpenFaqs((prev) => {
@@ -463,8 +466,9 @@ export default function Pricing() {
                 filter would have left a three-column layout with a hole in it
                 and nothing highlighted. */}
             <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-2">
-              {PACKAGES.map((pkg) => {
+              {packages.map((pkg) => {
                 const featured = pkg.id === "all";
+                const d = discountOf(pkg);
                 return (
                   <div
                     key={pkg.id}
@@ -490,13 +494,23 @@ export default function Pricing() {
                     <h3 className="font-serif text-[1.25rem] font-semibold text-[#1a1a1a]">
                       {pkg.label}
                     </h3>
-                    <p className="mt-4 flex items-baseline gap-1.5">
+                    <p className="mt-4 flex flex-wrap items-baseline gap-1.5">
+                      {d && (
+                        <span className="font-serif text-[1.2rem] font-light text-[#1a1a1a]/35 line-through">
+                          {inr(d.mrp)}
+                        </span>
+                      )}
                       <span className="font-serif text-[2.4rem] font-semibold leading-none text-[#1a1a1a]">
                         {inr(pkg.inr)}
                       </span>
                       <span className="text-[0.8rem] font-light text-[#1a1a1a]/35">
                         {pkg.scope === "site" ? "/ whole site" : "/ project"}
                       </span>
+                      {d && (
+                        <span className="ml-1 rounded-full bg-[#1e6b45]/[0.08] px-2.5 py-1 text-[0.62rem] font-medium tracking-[0.02em] text-[#1e6b45]">
+                          {d.label} · {d.pct}% off
+                        </span>
+                      )}
                     </p>
                     <ul className="mt-6 flex-1 space-y-2.5">
                       {featureLines(pkg).map((f) => (

@@ -32,7 +32,7 @@ import { fitFor, rankByFit, verdictFor } from "@/lib/fit";
    href that already carries it comes out doubled — /Truth-Estate/Truth-
    Estate/projects/… on any build with a non-empty base path. */
 import { projectPath } from "@/lib/projectHref";
-import { loadBuyData, saveBuyData, emptyBuyData } from "@/lib/journey";
+import { loadBuyData, saveBuyData, emptyBuyData, packageById } from "@/lib/journey";
 import { useJourney } from "@/components/journey/JourneyProvider";
 
 /* ── shared atoms, matched to the office's existing tokens ──────── */
@@ -266,7 +266,7 @@ function StateB({ brief, name, onEditBrief }: { brief: BuyerBrief; name?: string
                 {best.p.name} is the closest thing to your brief that you haven&rsquo;t unlocked.
               </p>
               <p className="mt-2 max-w-[54ch] text-[0.86rem] font-light leading-relaxed text-[#1a1a1a]/55">
-                ₹999 — about 0.01% of the ticket you&rsquo;re considering.
+                ₹{packageById("read").inr.toLocaleString("en-IN")} — about 0.01% of the ticket you&rsquo;re considering.
               </p>
               <Link href={projectPath(best.p)} className="mt-5 inline-block rounded-sm bg-[#1e6b45] px-6 py-3 text-[0.82rem] font-medium text-white transition-colors hover:bg-[#238c55]">
                 Unlock the full read →
