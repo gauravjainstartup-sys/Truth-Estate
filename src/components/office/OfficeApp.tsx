@@ -1520,8 +1520,8 @@ function InvoiceModal({ payment, onClose }: { payment: Payment; onClose: () => v
     <div className="fixed inset-0 z-[140] flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <button aria-label="Close" onClick={onClose} className="absolute inset-0 cursor-default bg-[#0a0a0a]/55 backdrop-blur-sm" />
       <div className="animate-fade-up relative max-h-[92svh] w-full max-w-[520px] overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl shadow-black/30">
-        <button aria-label="Close" onClick={onClose} className="absolute right-3.5 top-3.5 grid h-9 w-9 place-items-center rounded-full text-[#1a1a1a]/45 transition-colors hover:bg-[#1a1a1a]/[0.06] hover:text-[#1a1a1a]">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
+        <button aria-label="Close" onClick={onClose} className="absolute right-4 top-4 z-10 grid h-8 w-8 place-items-center rounded-full bg-[#1a1a1a]/[0.04] text-[#1a1a1a]/55 ring-1 ring-[#1a1a1a]/10 transition-colors hover:bg-[#1a1a1a]/10 hover:text-[#1a1a1a]">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" /></svg>
         </button>
 
         <div className="flex items-start justify-between gap-4 border-b border-[#1a1a1a]/10 pb-5">
