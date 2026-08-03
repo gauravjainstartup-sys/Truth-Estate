@@ -217,20 +217,20 @@ function loadAccess(): AccessState {
   let all = !!a.all;
   const uid = sessionUserId();
 
-  /* The account's own completed payments, read under the session. */
+  /* PAYMENT-ONLY (grants switched off for now, founder call). Purchased
+     reflects the account's completed PAYMENTS — primed from the same session
+     read that lists the invoices — so Purchased always equals Invoices.
+     Individual grants (user_profiles.unlocked_reports) are deliberately NOT
+     unioned in; a comped report is no longer shown as "Purchased". */
   if (uid && _sessionUnlocked && _sessionUnlocked.userId === uid) {
     for (const s of _sessionUnlocked.slugs) reads.add(s);
   }
 
-  /* The durable server-entitlements cache the report-page gate already
-     trusts (serverHasAccess) — grants, all-access plans and cross-device
-     purchases. Gated to whoever is signed in RIGHT NOW, exactly as that gate
-     is, so a stale answer for a previous account is never shown. */
+  /* All-Access is a paid PLAN, not a grant, so it stays — a ₹9,999 buyer
+     still owns everything. Gated to whoever is signed in right now, the same
+     check the report-page gate uses. */
   const e = readEntitlements();
-  if (e && e.userId && uid && e.userId === uid) {
-    if (e.all) all = true;
-    for (const s of Array.isArray(e.unlocked) ? e.unlocked : []) reads.add(s);
-  }
+  if (e && e.userId && uid && e.userId === uid && e.all) all = true;
 
   return { all, reads: [...reads], threeD: a.threeD ?? [] };
 }
