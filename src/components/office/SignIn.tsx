@@ -79,8 +79,8 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
     setStep("otp"); setResendIn(24);
   }
 
-  async function verify(e: React.FormEvent) {
-    e.preventDefault();
+  async function verify(e?: React.FormEvent) {
+    e?.preventDefault();
     if (busy) return;
     if (!otpComplete) { setErr(`Enter the ${OTP_LEN}-digit code.`); return; }
     const ten = isIndia ? normalisePhone(num) : normaliseIntl(dial, num);
@@ -188,7 +188,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
               </p>
 
               <div className="mt-5">
-                <OtpDigits value={otp} onChange={setOtp} len={OTP_LEN} autoFocus />
+                <OtpDigits value={otp} onChange={setOtp} len={OTP_LEN} autoFocus onComplete={verify} />
               </div>
 
               {err && <p className="mt-3 text-[0.8rem] text-[#b3402a]">{err}</p>}

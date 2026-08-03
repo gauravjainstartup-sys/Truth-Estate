@@ -545,7 +545,7 @@ function RegisterCard({
           </div>
           <div className="mt-2">
             <OtpDigits
-              value={otp} onChange={setOtp} len={otp.length} autoFocus
+              value={otp} onChange={setOtp} len={otp.length} autoFocus onComplete={verify}
               boxClass="h-12 w-full rounded-lg border border-[#1a1a1a]/15 bg-white text-center font-serif text-[1.25rem] font-light text-[#1a1a1a] outline-none transition-colors focus:border-[#1e6b45]/50"
             />
           </div>

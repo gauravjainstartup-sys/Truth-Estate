@@ -164,8 +164,8 @@ export default function UnlockModal({
      through to setSignedIn(). Someone could unlock and "pay" against a
      number that was never theirs. Both halves are real now — the code
      leaves MSG91 and the server confirms it before anyone is signed in. */
-  async function registerSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function registerSubmit(e?: React.FormEvent) {
+    e?.preventDefault();
     if (busy) return;
 
     if (!sent) {
@@ -360,7 +360,7 @@ export default function UnlockModal({
                     <p className="text-[0.85rem] text-[#1a1a1a]/55">Code sent to <span className="font-medium text-[#1a1a1a]">{sentTo}</span> via {isIndia ? "SMS" : "WhatsApp"}{" · "}<button type="button" onClick={() => { setSent(false); setKnown(undefined); setOtp(Array(OTP_LEN).fill("")); setErr(""); }} className="font-medium text-[#9a7a2e] hover:underline">Change</button></p>
                     <div className="mt-4">
                       <OtpDigits
-                        value={otp} onChange={setOtp} len={OTP_LEN} autoFocus
+                        value={otp} onChange={setOtp} len={OTP_LEN} autoFocus onComplete={registerSubmit}
                         boxClass="h-14 min-w-0 flex-1 rounded-lg border border-[#1a1a1a]/[0.18] bg-white text-center font-serif text-[1.4rem] text-[#1a1a1a] outline-none focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/20"
                       />
                     </div>

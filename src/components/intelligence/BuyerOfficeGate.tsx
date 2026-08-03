@@ -230,8 +230,8 @@ export default function BuyerOfficeGate({
     setSent(true);
   }
 
-  async function submitVerify(e: React.FormEvent) {
-    e.preventDefault();
+  async function submitVerify(e?: React.FormEvent) {
+    e?.preventDefault();
     if (busy) return;
     if (!name.trim()) { setErr("Please enter your name."); return; }
     if (!sent) { await sendCode(); return; }
@@ -356,7 +356,7 @@ export default function BuyerOfficeGate({
                   <div>
                     <p className={`mb-2.5 text-[0.76rem] font-light ${t.body}`}>Enter the code sent {method === "email" ? "to your email" : `on ${channelName}`}</p>
                     <OtpDigits
-                      value={otp} onChange={setOtp} len={OTP_LENGTH} autoFocus
+                      value={otp} onChange={setOtp} len={OTP_LENGTH} autoFocus onComplete={submitVerify}
                       boxClass={`h-12 w-full rounded-md border text-center text-[1.1rem] font-medium outline-none ${t.otp}`}
                     />
                   </div>

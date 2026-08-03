@@ -317,7 +317,13 @@ export default function TruthGuideChat({
           <input
             ref={inputRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setInput(val);
+              /* Auto-submit the code the moment it's complete — same behaviour
+                 as the digit-box OTP forms; no send tap for the OTP step. */
+              if (authStep === "code" && !authBusy && val.replace(/\D/g, "").length >= OTP_LENGTH) handleAuth(val);
+            }}
             placeholder={
               authStep === "phone" ? "Your mobile number"
               : authStep === "code" ? `${OTP_LENGTH}-digit code`
