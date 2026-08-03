@@ -1283,9 +1283,9 @@ export const READ_FROM_INR = 1100;
 /* The discount to render, or null when the list price equals the charge.
    One definition so every strike-through (pricing page, unlock modal,
    paywall, receipt) agrees on what "on offer" means and what % to show. */
-export function discountOf(p: { inr: number; mrp?: number | null; discountLabel?: string | null }): { mrp: number; label: string; pct: number } | null {
+export function discountOf(p: { inr: number; mrp?: number | null; discountLabel?: string | null }): { mrp: number; label: string; pct: number; off: number } | null {
   if (!p.mrp || p.mrp <= p.inr) return null;
-  return { mrp: p.mrp, label: p.discountLabel || "Offer", pct: Math.round((1 - p.inr / p.mrp) * 100) };
+  return { mrp: p.mrp, label: p.discountLabel || "Offer", pct: Math.round((1 - p.inr / p.mrp) * 100), off: p.mrp - p.inr };
 }
 
 const SIGNED_IN_KEY = "truthEstate.signedIn";

@@ -414,7 +414,7 @@ export default function UnlockModal({
                           <p className="mt-0.5 font-serif text-[1.35rem] font-semibold leading-none text-[#1e6b45]">{inr(amount)}</p>
                           {isUpgrade(c.id)
                             ? <p className="mt-1 text-[0.58rem] font-medium uppercase tracking-[0.08em] text-[#9a7a2e]">upgrade · {inr(credit)} credited</p>
-                            : d && <p className="mt-1 text-[0.56rem] font-medium uppercase tracking-[0.08em] text-[#1e6b45]">{d.label} · {d.pct}% off</p>}
+                            : d && <p className="mt-1 text-[0.58rem] font-semibold text-[#1e6b45]">save {inr(d.off)} · {d.pct}% off</p>}
                         </div>
                       </div>
 
@@ -491,7 +491,7 @@ export default function UnlockModal({
               </div>
               {isUpgrade(sel)
                 ? <p className="mt-1 text-[0.72rem] text-[#1a1a1a]/45">{inr(packageById(sel).inr)} tier · {inr(credit)} already paid credited.</p>
-                : selDiscount && <p className="mt-1 text-[0.72rem] text-[#1e6b45]">{selDiscount.label} — {selDiscount.pct}% off list {inr(selDiscount.mrp)}.</p>}
+                : selDiscount && <p className="mt-1 text-[0.72rem] text-[#1e6b45]">{selDiscount.label} — save {inr(selDiscount.off)} ({selDiscount.pct}% off).</p>}
               {/* The three payment methods used to be rendered here as
                   static rows with the first one pre-selected — a picture of
                   a checkout. Razorpay's own sheet offers the real ones, so

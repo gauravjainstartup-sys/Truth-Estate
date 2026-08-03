@@ -506,12 +506,12 @@ export default function Pricing() {
                       <span className="text-[0.8rem] font-light text-[#1a1a1a]/35">
                         {pkg.scope === "site" ? "/ whole site" : "/ project"}
                       </span>
-                      {d && (
-                        <span className="ml-1 rounded-full bg-[#1e6b45]/[0.08] px-2.5 py-1 text-[0.62rem] font-medium tracking-[0.02em] text-[#1e6b45]">
-                          {d.label} · {d.pct}% off
-                        </span>
-                      )}
                     </p>
+                    {d && (
+                      <p className="mt-1.5 text-[0.76rem] font-medium text-[#1e6b45]">
+                        {d.label} — save {inr(d.off)} ({d.pct}% off)
+                      </p>
+                    )}
                     <ul className="mt-6 flex-1 space-y-2.5">
                       {featureLines(pkg).map((f) => (
                         <li
