@@ -65,7 +65,7 @@ import {
   type ViewRecord,
   type OwnedRecord,
 } from "@/lib/officeReports";
-import { getSession, saveName } from "@/lib/phoneAuth";
+import { getSession, saveName, fetchMyProfile, updateMyProfile } from "@/lib/phoneAuth";
 import { loadBuyerBrief, briefSentence, type BuyerBrief } from "@/lib/buyerBrief";
 import { useJourney } from "@/components/journey/JourneyProvider";
 
@@ -1775,8 +1775,13 @@ function AccountRow({ label, children }: { label: string; children: React.ReactN
 function AccountSection({ onSignOut }: { onSignOut: () => void }) {
   const { open: openJourney } = useJourney();
   const [name, setName] = useState<string>(() => (loadAccount()?.name ?? "").trim());
-  const [phone] = useState<string>(() => getSession()?.phone ?? "");
-  const [email] = useState<string>(() => (loadConsultation()?.email ?? "").trim());
+  const [phone, setPhone] = useState<string>(() => getSession()?.phone ?? "");
+  const [email, setEmail] = useState<string>(() => (loadConsultation()?.email ?? "").trim());
+  /* True once user_profiles has answered over a live session — then it is
+     the source of truth (and follows the person across devices), and email
+     becomes editable. Without a session we keep the localStorage copy,
+     read-only, so surfaces without sessions behave exactly as before. */
+  const [live, setLive] = useState(false);
   const [brief, setBrief] = useState<BuyerBrief | null>(null);
 
   const [editing, setEditing] = useState(false);
@@ -1784,7 +1789,37 @@ function AccountSection({ onSignOut }: { onSignOut: () => void }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  const [emailEditing, setEmailEditing] = useState(false);
+  const [emailDraft, setEmailDraft] = useState("");
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailSaved, setEmailSaved] = useState(false);
+  const [emailErr, setEmailErr] = useState("");
+
   useEffect(() => { void loadBuyerBrief().then(setBrief); }, []);
+  useEffect(() => {
+    void fetchMyProfile().then((p) => {
+      if (!p) return;
+      setLive(true);
+      if (p.name && p.name.trim()) setName(p.name.trim());
+      if (p.phone && p.phone.trim()) setPhone(p.phone.trim());
+      /* A synthetic phone_*@truthestate.com address is not a real email. */
+      setEmail(p.email && !/^phone_\d+@truthestate\.com$/i.test(p.email) ? p.email : "");
+    });
+  }, []);
+
+  async function saveEmail() {
+    const clean = emailDraft.trim().slice(0, 200);
+    setEmailErr("");
+    if (clean && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(clean)) { setEmailErr("That doesn't look like an email."); return; }
+    setEmailSaving(true);
+    const ok = await updateMyProfile({ email: clean });
+    setEmailSaving(false);
+    if (!ok) { setEmailErr("Couldn't save that just now — try again."); return; }
+    setEmail(clean);
+    setEmailEditing(false);
+    setEmailSaved(true);
+    setTimeout(() => setEmailSaved(false), 2600);
+  }
 
   async function saveDisplayName() {
     const clean = draft.trim().slice(0, 120);
@@ -1879,11 +1914,47 @@ function AccountSection({ onSignOut }: { onSignOut: () => void }) {
           </AccountRow>
 
           <AccountRow label="Email">
-            {email && email.includes("@") ? (
-              <span className="text-[0.95rem] text-[#1a1a1a]">{email}</span>
+            {emailEditing ? (
+              <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+                <input
+                  autoFocus
+                  type="email"
+                  value={emailDraft}
+                  onChange={(e) => setEmailDraft(e.target.value)}
+                  placeholder="you@example.com"
+                  className={`sm:max-w-[280px] ${ACCOUNT_FIELD}`}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={saveEmail}
+                    disabled={emailSaving}
+                    className="rounded-sm bg-[#1e6b45] px-5 py-2.5 text-[0.8rem] font-medium tracking-[0.02em] text-white transition-colors hover:bg-[#238c55] disabled:opacity-60"
+                  >
+                    {emailSaving ? "Saving…" : "Save"}
+                  </button>
+                  <button
+                    onClick={() => { setEmailEditing(false); setEmailErr(""); }}
+                    className="rounded-sm border border-[#1a1a1a]/15 px-5 py-2.5 text-[0.8rem] font-light text-[#1a1a1a]/60 transition-colors hover:border-[#1a1a1a]/35"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             ) : (
-              <span className="text-[0.95rem] text-[#1a1a1a]/35">NA</span>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className={`text-[0.95rem] ${email ? "text-[#1a1a1a]" : "text-[#1a1a1a]/35"}`}>{email || "NA"}</span>
+                {live && (
+                  <button
+                    onClick={() => { setEmailDraft(email); setEmailEditing(true); }}
+                    className="text-[0.78rem] font-medium text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]"
+                  >
+                    {email ? "Edit" : "Add email"}
+                  </button>
+                )}
+                {emailSaved && <span className="text-[0.74rem] font-light text-[#1e6b45]">✓ Saved</span>}
+              </div>
             )}
+            {emailErr && <p className="mt-1.5 text-[0.74rem] text-[#b3402a]">{emailErr}</p>}
           </AccountRow>
         </div>
       </div>

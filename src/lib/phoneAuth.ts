@@ -224,6 +224,7 @@ export async function verifyOtp(
     const data = (await res.json().catch(() => ({}))) as {
       ok?: boolean; error?: string; userId?: string;
       chatsClaimed?: number; leadsClaimed?: number;
+      session?: { access_token: string; token_type: string; expires_in: number };
     };
     if (!data.ok || !data.userId) {
       return { ok: false, error: data.error ?? "Couldn't verify that just now. Try again in a moment." };
@@ -248,7 +249,9 @@ export async function verifyOtp(
     try {
       window.localStorage.setItem(
         SESSION_STORE,
-        JSON.stringify({ access_token: null, user_id: data.userId, phone: phone10 }),
+        /* The real session chat-signin mints once PROJECT_JWT_SECRET is set;
+           null until then. getSession() already exposes it. */
+        JSON.stringify({ access_token: data.session?.access_token ?? null, user_id: data.userId, phone: phone10 }),
       );
     } catch { /* a full quota must not block a verified sign-in */ }
 
@@ -261,6 +264,55 @@ export async function verifyOtp(
     return { ok: true };
   } catch {
     return { ok: false, error: "Couldn't reach us just now — check your connection and try again." };
+  }
+}
+
+/* ── Account profile, read/written through the session ──────────────
+   With a session token the browser reads and updates the user's OWN
+   user_profiles row directly, under the RLS own-row policies — no edge
+   function. Both return null/false with no session, so the office falls
+   back to its localStorage copy when sessions aren't live. */
+export type MyProfile = { id: string; name: string | null; phone: string | null; email: string | null };
+
+export async function fetchMyProfile(): Promise<MyProfile | null> {
+  const token = getSession()?.access_token;
+  if (!token) return null;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/user_profiles?select=id,name,phone,email&limit=1`,
+      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
+    );
+    if (!res.ok) return null;
+    const rows = (await res.json().catch(() => null)) as MyProfile[] | null;
+    return Array.isArray(rows) && rows[0] ? rows[0] : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function updateMyProfile(patch: Partial<Pick<MyProfile, "name" | "email">>): Promise<boolean> {
+  const session = getSession();
+  const token = session?.access_token;
+  const uid = session?.user_id;
+  if (!token || !uid) return false;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/user_profiles?id=eq.${encodeURIComponent(uid)}`,
+      {
+        method: "PATCH",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify(patch),
+        signal: AbortSignal.timeout(8000),
+      },
+    );
+    return res.ok;
+  } catch {
+    return false;
   }
 }
 
