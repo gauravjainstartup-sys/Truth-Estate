@@ -1141,12 +1141,13 @@ export function unlockProject(slug: string): void {
    All-Access (isMember), which also carries the advisory consultation.
    The single-project fee is credited toward it.
 
-   MEMBERSHIP_INR is gone rather than corrected. It held ₹11,000 from an
-   earlier membership price, PACKAGES later put All-Access at ₹9,999, and
-   the two sat a hundred and eighty lines apart agreeing about nothing.
-   Deleting it leaves one price for All-Access — PACKAGES, which is also
-   what razorpay-order charges from — instead of a second one waiting to
-   be picked up by the next thing that needs a number. */
+   MEMBERSHIP_INR is gone rather than corrected. It held an old membership
+   price that no longer matched what All-Access actually cost, and the two
+   sat a hundred and eighty lines apart agreeing about nothing. Deleting it
+   leaves one source of truth for the price — the pricing table (migration
+   0013), which razorpay-order charges from and getPackages() mirrors —
+   instead of a second number waiting to be picked up by the next thing
+   that needs one. */
 export const PROJECT_UNLOCK_INR = 1499;
 
 /* Full unit-intelligence access = a paid single-project unlock OR membership. */
@@ -1188,16 +1189,16 @@ export const PACKAGES: Package[] = [
 
 /* WHAT WE STILL HONOUR. Retired from sale, never from the ledger.
    The Sun & Vastu 3D advisor exists for a handful of projects and is
-   still in beta, so a ₹1,499 SKU built around it was selling a promise
+   still in beta, so a standalone SKU built around it was selling a promise
    the catalogue could not keep for most of it — founder's call to
    withdraw it. 3D does not disappear: All-Access includes it, and every
    3D the tier has already sold stays exactly where it is.
 
    It lives here rather than being deleted because deleting it would have
-   been silent and expensive. packageById is what prices an upgrade, and
-   with read3d gone it falls through to PACKAGES[0] — so a returning buyer
-   who paid ₹1,499 for the 3D tier would have been credited ₹999 against
-   All-Access instead of ₹1,499, quietly overcharging exactly the
+   been silent and expensive. packageById is what the client shows as an
+   upgrade credit, and with read3d gone it would fall through to the read
+   price — so a returning buyer who paid for the 3D tier would be
+   under-credited against All-Access, quietly overcharging exactly the
    customers who bought the thing we withdrew. The server's own price
    table keeps its read3d row for the same reason. */
 export const RETIRED_PACKAGES: Package[] = [
@@ -1438,13 +1439,13 @@ export function grantPackage(pkg: PackageId, slug?: string): void {
      one place the funnel needs to know about.
 
      PRICED FROM THE PACKAGE TABLE, not from three separate constants. The
-     ternary this replaces read a MEMBERSHIP_INR of ₹11,000 for All-Access,
-     a figure from an earlier membership price that PACKAGES was later set
-     below and nobody reconciled. Razorpay prices server-side from the
-     packageId, so buyers were correctly charged ₹9,999 throughout; what
-     was wrong was the number we then recorded, which overstated every
-     All-Access sale by ₹1,001 in our own analytics. The other two arms
-     happened to agree with the table, which is why it went unseen.
+     ternary this replaces read a MEMBERSHIP_INR for All-Access — a figure
+     from an earlier membership price that PACKAGES was later set below and
+     nobody reconciled. Razorpay prices server-side from the packageId, so
+     buyers were charged correctly throughout; what was wrong was the number
+     we then recorded, which overstated every All-Access sale in our own
+     analytics. The other two arms happened to agree with the table, which
+     is why it went unseen.
 
      Note this is the LIST price. A returning buyer paying the upgrade
      difference is charged less, and `payments` is the authority on what

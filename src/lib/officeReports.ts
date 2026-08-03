@@ -237,7 +237,7 @@ function loadAccess(): AccessState {
     for (const s of _sessionUnlocked.slugs) reads.add(s);
   }
 
-  /* All-Access is a paid PLAN, not a grant, so it stays — a ₹9,999 buyer
+  /* All-Access is a paid PLAN, not a grant, so it stays — an All-Access buyer
      still owns everything. Gated to whoever is signed in right now, the same
      check the report-page gate uses. */
   const e = readEntitlements();

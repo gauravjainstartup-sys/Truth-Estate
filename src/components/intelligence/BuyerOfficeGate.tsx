@@ -13,9 +13,9 @@ import { normalisePhone, normaliseIntl, sendOtp, sendOtpIntl, verifyOtp, OTP_LEN
 
 /* THE BUYER OFFICE — the member surface for a project's unit intelligence.
    Freemium: the live 3D + a sample unit are free; the full per-unit verdict
-   is paid (₹1,499 for one project — the read + 3D — or ₹9,999 All-Access:
-   every read + every 3D, with the single fee credited). Projects without a 3D
-   yet keep a free "register interest" flow. Payment is a front-end simulation.
+   is paid — a single report unlocks one project, or All-Access opens every
+   read + every 3D across the site, with the single fee credited. Projects
+   without a 3D yet keep a free "register interest" flow.
    Ships light by default; pass theme="dark" for the dark-luxe variant. */
 
 const BUDGETS = [
@@ -39,7 +39,7 @@ const CAPS: { icon: IconName; t: string; d: string }[] = [
 const emailOk = (e: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 const advisor = advisorFor("advice");
-// The all-access price (₹9,999) — the single project plan stays ₹1,499 (read + 3D).
+// All-Access price, read live from the pricing table.
 const ALL_INR = packageById("all").inr;
 
 type Plan = "single" | "membership";

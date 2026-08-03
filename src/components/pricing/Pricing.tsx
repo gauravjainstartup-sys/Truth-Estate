@@ -460,7 +460,7 @@ export default function Pricing() {
               pay for exactly what you need.
             </p>
 
-            {/* Two tiers, not three: the ₹1,499 read+3D SKU is withdrawn while the
+            {/* Two tiers, not three: the read+3D SKU is withdrawn while the
                 Sun & Vastu advisor is in beta on a handful of projects. The grid
                 and the featured tier both followed the retired one, so a bare
                 filter would have left a three-column layout with a hole in it

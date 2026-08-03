@@ -129,7 +129,7 @@ export default function UnlockModal({
   const isUpgrade = (id: PackageId) => credit > 0 && !owns(id);
   const selDiscount = discountOf(packageById(sel));
   /* Tied to what we actually SELL, not to this hand-written list. PLAN_CARDS
-     still describes the retired ₹1,499 read+3D tier, and without this filter
+     still describes the retired read+3D tier, and without this filter
      withdrawing it from PACKAGES would have removed its price from the
      pricing page and left its card sitting here. One table decides. */
   const cards = PLAN_CARDS.filter((c) => !owns(c.id) && pkgs.some((pk) => pk.id === c.id));

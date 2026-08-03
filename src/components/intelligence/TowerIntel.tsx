@@ -78,7 +78,7 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
   }, [modal]);
 
   // Payment succeeded in the gate (simulated). Record the entitlement under the
-  // v2 package model — the single project plan is ₹1,499 (read + 3D), the
+  // v2 package model — the single project unlock (one report), the
   // membership is all-access — then, if the 3D is already open (a dive-in),
   // unlock it so the tapped tower opens.
   function onPaid(plan: Plan) {

@@ -40,7 +40,7 @@ export type ChallengeAnswer = { text: string; gate: Gate };
 /* a corridor rival for in-chat head-to-heads — public scoreboard only
    (name + Truth Score); the deep audit stays behind each project's own read */
 export type Peer = { name: string; score: number; sameCorridor: boolean };
-/* per-unit Sun/Vastu intelligence — the ₹1,499 3D tier (has3DAccess only) */
+/* per-unit Sun/Vastu intelligence — the Sun & Vastu 3D tier, via All-Access (has3DAccess only) */
 export type UnitIntel = OmniUnit;
 /* access the chat needs to gate correctly */
 export type ChatAccess = { has3DModel: boolean; has3DAccess: boolean };
@@ -146,7 +146,7 @@ function classify(q: string): Intent {
   // compare wins over incidental location/price words ("compare to nearby",
   // "better value than X") — but NOT over "should I buy A over B" (verdict, above)
   if (has(n, "compare", "vs ", "versus", "better than", "worse than", "alternative", "other project", "other projects", "instead of")) return "compare";
-  // Sun/daylight/Vastu/ventilation/facing = the ₹1,499 Sun & Vastu 3D tier
+  // Sun/daylight/Vastu/ventilation/facing = the Sun & Vastu 3D tier (via All-Access)
   if (has(n, "sunlight", "daylight", "vastu", "ventilat", "facing", "airflow", "air flow", "natural light", "brightness", "cross vent", "morning sun", "which floor", "east-facing", "north-facing", "west-facing", "south-facing", " sun ", "sun?", "sunny")) return "sunvastu";
   if (has(n, "roi", "return", "appreciat", "cagr", "growth", "profit", "resale", "capital", "rental yield", "yield")) return "roi";
   if (has(n, "worth it", "overpriced", "expensive", "too costly", "value for money", "price fair", "fairly priced", "cheap", "premium")) return "price";
@@ -432,6 +432,6 @@ export const msgId = () => `m${Date.now().toString(36)}${(n++).toString(36)}`;
 
 /* the gate CTA copy, shared with the UI — one per gate kind */
 export const GATE_CTA = `Unlock the full read — ${inr(READ_FROM_INR)}`;
-/* The 3D rides on All-Access now; naming the retired ₹1,499 here would
-   promise a price the checkout no longer offers. */
+/* The 3D rides on All-Access now; naming the retired standalone 3D price
+   here would promise a price the checkout no longer offers. */
 export const GATE_CTA_3D = `Unlock Sun & Vastu 3D — with All-Access`;
