@@ -9,7 +9,8 @@
      • ties the *visible* Truth Score to the locked detail ("why only X?").
    ──────────────────────────────────────────────────────────────────────── */
 
-import { packageById } from "@/lib/journey";
+import { discountOf } from "@/lib/journey";
+import { usePackage } from "@/lib/usePricing";
 
 /* Each locked section framed as the burning question it answers — the pull is
    the question, not a data dump. Generic-but-true (no fabricated findings). */
@@ -59,6 +60,8 @@ export default function LockedReport({
 }) {
   const lost = Math.max(0, 100 - Math.round(truthScore));
   const owner = audience === "owner";
+  const read = usePackage("read");
+  const d = discountOf(read);
   return (
     <div className="mt-14 border-t border-[#1a1a1a]/8 pt-12">
       {/* ── the pitch ── */}
@@ -81,10 +84,17 @@ export default function LockedReport({
         )}
         <button
           onClick={onUnlock}
-          className="group mt-7 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#1e6b45] px-6 py-4 text-[1rem] font-semibold tracking-[0.01em] text-white shadow-[0_18px_40px_-16px_rgba(30,107,69,0.6)] transition-all hover:bg-[#238c55] sm:w-auto sm:px-10"
+          className="group mt-7 inline-flex w-full flex-col items-center justify-center gap-0.5 rounded-lg bg-[#1e6b45] px-6 py-3 text-white shadow-[0_18px_40px_-16px_rgba(30,107,69,0.6)] transition-all hover:bg-[#238c55] sm:w-auto sm:px-12"
         >
-          Get the full read — from {inr(packageById("read").inr)}
-          <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
+          <span className="inline-flex items-center gap-2 text-[1rem] font-semibold tracking-[0.01em]">
+            Get the full read — {inr(read.inr)}
+            <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
+          </span>
+          {d && (
+            <span className="text-[0.72rem] font-medium text-white/85">
+              <span className="text-white/55 line-through">{inr(d.mrp)}</span> · save {inr(d.mrp - read.inr)} ({d.pct}% off)
+            </span>
+          )}
         </button>
         <p className="mt-3.5 text-[0.82rem] leading-relaxed text-[#1a1a1a]/55">
           {owner

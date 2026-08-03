@@ -18,7 +18,8 @@
    there. This card is locked-only.
    ──────────────────────────────────────────────────────────────────────── */
 
-import { packageById } from "@/lib/journey";
+import { discountOf } from "@/lib/journey";
+import { usePackage } from "@/lib/usePricing";
 import { basePath } from "@/lib/site";
 
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
@@ -31,6 +32,8 @@ const INCLUDED: { t: string; bonus?: boolean }[] = [
 ];
 
 export default function UnlockDesk({ onUnlock, onSample }: { onUnlock: () => void; onSample: () => void }) {
+  const read = usePackage("read");
+  const d = discountOf(read);
   return (
     <div className="rounded-2xl border border-[#1a1a1a]/10 bg-[#FBF8F2] p-6">
       {/* founder as a trust seal — not a free-call offer */}
@@ -65,10 +68,17 @@ export default function UnlockDesk({ onUnlock, onSample }: { onUnlock: () => voi
 
       <button
         onClick={onUnlock}
-        className="group mt-5 block w-full rounded-xl bg-[#1e6b45] px-5 py-3.5 text-center text-[0.85rem] font-semibold text-white transition-colors hover:bg-[#238c55]"
+        className="group mt-5 block w-full rounded-xl bg-[#1e6b45] px-5 py-3 text-center text-white transition-colors hover:bg-[#238c55]"
       >
-        Unlock the full read — {inr(packageById("read").inr)}{" "}
-        <span aria-hidden className="inline-block transition-transform group-hover:translate-x-0.5">→</span>
+        <span className="inline-flex items-center gap-1.5 text-[0.85rem] font-semibold">
+          Unlock the full read — {inr(read.inr)}
+          <span aria-hidden className="inline-block transition-transform group-hover:translate-x-0.5">→</span>
+        </span>
+        {d && (
+          <span className="mt-0.5 block text-[0.68rem] font-medium text-white/85">
+            <span className="text-white/55 line-through">{inr(d.mrp)}</span> · save {inr(d.mrp - read.inr)} ({d.pct}% off)
+          </span>
+        )}
       </button>
 
       <button type="button" onClick={onSample} className="mt-3 block w-full text-center text-[0.72rem] font-medium text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]">
