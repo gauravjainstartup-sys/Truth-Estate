@@ -41,7 +41,7 @@ type Price = { mrp: number; price: number; label: string; scope: "project" | "si
 const DEFAULT_PRICING: Record<string, Omit<Price, "discountLabel">> = {
   read:   { mrp: 2100,  price: 1100,  label: "Full Read",              scope: "project" },
   read3d: { mrp: 1499,  price: 1499,  label: "Read + Sun & Vastu 3D",  scope: "project" },
-  all:    { mrp: 21000, price: 11000, label: "All-Access",             scope: "site" },
+  all:    { mrp: 11000, price: 5100,  label: "All-Access",             scope: "site" },
 };
 const fallbackPrice = (id: string): Price | null => {
   const f = DEFAULT_PRICING[id];

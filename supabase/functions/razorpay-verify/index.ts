@@ -50,7 +50,7 @@ const RZP_KEY_SECRET = Deno.env.get("RAZORPAY_KEY_SECRET") ?? "";
 const PRICE_INR: Record<string, { inr: number; label: string; scope: "project" | "site" }> = {
   read:   { inr: 1100,  label: "Full Read",             scope: "project" },
   read3d: { inr: 1499,  label: "Read + Sun & Vastu 3D", scope: "project" },
-  all:    { inr: 11000, label: "All-Access",            scope: "site" },
+  all:    { inr: 5100,  label: "All-Access",            scope: "site" },
 };
 
 const ALLOW_ORIGIN = [

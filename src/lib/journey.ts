@@ -1161,7 +1161,7 @@ export function hasFullAccess(slug: string): boolean {
    unlocks no reads. Content access is bought:
      • read    ₹1,100 (list ₹2,100)   — one project's full read (no 3D)
      • read3d  ₹1,499                 — retired; read + its Sun & Vastu 3D
-     • all     ₹11,000 (list ₹21,000) — every read + every 3D (+ 2 on-demand)
+     • all     ₹5,100 (list ₹11,000)  — every read + every 3D (+ 2 on-demand)
    Seeded fallback only; the pricing table is the live authority.
    Custom packages (and any Deal-Room mandate fee) are set after the
    first free advisor call — never a fixed number on the site.
@@ -1183,7 +1183,7 @@ export type Package = { id: PackageId; label: string; inr: number; mrp?: number;
    function refreshes from the table without a redeploy. */
 export const PACKAGES: Package[] = [
   { id: "read", label: "Full Read", inr: 1100, mrp: 2100, discountLabel: "Inaugural offer", scope: "project", includes3D: false, blurb: "This project's complete forensic read — every pillar, the price journey, ROI model and verdict." },
-  { id: "all", label: "All-Access", inr: 11000, mrp: 21000, discountLabel: "Inaugural offer", scope: "site", includes3D: true, blurb: "Every read and every 3D across the site — plus 2 on-demand project reports & 3Ds." },
+  { id: "all", label: "All-Access", inr: 5100, mrp: 11000, discountLabel: "Inaugural offer", scope: "site", includes3D: true, blurb: "Every read and every 3D across the site — plus 2 on-demand project reports & 3Ds." },
 ];
 
 /* WHAT WE STILL HONOUR. Retired from sale, never from the ledger.

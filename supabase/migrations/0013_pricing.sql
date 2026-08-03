@@ -49,7 +49,7 @@ insert into public.pricing
 values
   ('read',   'Full Read',              'project',  2100,  1100, 'Inaugural offer', false,
      'This project''s complete forensic read — every pillar, the price journey, ROI model and verdict.', true, 10),
-  ('all',    'All-Access',             'site',    21000, 11000, 'Inaugural offer', true,
+  ('all',    'All-Access',             'site',    11000,  5100, 'Inaugural offer', true,
      'Every read and every 3D across the site — plus 2 on-demand project reports & 3Ds.', true, 20),
   ('read3d', 'Read + Sun & Vastu 3D',  'project',  1499,  1499, null, true,
      'The full read plus the interactive Sun & Vastu 3D advisor for this project.', false, 30)
