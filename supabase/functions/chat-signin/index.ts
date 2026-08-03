@@ -39,6 +39,11 @@
 const DB_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+/* The project's JWT secret (Supabase → Settings → API → JWT Secret), set
+   as a function secret. Its PRESENCE is the on-switch for real sessions:
+   while it is unset, mintSession() returns null and this function behaves
+   byte-for-byte as it does today. */
+const JWT_SECRET = Deno.env.get("PROJECT_JWT_SECRET") ?? "";
 
 const ALLOW_ORIGIN = [
   /^https:\/\/gauravjainstartup-sys\.github\.io$/,
@@ -167,6 +172,61 @@ async function findInternational(digits: string): Promise<string | null> {
     return rows?.[0]?.id ?? null;
   } catch (e) {
     console.error("[chat-signin] intl lookup", e);
+    return null;
+  }
+}
+
+/* ── Real-session mint (Phase 0) ────────────────────────────────────
+   Signs a short-lived Supabase JWT for a SERVER-RESOLVED, verified user
+   id, so PostgREST treats the browser as that user and the existing RLS
+   own-row policies isolate it. Same Web Crypto HMAC primitive that
+   razorpay-verify uses; no dependency.
+
+   SAFE BY CONSTRUCTION:
+   • Inert until PROJECT_JWT_SECRET is set — deploying this changes nothing.
+   • Only ever called with an id resolved HERE from the MSG91-verified
+     phone; never an id supplied by the client.
+   • Never minted on the unverified international path.
+   • Failure is swallowed: a sign-in must not break because a token mint
+     hiccuped; the client just keeps its existing localStorage behaviour.
+
+   NEXT before this goes user-facing: refresh/rotation — for now it returns
+   a 1-hour access token with no refresh token. */
+function b64url(input: Uint8Array | string): string {
+  const bytes = typeof input === "string" ? new TextEncoder().encode(input) : input;
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function mintSession(
+  userId: string,
+): Promise<{ access_token: string; token_type: string; expires_in: number } | null> {
+  if (!JWT_SECRET) return null;
+  try {
+    const now = Math.floor(Date.now() / 1000);
+    const ttl = 60 * 60; // 1 hour
+    const data =
+      `${b64url(JSON.stringify({ alg: "HS256", typ: "JWT" }))}.` +
+      `${b64url(JSON.stringify({
+        sub: userId,
+        role: "authenticated",
+        aud: "authenticated",
+        iss: `${DB_URL}/auth/v1`,
+        iat: now,
+        exp: now + ttl,
+      }))}`;
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(JWT_SECRET),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+    const sig = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(data)));
+    return { access_token: `${data}.${b64url(sig)}`, token_type: "bearer", expires_in: ttl };
+  } catch (e) {
+    console.error("[chat-signin] session mint failed (non-fatal):", e instanceof Error ? e.message : String(e));
     return null;
   }
 }
@@ -333,13 +393,17 @@ Deno.serve(async (req: Request) => {
     });
 
     await stampSignIn(userId, body.anonId, body.sessionId);
-    console.log(`[chat-signin] ok user=${userId} chats=${linked?.chats_claimed ?? 0} leads=${linked?.leads_claimed ?? 0}`);
+    /* A real session — but only on this verified path, and only once the
+       JWT secret is set. Absent → the response is identical to before. */
+    const session = await mintSession(userId);
+    console.log(`[chat-signin] ok user=${userId} chats=${linked?.chats_claimed ?? 0} leads=${linked?.leads_claimed ?? 0} session=${session ? "minted" : "off"}`);
     return new Response(JSON.stringify({
       ok: true,
       userId,
       verified: true,
       chatsClaimed: linked?.chats_claimed ?? 0,
       leadsClaimed: linked?.leads_claimed ?? 0,
+      ...(session ? { session } : {}),
     }), { status: 200, headers });
   } catch (e) {
     return fail("Couldn't complete sign-in just now. Try again in a moment.",
