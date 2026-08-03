@@ -278,8 +278,17 @@ export default function ProjectProfile({
      is shopping for the demo. */
   useEffect(() => {
     if (sample) return;
-    track("report_viewed", { projectSlug: p.slug, projectName: p.name });
-  }, [p.slug, p.name, sample]);
+    /* seoSlug + market ride along in props so the office can rebuild a
+       working "Open report" link and a market label for this report on a
+       SECOND device — the event's own columns carry only the internal slug
+       and name. Backward-compatible: track() merges props, older events
+       simply lack these two keys and the office backfills or degrades. */
+    track("report_viewed", {
+      projectSlug: p.slug,
+      projectName: p.name,
+      props: { seoSlug: p.seoSlug ?? null, market: p.market ?? null },
+    });
+  }, [p.slug, p.name, p.seoSlug, p.market, sample]);
 
   /* Record the open in the buyer's Office — this is the "last opened" clock the
      Documents & Portfolio "See new update" badge reads against each report's

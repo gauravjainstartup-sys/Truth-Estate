@@ -50,6 +50,8 @@ import {
   listViewed,
   listOwned,
   listPayments,
+  fetchMyViewedRemote,
+  fetchMyPaymentsRemote,
   getRating,
   rateReport,
   unmarkOwned,
@@ -1317,10 +1319,18 @@ function DocumentsSection() {
   const [invoice, setInvoice] = useState<Payment | null>(null);
 
   useEffect(() => {
+    /* Paint instantly from the local copy, then prefer the account's own
+       data when a session is live — invoices and viewed reports then follow
+       the buyer across devices, not just this browser. Both fetchers return
+       null (kept the local copy) when signed out or on any hiccup, so a
+       lookup outage can never blank a tab. Purchased is already
+       account-backed via the entitlements cache. */
     setPurchased(listPurchased());
     setViewed(listViewed());
     setPayments(listPayments());
     loadReportDates().then(setDates);
+    void fetchMyPaymentsRemote().then((p) => { if (p) setPayments(p); });
+    void fetchMyViewedRemote().then((v) => { if (v) setViewed(v); });
   }, []);
 
   /* Opening the report from here refreshes the "last opened" clock so the

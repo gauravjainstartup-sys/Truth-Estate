@@ -274,6 +274,195 @@ export function reportUpdates(dates: SectionDates | null | undefined, since: num
   return out;
 }
 
+/* ════════════════════════════════════════════════════════════════
+   SESSION-BACKED READS — the office, per account (Phase 2)
+
+   With a real session (minted at sign-in, stored by phoneAuth under
+   "truthEstate.sbSession") the office reads the buyer's OWN invoices and
+   viewed reports straight from Postgres under RLS, so they follow the
+   ACCOUNT across devices instead of living on one browser. Purchased is
+   already account-backed (the entitlements cache, refreshed on every load);
+   owned is next, once its table exists (migration 0012).
+
+   These are ADAPTERS, not UI: each maps DB rows onto the EXISTING Payment /
+   ViewRecord shapes the Documents tab already renders — no component
+   changes. Every path fails SOFT and returns null (never []) when there is
+   no session, the lookup errors, or the shape is wrong — null means "keep
+   the local copy you already painted", which the caller can tell apart from
+   an empty array ("signed in, genuinely nothing").
+   ════════════════════════════════════════════════════════════════ */
+const SB_URL = "https://lyetvabfgaidvqrbmaoy.supabase.co";
+const SB_ANON =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5ZXR2YWJmZ2FpZHZxcmJtYW95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MDI2MzEsImV4cCI6MjA5MzI3ODYzMX0.zJzqyfhANxChklw7bEiOc7PwSq2R9wiJIpS39wCYS_8";
+
+/* The session phoneAuth writes on a verified sign-in. Read inline rather
+   than importing phoneAuth so this data layer keeps its single dependency
+   (./site) and never pulls the auth/journey chain into the office bundle. */
+function accessToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem("truthEstate.sbSession");
+    const s = raw ? (JSON.parse(raw) as { access_token?: string | null }) : null;
+    return s?.access_token ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/* liveSlug, inlined — the internal id events and entitlements key on is the
+   slugified project name. Kept local so this module never imports the
+   build-time supabase layer just for one string transform. */
+function slugify(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+/* jsonb can surface as a real object OR a string depending on the driver;
+   normalise both to a plain record so a props read never throws. */
+function asProps(v: unknown): Record<string, unknown> {
+  if (v && typeof v === "object" && !Array.isArray(v)) return v as Record<string, unknown>;
+  if (typeof v === "string") {
+    try {
+      const p = JSON.parse(v) as unknown;
+      return p && typeof p === "object" && !Array.isArray(p) ? (p as Record<string, unknown>) : {};
+    } catch {
+      return {};
+    }
+  }
+  return {};
+}
+
+type PaymentRow = {
+  id?: string; status?: string | null; project_name?: string | null; package_name?: string | null;
+  amount?: number | string | null; created_at?: string | null;
+  razorpay_order_id?: string | null; razorpay_payment_id?: string | null;
+};
+
+/* Documents · Invoices / the "Invoice ↗" buttons — the buyer's real
+   completed payments, RLS-scoped to them. The invoice number is a display
+   artifact (the authoritative reference is the Razorpay id on the receipt),
+   so it is synthesised deterministically from chronological order — TE-YYYY
+   from each payment's own year, a running sequence across all of them —
+   mirroring how addPayment numbers the local records. */
+export async function fetchMyPaymentsRemote(): Promise<Payment[] | null> {
+  const token = accessToken();
+  if (!token) return null;
+  try {
+    const res = await fetch(
+      `${SB_URL}/rest/v1/payments` +
+        `?select=id,status,project_name,package_name,amount,created_at,razorpay_order_id,razorpay_payment_id` +
+        `&order=created_at.asc&limit=200`,
+      { headers: { apikey: SB_ANON, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
+    );
+    if (!res.ok) return null;
+    const rows = (await res.json().catch(() => null)) as PaymentRow[] | null;
+    if (!Array.isArray(rows)) return null;
+    const out: Payment[] = [];
+    let seq = 0;
+    for (const r of rows) {
+      /* Only settled money is an invoice — a pending or failed row is not
+         something to hand the buyer a receipt for. Case-tolerant, because
+         status has been written both "completed" and "Completed". */
+      if ((r.status ?? "").toLowerCase() !== "completed") continue;
+      const amt = typeof r.amount === "string" ? parseFloat(r.amount) : r.amount ?? 0;
+      const amountInr = Number.isFinite(amt) ? Math.round(amt as number) : 0;
+      const date = r.created_at ? new Date(r.created_at).getTime() : Date.now();
+      /* All-Access carries the "all" package and no single project. */
+      const allAccess = (r.package_name ?? "").toLowerCase() === "all" || !r.project_name;
+      const stored = (r.project_name ?? "").trim();
+      const slug = allAccess ? null : slugify(stored);
+      /* project_name is a readable name on new rows and a raw slug on old
+         ones; prettify only when it looks like a slug. */
+      const name = allAccess
+        ? ""
+        : stored && !/^[a-z0-9-]+$/.test(stored)
+          ? stored
+          : slug
+            ? prettySlug(slug)
+            : "";
+      seq += 1;
+      const invoiceNo = `TE-${new Date(date).getFullYear()}-${String(seq).padStart(4, "0")}`;
+      out.push({
+        id: r.id ?? r.razorpay_payment_id ?? invoiceNo,
+        slug,
+        item: allAccess ? "All-Access — every report & 3D across the site" : `Full read${name ? ` — ${name}` : ""}`,
+        amountInr,
+        date,
+        ...(r.razorpay_payment_id ? { razorpayId: r.razorpay_payment_id } : {}),
+        invoiceNo,
+      });
+    }
+    /* The server is authoritative for a signed-in buyer, but never at the
+       cost of dropping a real receipt: a purchase whose ledger write failed,
+       or one recorded locally before the account was attached, lives only in
+       localStorage. Merge those in (deduped on project + amount, the server
+       row winning) so switching on sessions can only ADD invoices, never
+       hide one the buyer already had. */
+    const key = (p: Payment) => `${p.slug ?? "all"}|${p.amountInr}`;
+    const have = new Set(out.map(key));
+    for (const p of listPayments()) if (!have.has(key(p))) out.push(p);
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+type EventRow = { project_slug?: string | null; project_name?: string | null; created_at?: string | null; props?: unknown };
+
+/* Documents · Viewed — reports the buyer OPENED but has not bought or
+   marked owned, read from the event trail (report_viewed) under RLS.
+   Deduped to the latest open per report and filtered exactly like the local
+   listViewed(): purchased and owned reports live on other tabs.
+
+   seoSlug / market ride along in the event props on new opens; for older
+   events (props absent) they are backfilled from THIS device's local view
+   record when it has one, and otherwise left null — the row still shows,
+   its link falling back to the catalogue, rather than being dropped. */
+export async function fetchMyViewedRemote(): Promise<(ViewRecord & { slug: string })[] | null> {
+  const token = accessToken();
+  if (!token) return null;
+  try {
+    const res = await fetch(
+      `${SB_URL}/rest/v1/events` +
+        `?name=eq.report_viewed&select=project_slug,project_name,created_at,props` +
+        `&order=created_at.desc&limit=500`,
+      { headers: { apikey: SB_ANON, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
+    );
+    if (!res.ok) return null;
+    const rows = (await res.json().catch(() => null)) as EventRow[] | null;
+    if (!Array.isArray(rows)) return null;
+    const localViews = listViews();
+    const ownedMap = readJSON<Record<string, OwnedRecord>>(OWNED_KEY, {});
+    const seen = new Set<string>();
+    const out: (ViewRecord & { slug: string })[] = [];
+    for (const r of rows) {
+      const slug = (r.project_slug ?? "").trim();
+      if (!slug || seen.has(slug)) continue; // desc order ⇒ the first row per slug is the newest
+      seen.add(slug);
+      if (hasPurchase(slug) || ownedMap[slug]) continue; // same filter as listViewed()
+      const p = asProps(r.props);
+      const local = localViews[slug];
+      const seoSlug = typeof p.seoSlug === "string" && p.seoSlug ? p.seoSlug : local?.seoSlug ?? null;
+      const market = typeof p.market === "string" && p.market ? p.market : local?.market ?? "";
+      out.push({
+        slug,
+        name: r.project_name || local?.name || prettySlug(slug),
+        market,
+        seoSlug,
+        at: r.created_at ? new Date(r.created_at).getTime() : local?.at ?? Date.now(),
+      });
+    }
+    /* Augment with any local-only open the trail is missing — a view whose
+       event never flushed (tab closed inside the 800ms batch) or failed to
+       send. listViewed() is already filtered to not-purchased/not-owned and
+       deduped, so this only adds reports the server set doesn't already carry
+       and never resurrects one that belongs on another tab. */
+    for (const v of listViewed()) if (!seen.has(v.slug)) { seen.add(v.slug); out.push(v); }
+    return out.sort((a, b) => b.at - a.at);
+  } catch {
+    return null;
+  }
+}
+
 /* ════════ report-dates.json — fetch once, cache ════════ */
 let _datesCache: ReportDates | null = null;
 let _datesInflight: Promise<ReportDates> | null = null;
