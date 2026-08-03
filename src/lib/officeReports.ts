@@ -25,6 +25,7 @@
    ════════════════════════════════════════════════════════════════ */
 
 import { basePath } from "./site";
+import { readEntitlements } from "./entitlementsCache";
 
 /* ── Records ── */
 export type ViewRecord = { name: string; market: string; seoSlug: string | null; at: number };
@@ -195,9 +196,43 @@ export function getVote(feature: string): Vote | null {
 
 /* ════════ ENTITLEMENTS — read the real access store directly ════════ */
 type AccessState = { all: boolean; reads: string[]; threeD: string[] };
+
+/* Session-backed unlocks, primed from the account's own completed payments
+   (read under the session, the same source the Invoices list uses). Stashed
+   here so the SYNCHRONOUS access helpers below can union them without an
+   await — and session-guarded, so a previous account's slugs can never bleed
+   into a new sign-in. A completed payment IS an entitlement (see
+   entitlements/core.ts), so this is what makes a paid report show under
+   Purchased — and drop out of Viewed — even after the reload wipe clears the
+   local grant store. */
+let _sessionUnlocked: { userId: string; slugs: string[] } | null = null;
+export function primeSessionUnlocked(slugs: string[]): void {
+  const uid = sessionUserId();
+  _sessionUnlocked = uid ? { userId: uid, slugs: [...new Set(slugs.filter(Boolean))] } : null;
+}
+
 function loadAccess(): AccessState {
   const a = readJSON<Partial<AccessState>>(ACCESS_KEY, {});
-  return { all: !!a.all, reads: a.reads ?? [], threeD: a.threeD ?? [] };
+  const reads = new Set<string>(a.reads ?? []);
+  let all = !!a.all;
+  const uid = sessionUserId();
+
+  /* The account's own completed payments, read under the session. */
+  if (uid && _sessionUnlocked && _sessionUnlocked.userId === uid) {
+    for (const s of _sessionUnlocked.slugs) reads.add(s);
+  }
+
+  /* The durable server-entitlements cache the report-page gate already
+     trusts (serverHasAccess) — grants, all-access plans and cross-device
+     purchases. Gated to whoever is signed in RIGHT NOW, exactly as that gate
+     is, so a stale answer for a previous account is never shown. */
+  const e = readEntitlements();
+  if (e && e.userId && uid && e.userId === uid) {
+    if (e.all) all = true;
+    for (const s of Array.isArray(e.unlocked) ? e.unlocked : []) reads.add(s);
+  }
+
+  return { all, reads: [...reads], threeD: a.threeD ?? [] };
 }
 /* A report the buyer has bought (single read) or holds via All-Access. */
 export function hasPurchase(slug: string): boolean {

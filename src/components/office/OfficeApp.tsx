@@ -53,6 +53,7 @@ import {
   fetchMyViewedRemote,
   fetchMyPaymentsRemote,
   syncOwnedRemote,
+  primeSessionUnlocked,
   getRating,
   rateReport,
   unmarkOwned,
@@ -69,6 +70,7 @@ import {
   type OwnedRecord,
 } from "@/lib/officeReports";
 import { getSession, saveName, fetchMyProfile, updateMyProfile } from "@/lib/phoneAuth";
+import { fetchEntitlements } from "@/lib/entitlements";
 import { loadBuyerBrief, briefSentence, type BuyerBrief } from "@/lib/buyerBrief";
 import { useJourney } from "@/components/journey/JourneyProvider";
 
@@ -1321,17 +1323,28 @@ function DocumentsSection() {
 
   useEffect(() => {
     /* Paint instantly from the local copy, then prefer the account's own
-       data when a session is live — invoices and viewed reports then follow
-       the buyer across devices, not just this browser. Both fetchers return
-       null (kept the local copy) when signed out or on any hiccup, so a
-       lookup outage can never blank a tab. Purchased is already
-       account-backed via the entitlements cache. */
+       data when a session is live — Documents then follow the buyer across
+       devices, not just this browser. Every fetcher fails soft (keeps the
+       local copy), so a lookup outage can never blank a tab. */
     setPurchased(listPurchased());
     setViewed(listViewed());
     setPayments(listPayments());
     loadReportDates().then(setDates);
-    void fetchMyPaymentsRemote().then((p) => { if (p) setPayments(p); });
-    void fetchMyViewedRemote().then((v) => { if (v) setViewed(v); });
+
+    /* Pull the account's invoices AND its entitlements, prime the
+       session-backed unlocks from the paid reports, THEN recompute Purchased
+       and Viewed against the true entitlement state — so a report the buyer
+       paid for lands under Purchased (with its invoice) and drops out of the
+       "opened, not bought" Viewed list, instead of showing an Unlock button
+       for something they already own. */
+    void Promise.all([fetchMyPaymentsRemote(), fetchEntitlements()]).then(([p]) => {
+      if (p) {
+        setPayments(p);
+        primeSessionUnlocked(p.map((x) => x.slug).filter((s): s is string => !!s));
+      }
+      setPurchased(listPurchased());
+      void fetchMyViewedRemote().then((v) => { if (v) setViewed(v); });
+    });
   }, []);
 
   /* Opening the report from here refreshes the "last opened" clock so the
