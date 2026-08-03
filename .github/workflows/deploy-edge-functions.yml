@@ -48,6 +48,9 @@ jobs:
       - run: supabase functions deploy claim-events --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
       - run: supabase functions deploy entitlements --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
       - run: supabase functions deploy billing --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
+      # Public price list for the paywall/pricing UI. --no-verify-jwt: the
+      # browser reads it with no key at all, and a price is not a secret.
+      - run: supabase functions deploy pricing --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
       # The browser calls this one too (src/lib/rerank.ts) and it was live
       # while absent from this list, so its source drifted out of CI's reach:
       # editing the file here changed nothing in production and nothing said
