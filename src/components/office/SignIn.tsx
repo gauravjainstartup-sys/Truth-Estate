@@ -41,6 +41,9 @@ const DIAL = [
   { code: "+44", flag: "🇬🇧", name: "UK" },
   { code: "+65", flag: "🇸🇬", name: "Singapore" },
   { code: "+61", flag: "🇦🇺", name: "Australia" },
+  { code: "+49", flag: "🇩🇪", name: "Germany" },
+  { code: "+966", flag: "🇸🇦", name: "Saudi Arabia" },
+  { code: "+86", flag: "🇨🇳", name: "China" },
 ];
 
 const TICKS = [
@@ -232,11 +235,11 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
                     value={dial}
                     onChange={(e) => setDial(e.target.value)}
                     aria-label="Country code"
-                    className="rounded-md border border-[#1a1a1a]/[0.16] bg-white px-3 py-3 text-[0.95rem] text-[#1a1a1a] outline-none transition-colors focus:border-[#c9a96e]"
+                    className="w-24 shrink-0 rounded-md border border-[#1a1a1a]/[0.16] bg-white px-2.5 py-3 text-[0.95rem] text-[#1a1a1a] outline-none transition-colors focus:border-[#c9a96e]"
                   >
                     {DIAL.map((d) => (
                       <option key={d.code} value={d.code}>
-                        {d.flag} {d.code} ({d.name})
+                        {d.flag} {d.code}
                       </option>
                     ))}
                   </select>
