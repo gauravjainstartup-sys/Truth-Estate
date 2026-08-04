@@ -7,7 +7,8 @@ import { createPortal } from "react-dom";
 import Logo from "../Logo";
 import SignIn from "./SignIn";
 import { isSignedIn, clearAllDemoData, loadAccount, packageById, type BuyData } from "@/lib/journey";
-import { projectByName } from "@/lib/projects";
+import { rankProjectsIntel } from "@/lib/shortlist";
+import { useMatchCatalog, useMatchMarket } from "@/lib/useMatchCatalog";
 import ProjectOptionCard from "../intelligence/ProjectOptionCard";
 import {
   CONSULT_DAYPARTS,
@@ -574,10 +575,20 @@ function SignalChip({ s, onPromote }: { s: ActivitySignal; onPromote: (patch: Pa
 function RecommendationsSection({ thread, onActivate }: { thread: OfficeThread; onActivate: () => void }) {
   const postCall = callDone(thread.stage);
   const paid = isPaid(thread.stage);
-  /* Recs recomputed from the ONE brief, so they always match what My
-     Requirements shows — not a copy frozen at seed. */
+  /* Recommendations rank the LIVE tracked universe — the same baked catalog the
+     public shortlist ranks — against the ONE brief. Two reasons this is not the
+     mock rank it replaced: every card is now a real project with a prerendered
+     report page, so clicking one can never 404 (the mock set held projects with
+     no page); and the persona match engine genuinely re-orders on a budget /
+     corridor / config change, so the set visibly refreshes when the brief does.
+     currentBuy() is read on every render, and this section re-renders whenever a
+     brief edit or promote bumps the office — so it always answers the brief on
+     screen, never a copy frozen at seed. */
+  const catalog = useMatchCatalog();
+  const market = useMatchMarket();
+  const buy = currentBuy();
+  const ranked = catalog ? rankProjectsIntel(buy, catalog, market).slice(0, 3) : [];
   const brief = officeBrief();
-  const recs = brief.recs;
   const briefLine = brief.dna
     .filter((c) => ["Budget", "Markets", "Configuration"].includes(c.label))
     .map((c) => c.value)
@@ -605,17 +616,18 @@ function RecommendationsSection({ thread, onActivate }: { thread: OfficeThread; 
       )}
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {recs.map((r) => {
-          const intel = projectByName(r.name);
-          if (!intel) return null;
+        {ranked.map((p, i) => {
+          /* The top match is the one we'd pursue; the rest we're still
+             pressure-testing — the same framing the seed rank used, now over the
+             live set. */
+          const status: OfficeRec["status"] = i === 0 ? "recommended" : "investigating";
           return (
-            <div key={r.name} className="flex flex-col gap-2">
-              <ProjectOptionCard p={intel} matchPct={r.matchPct} />
+            <div key={p.slug} className="flex flex-col gap-2">
+              <ProjectOptionCard p={p} matchPct={p.matchPct} />
               <div className="rounded-xl border border-[#1a1a1a]/8 bg-[#FBF8F2] px-4 py-3">
-                <span className={`inline-block rounded-full border px-2.5 py-0.5 text-[0.62rem] font-medium uppercase tracking-[0.08em] ${recTone(r.status)}`}>
-                  {r.status.charAt(0).toUpperCase() + r.status.slice(1)}
+                <span className={`inline-block rounded-full border px-2.5 py-0.5 text-[0.62rem] font-medium uppercase tracking-[0.08em] ${recTone(status)}`}>
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
                 </span>
-                {r.note && <p className="mt-2 text-[0.82rem] font-light leading-relaxed text-[#1a1a1a]/60">{r.note}</p>}
               </div>
             </div>
           );
