@@ -504,13 +504,19 @@ function recsFromBuy(buy: BuyData): OfficeRec[] {
 }
 
 function seed(): OfficeState {
+  reconcileBrief(); // heal any drift between the two stores before deriving
   const account = loadAccount();
   const consult = loadConsultation();
+  /* The brief comes from the ONE source, not account.buy — so a fresh office
+     shows the same brief Home does. hasBrief is true once the journey has run
+     to at least its shortlist step (buyData), with or without an account. */
+  const buy = currentBuy();
+  const hasBrief = !!loadBuyData() || !!account;
 
   let primary: OfficeThread;
-  if (account) {
-    const { archetype, chips, title } = dnaChipsFromBuy(account.buy);
-    const recs = recsFromBuy(account.buy);
+  if (hasBrief) {
+    const { archetype, chips, title } = dnaChipsFromBuy(buy);
+    const recs = recsFromBuy(buy);
     const config = chips.find((c) => c.label === "Configuration")?.value ?? "3–4 BHK";
     primary = {
       id: "buy1",
@@ -522,7 +528,7 @@ function seed(): OfficeState {
       advisor: advisorFor(consult?.reason ?? "buy"),
       call: consult?.day
         ? { day: consult.day, time: consult.time ?? "—", format: consult.format ?? "Video" }
-        : account.booking
+        : account?.booking
         ? { day: account.booking.slot.split(" · ")[0] ?? account.booking.slot, time: account.booking.slot.split(" · ")[1] ?? "", format: "Video" }
         : { day: "Saturday", time: "11:30 AM", format: "Video" },
       pastCalls: [],
@@ -572,16 +578,56 @@ function seed(): OfficeState {
   return { threads: [primary], activeId: "buy1" };
 }
 
-/* ── Promotion: an inferred activity signal → the stated brief ──
-   The requirements page lets the buyer promote what their activity implies
-   (a corridor they keep opening, the price band they read, the size they
-   lean to) into the brief we hold. That means writing the real BuyData the
-   rest of the app reads — saveBuyData for the dashboard/recommendations,
-   and the account's copy so the office's own seed agrees — then re-deriving
-   just this thread's brief-shaped fields (chips, title, recommendations)
-   WITHOUT disturbing its stage or deal progress. */
+/* ════════════════════════════════════════════════════════════════
+   THE BRIEF — one logical source of truth.
+
+   Two stores exist for historical reasons: truthEstate.buy (loadBuyData —
+   written by the journey's shortlist step, read by the dashboard's
+   buyerBrief) and account.buy (written at account creation, read by the
+   office seed). They used to be read INDEPENDENTLY by different surfaces,
+   so they drifted and Home / My Requirements / Recommendations each showed
+   a different brief. That is fixed here:
+
+     · currentBuy()   — the ONE read. loadBuyData wins (it is what Home and
+                        the journey use); account.buy is the fallback.
+     · saveBrief()    — the ONE write. Always writes BOTH stores.
+     · reconcileBrief — heals an already-drifted pair on load.
+     · officeBrief()  — the brief as the office renders it (archetype, chips,
+                        title, recs), derived LIVE from currentBuy() so no
+                        surface can ever cache a stale copy.
+   ════════════════════════════════════════════════════════════════ */
 export function currentBuy(): BuyData {
   return loadBuyData() ?? loadAccount()?.buy ?? { ...emptyBuyData };
+}
+
+/* The single writer: both stores, always, so nothing downstream can read a
+   different brief than the one just set. */
+export function saveBrief(buy: BuyData): void {
+  saveBuyData(buy);
+  const acct = loadAccount();
+  if (acct) saveAccount({ ...acct, buy });
+}
+
+/* Heal a pair that has already drifted (the exact bug this refactor closes):
+   loadBuyData — what Home and the journey use — wins, and account.buy is
+   mirrored to it. If only account had a brief (an older flow), promote it to
+   the canonical store. Called once on office load. */
+export function reconcileBrief(): void {
+  const buy = loadBuyData();
+  const acct = loadAccount();
+  if (buy && acct && JSON.stringify(acct.buy) !== JSON.stringify(buy)) {
+    saveAccount({ ...acct, buy });
+  } else if (!buy && acct?.buy) {
+    saveBuyData(acct.buy);
+  }
+}
+
+/* The brief as every office surface should render it — one derivation, so
+   Home, My Requirements and Recommendations are guaranteed to agree. */
+export function officeBrief(): { archetype: string; title: string; dna: Chip[]; recs: OfficeRec[] } {
+  const buy = currentBuy();
+  const { archetype, chips, title } = dnaChipsFromBuy(buy);
+  return { archetype, title, dna: chips, recs: recsFromBuy(buy) };
 }
 
 export function briefPatchFromBuy(buy: BuyData): Partial<OfficeThread> {
@@ -589,20 +635,25 @@ export function briefPatchFromBuy(buy: BuyData): Partial<OfficeThread> {
   return { archetype, title, dna: chips, recs: recsFromBuy(buy) };
 }
 
-export function promoteToBrief(state: OfficeState, patch: Partial<BuyData>): OfficeState {
-  const next: BuyData = { ...currentBuy(), ...patch };
-  saveBuyData(next);
-  const acct = loadAccount();
-  if (acct) saveAccount({ ...acct, buy: next });
-
+/* Set the whole brief (the edit modal) — writes both stores and re-derives
+   the active thread's brief-shaped fields, leaving its stage / deal state
+   untouched. */
+export function setBrief(state: OfficeState, buy: BuyData): OfficeState {
+  saveBrief(buy);
   const active = state.threads.find((t) => t.id === state.activeId) ?? state.threads[0];
-  const threadPatch = briefPatchFromBuy(next);
+  const patch = briefPatchFromBuy(buy);
   const out: OfficeState = {
     ...state,
-    threads: state.threads.map((t) => (t.id === active.id ? { ...t, ...threadPatch } : t)),
+    threads: state.threads.map((t) => (t.id === active.id ? { ...t, ...patch } : t)),
   };
   saveOffice(out);
   return out;
+}
+
+/* Promote an inferred activity signal (a corridor, a price band, a size)
+   into the brief — a partial patch onto the one brief, through setBrief. */
+export function promoteToBrief(state: OfficeState, patch: Partial<BuyData>): OfficeState {
+  return setBrief(state, { ...currentBuy(), ...patch });
 }
 
 /* ── Persistence ── */
