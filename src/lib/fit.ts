@@ -15,6 +15,7 @@
    an unexplained fit number is a horoscope.
    ════════════════════════════════════════════════════════════════ */
 import type { BriefProject, BuyerBrief } from "@/lib/buyerBrief";
+import { matchLabel } from "@/lib/matchEngine";
 
 const W_CORRIDOR = 45;
 const W_BUDGET = 35;
@@ -136,7 +137,10 @@ export function verdictFor(brief: BuyerBrief, ranked: ReturnType<typeof rankByFi
   const scored = ranked.filter((r) => r.fit.score != null);
   if (!scored.length) return null;
 
-  const good = scored.filter((r) => (r.fit.score ?? 0) >= 80);
+  /* "Genuinely fits" reads off the app-wide match band (matchLabel: good =
+     Strong/Ideal, ≥ 68), not a private cutoff — so the headline count agrees
+     with the Fit bars below it and with Recommendations. */
+  const good = scored.filter((r) => r.fit.score != null && matchLabel(r.fit.score).tone === "good");
   const most = [...ranked].sort((a, b) => b.p.views - a.p.views)[0];
 
   const bits: string[] = [];
@@ -152,7 +156,7 @@ export function verdictFor(brief: BuyerBrief, ranked: ReturnType<typeof rankByFi
   if (most && most.p.views > 1) {
     const f = most.fit.score;
     bits.push(
-      f != null && f < 60
+      f != null && matchLabel(f).tone === "low"
         ? `The one you keep returning to, ${most.p.name}, is not among them.`
         : `The one you keep returning to is ${most.p.name}.`,
     );
