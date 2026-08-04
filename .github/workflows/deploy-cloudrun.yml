@@ -17,11 +17,23 @@ name: Deploy to Cloud Run (production)
 #  production value; leaving the variable unset would silently produce a
 #  build addressed to /Truth-Estate and 404 every link on the live domain.
 #
-#  Manual dispatch only, deliberately. A production cutover is a decision
-#  someone makes, not a side effect of a push.
+#  Auto-deploys on every push to main. main is the founder's single-user
+#  testing arena, and this candidate service (truthestate-web, a *.run.app
+#  URL) is where they test — so a merge to main should land there with no
+#  manual step. Code pushes reuse the committed Supabase snapshot (no DB
+#  pull); the manual "Run workflow" still offers refresh_snapshot=true.
+#
+#  This is still NOT the live site: truthestate.in is served by
+#  truthestate-with-supabase until its domain mapping is moved by hand.
+#  That cutover stays a deliberate act — flipping the domain is the
+#  decision, not the push. WHEN the domain is moved here, reinstate a gate
+#  (drop the push trigger, or add an approval environment) so a merge to
+#  main can no longer ship straight to the live domain.
 # ════════════════════════════════════════════════════════════════
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       refresh_snapshot:
