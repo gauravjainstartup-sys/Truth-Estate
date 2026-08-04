@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Logo from "../Logo";
 import SignIn from "./SignIn";
-import { isSignedIn, clearAllDemoData, loadAccount, packageById } from "@/lib/journey";
+import { isSignedIn, clearAllDemoData, loadAccount, packageById, type BuyData } from "@/lib/journey";
 import { projectByName } from "@/lib/projects";
 import ProjectOptionCard from "../intelligence/ProjectOptionCard";
 import {
@@ -38,12 +38,15 @@ import {
   dealPhaseIndex,
   isCurated,
   isPaid,
+  currentBuy,
   loadOffice,
   nextStep,
+  promoteToBrief,
   saveOffice,
   stageIndex,
   wins,
 } from "@/lib/office";
+import { loadActivitySignals, type ActivitySignals, type ActivitySignal } from "@/lib/activitySignals";
 import { basePath } from "@/lib/site";
 import {
   recordReportView,
@@ -85,6 +88,11 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
   const [navOpen, setNavOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const [celebrate, setCelebrate] = useState<string | null>(null);
+  /* Bumped whenever the buyer promotes an inferred activity signal into the
+     brief, so the requirements page re-reads its signals (the promoted one
+     now being stated, it drops off the "from your activity" list). */
+  const [promoteVersion, setPromoteVersion] = useState(0);
+  const { open: openJourney } = useJourney();
   /* Gate the office behind sign-in. A hard refresh wipes the session (root
      layout), so a reloaded visitor lands on the sign-in screen; the office
      only loads — and only seeds its demo — once they're signed in. */
@@ -104,9 +112,14 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
     saveOffice(next);
     setState({ ...next });
   };
+  /* Promote an inferred requirement (a corridor, a price band, a size) into
+     the stated brief — writes the real BuyData and re-derives this thread. */
+  const promote = (patch: Partial<BuyData>) => {
+    setState(promoteToBrief(state, patch));
+    setPromoteVersion((v) => v + 1);
+  };
   const patchThread = (id: string, patch: Partial<OfficeThread>) =>
     update({ ...state, threads: state.threads.map((t) => (t.id === id ? { ...t, ...patch } : t)) });
-  const setActive = (id: string) => update({ ...state, activeId: id });
   const cheer = (msg: string) => {
     setCelebrate(msg);
     setTimeout(() => setCelebrate(null), 4200);
@@ -180,7 +193,7 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
            here is what pushed the column narrow-and-offset before. */}
         <div className="px-6 py-9 md:px-10 md:py-12">
           {section === "home" && <DashboardHome name={loadAccount()?.name ?? null} />}
-          {section === "requirements" && <RequirementsSection state={state} activeId={active.id} onPick={setActive} />}
+          {section === "requirements" && <RequirementsSection active={active} onEdit={() => openJourney()} onPromote={promote} refreshKey={promoteVersion} />}
           {section === "recommendations" && <RecommendationsSection thread={active} onActivate={() => setPayOpen(true)} />}
           {section === "deal" && <DealSection thread={active} onAdvance={advanceTo} onActivate={() => setPayOpen(true)} />}
           {section === "advice" && <AdviceSection thread={active} onReschedule={(c) => patchThread(active.id, { call: c })} />}
@@ -375,43 +388,165 @@ function UpcomingCall({ thread }: { thread: OfficeThread }) {
 /* ════════════════════════════════════════════════════════════════
    MY REQUIREMENTS / BUYER DNA — multi-thread
    ════════════════════════════════════════════════════════════════ */
-function RequirementsSection({ state, activeId, onPick }: { state: OfficeState; activeId: string; onPick: (id: string) => void }) {
+/* ONE brief, clearly held — then, below it, what the buyer's own activity
+   quietly implies on top of it. No more BUY 1 / BUY 2 threads: a single
+   requirement set the buyer can edit, and a set of inferred signals they can
+   promote into it. */
+function RequirementsSection({
+  active,
+  onEdit,
+  onPromote,
+  refreshKey,
+}: {
+  active: OfficeThread;
+  onEdit: () => void;
+  onPromote: (patch: Partial<BuyData>) => void;
+  refreshKey: number;
+}) {
+  const [sig, setSig] = useState<ActivitySignals | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  /* Recompute on mount and after any promotion (refreshKey bumps). We don't
+     reset to a loading state on a promote — the block just swaps the old
+     signals for the new when they arrive, so folding one in doesn't flash the
+     whole section. setState lives in the async callback, never the effect
+     body, so it stays a synchronise-with-external-system effect. */
+  useEffect(() => {
+    let alive = true;
+    void loadActivitySignals(currentBuy()).then((s) => {
+      if (alive) { setSig(s); setLoaded(true); }
+    });
+    return () => { alive = false; };
+  }, [refreshKey]);
+  const loading = !loaded && !sig;
+
   return (
     <div className="animate-fade-up">
-      <SectionHead kicker="My Requirements" title="Your Buyer DNA" sub="Every decision you're running with us — each its own thread, with the requirements we hold." />
-      <div className="flex flex-col gap-5">
-        {state.threads.map((t) => {
-          const on = t.id === activeId;
-          return (
-            <div key={t.id} className={`rounded-xl border bg-white p-6 transition-all ${on ? "border-[#1e6b45]/40 shadow-sm" : "border-[#1a1a1a]/[0.08]"}`}>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <span className="rounded-full bg-[#1a1a1a]/[0.05] px-3 py-1 text-[0.72rem] font-medium tracking-[0.04em] text-[#1a1a1a]/70">{t.label}</span>
-                  <span className="font-serif text-[1.25rem] font-medium text-[#1a1a1a]">{t.archetype}</span>
-                </div>
-                {on ? (
-                  <span className="text-[0.72rem] font-light text-[#1e6b45]">● Viewing</span>
-                ) : (
-                  <button onClick={() => onPick(t.id)} className="text-[0.78rem] font-light text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a]">
-                    Switch to this →
+      <SectionHead
+        kicker="My Requirements"
+        title="What you're looking for"
+        sub="The brief we hold for you — and, below it, what your activity quietly tells us on top of it."
+      />
+
+      {/* THE ONE BRIEF */}
+      <div className="rounded-xl border border-[#1a1a1a]/[0.08] bg-white p-6 shadow-[0_20px_44px_-34px_rgba(0,0,0,0.32)] md:p-7">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/45">Your brief</p>
+            <p className="mt-1 font-serif text-[1.35rem] font-medium text-[#1a1a1a]">{active.archetype}</p>
+          </div>
+          <button onClick={onEdit} className="text-[0.82rem] font-medium text-[#1e6b45] transition-colors hover:text-[#238c55]">
+            Edit requirements →
+          </button>
+        </div>
+        <div className="mt-5 flex flex-wrap gap-2.5 border-t border-[#1a1a1a]/[0.06] pt-5">
+          {active.dna.map((c) => (
+            <span key={c.label} className="rounded-full border border-[#1a1a1a]/10 px-3.5 py-1.5 text-[0.78rem] font-light text-[#1a1a1a]/65">
+              <span className="text-[#1a1a1a]/40">{c.label}</span> <span className="font-medium text-[#1a1a1a]">{c.value}</span>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* FROM YOUR ACTIVITY — the implicit requirements */}
+      <ActivityBlock sig={sig} loading={loading} onPromote={onPromote} />
+    </div>
+  );
+}
+
+/* The inferred-requirements block. Everything here is read from THIS
+   account's own activity (activitySignals.ts) — never stated, always
+   badged, and only the signals that map to a real brief field carry a
+   promote action. */
+function ActivityBlock({
+  sig,
+  loading,
+  onPromote,
+}: {
+  sig: ActivitySignals | null;
+  loading: boolean;
+  onPromote: (patch: Partial<BuyData>) => void;
+}) {
+  return (
+    <div className="mt-10">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2">
+        <h2 className="font-serif text-[1.5rem] font-medium text-[#1a1a1a] md:text-[1.6rem]">From your activity</h2>
+        <span className="rounded-full border border-[#6b5aa0]/30 bg-[#6b5aa0]/[0.08] px-2.5 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-[#6b5aa0]">
+          Inferred · not set by you
+        </span>
+      </div>
+      <p className="mt-2 max-w-[62ch] text-[0.9rem] font-light leading-relaxed text-[#1a1a1a]/55">
+        You never told us these — we read them from what you actually open and unlock. They sharpen your recommendations, and you can promote the market, budget and size into your brief above.
+      </p>
+
+      {loading ? (
+        <div className="mt-4 h-40 animate-pulse rounded-xl border border-[#1a1a1a]/[0.08] bg-[#1a1a1a]/[0.03]" />
+      ) : !sig || !sig.ready ? (
+        <div className="mt-4 rounded-xl border border-dashed border-[#1a1a1a]/15 bg-white/50 px-6 py-7">
+          <p className="max-w-[52ch] text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/55">
+            As you open more reports, we&rsquo;ll start reading your leanings here — the markets, budget and size you keep coming back to — and let you fold them into your brief.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-4 rounded-xl border border-[#1a1a1a]/[0.08] bg-white p-6">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {sig.signals.map((s) => (
+              <SignalChip key={s.key} s={s} onPromote={onPromote} />
+            ))}
+          </div>
+
+          {sig.nudge && (
+            <div className="mt-4 flex gap-3 rounded-xl border border-[#c9a96e]/40 bg-[#9a7a2e]/[0.06] px-4 py-3.5">
+              <span className="mt-0.5 grid h-[22px] w-[22px] shrink-0 place-items-center rounded-full bg-[#c9a96e] text-[0.78rem] font-bold text-[#3a2c0e]">!</span>
+              <div>
+                <p className="text-[0.84rem] leading-relaxed text-[#1a1a1a]/80">{sig.nudge.message}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1.5">
+                  <button
+                    onClick={() => onPromote(sig.nudge!.patch)}
+                    className="text-[0.78rem] font-semibold text-[#1e6b45] transition-colors hover:text-[#238c55]"
+                  >
+                    {sig.nudge.addLabel}
                   </button>
-                )}
-              </div>
-              <p className="mt-1.5 text-[0.82rem] font-light text-[#1a1a1a]/45">{t.title} · {STAGE_LABEL[t.stage]}</p>
-              <div className="mt-5 flex flex-wrap gap-2.5 border-t border-[#1a1a1a]/[0.06] pt-5">
-                {t.dna.map((c) => (
-                  <span key={c.label} className="rounded-full border border-[#1a1a1a]/10 px-3.5 py-1.5 text-[0.78rem] font-light text-[#1a1a1a]/65">
-                    <span className="text-[#1a1a1a]/40">{c.label}</span> {c.value}
-                  </span>
-                ))}
+                  <span className="text-[0.78rem] font-light text-[#1a1a1a]/45">No, keep my brief</span>
+                </div>
               </div>
             </div>
-          );
-        })}
+          )}
+
+          {sig.mostAttention && (
+            <p className="mt-4 text-[0.82rem] font-light text-[#1a1a1a]/60">
+              Most of your attention: <span className="font-medium text-[#1a1a1a]">{sig.mostAttention.name}</span> — {sig.mostAttention.note}.
+            </p>
+          )}
+          <p className="mt-3 text-[0.72rem] font-light leading-relaxed text-[#1a1a1a]/45">
+            Read only from your own activity on this account. Nothing here changes your brief until you add it.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* A single inferred signal. Promotable ones (market / budget / size) carry a
+   working ＋ Add; the rest are context we surface but don't pretend to make
+   actionable — a control that changed nothing would be worse than none. */
+function SignalChip({ s, onPromote }: { s: ActivitySignal; onPromote: (patch: Partial<BuyData>) => void }) {
+  return (
+    <div className={`flex items-center justify-between gap-3 rounded-xl border bg-[#FBF8F2] px-4 py-3 ${s.disagrees ? "border-[#c9a96e]/45" : "border-[#1a1a1a]/[0.08]"}`}>
+      <div className="min-w-0">
+        <p className="truncate text-[0.9rem] font-semibold text-[#1a1a1a]">{s.value}</p>
+        <p className="mt-0.5 text-[0.72rem] font-light leading-snug text-[#1a1a1a]/55">{s.evidence}</p>
       </div>
-      <Link href="/" className="mt-7 inline-block text-[0.82rem] font-light text-[#1e6b45] transition-colors hover:text-[#238c55]">
-        + Start a new requirement
-      </Link>
+      {s.promote ? (
+        <button
+          onClick={() => onPromote(s.promote!)}
+          className="shrink-0 rounded-full border border-[#1e6b45]/30 bg-[#1e6b45]/[0.06] px-3 py-1.5 text-[0.72rem] font-semibold text-[#1e6b45] transition-colors hover:bg-[#1e6b45]/12"
+        >
+          ＋ Add
+        </button>
+      ) : (
+        <span className="shrink-0 text-[0.6rem] font-light uppercase tracking-[0.12em] text-[#1a1a1a]/30">noticed</span>
+      )}
     </div>
   );
 }

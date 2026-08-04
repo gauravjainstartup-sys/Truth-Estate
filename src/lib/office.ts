@@ -8,7 +8,7 @@
    so the UI can light them up without a schema change.
    ════════════════════════════════════════════════════════════════ */
 
-import { deriveDNA, loadAccount, rankProjects, type BuyData } from "./journey";
+import { deriveDNA, loadAccount, saveAccount, loadBuyData, saveBuyData, emptyBuyData, rankProjects, type BuyData } from "./journey";
 import { advisorFor, loadConsultation, type ConsultAdvisor } from "./consultation";
 
 /* ── Deal lifecycle ── */
@@ -238,25 +238,6 @@ const buyCuration: Curation = {
     ],
   },
   deal: null,
-};
-
-const investCuration: Curation = {
-  tat: "about 48 hours",
-  report: {
-    pages: 28,
-    teasers: [
-      { label: "True price / sq ft", value: "₹11,900 — vs ₹13,100 quoted" },
-      { label: "Rental underwrite", value: "3.1% net today, building to 4.4%" },
-    ],
-  },
-  unit: {
-    tags: ["3D unit views", "Vastu", "Air flow", "Livability index"],
-    teasers: [
-      { label: "Best stack", value: "Tower C · 14–18 floor" },
-      { label: "Livability index", value: "8.4 / 10" },
-    ],
-  },
-  deal: { headline: "₹3.05 Cr sourced", sub: "₹22 lakh below the quoted price — held for you for 7 days" },
 };
 
 /* ── Deal execution seed — derived from the recommended project. ── */
@@ -522,40 +503,6 @@ function recsFromBuy(buy: BuyData): OfficeRec[] {
     }));
 }
 
-const DEMO_BUY2_RECS: OfficeRec[] = [
-  { name: "Smartworld One DXP", developer: "Smartworld", market: "Dwarka Expressway", truthScore: 86, matchPct: 94, status: "recommended" },
-  { name: "Signature Global Titanium SPR", developer: "Signature Global", market: "SPR", truthScore: 82, matchPct: 88, status: "investigating" },
-  { name: "Emaar Urban Ascent", developer: "Emaar", market: "Dwarka Expressway", truthScore: 84, matchPct: 85, status: "rejected", note: "Stretched pricing vs. corridor comparables" },
-];
-
-const DEMO_BUY2: OfficeThread = {
-  id: "buy2",
-  label: "BUY 2",
-  title: "Dwarka Expressway · Investment",
-  stage: "curated",
-  archetype: "The Yield Seeker",
-  dna: [
-    { label: "Budget", value: "₹2–4 Cr" },
-    { label: "Markets", value: "Dwarka Expressway, New Gurgaon" },
-    { label: "Configuration", value: "2–3 BHK" },
-    { label: "Timeline", value: "Within 6 months" },
-    { label: "Priorities", value: "Rental Yield, Liquidity" },
-  ],
-  advisor: advisorFor("invest"),
-  call: { day: "Last Tuesday", time: "6:30 PM", format: "Video", done: true, summary: "Strong rental corridor; two of four shortlisted projects carry avoidable delivery risk." },
-  pastCalls: [{ day: "Last Tuesday", time: "6:30 PM", format: "Video", done: true }],
-  recs: DEMO_BUY2_RECS,
-  questions: [
-    { id: uid(), q: "Is the rental demand on Dwarka Expressway real yet?", a: "Occupancy is still building — yields are a 2–3 year story, not immediate. We'd underwrite on appreciation first.", by: "Your advisor", status: "answered", at: Date.now() - 86400000 },
-  ],
-  docs: baseDocs(),
-  curation: investCuration,
-  visits: buildVisits(DEMO_BUY2_RECS),
-  mandate: buildMandate(DEMO_BUY2_RECS, "2–3 BHK"),
-  negotiation: buildNegotiation(DEMO_BUY2_RECS, crore(3.05)),
-  saleOffer: buildSaleOffer(crore(3.05)),
-};
-
 function seed(): OfficeState {
   const account = loadAccount();
   const consult = loadConsultation();
@@ -622,14 +569,47 @@ function seed(): OfficeState {
     };
   }
 
-  return { threads: [primary, DEMO_BUY2], activeId: "buy1" };
+  return { threads: [primary], activeId: "buy1" };
+}
+
+/* ── Promotion: an inferred activity signal → the stated brief ──
+   The requirements page lets the buyer promote what their activity implies
+   (a corridor they keep opening, the price band they read, the size they
+   lean to) into the brief we hold. That means writing the real BuyData the
+   rest of the app reads — saveBuyData for the dashboard/recommendations,
+   and the account's copy so the office's own seed agrees — then re-deriving
+   just this thread's brief-shaped fields (chips, title, recommendations)
+   WITHOUT disturbing its stage or deal progress. */
+export function currentBuy(): BuyData {
+  return loadBuyData() ?? loadAccount()?.buy ?? { ...emptyBuyData };
+}
+
+export function briefPatchFromBuy(buy: BuyData): Partial<OfficeThread> {
+  const { archetype, chips, title } = dnaChipsFromBuy(buy);
+  return { archetype, title, dna: chips, recs: recsFromBuy(buy) };
+}
+
+export function promoteToBrief(state: OfficeState, patch: Partial<BuyData>): OfficeState {
+  const next: BuyData = { ...currentBuy(), ...patch };
+  saveBuyData(next);
+  const acct = loadAccount();
+  if (acct) saveAccount({ ...acct, buy: next });
+
+  const active = state.threads.find((t) => t.id === state.activeId) ?? state.threads[0];
+  const threadPatch = briefPatchFromBuy(next);
+  const out: OfficeState = {
+    ...state,
+    threads: state.threads.map((t) => (t.id === active.id ? { ...t, ...threadPatch } : t)),
+  };
+  saveOffice(out);
+  return out;
 }
 
 /* ── Persistence ── */
-/* v4: the SELL thread was retired. A v3 state saved before that still
-   holds it, and it would render as a buy thread with nothing in it — so
-   the bump reseeds rather than migrates. */
-const OFFICE_KEY = "truthEstate.office.v4";
+/* v5: the office collapsed to a SINGLE requirement thread — the demo "BUY 2"
+   (Yield Seeker) was retired. A v4 state saved before that still holds two
+   threads; the bump reseeds to one rather than migrating a dead thread. */
+const OFFICE_KEY = "truthEstate.office.v5";
 
 export function loadOffice(): OfficeState {
   if (typeof window === "undefined") return seed();
