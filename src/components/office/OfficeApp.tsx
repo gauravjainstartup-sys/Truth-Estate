@@ -238,6 +238,7 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
           {section === "account" && (
             <AccountSection
               onSignOut={() => { clearAllDemoData(); setState(null); setAuthed(false); setNavOpen(false); }}
+              onEditBrief={() => setBriefEditOpen(true)}
             />
           )}
         </div>
@@ -2034,8 +2035,7 @@ function AccountRow({ label, children }: { label: string; children: React.ReactN
   );
 }
 
-function AccountSection({ onSignOut }: { onSignOut: () => void }) {
-  const { open: openJourney } = useJourney();
+function AccountSection({ onSignOut, onEditBrief }: { onSignOut: () => void; onEditBrief: () => void }) {
   const [name, setName] = useState<string>(() => (loadAccount()?.name ?? "").trim());
   const [phone, setPhone] = useState<string>(() => getSession()?.phone ?? "");
   const [phoneVerified, setPhoneVerified] = useState(false);
@@ -2327,7 +2327,7 @@ function AccountSection({ onSignOut }: { onSignOut: () => void }) {
         <div className="flex items-center justify-between border-b border-[#1a1a1a]/[0.07] px-6 py-4">
           <Eyebrow>Your brief</Eyebrow>
           <button
-            onClick={() => openJourney()}
+            onClick={onEditBrief}
             className="text-[0.78rem] font-medium text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]"
           >
             Update
