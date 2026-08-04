@@ -36,6 +36,10 @@ jobs:
       - run: supabase functions deploy challenge-router --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
       - run: supabase functions deploy capture-lead --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
       - run: supabase functions deploy chat-signin --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
+      # Twilio Verify for non-+91 numbers. --no-verify-jwt: the browser calls
+      # it pre-session (it is what mints the session), authorising inside via
+      # the Twilio check, exactly like chat-signin.
+      - run: supabase functions deploy twilio-otp --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
       - run: supabase functions deploy phone-known --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
       # Razorpay. --no-verify-jwt because the browser calls these with the
       # anon key like every other public function; the real authorisation
