@@ -80,7 +80,7 @@ import {
   type ViewRecord,
   type OwnedRecord,
 } from "@/lib/officeReports";
-import { getSession, saveName, fetchMyProfile, updateMyProfile, sendOtp, verifyOtp, normalisePhone } from "@/lib/phoneAuth";
+import { getSession, saveName, fetchMyProfile, updateMyProfile, sendOtp, verifyOtp, normalisePhone, beginGoogleLink } from "@/lib/phoneAuth";
 import OtpDigits from "@/components/auth/OtpDigits";
 import { fetchEntitlements } from "@/lib/entitlements";
 import { loadBuyerBrief, briefSentence, type BuyerBrief } from "@/lib/buyerBrief";
@@ -2047,6 +2047,21 @@ function AccountSection({ onSignOut }: { onSignOut: () => void }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  /* Connect Google — for a phone member with no verified email. Stashes this
+     account's session token and runs OAuth; the callback + google-signin fold
+     the Google identity into THIS account, so a later "Continue with Google"
+     lands back here instead of a second profile. */
+  const [linkBusy, setLinkBusy] = useState(false);
+  const [linkErr, setLinkErr] = useState("");
+  async function handleConnectGoogle() {
+    setLinkErr("");
+    setLinkBusy(true);
+    const r = await beginGoogleLink();
+    /* On success the browser redirects to Google — leave busy set so the
+       button can't be pressed twice while it navigates away. */
+    if (!r.ok) { setLinkBusy(false); setLinkErr(r.error); }
+  }
+
   useEffect(() => { void loadBuyerBrief().then(setBrief); }, []);
   useEffect(() => {
     void fetchMyProfile().then((p) => {
@@ -2275,10 +2290,26 @@ function AccountSection({ onSignOut }: { onSignOut: () => void }) {
               signs in with a different Google account (that proves ownership).
               So: read-only, with a verified tick when present. */}
           <AccountRow label="Email">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className={`text-[0.95rem] ${email ? "text-[#1a1a1a]" : "text-[#1a1a1a]/35"}`}>{email || "NA"}</span>
-              {email && <Pill tone="green">✓ Verified</Pill>}
-            </div>
+            {email ? (
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className="text-[0.95rem] text-[#1a1a1a]">{email}</span>
+                <Pill tone="green">✓ Verified</Pill>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-[0.95rem] text-[#1a1a1a]/35">NA</span>
+                  <button
+                    onClick={handleConnectGoogle}
+                    disabled={linkBusy}
+                    className="text-[0.78rem] font-medium text-[#1e6b45] transition-colors hover:text-[#238c55] disabled:opacity-60"
+                  >
+                    {linkBusy ? "Opening Google…" : "+ Connect Google"}
+                  </button>
+                </div>
+                {linkErr && <p className="text-[0.78rem] text-[#b3402a]">{linkErr}</p>}
+              </div>
+            )}
           </AccountRow>
         </div>
       </div>

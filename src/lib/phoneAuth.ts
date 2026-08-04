@@ -488,9 +488,18 @@ export async function fetchMyBrief(): Promise<BuyData | null> {
   }
 }
 
-export async function signInWithGoogle(redirectTo?: string): Promise<AuthResult> {
+/* Set before a "Link Google" flow: the phone account's own session token,
+   stashed so it survives the OAuth redirect. Its presence on return tells
+   the callback to LINK (fold Google into this account) rather than sign in
+   fresh. One-shot — finishGoogleAuth consumes it. */
+const LINK_TOKEN_KEY = "truthEstate.googleLinkToken";
+
+export async function signInWithGoogle(redirectTo?: string, link = false): Promise<AuthResult> {
   if (typeof window === "undefined") return { ok: false, error: "Window undefined" };
   try {
+    /* A plain sign-in must never inherit a stale link intent from an
+       abandoned earlier attempt. */
+    if (!link) { try { window.localStorage.removeItem(LINK_TOKEN_KEY); } catch { /* ignore */ } }
     const origin = window.location.origin;
     const target = redirectTo || window.location.href;
     const callbackUrl = `${origin}${basePath}/auth/callback?next=${encodeURIComponent(target)}`;
@@ -510,6 +519,50 @@ export async function signInWithGoogle(redirectTo?: string): Promise<AuthResult>
   } catch (err) {
     const message = err instanceof Error ? err.message : "Google Sign-In failed";
     return { ok: false, error: message };
+  }
+}
+
+/* Link Google to the account the user is signed into NOW (a phone account).
+   Stash its token, then run the same OAuth — the callback + google-signin
+   do the actual linking. */
+export async function beginGoogleLink(): Promise<AuthResult> {
+  const token = getSession()?.access_token;
+  if (!token) return { ok: false, error: "Sign in first, then link Google." };
+  try { window.localStorage.setItem(LINK_TOKEN_KEY, token); } catch { /* ignore */ }
+  return signInWithGoogle(undefined, true);
+}
+
+/* Called from the OAuth callback with the Supabase-issued Google access
+   token. Hands it to google-signin, which verifies the Google identity and
+   returns the CANONICAL account (resolved by google_sub, or linked to the
+   stashed phone account) + a real session for it. Returns what to store. */
+export async function finishGoogleAuth(googleAccessToken: string): Promise<
+  { ok: true; userId: string; session: { access_token: string; token_type: string; expires_in: number } | null; linked: boolean }
+  | { ok: false; error: string }
+> {
+  let linkToken: string | null = null;
+  try { linkToken = window.localStorage.getItem(LINK_TOKEN_KEY); } catch { /* ignore */ }
+  try { window.localStorage.removeItem(LINK_TOKEN_KEY); } catch { /* ignore */ }
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/google-signin`, {
+      method: "POST",
+      headers: { "content-type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({
+        action: linkToken ? "link" : "signin",
+        googleToken: googleAccessToken,
+        ...(linkToken ? { linkToken } : {}),
+        anonId: getAnonId(), sessionId: getSessionId(),
+      }),
+      signal: AbortSignal.timeout(20000),
+    });
+    const data = (await res.json().catch(() => ({}))) as {
+      ok?: boolean; error?: string; userId?: string; linked?: boolean;
+      session?: { access_token: string; token_type: string; expires_in: number };
+    };
+    if (!data.ok || !data.userId) return { ok: false, error: data.error ?? "Couldn't complete Google sign-in." };
+    return { ok: true, userId: data.userId, session: data.session ?? null, linked: !!data.linked };
+  } catch {
+    return { ok: false, error: "Couldn't reach us just now — check your connection and try again." };
   }
 }
 

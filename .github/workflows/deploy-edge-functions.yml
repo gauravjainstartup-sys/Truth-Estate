@@ -40,6 +40,11 @@ jobs:
       # it pre-session (it is what mints the session), authorising inside via
       # the Twilio check, exactly like chat-signin.
       - run: supabase functions deploy twilio-otp --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
+      # Resolves a Google login to the ONE canonical account (by google_sub)
+      # and mints its session, and links a Google identity onto a phone
+      # account. --no-verify-jwt: it verifies the Google token itself, and the
+      # link path verifies the phone account's HS256 signature inside.
+      - run: supabase functions deploy google-signin --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
       - run: supabase functions deploy phone-known --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
       # Razorpay. --no-verify-jwt because the browser calls these with the
       # anon key like every other public function; the real authorisation

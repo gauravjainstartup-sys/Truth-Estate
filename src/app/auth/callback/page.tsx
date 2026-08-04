@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Logo from "@/components/Logo";
 import type { Session } from "@supabase/supabase-js";
-import { supabase, claimAnonymousHistory } from "@/lib/phoneAuth";
+import { supabase, claimAnonymousHistory, finishGoogleAuth } from "@/lib/phoneAuth";
 import { setSignedIn, saveAccount, emptyBuyData } from "@/lib/journey";
 
 export default function AuthCallbackPage() {
@@ -11,6 +11,11 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     let unmounted = false;
+    /* getSession, onAuthStateChange and the 3s fallback can each surface the
+       same session — and completeLogin is now async (it calls google-signin),
+       so the window where two of them race is wide enough to double-run.
+       One-shot guard: whoever lands first completes it, the rest no-op. */
+    let done = false;
 
     async function handleCallback() {
       try {
@@ -51,15 +56,35 @@ export default function AuthCallbackPage() {
       }
     }
 
-    function completeLogin(session: Session) {
+    async function completeLogin(session: Session) {
+      if (done) return;
+      done = true;
       const u = session.user;
       const fullName = u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split("@")[0] || "Member";
 
+      /* Resolve this Google login to the ONE canonical account and mint THAT
+         account's session — not the throwaway Supabase OAuth user's. Without
+         this, a member who first signed up by phone lands on a second, empty
+         profile every time they "Continue with Google" (the bug the founder
+         hit). google-signin finds the account by google_sub, or — when a
+         "Connect Google" flow stashed the phone account's token — folds this
+         Google identity into it. session.access_token is the Supabase OAuth
+         token google-signin verifies at /auth/v1/user; the browser can't fake
+         it. */
+      const resolved = await finishGoogleAuth(session.access_token);
+      if (!resolved.ok) {
+        if (!unmounted) { done = false; setError(resolved.error); }
+        return;
+      }
+      const canonicalToken = resolved.session?.access_token ?? null;
+
       if (typeof window !== "undefined") {
+        /* The CANONICAL account's id + its minted session, never the raw
+           OAuth user's — so every surface reads the one profile. */
         window.localStorage.setItem("truthEstate.sbSession", JSON.stringify({
-          access_token: session.access_token,
-          user_id: u.id,
-          phone: u.phone || null,
+          access_token: canonicalToken,
+          user_id: resolved.userId,
+          phone: null,
           email: u.email || null,
           provider: "google",
         }));
@@ -73,8 +98,10 @@ export default function AuthCallbackPage() {
         booking: null,
       });
 
-      if (session.access_token) {
-        claimAnonymousHistory(session.access_token);
+      /* Claim this device's anonymous trail onto the CANONICAL account — the
+         RPC takes identity from the JWT, so it must be the canonical session. */
+      if (canonicalToken) {
+        claimAnonymousHistory(canonicalToken);
       }
 
       const params = new URLSearchParams(window.location.search);
