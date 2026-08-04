@@ -8,7 +8,7 @@
    so the UI can light them up without a schema change.
    ════════════════════════════════════════════════════════════════ */
 
-import { deriveDNA, loadAccount, saveAccount, loadBuyData, saveBuyData, emptyBuyData, rankProjects, type BuyData } from "./journey";
+import { deriveDNA, loadAccount, saveAccount, loadBuyData, saveBuyData, emptyBuyData, hasPreferences, rankProjects, type BuyData } from "./journey";
 import { advisorFor, loadConsultation, type ConsultAdvisor } from "./consultation";
 import { saveBriefToServer, fetchMyBrief } from "./phoneAuth";
 
@@ -482,7 +482,13 @@ function dnaChipsFromBuy(buy: BuyData): { archetype: string; chips: Chip[]; titl
     archetype: d.archetype,
     title: `${d.markets.slice(0, 2).join(" · ") || "Gurugram"} · ${d.config}`,
     chips: [
-      { label: "Budget", value: d.budgetRange },
+      /* budgetCr defaults to 6 (emptyBuyData), so an untouched brief would
+         otherwise render "₹5–7 Cr" as if the member stated it — the one
+         fabricated value in an otherwise-honest default set. Gate it on
+         hasPreferences, the same "was this brief actually touched" test
+         buyerBrief uses, so a new member sees a neutral budget like the other
+         defaults instead of a number they never gave. */
+      { label: "Budget", value: hasPreferences(buy) ? d.budgetRange : "To be set" },
       { label: "Markets", value: d.markets.length ? d.markets.slice(0, 3).join(", ") : "Open to guidance" },
       { label: "Configuration", value: d.config },
       { label: "Timeline", value: d.timeline },
@@ -527,11 +533,15 @@ function seed(): OfficeState {
       archetype,
       dna: chips,
       advisor: advisorFor(consult?.reason ?? "buy"),
+      /* A real booked consultation ONLY — from the consult form or an account
+         booking. No fabricated fallback: a brand-new member who never booked
+         must not see a fake "Saturday 11:30 AM" call. null → the Advice
+         section's own empty state ("No past consultations yet"). */
       call: consult?.day
         ? { day: consult.day, time: consult.time ?? "—", format: consult.format ?? "Video" }
         : account?.booking
         ? { day: account.booking.slot.split(" · ")[0] ?? account.booking.slot, time: account.booking.slot.split(" · ")[1] ?? "", format: "Video" }
-        : { day: "Saturday", time: "11:30 AM", format: "Video" },
+        : null,
       pastCalls: [],
       recs,
       questions: [],
@@ -563,7 +573,7 @@ function seed(): OfficeState {
         { label: "Priorities", value: "Construction Quality, Location" },
       ],
       advisor: advisorFor("buy"),
-      call: { day: "Saturday", time: "11:30 AM", format: "Video" },
+      call: null,
       pastCalls: [],
       recs,
       questions: [],

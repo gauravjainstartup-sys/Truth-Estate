@@ -5,7 +5,7 @@ import { track } from "@/lib/events";
 import { useRouter } from "next/navigation";
 import Logo from "../Logo";
 import { useConsultation } from "../consultation/ConsultationProvider";
-import { loadBuyData, hasPreferences, deriveDNA, clearAllDemoData, saveLead, hasReadAccess, has3DAccess, readStake, packageById, AUTH_EVENT } from "@/lib/journey";
+import { loadBuyData, hasPreferences, deriveDNA, clearAllDemoData, saveLead, hasReadAccess, has3DAccess, readStake, packageById, isSignedIn, AUTH_EVENT } from "@/lib/journey";
 import { ENTITLEMENTS_EVENT } from "@/lib/entitlementsCache";
 import { negotiationLevers } from "@/lib/negotiation";
 import type { RelatedGroups, RelatedProject } from "@/lib/relatedProjects";
@@ -245,6 +245,26 @@ export default function ProjectProfile({
       window.removeEventListener(ENTITLEMENTS_EVENT, read);
       window.removeEventListener(AUTH_EVENT, read);
     };
+  }, [p.slug]);
+
+  /* Resume the unlock after a Google round-trip. The paywall's "Continue with
+     Google" leaves the page entirely and returns with ?unlock=<slug> (and u3d=1
+     if they were after the 3D/all tier). Without this the reader landed on a
+     plainly reloaded report, signed in but with the sheet gone, and had to hunt
+     for the unlock button again — exactly the dropped payment flow. Re-open it;
+     signed in now, the sheet resumes at plan/pay, not registration. Strip the
+     params so a later refresh doesn't reopen it. Post-mount, like ?as=owner:
+     the query string doesn't exist at prerender time. */
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("unlock") !== p.slug || !isSignedIn()) return;
+      setUnlockFocus3D(params.get("u3d") === "1");
+      setUnlockOpen(true);
+      params.delete("unlock"); params.delete("u3d");
+      const qs = params.toString();
+      window.history.replaceState(null, "", window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash);
+    } catch { /* a query string can never break the report */ }
   }, [p.slug]);
 
   /* ?as=owner — set by the journey's owner path, which already knows this
