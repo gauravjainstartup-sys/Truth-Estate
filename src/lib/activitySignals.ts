@@ -232,16 +232,18 @@ function priceSignal(ts: Touched[], stated: BuyData): ActivitySignal | null {
   const lo = Math.floor(mid);
   const hi = lo + 1;
   const budgetCr = Math.round(mid);
-  /* Disagree only when a stated budget genuinely sits outside what they
-     read — a stated brief they never touched (default 6) is not a claim. */
+  /* A stated brief they never touched (default 6) is not a claim. */
   const statedTouched = stated.locations.length > 0 || stated.configs.length > 0 || stated.priorities.length > 0;
-  const disagrees = statedTouched && Math.abs(stated.budgetCr - mid) >= 1.5;
+  /* Already covered by the stated budget ⇒ nothing to add; surface as context,
+     the same way markets/config de-dup once they're in the brief. */
+  const inBand = statedTouched && stated.budgetCr >= lo && stated.budgetCr <= hi;
+  const disagrees = statedTouched && !inBand && Math.abs(stated.budgetCr - mid) >= 1.5;
   return {
     key: "price",
     value: `₹${lo}–${hi} Cr`,
-    evidence: "your most-viewed price band",
+    evidence: inBand ? "your most-viewed band · matches your brief" : "your most-viewed price band",
     disagrees,
-    promote: { budgetCr },
+    promote: inBand ? undefined : { budgetCr },
   };
 }
 

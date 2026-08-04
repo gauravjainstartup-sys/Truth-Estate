@@ -52,15 +52,27 @@ function Skeleton() {
   );
 }
 
-export default function DashboardHome({ name }: { name?: string | null }) {
+export default function DashboardHome({
+  name,
+  onEditBrief,
+  refreshKey = 0,
+}: {
+  name?: string | null;
+  /* Edit an EXISTING brief in place (the office modal). Falls back to the
+     journey if not provided. */
+  onEditBrief?: () => void;
+  /* Bumped by the office on any brief change so Home re-reads the one brief
+     and stays in step with My Requirements. */
+  refreshKey?: number;
+}) {
   const [brief, setBrief] = useState<BuyerBrief | null>(null);
   const { open: openJourney } = useJourney();
 
-  useEffect(() => { void loadBuyerBrief().then(setBrief); }, []);
+  useEffect(() => { void loadBuyerBrief().then(setBrief); }, [refreshKey]);
   if (!brief) return <Skeleton />;
 
   return brief.known
-    ? <StateB brief={brief} name={name} onEditBrief={() => openJourney()} />
+    ? <StateB brief={brief} name={name} onEditBrief={onEditBrief ?? (() => openJourney())} />
     : <StateA brief={brief} name={name} onOpenBrief={() => openJourney()} />;
 }
 

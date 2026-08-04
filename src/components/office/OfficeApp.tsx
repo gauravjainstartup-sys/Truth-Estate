@@ -41,12 +41,16 @@ import {
   currentBuy,
   loadOffice,
   nextStep,
+  officeBrief,
   promoteToBrief,
+  reconcileBrief,
   saveOffice,
+  setBrief,
   stageIndex,
   wins,
 } from "@/lib/office";
 import { loadActivitySignals, type ActivitySignals, type ActivitySignal } from "@/lib/activitySignals";
+import BriefEditModal from "./BriefEditModal";
 import { basePath } from "@/lib/site";
 import {
   recordReportView,
@@ -88,10 +92,11 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
   const [navOpen, setNavOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const [celebrate, setCelebrate] = useState<string | null>(null);
-  /* Bumped whenever the buyer promotes an inferred activity signal into the
-     brief, so the requirements page re-reads its signals (the promoted one
-     now being stated, it drops off the "from your activity" list). */
-  const [promoteVersion, setPromoteVersion] = useState(0);
+  const [briefEditOpen, setBriefEditOpen] = useState(false);
+  /* Bumped on ANY brief change (edit or promote), so every surface —
+     Home, My Requirements, Recommendations — re-reads the one brief and
+     they can never drift out of sync again. */
+  const [briefVersion, setBriefVersion] = useState(0);
   const { open: openJourney } = useJourney();
   /* Gate the office behind sign-in. A hard refresh wipes the session (root
      layout), so a reloaded visitor lands on the sign-in screen; the office
@@ -99,11 +104,13 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
   useEffect(() => {
     const m = isSignedIn();
     setAuthed(m);
-    if (m) setState(loadOffice());
+    /* Heal any drift between the two brief stores before the office reads
+       either — so a stale account.buy can't keep showing a different brief. */
+    if (m) { reconcileBrief(); setState(loadOffice()); }
   }, []);
 
   if (authed === null) return <div className="min-h-svh bg-[#F5F0E8]" />;
-  if (!authed) return <SignIn onSignedIn={() => { setAuthed(true); setState(loadOffice()); }} />;
+  if (!authed) return <SignIn onSignedIn={() => { setAuthed(true); reconcileBrief(); setState(loadOffice()); }} />;
   if (!state) return <div className="min-h-svh bg-[#F5F0E8]" />;
 
   const active = state.threads.find((t) => t.id === state.activeId) ?? state.threads[0];
@@ -116,7 +123,14 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
      the stated brief — writes the real BuyData and re-derives this thread. */
   const promote = (patch: Partial<BuyData>) => {
     setState(promoteToBrief(state, patch));
-    setPromoteVersion((v) => v + 1);
+    setBriefVersion((v) => v + 1);
+  };
+  /* Save the whole brief from the edit modal — one write, every surface
+     re-reads it. */
+  const saveBriefEdit = (buy: BuyData) => {
+    setState(setBrief(state, buy));
+    setBriefVersion((v) => v + 1);
+    setBriefEditOpen(false);
   };
   const patchThread = (id: string, patch: Partial<OfficeThread>) =>
     update({ ...state, threads: state.threads.map((t) => (t.id === id ? { ...t, ...patch } : t)) });
@@ -192,8 +206,8 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
            max-w-7xl, so the content just needs its gutters. A second cap
            here is what pushed the column narrow-and-offset before. */}
         <div className="px-6 py-9 md:px-10 md:py-12">
-          {section === "home" && <DashboardHome name={loadAccount()?.name ?? null} />}
-          {section === "requirements" && <RequirementsSection active={active} onEdit={() => openJourney()} onPromote={promote} refreshKey={promoteVersion} />}
+          {section === "home" && <DashboardHome name={loadAccount()?.name ?? null} onEditBrief={() => setBriefEditOpen(true)} refreshKey={briefVersion} />}
+          {section === "requirements" && <RequirementsSection onEdit={() => setBriefEditOpen(true)} onPromote={promote} refreshKey={briefVersion} />}
           {section === "recommendations" && <RecommendationsSection thread={active} onActivate={() => setPayOpen(true)} />}
           {section === "deal" && <DealSection thread={active} onAdvance={advanceTo} onActivate={() => setPayOpen(true)} />}
           {section === "advice" && <AdviceSection thread={active} onReschedule={(c) => patchThread(active.id, { call: c })} />}
@@ -206,6 +220,7 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
           )}
         </div>
         {payOpen && <PaymentSheet thread={active} onClose={() => setPayOpen(false)} onPay={activate} />}
+        {briefEditOpen && <BriefEditModal initial={currentBuy()} onClose={() => setBriefEditOpen(false)} onSave={saveBriefEdit} />}
         {celebrate && <Celebrate message={celebrate} />}
       </main>
      </div>
@@ -393,16 +408,18 @@ function UpcomingCall({ thread }: { thread: OfficeThread }) {
    requirement set the buyer can edit, and a set of inferred signals they can
    promote into it. */
 function RequirementsSection({
-  active,
   onEdit,
   onPromote,
   refreshKey,
 }: {
-  active: OfficeThread;
   onEdit: () => void;
   onPromote: (patch: Partial<BuyData>) => void;
   refreshKey: number;
 }) {
+  /* The brief, derived LIVE from the one source (currentBuy) on every render —
+     so this card always shows exactly what Home shows. refreshKey re-renders
+     this after an edit/promote. */
+  const brief = officeBrief();
   const [sig, setSig] = useState<ActivitySignals | null>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -433,14 +450,14 @@ function RequirementsSection({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/45">Your brief</p>
-            <p className="mt-1 font-serif text-[1.35rem] font-medium text-[#1a1a1a]">{active.archetype}</p>
+            <p className="mt-1 font-serif text-[1.35rem] font-medium text-[#1a1a1a]">{brief.archetype}</p>
           </div>
           <button onClick={onEdit} className="text-[0.82rem] font-medium text-[#1e6b45] transition-colors hover:text-[#238c55]">
             Edit requirements →
           </button>
         </div>
         <div className="mt-5 flex flex-wrap gap-2.5 border-t border-[#1a1a1a]/[0.06] pt-5">
-          {active.dna.map((c) => (
+          {brief.dna.map((c) => (
             <span key={c.label} className="rounded-full border border-[#1a1a1a]/10 px-3.5 py-1.5 text-[0.78rem] font-light text-[#1a1a1a]/65">
               <span className="text-[#1a1a1a]/40">{c.label}</span> <span className="font-medium text-[#1a1a1a]">{c.value}</span>
             </span>
@@ -557,6 +574,14 @@ function SignalChip({ s, onPromote }: { s: ActivitySignal; onPromote: (patch: Pa
 function RecommendationsSection({ thread, onActivate }: { thread: OfficeThread; onActivate: () => void }) {
   const postCall = callDone(thread.stage);
   const paid = isPaid(thread.stage);
+  /* Recs recomputed from the ONE brief, so they always match what My
+     Requirements shows — not a copy frozen at seed. */
+  const brief = officeBrief();
+  const recs = brief.recs;
+  const briefLine = brief.dna
+    .filter((c) => ["Budget", "Markets", "Configuration"].includes(c.label))
+    .map((c) => c.value)
+    .join(" · ");
   return (
     <div className="animate-fade-up">
       <SectionHead
@@ -565,12 +590,22 @@ function RecommendationsSection({ thread, onActivate }: { thread: OfficeThread; 
         sub={
           postCall
             ? "Updated after your consultation — what we'd pursue, what we ruled out, and why."
-            : "The projects we're pressure-testing against your Buyer DNA. We'll challenge these on your call."
+            : "The projects we're pressure-testing against your requirements. We'll challenge these on your call."
         }
       />
 
+      {/* What these are matched against — so it's never a mystery which brief
+          the recommendations answer to. */}
+      {briefLine && (
+        <div className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-[#1a1a1a]/[0.08] bg-white px-4 py-2.5 text-[0.8rem] font-light text-[#1a1a1a]/60">
+          <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">Matched to your brief</span>
+          <span className="font-medium text-[#1a1a1a]/80">{briefLine}</span>
+          <Link href="/office/requirements" className="ml-auto text-[0.76rem] font-medium text-[#1e6b45] hover:text-[#238c55]">Edit →</Link>
+        </div>
+      )}
+
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {thread.recs.map((r) => {
+        {recs.map((r) => {
           const intel = projectByName(r.name);
           if (!intel) return null;
           return (
