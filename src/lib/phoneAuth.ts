@@ -466,17 +466,24 @@ export async function saveBriefToServer(buy: BuyData): Promise<void> {
 }
 
 export async function fetchMyBrief(): Promise<BuyData | null> {
-  const token = getSession()?.access_token;
-  if (!token) return null;
+  const session = getSession();
+  const token = session?.access_token;
+  const uid = session?.user_id;
+  if (!token || !uid) return null;
   try {
+    /* Filter by id (like the write) rather than leaning on RLS to pick the
+       row, so read and write always target the same profile. */
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/user_profiles?select=brief&limit=1`,
+      `${SUPABASE_URL}/rest/v1/user_profiles?id=eq.${encodeURIComponent(uid)}&select=brief`,
       { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
     );
-    if (!res.ok) return null;
+    if (!res.ok) { console.warn(`[brief] server read failed: HTTP ${res.status}`); return null; }
     const rows = (await res.json().catch(() => null)) as { brief?: BuyData | null }[] | null;
-    return Array.isArray(rows) && rows[0]?.brief ? rows[0].brief : null;
-  } catch {
+    const brief = Array.isArray(rows) && rows[0]?.brief ? rows[0].brief : null;
+    console.info(`[brief] server read ok — ${brief ? "found a saved brief" : "no saved brief on this account"}`);
+    return brief;
+  } catch (e) {
+    console.warn("[brief] server read error", e);
     return null;
   }
 }
