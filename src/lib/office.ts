@@ -8,8 +8,9 @@
    so the UI can light them up without a schema change.
    ════════════════════════════════════════════════════════════════ */
 
-import { deriveDNA, loadAccount, saveAccount, loadBuyData, saveBuyData, emptyBuyData, rankProjects, type BuyData } from "./journey";
+import { deriveDNA, loadAccount, saveAccount, loadBuyData, saveBuyData, emptyBuyData, rankProjects, hasPreferences, type BuyData } from "./journey";
 import { advisorFor, loadConsultation, type ConsultAdvisor } from "./consultation";
+import { saveBriefToServer, fetchMyBrief } from "./phoneAuth";
 
 /* ── Deal lifecycle ── */
 export type DealStage =
@@ -601,11 +602,35 @@ export function currentBuy(): BuyData {
 }
 
 /* The single writer: both stores, always, so nothing downstream can read a
-   different brief than the one just set. */
+   different brief than the one just set. Also persists to the account
+   (fire-and-forget) so the brief survives sign-out — which wipes
+   localStorage — and follows the buyer across devices. The localStorage
+   writes above stay the source of truth for this session; the server copy is
+   for the next sign-in. No session → saveBriefToServer no-ops. */
 export function saveBrief(buy: BuyData): void {
   saveBuyData(buy);
   const acct = loadAccount();
   if (acct) saveAccount({ ...acct, buy });
+  void saveBriefToServer(buy);
+}
+
+/* Restore the stated brief from the account when localStorage has none — the
+   case right after sign-in, since sign-out wiped it. Runs only when signed in
+   (fetchMyBrief no-ops without a session) and only writes when the account
+   actually holds a real, touched brief, so it can never overwrite a fresh
+   local edit or plant an empty seed. Local-only writes here (not saveBrief),
+   so it doesn't echo straight back to the server. Returns true if it
+   restored something, so the caller can refresh every surface. */
+export async function hydrateBriefFromServer(): Promise<boolean> {
+  if (loadBuyData()) return false; // a local stated brief already wins
+  const remote = await fetchMyBrief();
+  if (remote && hasPreferences(remote)) {
+    saveBuyData(remote);
+    const acct = loadAccount();
+    if (acct) saveAccount({ ...acct, buy: remote });
+    return true;
+  }
+  return false;
 }
 
 /* Heal a pair that has already drifted (the exact bug this refactor closes):

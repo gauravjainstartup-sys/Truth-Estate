@@ -28,7 +28,7 @@
    and rewriting those call sites is a separate job from putting a real
    OTP in the chat. This file is where that bridge gets cut later.
    ════════════════════════════════════════════════════════════════ */
-import { setSignedIn, signOut, loadAccount, saveAccount, emptyBuyData } from "@/lib/journey";
+import { setSignedIn, signOut, loadAccount, saveAccount, emptyBuyData, type BuyData } from "@/lib/journey";
 import { getAnonId, getSessionId } from "@/lib/truthGuideChat";
 import { track } from "@/lib/events";
 import { basePath } from "@/lib/site";
@@ -432,6 +432,52 @@ export async function updateMyProfile(patch: Partial<Pick<MyProfile, "name" | "e
     return { ok: true };
   } catch {
     return { ok: false, error: "Network error — please check your connection." };
+  }
+}
+
+/* ── The stated brief, kept on the account ──────────────────────────
+   The office brief lived only in localStorage, which sign-out wipes — so an
+   edited brief reverted to the /brief inference on the next sign-in. These
+   persist it on the user's OWN user_profiles row (jsonb `brief` column,
+   migration 0016), under the session and the own-row RLS policy — the same
+   boundary updateMyProfile uses. No session → both no-op and the office keeps
+   its localStorage copy, so this is inert until real sessions are on. */
+export async function saveBriefToServer(buy: BuyData): Promise<void> {
+  const session = getSession();
+  const token = session?.access_token;
+  const uid = session?.user_id;
+  if (!token || !uid) return; // signed out / soft mode — localStorage is the store
+  try {
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/user_profiles?id=eq.${encodeURIComponent(uid)}`,
+      {
+        method: "PATCH",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({ brief: buy }),
+        signal: AbortSignal.timeout(8000),
+      },
+    );
+  } catch { /* best effort — the localStorage copy is already saved */ }
+}
+
+export async function fetchMyBrief(): Promise<BuyData | null> {
+  const token = getSession()?.access_token;
+  if (!token) return null;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/user_profiles?select=brief&limit=1`,
+      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
+    );
+    if (!res.ok) return null;
+    const rows = (await res.json().catch(() => null)) as { brief?: BuyData | null }[] | null;
+    return Array.isArray(rows) && rows[0]?.brief ? rows[0].brief : null;
+  } catch {
+    return null;
   }
 }
 

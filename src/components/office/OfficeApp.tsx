@@ -40,6 +40,7 @@ import {
   isCurated,
   isPaid,
   currentBuy,
+  hydrateBriefFromServer,
   loadOffice,
   nextStep,
   officeBrief,
@@ -110,6 +111,25 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
        either — so a stale account.buy can't keep showing a different brief. */
     if (m) { reconcileBrief(); setState(loadOffice()); }
   }, []);
+
+  /* After sign-in, localStorage may hold no brief — sign-out wiped it. Pull
+     the stated brief the account saved server-side (migration 0016) and
+     restore it, then bump briefVersion so every surface re-reads it. This is
+     what makes an edited brief survive sign-out instead of reverting to the
+     /brief inference. Best-effort and non-blocking; a no-op once a local
+     brief exists, so it never clobbers a fresh edit. */
+  useEffect(() => {
+    if (!authed) return;
+    let cancelled = false;
+    void hydrateBriefFromServer().then((restored) => {
+      if (!cancelled && restored) {
+        reconcileBrief();
+        setState(loadOffice());
+        setBriefVersion((v) => v + 1);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [authed]);
 
   if (authed === null) return <div className="min-h-svh bg-[#F5F0E8]" />;
   if (!authed) return <SignIn onSignedIn={() => { setAuthed(true); reconcileBrief(); setState(loadOffice()); }} />;
