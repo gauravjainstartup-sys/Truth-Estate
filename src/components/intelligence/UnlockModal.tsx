@@ -114,9 +114,10 @@ export default function UnlockModal({
   const pkgs = usePricing();
 
   const isIndia = dial === "+91";
-  /* MSG91 sends 4 digits; Twilio Verify sends 6 by default — the boxes
-     follow the path so an international code actually fits. */
-  const otpLen = isIndia ? OTP_LEN : 6;
+  /* One code length for both providers: MSG91 sends 4 for +91, and the
+     Twilio Verify Service is configured to 4 (console → Verify → Code
+     Length) to match. If that Twilio setting ever changes, change this. */
+  const otpLen = OTP_LEN;
   const numValid = num.replace(/\D/g, "").length >= (isIndia ? 10 : 6);
   const otpComplete = otp.length === otpLen && otp.every((d) => d !== "");
   /* Show the number the SMS actually went to, not the raw keystrokes —

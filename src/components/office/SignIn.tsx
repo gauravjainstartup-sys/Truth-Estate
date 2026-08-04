@@ -66,9 +66,10 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
   const [isReturning, setIsReturning] = useState(false);
 
   const isIndia = dial === "+91";
-  /* MSG91 sends a 4-digit code; Twilio Verify sends 6 by default. The
-     boxes follow the path so an international code actually fits. */
-  const otpLen = isIndia ? OTP_LENGTH : 6;
+  /* One code length for both providers: MSG91 sends 4 for +91, and the
+     Twilio Verify Service is configured to 4 (console → Verify → Code
+     Length) to match. If that Twilio setting ever changes, change this. */
+  const otpLen = OTP_LENGTH;
   const numValid = num.replace(/\D/g, "").length >= (isIndia ? 10 : 6);
   const otpComplete = otp.length === otpLen && otp.every((d) => d !== "");
   const normalised = isIndia ? normalisePhone(num) : null;
@@ -116,7 +117,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
       setStep("otp");
       setResendIn(24);
     } else {
-      // International SMS OTP via Twilio Verify (6-digit by default).
+      // International SMS OTP via Twilio Verify (4-digit, set to match MSG91).
       const known = await phoneKnown(ten, dial);
       setIsReturning(known === true);
 
