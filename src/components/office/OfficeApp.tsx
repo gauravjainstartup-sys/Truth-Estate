@@ -2040,6 +2040,11 @@ function AccountSection({ onSignOut }: { onSignOut: () => void }) {
   const [phone, setPhone] = useState<string>(() => getSession()?.phone ?? "");
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [email, setEmail] = useState<string>(() => (loadConsultation()?.email ?? "").trim());
+  /* The Google identity actually LINKED to this account (google_sub). It — not
+     the mere presence of an email — is what makes a later "Continue with
+     Google" resolve here. A data-merge can hand the account a display email
+     without ever linking Google, so the two are tracked apart. */
+  const [googleSub, setGoogleSub] = useState<string | null>(null);
   const [brief, setBrief] = useState<BuyerBrief | null>(null);
 
   const [editing, setEditing] = useState(false);
@@ -2071,6 +2076,7 @@ function AccountSection({ onSignOut }: { onSignOut: () => void }) {
       setPhoneVerified(!!p.phone_verified);
       /* A synthetic phone_*@truthestate.com address is not a real email. */
       setEmail(p.email && !/^phone_\d+@truthestate\.com$/i.test(p.email) ? p.email : "");
+      setGoogleSub(p.google_sub ?? null);
     });
   }, []);
 
@@ -2284,21 +2290,23 @@ function AccountSection({ onSignOut }: { onSignOut: () => void }) {
             )}
           </AccountRow>
 
-          {/* Email is a VERIFIED identity from Google SSO — not a free-text
-              field. A typed address would be unverified and could collide with
-              the one-account-per-email rule (0015). To change it, the member
-              signs in with a different Google account (that proves ownership).
-              So: read-only, with a verified tick when present. */}
+          {/* Email is a VERIFIED, LINKED Google identity — not a free-text
+              field. The green tick means the account carries a google_sub, so a
+              later "Continue with Google" resolves HERE. An account can hold a
+              display email with no link (a data-merge copies the address but
+              not the identity) — that reads as unlinked and offers Connect
+              Google, the one action that stamps the link. To change the email,
+              the member connects a different Google account (which proves it). */}
           <AccountRow label="Email">
-            {email ? (
+            {googleSub ? (
               <div className="flex flex-wrap items-center gap-2.5">
-                <span className="text-[0.95rem] text-[#1a1a1a]">{email}</span>
+                <span className={`text-[0.95rem] ${email ? "text-[#1a1a1a]" : "text-[#1a1a1a]/35"}`}>{email || "NA"}</span>
                 <Pill tone="green">✓ Verified</Pill>
               </div>
             ) : (
               <div className="flex flex-col gap-2">
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-[0.95rem] text-[#1a1a1a]/35">NA</span>
+                  <span className={`text-[0.95rem] ${email ? "text-[#1a1a1a]" : "text-[#1a1a1a]/35"}`}>{email || "NA"}</span>
                   <button
                     onClick={handleConnectGoogle}
                     disabled={linkBusy}
