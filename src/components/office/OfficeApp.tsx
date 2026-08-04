@@ -79,7 +79,8 @@ import {
   type ViewRecord,
   type OwnedRecord,
 } from "@/lib/officeReports";
-import { getSession, saveName, fetchMyProfile, updateMyProfile } from "@/lib/phoneAuth";
+import { getSession, saveName, fetchMyProfile, updateMyProfile, sendOtp, verifyOtp, normalisePhone } from "@/lib/phoneAuth";
+import OtpDigits from "@/components/auth/OtpDigits";
 import { fetchEntitlements } from "@/lib/entitlements";
 import { loadBuyerBrief, briefSentence, type BuyerBrief } from "@/lib/buyerBrief";
 import { useJourney } from "@/components/journey/JourneyProvider";
@@ -2053,9 +2054,9 @@ function AccountSection({ onSignOut }: { onSignOut: () => void }) {
     setEmailErr("");
     if (clean && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(clean)) { setEmailErr("That doesn't look like an email."); return; }
     setEmailSaving(true);
-    const ok = await updateMyProfile({ email: clean });
+    const r = await updateMyProfile({ email: clean });
     setEmailSaving(false);
-    if (!ok) { setEmailErr("Couldn't save that just now — try again."); return; }
+    if (!r.ok) { setEmailErr(r.error); return; }
     setEmail(clean);
     setEmailEditing(false);
     setEmailSaved(true);
@@ -2071,6 +2072,48 @@ function AccountSection({ onSignOut }: { onSignOut: () => void }) {
     setEditing(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2600);
+  }
+
+  const [mobileEditing, setMobileEditing] = useState(false);
+  const [mobileDial, setMobileDial] = useState("+91");
+  const [mobileNum, setMobileNum] = useState("");
+  const [mobileStep, setMobileStep] = useState<"num" | "otp">("num");
+  const [mobileOtp, setMobileOtp] = useState<string[]>(["", "", "", ""]);
+  const [mobileBusy, setMobileBusy] = useState(false);
+  const [mobileErr, setMobileErr] = useState("");
+
+  async function handleSendMobileCode() {
+    if (mobileDial !== "+91") {
+      const clean = mobileNum.trim();
+      if (clean.length < 5) { setMobileErr("Enter a valid mobile number."); return; }
+      setMobileBusy(true);
+      const fullPhone = `${mobileDial} ${clean}`;
+      const r = await updateMyProfile({ phone: fullPhone });
+      setMobileBusy(false);
+      if (!r.ok) { setMobileErr(r.error); return; }
+      setPhone(fullPhone);
+      setMobileEditing(false);
+      return;
+    }
+
+    const ten = normalisePhone(mobileNum);
+    if (!ten) { setMobileErr("Enter a valid 10-digit Indian mobile number."); return; }
+    setMobileErr(""); setMobileBusy(true);
+    const r = await sendOtp(ten);
+    setMobileBusy(false);
+    if (!r.ok) { setMobileErr(r.error); return; }
+    setMobileStep("otp");
+  }
+
+  async function handleVerifyMobileCode() {
+    const ten = normalisePhone(mobileNum);
+    if (!ten) return;
+    setMobileErr(""); setMobileBusy(true);
+    const r = await verifyOtp(ten, mobileOtp.join(""), name);
+    setMobileBusy(false);
+    if (!r.ok) { setMobileErr(r.error); return; }
+    setPhone(`+91 ${ten}`);
+    setMobileEditing(false);
   }
 
   const lead = brief ? briefSentence(brief) : null;
@@ -2147,10 +2190,86 @@ function AccountSection({ onSignOut }: { onSignOut: () => void }) {
             {phone ? (
               <div className="flex flex-wrap items-center gap-2.5">
                 <span className="text-[0.95rem] text-[#1a1a1a]">{prettyMobile(phone)}</span>
-                <Pill tone="green">✓ Verified</Pill>
+                <Pill tone={phone.startsWith("+91") ? "green" : "neutral"}>
+                  {phone.startsWith("+91") ? "✓ Verified" : "Contact Number"}
+                </Pill>
+              </div>
+            ) : mobileEditing ? (
+              <div className="py-2">
+                {mobileStep === "num" ? (
+                  <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+                    <div className="flex gap-2">
+                      <select
+                        value={mobileDial}
+                        onChange={(e) => setMobileDial(e.target.value)}
+                        className="rounded-md border border-[#1a1a1a]/[0.16] bg-white px-2 py-2 text-[0.88rem] text-[#1a1a1a] outline-none"
+                      >
+                        <option value="+91">🇮🇳 +91</option>
+                        <option value="+1">🇺🇸 +1</option>
+                        <option value="+971">🇦🇪 +971</option>
+                        <option value="+44">🇬🇧 +44</option>
+                        <option value="+65">🇸🇬 +65</option>
+                        <option value="+61">🇦🇺 +61</option>
+                      </select>
+                      <input
+                        autoFocus
+                        value={mobileNum}
+                        onChange={(e) => setMobileNum(e.target.value)}
+                        placeholder="Mobile number"
+                        className={`sm:max-w-[220px] ${ACCOUNT_FIELD}`}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSendMobileCode}
+                        disabled={mobileBusy}
+                        className="rounded-sm bg-[#1e6b45] px-4 py-2 text-[0.8rem] font-medium text-white hover:bg-[#238c55] disabled:opacity-60"
+                      >
+                        {mobileBusy ? "Saving…" : mobileDial === "+91" ? "Send Code →" : "Save Number →"}
+                      </button>
+                      <button
+                        onClick={() => { setMobileEditing(false); setMobileErr(""); }}
+                        className="rounded-sm border border-[#1a1a1a]/15 px-4 py-2 text-[0.8rem] text-[#1a1a1a]/60 hover:border-[#1a1a1a]/35"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <p className="text-[0.82rem] text-[#1a1a1a]/70">
+                      Enter 4-digit code sent to <span className="font-medium text-[#1a1a1a]">+91 {mobileNum}</span>:
+                    </p>
+                    <OtpDigits value={mobileOtp} onChange={setMobileOtp} len={4} autoFocus onComplete={handleVerifyMobileCode} />
+                    <div className="flex gap-2 mt-1">
+                      <button
+                        onClick={handleVerifyMobileCode}
+                        disabled={mobileBusy || mobileOtp.some(d => !d)}
+                        className="rounded-sm bg-[#1e6b45] px-4 py-2 text-[0.8rem] font-medium text-white hover:bg-[#238c55] disabled:opacity-60"
+                      >
+                        {mobileBusy ? "Verifying…" : "Verify & Save →"}
+                      </button>
+                      <button
+                        onClick={() => setMobileStep("num")}
+                        className="rounded-sm border border-[#1a1a1a]/15 px-3 py-2 text-[0.8rem] text-[#1a1a1a]/60"
+                      >
+                        Change Number
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {mobileErr && <p className="mt-2 text-[0.78rem] text-[#b3402a]">{mobileErr}</p>}
               </div>
             ) : (
-              <span className="text-[0.95rem] text-[#1a1a1a]/35">NA</span>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-[0.95rem] text-[#1a1a1a]/35">NA</span>
+                <button
+                  onClick={() => { setMobileEditing(true); setMobileStep("num"); setMobileErr(""); }}
+                  className="text-[0.78rem] font-medium text-[#1e6b45] transition-colors hover:text-[#238c55]"
+                >
+                  + Add Mobile Number
+                </button>
+              </div>
             )}
           </AccountRow>
 
