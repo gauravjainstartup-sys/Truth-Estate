@@ -1,0 +1,50 @@
+name: RLS Guard
+
+# Row-Level Security is the only wall between the PUBLIC anon key (it ships
+# in the JS bundle) and the customer tables. It has been breached once
+# (see supabase/migrations/0001_rls_lockdown.sql). This job stands where an
+# attacker stands — the public REST endpoint, holding only the anon key —
+# and fails the build the moment a sensitive table leaks a row, a client
+# write is accepted, or a public build table stops being readable.
+#
+# It runs on every PR and push to main (so a regression can't merge), plus a
+# daily drift check (a policy can be changed in the Supabase console with no
+# commit at all — the cron is the backstop for that).
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    # 06:30 UTC daily — catches console-side policy drift no commit would show.
+    - cron: "30 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rls-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Probe the public REST surface with the anon key
+        # The script falls back to the public anon key + URL baked into the
+        # repo, so nothing has to be configured. Set these as repository
+        # VARIABLES (Settings → Secrets and variables → Actions → Variables)
+        # only if the project ever moves — they are not secrets.
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+        run: node scripts/rls-guard.mjs
