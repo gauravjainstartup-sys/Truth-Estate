@@ -82,6 +82,52 @@ const userRoute = ["/auth/v1/user", { status: 200, json: GOOGLE_USER }];
   ok(calls.some((c) => c.url.includes("on_conflict=id")), "upserts a profile row (with google_sub) for the new user");
 }
 
+/* ── SIGNIN: no google_sub, but the verified EMAIL already owns an account ── */
+{
+  const { f, calls } = makeFetch([
+    userRoute,
+    ["google_sub=eq.google-sub-123", { status: 200, json: [] }],                                 // no sub match
+    ["email=eq.", { status: 200, json: [{ id: "phone-acct-A", email: "gj@gmail.com" }] }],        // email match
+    ["user_profiles?id=eq.phone-acct-A", { status: 204, json: {} }],                              // stamp google_sub
+    ["rpc/merge_user_profiles", { status: 200, json: {} }],
+  ]);
+  const r = await handleGoogleSignin({ action: "signin", googleToken: "g" }, { env: ENV, fetchImpl: f, now: AT });
+  ok(r.json.ok === true && r.json.userId === "phone-acct-A", "signin falls back to the account that already owns the verified email");
+  const patch = calls.find((c) => c.method === "PATCH" && c.url.includes("phone-acct-A"));
+  ok(patch && JSON.parse(patch.body).google_sub === "google-sub-123", "email match stamps google_sub, so the next login resolves by sub");
+  const merge = calls.find((c) => c.url.includes("merge_user_profiles"));
+  ok(merge && JSON.parse(merge.body).p_target === "phone-acct-A" && JSON.parse(merge.body).p_source === "goog-oauth-uid", "folds the throwaway OAuth account into the email-matched one");
+}
+
+/* ── SIGNIN: throwaway already owns its OWN google_sub, but the email points
+      to a different real account → resolve to that account (the founder's case) ── */
+{
+  const { f, calls } = makeFetch([
+    userRoute,
+    ["google_sub=eq.google-sub-123", { status: 200, json: [{ id: "goog-oauth-uid" }] }],          // sub self-hit
+    ["email=eq.", { status: 200, json: [{ id: "phone-acct-A", email: "gj@gmail.com" }] }],         // email → real acct
+    ["user_profiles?id=eq.phone-acct-A", { status: 204, json: {} }],
+    ["rpc/merge_user_profiles", { status: 200, json: {} }],
+  ]);
+  const r = await handleGoogleSignin({ action: "signin", googleToken: "g" }, { env: ENV, fetchImpl: f, now: AT });
+  ok(r.json.ok === true && r.json.userId === "phone-acct-A", "a sub self-hit does not block the email fallback → lands on the real account");
+  const merge = calls.find((c) => c.url.includes("merge_user_profiles"));
+  ok(merge && JSON.parse(merge.body).p_target === "phone-acct-A", "folds the throwaway into the email-matched account");
+}
+
+/* ── SIGNIN: the ONLY email hit is the OAuth account itself → new, no self-merge ── */
+{
+  const { f, calls } = makeFetch([
+    userRoute,
+    ["google_sub=eq.google-sub-123", { status: 200, json: [] }],
+    ["email=eq.", { status: 200, json: [{ id: "goog-oauth-uid", email: "gj@gmail.com" }] }],       // only itself
+    ["user_profiles?on_conflict=id", { status: 201, json: {} }],
+  ]);
+  const r = await handleGoogleSignin({ action: "signin", googleToken: "g" }, { env: ENV, fetchImpl: f, now: AT });
+  ok(r.json.ok === true && r.json.userId === "goog-oauth-uid", "email hitting only the throwaway OAuth account → treated as new (excluded)");
+  ok(!calls.some((c) => c.url.includes("merge_user_profiles")), "no merge when the sole email hit is the OAuth account itself");
+}
+
 /* ── LINK: valid phone token → stamps + folds ───────────────────── */
 {
   const minted = await mintSession("phone-acct-A", ENV, AT());
