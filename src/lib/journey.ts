@@ -874,6 +874,19 @@ export function saveBuyData(d: BuyData): void {
   } catch {
     /* ignore */
   }
+  /* Persist the stated brief to the account too — so it survives sign-out
+     (which wipes localStorage) and follows the buyer across devices and login
+     methods. This is the ONE writer every brief edit funnels through — the
+     journey, the consult fold, the match-score screen, the dashboard's
+     "confirm guess" — so putting the server write HERE is what guarantees no
+     edit path can silently stay local (the bug: only the office modal's
+     saveBrief persisted, so a brief set any other way was lost on the next
+     sign-in). Dynamic import breaks the static journey → phoneAuth cycle;
+     fire-and-forget, and a no-op when signed out (saveBriefToServer checks the
+     session), so the anonymous journey is unaffected. */
+  void import("@/lib/phoneAuth")
+    .then(({ saveBriefToServer }) => saveBriefToServer(d))
+    .catch(() => { /* best-effort — the localStorage copy is already saved */ });
 }
 
 export function hasPreferences(d: BuyData): boolean {
