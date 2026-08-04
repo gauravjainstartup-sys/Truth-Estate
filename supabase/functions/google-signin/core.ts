@@ -165,6 +165,34 @@ async function findByGoogleSub(sub: string, env: Env, fetchImpl: typeof fetch): 
   } catch { return null; }
 }
 
+/* An existing account that already owns this (real, verified) email — the
+   returning member whose profile carries this Google address but not yet the
+   google_sub. Excludes the throwaway OAuth account itself and synthetic
+   phone_<digits>@truthestate.com addresses (a phone-only account is not an
+   email identity, and its address can never equal a real Google email anyway).
+
+   Why an exact match on email is safe here — the takeover worry with bare-email
+   linking is a VERIFIED login adopting an account whose email is UNVERIFIED
+   (attacker-seeded). That can't happen on this project: the only writers of
+   user_profiles.email are Google (verified) and chat-signin (synthetic
+   phone_*), and no path stores a typed/unverified address. The 0015 unique
+   index on lower(email) also guarantees at most one account holds a given
+   email, so a hit is unambiguous. If a typed-email path is ever added, gate
+   this to a verified-email flag. */
+async function findByVerifiedEmail(email: string, excludeId: string, env: Env, fetchImpl: typeof fetch): Promise<string | null> {
+  const e = email.trim();
+  if (!e || /^phone_\d+@truthestate\.com$/i.test(e)) return null;
+  try {
+    // eq (not ilike) — exact, and free of LIKE wildcard pitfalls (_ / %). Google
+    // returns the address already normalised, matching what was stored from it.
+    const res = await fetchImpl(`${env.DB_URL}/rest/v1/user_profiles?select=id,email&email=eq.${encodeURIComponent(e)}&limit=2`, { headers: svc(env.SERVICE_KEY) });
+    if (!res.ok) return null;
+    const rows = await res.json() as { id?: string; email?: string }[];
+    const hit = (rows ?? []).find((r) => r.id && r.id !== excludeId && r.email && !/^phone_\d+@truthestate\.com$/i.test(r.email));
+    return hit?.id ?? null;
+  } catch { return null; }
+}
+
 async function patchProfile(id: string, patch: Record<string, unknown>, env: Env, fetchImpl: typeof fetch): Promise<boolean> {
   try {
     const res = await fetchImpl(`${env.DB_URL}/rest/v1/user_profiles?id=eq.${encodeURIComponent(id)}`, {
@@ -239,19 +267,43 @@ export async function handleGoogleSignin(body: Body, deps: Deps): Promise<Result
     return ok({ userId: target, linked: true, ...(session ? { session } : {}) });
   }
 
-  /* ── SIGNIN: resolve to the canonical account by google_sub. ── */
-  let userId = g.sub ? await findByGoogleSub(g.sub, env, fetchImpl) : null;
-  if (userId && userId !== g.userId) {
-    /* A different account owns this Google identity (it was linked to a
-       phone account). Fold this fresh OAuth account into it so it never
-       lingers, and sign into the canonical one. */
+  /* ── SIGNIN: resolve to the ONE canonical account. ──
+       1) by google_sub — the permanent Google id, set on a prior sign-in/link.
+       2) fallback, by VERIFIED email — a returning member whose account already
+          carries this Google address (from an earlier Google login, or handed
+          to the survivor by a data-merge) but not yet the google_sub. This is
+          what makes "Continue with Google" land on the EXISTING profile instead
+          of forking a fresh, empty one — the split the founder saw. Safe
+          because no unverified email can exist in user_profiles (see
+          findByVerifiedEmail).
+     On either match, fold the throwaway OAuth account in; on an email match also
+     stamp google_sub so the NEXT login resolves by (1) directly. */
+  /* A google_sub hit only counts if it points at a DIFFERENT account than the
+     fresh OAuth user. A self-hit (the throwaway already carries its own sub
+     from an earlier new-user login) must NOT short-circuit the email fallback —
+     otherwise a member with an existing email-bearing account stays split. */
+  const subHit = g.sub ? await findByGoogleSub(g.sub, env, fetchImpl) : null;
+  let userId: string | null = subHit && subHit !== g.userId ? subHit : null;
+  let via = userId ? "google_sub" : "";
+  if (!userId && g.email) {
+    const byEmail = await findByVerifiedEmail(g.email, g.userId, env, fetchImpl);
+    if (byEmail) { userId = byEmail; via = "email"; }
+  }
+  if (userId) {
+    /* An existing, different account is canonical. On an email match it has no
+       google_sub yet — stamp it so future logins resolve straight by sub. Then
+       fold this fresh OAuth account in so it never lingers. */
+    if (via === "email" && g.sub) {
+      await patchProfile(userId, { google_sub: g.sub, ...(g.avatar ? { avatar_url: g.avatar } : {}) }, env, fetchImpl);
+    }
     await rpc("merge_user_profiles", { p_target: userId, p_source: g.userId }, env, fetchImpl);
   } else {
     // New Google-only user: this account is its own canonical.
     userId = g.userId;
+    via = "new";
     await ensureProfile(g, env, fetchImpl);
   }
   const session = await mintSession(userId, env, now());
-  console.log(`[google-signin] signin account=${userId} (google=${g.userId}) session=${session ? "minted" : "off"}`);
+  console.log(`[google-signin] signin account=${userId} (google=${g.userId}) via=${via} session=${session ? "minted" : "off"}`);
   return ok({ userId, verified: true, ...(session ? { session } : {}) });
 }
