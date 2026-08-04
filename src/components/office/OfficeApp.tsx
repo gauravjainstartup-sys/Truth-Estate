@@ -2038,12 +2038,8 @@ function AccountSection({ onSignOut }: { onSignOut: () => void }) {
   const { open: openJourney } = useJourney();
   const [name, setName] = useState<string>(() => (loadAccount()?.name ?? "").trim());
   const [phone, setPhone] = useState<string>(() => getSession()?.phone ?? "");
+  const [phoneVerified, setPhoneVerified] = useState(false);
   const [email, setEmail] = useState<string>(() => (loadConsultation()?.email ?? "").trim());
-  /* True once user_profiles has answered over a live session — then it is
-     the source of truth (and follows the person across devices), and email
-     becomes editable. Without a session we keep the localStorage copy,
-     read-only, so surfaces without sessions behave exactly as before. */
-  const [live, setLive] = useState(false);
   const [brief, setBrief] = useState<BuyerBrief | null>(null);
 
   const [editing, setEditing] = useState(false);
@@ -2051,37 +2047,17 @@ function AccountSection({ onSignOut }: { onSignOut: () => void }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const [emailEditing, setEmailEditing] = useState(false);
-  const [emailDraft, setEmailDraft] = useState("");
-  const [emailSaving, setEmailSaving] = useState(false);
-  const [emailSaved, setEmailSaved] = useState(false);
-  const [emailErr, setEmailErr] = useState("");
-
   useEffect(() => { void loadBuyerBrief().then(setBrief); }, []);
   useEffect(() => {
     void fetchMyProfile().then((p) => {
       if (!p) return;
-      setLive(true);
       if (p.name && p.name.trim()) setName(p.name.trim());
       if (p.phone && p.phone.trim()) setPhone(p.phone.trim());
+      setPhoneVerified(!!p.phone_verified);
       /* A synthetic phone_*@truthestate.com address is not a real email. */
       setEmail(p.email && !/^phone_\d+@truthestate\.com$/i.test(p.email) ? p.email : "");
     });
   }, []);
-
-  async function saveEmail() {
-    const clean = emailDraft.trim().slice(0, 200);
-    setEmailErr("");
-    if (clean && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(clean)) { setEmailErr("That doesn't look like an email."); return; }
-    setEmailSaving(true);
-    const r = await updateMyProfile({ email: clean });
-    setEmailSaving(false);
-    if (!r.ok) { setEmailErr(r.error); return; }
-    setEmail(clean);
-    setEmailEditing(false);
-    setEmailSaved(true);
-    setTimeout(() => setEmailSaved(false), 2600);
-  }
 
   async function saveDisplayName() {
     const clean = draft.trim().slice(0, 120);
@@ -2210,8 +2186,8 @@ function AccountSection({ onSignOut }: { onSignOut: () => void }) {
             {phone ? (
               <div className="flex flex-wrap items-center gap-2.5">
                 <span className="text-[0.95rem] text-[#1a1a1a]">{prettyMobile(phone)}</span>
-                <Pill tone={phone.startsWith("+91") ? "green" : "neutral"}>
-                  {phone.startsWith("+91") ? "✓ Verified" : "Contact Number"}
+                <Pill tone={phoneVerified ? "green" : "neutral"}>
+                  {phoneVerified ? "✓ Verified" : "Unverified"}
                 </Pill>
               </div>
             ) : mobileEditing ? (
@@ -2293,48 +2269,16 @@ function AccountSection({ onSignOut }: { onSignOut: () => void }) {
             )}
           </AccountRow>
 
+          {/* Email is a VERIFIED identity from Google SSO — not a free-text
+              field. A typed address would be unverified and could collide with
+              the one-account-per-email rule (0015). To change it, the member
+              signs in with a different Google account (that proves ownership).
+              So: read-only, with a verified tick when present. */}
           <AccountRow label="Email">
-            {emailEditing ? (
-              <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
-                <input
-                  autoFocus
-                  type="email"
-                  value={emailDraft}
-                  onChange={(e) => setEmailDraft(e.target.value)}
-                  placeholder="you@example.com"
-                  className={`sm:max-w-[280px] ${ACCOUNT_FIELD}`}
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={saveEmail}
-                    disabled={emailSaving}
-                    className="rounded-sm bg-[#1e6b45] px-5 py-2.5 text-[0.8rem] font-medium tracking-[0.02em] text-white transition-colors hover:bg-[#238c55] disabled:opacity-60"
-                  >
-                    {emailSaving ? "Saving…" : "Save"}
-                  </button>
-                  <button
-                    onClick={() => { setEmailEditing(false); setEmailErr(""); }}
-                    className="rounded-sm border border-[#1a1a1a]/15 px-5 py-2.5 text-[0.8rem] font-light text-[#1a1a1a]/60 transition-colors hover:border-[#1a1a1a]/35"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-wrap items-center gap-3">
-                <span className={`text-[0.95rem] ${email ? "text-[#1a1a1a]" : "text-[#1a1a1a]/35"}`}>{email || "NA"}</span>
-                {live && (
-                  <button
-                    onClick={() => { setEmailDraft(email); setEmailEditing(true); }}
-                    className="text-[0.78rem] font-medium text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]"
-                  >
-                    {email ? "Edit" : "Add email"}
-                  </button>
-                )}
-                {emailSaved && <span className="text-[0.74rem] font-light text-[#1e6b45]">✓ Saved</span>}
-              </div>
-            )}
-            {emailErr && <p className="mt-1.5 text-[0.74rem] text-[#b3402a]">{emailErr}</p>}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className={`text-[0.95rem] ${email ? "text-[#1a1a1a]" : "text-[#1a1a1a]/35"}`}>{email || "NA"}</span>
+              {email && <Pill tone="green">✓ Verified</Pill>}
+            </div>
           </AccountRow>
         </div>
       </div>
