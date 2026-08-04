@@ -383,14 +383,14 @@ export async function verifyOtp(
    user_profiles row directly, under the RLS own-row policies — no edge
    function. Both return null/false with no session, so the office falls
    back to its localStorage copy when sessions aren't live. */
-export type MyProfile = { id: string; name: string | null; phone: string | null; email: string | null; phone_verified: boolean };
+export type MyProfile = { id: string; name: string | null; phone: string | null; email: string | null; phone_verified: boolean; google_sub: string | null };
 
 export async function fetchMyProfile(): Promise<MyProfile | null> {
   const token = getSession()?.access_token;
   if (!token) return null;
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/user_profiles?select=id,name,phone,email,phone_verified&limit=1`,
+      `${SUPABASE_URL}/rest/v1/user_profiles?select=id,name,phone,email,phone_verified,google_sub&limit=1`,
       { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
     );
     if (!res.ok) return null;
