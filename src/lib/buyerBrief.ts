@@ -16,7 +16,7 @@
    to change. Nothing here renders anything.
    ════════════════════════════════════════════════════════════════ */
 import { getAnonId } from "@/lib/truthGuideChat";
-import { loadBuyData, hasPreferences, type BuyData } from "@/lib/journey";
+import { loadBuyData, hasPreferences, budgetRange, type BuyData } from "@/lib/journey";
 
 const SUPABASE_URL = "https://lyetvabfgaidvqrbmaoy.supabase.co";
 const SUPABASE_ANON_KEY =
@@ -71,8 +71,13 @@ const NA = <T,>(evidence = ""): Field<T> => ({
   value: null, display: "NA", evidence, source: "unknown", confidence: "none",
 });
 
-const crBand = (b: { min: number; max: number }) =>
-  b.min === b.max ? `₹${b.min} Cr` : `₹${b.min}–${b.max} Cr`;
+/* Budget is shown in whole crores everywhere. Floor the low end and ceil the
+   high end so a rounded band never reads NARROWER than the real one. */
+const crBand = (b: { min: number; max: number }) => {
+  const lo = Math.floor(b.min);
+  const hi = Math.ceil(b.max);
+  return lo === hi ? `₹${lo} Cr` : `₹${lo}–${hi} Cr`;
+};
 
 /* ── What they told us ────────────────────────────────────────────── */
 /* Read defensively: BuyData is written by several journey steps and a
@@ -91,10 +96,12 @@ function fromStated(buy: BuyData | null): Partial<BuyerBrief> {
      hasPreferences is the existing test for "this brief was actually
      touched"; only then is the number the visitor's rather than ours. */
   if (hasPreferences(buy) && typeof buy.budgetCr === "number" && buy.budgetCr > 0) {
-    /* The journey captures a single number; the dashboard shows a band.
-       ±15% is the width people actually mean by "around 7 crore". */
-    const b = { min: Math.round(buy.budgetCr * 0.85 * 4) / 4, max: Math.round(buy.budgetCr * 1.15 * 4) / 4 };
-    out.budgetCr = { value: b, display: crBand(b), evidence: "", source: "stated", confidence: "strong" };
+    /* Whole-number band, ±1 Cr: "5" means "₹4–6 Cr". Display goes through the
+       SAME budgetRange() the Buyer DNA chip uses, so Home and My Requirements
+       read identically (and the ₹20 Cr+ cap is handled in one place). The
+       {min,max} value that feeds fit scoring is the matching ±1 band. */
+    const b = { min: Math.max(1, buy.budgetCr - 1), max: buy.budgetCr + 1 };
+    out.budgetCr = { value: b, display: budgetRange(buy.budgetCr), evidence: "", source: "stated", confidence: "strong" };
   }
   const cfgs = Array.isArray(buy.configs) ? buy.configs.filter(Boolean) : [];
   if (cfgs.length) {
