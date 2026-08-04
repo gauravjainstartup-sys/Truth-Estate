@@ -394,7 +394,23 @@ export default function UnlockModal({
                   <button
                     type="button"
                     disabled={busy}
-                    onClick={async () => { setBusy(true); setErr(""); const r = await signInWithGoogle(); if (!r.ok) { setBusy(false); setErr(r.error); } }}
+                    onClick={async () => {
+                      setBusy(true); setErr("");
+                      /* Return to THIS report with an intent flag, so the page
+                         re-opens the unlock sheet on the way back — signed in
+                         now, the reader resumes at payment instead of a plainly
+                         reloaded page (the old flow dropped them here with
+                         nothing, and they had to find the unlock button again). */
+                      let back: string | undefined;
+                      try {
+                        const u = new URL(window.location.href);
+                        u.searchParams.set("unlock", slug);
+                        if (focus3D) u.searchParams.set("u3d", "1"); else u.searchParams.delete("u3d");
+                        back = u.toString();
+                      } catch { /* fall back to the current URL */ }
+                      const r = await signInWithGoogle(back);
+                      if (!r.ok) { setBusy(false); setErr(r.error); }
+                    }}
                     className="flex w-full items-center justify-center gap-3 rounded-md border border-[#1a1a1a]/20 bg-white text-[#1a1a1a] hover:bg-white/80 px-4 py-3 text-[0.9rem] font-medium shadow-sm transition-all disabled:opacity-60"
                   >
                     <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
