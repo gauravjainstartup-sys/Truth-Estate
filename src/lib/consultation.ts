@@ -206,12 +206,37 @@ export const emptyConsultBooking = (context: ConsultContext = {}): ConsultBookin
 /* ── Persistence (front-end simulation only) ── */
 const CONSULT_KEY = "truthEstate.consultation";
 
+/* Byte-identical to modelSlugFor / the brief function's slugify — the events
+   table joins the browsing trail to the catalogue on this slug, so it must
+   match exactly or a project-scoped enquiry silently attaches to nothing. */
+function consultSlug(name: string): string {
+  return (name ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
 export function saveConsultation(b: ConsultBooking): void {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(CONSULT_KEY, JSON.stringify(b));
   } catch {
     /* ignore */
+  }
+  /* A booked consultation is an enquiry — the strongest one. When it was
+     requested from a project page, record it as a project-scoped
+     lead_captured event so it feeds the brief inference (weight +4, like any
+     enquiry), the same way a document request does. Dynamic import keeps this
+     module out of a journey/events cycle, and a metric must never break a
+     booking. */
+  const project = b.context?.sourceKind === "project" ? b.context.source : undefined;
+  if (project) {
+    void import("@/lib/events")
+      .then((m) =>
+        m.track("lead_captured", {
+          projectName: project,
+          projectSlug: consultSlug(project),
+          props: { intent: "consultation", ...(b.reason ? { reason: b.reason } : {}) },
+        }),
+      )
+      .catch(() => { /* analytics must never surface an error */ });
   }
 }
 

@@ -1030,16 +1030,23 @@ export function saveLead(l: Lead): void {
     /* ignore */
   }
   postLead(l);
+  /* Feedback and report-error are NOT enquiries. They are still recorded as
+     leads (postLead, above), but they must not fire the funnel/inference
+     event — leaving feedback on a report is not buying intent, and counting
+     it would inflate that project's weight in the brief inference. */
+  const isEnquiry = l.intent !== "feedback" && l.intent !== "report-error";
   /* The slug as well as the name. Reports are recorded under a slug
      (report_viewed), leads carried only a display name, so "DLF The
      Arbour" and "dlf-the-arbour" never joined — and every funnel question
      of the form "which report did they read before enquiring" came back
      empty. events.project_slug is the indexed column; it has to be set. */
-  fireEvent("lead_captured", {
-    projectName: l.project,
-    ...(l.project ? { projectSlug: modelSlugFor(l.project) } : {}),
-    props: { intent: l.intent, ...(l.docs?.length ? { docs: l.docs } : {}) },
-  });
+  if (isEnquiry) {
+    fireEvent("lead_captured", {
+      projectName: l.project,
+      ...(l.project ? { projectSlug: modelSlugFor(l.project) } : {}),
+      props: { intent: l.intent, ...(l.docs?.length ? { docs: l.docs } : {}) },
+    });
+  }
   // a project-scoped lead is a 'lead'-tier model entitlement (no-op while dormant)
   if (l.project) grantModelAccess(modelSlugFor(l.project), l.phone || l.email, "lead");
 }
