@@ -546,50 +546,27 @@ export function rankCore<T extends Rankable>(
   d: BuyData,
   opts: RankOpts = {},
 ): (T & { matchPct: number; _score: number; _fit: RankFit })[] {
+  const configs = Array.isArray(d?.configs) ? d.configs : [];
+  const locations = Array.isArray(d?.locations) ? d.locations : [];
+  const priorities = Array.isArray(d?.priorities) ? d.priorities : [];
+  const budgetCr = typeof d?.budgetCr === "number" ? d.budgetCr : 6;
+  const notes = d?.notes || "";
+
   const wantsConfig = (p: T) => {
-    if (d.configs.length === 0 || d.configs.includes("Flexible")) return true;
-    // Only the configs the catalog actually knows for this project — "NA" is
-    // the adapter's "no unit data yet", not a real type. Exclude a project only
-    // when its KNOWN configs miss what the buyer asked for; when we hold no
-    // config data at all, give it the benefit of the doubt rather than dropping
-    // a possible match on a field the pipeline hasn't populated for it.
+    if (configs.length === 0 || configs.includes("Flexible")) return true;
     const known = p.configs.filter((c) => c && c.toUpperCase() !== "NA");
     if (known.length === 0) return true;
-    return d.configs.some((chip) => known.some((cfg) => configMatches(chip, cfg)));
+    return configs.some((chip) => known.some((cfg) => configMatches(chip, cfg)));
   };
 
-  /* Affordability gate — a recommendation the buyer cannot afford is not a
-     recommendation. Anything whose ENTRY price sits more than ₹2 Cr above the
-     stated budget is excluded BEFORE ranking (the same +2 Cr stretch the budget
-     band below already tolerates), so corridor fit can no longer surface a
-     ₹9 Cr project against a ₹5 Cr brief. Cheaper than budget stays in — the
-     buyer can afford it — and simply ranks through the normal decay. 21 means
-     "₹20 Cr+": no ceiling. If the gate would empty the list outright (a very
-     low budget against a premium-only universe), rank the full set instead —
-     an honest "closest there is" beats a dead end, and the card copy never
-     claims budget fit for anything outside the band. */
-  const ceiling = d.budgetCr >= 21 ? Infinity : d.budgetCr + 2;
+  const ceiling = budgetCr >= 21 ? Infinity : budgetCr + 2;
   const affordable = items.filter((p) => p.budget[0] <= ceiling);
   const affordablePool = affordable.length ? affordable : items;
 
-  /* Configuration gate — when the buyer names concrete home types, a project
-     that cannot offer ANY of them is not a match however well it scores on
-     corridor or price (the founder's "duplex penthouse is a MUST" case: a soft
-     +18 nudge let a non-matching project still surface). Filter to the ones
-     that can. Same safety valve as the affordability gate: if it would empty
-     the pool — the buyer stayed Flexible, or the catalog doesn't yet tag the
-     requested type — fall back rather than dead-end, so we never gate on a
-     field the pipeline may not populate. wantsConfig already encodes the
-     "flexible / no preference" no-op, so this is inert unless a real config
-     was asked for. */
   const cfgMatched = affordablePool.filter(wantsConfig);
   const cfgPool = cfgMatched.length ? cfgMatched : affordablePool;
 
-  /* Hard musts from the notes ("duplex is a must") — a strict filter with NO
-     fallback: known-miss is out, and so is a project with no config data (a
-     must-have can't be satisfied by a blank). Can genuinely empty the pool —
-     callers surface their empty state, which is the honest answer. */
-  const musts = mustHaveConfigsFrom(d.notes);
+  const musts = mustHaveConfigsFrom(notes);
   const pool = musts.length
     ? cfgPool.filter((p) => {
         const known = p.configs.filter((c) => c && c.toUpperCase() !== "NA");
@@ -597,33 +574,27 @@ export function rankCore<T extends Rankable>(
       })
     : cfgPool;
 
-  /* ── Persona-weighted graded score (docs/ranking-v2-spec.md) ──
-     Each dimension is a continuous 0..1 fit × a persona weight, so close-but-
-     not-perfect earns partial credit (no cliffs) and an objectively safer /
-     better project outranks a filter-equal but weaker one. Each purchase type
-     weights the same signals differently (PERSONA_WEIGHTS). Weights sum to
-     100, so `s` is an honest absolute 0..100. */
-  const W = weightsFor(d.purchaseType);
+  const W = weightsFor(d?.purchaseType ?? null);
   const investor = W.invest > 0;
 
   const budgetFit = (lo: number, hi: number): number => {
-    if (d.budgetCr >= lo) return d.budgetCr <= hi ? 1 : 0.9; // within band, or comfortably affordable
-    return Math.max(0, 1 - (lo - d.budgetCr) / 2.5); // entry above budget → graded stretch decay
+    if (budgetCr >= lo) return budgetCr <= hi ? 1 : 0.9;
+    return Math.max(0, 1 - (lo - budgetCr) / 2.5);
   };
   const configFit = (p: T): number => {
-    if (d.configs.length === 0 || d.configs.includes("Flexible")) return 1;
+    if (configs.length === 0 || configs.includes("Flexible")) return 1;
     const known = p.configs.filter((c) => c && c.toUpperCase() !== "NA");
-    if (known.length === 0) return 0.5; // unknown → benefit of the doubt
-    if (d.configs.some((chip) => known.some((cfg) => configMatches(chip, cfg)))) return 1;
-    if (d.configs.some((chip) => known.some((cfg) => bhkAdjacent(chip, cfg)))) return 0.45;
-    return 0.2; // known, but misses (only reachable when the config gate falls back)
+    if (known.length === 0) return 0.5;
+    if (configs.some((chip) => known.some((cfg) => configMatches(chip, cfg)))) return 1;
+    if (configs.some((chip) => known.some((cfg) => bhkAdjacent(chip, cfg)))) return 0.45;
+    return 0.2;
   };
   const locationFit = (p: T): number =>
-    d.locations.length === 0 || d.locations.some((loc) => sameCorridor(loc, p.market)) ? 1 : 0.25;
+    locations.length === 0 || locations.some((loc) => sameCorridor(loc, p.market)) ? 1 : 0.25;
   const priorityFit = (p: T): number => {
-    if (d.priorities.length === 0) return 1;
-    const served = p.tags.filter((t) => d.priorities.includes(t)).length;
-    return served / d.priorities.length;
+    if (priorities.length === 0) return 1;
+    const served = p.tags.filter((t) => priorities.includes(t)).length;
+    return served / priorities.length;
   };
   const trustFit = (p: T): number => {
     const tags = TRUST_TAGS.filter((t) => p.tags.includes(t)).length;
@@ -733,7 +704,9 @@ const MARKET_SHORT: Record<string, string> = {
 };
 
 export function deriveDNA(d: BuyData): DNA {
-  const p = d.priorities;
+  const p = Array.isArray(d?.priorities) ? d.priorities : [];
+  const configs = Array.isArray(d?.configs) ? d.configs : [];
+  const locations = Array.isArray(d?.locations) ? d.locations : [];
 
   let archetype = "Considered Buyer";
   if (p.includes("Capital Appreciation") || p.includes("Liquidity") || p.includes("Rental Yield"))
@@ -741,31 +714,31 @@ export function deriveDNA(d: BuyData): DNA {
   else if (p.includes("Luxury Lifestyle") || p.includes("Layouts"))
     archetype = "Lifestyle Connoisseur";
   else if (p.includes("Value Buying")) archetype = "Value Seeker";
-  else if (d.purchaseType === "First Home") archetype = "First-Home Buyer";
-  else if (d.purchaseType === "Upgrade") archetype = "Upgrade Buyer";
+  else if (d?.purchaseType === "First Home") archetype = "First-Home Buyer";
+  else if (d?.purchaseType === "Upgrade") archetype = "Upgrade Buyer";
 
   let risk = "Medium";
   if (p.includes("Legal Safety") || p.includes("On-Time Delivery")) risk = "Conservative";
-  if (d.purchaseType === "Investment" && p.includes("Capital Appreciation")) risk = "Medium–High";
+  if (d?.purchaseType === "Investment" && p.includes("Capital Appreciation")) risk = "Medium–High";
 
   const config =
-    d.configs.length === 0 || d.configs.includes("Flexible") ? "Flexible" : d.configs.join(" · ");
+    configs.length === 0 || configs.includes("Flexible") ? "Flexible" : configs.join(" · ");
 
   const markets =
-    d.locations.length === 0
+    locations.length === 0
       ? ["Open to guidance"]
-      : d.locations.map((m) => MARKET_SHORT[m] ?? m);
+      : locations.map((m) => MARKET_SHORT[m] ?? m);
 
   return {
     archetype,
     insight: ARCHETYPE_INSIGHT[archetype] ?? ARCHETYPE_INSIGHT["Considered Buyer"],
     risk,
-    budgetRange: budgetRange(d.budgetCr),
+    budgetRange: budgetRange(d?.budgetCr ?? 6),
     markets,
     config,
     topPriorities: p.length ? p : ["To be discovered together"],
-    timeline: d.timeline ?? "Flexible",
-    possession: d.possession ? POSSESSION_DNA_LABEL[d.possession] : "Under-construction focus",
+    timeline: d?.timeline ?? "Flexible",
+    possession: d?.possession ? (POSSESSION_DNA_LABEL[d.possession] ?? "Under-construction focus") : "Under-construction focus",
   };
 }
 

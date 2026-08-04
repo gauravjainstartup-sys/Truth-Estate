@@ -23,7 +23,7 @@ import {
   type PackageId, type Stake,
 } from "@/lib/journey";
 import { usePricing } from "@/lib/usePricing";
-import { normalisePhone, normaliseIntl, phoneKnown, prettyPhone, sendOtp, sendOtpIntl, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
+import { normalisePhone, normaliseIntl, phoneKnown, prettyPhone, sendOtp, sendOtpIntl, sendTwilioOtp, verifyOtp, verifyTwilioOtp, OTP_LENGTH } from "@/lib/phoneAuth";
 import { fetchEntitlements } from "@/lib/entitlements";
 import { payForPackage, prewarmCheckout, type Receipt } from "@/lib/checkout";
 import { openReceipt, invalidateBilling, inr as inrFmt } from "@/lib/billing";
@@ -181,7 +181,7 @@ export default function UnlockModal({
          every sign-in for a cosmetic answer. If the lookup loses, `known`
          is null and the name field appears — the same as a new visitor. */
       const [r, k] = await Promise.all([
-        isIndia ? sendOtp(ten) : sendOtpIntl(ten),
+        isIndia ? sendOtp(ten) : sendTwilioOtp(dial, num),
         phoneKnown(ten, dial),
       ]);
       setBusy(false);
@@ -203,7 +203,9 @@ export default function UnlockModal({
     setErr(""); setBusy(true);
     /* Signs in only on a server-confirmed code, and carries the name so
        the profile lands complete in one round trip. */
-    const r = await verifyOtp(ten, otp.join(""), name.trim(), dial);
+    const r = isIndia
+      ? await verifyOtp(ten, otp.join(""), name.trim(), dial)
+      : await verifyTwilioOtp(dial, num, otp.join(""), name.trim());
     setBusy(false);
     if (!r.ok) { setErr(r.error); return; }
 

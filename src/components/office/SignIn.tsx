@@ -3,12 +3,14 @@
 /* ────────────────────────────────────────────────────────────────────────
    Sign-in — the gate to the Private Office (also the registration entry).
 
-   A logged-out visitor (including anyone who has just hard-refreshed, which
-   wipes the simulated session) lands here instead of the office. Verifying
-   sets membership (setMember) and reveals the office.
-
-   Mobile-only auth, India-only for now: MSG91 sends the code by SMS
-   against DLT-registered templates, which cover Indian numbers only.
+   Rules & Workflows:
+   1. Step 1 asks for Mobile Number ONLY (Indian +91 or International).
+      No Name field upfront for returning users.
+   2. Auto-detects visitor country on load to prefill country dial code (+91, +1, +971, etc.).
+   3. Indian numbers (+91): MSG91 sends 4-digit SMS OTP.
+      - Checks if returning user (phoneKnown). Shows Welcome Back screen.
+      - 4-digit OTP verification -> Sign in -> Open Private Office.
+   4. International numbers (Non-+91): Google SSO (Verified Email) primary.
    ──────────────────────────────────────────────────────────────────────── */
 
 import { useEffect, useState } from "react";
@@ -16,45 +18,67 @@ import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import OtpDigits from "../auth/OtpDigits";
 import { saveLead } from "@/lib/journey";
-import { normalisePhone, normaliseIntl, prettyPhone, sendOtp, sendOtpIntl, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
+import {
+  normalisePhone,
+  normaliseIntl,
+  prettyPhone,
+  sendOtp,
+  sendOtpIntl,
+  sendTwilioOtp,
+  verifyOtp,
+  verifyTwilioOtp,
+  signInWithGoogle,
+  phoneKnown,
+  OTP_LENGTH,
+} from "@/lib/phoneAuth";
+import { detectUserCountry } from "@/lib/geo";
 import { basePath } from "@/lib/site";
 
-
 const DIAL = [
-  { code: "+91", flag: "🇮🇳" }, { code: "+971", flag: "🇦🇪" }, { code: "+1", flag: "🇺🇸" },
-  { code: "+44", flag: "🇬🇧" }, { code: "+65", flag: "🇸🇬" }, { code: "+61", flag: "🇦🇺" },
+  { code: "+91", flag: "🇮🇳", name: "India" },
+  { code: "+971", flag: "🇦🇪", name: "UAE" },
+  { code: "+1", flag: "🇺🇸", name: "USA / Canada" },
+  { code: "+44", flag: "🇬🇧", name: "UK" },
+  { code: "+65", flag: "🇸🇬", name: "Singapore" },
+  { code: "+61", flag: "🇦🇺", name: "Australia" },
 ];
+
 const TICKS = [
   "Zero brokerage · fixed fee",
   "Independent, on-record advice",
   "Your negotiation, tracked end-to-end",
 ];
-const OTP_LEN = OTP_LENGTH;
+
+const OTP_LEN = OTP_LENGTH; // 4 digits
 
 const FIELD =
   "w-full rounded-md border border-[#1a1a1a]/[0.16] bg-white px-4 py-3 text-[0.95rem] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#1a1a1a]/35 focus:border-[#c9a96e]";
 
 export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
-  const { open: openOnboarding } = useJourney(); // the brief journey doubles as onboarding
+  const { open: openOnboarding } = useJourney();
   const [step, setStep] = useState<"contact" | "otp">("contact");
-  const [name, setName] = useState("");
   const [dial, setDial] = useState("+91");
   const [num, setNum] = useState("");
   const [otp, setOtp] = useState<string[]>(Array(OTP_LEN).fill(""));
   const [err, setErr] = useState("");
   const [resendIn, setResendIn] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [isReturning, setIsReturning] = useState(false);
 
   const isIndia = dial === "+91";
-  const channel = isIndia ? "SMS" : "WhatsApp";
   const numValid = num.replace(/\D/g, "").length >= (isIndia ? 10 : 6);
   const otpComplete = otp.every((d) => d !== "");
-  /* Show the number we ACTUALLY send to, not the raw keystrokes. Typing
-     the STD 0 out of habit rendered "+91 09958777313" — the SMS went to
-     the right handset, but this line is precisely where someone checks
-     their number, so it has to match what was dialled. */
   const normalised = isIndia ? normalisePhone(num) : null;
   const sentTo = normalised ? `${dial} ${prettyPhone(normalised)}` : `${dial} ${num.trim()}`;
+
+  // Auto-detect country code on mount
+  useEffect(() => {
+    detectUserCountry().then((geo) => {
+      if (geo.dialCode && DIAL.some((d) => d.code === geo.dialCode)) {
+        setDial(geo.dialCode);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     if (resendIn <= 0) return;
@@ -62,43 +86,84 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
     return () => clearTimeout(id);
   }, [resendIn]);
 
-  async function sendCode() {
+  async function handleMobileSubmit(e?: React.FormEvent) {
+    e?.preventDefault();
     if (busy) return;
-    if (!name.trim()) { setErr("Please enter your name."); return; }
-    if (!numValid) { setErr("Enter a valid mobile number."); return; }
-    /* MSG91's DLT templates reach Indian handsets only. An international
-       number therefore takes the WhatsApp path, which is dummied until
-       those templates are live — see lib/phoneAuth. */
-    const ten = isIndia ? normalisePhone(num) : normaliseIntl(dial, num);
-    if (!ten) { setErr("That number doesn't look right — mind checking it?"); return; }
 
-    setErr(""); setBusy(true);
-    const r = isIndia ? await sendOtp(ten) : await sendOtpIntl(ten);
-    setBusy(false);
-    if (!r.ok) { setErr(r.error); return; }
-    setStep("otp"); setResendIn(24);
+    const ten = isIndia ? normalisePhone(num) : normaliseIntl(dial, num);
+    if (!ten) {
+      setErr(isIndia ? "Please enter a valid 10-digit Indian mobile number." : "Please enter a valid mobile number.");
+      return;
+    }
+
+    setErr("");
+    setBusy(true);
+
+    if (isIndia) {
+      const known = await phoneKnown(ten, dial);
+      setIsReturning(known === true);
+
+      const r = await sendOtp(ten);
+      setBusy(false);
+      if (!r.ok) {
+        setErr(r.error);
+        return;
+      }
+      setStep("otp");
+      setResendIn(24);
+    } else {
+      // International 4-digit SMS OTP via Twilio
+      const known = await phoneKnown(ten, dial);
+      setIsReturning(known === true);
+
+      const r = await sendTwilioOtp(dial, num);
+      setBusy(false);
+      if (!r.ok) {
+        setErr(r.error);
+        return;
+      }
+      setStep("otp");
+      setResendIn(24);
+    }
   }
 
   async function verify(e?: React.FormEvent) {
     e?.preventDefault();
     if (busy) return;
-    if (!otpComplete) { setErr(`Enter the ${OTP_LEN}-digit code.`); return; }
+    if (!otpComplete) {
+      setErr(`Enter the ${OTP_LENGTH}-digit code.`);
+      return;
+    }
+
     const ten = isIndia ? normalisePhone(num) : normaliseIntl(dial, num);
-    if (!ten) { setErr("That number doesn't look right — go back and check it."); return; }
+    if (!ten) {
+      setErr("That number doesn't look right — go back and check it.");
+      return;
+    }
 
-    setErr(""); setBusy(true);
-    /* This screen collects the name before the number, so it travels with
-       the verification and the profile lands complete in one round trip.
-       verifyOtp signs in only after the server has confirmed the code —
-       it does not simply set a flag, which is what this screen used to do. */
-    const r = await verifyOtp(ten, otp.join(""), name.trim(), dial);
+    setErr("");
+    setBusy(true);
+
+    // Verify 4-digit OTP
+    const r = await verifyOtp(ten, otp.join(""), undefined, dial);
     setBusy(false);
-    if (!r.ok) { setErr(r.error); return; }
+    if (!r.ok) {
+      setErr(r.error);
+      return;
+    }
 
-    saveLead({ name: name.trim(), email: "", phone: `${dial} ${num}`.trim(), intent: "buyer-office", createdAt: Date.now() });
-    onSignedIn();          // reveal the office (dashboard) behind…
-    openOnboarding();      // …the onboarding brief. For now everyone onboards
-                           // after sign-in; closing it lands in the dashboard.
+    saveLead({
+      name: "",
+      email: "",
+      phone: `${dial} ${num}`.trim(),
+      intent: "buyer-office",
+      createdAt: Date.now(),
+    });
+
+    onSignedIn();
+    if (!isReturning) {
+      openOnboarding(); // New users get the onboarding brief
+    }
   }
 
   const brand = (
@@ -127,7 +192,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
 
   return (
     <div className="flex min-h-svh w-full flex-col bg-[#F5F0E8] text-[#1a1a1a] md:flex-row">
-      {/* brand panel — a quiet dark identity beside the form (a top strip on mobile) */}
+      {/* Brand panel */}
       <div
         className="flex flex-col px-6 py-8 md:w-[40%] md:justify-between md:px-10 md:py-12 lg:px-14"
         style={{ background: "radial-gradient(120% 120% at 20% 15%, #241d12, #14110d 62%)" }}
@@ -135,41 +200,97 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
         {brand}
       </div>
 
-      {/* form */}
+      {/* Form */}
       <div className="flex flex-1 items-center justify-center px-6 py-10 md:px-12">
         <div className="w-full max-w-[400px]">
           <p className="text-[0.66rem] font-semibold uppercase tracking-[0.2em] text-[#9a7a2e]">The Private Office</p>
 
           {step === "contact" ? (
-            <form onSubmit={(e) => { e.preventDefault(); sendCode(); }}>
-              <h1 className="mt-2.5 font-serif text-[1.9rem] font-semibold leading-[1.1] tracking-[-0.01em] md:text-[2rem]">Sign in</h1>
-              <p className="mt-2 text-[0.9rem] leading-snug text-[#1a1a1a]/55">Enter your details to open your office.</p>
+            <form onSubmit={handleMobileSubmit}>
+              <h1 className="mt-2.5 font-serif text-[1.9rem] font-semibold leading-[1.1] tracking-[-0.01em] md:text-[2rem]">
+                Sign in
+              </h1>
+              <p className="mt-2 text-[0.9rem] leading-snug text-[#1a1a1a]/55">
+                {isIndia
+                  ? "Enter your mobile number to receive a 4-digit SMS code."
+                  : "International Visitors: Sign in securely with Google."}
+              </p>
 
               <label className="mt-6 block">
-                <span className="text-[0.64rem] font-semibold uppercase tracking-[0.12em] text-[#1a1a1a]/45">Full name</span>
-                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Rohan Mehta" autoComplete="name" className={`mt-2 ${FIELD}`} />
-              </label>
-
-              <label className="mt-4 block">
                 <span className="text-[0.64rem] font-semibold uppercase tracking-[0.12em] text-[#1a1a1a]/45">Mobile number</span>
                 <div className="mt-2 flex gap-2">
-                  <select value={dial} onChange={(e) => setDial(e.target.value)} aria-label="Country code"
-                    className="rounded-md border border-[#1a1a1a]/[0.16] bg-white px-3 py-3 text-[0.95rem] text-[#1a1a1a] outline-none transition-colors focus:border-[#c9a96e]">
-                    {DIAL.map((d) => <option key={d.code} value={d.code}>{d.flag} {d.code}</option>)}
+                  <select
+                    value={dial}
+                    onChange={(e) => setDial(e.target.value)}
+                    aria-label="Country code"
+                    className="rounded-md border border-[#1a1a1a]/[0.16] bg-white px-3 py-3 text-[0.95rem] text-[#1a1a1a] outline-none transition-colors focus:border-[#c9a96e]"
+                  >
+                    {DIAL.map((d) => (
+                      <option key={d.code} value={d.code}>
+                        {d.flag} {d.code} ({d.name})
+                      </option>
+                    ))}
                   </select>
-                  <input value={num} onChange={(e) => setNum(e.target.value)} inputMode="numeric" placeholder="98xxxxxx21" autoComplete="tel-national" className={`flex-1 ${FIELD}`} />
+                  <input
+                    value={num}
+                    onChange={(e) => setNum(e.target.value)}
+                    inputMode="numeric"
+                    placeholder="98xxxxxx21"
+                    autoComplete="tel-national"
+                    className={`flex-1 ${FIELD}`}
+                  />
                 </div>
               </label>
 
               {err && <p className="mt-3 text-[0.8rem] text-[#b3402a]">{err}</p>}
 
-              <button type="submit" disabled={busy} className="mt-6 w-full rounded-md bg-[#1e6b45] px-4 py-3 text-[0.9rem] font-medium tracking-[0.02em] text-white transition-colors hover:bg-[#238c55] disabled:opacity-60">
-                {busy ? "Sending\u2026" : "Send code \u2192"}
+              {isIndia ? (
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="mt-6 w-full rounded-md bg-[#1e6b45] px-4 py-3 text-[0.9rem] font-medium tracking-[0.02em] text-white transition-colors hover:bg-[#238c55] disabled:opacity-60"
+                >
+                  {busy ? "Sending code\u2026" : "Send code \u2192"}
+                </button>
+              ) : (
+                <div className="mt-6">
+                  <div className="mb-3 rounded-md bg-[#c9a96e]/15 border border-[#c9a96e]/30 p-3 text-[0.8rem] leading-relaxed text-[#7a5f1e]">
+                    ✨ <strong>International Visitors</strong>: Google SSO provides instant, verified access without SMS delays.
+                  </div>
+                </div>
+              )}
+
+              <div className="relative my-5 text-center">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-[#1a1a1a]/10"></div></div>
+                <span className="relative bg-[#F5F0E8] px-3 text-[0.72rem] font-medium uppercase tracking-wider text-[#1a1a1a]/40">or</span>
+              </div>
+
+              {/* Google SSO Button */}
+              <button
+                type="button"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  setErr("");
+                  const r = await signInWithGoogle();
+                  if (!r.ok) { setBusy(false); setErr(r.error); }
+                }}
+                className={`flex w-full items-center justify-center gap-3 rounded-md border ${
+                  !isIndia
+                    ? "border-[#1e6b45] bg-[#1e6b45] text-white hover:bg-[#238c55]"
+                    : "border-[#1a1a1a]/20 bg-white text-[#1a1a1a] hover:bg-white/80"
+                } px-4 py-3 text-[0.9rem] font-medium shadow-sm transition-all disabled:opacity-60`}
+              >
+                <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.28v3.15C3.25 21.3 7.31 24 12 24z"/>
+                  <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.28C.46 8.21 0 10.05 0 12s.46 3.79 1.28 5.42l4-3.15z"/>
+                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.28 6.58l4 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                </svg>
+                Continue with Google
               </button>
-              <p className="mt-3 text-[0.75rem] leading-relaxed text-[#1a1a1a]/40">
-                We&rsquo;ll send a {OTP_LEN}-digit code {isIndia ? "by SMS" : "on WhatsApp"}{" "}to confirm it&rsquo;s you.
-              </p>
-              <p className="mt-2 text-[0.72rem] leading-relaxed text-[#1a1a1a]/40">
+
+              <p className="mt-4 text-[0.72rem] leading-relaxed text-[#1a1a1a]/40">
                 By continuing you agree to our{" "}
                 <a href={`${basePath}/terms`} className="underline decoration-[#1a1a1a]/25 underline-offset-2 hover:text-[#1a1a1a]/70">Terms</a>{" "}and{" "}
                 <a href={`${basePath}/privacy`} className="underline decoration-[#1a1a1a]/25 underline-offset-2 hover:text-[#1a1a1a]/70">Privacy Policy</a>.
@@ -181,10 +302,18 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
             </form>
           ) : (
             <form onSubmit={verify}>
-              <h1 className="mt-2.5 font-serif text-[1.9rem] font-semibold leading-[1.1] tracking-[-0.01em] md:text-[2rem]">Enter the code</h1>
+              <h1 className="mt-2.5 font-serif text-[1.9rem] font-semibold leading-[1.1] tracking-[-0.01em] md:text-[2rem]">
+                {isReturning ? "Welcome back" : "Enter the code"}
+              </h1>
               <p className="mt-2 text-[0.85rem] text-[#1a1a1a]/55">
-                Sent to <span className="font-medium text-[#1a1a1a]">{sentTo}</span> via {channel}{" · "}
-                <button type="button" onClick={() => { setStep("contact"); setOtp(Array(OTP_LEN).fill("")); setErr(""); }} className="font-medium text-[#9a7a2e] hover:underline">Change</button>
+                Sent to <span className="font-medium text-[#1a1a1a]">{sentTo}</span> via SMS{" · "}
+                <button
+                  type="button"
+                  onClick={() => { setStep("contact"); setOtp(Array(OTP_LEN).fill("")); setErr(""); }}
+                  className="font-medium text-[#9a7a2e] hover:underline"
+                >
+                  Change
+                </button>
               </p>
 
               <div className="mt-5">
@@ -193,29 +322,37 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
 
               {err && <p className="mt-3 text-[0.8rem] text-[#b3402a]">{err}</p>}
 
-              <button type="submit" disabled={busy} className="mt-6 w-full rounded-md bg-[#1e6b45] px-4 py-3 text-[0.9rem] font-medium tracking-[0.02em] text-white transition-colors hover:bg-[#238c55] disabled:opacity-60">
+              <button
+                type="submit"
+                disabled={busy}
+                className="mt-6 w-full rounded-md bg-[#1e6b45] px-4 py-3 text-[0.9rem] font-medium tracking-[0.02em] text-white transition-colors hover:bg-[#238c55] disabled:opacity-60"
+              >
                 {busy ? "Verifying\u2026" : "Verify \u0026 enter \u2192"}
               </button>
+
               <p className="mt-3 text-[0.78rem] text-[#1a1a1a]/45">
                 Didn&rsquo;t get it?{" "}
-                {resendIn > 0
-                  ? <span className="text-[#1a1a1a]/40">Resend in 0:{String(resendIn).padStart(2, "0")}</span>
-                  : <button
-                      type="button"
-                      disabled={busy}
-                      onClick={async () => {
-                        if (busy) return;
-                        const ten = isIndia ? normalisePhone(num) : normaliseIntl(dial, num);
-                        if (!ten) { setErr("That number doesn't look right."); return; }
-                        setErr(""); setBusy(true);
-                        const r = isIndia ? await sendOtp(ten) : await sendOtpIntl(ten);
-                        setBusy(false);
-                        if (r.ok) setResendIn(24); else setErr(r.error);
-                      }}
-                      className="font-medium text-[#9a7a2e] hover:underline disabled:opacity-50"
-                    >Resend code</button>}
+                {resendIn > 0 ? (
+                  <span className="text-[#1a1a1a]/40">Resend in 0:{String(resendIn).padStart(2, "0")}</span>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={async () => {
+                      if (busy) return;
+                      const ten = isIndia ? normalisePhone(num) : normaliseIntl(dial, num);
+                      if (!ten) { setErr("That number doesn't look right."); return; }
+                      setErr(""); setBusy(true);
+                      const r = isIndia ? await sendOtp(ten) : await sendOtpIntl(ten);
+                      setBusy(false);
+                      if (r.ok) setResendIn(24); else setErr(r.error);
+                    }}
+                    className="font-medium text-[#9a7a2e] hover:underline disabled:opacity-50"
+                  >
+                    Resend code
+                  </button>
+                )}
               </p>
-
             </form>
           )}
         </div>

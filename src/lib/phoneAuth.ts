@@ -31,10 +31,21 @@
 import { setSignedIn, signOut, loadAccount, saveAccount, emptyBuyData } from "@/lib/journey";
 import { getAnonId, getSessionId } from "@/lib/truthGuideChat";
 import { track } from "@/lib/events";
+import { basePath } from "@/lib/site";
+import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = "https://lyetvabfgaidvqrbmaoy.supabase.co";
 const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5ZXR2YWJmZ2FpZHZxcmJtYW95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MDI2MzEsImV4cCI6MjA5MzI3ODYzMX0.zJzqyfhANxChklw7bEiOc7PwSq2R9wiJIpS39wCYS_8";
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    flowType: "implicit",
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  },
+});
 
 const SESSION_STORE = "truthEstate.sbSession";
 
@@ -178,6 +189,59 @@ export async function phoneKnown(phone: string, dial: string = INDIA_DIAL): Prom
   }
 }
 
+export async function sendTwilioOtp(dial: string, phone: string): Promise<AuthResult> {
+  try {
+    const res = await fetch("/api/auth/twilio/send-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dial, phone }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      return { ok: false, error: data.error || "Failed to send SMS OTP." };
+    }
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "Network error sending SMS OTP." };
+  }
+}
+
+export async function verifyTwilioOtp(dial: string, phone: string, code: string, name?: string): Promise<AuthResult> {
+  try {
+    const res = await fetch("/api/auth/twilio/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dial, phone, code }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      return { ok: false, error: data.error || "Invalid verification code." };
+    }
+
+    const cleanDial = dial.startsWith("+") ? dial : `+${dial}`;
+    const fullPhone = `${cleanDial} ${phone.replace(/\D/g, "")}`;
+    const token = `twilio_sess_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const user_id = `usr_${Math.random().toString(36).slice(2, 10)}`;
+
+    try {
+      window.localStorage.setItem(
+        SESSION_STORE,
+        JSON.stringify({ access_token: token, user_id, phone: fullPhone, provider: "twilio" }),
+      );
+    } catch { /* empty */ }
+
+    setSignedIn();
+
+    if (name?.trim()) {
+      await saveName(name.trim());
+    }
+
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "Network error verifying SMS OTP." };
+  }
+}
+
 export async function sendOtp(phone10: string): Promise<AuthResult> {
   try {
     const { ok, data } = await callFn("send-otp", { phone: phone10 });
@@ -290,11 +354,13 @@ export async function fetchMyProfile(): Promise<MyProfile | null> {
   }
 }
 
-export async function updateMyProfile(patch: Partial<Pick<MyProfile, "name" | "email">>): Promise<boolean> {
+export type ProfileUpdateResult = { ok: true } | { ok: false; error: string };
+
+export async function updateMyProfile(patch: Partial<Pick<MyProfile, "name" | "email" | "phone">>): Promise<ProfileUpdateResult> {
   const session = getSession();
   const token = session?.access_token;
   const uid = session?.user_id;
-  if (!token || !uid) return false;
+  if (!token || !uid) return { ok: false, error: "Not signed in" };
   try {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/user_profiles?id=eq.${encodeURIComponent(uid)}`,
@@ -310,13 +376,44 @@ export async function updateMyProfile(patch: Partial<Pick<MyProfile, "name" | "e
         signal: AbortSignal.timeout(8000),
       },
     );
-    return res.ok;
+    if (!res.ok) {
+      if (res.status === 409 || res.status === 400) {
+        return { ok: false, error: "This mobile number or email is already linked to another member profile." };
+      }
+      return { ok: false, error: "Couldn't update profile right now." };
+    }
+    return { ok: true };
   } catch {
-    return false;
+    return { ok: false, error: "Network error — please check your connection." };
   }
 }
 
-export function getSession(): { access_token: string | null; user_id: string | null; phone: string } | null {
+export async function signInWithGoogle(redirectTo?: string): Promise<AuthResult> {
+  if (typeof window === "undefined") return { ok: false, error: "Window undefined" };
+  try {
+    const origin = window.location.origin;
+    const target = redirectTo || window.location.href;
+    const callbackUrl = `${origin}${basePath}/auth/callback?next=${encodeURIComponent(target)}`;
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: callbackUrl,
+        queryParams: {
+          access_type: "offline",
+          prompt: "consent",
+        },
+      },
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Google Sign-In failed";
+    return { ok: false, error: message };
+  }
+}
+
+export function getSession(): { access_token: string | null; user_id: string | null; phone: string | null; email?: string | null; provider?: string } | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(SESSION_STORE);
