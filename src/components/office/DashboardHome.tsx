@@ -24,10 +24,14 @@
    is demoted to a thin strip near the bottom. It is context, not content.
    ════════════════════════════════════════════════════════════════ */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { loadBuyerBrief, type BuyerBrief, type BriefProject } from "@/lib/buyerBrief";
 import { fitFor, rankByFit, verdictFor } from "@/lib/fit";
+import { matchLabel } from "@/lib/matchEngine";
+import { rankProjectsIntel } from "@/lib/shortlist";
+import { useMatchCatalog, useMatchMarket } from "@/lib/useMatchCatalog";
+import { currentBuy } from "@/lib/office";
 /* projectPath, not projectHref: next/link applies basePath itself, so a
    href that already carries it comes out doubled — /Truth-Estate/Truth-
    Estate/projects/… on any build with a non-empty base path. */
@@ -227,10 +231,33 @@ function LockedFitPreview({ projects }: { projects: BriefProject[] }) {
    STATE B — we know the brief. Lead with the answer.
    ════════════════════════════════════════════════════════════════ */
 function StateB({ brief, name, onEditBrief }: { brief: BuyerBrief; name?: string | null; onEditBrief: () => void }) {
-  const ranked = rankByFit(brief.projects, brief);
+  /* The fit % is the persona match engine's score — the SAME number the public
+     shortlist, the report's YOUR FIT and the office Recommendations show — so a
+     project reads the same fit here as everywhere else, instead of the office
+     quietly running a second scale. fitFor still supplies the plain-English
+     reason ("in your corridor", "above your ceiling"); only the score is
+     swapped in, matched by slug against the live catalog ranked for THIS brief.
+     A project not in the live catalog (or the catalog still settling) keeps
+     fitFor's own score, so nothing blanks. */
+  const catalog = useMatchCatalog();
+  const market = useMatchMarket();
+  const ranked = useMemo(() => {
+    const pct = new Map<string, number>();
+    if (catalog) for (const r of rankProjectsIntel(currentBuy(), catalog, market)) pct.set(r.slug, r.matchPct);
+    return brief.projects
+      .map((p) => {
+        const fit = fitFor(p, brief);
+        const m = pct.get(p.slug);
+        return { p, fit: m != null ? { ...fit, score: m } : fit };
+      })
+      .sort((a, b) => (b.fit.score ?? -1) - (a.fit.score ?? -1) || (b.p.truthScore ?? 0) - (a.p.truthScore ?? 0));
+  }, [brief, catalog, market]);
   const verdict = verdictFor(brief, ranked);
-  const weakest = ranked.find((r) => (r.fit.score ?? 100) < 60 && r.p.views > 1);
-  const best = ranked.find((r) => (r.fit.score ?? 0) >= 80 && !r.p.paid);
+  /* "good / fair / low" is the ONE band the whole app reads off a match % —
+     matchLabel — so the next-step nudge fires on the same boundary the Fit bar
+     and Recommendations do. */
+  const weakest = ranked.find((r) => r.fit.score != null && matchLabel(r.fit.score).tone === "low" && r.p.views > 1);
+  const best = ranked.find((r) => r.fit.score != null && matchLabel(r.fit.score).tone === "good" && !r.p.paid);
 
   return (
     <div className="animate-fade-up">
@@ -327,7 +354,7 @@ function FitTable({ ranked }: { ranked: ReturnType<typeof rankByFit> }) {
                   </div>
                   <div className="mt-1.5 h-[3px] w-full overflow-hidden rounded-full bg-[#1a1a1a]/[0.08]">
                     <div
-                      className={`h-full rounded-full ${(fit.score ?? 0) >= 80 ? "bg-[#1e6b45]" : (fit.score ?? 0) >= 50 ? "bg-[#9a7a2e]" : "bg-[#b0503e]"}`}
+                      className={`h-full rounded-full ${fit.score == null ? "bg-[#b0503e]" : matchLabel(fit.score).tone === "good" ? "bg-[#1e6b45]" : matchLabel(fit.score).tone === "fair" ? "bg-[#9a7a2e]" : "bg-[#b0503e]"}`}
                       style={{ width: `${fit.score ?? 0}%` }}
                     />
                   </div>
