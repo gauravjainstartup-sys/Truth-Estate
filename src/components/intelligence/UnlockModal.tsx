@@ -31,6 +31,7 @@ import { openReceipt, invalidateBilling, inr as inrFmt } from "@/lib/billing";
 const DIAL = [
   { code: "+91", flag: "🇮🇳" }, { code: "+971", flag: "🇦🇪" }, { code: "+1", flag: "🇺🇸" },
   { code: "+44", flag: "🇬🇧" }, { code: "+65", flag: "🇸🇬" }, { code: "+61", flag: "🇦🇺" },
+  { code: "+49", flag: "🇩🇪" }, { code: "+966", flag: "🇸🇦" }, { code: "+86", flag: "🇨🇳" },
 ];
 const OTP_LEN = OTP_LENGTH;
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
