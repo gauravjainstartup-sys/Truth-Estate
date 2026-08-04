@@ -147,8 +147,16 @@ async function catalog(): Promise<Map<string, Lite>> {
    left open nine times doesn't shout down a considered second read. */
 type Touched = BriefProject & { w: number; cat: Lite | null; owned: boolean };
 
+/* One weight scale, matching the server's /brief inference: a booked
+   consultation (12) outranks a purchase (10), a self-declared ownership is
+   as strong (10), a plain enquiry is 4, and repeat views cap at 3 so a tab
+   left open nine times can't shout down a considered second read. */
 function weight(p: BriefProject, owned: boolean): number {
-  return Math.min(p.views, 3) + (p.paid ? 4 : 0) + (owned ? 4 : 0) + (p.enquired ? 2 : 0);
+  return Math.min(p.views, 3)
+    + (p.consulted ? 12 : 0)
+    + (p.paid ? 10 : 0)
+    + (owned ? 10 : 0)
+    + (p.enquired ? 4 : 0);
 }
 
 function weightedMedian(pairs: { v: number; w: number }[]): number | null {
@@ -229,6 +237,18 @@ function priceSignal(ts: Touched[], stated: BuyData): ActivitySignal | null {
   if (priced.length < 2) return null;
   const mid = weightedMedian(priced.map((t) => ({ v: t.minPriceCr, w: t.w })));
   if (mid == null) return null;
+  /* Spread-guard, matching the server: with no strong anchor (purchase,
+     consultation, or declared ownership), if under half the weighted reading
+     clusters near the median there is no price band to name — don't show one.
+     An anchor's own weight dominates the median, so we trust it and skip. */
+  const anchored = priced.some((t) => t.paid || t.consulted || t.owned);
+  if (!anchored) {
+    const total = priced.reduce((s, t) => s + t.w, 0);
+    const nearMid = priced
+      .filter((t) => t.minPriceCr >= mid * 0.7 && t.minPriceCr <= mid * 1.3)
+      .reduce((s, t) => s + t.w, 0);
+    if (total > 0 && nearMid / total < 0.5) return null;
+  }
   const lo = Math.floor(mid);
   const hi = lo + 1;
   const budgetCr = Math.round(mid);
@@ -304,13 +324,15 @@ function urgencySignal(ts: Touched[]): ActivitySignal | null {
 function attention(ts: Touched[]): { name: string; note: string } | null {
   const top = ts[0]; // ts is weight-sorted
   if (!top) return null;
-  const note = top.paid
-    ? "unlocked"
-    : top.owned
-      ? "in your portfolio"
-      : top.enquired
-        ? `opened ${top.views} time${top.views === 1 ? "" : "s"}, enquired`
-        : `opened ${top.views} time${top.views === 1 ? "" : "s"}`;
+  const note = top.consulted
+    ? "you booked a consultation"
+    : top.paid
+      ? "unlocked"
+      : top.owned
+        ? "in your portfolio"
+        : top.enquired
+          ? `opened ${top.views} time${top.views === 1 ? "" : "s"}, enquired`
+          : `opened ${top.views} time${top.views === 1 ? "" : "s"}`;
   return { name: top.name, note };
 }
 

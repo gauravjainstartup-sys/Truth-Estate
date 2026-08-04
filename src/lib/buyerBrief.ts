@@ -46,6 +46,10 @@ export type BriefProject = {
   views: number;
   paid: boolean;
   enquired: boolean;
+  /* A booked consultation on this project — the top intent signal. Optional
+     because an older /brief deployment won't return it yet (treated as
+     false until the edge function ships). */
+  consulted?: boolean;
   lastAt: string;
 };
 

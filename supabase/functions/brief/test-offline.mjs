@@ -163,9 +163,36 @@ console.log("\na repeated size still gets claimed");
   t("4 BHK from two projects", b.config.value === "4 BHK", JSON.stringify(b.config));
 }
 
+console.log("\nconsultation weight + budget spread-guard");
+{
+  const WIDE = [2, 4, 6, 8, 12, 16].map((cr) => ({
+    name: `P${cr}`, microMarket: "A", min_price_cr: cr, config: "", min_bhk_num: 3, avg_cost_sqft: 0, truthScore: 70,
+  }));
+  const evp = (name, slug, tm, props) => ({ name, project_slug: slug, created_at: `2026-07-25T${tm}:00Z`, props });
+  const browse = () => [2, 4, 6, 8, 12, 16].map((cr, i) => ev("report_viewed", `p${cr}`, `10:0${i}`));
+
+  // Broad browse, no purchase/consult anchor → budget must refuse to guess.
+  const broad = inferBrief(browse(), WIDE);
+  t("broad browse → no budget", broad.budgetCr.value === null, JSON.stringify(broad.budgetCr));
+  t("broad browse → 'too wide' evidence", /wide|narrow/.test(broad.budgetCr.evidence), broad.budgetCr.evidence);
+
+  // Same broad browse + a consultation on P6 → anchored, budget lands near ₹6.
+  const anchored = inferBrief([...browse(), evp("lead_captured", "p6", "10:10", { intent: "consultation" })], WIDE);
+  t("consultation anchors the budget", anchored.budgetCr.value !== null && anchored.budgetCr.value.min <= 6 && anchored.budgetCr.value.max >= 6, JSON.stringify(anchored.budgetCr));
+  const p6 = anchored.projects.find((p) => p.slug === "p6");
+  t("consultation sets consulted, not enquired", !!p6 && p6.consulted === true && p6.enquired === false, JSON.stringify(p6));
+  t("a consulted project outweighs a mere view", !!p6 && p6.weight >= 12, JSON.stringify(p6));
+
+  // A document request stays a plain enquiry (+4), not a consultation.
+  const enq = inferBrief([...browse(), evp("lead_captured", "p6", "10:10", { intent: "documents" })], WIDE);
+  const p6e = enq.projects.find((p) => p.slug === "p6");
+  t("a document lead is enquired, not consulted", !!p6e && p6e.enquired === true && p6e.consulted === false, JSON.stringify(p6e));
+}
+
 console.log("\nweights and median");
 t("repeat views are capped", weightFor({ views: 99, paid: false, enquired: false }) === 3);
 t("a purchase outweighs idle views", weightFor({ views: 1, paid: true, enquired: false }) > weightFor({ views: 3, paid: false, enquired: false }));
+t("a consultation outranks a purchase", weightFor({ views: 1, consulted: true }) > weightFor({ views: 1, paid: true }));
 t("median is weighted", weightedMedian([{ v: 1, w: 1 }, { v: 9, w: 50 }]) === 9);
 t("median of nothing is null", weightedMedian([]) === null);
 t("zero weights ignored", weightedMedian([{ v: 5, w: 0 }]) === null);
