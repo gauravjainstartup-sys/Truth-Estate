@@ -37,6 +37,7 @@ import {
   OTP_LENGTH,
   type Verified,
 } from "@/lib/shortlistAuth";
+import { foldConsultIntoBrief } from "@/lib/journey";
 
 
 type Step = "intro" | "payment" | "confirm" | "office";
@@ -82,6 +83,10 @@ export default function ConsultationJourney({
     const finalised = { ...booking, createdAt: Date.now() };
     setBooking(finalised);
     saveConsultation(finalised);
+    /* Stated intent from the consult form (budget / markets / timeline /
+       goals) → the brief. Stated beats inferred, so this sharpens the office
+       directly, not just via the +12 inference weight. */
+    foldConsultIntoBrief(finalised.details);
     goTo("confirm");
   };
 

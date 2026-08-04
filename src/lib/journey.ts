@@ -907,6 +907,42 @@ export function hasPreferences(d: BuyData): boolean {
   return d.locations.length > 0 || d.configs.length > 0 || d.priorities.length > 0 || d.purchaseType != null;
 }
 
+/* A booked consultation is STATED intent — the buyer told us their budget,
+   markets and timeline in the consult form. Fold those into the brief (stated
+   beats inferred), so the office reflects what they just said rather than
+   only what we infer. Budget/timeline are set (fresh explicit input);
+   markets/priorities union in (never lose what was there). Writes both stores,
+   mirroring office.saveBrief without importing it (which would cycle). */
+const CONSULT_BUDGET_CR: Record<string, number> = {
+  "Under ₹2 Cr": 2, "₹2–4 Cr": 3, "₹4–7 Cr": 6, "₹7–12 Cr": 10, "₹12 Cr+": 14,
+};
+export function foldConsultIntoBrief(details: Record<string, string | string[]> | undefined): void {
+  if (!details) return;
+  const next: BuyData = { ...emptyBuyData, ...(loadBuyData() ?? loadAccount()?.buy ?? {}) };
+  let changed = false;
+
+  const budgetStr =
+    (typeof details.budget === "string" && details.budget) ||
+    (typeof details.capital === "string" && details.capital) || "";
+  if (budgetStr && CONSULT_BUDGET_CR[budgetStr]) { next.budgetCr = CONSULT_BUDGET_CR[budgetStr]; changed = true; }
+
+  if (Array.isArray(details.markets) && details.markets.length) {
+    next.locations = [...new Set([...next.locations, ...details.markets.filter(Boolean)])];
+    changed = true;
+  }
+  if (typeof details.timeline === "string" && details.timeline) { next.timeline = details.timeline; changed = true; }
+  /* Invest "goals" ARE priority tags (Capital Appreciation, Rental Yield …). */
+  if (Array.isArray(details.goals) && details.goals.length) {
+    next.priorities = [...new Set([...next.priorities, ...details.goals.filter(Boolean)])].slice(0, MAX_PRIORITIES);
+    changed = true;
+  }
+
+  if (!changed) return;
+  saveBuyData(next);
+  const acct = loadAccount();
+  if (acct) saveAccount({ ...acct, buy: next });
+}
+
 /* Absolute single-project fit — an honest 0–100 read of how well a project
    answers THIS buyer's stated needs (unlike the shortlist's relative rank). */
 export function matchScoreFor(p: Project, d: BuyData): number {

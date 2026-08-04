@@ -32,6 +32,9 @@ export type EventRow = {
   name: string;
   project_slug: string | null;
   created_at: string;
+  /* jsonb from the events table. lead_captured carries { intent } here, which
+     is how a booked consultation is told apart from a document request. */
+  props?: unknown;
 };
 
 export type ProjectRow = {
@@ -65,6 +68,11 @@ export type TouchedProject = {
   views: number;
   paid: boolean;
   enquired: boolean;
+  /* A booked consultation on this project — the strongest intent signal we
+     have (a paid advisory call is a bigger commitment than unlocking a
+     report), so it is weighted above a purchase. Kept separate from
+     `enquired` so the two don't double-count. */
+  consulted: boolean;
   weight: number;
   lastAt: string;
 };
@@ -98,11 +106,27 @@ const W_VIEW = 1;
 const W_VIEW_CAP = 3;
 const W_ENQUIRED = 4;
 const W_PAID = 10;
+/* A booked consultation outranks a purchase: unlocking a report is a ₹1,100
+   decision, booking a paid advisory call is a bigger one. */
+const W_CONSULT = 12;
 
-export function weightFor(t: { views: number; paid: boolean; enquired: boolean }): number {
+export function weightFor(t: { views: number; paid: boolean; enquired: boolean; consulted?: boolean }): number {
   return Math.min(t.views, W_VIEW_CAP) * W_VIEW
-    + (t.enquired ? W_ENQUIRED : 0)
-    + (t.paid ? W_PAID : 0);
+    + (t.consulted ? W_CONSULT : 0)
+    + (t.paid ? W_PAID : 0)
+    + (t.enquired ? W_ENQUIRED : 0);
+}
+
+/* The lead's intent, from event props. jsonb surfaces as an object or a
+   string depending on the driver; tolerate both, return null when absent. */
+function intentOf(e: EventRow): string | null {
+  const p = e.props;
+  let obj: Record<string, unknown> = {};
+  if (p && typeof p === "object" && !Array.isArray(p)) obj = p as Record<string, unknown>;
+  else if (typeof p === "string") {
+    try { const j = JSON.parse(p); if (j && typeof j === "object") obj = j as Record<string, unknown>; } catch { /* not json */ }
+  }
+  return typeof obj.intent === "string" ? obj.intent : null;
 }
 
 /* ── Collapse the event stream into one row per project ───────────── */
@@ -133,6 +157,7 @@ export function touchedProjects(
         views: 0,
         paid: false,
         enquired: false,
+        consulted: false,
         weight: 0,
         lastAt: e.created_at,
       };
@@ -140,7 +165,13 @@ export function touchedProjects(
     }
     if (e.name === "report_viewed") t.views += 1;
     if (e.name === "payment_completed" || e.name === "report_unlocked") t.paid = true;
-    if (e.name === "lead_captured") t.enquired = true;
+    /* A lead is an enquiry (+4) — unless its intent is "consultation", the
+       strongest signal (+12), kept on its own flag so the two don't stack
+       into a phantom 16. */
+    if (e.name === "lead_captured") {
+      if (intentOf(e) === "consultation") t.consulted = true;
+      else t.enquired = true;
+    }
     if (e.created_at > t.lastAt) t.lastAt = e.created_at;
   }
 
@@ -234,6 +265,26 @@ function inferBudget(ts: TouchedProject[]): Guess<{ min: number; max: number }> 
 
   const mid = weightedMedian(priced.map((t) => ({ v: t.minPriceCr as number, w: t.weight })));
   if (mid == null) return { value: null, evidence: "we've no signal on this", confidence: "none" };
+
+  /* Spread-guard. With NO strong intent anchor (no purchase, no consultation),
+     if less than half the weighted reading clusters near the median there is
+     no budget to call — this is the All-Access buyer who opens the whole
+     catalogue, or anyone browsing broadly. Corridor and config already refuse
+     to guess when the reading is spread; budget must too, or it reports the
+     catalogue's middle as "your budget". A purchase or consultation IS the
+     anchor — when one exists we trust the (weight-dominated) median and skip
+     the guard, so a booked call on a ₹6 Cr project still reads ₹6 Cr even
+     amid broad browsing. */
+  const anchored = priced.some((t) => t.paid || t.consulted);
+  if (!anchored) {
+    const total = priced.reduce((s, t) => s + t.weight, 0);
+    const nearMid = priced
+      .filter((t) => (t.minPriceCr as number) >= mid * 0.7 && (t.minPriceCr as number) <= mid * 1.3)
+      .reduce((s, t) => s + t.weight, 0);
+    if (total > 0 && nearMid / total < 0.5) {
+      return { value: null, evidence: "your reading spans too wide a price range to call — narrow it and we can", confidence: "none" };
+    }
+  }
 
   /* The band is the spread of what they actually looked at, clamped so a
      single project still yields a usable range rather than a point. */

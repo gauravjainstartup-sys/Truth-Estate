@@ -90,7 +90,7 @@ async function projects(): Promise<ProjectRow[]> {
    read three reports on their phone and came back on a laptop is one
    buyer, and a brief that forgets half their search is worse than none. */
 async function trail(anonId: string): Promise<EventRow[]> {
-  const sel = "select=name,project_slug,created_at&order=created_at.asc&limit=1000";
+  const sel = "select=name,project_slug,created_at,props&order=created_at.asc&limit=1000";
   const idRes = await sb(
     `events?select=user_id&anon_id=eq.${encodeURIComponent(anonId)}&user_id=not.is.null&limit=1`,
   );
