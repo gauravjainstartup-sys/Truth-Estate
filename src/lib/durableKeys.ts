@@ -32,8 +32,17 @@ export const SESSION_KEYS = [
   "truthEstate.entitlements",
 ] as const;
 
+/* The buyer's REQUIREMENTS — the brief they set in the journey or edited in
+   the office. This is not disposable demo state: someone who edits their
+   requirements and refreshes the tab must see the requirements they just set,
+   not the seed default. Both stores (truthEstate.buy is canonical, the
+   account carries a mirror) survive a reload and clear only on a deliberate
+   sign-out or demo reset. Missing them here is exactly why an edited brief
+   reverted on a hard refresh. */
+export const BRIEF_KEYS = ["truthEstate.buy", "truthEstate.account"] as const;
+
 /* Survives a reload. */
-export const KEEP_ON_RELOAD: readonly string[] = [...DEVICE_KEYS, ...SESSION_KEYS];
+export const KEEP_ON_RELOAD: readonly string[] = [...DEVICE_KEYS, ...SESSION_KEYS, ...BRIEF_KEYS];
 
 /* Survives an explicit "reset demo data" — the device, but not the
    session. Signing out is a separate, deliberate act. */
@@ -45,7 +54,7 @@ export const CLEARED_ON_SIGN_OUT: readonly string[] = [
   ...SESSION_KEYS,
   "truthEstate.member",
   "truthEstate.access",
-  "truthEstate.account",
+  ...BRIEF_KEYS,
   "truthEstate.unlocked",
   /* Whether this person owns a flat in each project they unlocked. It is
      a fact about THEM, not about the handset — the next person to sign in
