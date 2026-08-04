@@ -44,6 +44,8 @@ const DIAL = [
   { code: "+49", flag: "🇩🇪", name: "Germany" },
   { code: "+966", flag: "🇸🇦", name: "Saudi Arabia" },
   { code: "+86", flag: "🇨🇳", name: "China" },
+  { code: "+31", flag: "🇳🇱", name: "Netherlands" },
+  { code: "+43", flag: "🇦🇹", name: "Austria" },
 ];
 
 const TICKS = [

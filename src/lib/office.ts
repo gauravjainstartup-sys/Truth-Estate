@@ -8,7 +8,7 @@
    so the UI can light them up without a schema change.
    ════════════════════════════════════════════════════════════════ */
 
-import { deriveDNA, loadAccount, saveAccount, loadBuyData, saveBuyData, emptyBuyData, rankProjects, hasPreferences, type BuyData } from "./journey";
+import { deriveDNA, loadAccount, saveAccount, loadBuyData, saveBuyData, emptyBuyData, rankProjects, type BuyData } from "./journey";
 import { advisorFor, loadConsultation, type ConsultAdvisor } from "./consultation";
 import { saveBriefToServer, fetchMyBrief } from "./phoneAuth";
 
@@ -622,14 +622,26 @@ export function saveBrief(buy: BuyData): void {
    so it doesn't echo straight back to the server. Returns true if it
    restored something, so the caller can refresh every surface. */
 export async function hydrateBriefFromServer(): Promise<boolean> {
-  if (loadBuyData()) return false; // a local stated brief already wins
+  if (loadBuyData()) { console.info("[brief] local brief present — no restore needed"); return false; }
   const remote = await fetchMyBrief();
-  if (remote && hasPreferences(remote)) {
+  /* Throw-proof "was this brief actually touched" test — hasPreferences reads
+     .length directly and would throw if the restored jsonb has an undefined
+     array, silently killing the restore. */
+  const touched = !!remote && (
+    (Array.isArray(remote.locations) && remote.locations.length > 0) ||
+    (Array.isArray(remote.configs) && remote.configs.length > 0) ||
+    (Array.isArray(remote.priorities) && remote.priorities.length > 0) ||
+    remote.purchaseType != null ||
+    (typeof remote.budgetCr === "number" && remote.budgetCr > 0)
+  );
+  if (remote && touched) {
     saveBuyData(remote);
     const acct = loadAccount();
     if (acct) saveAccount({ ...acct, buy: remote });
+    console.info("[brief] restored from your account");
     return true;
   }
+  console.info("[brief] nothing to restore (empty or no server brief)");
   return false;
 }
 
