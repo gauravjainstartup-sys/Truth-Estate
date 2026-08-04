@@ -332,6 +332,13 @@ function FitTable({ ranked }: { ranked: ReturnType<typeof rankByFit> }) {
         <p className={EYEBROW}>Against your brief</p>
         <p className="text-[0.72rem] font-light text-[#1a1a1a]/40">Fit is about you. Truth Score is about the project.</p>
       </div>
+      {/* Say what this list IS — the reports the buyer has opened, not the whole
+          market — so the order never reads as disagreeing with Recommendations,
+          which ranks the full catalogue. Same fit scale; different pool. */}
+      <p className="mt-1.5 text-[0.78rem] font-light leading-snug text-[#1a1a1a]/45">
+        Only the reports you&rsquo;ve opened, ranked against your brief. The whole market is under{" "}
+        <Link href="/office/recommendations" className="font-medium text-[#1e6b45] transition-colors hover:text-[#238c55]">Recommendations</Link>.
+      </p>
 
       <div className={`mt-3 overflow-hidden ${CARD}`}>
         <div className="divide-y divide-[#1a1a1a]/[0.06]">
