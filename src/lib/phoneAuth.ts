@@ -189,56 +189,103 @@ export async function phoneKnown(phone: string, dial: string = INDIA_DIAL): Prom
   }
 }
 
+/* ── International (non-+91) via Twilio Verify ───────────────────
+   Both hit the twilio-otp Edge Function with the anon key, exactly as
+   the +91 path hits chat-signin: the browser never asserts its own
+   identity — the function proves it, inside, against Twilio.
+
+   What AG had here POSTed to /api/auth/twilio/* — dead on this static
+   export, there is no server — and on "verify" minted a FAKE local
+   token (`twilio_sess_${Date.now()}`, a random `usr_…`), so any code the
+   UI accepted signed you in as a fabricated user. These call the real
+   function and store the REAL session (null until PROJECT_JWT_SECRET is
+   set), the same shape verifyOtp writes.
+
+   The number is normalised HERE so the two call sites (SignIn, the
+   paywall) can pass raw keystrokes: normaliseIntl folds "+44 7911…",
+   "07911…" and "7911…" to one canonical local part, so the E.164 the
+   function builds can never double the country code. */
 export async function sendTwilioOtp(dial: string, phone: string): Promise<AuthResult> {
+  const cc = dial.replace(/\D/g, "");
+  const full = normaliseIntl(dial, phone);
+  const local = full ? full.slice(cc.length) : "";
+  if (!local) return { ok: false, error: "That number doesn't look right — mind checking it?" };
   try {
-    const res = await fetch("/api/auth/twilio/send-otp", {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/twilio-otp`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ dial, phone }),
+      headers: {
+        "content-type": "application/json",
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({ action: "send", dial: cc, phone: local }),
+      signal: AbortSignal.timeout(20000),
     });
-    const data = await res.json();
-    if (!res.ok || !data.ok) {
-      return { ok: false, error: data.error || "Failed to send SMS OTP." };
-    }
+    const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+    if (!data.ok) return { ok: false, error: data.error ?? "Couldn't send the code. Check the number and try again." };
     return { ok: true };
   } catch {
-    return { ok: false, error: "Network error sending SMS OTP." };
+    return { ok: false, error: "Couldn't reach us just now — check your connection and try again." };
   }
 }
 
 export async function verifyTwilioOtp(dial: string, phone: string, code: string, name?: string): Promise<AuthResult> {
+  const cc = dial.replace(/\D/g, "");
+  const full = normaliseIntl(dial, phone);
+  const local = full ? full.slice(cc.length) : "";
+  if (!local) return { ok: false, error: "That number doesn't look right — go back and check it." };
   try {
-    const res = await fetch("/api/auth/twilio/verify-otp", {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/twilio-otp`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ dial, phone, code }),
+      headers: {
+        "content-type": "application/json",
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({
+        action: "check",
+        dial: cc,
+        phone: local,
+        code: code.replace(/\D/g, ""),
+        anonId: getAnonId(),
+        sessionId: getSessionId(),
+        ...(name?.trim() ? { name: name.trim() } : {}),
+      }),
+      signal: AbortSignal.timeout(20000),
     });
-    const data = await res.json();
-    if (!res.ok || !data.ok) {
-      return { ok: false, error: data.error || "Invalid verification code." };
+    const data = (await res.json().catch(() => ({}))) as {
+      ok?: boolean; error?: string; userId?: string;
+      chatsClaimed?: number; leadsClaimed?: number;
+      session?: { access_token: string; token_type: string; expires_in: number };
+    };
+    if (!data.ok || !data.userId) {
+      return { ok: false, error: data.error ?? "That code didn't match. Try again, or ask for a new one." };
     }
 
-    const cleanDial = dial.startsWith("+") ? dial : `+${dial}`;
-    const fullPhone = `${cleanDial} ${phone.replace(/\D/g, "")}`;
-    const token = `twilio_sess_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    const user_id = `usr_${Math.random().toString(36).slice(2, 10)}`;
+    /* A different account on this shared handset — drop the previous
+       one's cached unlocks/brief, exactly as verifyOtp does. */
+    const previous = getSession()?.user_id ?? null;
+    if (previous && previous !== data.userId) {
+      console.info("[signin] different account on this device — clearing the previous one's state");
+      signOut();
+    }
 
+    /* Canonical E.164, matching what the function stored on the profile,
+       so a later phone lookup resolves the same shape. */
+    const e164 = `+${cc}${local}`;
     try {
       window.localStorage.setItem(
         SESSION_STORE,
-        JSON.stringify({ access_token: token, user_id, phone: fullPhone, provider: "twilio" }),
+        JSON.stringify({ access_token: data.session?.access_token ?? null, user_id: data.userId, phone: e164 }),
       );
-    } catch { /* empty */ }
+    } catch { /* a full quota must not block a verified sign-in */ }
 
     setSignedIn();
-
-    if (name?.trim()) {
-      await saveName(name.trim());
-    }
-
+    /* Under the anon_id, so it is swept up with the pre-sign-in trail. */
+    track("signed_in", { props: { via: "twilio", chatsClaimed: data.chatsClaimed ?? 0, leadsClaimed: data.leadsClaimed ?? 0 } });
     return { ok: true };
   } catch {
-    return { ok: false, error: "Network error verifying SMS OTP." };
+    return { ok: false, error: "Couldn't reach us just now — check your connection and try again." };
   }
 }
 

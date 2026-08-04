@@ -23,7 +23,7 @@ import {
   type PackageId, type Stake,
 } from "@/lib/journey";
 import { usePricing } from "@/lib/usePricing";
-import { normalisePhone, normaliseIntl, phoneKnown, prettyPhone, sendOtp, sendOtpIntl, sendTwilioOtp, verifyOtp, verifyTwilioOtp, OTP_LENGTH } from "@/lib/phoneAuth";
+import { normalisePhone, normaliseIntl, phoneKnown, prettyPhone, sendOtp, sendTwilioOtp, verifyOtp, verifyTwilioOtp, OTP_LENGTH } from "@/lib/phoneAuth";
 import { fetchEntitlements } from "@/lib/entitlements";
 import { payForPackage, prewarmCheckout, type Receipt } from "@/lib/checkout";
 import { openReceipt, invalidateBilling, inr as inrFmt } from "@/lib/billing";
@@ -114,8 +114,11 @@ export default function UnlockModal({
   const pkgs = usePricing();
 
   const isIndia = dial === "+91";
+  /* MSG91 sends 4 digits; Twilio Verify sends 6 by default — the boxes
+     follow the path so an international code actually fits. */
+  const otpLen = isIndia ? OTP_LEN : 6;
   const numValid = num.replace(/\D/g, "").length >= (isIndia ? 10 : 6);
-  const otpComplete = otp.every((d) => d !== "");
+  const otpComplete = otp.length === otpLen && otp.every((d) => d !== "");
   /* Show the number the SMS actually went to, not the raw keystrokes —
      typing the STD 0 out of habit rendered "+91 09958777312". */
   const normalised = isIndia ? normalisePhone(num) : null;
@@ -170,8 +173,9 @@ export default function UnlockModal({
 
     if (!sent) {
       if (!numValid) { setErr("Enter a valid mobile number."); return; }
-      /* Indian numbers get the MSG91 SMS code; international numbers take
-         the WhatsApp path, dummied until those templates are live. */
+      /* Indian numbers get the MSG91 SMS code; every other country gets a
+         real Twilio Verify SMS code (twilio-otp). Both are genuine now —
+         the old international path only pretended to send. */
       const ten = isIndia ? normalisePhone(num) : normaliseIntl(dial, num);
       if (!ten) { setErr("That number doesn't look right — mind checking it?"); return; }
 
@@ -187,6 +191,7 @@ export default function UnlockModal({
       setBusy(false);
       if (!r.ok) { setErr(r.error); return; }
       setKnown(k);
+      setOtp(Array(otpLen).fill("")); // 4 boxes for +91, 6 for Twilio
       setSent(true);
       return;
     }
@@ -196,7 +201,7 @@ export default function UnlockModal({
        answer we ask, because sending someone through without a name is
        how an account ends up unnamed for good. */
     if (known !== true && !name.trim()) { setErr("Please enter your name."); return; }
-    if (!otpComplete) { setErr(`Enter the ${OTP_LEN}-digit code.`); return; }
+    if (!otpComplete) { setErr(`Enter the ${otpLen}-digit code.`); return; }
     const ten = isIndia ? normalisePhone(num) : normaliseIntl(dial, num);
     if (!ten) { setErr("That number doesn't look right — go back and check it."); return; }
 
@@ -359,10 +364,10 @@ export default function UnlockModal({
                   )}
 
                   <div className="mt-5">
-                    <p className="text-[0.85rem] text-[#1a1a1a]/55">Code sent to <span className="font-medium text-[#1a1a1a]">{sentTo}</span> via {isIndia ? "SMS" : "WhatsApp"}{" · "}<button type="button" onClick={() => { setSent(false); setKnown(undefined); setOtp(Array(OTP_LEN).fill("")); setErr(""); }} className="font-medium text-[#9a7a2e] hover:underline">Change</button></p>
+                    <p className="text-[0.85rem] text-[#1a1a1a]/55">Code sent to <span className="font-medium text-[#1a1a1a]">{sentTo}</span> via SMS{" · "}<button type="button" onClick={() => { setSent(false); setKnown(undefined); setOtp(Array(otpLen).fill("")); setErr(""); }} className="font-medium text-[#9a7a2e] hover:underline">Change</button></p>
                     <div className="mt-4">
                       <OtpDigits
-                        value={otp} onChange={setOtp} len={OTP_LEN} autoFocus onComplete={registerSubmit}
+                        value={otp} onChange={setOtp} len={otpLen} autoFocus onComplete={registerSubmit}
                         boxClass="h-14 min-w-0 flex-1 rounded-lg border border-[#1a1a1a]/[0.18] bg-white text-center font-serif text-[1.4rem] text-[#1a1a1a] outline-none focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/20"
                       />
                     </div>

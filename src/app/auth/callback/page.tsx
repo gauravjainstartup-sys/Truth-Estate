@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Logo from "@/components/Logo";
+import type { Session } from "@supabase/supabase-js";
 import { supabase, claimAnonymousHistory } from "@/lib/phoneAuth";
 import { setSignedIn, saveAccount, emptyBuyData } from "@/lib/journey";
 
@@ -50,7 +51,7 @@ export default function AuthCallbackPage() {
       }
     }
 
-    function completeLogin(session: any) {
+    function completeLogin(session: Session) {
       const u = session.user;
       const fullName = u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split("@")[0] || "Member";
 

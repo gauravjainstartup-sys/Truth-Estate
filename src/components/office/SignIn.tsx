@@ -4,13 +4,14 @@
    Sign-in — the gate to the Private Office (also the registration entry).
 
    Rules & Workflows:
-   1. Step 1 asks for Mobile Number ONLY (Indian +91 or International).
-      No Name field upfront for returning users.
-   2. Auto-detects visitor country on load to prefill country dial code (+91, +1, +971, etc.).
-   3. Indian numbers (+91): MSG91 sends 4-digit SMS OTP.
-      - Checks if returning user (phoneKnown). Shows Welcome Back screen.
-      - 4-digit OTP verification -> Sign in -> Open Private Office.
-   4. International numbers (Non-+91): Google SSO (Verified Email) primary.
+   1. Step 1 asks for Mobile Number ONLY — no name field (a returning
+      member's name is on their profile; a new one adds it in the office).
+   2. Auto-detects visitor country on load to prefill the dial code.
+   3. Number -> SMS code, the same door for everyone:
+      - +91 -> MSG91 (4-digit); every other country -> Twilio Verify (6-digit).
+      - phoneKnown decides the "Welcome back" vs first-time greeting.
+      - Verify -> sign in -> open the Private Office.
+   4. Google SSO is the shared alternative, any region.
    ──────────────────────────────────────────────────────────────────────── */
 
 import { useEffect, useState } from "react";
@@ -23,7 +24,6 @@ import {
   normaliseIntl,
   prettyPhone,
   sendOtp,
-  sendOtpIntl,
   sendTwilioOtp,
   verifyOtp,
   verifyTwilioOtp,
@@ -66,8 +66,11 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
   const [isReturning, setIsReturning] = useState(false);
 
   const isIndia = dial === "+91";
+  /* MSG91 sends a 4-digit code; Twilio Verify sends 6 by default. The
+     boxes follow the path so an international code actually fits. */
+  const otpLen = isIndia ? OTP_LENGTH : 6;
   const numValid = num.replace(/\D/g, "").length >= (isIndia ? 10 : 6);
-  const otpComplete = otp.every((d) => d !== "");
+  const otpComplete = otp.length === otpLen && otp.every((d) => d !== "");
   const normalised = isIndia ? normalisePhone(num) : null;
   const sentTo = normalised ? `${dial} ${prettyPhone(normalised)}` : `${dial} ${num.trim()}`;
 
@@ -109,10 +112,11 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
         setErr(r.error);
         return;
       }
+      setOtp(Array(otpLen).fill(""));
       setStep("otp");
       setResendIn(24);
     } else {
-      // International 4-digit SMS OTP via Twilio
+      // International SMS OTP via Twilio Verify (6-digit by default).
       const known = await phoneKnown(ten, dial);
       setIsReturning(known === true);
 
@@ -122,6 +126,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
         setErr(r.error);
         return;
       }
+      setOtp(Array(otpLen).fill(""));
       setStep("otp");
       setResendIn(24);
     }
@@ -131,7 +136,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
     e?.preventDefault();
     if (busy) return;
     if (!otpComplete) {
-      setErr(`Enter the ${OTP_LENGTH}-digit code.`);
+      setErr(`Enter the ${otpLen}-digit code.`);
       return;
     }
 
@@ -144,8 +149,13 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
     setErr("");
     setBusy(true);
 
-    // Verify 4-digit OTP
-    const r = await verifyOtp(ten, otp.join(""), undefined, dial);
+    /* +91 verifies + signs in through chat-signin (MSG91); every other
+       country through twilio-otp (Twilio Verify). No name is collected on
+       this screen — a returning member's name is already on their profile,
+       and a new one can add it in the office. */
+    const r = isIndia
+      ? await verifyOtp(ten, otp.join(""), undefined, dial)
+      : await verifyTwilioOtp(dial, num, otp.join(""));
     setBusy(false);
     if (!r.ok) {
       setErr(r.error);
@@ -211,9 +221,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
                 Sign in
               </h1>
               <p className="mt-2 text-[0.9rem] leading-snug text-[#1a1a1a]/55">
-                {isIndia
-                  ? "Enter your mobile number to receive a 4-digit SMS code."
-                  : "International Visitors: Sign in securely with Google."}
+                Enter your mobile number for an SMS code — or continue with Google.
               </p>
 
               <label className="mt-6 block">
@@ -244,21 +252,16 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
 
               {err && <p className="mt-3 text-[0.8rem] text-[#b3402a]">{err}</p>}
 
-              {isIndia ? (
-                <button
-                  type="submit"
-                  disabled={busy}
-                  className="mt-6 w-full rounded-md bg-[#1e6b45] px-4 py-3 text-[0.9rem] font-medium tracking-[0.02em] text-white transition-colors hover:bg-[#238c55] disabled:opacity-60"
-                >
-                  {busy ? "Sending code\u2026" : "Send code \u2192"}
-                </button>
-              ) : (
-                <div className="mt-6">
-                  <div className="mb-3 rounded-md bg-[#c9a96e]/15 border border-[#c9a96e]/30 p-3 text-[0.8rem] leading-relaxed text-[#7a5f1e]">
-                    ✨ <strong>International Visitors</strong>: Google SSO provides instant, verified access without SMS delays.
-                  </div>
-                </div>
-              )}
+              {/* One door for everyone: number -> SMS code. +91 goes through
+                  MSG91, every other country through Twilio Verify. Google
+                  below is the shared alternative, any region. */}
+              <button
+                type="submit"
+                disabled={busy}
+                className="mt-6 w-full rounded-md bg-[#1e6b45] px-4 py-3 text-[0.9rem] font-medium tracking-[0.02em] text-white transition-colors hover:bg-[#238c55] disabled:opacity-60"
+              >
+                {busy ? "Sending code\u2026" : "Send code \u2192"}
+              </button>
 
               <div className="relative my-5 text-center">
                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-[#1a1a1a]/10"></div></div>
@@ -275,11 +278,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
                   const r = await signInWithGoogle();
                   if (!r.ok) { setBusy(false); setErr(r.error); }
                 }}
-                className={`flex w-full items-center justify-center gap-3 rounded-md border ${
-                  !isIndia
-                    ? "border-[#1e6b45] bg-[#1e6b45] text-white hover:bg-[#238c55]"
-                    : "border-[#1a1a1a]/20 bg-white text-[#1a1a1a] hover:bg-white/80"
-                } px-4 py-3 text-[0.9rem] font-medium shadow-sm transition-all disabled:opacity-60`}
+                className="flex w-full items-center justify-center gap-3 rounded-md border border-[#1a1a1a]/20 bg-white text-[#1a1a1a] hover:bg-white/80 px-4 py-3 text-[0.9rem] font-medium shadow-sm transition-all disabled:opacity-60"
               >
                 <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
@@ -309,7 +308,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
                 Sent to <span className="font-medium text-[#1a1a1a]">{sentTo}</span> via SMS{" · "}
                 <button
                   type="button"
-                  onClick={() => { setStep("contact"); setOtp(Array(OTP_LEN).fill("")); setErr(""); }}
+                  onClick={() => { setStep("contact"); setOtp(Array(otpLen).fill("")); setErr(""); }}
                   className="font-medium text-[#9a7a2e] hover:underline"
                 >
                   Change
@@ -317,7 +316,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
               </p>
 
               <div className="mt-5">
-                <OtpDigits value={otp} onChange={setOtp} len={OTP_LEN} autoFocus onComplete={verify} />
+                <OtpDigits value={otp} onChange={setOtp} len={otpLen} autoFocus onComplete={verify} />
               </div>
 
               {err && <p className="mt-3 text-[0.8rem] text-[#b3402a]">{err}</p>}
@@ -343,7 +342,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
                       const ten = isIndia ? normalisePhone(num) : normaliseIntl(dial, num);
                       if (!ten) { setErr("That number doesn't look right."); return; }
                       setErr(""); setBusy(true);
-                      const r = isIndia ? await sendOtp(ten) : await sendOtpIntl(ten);
+                      const r = isIndia ? await sendOtp(ten) : await sendTwilioOtp(dial, num);
                       setBusy(false);
                       if (r.ok) setResendIn(24); else setErr(r.error);
                     }}
