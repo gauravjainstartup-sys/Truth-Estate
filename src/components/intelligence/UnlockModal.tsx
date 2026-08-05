@@ -531,7 +531,9 @@ export default function UnlockModal({
                   <span className="grid h-7 w-7 place-items-center rounded bg-[#3395ff] font-bold">R</span>
                   <span className="font-semibold tracking-tight">Razorpay</span>
                 </div>
-                <span className="text-[0.78rem] text-white/70">Truth Estate</span>
+                {/* pr-10 reserves the top-right corner for the modal's absolute
+                    close ✕ (right-3, h-9 w-9) so it never overlaps the label */}
+                <span className="pr-10 text-[0.78rem] text-white/70">Truth Estate</span>
               </div>
               <div className="flex items-baseline justify-between">
                 <span className="text-[0.8rem] text-[#1a1a1a]/55">{packageById(sel).label}{isUpgrade(sel) ? " · upgrade" : ""}</span>
