@@ -48,27 +48,40 @@ export function useLiveVitals(projectName: string): LiveVitals | null {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const rows = await sbGet<{ id: number; avg_cost_sqft: number | null }>(
+      // corridor average rides on the public listing view (keyed by name)
+      const rows = await sbGet<{ avg_cost_sqft: number | null }>(
         "backlog_listing_public_v3",
-        `select=id,avg_cost_sqft&name=eq.${encodeURIComponent(projectName)}&limit=1`,
+        `select=avg_cost_sqft&name=eq.${encodeURIComponent(projectName)}&limit=1`,
       );
-      if (cancelled || !rows?.length) return;
-      const row = rows[0];
+      const corridorAvg = rows?.[0]?.avg_cost_sqft ?? null;
 
-      const exts = await sbGet<{
-        price_range_sqft: string | null;
-        super_area_range: string | null;
-        launch_price: number | null;
-      }>(
-        "project_extended_details",
-        `select=price_range_sqft,super_area_range,launch_price&backlog_id=eq.${row.id}&limit=1`,
+      // launch / current / super-area live on project_extended_details, keyed by
+      // backlog_id — which is backlog_projects.id, NOT the listing view's own id
+      // (those are two different ids). Resolve the backlog_id by name first, then
+      // read the pricing; joining on the listing id silently returned nothing and
+      // the page fell back to the stale build-time snapshot.
+      const bp = await sbGet<{ id: string }>(
+        "backlog_projects",
+        `select=id&project_name=eq.${encodeURIComponent(projectName)}&limit=1`,
       );
+      const backlogId = bp?.[0]?.id ?? null;
+
+      const exts = backlogId
+        ? await sbGet<{
+            price_range_sqft: string | null;
+            super_area_range: string | null;
+            launch_price: number | null;
+          }>(
+            "project_extended_details",
+            `select=price_range_sqft,super_area_range,launch_price&backlog_id=eq.${backlogId}&limit=1`,
+          )
+        : null;
       const ext = exts?.[0] ?? null;
       const range = psfRange(ext?.price_range_sqft ?? null);
 
-      if (!cancelled) {
+      if (!cancelled && (corridorAvg != null || ext)) {
         setData({
-          corridorAvg: row.avg_cost_sqft ?? null,
+          corridorAvg,
           currentLow: range?.[0] ?? null,
           currentHigh: range?.[1] ?? null,
           launchPsf: ext?.launch_price ?? null,

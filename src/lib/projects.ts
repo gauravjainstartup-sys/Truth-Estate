@@ -227,7 +227,7 @@ export type ProjectOps = {
      ticket band. Efficiency & loading are derived, never stored. `plan` is an
      optional licensed 2D floor-plan image (relative to /public); when absent
      we render an indicative schematic. */
-  homes?: { config: string; variant?: string; carpetSqft: number; superSqft: number; balconySqft?: number; priceCr: number; plan?: string; plans?: { src: string; label: string }[]; beds?: number }[];
+  homes?: { config: string; variant?: string; carpetSqft: number | null; superSqft: number; balconySqft?: number; priceCr: number; plan?: string; plans?: { src: string; label: string }[]; beds?: number }[];
   /* Imagery (relative to /public). `render` is the developer's marketing
      render; `sitePhotos` are our dated field-visit photographs. Absent →
      brand-safe schematic stand-ins render in their place. */

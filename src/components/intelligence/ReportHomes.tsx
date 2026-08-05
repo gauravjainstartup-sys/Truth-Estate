@@ -58,8 +58,10 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
   const plans = h.plans ?? (h.plan ? [{ src: h.plan, label: "" }] : []);
   const activePlan = plans.length ? plans[Math.min(planIdx, plans.length - 1)] : null;
 
-  const eff = Math.round((h.carpetSqft / h.superSqft) * 100);
-  const loading = 100 - eff;
+  // carpet is sometimes filed after the size is listed; when it's missing the
+  // efficiency read can't be computed, so it (and Loading) show as NA
+  const eff = h.carpetSqft != null && h.superSqft > 0 ? Math.round((h.carpetSqft / h.superSqft) * 100) : null;
+  const loading = eff != null ? 100 - eff : null;
   /* THE UNIT'S COST — super area × THIS PROJECT'S filed rate.
    *
    * It used to multiply by p.psf.avg, and the comment here said that was
@@ -92,7 +94,8 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
   };
   const beds = h.beds ?? (parseInt(h.config, 10) || 3);
   const effRead =
-    eff >= 72 ? { grade: "Strong", tone: "#1e6b45", note: "well above the segment norm — you keep more of what you pay for." }
+    eff == null ? null
+    : eff >= 72 ? { grade: "Strong", tone: "#1e6b45", note: "well above the segment norm — you keep more of what you pay for." }
     : eff >= 66 ? { grade: "Good", tone: "#238c55", note: "solid for a luxury high-rise, where lobbies and amenities eat carpet." }
     : { grade: "Watch", tone: "#9a7a2e", note: "on the lower side — negotiate on carpet, not super." };
 
@@ -182,15 +185,17 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
           <div>
             <p className="text-[0.6rem] font-semibold uppercase tracking-[0.14em] text-[#1a1a1a]/40">The layout, measured</p>
             <dl className="mt-2.5">
-              <Row k="Carpet area" v={`${h.carpetSqft.toLocaleString("en-IN")} sq ft`} strong />
+              <Row k="Carpet area" v={h.carpetSqft != null ? `${h.carpetSqft.toLocaleString("en-IN")} sq ft` : "NA"} strong />
               <Row k="Super area" v={`${h.superSqft.toLocaleString("en-IN")} sq ft`} />
               <Row k="Balcony / deck" v={h.balconySqft != null ? `${h.balconySqft.toLocaleString("en-IN")} sq ft` : "NA"} />
-              <Row k="Loading" v={`${loading}%`} />
-              <Row k="Carpet efficiency" v={`${eff}%`} strong />
+              <Row k="Loading" v={loading != null ? `${loading}%` : "NA"} />
+              <Row k="Carpet efficiency" v={eff != null ? `${eff}%` : "NA"} strong />
             </dl>
             {/* the efficiency read — the same quiet left-rule strip as the report's
                other analyst reads; the grade rides as a hairline chip and the
-               figure lives once, in the prose */}
+               figure lives once, in the prose. Hidden when carpet isn't filed
+               yet (no efficiency to read) — the areas above then show it as NA */}
+            {effRead && (
             <div className="mt-4 rounded-r-xl border-l-2 px-5 py-3.5" style={{ borderColor: effRead.tone, background: `${effRead.tone}0f` }}>
               <p className="flex items-center gap-2.5 text-[0.6rem] font-bold uppercase tracking-[0.12em]" style={{ color: effRead.tone }}>
                 ◆ The efficiency read
@@ -200,6 +205,7 @@ export default function ReportHomes({ p }: { p: ProjectIntel }) {
                 <b className="font-semibold text-[#1a1a1a]">{eff}% usable</b> — {effRead.note}
               </p>
             </div>
+            )}
           </div>
         </div>
 
