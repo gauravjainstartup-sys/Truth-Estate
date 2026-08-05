@@ -112,9 +112,11 @@ export function coveredProjects(projects: OmniProject[]): OmniProject[] {
    Fully dynamic: it tracks the live index size (100+ on production), never a
    hardcoded figure. */
 export function coveredCountLabel(projects: OmniProject[]): string {
+  /* The exact live index size. It was floored to the nearest ten, which
+     under-counted (97 → "90+"); the exact number is honest and climbs itself
+     as projects are added. */
   const n = projects.length;
-  const floored = Math.max(10, Math.floor(n / 10) * 10);
-  return `${floored}+ Gurugram projects covered`;
+  return n > 0 ? `${n} Gurugram projects covered` : "Gurugram projects covered";
 }
 
 const weight = (p: OmniProject) => (p.score ?? 0) + (p.has3D ? 4 : 0);
@@ -196,12 +198,35 @@ export function shortLocality(location: string | null): string | null {
   return clean || null;
 }
 
-/* Row metadata line: "Sector 63A · 9 sources" (either part omitted if absent). */
+/* The corridor a project sits in, shortened for the row subtitle:
+   "Golf Course Road (GCR)" → "GCR Corridor", "Southern Peripheral Road (SPR
+   Corridor)" → "SPR Corridor", "New Gurgaon" → "New Gurgaon". Reads the part
+   after the sector in `location` ("Sector 63 · <corridor>"); null when there
+   is no distinct corridor part. A parenthetical CODE (GCR/GCRE/SPR) wins; a
+   qualifier paren ("Sohna Town (South of Gurugram)") is dropped, keeping the
+   name. A bare acronym gets a "Corridor" suffix for context. */
+export function corridorLabel(location: string | null): string | null {
+  if (!location) return null;
+  const parts = location.split("·").map((s) => s.trim());
+  if (parts.length < 2) return null;
+  const raw = parts.slice(1).join(" · ");
+  if (!raw) return null;
+  const paren = raw.match(/\(([^)]+)\)/);
+  let label: string;
+  if (paren && /^[A-Z]{2,5}(\s+Corridor)?$/.test(paren[1].trim())) {
+    label = paren[1].trim();
+  } else {
+    label = raw.replace(/\s*\([^)]*\)\s*/g, " ").trim();
+  }
+  if (!label) return null;
+  if (/^[A-Z]{2,5}$/.test(label)) label = `${label} Corridor`;
+  return label;
+}
+
+/* Row metadata line: "Sector 63 · GCR Corridor" — the locality and the
+   corridor it sits in (either part omitted if absent). */
 export function rowMeta(p: OmniProject): string {
-  const parts = [
-    shortLocality(p.location),
-    p.sources != null && p.sources > 0 ? `${p.sources} source${p.sources === 1 ? "" : "s"}` : null,
-  ].filter(Boolean);
+  const parts = [shortLocality(p.location), corridorLabel(p.location)].filter(Boolean);
   return parts.join(" · ");
 }
 

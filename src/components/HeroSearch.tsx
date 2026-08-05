@@ -247,7 +247,7 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
         <>
           {recentProjects.length > 0 && label("Recent")}
           {recentProjects.map((p, i) => row(p, i, false))}
-          {mostList.length > 0 && label("Most searched")}
+          {mostList.length > 0 && label("Top rated")}
           {mostList.map((p, k) => row(p, recentProjects.length + k, false))}
           <li role="presentation" className="border-t px-4 py-2.5 text-[11px] text-[#8b8067]" style={{ borderTopWidth: "0.5px", borderTopColor: "#d8cfb8" }}>
             {coveredCountLabel(projects)}

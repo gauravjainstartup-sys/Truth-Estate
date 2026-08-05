@@ -40,11 +40,15 @@ const columns: {
   {
     label: "Intelligence",
     links: [
-      { t: "Project Intelligence", h: "/intelligence" },
-      { t: "Developer Intelligence", h: "/intelligence" },
-      { t: "Location Intelligence", h: "/intelligence" },
-      { t: "Compare Intelligence", h: "/intelligence" },
-      { t: "Market Intelligence", h: "/intelligence" },
+      { t: "Project Intelligence", h: "/intelligence/projects" },
+      { t: "Developer Intelligence", h: "/intelligence/developers" },
+      /* No standalone location route — micro-markets ARE the corridor/location
+         intelligence, so both point at the markets index. */
+      { t: "Location Intelligence", h: "/intelligence/markets" },
+      { t: "Compare Intelligence", h: "/intelligence/compare" },
+      { t: "Market Intelligence", h: "/intelligence/markets" },
+      /* Legal has no dedicated index — it lives inside each project report — so
+         this stays on the hub until a standalone legal page exists. */
       { t: "Legal Intelligence", h: "/intelligence" },
     ],
   },
@@ -161,31 +165,36 @@ export default function Footer({
                 judgement to help buyers make confident property decisions.
               </p>
 
-              {/* Social */}
+              {/* Social — real handles, open in a new tab (rel prevents the
+                  opened tab from reaching back via window.opener). */}
               <div className="mt-10 flex items-center gap-5">
                 <a
-                  href="#"
+                  href="https://www.linkedin.com/company/truth-estate/"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   aria-label="LinkedIn"
                   className="text-[#1a1a1a]/30 transition-colors duration-300 hover:text-[#1a1a1a]/70"
                 >
                   <LinkedInIcon />
                 </a>
                 <a
-                  href="#"
+                  href="https://x.com/truthestateggn"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   aria-label="X (Twitter)"
                   className="text-[#1a1a1a]/30 transition-colors duration-300 hover:text-[#1a1a1a]/70"
                 >
                   <XIcon />
                 </a>
-                <span
-                  className="flex items-center gap-2 text-[#1a1a1a]/15"
-                  aria-label="YouTube — Coming Soon"
+                <a
+                  href="https://www.youtube.com/@TruthEstate"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="YouTube"
+                  className="text-[#1a1a1a]/30 transition-colors duration-300 hover:text-[#1a1a1a]/70"
                 >
                   <YouTubeIcon />
-                  <span className="text-[10px] font-light tracking-[0.1em] text-[#1a1a1a]/25">
-                    Coming Soon
-                  </span>
-                </span>
+                </a>
               </div>
             </div>
 
