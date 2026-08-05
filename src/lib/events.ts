@@ -108,6 +108,30 @@ function flush(useBeacon = false): void {
   send(batch, useBeacon);
 }
 
+/* Fan the same named events out to GA4 (gtag) and Amplitude when they've
+   loaded — production only; see components/Analytics.tsx. Autocapture
+   (Amplitude) and enhanced measurement (GA4) already log pageviews in both,
+   so page_viewed is left to them; everything else is the funnel, sent with
+   its properties and the anon_id so a vendor event joins back to this
+   first-party trail. Best-effort and silent, like the rest of this file. */
+function forwardToVendors(name: EventName, detail: Omit<Queued, "name" | "path" | "referrer">): void {
+  if (name === "page_viewed") return;
+  try {
+    const props: Record<string, unknown> = {
+      ...(detail.projectSlug ? { project_slug: detail.projectSlug } : {}),
+      ...(detail.projectName ? { project_name: detail.projectName } : {}),
+      ...(detail.props ?? {}),
+      anon_id: getAnonId(),
+    };
+    const w = window as unknown as {
+      gtag?: (...a: unknown[]) => void;
+      amplitude?: { track?: (n: string, p?: Record<string, unknown>) => void };
+    };
+    w.gtag?.("event", name, props);
+    w.amplitude?.track?.(name, props);
+  } catch { /* analytics must never surface an error */ }
+}
+
 export function track(
   name: EventName,
   detail: Omit<Queued, "name" | "path" | "referrer"> = {},
@@ -121,6 +145,7 @@ export function track(
       referrer: document.referrer || undefined,
     });
     if (!timer) timer = setTimeout(() => flush(), FLUSH_MS);
+    forwardToVendors(name, detail);
   } catch { /* never break a page for a metric */ }
 }
 
