@@ -579,12 +579,18 @@ export function liveProjectIntel(
      a single card with a plan toggle rather than a fake multi-size picker.
      Genuinely different sizes (different areas) stay as separate homes. */
   const levelWord = /lower|upper|level|ground|first|second|third|floor|duplex/i;
+  /* Super area is the identity of a size — it's what the price and the picker
+     ride on. Carpet is often filed later, so requiring it here silently DROPPED
+     whole configurations (a 4 BHK with no carpet yet vanished from both the
+     homes picker and the BHK chip). Keep any row with a super area; carry a
+     missing carpet through as null so the layout table renders it as "NA"
+     (ReportHomes) rather than the config disappearing. */
   const rawHomes = (cfgs ?? [])
-    .filter((c) => (c.carpetArea ?? 0) > 0 && (c.superArea ?? 0) > 0)
+    .filter((c) => (c.superArea ?? 0) > 0)
     .map((c) => ({
       config: c.bhkType ? normBhk(c.bhkType) : "NA",
       areaType: c.areaType,
-      carpetSqft: c.carpetArea!,
+      carpetSqft: (c.carpetArea ?? 0) > 0 ? c.carpetArea! : null,
       superSqft: c.superArea!,
       balconySqft: (c.balconyArea ?? 0) > 0 ? c.balconyArea! : undefined,
       // a floor-plan cell may hold ONE Storage URL or SEVERAL (a duplex filed
@@ -647,15 +653,19 @@ export function liveProjectIntel(
      penthouses instead of leading with one. ReportHomes renders tabs in this
      array's first-seen order, so sorting here fixes the tab order with no UI
      change. */
+  // rank by carpet where we have it, else fall back to super area so a
+  // carpet-less config still orders sensibly instead of throwing off a null
+  const sizeKey = (h: { carpetSqft: number | null; superSqft: number }) => h.carpetSqft ?? h.superSqft;
   const cfgMinCarpet = new Map<string, number>();
   for (const h of homes) {
     const prev = cfgMinCarpet.get(h.config);
-    if (prev == null || h.carpetSqft < prev) cfgMinCarpet.set(h.config, h.carpetSqft);
+    const k = sizeKey(h);
+    if (prev == null || k < prev) cfgMinCarpet.set(h.config, k);
   }
   homes.sort(
     (a, b) =>
       (cfgMinCarpet.get(a.config)! - cfgMinCarpet.get(b.config)!) ||
-      (a.carpetSqft - b.carpetSqft) ||
+      (sizeKey(a) - sizeKey(b)) ||
       (a.superSqft - b.superSqft),
   );
   const cfgNames = dedupe(homes.map((h) => h.config)).filter((c) => c !== "NA");
@@ -791,7 +801,7 @@ export function liveProjectIntel(
      honest — an unclaimed priority simply doesn't move the match, never a
      hopeful guess. Vocabulary mirrors journey.ts PRIORITIES_BY_TYPE so a
      buyer's picks line up with what a live project can claim. ── */
-  const carpetRatios = homes.map((h) => (h.superSqft > 0 ? h.carpetSqft / h.superSqft : 0)).filter((r) => r > 0);
+  const carpetRatios = homes.map((h) => (h.carpetSqft != null && h.superSqft > 0 ? h.carpetSqft / h.superSqft : 0)).filter((r) => r > 0);
   const carpetEff = carpetRatios.length ? carpetRatios.reduce((a, b) => a + b, 0) / carpetRatios.length : null;
   const uspText = (() => {
     const parts: string[] = [];

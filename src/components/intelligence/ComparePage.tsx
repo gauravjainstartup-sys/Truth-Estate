@@ -198,9 +198,9 @@ function ProjectCompare({ r }: { r: Extract<ResolvedCompare, { kind: "project" }
   const [pilA, pilB] = [pillars(a), pillars(b)];
 
   const effOf = (p: ProjectIntel) => {
-    const hs = p.ops?.homes;
+    const hs = p.ops?.homes?.filter((h) => h.carpetSqft != null && h.superSqft > 0);
     if (!hs?.length) return null;
-    return Math.max(...hs.map((h) => Math.round((h.carpetSqft / h.superSqft) * 100)));
+    return Math.max(...hs.map((h) => Math.round((h.carpetSqft! / h.superSqft) * 100)));
   };
   const supRange = (p: ProjectIntel) => {
     const hs = p.ops?.homes;
