@@ -496,6 +496,10 @@ export type TowerIntelMeta = {
 export const TOWER_INTEL: Record<string, TowerIntelMeta> = {
   // keyed by the DB project_name (source of truth) so the advisor attaches
   // to the live page; the sample dossier carries the same name
+  /* DLF The Arbour — 3D advisor withheld from the live site (founder's call).
+     Kept here so re-enabling is just un-commenting this block. While hidden,
+     the project page shows the "request the 3D" flow and Arbour is dropped from
+     the Sun & Vastu showcase, the map sun-pins and the chatbot's unit data.
   "DLF The Arbour": {
     file: "tower-intel/dlf-arbour.html",
     preview: "tower-intel/preview.jpg",
@@ -514,6 +518,7 @@ export const TOWER_INTEL: Record<string, TowerIntelMeta> = {
       idealFor: "Large & joint families (4–6)",
     },
   },
+  */
   "Signature Global Titanium SPR": {
     file: "tower-intel/signature-global-titanium-spr.html",
     preview: "tower-intel/signature-global-titanium-spr-preview.jpg",

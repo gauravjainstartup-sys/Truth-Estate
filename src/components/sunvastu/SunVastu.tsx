@@ -48,7 +48,10 @@ const LIVE: { name: string; file: string; preview: string; towers: number; note:
   { name: "Ashiana Amarah Phase - 5", file: "tower-intel/ashiana-amarah-phase-5.html", preview: "tower-intel/ashiana-amarah-phase-5-preview.jpg", towers: 4, note: "G+14 · Iris 4 BHK + 3 BHK" },
   { name: "Signature Global Titanium SPR", file: "tower-intel/signature-global-titanium-spr.html", preview: "tower-intel/signature-global-titanium-spr-preview.jpg", towers: 7, note: "2-to-core dual-aspect" },
   { name: "M3M Elie Saab", file: "tower-intel/m3m-residences-by-elie-saab.html", preview: "tower-intel/m3m-residences-by-elie-saab-preview.jpg", towers: 3, note: "east-sunrise living" },
-  { name: "DLF The Arbour", file: "tower-intel/dlf-arbour.html", preview: "tower-intel/preview.jpg", towers: 5, note: "south-east corners" },
+  /* DLF The Arbour — 3D advisor withheld from the live site (founder's call).
+     Kept here so re-enabling is just un-commenting this line (and the matching
+     TOWER_INTEL block in src/lib/projects.ts).
+     { name: "DLF The Arbour", file: "tower-intel/dlf-arbour.html", preview: "tower-intel/preview.jpg", towers: 5, note: "south-east corners" }, */
 ];
 
 /* ── scroll reveal (honours reduced-motion, lint-clean) ───────────────── */
@@ -631,7 +634,7 @@ export default function SunVastu() {
         <Reveal>
           <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#c9a96e]">Live now</p>
           <h2 className="mt-5 max-w-3xl font-serif text-3xl font-medium leading-[1.12] text-[#f4efe6] sm:text-[2.6rem]">
-            Seven towers you can walk through the sun on, right now.
+            {LIVE.reduce((s, p) => s + p.towers, 0)} towers you can walk through the sun on, right now.
           </h2>
           <p className="mt-6 max-w-2xl text-[15px] leading-relaxed text-[#b8b0a3]">
             These projects are already modelled and interactive. Open one, play the sun across the day, and pick the tower and floor that live in the best light.
