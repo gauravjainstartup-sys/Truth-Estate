@@ -35,6 +35,10 @@ import { existsSync } from "node:fs";
 
 const OUT = "deploy/redirects.conf";
 const OLD_URLS = "deploy/old-urls.txt";
+/* URLs Google has indexed (GSC exports) that the crawl never reached. A
+   separate committed file so a re-crawl — which overwrites old-urls.txt —
+   cannot silently drop them. Folded into the old-URL set below. */
+const INDEXED_URLS = "deploy/indexed-urls.txt";
 const SITEMAP = "out/sitemap.xml";
 
 const slugify = (s) => String(s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -326,9 +330,19 @@ function bestMatch(oldPath, news, scoped) {
    longer is a different project whose name merely begins with it. The
    boundary dashes stop "birla-arika" matching mid-word. Verified against
    all 97 rows: every one resolves to its own report, none to a sibling. */
+/* OLD PROJECT SLUG → NEW, for the few projects the old site named differently
+   (a misspelling, a dropped developer prefix). Consulted when resolving a
+   comparison's first project to its report, so a whole family of /compare/
+   URLs built on the old name lands instead of 404ing. The direct project URL
+   is covered by OVERRIDES; this is its comparison-pair counterpart. */
+const SLUG_ALIAS = {
+  "tonino-lambhorgini-residences": "signature-global-tonino-lamborghini-residences",
+};
+
 function projectResolver(news) {
   const projects = news.filter((n) => n.includes("/projects/"));
-  return (slug) => {
+  return (slugIn) => {
+    const slug = SLUG_ALIAS[slugIn] ?? slugIn;
     const hits = projects.filter((p) => p.includes(`-${slug}-`) || p.endsWith(`-${slug}`));
     if (hits.length === 0) return null;
     const shortest = Math.min(...hits.map((h) => h.length));
@@ -444,7 +458,7 @@ if (!arg) {
 
 const news = await newPaths(sitemapSrc);
 const newSet = new Set(news);
-const olds = arg === "--crawl"
+let olds = arg === "--crawl"
   ? await crawl(argv[1] ?? "https://www.truthestate.in")
   : await fromFile(arg);
 
@@ -462,6 +476,20 @@ const olds = arg === "--crawl"
 if (arg === "--crawl") {
   await writeFile(OLD_URLS, `${olds.slice().sort().join("\n")}\n`);
   console.log(`  → ${OLD_URLS} (${olds.length} path(s) — the input to every future rebuild)`);
+}
+
+/* Fold in Google's own index — the URLs the crawl never reached. Written to
+   old-urls.txt ABOVE first (that file stays the pure crawl, so a re-crawl
+   overwriting it can't disagree with itself); the indexed set is unioned in
+   only for THIS run's matching. Without it, 854 URLs Google has indexed would
+   404 at cutover — indistinguishable in any smoke test from pages that never
+   existed. */
+if (existsSync(INDEXED_URLS)) {
+  const merged = new Set(olds);
+  const before = merged.size;
+  for (const p of await fromFile(INDEXED_URLS)) merged.add(p);
+  olds = [...merged];
+  if (olds.length > before) console.log(`  + ${olds.length - before} path(s) from ${INDEXED_URLS} (Google-indexed, crawl missed)`);
 }
 
 console.log(`\n  old: ${olds.length} path(s)   new: ${news.length} path(s)\n`);
@@ -516,6 +544,12 @@ const OVERRIDES = {
   "/best-projects/under-8-cr-golf-course-extension": "/best-projects/under-8-cr-gurugram?q=Golf%20Course%20Extension",
   "/under-construction-projects-in-gurugram": "/intelligence/projects",
   "/contact": "/premiumbuyeroffice",
+  /* The old site listed this project as "tonino-lambhorgini-residences"
+     (misspelt, no developer prefix); this build files it under its full,
+     correct slug. The token matcher can't bridge "lambhorgini"→"lamborghini",
+     so it's named here. Google has it indexed, so it must not 404. */
+  "/projects/gurugram-real-estate-tonino-lambhorgini-residences-southern-peripheral-road-spr-corridor-sector-71":
+    "/projects/gurugram-real-estate-signature-global-tonino-lamborghini-residences-southern-peripheral-road-spr-corridor-sector-71",
 };
 
 /* LAST RESORT: THE SECTION'S OWN INDEX.

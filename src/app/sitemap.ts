@@ -2,7 +2,6 @@ import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/site";
 import { DEVELOPERS } from "@/lib/developers";
 import { MARKETS } from "@/lib/markets";
-import { DEV_PAIRS, MARKET_PAIRS, scoredProjectOptions, projectComparePairs } from "@/lib/compare";
 import { BEST_PROJECTS } from "@/lib/bestProjects";
 import { fetchBacklogFull } from "@/lib/supabase";
 
@@ -53,9 +52,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   rows.forEach((r) => add(`/projects/${r.seoSlug}`, 0.8, "weekly"));
   DEVELOPERS.forEach((d) => add(`/intelligence/developers/${d.slug}`, 0.6, "monthly"));
   MARKETS.forEach((m) => add(`/intelligence/markets/${m.slug}`, 0.6, "monthly"));
-  // compare pages: live project pairs (scored set) + curated developer/market pairs
-  const projectPairs = projectComparePairs(scoredProjectOptions(rows));
-  [...projectPairs, ...DEV_PAIRS, ...MARKET_PAIRS].forEach((pair) => add(`/intelligence/compare/${pair}`, 0.4, "monthly"));
+  /* Individual /intelligence/compare/<pair> pages are deliberately NOT listed:
+     they carry `robots: noindex` (combinatorial near-duplicates — see the pair
+     route). Sitemapping a noindexed URL is a contradictory signal Google flags
+     as "Submitted URL marked noindex", so they stay out. The compare HUB
+     (/intelligence/compare, added above) is indexable and remains. */
 
   return entries;
 }

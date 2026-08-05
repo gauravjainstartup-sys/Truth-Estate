@@ -123,6 +123,14 @@ export async function generateMetadata({ params }: { params: Promise<{ pair: str
     title: `${title} — Compare`,
     description: `Independent side-by-side comparison of ${title}: measured on the same evidence — score, signals, delivery, pricing and outlook. No paid rankings.`,
     alternates: { canonical: `/intelligence/compare/${pair}` },
+    /* NOINDEX, but FOLLOW. The pair pages are combinatorial (97 projects →
+       thousands of near-identical A-vs-B permutations); the old site indexed
+       them and Google collapsed ~2,880 as "duplicate, chose different
+       canonical" — wasted crawl budget and no individual ranking. They stay
+       fully live for buyers who land on them, but out of the index; `follow`
+       lets the equity flow through to the two project reports they link. Kept
+       out of sitemap.xml for the same reason. */
+    robots: { index: false, follow: true },
   };
 }
 

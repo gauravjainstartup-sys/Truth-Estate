@@ -1,14 +1,14 @@
 name: Deploy to Cloud Run (production)
 
 # ════════════════════════════════════════════════════════════════
-#  PRODUCTION — www.truthestate.in.
+#  PRODUCTION — truthestate.in.
 #
 #  Distinct from deploy.yml, which publishes the GitHub Pages PREVIEW.
 #  The two differ in the only two things that matter about where a build
 #  lives, and both are environment variables here:
 #
 #    NEXT_PUBLIC_BASE_PATH=""                     served from the root
-#    NEXT_PUBLIC_ORIGIN=https://www.truthestate.in  canonicals, sitemap,
+#    NEXT_PUBLIC_ORIGIN=https://truthestate.in  canonicals, sitemap,
 #                                                   JSON-LD, and the
 #                                                   noindex switch
 #
@@ -129,7 +129,7 @@ jobs:
       - name: Build the production export
         env:
           NEXT_PUBLIC_BASE_PATH: ""
-          NEXT_PUBLIC_ORIGIN: https://www.truthestate.in
+          NEXT_PUBLIC_ORIGIN: https://truthestate.in
           # Either name, because deploy.yml has always used the short one.
           NEXT_PUBLIC_GMAPS_KEY: ${{ secrets.GMAPS_KEY || secrets.NEXT_PUBLIC_GMAPS_KEY }}
           # Static Maps runs server-side, from this runner, with no Referer
@@ -273,7 +273,7 @@ jobs:
             grep -rls "/Truth-Estate" out --include="*.html" | head -5
             exit 1
           fi
-          grep -q "https://www.truthestate.in/sitemap.xml" out/robots.txt \
+          grep -q "https://truthestate.in/sitemap.xml" out/robots.txt \
             || { echo "::error::robots.txt is not pointing at the production origin"; cat out/robots.txt; exit 1; }
           if grep -q 'name="robots" content="noindex' out/index.html; then
             echo "::error::the home page is noindexed — NEXT_PUBLIC_ORIGIN is not the production origin"
@@ -345,16 +345,16 @@ jobs:
           # Trailing slash is optional and deliberately not asserted.
           # metadataBase resolves `canonical: "/"` differently depending on
           # whether the base URL carries a path, so the preview emits
-          # ".../Truth-Estate/" and production emits "https://www.truthestate.in"
+          # ".../Truth-Estate/" and production emits "https://truthestate.in"
           # with no slash. Google normalises the two; a test that insists on
           # one shape fails a correct page, which is what happened on the
           # first successful deploy.
           canon=$(curl -s "$URL/" | grep -o 'rel="canonical" href="[^"]*"' | head -1 | sed 's/.*href="//;s/"$//')
           case "$canon" in
-            https://www.truthestate.in|https://www.truthestate.in/)
+            https://truthestate.in|https://truthestate.in/)
               echo "  ok   canonical → $canon" ;;
             *)
-              echo "  FAIL canonical → ${canon:-(none)} (want https://www.truthestate.in)"; fail=1 ;;
+              echo "  FAIL canonical → ${canon:-(none)} (want https://truthestate.in)"; fail=1 ;;
           esac
 
           # The image is the site, so prove the page is the one we built
