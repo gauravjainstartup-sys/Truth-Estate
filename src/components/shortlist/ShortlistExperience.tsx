@@ -98,7 +98,11 @@ export default function ShortlistExperience() {
       </header>
 
       <main className="mx-auto max-w-7xl px-6 pb-24 pt-8 md:px-10 md:pt-12">
-        {!mounted ? null : buy && dna && hasPreferences(buy) ? (
+        {/* Loader from the very first paint (incl. the static shell, before
+           hydration) — never a blank main, which was the flash on the way in
+           and back. mounted starts false on the server AND the client's first
+           render, so this hydrates without a mismatch. */}
+        {!mounted ? <Ranking /> : buy && dna && hasPreferences(buy) ? (
           /* Catalog fetch + AI re-rank settling — a loader, not a blank hold,
              so the page never looks frozen (cards still never shuffle after
              reveal because we only render them once `settled`). */
