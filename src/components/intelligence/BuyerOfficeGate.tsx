@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   saveLead, saveBuyData, loadBuyData, emptyBuyData,
   loadMemberCall, saveMemberCall, type MemberCall,
+  isSignedIn,
 } from "@/lib/journey";
 import { CONSULT_DAYS, CONSULT_DAYPARTS, CONSULT_FORMATS, advisorFor } from "@/lib/consultation";
 import { normalisePhone, normaliseIntl, sendOtp, sendOtpIntl, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
@@ -140,7 +141,12 @@ export default function BuyerOfficeGate({
 
   useEffect(() => {
     if (open) {
-      setStep(start);
+      /* Already signed in (Google or phone) → don't re-ask for name + OTP.
+         isSignedIn() is the one signal set by every sign-in path, so a known
+         visitor skips the join/verify steps and opens straight on their Buyer
+         Office. The paid read is still bought only on the report itself. */
+      const known = isSignedIn();
+      setStep(known && (start === "intro" || start === "req") ? "home" : start);
       setShow(false);
       const id = requestAnimationFrame(() => setShow(true));
       const saved = loadBuyData();

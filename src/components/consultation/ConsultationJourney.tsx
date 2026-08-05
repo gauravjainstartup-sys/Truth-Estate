@@ -37,7 +37,8 @@ import {
   OTP_LENGTH,
   type Verified,
 } from "@/lib/shortlistAuth";
-import { foldConsultIntoBrief } from "@/lib/journey";
+import { foldConsultIntoBrief, isSignedIn, loadAccount } from "@/lib/journey";
+import { getSession } from "@/lib/phoneAuth";
 
 
 type Step = "intro" | "payment" | "confirm" | "office";
@@ -284,19 +285,34 @@ function AdviceEntry({
   const [phase, setPhase] = useState<"register" | "schedule">("register");
   const [verified, setVerified] = useState<Verified | null>(null);
 
-  // A prior shortlist verification carries over — skip the second OTP and
-  // open straight on the scheduler. We start unverified so the first client
-  // render matches the static server render, then hydrate from storage.
+  // A prior sign-in carries over — skip the second OTP and open straight on
+  // the scheduler. loadVerified() covers a phone-OTP sign-in; isSignedIn()
+  // also covers Google, whose identity lives in getSession()/loadAccount() —
+  // a different store the old check missed, so a Google member was re-asked
+  // for name + phone here. We start unverified so the first client render
+  // matches the static server render, then hydrate from storage.
   useEffect(() => {
     const v = loadVerified();
-    if (!v) return;
+    const signedIn = isSignedIn();
+    if (!v && !signedIn) return;
+    const session = getSession();
+    const acct = loadAccount();
+    const name = v?.name || acct?.name || "";
+    const mobile = v?.channel === "mobile" ? `${v.cc ?? ""} ${v.contact}`.trim() : (session?.phone ?? "");
+    const email = v?.email || (v?.channel === "email" ? v.contact : "") || session?.email || "";
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setVerified(v);
+    setVerified(v ?? {
+      channel: session?.phone ? "mobile" : "email",
+      contact: session?.phone || session?.email || email || "",
+      name: name || undefined,
+      email: email || undefined,
+      at: Date.now(),
+    });
     setBooking((b) => ({
       ...b,
-      name: b.name || v.name || "",
-      mobile: b.mobile || (v.channel === "mobile" ? `${v.cc ?? ""} ${v.contact}`.trim() : b.mobile),
-      email: b.email || v.email || (v.channel === "email" ? v.contact : ""),
+      name: b.name || name,
+      mobile: b.mobile || mobile,
+      email: b.email || email,
     }));
     setPhase("schedule");
   }, [setBooking]);
