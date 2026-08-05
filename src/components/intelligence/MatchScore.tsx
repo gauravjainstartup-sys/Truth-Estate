@@ -9,8 +9,8 @@ import {
   matchLabel,
   emptyBuyData,
   buyerFromBuyData,
-  setMember,
-  isMember,
+  setSignedIn,
+  isSignedIn,
   corridorKey,
   LOCATIONS,
   type BuyData,
@@ -82,13 +82,19 @@ export default function MatchScore({ project, initialBuy, variant = "card" }: { 
       const saved = loadBuyData();
       if (saved) setBuy(saved);
     }
-    setMemberFlag(isMember());
+    setMemberFlag(isSignedIn());
     setVerified(loadVerified());
   }, [initialBuy]);
 
   function handleVerified(v: Verified) {
     saveVerified(v);
-    setMember();
+    /* Verifying a contact is a SIGN-IN, not a purchase. This used to call
+       setMember(), which set the membership flag that hasReadAccess() reads
+       directly — so completing this OTP unlocked every paid report for free.
+       It now marks the visitor signed-in (brief saved, header updated) and
+       grants no read entitlement: the paid read is bought only on the report
+       itself, through its Razorpay checkout. */
+    setSignedIn();
     setMemberFlag(true);
     setVerified(v);
     setOtp(null);

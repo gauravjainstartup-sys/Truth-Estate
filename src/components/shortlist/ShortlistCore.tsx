@@ -7,7 +7,7 @@ import OtpSheet from "./OtpSheet";
 import { projectByName, type ProjectIntel } from "@/lib/projects";
 import { briefChips } from "@/lib/shortlist";
 import { loadVerified, saveVerified, type Verified } from "@/lib/shortlistAuth";
-import { saveLead, unlockProject, ACTIVE_PROJECT_COUNT, type BuyData, type DNA, type Scored } from "@/lib/journey";
+import { saveLead, ACTIVE_PROJECT_COUNT, type BuyData, type DNA, type Scored } from "@/lib/journey";
 
 /* ════════════════════════════════════════════════════════════════
    THE CLUBBED SHORTLIST — one surface, two homes.
@@ -81,7 +81,12 @@ export default function ShortlistCore({
         buy,
         createdAt: Date.now(),
       });
-      unlockProject(lead.intel.slug);
+      /* No entitlement is granted here any more. Verifying a contact is a
+         lead, not a purchase — the paid read is bought only on the report,
+         through its own Razorpay checkout. saveLead above still records the
+         lead (and its 'lead'-tier model access); this used to also call
+         unlockProject(), a free client-side unlock that fired a false
+         report_unlocked and wrote the legacy unlock store. */
     }
     setVerified(v);
     onVerifiedChange?.(v);

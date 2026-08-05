@@ -6,7 +6,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   saveLead, saveBuyData, loadBuyData, emptyBuyData,
   loadMemberCall, saveMemberCall, type MemberCall,
-  packageById,
 } from "@/lib/journey";
 import { CONSULT_DAYS, CONSULT_DAYPARTS, CONSULT_FORMATS, advisorFor } from "@/lib/consultation";
 import { normalisePhone, normaliseIntl, sendOtp, sendOtpIntl, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
@@ -36,15 +35,10 @@ const CAPS: { icon: IconName; t: string; d: string }[] = [
   { icon: "wind", t: "Cross-ventilation", d: "How air moves through the layout — corner and through-units flagged." },
   { icon: "value", t: "Best-value stacks", d: "The units priced below what their position is really worth." },
 ];
-const emailOk = (e: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
-const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 const advisor = advisorFor("advice");
-// All-Access price, read live from the pricing table.
-const ALL_INR = packageById("all").inr;
 
-type Plan = "single" | "membership";
-type Step = "intro" | "req" | "verify" | "plans" | "pay" | "done" | "schedule" | "booked" | "home";
-type StartAt = "intro" | "req" | "plans" | "home";
+type Step = "intro" | "req" | "verify" | "done" | "schedule" | "booked" | "home";
+type StartAt = "intro" | "req" | "home";
 
 type ThemeName = "light" | "dark";
 type Tokens = {
@@ -116,10 +110,10 @@ const THEMES: Record<ThemeName, Tokens> = {
 
 export default function BuyerOfficeGate({
   open, project, slug, start = "intro", has3D = false, access = false, theme = "light",
-  onClose, onJoined, onPaid, onSeeUnitIntel,
+  onClose, onJoined, onSeeUnitIntel,
 }: {
   open: boolean; project: string; slug: string; start?: StartAt; has3D?: boolean; access?: boolean; theme?: ThemeName;
-  onClose: () => void; onJoined: () => void; onPaid: (plan: Plan) => void; onSeeUnitIntel: () => void;
+  onClose: () => void; onJoined: () => void; onSeeUnitIntel: () => void;
 }) {
   const t = THEMES[theme];
   const [show, setShow] = useState(false);
@@ -137,14 +131,6 @@ export default function BuyerOfficeGate({
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(""));
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
-  // payment
-  /* "membership" is the only card the plans step renders now; a "single"
-     default would make the pay step charge a plan the reader never saw. */
-  const [plan, setPlan] = useState<Plan>("membership");
-  const [card, setCard] = useState("");
-  const [exp, setExp] = useState("");
-  const [cvv, setCvv] = useState("");
-  const [paying, setPaying] = useState(false);
   // scheduling
   const [call, setCall] = useState<MemberCall | null>(null);
   const [schedFrom, setSchedFrom] = useState<Step>("home");
@@ -164,7 +150,6 @@ export default function BuyerOfficeGate({
     }
     setSent(false); setOtp(Array(OTP_LENGTH).fill("")); setErr("");
     setDay(null); setSlot(null); setFormat(null);
-    setCard(""); setExp(""); setCvv(""); setPaying(false);
   }, [open, start]);
 
   useEffect(() => {
@@ -183,9 +168,6 @@ export default function BuyerOfficeGate({
   const hasIntro = start === "intro";
   const stepTotal = hasIntro ? 3 : 2;
   const stepNo = step === "intro" ? 1 : step === "req" ? (hasIntro ? 2 : 1) : step === "verify" ? (hasIntro ? 3 : 2) : 0;
-  const amount = plan === "single" ? packageById("read3d").inr : ALL_INR;
-  const contactValid = name.trim() !== "" && (method === "email" ? emailOk(email) : numValid);
-  const cardValid = card.replace(/\D/g, "").length >= 12 && exp.length >= 4 && cvv.length >= 3;
 
   const toggle = (k: "configs" | "priorities", v: string, max = 99) =>
     setDraft((d) => {
@@ -246,17 +228,6 @@ export default function BuyerOfficeGate({
     setBusy(false);
     if (!r.ok) { setErr(r.error); return; }
     persistAndJoin();
-  }
-
-  function doPay(e: React.FormEvent) {
-    e.preventDefault();
-    if (!contactValid) { setErr("Add your name and a valid contact."); return; }
-    if (!cardValid) { setErr("Enter your card details."); return; }
-    setErr(""); setPaying(true);
-    saveBrief();
-    saveLead({ name: name.trim() || "—", email: method === "email" ? email.trim() : "", phone: method === "phone" ? `${dial} ${num}`.trim() : undefined, project, intent: "buyer-office", createdAt: Date.now() });
-    // simulate a short processing beat, then unlock
-    setTimeout(() => { onPaid(plan); setOutcome("unlocked"); setStep("done"); setPaying(false); }, 700);
   }
 
   const goSchedule = (from: Step) => { setSchedFrom(from); setStep("schedule"); };
@@ -377,59 +348,6 @@ export default function BuyerOfficeGate({
               <button type="button" onClick={() => setStep("req")} className={`mt-3.5 ${backLink}`}>← Back</button>
               <p className={`mt-4 text-center text-[0.68rem] font-light leading-[1.5] ${t.fine}`}>Free — no payment. We never share or spam. Front-end demo; OTP is simulated.</p>
             </form>
-          ) : step === "plans" ? (
-            <>
-              <h2 className={`font-serif text-[1.7rem] font-medium leading-[1.12] ${t.h2}`}>Unlock the full verdict.</h2>
-              <p className={`mt-2.5 text-[0.86rem] font-light leading-[1.6] ${t.body}`}>You&apos;ve seen the model and a sample. Open every unit in {project} — graded on sun, Vastu, light, ventilation and value.</p>
-              <div className="mt-6 flex flex-col gap-3">
-                {/* The single-project 3D tier is withdrawn while the advisor is
-                    in beta — All-Access is the one way to buy the 3D now, so the
-                    gate offers exactly what the unlock modal offers and nothing
-                    the checkout would refuse. */}
-                <PlanCard t={t} on={plan === "membership"} onClick={() => setPlan("membership")}
-                  title="All-Access" price={inr(ALL_INR)} unit="whole site" badge="Best value"
-                  desc="Every read and every 3D across the site — plus 2 on-demand reports & 3Ds, and your 45-min advisory call." />
-              </div>
-              <button onClick={() => setStep("pay")} className={`mt-6 ${primaryBtn}`}>Continue · {inr(amount)}</button>
-              <button onClick={onSeeUnitIntel} className={`mt-3 ${backLink}`}>← Keep exploring free</button>
-            </>
-          ) : step === "pay" ? (
-            <form onSubmit={doPay}>
-              <h2 className={`font-serif text-[1.7rem] font-medium leading-[1.12] ${t.h2}`}>Checkout.</h2>
-              <div className={`mt-4 flex items-center justify-between rounded-xl border p-4 ${t.card}`}>
-                <div className="min-w-0">
-                  <p className={`text-[0.9rem] font-medium ${t.capTitle}`}>{plan === "single" ? project : "All-Access"}</p>
-                  <p className={`text-[0.76rem] font-light ${t.capDesc}`}>{plan === "single" ? "Full read + Sun & Vastu 3D · one project" : "Every read + every 3D · whole site"}</p>
-                </div>
-                <p className={`shrink-0 font-mono text-[1.15rem] font-medium ${t.h2}`}>{inr(amount)}</p>
-              </div>
-              <div className="mt-4 flex flex-col gap-3">
-                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" className={`${field} w-full`} />
-                <div className={`flex gap-1 rounded-md border p-1 ${t.tabWrap}`}>
-                  <Tab t={t} on={method === "phone"} onClick={() => setMethod("phone")}>Mobile</Tab>
-                  <Tab t={t} on={method === "email"} onClick={() => setMethod("email")}>Email</Tab>
-                </div>
-                {method === "phone" ? (
-                  <div className="flex gap-2">
-                    <select value={dial} onChange={(e) => setDial(e.target.value)} className={`${field} w-[96px] shrink-0`}>
-                      {DIAL.map((d) => <option key={d.code} value={d.code} className={t.option}>{d.flag} {d.code}</option>)}
-                    </select>
-                    <input value={num} onChange={(e) => setNum(e.target.value.replace(/[^\d\s]/g, ""))} placeholder="Mobile number" inputMode="tel" className={`${field} min-w-0 flex-1`} />
-                  </div>
-                ) : (
-                  <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="you@email.com" className={`${field} w-full`} />
-                )}
-                <input value={card} onChange={(e) => setCard(e.target.value.replace(/[^\d ]/g, "").slice(0, 19))} placeholder="Card number" inputMode="numeric" className={`${field} w-full`} />
-                <div className="flex gap-2">
-                  <input value={exp} onChange={(e) => setExp(e.target.value.replace(/[^\d/]/g, "").slice(0, 5))} placeholder="MM / YY" inputMode="numeric" className={`${field} min-w-0 flex-1`} />
-                  <input value={cvv} onChange={(e) => setCvv(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="CVV" inputMode="numeric" className={`${field} min-w-0 flex-1`} />
-                </div>
-              </div>
-              {err && <p className={`mt-2.5 text-[0.78rem] ${t.err}`}>{err}</p>}
-              <button disabled={paying} className={`mt-5 ${primaryBtn} disabled:opacity-60`}>{paying ? "Processing…" : `Pay ${inr(amount)}`}</button>
-              <button type="button" onClick={() => setStep("plans")} className={`mt-3.5 ${backLink}`}>← Back to plans</button>
-              <p className={`mt-4 text-center text-[0.68rem] font-light leading-[1.5] ${t.fine}`}>🔒 Front-end demo — no real card is charged. {plan === "single" ? "Fee credited if you upgrade to All-Access." : "Includes your advisory consultation."}</p>
-            </form>
           ) : step === "done" ? (
             <div className="text-center">
               <Crest t={t}><Icon name="check" /></Crest>
@@ -530,25 +448,6 @@ export default function BuyerOfficeGate({
         </div>
       </div>
     </div>
-  );
-}
-
-function PlanCard({ t, on, onClick, title, price, unit, desc, badge }: { t: Tokens; on: boolean; onClick: () => void; title: string; price: string; unit: string; desc: string; badge?: string }) {
-  return (
-    <button type="button" onClick={onClick} className={`w-full rounded-xl border p-4 text-left transition-all ${on ? t.planOn : t.planOff}`}>
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className={`grid h-4 w-4 place-items-center rounded-full border ${on ? "border-[#1e6b45] bg-[#1e6b45] text-white" : "border-current opacity-30"}`}>{on && <span className="text-[0.55rem]">✓</span>}</span>
-          <p className={`text-[0.95rem] font-medium ${t.capTitle}`}>{title}</p>
-          {badge && <span className={`rounded-full border px-2 py-0.5 text-[0.54rem] font-semibold uppercase tracking-[0.08em] ${t.crest}`}>{badge}</span>}
-        </div>
-        <div className="shrink-0 text-right">
-          <p className={`font-mono text-[1.05rem] font-medium ${t.h2}`}>{price}</p>
-          <p className={`text-[0.58rem] font-light uppercase tracking-[0.08em] ${t.capDesc}`}>{unit}</p>
-        </div>
-      </div>
-      <p className={`mt-2 pl-6 text-[0.78rem] font-light leading-[1.5] ${t.capDesc}`}>{desc}</p>
-    </button>
   );
 }
 

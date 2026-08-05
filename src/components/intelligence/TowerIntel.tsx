@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { has3DAccess, grantPackage, saveLead } from "@/lib/journey";
+import { has3DAccess, saveLead } from "@/lib/journey";
 import BuyerOfficeGate from "./BuyerOfficeGate";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import type { ProjectIntel, TowerIntelMeta } from "@/lib/projects";
@@ -18,8 +18,7 @@ export function openUnitIntel() {
   if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(UNIT_INTEL_EVENT));
 }
 
-type GateStart = "intro" | "req" | "plans" | "home";
-type Plan = "single" | "membership";
+type GateStart = "intro" | "req" | "home";
 
 export default function TowerIntel({ project, meta }: { project: ProjectIntel; meta?: TowerIntelMeta }) {
   const slug = project.slug;
@@ -57,7 +56,11 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
       const d = e.data;
       if (!d || typeof d !== "object") return;
       if (d.type === "te-ready" && has3DAccess(slug)) postPaid();
-      if (d.type === "te-pay") openGate("plans");
+      // Dive past the free sample → the full verdict is not sold here. Open
+      // the free Buyer Office join (brief + verify), which lands on "talk to
+      // your advisor". The paid read is bought only on the report itself, via
+      // the report's own Razorpay checkout — never granted from this surface.
+      if (d.type === "te-pay") openGate(has3DAccess(slug) ? "home" : "req");
       // "Talk to an advisor" from a unit — close the model and open the consult flow with the unit as source.
       if (d.type === "te-consult") { setModal(false); openConsult({ source: project.name, sourceKind: "project", intent: "buy" }); }
       // Walk-through early-access — capture the mobile number into the app's lead store.
@@ -77,16 +80,6 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
     return () => { document.body.style.overflow = prev; };
   }, [modal]);
 
-  // Payment succeeded in the gate (simulated). Record the entitlement under the
-  // v2 package model — the single project unlock (one report), the
-  // membership is all-access — then, if the 3D is already open (a dive-in),
-  // unlock it so the tapped tower opens.
-  function onPaid(plan: Plan) {
-    if (plan === "membership") grantPackage("all");
-    else grantPackage("read3d", slug);
-    setAccess(true);
-    if (has3D && modal) postPaid();
-  }
 
   // "See your unit intelligence" from the success / home / booked screens.
   function onSeeUnitIntel() {
@@ -176,7 +169,6 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
         access={access}
         onClose={() => setGateStart(null)}
         onJoined={() => { /* free register — lead saved in the gate */ }}
-        onPaid={onPaid}
         onSeeUnitIntel={onSeeUnitIntel}
       />
     </>
