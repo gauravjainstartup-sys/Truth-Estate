@@ -713,12 +713,15 @@ export function liveProjectIntel(
   /* price journey — only when the extended row carries a parseable
      current range AND a launch price; the launch month anchors to the
      RERA registration date (the filing that starts the clock) */
-  const launchMonth = row.registrationDate?.match(/([A-Za-z]{3,9})\s+(\d{4})\s*$/);
-  // "Jan 2023" from the RERA registration date — the filing that starts the clock.
-  const launchLabel = launchMonth ? `${launchMonth[1].slice(0, 3)} ${launchMonth[2]}` : null;
+  /* "May 2026" from the RERA registration date — the filing that starts the
+     clock. parseAnyDate handles ISO (2026-05-04), slash and text-month forms;
+     the old regex only matched a trailing "Mon YYYY", so an ISO registration
+     date (7 of the live projects, incl. Godrej Samaris) silently read as NA. */
+  const regParsed = parseAnyDate(row.registrationDate);
+  const launchLabel = regParsed ? `${MON3[regParsed.m]} ${regParsed.y}` : null;
   const price =
-    range && (ext?.launchPrice ?? 0) > 0 && launchMonth
-      ? { launchPsf: ext!.launchPrice!, launchDate: launchLabel!, currentLow: range[0], currentHigh: range[1] }
+    range && (ext?.launchPrice ?? 0) > 0 && launchLabel
+      ? { launchPsf: ext!.launchPrice!, launchDate: launchLabel, currentLow: range[0], currentHigh: range[1] }
       : null;
 
   const heroSrc = mediaSrc(ext?.heroImageUrl);
@@ -1384,7 +1387,7 @@ export function liveProjectIntel(
       : {}),
     ...(row.location ? { address: withCity(row.location) } : {}),
     ...(row.totalUnits != null ? { units: Math.round(row.totalUnits) } : totalUnits != null ? { units: totalUnits } : {}),
-    ...(ext?.totalTowers != null && ext.totalTowers > 0 ? { towers: Math.round(ext.totalTowers) } : {}),
+    ...((() => { const t = ext?.totalTowers ?? row.maxTowers; return t != null && t > 0 ? { towers: Math.round(t) } : {}; })()),
     ...(landAcres != null ? { landAcres } : {}),
     ...(density != null ? { density } : {}),
     ...(openAreaPct != null ? { openAreaPct } : {}),
