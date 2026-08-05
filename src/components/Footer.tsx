@@ -42,14 +42,8 @@ const columns: {
     links: [
       { t: "Project Intelligence", h: "/intelligence/projects" },
       { t: "Developer Intelligence", h: "/intelligence/developers" },
-      /* No standalone location route — micro-markets ARE the corridor/location
-         intelligence, so both point at the markets index. */
-      { t: "Location Intelligence", h: "/intelligence/markets" },
       { t: "Compare Intelligence", h: "/intelligence/compare" },
       { t: "Market Intelligence", h: "/intelligence/markets" },
-      /* Legal has no dedicated index — it lives inside each project report — so
-         this stays on the hub until a standalone legal page exists. */
-      { t: "Legal Intelligence", h: "/intelligence" },
     ],
   },
   {
