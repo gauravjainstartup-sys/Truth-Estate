@@ -17,23 +17,17 @@ name: Deploy to Cloud Run (production)
 #  production value; leaving the variable unset would silently produce a
 #  build addressed to /Truth-Estate and 404 every link on the live domain.
 #
-#  Auto-deploys on every push to main. main is the founder's single-user
-#  testing arena, and this candidate service (truthestate-web, a *.run.app
-#  URL) is where they test — so a merge to main should land there with no
-#  manual step. Code pushes reuse the committed Supabase snapshot (no DB
-#  pull); the manual "Run workflow" still offers refresh_snapshot=true.
-#
-#  This is still NOT the live site: truthestate.in is served by
-#  truthestate-with-supabase until its domain mapping is moved by hand.
-#  That cutover stays a deliberate act — flipping the domain is the
-#  decision, not the push. WHEN the domain is moved here, reinstate a gate
-#  (drop the push trigger, or add an approval environment) so a merge to
-#  main can no longer ship straight to the live domain.
+#  MANUAL DEPLOY ONLY. truthestate.in's Cloud Run domain mapping was moved to
+#  truthestate-web at cutover, so this service now serves the LIVE site — a
+#  deploy here is a production release. The auto-deploy-on-push trigger has
+#  therefore been removed: a release is a deliberate "Run workflow" from the
+#  Actions tab, never an accidental merge to main. A manual run reuses the
+#  committed Supabase snapshot unless refresh_snapshot=true. (Re-add
+#  `push: { branches: [main] }` only if the live domain is ever moved off
+#  this service again.)
 # ════════════════════════════════════════════════════════════════
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       refresh_snapshot:
@@ -62,11 +56,11 @@ env:
   GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'gen-lang-client-0356808352' }}
   GCP_REGION: ${{ vars.GCP_REGION || 'asia-southeast1' }}
   AR_REPOSITORY: ${{ vars.AR_REPOSITORY || 'truthestate' }}
-  # NOT the live service. The existing `truthestate-with-supabase` keeps
-  # serving truthestate.in until its domain mapping is moved by hand — so
-  # a bad deploy costs a .run.app URL nobody has, not the live site. The
-  # cutover is then a domain mapping change, which is instant and
-  # reversible, rather than a rebuild under pressure.
+  # THE LIVE SERVICE. truthestate.in's Cloud Run domain mapping was moved to
+  # truthestate-web at cutover, so a deploy here IS a live release — which is
+  # why the push trigger is gone and releases are a deliberate manual run.
+  # Rollback stays a domain-mapping move back to truthestate-with-supabase,
+  # which is still deployed and untouched.
   SERVICE_NAME: ${{ vars.CLOUD_RUN_SERVICE || 'truthestate-web' }}
 
 jobs:
