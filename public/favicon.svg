@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Drop shadow for the outer frame and internal tiles -->
+    <filter id="shadowFilter" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="16" stdDeviation="14" flood-color="#020E0B" flood-opacity="0.45" />
+    </filter>
+
+    <!-- Heavy drop shadow specifically for the elevated central gold sphere -->
+    <filter id="sphereShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#010A08" flood-opacity="0.6" />
+    </filter>
+
+    <!-- Glossy Premium Emerald Tile Gradient -->
+    <linearGradient id="tileGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#12664B" />    <!-- Highlighted Top Left (Active Luxurious Emerald) -->
+      <stop offset="45%" stop-color="#0B3D26" />   <!-- Traditional Forest Green -->
+      <stop offset="100%" stop-color="#041810" />  <!-- Sleek Deep Shadow Green -->
+    </linearGradient>
+
+    <!-- Sleek Outer Frame Gradient: Brushed Polished Titanium with deep forest undertones -->
+    <linearGradient id="frameGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2D4A3F" />    <!-- Soft metallic reflection -->
+      <stop offset="30%" stop-color="#122A21" />   <!-- Deep slate -->
+      <stop offset="70%" stop-color="#071410" />   <!-- Core executive shadow -->
+      <stop offset="100%" stop-color="#020806" />  <!-- Darkest angle -->
+    </linearGradient>
+
+    <!-- 3D Gold Specular Ball Gradient for the center point -->
+    <radialGradient id="goldSphereGrad" cx="35%" cy="35%" r="65%" fx="35%" fy="35%">
+      <stop offset="0%" stop-color="#FFF6E5" />    <!-- Specular glare -->
+      <stop offset="30%" stop-color="#D4AF37" />   <!-- Metallic Gold -->
+      <stop offset="75%" stop-color="#B29668" />   <!-- Accent gold -->
+      <stop offset="100%" stop-color="#554124" />  <!-- Deep core sphere shadow -->
+    </radialGradient>
+  </defs>
+
+  <g>
+    <!-- 1. UNDER-SHADOW for the Outer Frame -->
+    <rect x="52" y="62" width="408" height="408" rx="36" fill="none" stroke="#010C09" stroke-width="16" stroke-linecap="round" filter="url(#shadowFilter)" />
+
+    <!-- 2. EXTRUSION DEPTH (3D Side) of the Outer Frame -->
+    <rect x="52" y="56" width="408" height="408" rx="36" fill="none" stroke="#041C15" stroke-width="16" stroke-linecap="round" />
+
+    <!-- 3. FRONT FACE of the Outer Frame -->
+    <rect x="52" y="52" width="408" height="408" rx="36" fill="none" stroke="url(#frameGrad)" stroke-width="16" stroke-linecap="round" />
+
+    <!-- ============================================ -->
+    <!-- 4 QUADRANT TILES (Elevated) -->
+    <!-- ============================================ -->
+
+    <!-- TOP-LEFT TILE -->
+    <rect x="82" y="92" width="164" height="164" rx="20" fill="#010A08" opacity="0.4" />
+    <rect x="82" y="86" width="164" height="164" rx="20" fill="#031E14" />
+    <rect x="82" y="82" width="164" height="164" rx="20" fill="url(#tileGrad)" stroke="#10b981" stroke-width="1" stroke-opacity="0.15" />
+
+    <!-- TOP-RIGHT TILE -->
+    <rect x="266" y="92" width="164" height="164" rx="20" fill="#010A08" opacity="0.4" />
+    <rect x="266" y="86" width="164" height="164" rx="20" fill="#031E14" />
+    <rect x="266" y="82" width="164" height="164" rx="20" fill="url(#tileGrad)" stroke="#10b981" stroke-width="1" stroke-opacity="0.15" />
+
+    <!-- BOTTOM-LEFT TILE -->
+    <rect x="82" y="276" width="164" height="164" rx="20" fill="#010A08" opacity="0.4" />
+    <rect x="82" y="270" width="164" height="164" rx="20" fill="#031E14" />
+    <rect x="82" y="266" width="164" height="164" rx="20" fill="url(#tileGrad)" stroke="#10b981" stroke-width="1" stroke-opacity="0.15" />
+
+    <!-- BOTTOM-RIGHT TILE -->
+    <rect x="266" y="276" width="164" height="164" rx="20" fill="#010A08" opacity="0.4" />
+    <rect x="266" y="270" width="164" height="164" rx="20" fill="#031E14" />
+    <rect x="266" y="266" width="164" height="164" rx="20" fill="url(#tileGrad)" stroke="#10b981" stroke-width="1" stroke-opacity="0.15" />
+
+    <!-- ============================================ -->
+    <!-- CENTRAL 3D GOLD GLOWING SPHERE (HOVERING) -->
+    <!-- ============================================ -->
+    <circle cx="256" cy="265" r="32" fill="#000000" opacity="0.5" filter="url(#sphereShadow)" />
+    <circle cx="256" cy="256" r="32" fill="url(#goldSphereGrad)" stroke="#8C6E3D" stroke-width="1" />
+  </g>
+</svg>
