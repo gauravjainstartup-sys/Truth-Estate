@@ -4,7 +4,7 @@
    Two deployments now, and they differ in BOTH values:
 
      staging     https://gauravjainstartup-sys.github.io  +  /Truth-Estate
-     production  https://www.truthestate.in               +  ""  (root)
+     production  https://truthestate.in                   +  ""  (root)
 
    The base path used to be a literal `const basePath = "/Truth-Estate"`
    redeclared in 49 places across 52 files, alongside `basePath` in

@@ -52,11 +52,12 @@ server {
   port_in_redirect off;
 
   # ── canonical host ──
-  # One host serves the site: www. Google treats apex and www as separate
-  # sites, and two live copies of 935 pages is the same split-equity
-  # problem as leaving the preview crawlable.
-  if ($host = "truthestate.in") {
-    return 301 $fwd_proto://www.truthestate.in$request_uri;
+  # One host serves the site: the APEX (truthestate.in) — the host Google has
+  # already indexed (all 4,793 URLs on the bare domain). Apex and www are
+  # separate sites to Google, so the www copy 301s onto the apex: all equity
+  # on one host, and no site-wide host change layered on the platform move.
+  if ($host = "www.truthestate.in") {
+    return 301 $fwd_proto://truthestate.in$request_uri;
   }
 
   # ── the shape GitHub Pages served, preserved ──
@@ -75,6 +76,17 @@ server {
   # below could claim /_next/static/*.svg and change its caching.
   location ^~ /_next/static/ {
     try_files $uri =404;
+  }
+
+  # ── legacy /projects/<slug>/locked → the report ──
+  # The old site exposed a locked (paywalled) variant of each report at
+  # /projects/<slug>/locked, and Google indexed roughly one per project. This
+  # build has no /locked route — the report itself IS the canonical page — so
+  # fold the variant onto it. A regex covers every slug in one rule instead of
+  # a per-project line in redirects.conf. Regex loses to the `=` exact matches
+  # in redirects.conf, so it can never shadow a more specific redirect.
+  location ~ ^/projects/(.+?)/locked/?$ {
+    return 301 /projects/$1;
   }
 
   # ── 301s from the old site ──
