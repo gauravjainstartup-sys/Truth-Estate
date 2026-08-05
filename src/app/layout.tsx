@@ -4,7 +4,7 @@ import { Playfair_Display } from "next/font/google";
 import "./globals.css";
 import JourneyProvider from "@/components/journey/JourneyProvider";
 import ConsultationProvider from "@/components/consultation/ConsultationProvider";
-import { IS_PRODUCTION_ORIGIN, SITE_URL } from "@/lib/site";
+import { IS_PRODUCTION_ORIGIN, SITE_URL, basePath } from "@/lib/site";
 import { KEEP_ON_RELOAD } from "@/lib/durableKeys";
 import EventTracker from "@/components/EventTracker";
 
@@ -53,21 +53,14 @@ export const metadata: Metadata = {
   category: "Real Estate",
   alternates: { canonical: "/" },
   formatDetection: { telephone: false, email: false, address: false },
-  /* Favicon set. SVG first (modern browsers pick it), then the raster sizes,
-     then the .ico for legacy. Absolute (SITE_URL-based) so the href carries
-     the base path on the preview and resolves to the domain root in
-     production — a leading-slash path would drop the base path on the mirror.
-     Sources live in /public; see public/favicon.svg (the vector master). */
-  icons: {
-    icon: [
-      { url: `${SITE_URL}/favicon.svg`, type: "image/svg+xml" },
-      { url: `${SITE_URL}/favicon-48x48.png`, type: "image/png", sizes: "48x48" },
-      { url: `${SITE_URL}/favicon.png`, type: "image/png", sizes: "192x192" },
-      { url: `${SITE_URL}/favicon.ico`, sizes: "any" },
-    ],
-    shortcut: [{ url: `${SITE_URL}/favicon.ico` }],
-    apple: [{ url: `${SITE_URL}/apple-touch-icon.png`, sizes: "180x180" }],
-  },
+  /* Favicons are NOT declared here on purpose. metadata.icons resolves every
+     href against metadataBase (the production origin), which is correct for a
+     canonical but wrong for an icon the browser must fetch from whatever host
+     is serving the page: on the .run.app arena (and the github.io preview)
+     that produced <link href="https://truthestate.in/favicon.svg">, an
+     off-host request to the not-yet-cutover domain, so the new icon never
+     loaded. They're rendered in <head> instead with base-path-relative,
+     same-origin hrefs. */
   openGraph: {
     type: "website",
     siteName: "Truth Estate",
@@ -200,6 +193,15 @@ export default function RootLayout({
         />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteLd) }} />
+        {/* Favicons — same-origin, base-path-relative so they load from the
+           host actually serving the page (the .run.app arena and the github.io
+           preview both differ from the production origin). SVG first for modern
+           browsers; the .ico is the legacy fallback. Sources in /public. */}
+        <link rel="icon" href={`${basePath}/favicon.svg`} type="image/svg+xml" />
+        <link rel="icon" href={`${basePath}/favicon-48x48.png`} type="image/png" sizes="48x48" />
+        <link rel="icon" href={`${basePath}/favicon.png`} type="image/png" sizes="192x192" />
+        <link rel="icon" href={`${basePath}/favicon.ico`} sizes="any" />
+        <link rel="apple-touch-icon" href={`${basePath}/apple-touch-icon.png`} sizes="180x180" />
       </head>
       <body className="min-h-full flex flex-col bg-[#0a0a0a] text-white">
         <ConsultationProvider>
