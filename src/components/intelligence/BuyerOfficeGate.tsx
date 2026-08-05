@@ -48,7 +48,7 @@ type StartAt = "intro" | "req" | "plans" | "home";
 
 type ThemeName = "light" | "dark";
 type Tokens = {
-  sheet: string; backdrop: string; hairline: string; glow: string;
+  sheet: string; sheetBg: string; backdrop: string; hairline: string; glow: string;
   badge: string; eyebrow: string; stepOn: string; stepOff: string; close: string;
   h2: string; accent: string; body: string; bodyStrong: string;
   capIcon: string; capDivide: string; capTitle: string; capDesc: string;
@@ -62,6 +62,7 @@ type Tokens = {
 const THEMES: Record<ThemeName, Tokens> = {
   light: {
     sheet: "border-[#ece3d1] bg-white text-[#1a1a1a] shadow-[0_-30px_80px_-26px_rgba(60,42,10,0.30)]",
+    sheetBg: "bg-white",
     backdrop: "bg-[#1a1206]/45",
     hairline: "linear-gradient(90deg, transparent, rgba(154,122,46,0.55), transparent)",
     glow: "radial-gradient(circle, rgba(201,169,110,0.22), transparent 70%)",
@@ -87,6 +88,7 @@ const THEMES: Record<ThemeName, Tokens> = {
   },
   dark: {
     sheet: "border-white/10 bg-[#0c0c0e] text-white shadow-[0_-30px_80px_-20px_rgba(0,0,0,0.85)]",
+    sheetBg: "bg-[#0c0c0e]",
     backdrop: "bg-black/70",
     hairline: "linear-gradient(90deg, transparent, rgba(201,169,110,0.7), transparent)",
     glow: "radial-gradient(circle, rgba(201,169,110,0.14), transparent 70%)",
@@ -310,8 +312,16 @@ export default function BuyerOfficeGate({
                   </div>
                 ))}
               </div>
-              <button onClick={() => setStep("req")} className={`mt-7 ${primaryBtn}`}>Request Sun &amp; Vastu 3D</button>
-              <p className={`mt-3 text-center text-[0.72rem] font-light ${t.fine}`}>{project}&apos;s 3D model is in production — join and we&apos;ll bring it to you first.</p>
+              {/* Pinned so the primary action is always in view — the five
+                  capability rows push it under the fold on a phone otherwise
+                  (the sheet scrolls, but the CTA was easy to miss). Opaque
+                  sheet bg + full-bleed (-mx-7) so scrolling rows pass behind it
+                  cleanly; a soft top shadow lifts it off the list in both
+                  themes. */}
+              <div className={`sticky bottom-0 -mx-7 mt-6 ${t.sheetBg} px-7 pb-1 pt-3.5 shadow-[0_-14px_18px_-14px_rgba(0,0,0,0.22)]`}>
+                <button onClick={() => setStep("req")} className={primaryBtn}>Request Sun &amp; Vastu 3D</button>
+                <p className={`mt-2.5 text-center text-[0.72rem] font-light ${t.fine}`}>{project}&apos;s 3D model is in production — join and we&apos;ll bring it to you first.</p>
+              </div>
             </>
           ) : step === "req" ? (
             <>
