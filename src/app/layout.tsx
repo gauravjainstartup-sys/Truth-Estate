@@ -53,6 +53,21 @@ export const metadata: Metadata = {
   category: "Real Estate",
   alternates: { canonical: "/" },
   formatDetection: { telephone: false, email: false, address: false },
+  /* Favicon set. SVG first (modern browsers pick it), then the raster sizes,
+     then the .ico for legacy. Absolute (SITE_URL-based) so the href carries
+     the base path on the preview and resolves to the domain root in
+     production — a leading-slash path would drop the base path on the mirror.
+     Sources live in /public; see public/favicon.svg (the vector master). */
+  icons: {
+    icon: [
+      { url: `${SITE_URL}/favicon.svg`, type: "image/svg+xml" },
+      { url: `${SITE_URL}/favicon-48x48.png`, type: "image/png", sizes: "48x48" },
+      { url: `${SITE_URL}/favicon.png`, type: "image/png", sizes: "192x192" },
+      { url: `${SITE_URL}/favicon.ico`, sizes: "any" },
+    ],
+    shortcut: [{ url: `${SITE_URL}/favicon.ico` }],
+    apple: [{ url: `${SITE_URL}/apple-touch-icon.png`, sizes: "180x180" }],
+  },
   openGraph: {
     type: "website",
     siteName: "Truth Estate",
@@ -107,7 +122,7 @@ const orgLd = {
   "@id": `${SITE_URL}/#organization`,
   name: "Truth Estate",
   url: SITE_URL,
-  logo: `${SITE_URL}/favicon.ico`,
+  logo: `${SITE_URL}/favicon.png`,
   image: OG_IMAGE,
   slogan: "Less promises. More proof.",
   description:
