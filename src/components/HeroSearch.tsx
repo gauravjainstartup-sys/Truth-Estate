@@ -26,6 +26,7 @@ import {
 } from "@/lib/heroSearch";
 import { projectHref } from "@/lib/projectHref";
 import { basePath } from "@/lib/site";
+import { track } from "@/lib/events";
 
 const DEBOUNCE_MS = 150;
 const MOBILE_MQ = "(max-width: 767px)";
@@ -62,10 +63,19 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
 
   const triggerRef = useRef<HTMLInputElement>(null);
   const overlayInputRef = useRef<HTMLInputElement>(null);
+  const searchStartedRef = useRef(false);
   const rawId = useId();
   const uid = rawId.replace(/[^a-zA-Z0-9_-]/g, "");
   const panelId = `${uid}-panel`;
   const optId = (i: number) => `${uid}-opt-${i}`;
+
+  /* Analytics — fire once when the visitor first engages the home search:
+     the first character typed, or the mobile search surface opened. */
+  const markSearchStarted = useCallback(() => {
+    if (searchStartedRef.current) return;
+    searchStartedRef.current = true;
+    track("search_started", { props: { source: "home" } });
+  }, []);
 
   /* breakpoint + responsive placeholder */
   useEffect(() => {
@@ -149,7 +159,7 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
     };
   }, [mobileOpen]);
 
-  const openMobile = useCallback(() => { triggerRef.current?.blur(); setMobileOpen(true); }, []);
+  const openMobile = useCallback(() => { triggerRef.current?.blur(); setMobileOpen(true); markSearchStarted(); }, [markSearchStarted]);
   const closeMobile = useCallback(() => { setMobileOpen(false); setQuery(""); setActive(-1); }, []);
 
   const go = useCallback((p: OmniProject) => {
@@ -307,7 +317,7 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
               : { "aria-haspopup": "dialog" as const, "aria-expanded": mobileOpen })}
             autoComplete="off"
             value={query}
-            onChange={(e) => { if (!isMobile) { setQuery(e.target.value); setOpen(true); } }}
+            onChange={(e) => { if (!isMobile) { setQuery(e.target.value); setOpen(true); if (e.target.value.trim()) markSearchStarted(); } }}
             onFocus={() => { if (!isMobile) setOpen(true); }}
             onBlur={() => { if (!isMobile) { setOpen(false); setActive(-1); } }}
             onClick={() => { if (isMobile) openMobile(); }}
@@ -364,7 +374,7 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
                 autoComplete="off"
                 autoFocus
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => { setQuery(e.target.value); if (e.target.value.trim()) markSearchStarted(); }}
                 onKeyDown={onKeyDown}
                 placeholder={placeholder}
                 className="h-full w-full min-w-0 bg-transparent pr-3 text-[16px] text-[#2a2318] placeholder:text-[#7a6f56] focus:outline-none"

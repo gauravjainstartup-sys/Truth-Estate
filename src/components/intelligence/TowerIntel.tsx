@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { has3DAccess, saveLead } from "@/lib/journey";
+import { track } from "@/lib/events";
 import BuyerOfficeGate from "./BuyerOfficeGate";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import type { ProjectIntel, TowerIntelMeta } from "@/lib/projects";
@@ -79,6 +80,13 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
   }, [modal]);
+
+  // Analytics: the Sun & Vastu 3D advisor was opened (any trigger — hero pill,
+  // section CTA, or "see unit intelligence"). One place, so a new opener is
+  // instrumented by construction.
+  useEffect(() => {
+    if (modal) track("model_opened", { projectSlug: slug, projectName: project.name });
+  }, [modal, slug, project.name]);
 
 
   // "See your unit intelligence" from the success / home / booked screens.

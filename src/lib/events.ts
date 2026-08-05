@@ -38,7 +38,12 @@ export type EventName =
      name: a spike here is usually a payment that did not land. */
   | "help_centre_opened"
   /* Owner or prospect, declared at the unlock. */
-  | "stake_declared";
+  | "stake_declared"
+  /* Sun & Vastu 3D advisor opened on a project page. */
+  | "model_opened"
+  /* Home-page search engaged — the first keystroke, or the mobile search
+     surface opened. Top-of-funnel intent, distinct from chat_opened. */
+  | "search_started";
 
 type Queued = {
   name: EventName;
