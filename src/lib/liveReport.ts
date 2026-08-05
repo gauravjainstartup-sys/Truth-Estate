@@ -708,15 +708,20 @@ export function liveProjectIntel(
       ? Math.round(((psfLo * smallestSuper) / 1e7) * 10) / 10
       : Number.isFinite(fallbackCr) ? fallbackCr : 0;
 
-  /* Top ticket = the project's OWN filed psf high × its largest home — a
-     genuine low–high band ONLY where the pipeline actually has that spread
-     (a filed price range and a bigger config). Where it doesn't, hi === lo
-     and every consumer keeps its "from ₹X Cr+" single-ticket convention:
-     we never manufacture a range the data can't support. */
-  const psfHi = range?.[1] ?? null;
+  /* Top ticket = the SAME low psf across the LARGEST home — the entry rate
+     held over the biggest config, which is exactly what the report's own
+     ticket does (ProjectProfile.ticketFromPsf holds currentLow = range[0]
+     across the super-area band). So a card and its report never quote two
+     different ranges.
+
+     This used to multiply the filed HIGH psf (range[1]) by the largest home,
+     which compounded the psf spread with the size spread and blew the top
+     out — a card read "…–7 Cr" / "…–20.6 Cr" while its report, holding the
+     low psf, read materially lower. Where there's a single home size,
+     hi === lo and the "from ₹X Cr+" single-ticket convention stands. */
   let hi = lo;
-  if (psfHi && largestSuper) {
-    const top = Math.round(((psfHi * largestSuper) / 1e7) * 10) / 10;
+  if (psfLo && largestSuper) {
+    const top = Math.round(((psfLo * largestSuper) / 1e7) * 10) / 10;
     if (top > lo) hi = top;
   }
 
