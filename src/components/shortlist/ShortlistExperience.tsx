@@ -29,6 +29,10 @@ export default function ShortlistExperience() {
   const [mounted, setMounted] = useState(false);
   const [buy, setBuy] = useState<ReturnType<typeof loadBuyData>>(null);
   const [verified, setVerified] = useState<Verified | null>(null);
+  /* True until the brief is either found or the hand-off retry window closes —
+     lets us show a loader instead of flashing the cold "build your brief"
+     screen while an onboarding hand-off's storage write lands. */
+  const [briefResolving, setBriefResolving] = useState(true);
 
   const refresh = useCallback(() => {
     setBuy(loadBuyData());
@@ -37,8 +41,28 @@ export default function ShortlistExperience() {
 
   useEffect(() => {
     setMounted(true);
-    refresh();
-  }, [refresh]);
+    setVerified(loadVerified());
+    const initial = loadBuyData();
+    if (initial) { setBuy(initial); setBriefResolving(false); return; }
+    /* The onboarding builds the brief on this same site and hands off to
+       /shortlist; on a full-page hand-off its localStorage write can trail
+       our first read. Re-check for ~2s (and on any storage write) before we
+       conclude "no brief" and show the cold screen — so a real buyer coming
+       through onboarding never flashes it. */
+    let tries = 0;
+    const grab = () => {
+      const b = loadBuyData();
+      if (b) { setBuy(b); setBriefResolving(false); return true; }
+      return false;
+    };
+    const id = setInterval(() => {
+      tries += 1;
+      if (grab() || tries >= 8) { clearInterval(id); if (tries >= 8) setBriefResolving(false); }
+    }, 250);
+    const onStorage = () => { if (grab()) clearInterval(id); };
+    window.addEventListener("storage", onStorage);
+    return () => { clearInterval(id); window.removeEventListener("storage", onStorage); };
+  }, []);
 
   // When the refine journey closes, re-read the brief so the shortlist re-ranks.
   const wasOpen = useRef(isOpen);
@@ -74,18 +98,29 @@ export default function ShortlistExperience() {
       </header>
 
       <main className="mx-auto max-w-7xl px-6 pb-24 pt-8 md:px-10 md:pt-12">
-        {!mounted ? null : !buy || !dna || !hasPreferences(buy) ? (
-          <EmptyState onStart={() => open("buy")} />
-        ) : !catalog || !settled ? null /* catalog / re-rank settling — hold so cards never shuffle after reveal */ : recs.length >= 1 ? (
-          <ShortlistCore
-            buy={buy}
-            dna={dna}
-            recs={recs}
-            scannedCount={catalog.length}
-            onRefine={() => open("buy")}
-            onConsult={() => open()}
-            onVerifiedChange={setVerified}
-          />
+        {!mounted ? null : buy && dna && hasPreferences(buy) ? (
+          /* Catalog fetch + AI re-rank settling — a loader, not a blank hold,
+             so the page never looks frozen (cards still never shuffle after
+             reveal because we only render them once `settled`). */
+          !catalog || !settled ? (
+            <Ranking />
+          ) : recs.length >= 1 ? (
+            <ShortlistCore
+              buy={buy}
+              dna={dna}
+              recs={recs}
+              scannedCount={catalog.length}
+              onRefine={() => open("buy")}
+              onConsult={() => open()}
+              onVerifiedChange={setVerified}
+            />
+          ) : (
+            <EmptyState onStart={() => open("buy")} />
+          )
+        ) : briefResolving ? (
+          /* Brief still arriving from the onboarding hand-off — hold on the
+             loader rather than flashing the cold screen. */
+          <Ranking />
         ) : (
           <EmptyState onStart={() => open("buy")} />
         )}
@@ -112,6 +147,18 @@ function EmptyState({ onStart }: { onStart: () => void }) {
       >
         Build my brief →
       </button>
+    </div>
+  );
+}
+
+/* ── Settling: the brief is arriving from onboarding, or the catalog + AI
+   re-rank are in flight. A quiet loader in the page's own palette, so the
+   route never shows a blank screen on the way in. ── */
+function Ranking() {
+  return (
+    <div className="mx-auto max-w-lg py-[14vh] text-center">
+      <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-[#1e6b45]/20 border-t-[#1e6b45]" aria-hidden />
+      <p className="mt-5 font-mono text-[0.66rem] font-semibold uppercase tracking-[0.24em] text-[#9a7a2e]" role="status">Ranking your matches…</p>
     </div>
   );
 }
