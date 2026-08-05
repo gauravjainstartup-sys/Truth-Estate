@@ -314,7 +314,7 @@ function MatchSheet({ open, project, market, seed, computed, existing, member, v
   return (
     <div className="fixed inset-0 z-[130] flex items-end justify-center md:items-center md:p-6">
       <div className={`absolute inset-0 bg-[#1a1206]/45 backdrop-blur-md transition-opacity duration-300 ${show ? "opacity-100" : "opacity-0"}`} onClick={onClose} />
-      <div data-ms-sheet className={`relative z-10 flex max-h-[94vh] w-full flex-col overflow-hidden rounded-t-[20px] border border-[#ece3d1] bg-white text-[#1a1a1a] shadow-[0_-30px_80px_-26px_rgba(60,42,10,0.30)] transition-all duration-300 md:max-h-[90vh] md:max-w-[480px] md:rounded-[20px] ${show ? "translate-y-0 opacity-100 md:scale-100" : "translate-y-full opacity-0 md:translate-y-0 md:scale-[0.97]"}`}>
+      <div data-ms-sheet className={`relative z-10 flex max-h-[94svh] w-full flex-col overflow-hidden rounded-t-[20px] border border-[#ece3d1] bg-white text-[#1a1a1a] shadow-[0_-30px_80px_-26px_rgba(60,42,10,0.30)] transition-all duration-300 md:max-h-[90svh] md:max-w-[480px] md:rounded-[20px] ${show ? "translate-y-0 opacity-100 md:scale-100" : "translate-y-full opacity-0 md:translate-y-0 md:scale-[0.97]"}`}>
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(154,122,46,0.55), transparent)" }} />
 
         {/* Header */}
