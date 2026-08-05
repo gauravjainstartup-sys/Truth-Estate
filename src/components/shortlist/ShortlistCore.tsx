@@ -7,7 +7,8 @@ import OtpSheet from "./OtpSheet";
 import { projectByName, type ProjectIntel } from "@/lib/projects";
 import { briefChips } from "@/lib/shortlist";
 import { loadVerified, saveVerified, type Verified } from "@/lib/shortlistAuth";
-import { saveLead, ACTIVE_PROJECT_COUNT, type BuyData, type DNA, type Scored } from "@/lib/journey";
+import { getSession } from "@/lib/phoneAuth";
+import { saveLead, isSignedIn, loadAccount, ACTIVE_PROJECT_COUNT, type BuyData, type DNA, type Scored } from "@/lib/journey";
 
 /* ════════════════════════════════════════════════════════════════
    THE CLUBBED SHORTLIST — one surface, two homes.
@@ -50,7 +51,24 @@ export default function ShortlistCore({
   const [otpOpen, setOtpOpen] = useState(false);
 
   useEffect(() => {
-    setVerified(loadVerified());
+    const v = loadVerified();
+    if (v) { setVerified(v); return; }
+    /* Signed in (Google or phone) but no shortlist OTP record on this device →
+       recognise the session so the #1 match isn't gated behind a second OTP.
+       isSignedIn() is the one flag every sign-in path sets; identity for the
+       lead comes from getSession()/loadAccount(). The read is still bought on
+       the report itself. */
+    if (isSignedIn()) {
+      const s = getSession();
+      const acct = loadAccount();
+      setVerified({
+        channel: s?.phone ? "mobile" : "email",
+        contact: s?.phone || s?.email || "",
+        name: acct?.name || undefined,
+        email: s?.email || undefined,
+        at: Date.now(),
+      });
+    }
   }, []);
 
   const top = useMemo(
