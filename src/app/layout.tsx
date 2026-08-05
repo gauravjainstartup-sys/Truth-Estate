@@ -7,6 +7,7 @@ import ConsultationProvider from "@/components/consultation/ConsultationProvider
 import { IS_PRODUCTION_ORIGIN, SITE_URL, basePath } from "@/lib/site";
 import { KEEP_ON_RELOAD } from "@/lib/durableKeys";
 import EventTracker from "@/components/EventTracker";
+import Analytics from "@/components/Analytics";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -204,6 +205,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href={`${basePath}/apple-touch-icon.png`} sizes="180x180" />
       </head>
       <body className="min-h-full flex flex-col bg-[#0a0a0a] text-white">
+        <Analytics />
         <ConsultationProvider>
           <EventTracker />
           <JourneyProvider>{children}</JourneyProvider>
