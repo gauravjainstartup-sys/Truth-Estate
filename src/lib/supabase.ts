@@ -252,6 +252,11 @@ export type LiveBacklogFull = {
      has its Occupancy/Completion Certificate on record. */
   deliveredOcDate: string | null;
   deliveredCertificateUrl: string | null;
+  /* Tower count — lives in backlog_project_data.overrides.max_towers (the
+     project_extended_details.total_towers column exists but its rows don't
+     join the public listing, so every project read NA). This is the source
+     that actually resolves for the catalogue. */
+  maxTowers: number | null;
   modTrackRecord: unknown;
   modLegal: unknown;
   modFinancial: unknown;
@@ -441,7 +446,7 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
      not as top-level columns. Fetched in its own query so it never touches the
      construction/sales join above. A project with delivered_oc_date set is
      delivered. */
-  const ocById = new Map<string, { ocDate: string | null; ocUrl: string | null }>();
+  const ocById = new Map<string, { ocDate: string | null; ocUrl: string | null; maxTowers: number | null }>();
   for (const b of (await sbRows("backlog_project_data", "select=id,overrides&limit=2000")) ?? []) {
     const id = s(b.id);
     if (!id) continue;
@@ -450,6 +455,8 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
     ocById.set(id, {
       ocDate: s(ovr.delivered_oc_date),
       ocUrl: s(ovr.delivered_certificate_url),
+      /* Same JSONB as the OC certificate; the vitals' Towers reads from here. */
+      maxTowers: n(ovr.max_towers),
     });
   }
   const out: LiveBacklogFull[] = [];
@@ -502,6 +509,7 @@ export async function fetchBacklogFull(): Promise<LiveBacklogFull[] | null> {
       legalHealth: j(bpd?.legal_health),
       deliveredOcDate: oc?.ocDate ?? null,
       deliveredCertificateUrl: oc?.ocUrl ?? null,
+      maxTowers: oc?.maxTowers ?? null,
       modTrackRecord: j(r.developer_track_record),
       modLegal: j(r.legal_risks),
       modFinancial: j(r.financial_subscores),
