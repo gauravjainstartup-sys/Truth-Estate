@@ -39,6 +39,23 @@ export function splitPair(pair: string): [string, string] | null {
   return parts.length === 2 ? [parts[0], parts[1]] : null;
 }
 
+/* The subset of `pairs` whose BOTH slugs are real live projects — i.e. the
+   compare pages that will actually build and resolve this run. The route
+   (generateStaticParams + resolution) and the sitemap both filter through this
+   against the SAME backlog rows, so the sitemap can never list a pair that
+   wasn't built. That invariant matters: the deploy regenerates redirects.conf
+   from the sitemap and refuses to ship a 301 whose target isn't a built file,
+   so a sitemap listing an unbuilt pair fails the deploy. */
+export function resolvableProjectPairs(pairs: Iterable<string>, projectSlugs: Iterable<string>): string[] {
+  const have = new Set(projectSlugs);
+  const out: string[] = [];
+  for (const p of pairs) {
+    const sp = splitPair(p);
+    if (sp && have.has(sp[0]) && have.has(sp[1])) out.push(p);
+  }
+  return out;
+}
+
 /* ── Live project set ───────────────────────────────────────────────
    The compare picker offers the scored tracked projects (real Truth
    Score), highest first. On a static export every offered pair must be

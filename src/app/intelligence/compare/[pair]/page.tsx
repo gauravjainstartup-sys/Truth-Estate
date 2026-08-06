@@ -19,6 +19,7 @@ import {
   compareTitle,
   scoredProjectOptions,
   projectComparePairs,
+  resolvableProjectPairs,
   splitPair,
   type ResolvedCompare,
 } from "@/lib/compare";
@@ -74,10 +75,6 @@ function lookupKey<T>(
   return alt && table[alt] !== undefined ? alt : null;
 }
 
-async function scoredOpts() {
-  return scoredProjectOptions(await backlog());
-}
-
 /* Resolve a live project pair → two rich ProjectIntels (the same shape the
    sample pair used, so ComparePage renders unchanged). Only pairs within the
    scored/capped set resolve — everything else falls through to dev/market. */
@@ -86,8 +83,12 @@ async function resolveProjectPair(pair: string): Promise<ResolvedCompare | null>
   if (!sp) return null;
   const rows = await backlog();
   if (!rows) return null;
-  const allowed = new Set((await scoredOpts()).map((o) => o.slug));
-  if (!allowed.has(sp[0]) || !allowed.has(sp[1])) return null;
+  /* Any two REAL tracked projects can be compared (not just the top-scored
+     picker set): direct URLs to demand-proven pairs — the ones Google already
+     ranks — must resolve, not 404. The pair is prerendered only if it's in the
+     scored set OR the demand allowlist (see generateStaticParams). */
+  const have = new Set(rows.map((r) => r.slug));
+  if (!have.has(sp[0]) || !have.has(sp[1])) return null;
   const ra = rows.find((r) => r.slug === sp[0]);
   const rb = rows.find((r) => r.slug === sp[1]);
   if (!ra || !rb) return null;
@@ -108,9 +109,16 @@ async function resolve(pair: string): Promise<ResolvedCompare | null> {
 }
 
 export async function generateStaticParams() {
-  const projectPairs = projectComparePairs(await scoredOpts());
-  const all = [...projectPairs, ...DEV_PAIRS, ...MARKET_PAIRS];
-  console.log(`[urls] compare pairs → projects:${projectPairs.length} · developers:${DEV_PAIRS.length} · markets:${MARKET_PAIRS.length}`);
+  const rows = await backlog();
+  /* The default set: every pair among the top-scored projects (the picker
+     offers these). PLUS the demand-proven pairs (INDEXABLE_COMPARE_PAIRS) that
+     resolve to two real projects — these are the ones Google already ranks, so
+     they get a real page even when a project sits outside the picker's cap.
+     Deduped; the sitemap lists exactly the resolvable demand pairs. */
+  const projectPairs = projectComparePairs(scoredProjectOptions(rows));
+  const demandPairs = resolvableProjectPairs(INDEXABLE_COMPARE_PAIRS, (rows ?? []).map((r) => r.slug));
+  const all = [...new Set([...projectPairs, ...demandPairs, ...DEV_PAIRS, ...MARKET_PAIRS])];
+  console.log(`[urls] compare pairs → scored:${projectPairs.length} · demand:${demandPairs.length} · developers:${DEV_PAIRS.length} · markets:${MARKET_PAIRS.length} · total:${all.length}`);
   return all.map((pair) => ({ pair }));
 }
 

@@ -4,6 +4,7 @@ import { DEVELOPERS } from "@/lib/developers";
 import { MARKETS } from "@/lib/markets";
 import { BEST_PROJECTS } from "@/lib/bestProjects";
 import { INDEXABLE_COMPARE_PAIRS } from "@/lib/indexableCompares";
+import { resolvableProjectPairs } from "@/lib/compare";
 import { fetchBacklogFull } from "@/lib/supabase";
 
 export const dynamic = "force-static";
@@ -61,7 +62,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
      index:true, so they belong here. Sitemapping only the indexable ones avoids
      the "submitted URL marked noindex" contradiction. The compare HUB
      (/intelligence/compare, added above) is indexable and remains. */
-  INDEXABLE_COMPARE_PAIRS.forEach((pair) => add(`/intelligence/compare/${pair}`, 0.5, "monthly"));
+  /* Only the demand pairs that resolve to two real projects in THIS build —
+     the same predicate the compare route prerenders with — so the sitemap can
+     never list a pair that wasn't built (the deploy regenerates redirects.conf
+     from the sitemap and rejects a 301 whose target 404s). */
+  resolvableProjectPairs(INDEXABLE_COMPARE_PAIRS, rows.map((r) => r.slug))
+    .forEach((pair) => add(`/intelligence/compare/${pair}`, 0.5, "monthly"));
 
   return entries;
 }
