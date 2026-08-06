@@ -3,6 +3,7 @@ import { SITE_URL } from "@/lib/site";
 import { DEVELOPERS } from "@/lib/developers";
 import { MARKETS } from "@/lib/markets";
 import { BEST_PROJECTS } from "@/lib/bestProjects";
+import { INDEXABLE_COMPARE_PAIRS } from "@/lib/indexableCompares";
 import { fetchBacklogFull } from "@/lib/supabase";
 
 export const dynamic = "force-static";
@@ -22,6 +23,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   add("/intelligence", 0.9, "weekly");
   add("/pricing", 0.7, "monthly");
   add("/methodology", 0.7, "monthly");
+  add("/sun-vastu", 0.7, "monthly");
   add("/about", 0.6, "monthly");
   add("/vision", 0.6, "monthly");
   add("/data-sources", 0.5, "monthly");
@@ -52,11 +54,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   rows.forEach((r) => add(`/projects/${r.seoSlug}`, 0.8, "weekly"));
   DEVELOPERS.forEach((d) => add(`/intelligence/developers/${d.slug}`, 0.6, "monthly"));
   MARKETS.forEach((m) => add(`/intelligence/markets/${m.slug}`, 0.6, "monthly"));
-  /* Individual /intelligence/compare/<pair> pages are deliberately NOT listed:
-     they carry `robots: noindex` (combinatorial near-duplicates — see the pair
-     route). Sitemapping a noindexed URL is a contradictory signal Google flags
-     as "Submitted URL marked noindex", so they stay out. The compare HUB
+  /* Compare pairs: only the demand-proven allowlist is listed. The full
+     combinatorial /intelligence/compare/<pair> set stays noindex + out of the
+     sitemap (near-duplicates Google collapses — see the pair route); but the
+     pairs that already earned search impressions (INDEXABLE_COMPARE_PAIRS) are
+     index:true, so they belong here. Sitemapping only the indexable ones avoids
+     the "submitted URL marked noindex" contradiction. The compare HUB
      (/intelligence/compare, added above) is indexable and remains. */
+  INDEXABLE_COMPARE_PAIRS.forEach((pair) => add(`/intelligence/compare/${pair}`, 0.5, "monthly"));
 
   return entries;
 }

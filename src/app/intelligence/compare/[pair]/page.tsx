@@ -23,6 +23,8 @@ import {
   type ResolvedCompare,
 } from "@/lib/compare";
 import ComparePage from "@/components/intelligence/ComparePage";
+import { INDEXABLE_COMPARE_PAIRS } from "@/lib/indexableCompares";
+import { IS_PRODUCTION_ORIGIN } from "@/lib/site";
 import { breadcrumbLd, ldJson } from "@/lib/seo";
 
 /* Project comparisons run on the LIVE tracked set (backlog_listing_public_v3):
@@ -123,14 +125,19 @@ export async function generateMetadata({ params }: { params: Promise<{ pair: str
     title: `${title} — Compare`,
     description: `Independent side-by-side comparison of ${title}: measured on the same evidence — score, signals, delivery, pricing and outlook. No paid rankings.`,
     alternates: { canonical: `/intelligence/compare/${pair}` },
-    /* NOINDEX, but FOLLOW. The pair pages are combinatorial (97 projects →
-       thousands of near-identical A-vs-B permutations); the old site indexed
-       them and Google collapsed ~2,880 as "duplicate, chose different
-       canonical" — wasted crawl budget and no individual ranking. They stay
-       fully live for buyers who land on them, but out of the index; `follow`
-       lets the equity flow through to the two project reports they link. Kept
-       out of sitemap.xml for the same reason. */
-    robots: { index: false, follow: true },
+    /* Combinatorial pair pages (97 projects → thousands of near-identical
+       A-vs-B permutations) are NOINDEX by default — Google collapses them as
+       "duplicate, chose different canonical", they earn no individual ranking,
+       and at scale they dilute the site's quality signal. The exception is
+       INDEXABLE_COMPARE_PAIRS: pairs that ALREADY earned search impressions
+       (GSC Performance export) and so have proven demand — those get
+       index:true and are listed in sitemap.xml. Every pair stays fully live
+       for buyers, and `follow` lets equity flow to the two reports either way.
+       Gated on IS_PRODUCTION_ORIGIN like the root robots, so a preview/branch
+       build still ships every pair noindex (a page-level `robots` overrides the
+       root's site-wide noindex, so without this gate the allowlist would leak
+       into the github.io preview's index). */
+    robots: { index: IS_PRODUCTION_ORIGIN && INDEXABLE_COMPARE_PAIRS.has(pair), follow: true },
   };
 }
 
