@@ -17,14 +17,31 @@ name: Deploy to Cloud Run (production)
 #  production value; leaving the variable unset would silently produce a
 #  build addressed to /Truth-Estate and 404 every link on the live domain.
 #
-#  MANUAL DEPLOY ONLY. truthestate.in's Cloud Run domain mapping was moved to
-#  truthestate-web at cutover, so this service now serves the LIVE site — a
-#  deploy here is a production release. The auto-deploy-on-push trigger has
-#  therefore been removed: a release is a deliberate "Run workflow" from the
-#  Actions tab, never an accidental merge to main. A manual run reuses the
-#  committed Supabase snapshot unless refresh_snapshot=true. (Re-add
-#  `push: { branches: [main] }` only if the live domain is ever moved off
-#  this service again.)
+#  TWO WAYS IN, AND ONLY TWO. truthestate.in's Cloud Run domain mapping was
+#  moved to truthestate-web at cutover, so this service serves the LIVE site
+#  and any deploy here is a production release.
+#
+#    workflow_dispatch — a deliberate "Run workflow" from the Actions tab.
+#      This is how a CODE release ships. Reuses the committed Supabase
+#      snapshot unless refresh_snapshot=true.
+#
+#    schedule — a data refresh. Operational data (floor plans, prices,
+#      registration dates) is entered in Supabase between releases, and the
+#      site is a static export, so nothing new appears until something
+#      rebuilds. This cron rebuilds main against a FRESH Supabase pull on a
+#      fixed cadence (SNAPSHOT_REFRESH is forced to 1 for schedule events,
+#      below), so a data entry goes live within one interval without anyone
+#      dispatching a deploy. It is the interim until the client-side live
+#      layer lands; that will make the same fields update on refresh.
+#
+#  The auto-deploy-on-PUSH trigger stays removed: a code release is still a
+#  deliberate act, never an accidental merge. But note the consequence of the
+#  cron — it re-publishes whatever is on main at fire time, so MAIN MUST STAY
+#  SHIPPABLE. Every gate below (snapshot honoured, no 301-into-404, not
+#  addressed to the preview, smoke test) runs on the scheduled build too, so a
+#  broken main cannot reach production; an in-progress-but-valid main can.
+#  (Re-add `push: { branches: [main] }` only if the live domain is ever moved
+#  off this service again.)
 # ════════════════════════════════════════════════════════════════
 
 on:
@@ -34,6 +51,14 @@ on:
         description: "Re-pull the Supabase snapshot (otherwise reuse the cache)"
         type: boolean
         default: true
+  # Data refresh. Every 6 hours on the hour (UTC) → 05:30 / 11:30 / 17:30 /
+  # 23:30 IST, so data entered across the Indian workday is live within a few
+  # hours with no manual dispatch. Schedule runs ALWAYS re-pull Supabase
+  # (SNAPSHOT_REFRESH forced to 1 below); retune cadence by changing the one
+  # number here. GitHub crons are UTC and best-effort — they can lag a few
+  # minutes under load, which is immaterial for a data refresh.
+  schedule:
+    - cron: "0 */6 * * *"
 
 # Never two production deploys at once, and never cancel one midway —
 # a half-pushed image is worse than a queued one.
@@ -132,7 +157,9 @@ jobs:
           # Set GMAPS_SERVER_KEY to a second key restricted by API instead of
           # referrer and the bake uses it; leave it unset and nothing changes.
           GMAPS_SERVER_KEY: ${{ secrets.GMAPS_SERVER_KEY }}
-          SNAPSHOT_REFRESH: ${{ inputs.refresh_snapshot && '1' || '0' }}
+          # Manual runs honour the checkbox; scheduled runs always refresh —
+          # a data-refresh deploy that reused a stale snapshot would be a no-op.
+          SNAPSHOT_REFRESH: ${{ (github.event_name == 'schedule' || inputs.refresh_snapshot) && '1' || '0' }}
           REQUIRE_SNAPSHOT: "1"
           # READ THE SNAPSHOT THE PREBUILD JUST DOWNLOADED.
           #
