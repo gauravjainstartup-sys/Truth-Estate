@@ -122,7 +122,7 @@ export default function Hero({ index }: { index: OmniIndex }) {
       {/* ── header ── */}
       <header className="absolute inset-x-0 top-0 z-30">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 md:px-10 md:py-7 lg:px-16">
-          <a href={`${basePath}/`} aria-label="Truth Estate — home"><Logo className="h-9 w-auto md:h-10" /></a>
+          <a href={`${basePath}/`} aria-label="TRUTH ESTATE"><Logo className="h-9 w-auto md:h-10" /></a>
           {/* desktop nav */}
           <nav className="hidden items-center gap-7 text-[13.5px] font-medium tracking-[0.01em] text-[#f6f1e8]/90 [text-shadow:0_1px_2px_rgba(6,4,2,0.6),0_1px_14px_rgba(6,4,2,0.9)] min-[900px]:flex xl:gap-9">
             {NAV.map((n) => (
@@ -150,25 +150,25 @@ export default function Hero({ index }: { index: OmniIndex }) {
       </header>
 
       {/* ── content column ── */}
-      <div className="relative z-10 mx-auto flex h-full max-w-7xl items-start px-6 pt-28 pb-16 md:items-center md:px-10 md:pt-7 md:pb-7 lg:px-16">
+      <div className="relative z-10 mx-auto flex h-full max-w-7xl items-start px-6 pt-22 pb-10 md:items-center md:px-10 md:pt-7 md:pb-7 lg:px-16">
         <div className="w-full max-w-[380px] md:max-w-[46%] md:-translate-y-12">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#c9a24b]">The Independent Buyer&rsquo;s Office</p>
-          <h1 className="mt-3 font-serif font-semibold leading-[1.05] tracking-[-0.01em] text-[#f6f1e8] text-[2.125rem] md:mt-4 md:text-[clamp(2.75rem,4vw,3.5rem)]">
+          <h1 className="mt-2.5 font-serif font-semibold leading-[1.05] tracking-[-0.01em] text-[#f6f1e8] text-[2.125rem] md:mt-4 md:text-[clamp(2.75rem,4vw,3.5rem)]">
             Decisions worth<br />living with.
           </h1>
-          <p className="mt-3 text-[15px] leading-snug text-[#b3aa9e] md:text-[16px]">
+          <p className="mt-2.5 text-[15px] leading-snug text-[#b3aa9e] md:mt-3 md:text-[16px]">
             Built for buyers. Never paid by builders.
           </p>
 
           {/* search — a real, submitting input with a results dropdown */}
-          <div className="mt-5 md:mt-6">
+          <div className="mt-4 md:mt-6">
             <HeroSearch index={index} />
           </div>
 
           {/* trust chips — stacked one-per-line on mobile; an inline, wrapping
              row on desktop. Each promise carries its own distinct gold glyph;
              no dividers (the narrow hero column can't hold them on one line). */}
-          <ul className="mt-4 flex flex-col items-start gap-y-3 text-[11px] tracking-[0.02em] text-[#9a9287] md:mt-5 md:flex-row md:flex-wrap md:items-center md:gap-x-[18px] md:gap-y-2.5">
+          <ul className="mt-3.5 flex flex-col items-start gap-y-2 text-[11px] tracking-[0.02em] text-[#9a9287] md:mt-5 md:flex-row md:flex-wrap md:items-center md:gap-x-[18px] md:gap-y-2.5">
             {CHIPS.map((c) => (
               <li key={c.label} className="flex items-center gap-1.5">
                 <c.Icon className="h-3.5 w-3.5 shrink-0 text-[#c9a24b] md:h-4 md:w-4" />{c.label}
@@ -185,7 +185,7 @@ export default function Hero({ index }: { index: OmniIndex }) {
           <button
             type="button"
             onClick={() => open()}
-            className="group mt-4 block w-full max-w-[420px] border-t border-[#f6f1e8]/10 pt-3.5 text-left text-[13.5px] text-[#b3aa9e] transition-colors duration-150 hover:text-[#f6f1e8] md:mt-5 md:pt-4"
+            className="group mt-3.5 block w-full max-w-[420px] border-t border-[#f6f1e8]/10 pt-3 text-left text-[13.5px] text-[#b3aa9e] transition-colors duration-150 hover:text-[#f6f1e8] md:mt-5 md:pt-4"
           >
             Not sure?{" "}
             <span className="whitespace-nowrap font-medium text-[#e7cf95]">

@@ -200,6 +200,8 @@ export async function generateStaticParams() {
 
 export const dynamicParams = false;
 
+import { getProjectSeoMeta } from "@/lib/seoCategoryGrowth";
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   if (slug === SAMPLE_SLUG) {
@@ -221,25 +223,25 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const rows = await backlog();
   const live = rows?.find((r) => r.seoSlug === slug);
   if (live) {
-    const desc = `Independent read on ${live.name}${live.developer ? ` by ${live.developer}` : ""}${live.truthScore != null ? ` — Truth Score ${live.truthScore}/100` : ""}: delivery risk, construction pace, legal and financial signals from RERA filings and public records.`;
+    const meta = getProjectSeoMeta({
+      name: live.name,
+      developer: live.developer,
+      truthScore: live.truthScore,
+      minPriceCr: live.minPriceCr,
+      seoSlug: live.seoSlug,
+    });
     return {
-      /* No " | Truth Estate" here — the layout's title template already
-         appends it, and having both produced "… | Truth Estate | Truth
-         Estate" on all 97 reports. */
-      title: `${live.name} — Project Intelligence`,
-      description: desc,
+      /* Absolute title override — layout title template is bypassed by %s if set,
+         so meta.title (e.g. "DLF The Arbour Review (2026): Worth Buying? Truth Score 87")
+         renders clean without trailing duplicate branding. */
+      title: { absolute: meta.title },
+      description: meta.description,
       alternates: { canonical: `/projects/${slug}` },
-      /* Without this every report inherited the site-wide OG title, so all
-         97 shared one card: "Truth Estate — Independent Real Estate
-         Advisory for NRI Investors". A shared social title is also a
-         weaker signal to the engines that read them. */
       openGraph: {
-        type: "article",
-        title: `${live.name} — Project Intelligence`,
-        description: desc,
+        title: meta.title,
+        description: meta.description,
         url: `/projects/${slug}`,
       },
-      twitter: { card: "summary_large_image", title: `${live.name} — Project Intelligence`, description: desc },
     };
   }
   const target = await legacyTarget(slug);

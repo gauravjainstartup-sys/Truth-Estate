@@ -120,9 +120,9 @@ function YouTubeIcon() {
 }
 
 const linkBase =
-  "text-left text-[0.82rem] font-light leading-snug transition-all duration-300";
-const linkDefault = `${linkBase} text-[#1a1a1a]/45 hover:text-[#1a1a1a] hover:translate-x-px`;
-const linkFeatured = `${linkBase} text-[#1a1a1a]/55 hover:text-[#1a1a1a] hover:translate-x-px`;
+  "text-left text-[0.82rem] font-medium leading-snug transition-all duration-300";
+const linkDefault = `${linkBase} text-[#4a463d] hover:text-[#1a1a1a] hover:translate-x-px`;
+const linkFeatured = `${linkBase} text-[#38342c] hover:text-[#1a1a1a] hover:translate-x-px`;
 
 export default function Footer({
   precededByDark = true,
@@ -150,13 +150,13 @@ export default function Footer({
             <div className="md:col-span-4 lg:col-span-3">
               <Logo color="#1a1a1a" className="h-11 w-auto md:h-[3.2rem]" />
 
-              <p className="mt-8 font-serif text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/50 md:text-[1rem]">
+              <p className="mt-8 font-serif text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/70 md:text-[1rem]">
                 Independent intelligence for
                 <br />
                 life&apos;s biggest real estate decisions.
               </p>
 
-              <p className="mt-6 max-w-[280px] text-[0.82rem] font-light leading-[1.8] text-[#1a1a1a]/35">
+              <p className="mt-6 max-w-[280px] text-[0.82rem] font-light leading-[1.8] text-[#1a1a1a]/60">
                 Truth Estate combines research, technology and independent
                 judgement to help buyers make confident property decisions.
               </p>
@@ -166,23 +166,23 @@ export default function Footer({
                 <a
                   href="#"
                   aria-label="LinkedIn"
-                  className="text-[#1a1a1a]/30 transition-colors duration-300 hover:text-[#1a1a1a]/70"
+                  className="text-[#1a1a1a]/50 transition-colors duration-300 hover:text-[#1a1a1a]"
                 >
                   <LinkedInIcon />
                 </a>
                 <a
                   href="#"
                   aria-label="X (Twitter)"
-                  className="text-[#1a1a1a]/30 transition-colors duration-300 hover:text-[#1a1a1a]/70"
+                  className="text-[#1a1a1a]/50 transition-colors duration-300 hover:text-[#1a1a1a]"
                 >
                   <XIcon />
                 </a>
                 <span
-                  className="flex items-center gap-2 text-[#1a1a1a]/15"
+                  className="flex items-center gap-2 text-[#1a1a1a]/40"
                   aria-label="YouTube — Coming Soon"
                 >
                   <YouTubeIcon />
-                  <span className="text-[10px] font-light tracking-[0.1em] text-[#1a1a1a]/25">
+                  <span className="text-[10px] font-light tracking-[0.1em] text-[#1a1a1a]/60">
                     Coming Soon
                   </span>
                 </span>
@@ -196,11 +196,11 @@ export default function Footer({
                   const cls = col.featured ? linkFeatured : linkDefault;
                   return (
                     <div key={col.label}>
-                      <h3 className="text-[10px] font-medium uppercase tracking-[0.25em] text-[#c9a96e]">
+                      <h3 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#856424]">
                         {col.label}
                       </h3>
                       {col.featured && (
-                        <div className="mt-2.5 h-[1.5px] w-5 bg-[#c9a96e]/40" />
+                        <div className="mt-2.5 h-[1.5px] w-5 bg-[#856424]/40" />
                       )}
                       <ul
                         className={`${col.featured ? "mt-4" : "mt-6"} space-y-3.5`}
@@ -243,21 +243,21 @@ export default function Footer({
           </div>
 
           {/* ── Divider ── */}
-          <div className="mt-[14vh] border-t border-[#1a1a1a]/8 md:mt-[16vh]" />
+          <div className="mt-[14vh] border-t border-[#1a1a1a]/15 md:mt-[16vh]" />
 
           {/* ── Bottom bar ── */}
           <div className="flex flex-col items-center gap-4 pb-[6vh] pt-8 md:flex-row md:justify-between">
-            <p className="flex items-center gap-3 text-[0.72rem] font-light tracking-[0.04em] text-[#1a1a1a]/30">
+            <p className="flex items-center gap-3 text-[0.72rem] font-light tracking-[0.04em] text-[#1a1a1a]/60">
               &copy; Truth Estate
               {/* demo-only: wipe truthEstate.* and start as a first-time visitor */}
               <button
                 onClick={() => { clearAllDemoData(); window.location.reload(); }}
-                className="underline decoration-[#1a1a1a]/15 underline-offset-2 transition-colors hover:text-[#1a1a1a]/60"
+                className="underline decoration-[#1a1a1a]/30 underline-offset-2 transition-colors hover:text-[#1a1a1a]"
               >
                 Reset demo
               </button>
             </p>
-            <p className="text-[0.72rem] font-light tracking-[0.04em] text-[#1a1a1a]/30">
+            <p className="text-[0.72rem] font-light tracking-[0.04em] text-[#1a1a1a]/60">
               Designed in India. Built for independent property decisions.
             </p>
           </div>

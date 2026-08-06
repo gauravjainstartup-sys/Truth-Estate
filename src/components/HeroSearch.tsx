@@ -331,7 +331,7 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
           role="listbox"
           aria-label="Project search"
           onMouseDown={(e) => e.preventDefault()}
-          className="teh-search-panel absolute left-0 top-full z-50 mt-[7px] max-h-[70vh] w-full overflow-y-auto overscroll-contain rounded-lg bg-[#efe9dc]"
+          className="teh-search-panel absolute left-0 top-full z-50 mt-[7px] max-h-[340px] md:max-h-[380px] w-full overflow-y-auto overscroll-contain rounded-lg bg-[#efe9dc]"
           style={{ boxShadow: "0 16px 40px rgba(0,0,0,0.5)" }}
         >
           {panelChildren()}

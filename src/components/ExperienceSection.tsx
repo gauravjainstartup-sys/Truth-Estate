@@ -219,7 +219,7 @@ function Stage({
           style={{ background: "rgba(201,169,110,0.3)", transition: "all 0.45s ease" }}
         />
       </span>
-      <p className="text-[10px] font-light uppercase tracking-[0.4em] text-[#c9a96e]">{kicker}</p>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.4em] text-[#856424]">{kicker}</p>
       <h3 className={headingClass ?? "mt-4 font-serif text-[1.7rem] font-medium leading-[1.12] text-[#1a1a1a] md:text-[2.2rem]"}>
         {heading}
       </h3>
