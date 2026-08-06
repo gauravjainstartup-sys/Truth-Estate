@@ -1,12 +1,13 @@
 "use client";
 
-import LegalLayout, { S, Bullet, Todo } from "./LegalLayout";
+import LegalLayout, { S, Bullet } from "./LegalLayout";
 
 const SECTIONS = [
   { id: "introduction", title: "Introduction" },
   { id: "nature", title: "Nature of Information" },
   { id: "scores", title: "Scores & Recommendations" },
   { id: "research", title: "Independent Research" },
+  { id: "no-brokerage", title: "Not a Broker or Agent" },
   { id: "no-investment", title: "No Investment Advice" },
   { id: "no-legal", title: "No Legal Advice" },
   { id: "no-financial", title: "No Financial Advice" },
@@ -24,8 +25,8 @@ export default function DisclaimerContent() {
       title="Disclaimer"
       description="What Truth Estate is, what it is not, and the boundaries of the information we provide."
       breadcrumb="Disclaimer"
-      lastUpdated="28 June 2026"
-      readingTime="6 min"
+      lastUpdated="6 August 2026"
+      readingTime="7 min"
       version="1.0"
       sections={SECTIONS}
     >
@@ -34,10 +35,11 @@ export default function DisclaimerContent() {
         <h2 className={S.h2}>Introduction</h2>
         <div className={S.body}>
           <p>
-            Truth Estate (&ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;)
-            operates an independent real estate research and advisory platform
-            accessible at truthestate.in and through related services including
-            Truth Intelligence, TruthGuide, and Private Office.
+            Truth Estate (&ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;) —
+            a private limited company incorporated in India and based in Gurugram,
+            Haryana — operates an independent real estate research and advisory
+            platform accessible at truthestate.in and through related services
+            including Truth Intelligence, TruthGuide, and Private Office.
           </p>
           <p>
             This disclaimer explains the nature and limitations of the
@@ -115,6 +117,28 @@ export default function DisclaimerContent() {
         </div>
       </section>
 
+      {/* Not a Broker or Agent */}
+      <section id="no-brokerage" className={S.section}>
+        <h2 className={S.h2}>Not a Broker or Agent</h2>
+        <div className={S.body}>
+          <p>
+            Truth Estate is a research and buyer-advisory service. We are not a
+            real estate broker or agent, we are not registered as a real estate
+            agent under the Real Estate (Regulation and Development) Act, 2016
+            (RERA), and we do not broker, market, or sell property. We do not
+            act for developers, and we do not earn brokerage or commission on
+            any transaction.
+          </p>
+          <p>
+            Any advisory fee you pay is for our independent research and
+            guidance only. You transact directly with the developer or seller,
+            on your own account. Always verify a project&apos;s RERA
+            registration and approvals directly with the relevant State RERA
+            authority before committing.
+          </p>
+        </div>
+      </section>
+
       {/* No Investment Advice */}
       <section id="no-investment" className={S.section}>
         <h2 className={S.h2}>No Investment Advice</h2>
@@ -127,16 +151,21 @@ export default function DisclaimerContent() {
             assess on your behalf.
           </p>
           <p>
+            Truth Estate is not registered with the Securities and Exchange
+            Board of India (SEBI) as an investment adviser or research analyst,
+            and is not regulated by the Reserve Bank of India (RBI). Real estate
+            is not a &ldquo;security,&rdquo; and nothing we publish is investment
+            advice, research-analyst services, or a recommendation to buy or
+            sell any security within the meaning of the SEBI (Investment
+            Advisers) Regulations, 2013 or the SEBI (Research Analysts)
+            Regulations, 2014.
+          </p>
+          <p>
             We strongly recommend that you consult a qualified financial
-            advisor before making any property investment decision, regardless
+            adviser before making any property investment decision, regardless
             of the information or analysis we provide.
           </p>
         </div>
-        <Todo>
-          Confirm SEBI/RBI regulatory language requirements for investment
-          disclaimers applicable to real estate advisory platforms operating in
-          India.
-        </Todo>
       </section>
 
       {/* No Legal Advice */}
@@ -246,7 +275,7 @@ export default function DisclaimerContent() {
         <div className={S.body}>
           <p>
             To the fullest extent permitted by applicable law, Truth Estate,
-            its founders, employees, and contractors shall not be liable for
+            its directors, employees, and contractors shall not be liable for
             any direct, indirect, incidental, consequential, or punitive
             damages arising from:
           </p>
@@ -261,12 +290,15 @@ export default function DisclaimerContent() {
             in contract, tort, negligence, strict liability, or any other legal
             theory.
           </p>
+          <p>
+            Nothing in this disclaimer excludes or limits any liability that
+            cannot be excluded or limited under applicable law, including
+            liability for fraud or under the Consumer Protection Act, 2019.
+            Where our liability cannot be excluded but can be limited, it is
+            limited to the amount you have paid to Truth Estate in the twelve
+            months preceding the claim.
+          </p>
         </div>
-        <Todo>
-          Legal review required: confirm limitation of liability clauses comply
-          with Indian Consumer Protection Act 2019 and Information Technology
-          Act 2000.
-        </Todo>
       </section>
 
       <div className={S.divider} />
@@ -295,15 +327,15 @@ export default function DisclaimerContent() {
           <p>
             If you have questions about this disclaimer or our research
             methodology, we welcome your enquiry at{" "}
-            <a href="mailto:legal@truthestate.in" className={S.link}>
-              legal@truthestate.in
+            <a href="mailto:info@truthestate.in" className={S.link}>
+              info@truthestate.in
             </a>
+            .
+          </p>
+          <p>
+            Truth Estate · Gurugram, Haryana, India.
           </p>
         </div>
-        <Todo>
-          Add registered business address and any applicable registration
-          numbers once company incorporation is finalised.
-        </Todo>
       </section>
     </LegalLayout>
   );

@@ -280,8 +280,8 @@ export default function LegalLayout({
                 </p>
                 <p className="mt-4 text-[0.88rem] font-light leading-[1.8] text-[#1a1a1a]/40">
                   If you have questions about this document, contact us at{" "}
-                  <a href="mailto:legal@truthestate.in" className={S.link}>
-                    legal@truthestate.in
+                  <a href="mailto:info@truthestate.in" className={S.link}>
+                    info@truthestate.in
                   </a>
                 </p>
               </div>

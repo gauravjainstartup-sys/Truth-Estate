@@ -1,6 +1,6 @@
 "use client";
 
-import LegalLayout, { S, Bullet, Todo } from "./LegalLayout";
+import LegalLayout, { S, Bullet } from "./LegalLayout";
 import { basePath } from "@/lib/site";
 
 const SECTIONS = [
@@ -12,14 +12,15 @@ const SECTIONS = [
   { id: "private-office", title: "Private Office" },
   { id: "independent-advice", title: "Independent Advice" },
   { id: "payments", title: "Payments" },
-  { id: "subscriptions", title: "Subscriptions" },
+  { id: "refunds", title: "Refunds" },
+  { id: "subscriptions", title: "Memberships & Plans" },
   { id: "user-responsibilities", title: "User Responsibilities" },
   { id: "intellectual-property", title: "Intellectual Property" },
   { id: "third-party", title: "Third-Party Content" },
   { id: "termination", title: "Termination" },
   { id: "disclaimer", title: "Disclaimer" },
   { id: "liability", title: "Limitation of Liability" },
-  { id: "jurisdiction", title: "Governing Law" },
+  { id: "jurisdiction", title: "Governing Law & Disputes" },
   { id: "changes", title: "Changes to Terms" },
   { id: "contact", title: "Contact" },
 ];
@@ -30,8 +31,8 @@ export default function TermsContent() {
       title="Terms of Use"
       description="The terms governing your use of Truth Estate's platform, research, and advisory services."
       breadcrumb="Terms of Use"
-      lastUpdated="28 June 2026"
-      readingTime="12 min"
+      lastUpdated="6 August 2026"
+      readingTime="13 min"
       version="1.0"
       sections={SECTIONS}
     >
@@ -46,7 +47,13 @@ export default function TermsContent() {
           </p>
           <p>
             These terms constitute a legally binding agreement between you and
-            Truth Estate. We recommend reading them carefully.
+            Truth Estate, a private limited company incorporated in India and
+            based in Gurugram, Haryana. We recommend reading them carefully,
+            alongside our{" "}
+            <a href={`${basePath}/privacy`} className={S.link}>Privacy Policy</a>{" "}
+            and{" "}
+            <a href={`${basePath}/disclaimer`} className={S.link}>Disclaimer</a>,
+            which form part of these terms.
           </p>
         </div>
       </section>
@@ -72,22 +79,24 @@ export default function TermsContent() {
         <h2 className={S.h2}>Accounts</h2>
         <div className={S.body}>
           <p>
-            Certain features may require you to create an account. You are
-            responsible for maintaining the confidentiality of your account
-            credentials and for all activity that occurs under your account.
+            Certain features require you to create an account. We offer
+            passwordless sign-in: you can register and log in either with your
+            mobile number and a one-time password (OTP) sent by SMS, or with
+            your Google account. Authentication is handled by our identity
+            provider, Supabase Auth; we do not ask you to create or remember a
+            password.
           </p>
+          <ul className={S.ul}>
+            <Bullet>You are responsible for keeping access to your registered mobile number and Google account secure, and for all activity under your account</Bullet>
+            <Bullet>An account is for a single individual; do not share access or let others transact under your account</Bullet>
+            <Bullet>You agree to provide accurate, current, and complete information and to keep it up to date</Bullet>
+            <Bullet>Notify us promptly at info@truthestate.in if you suspect any unauthorised use of your account</Bullet>
+          </ul>
           <p>
-            You agree to provide accurate, current, and complete information
-            during registration and to update your information as needed. We
-            reserve the right to suspend or terminate accounts that contain
-            false or misleading information.
+            We may suspend or terminate accounts that contain false or
+            misleading information, or that are used in breach of these terms.
           </p>
         </div>
-        <Todo>
-          Specify account creation flow, authentication method, and
-          password/security requirements once the user authentication system
-          is implemented.
-        </Todo>
       </section>
 
       <div className={S.divider} />
@@ -106,7 +115,7 @@ export default function TermsContent() {
             <Bullet>Research is published at our discretion and updated as new evidence becomes available</Bullet>
             <Bullet>Truth Scores and Match Scores represent our independent assessment and may change over time</Bullet>
             <Bullet>Research coverage does not imply endorsement of any project or developer</Bullet>
-            <Bullet>Access to certain intelligence features may require a subscription or advisory engagement</Bullet>
+            <Bullet>Access to certain intelligence features may require a payment or advisory engagement</Bullet>
           </ul>
         </div>
       </section>
@@ -121,10 +130,10 @@ export default function TermsContent() {
             When using TruthGuide:
           </p>
           <ul className={S.ul}>
-            <Bullet>Responses are generated based on our research data and may not cover every relevant consideration</Bullet>
+            <Bullet>Responses are generated by an AI model and may not cover every relevant consideration, and may occasionally be incomplete or incorrect</Bullet>
             <Bullet>TruthGuide is designed to explain and inform, not to persuade or recommend specific transactions</Bullet>
             <Bullet>AI-generated responses should be verified against primary sources for important decisions</Bullet>
-            <Bullet>Your interactions may be used to improve response quality, subject to our Privacy Policy</Bullet>
+            <Bullet>Your questions are processed to generate answers and may be used to improve response quality, as described in our Privacy Policy — please do not enter sensitive personal information into the chat</Bullet>
           </ul>
           <p>
             TruthGuide does not constitute professional advice. See our{" "}
@@ -141,18 +150,16 @@ export default function TermsContent() {
         <h2 className={S.h2}>Private Office</h2>
         <div className={S.body}>
           <p>
-            Private Office is our independent buyer representation service,
+            Private Office is our independent buyer-representation service,
             providing dedicated advisory support from research through to
             decision. Private Office engagements are subject to separate
-            service agreements that will be provided when you engage our
-            advisory services.
+            engagement terms — covering scope, fees, timeline, and deliverables
+            — which are provided to you when you engage our advisory services.
+            In the event of any conflict, those engagement terms govern the
+            specific advisory relationship, and these Terms of Use apply to
+            everything else.
           </p>
         </div>
-        <Todo>
-          Draft the Private Office service agreement template. Define scope of
-          services, advisory fee structure, engagement timeline, and
-          deliverables.
-        </Todo>
       </section>
 
       {/* Independent Advice */}
@@ -161,8 +168,9 @@ export default function TermsContent() {
         <div className={S.body}>
           <p>
             Truth Estate operates independently. We are not affiliated with
-            any developer, broker, financial institution, or property portal.
-            Our advisory services are designed to represent the buyer&apos;s
+            any developer, broker, financial institution, or property portal,
+            and we do not earn brokerage or commission on any transaction. Our
+            advisory services are designed to represent the buyer&apos;s
             interest.
           </p>
           <p>
@@ -184,42 +192,63 @@ export default function TermsContent() {
         <h2 className={S.h2}>Payments</h2>
         <div className={S.body}>
           <p>
-            Certain Truth Estate services require payment. All fees will be
-            clearly disclosed before you incur any charges. Payments are
-            processed through secure third-party payment processors.
+            Certain Truth Estate services require payment. All fees are clearly
+            disclosed before you incur any charge. Payments are processed by
+            Razorpay, a third-party payment processor; by paying, you also agree
+            to Razorpay&apos;s terms.
           </p>
           <ul className={S.ul}>
             <Bullet>Prices are quoted in Indian Rupees (INR) unless otherwise stated</Bullet>
-            <Bullet>Applicable taxes (GST) will be added as required by law</Bullet>
-            <Bullet>Refund policies vary by service and will be specified at the time of purchase</Bullet>
+            <Bullet>Applicable taxes, including GST, are added as required by law</Bullet>
+            <Bullet>You can pay using the methods Razorpay supports — such as cards, UPI, net banking, and wallets</Bullet>
+            <Bullet>We do not receive or store your full card or bank credentials; these are handled directly by Razorpay under its PCI-DSS-compliant systems. We retain a record of the transaction (such as amount, date, and what it was for) for accounting and support</Bullet>
           </ul>
         </div>
-        <Todo>
-          Specify payment processor, accepted payment methods, refund policy
-          details, and cancellation terms once the payment system is
-          implemented.
-        </Todo>
       </section>
 
-      {/* Subscriptions */}
-      <section id="subscriptions" className={S.section}>
-        <h2 className={S.h2}>Subscriptions</h2>
+      {/* Refunds */}
+      <section id="refunds" className={S.section}>
+        <h2 className={S.h2}>Refunds</h2>
         <div className={S.body}>
           <p>
-            Some services may be offered on a subscription basis. Subscription
-            terms, including billing frequency, renewal procedures, and
-            cancellation rights, will be clearly presented before you
-            subscribe.
+            Our services deliver digital research and advisory work, much of it
+            accessible immediately on payment. Our refund policy reflects that:
           </p>
+          <ul className={S.ul}>
+            <Bullet><strong className="font-medium text-[#1a1a1a]/65">Unlocked reports and intelligence</strong> — because access is granted instantly and the content is consumed on unlock, these fees are non-refundable once the report or intelligence has been unlocked</Bullet>
+            <Bullet><strong className="font-medium text-[#1a1a1a]/65">Duplicate or erroneous charges</strong> — refunded in full</Bullet>
+            <Bullet><strong className="font-medium text-[#1a1a1a]/65">Content we could not deliver</strong> — if a report you paid for could not be accessed due to a fault on our side and we cannot resolve it, we refund that fee</Bullet>
+            <Bullet><strong className="font-medium text-[#1a1a1a]/65">Advisory &amp; Private Office</strong> — governed by your engagement terms; fees for work already performed are non-refundable, and any unused portion is handled as set out in those terms</Bullet>
+          </ul>
           <p>
-            You may cancel a subscription at any time. Cancellation will take
-            effect at the end of the current billing period.
+            For any billing question or refund request, contact{" "}
+            <a href="mailto:info@truthestate.in" className={S.link}>info@truthestate.in</a>{" "}
+            within 7 days of the charge. Nothing here limits any refund or
+            remedy you are entitled to under applicable law, including the
+            Consumer Protection Act, 2019. Approved refunds are returned to your
+            original payment method via Razorpay.
           </p>
         </div>
-        <Todo>
-          Define subscription tiers, pricing, billing cycles, trial periods,
-          and auto-renewal terms once the subscription model is finalised.
-        </Todo>
+      </section>
+
+      {/* Memberships & Plans */}
+      <section id="subscriptions" className={S.section}>
+        <h2 className={S.h2}>Memberships &amp; Plans</h2>
+        <div className={S.body}>
+          <p>
+            Where we offer a membership or plan — for example an all-access plan
+            or an advisory retainer — the price, what it includes, the billing
+            frequency, and the renewal and cancellation terms are shown before
+            you pay.
+          </p>
+          <p>
+            If a plan renews automatically, we tell you before you buy, and you
+            can turn off renewal at any time from your account or by contacting
+            us. Cancellation takes effect at the end of the current billing
+            period; unless required by law, fees for a billing period already
+            started are not refunded.
+          </p>
+        </div>
       </section>
 
       {/* User Responsibilities */}
@@ -257,12 +286,10 @@ export default function TermsContent() {
           <p>
             &ldquo;Truth Estate,&rdquo; &ldquo;Truth Intelligence,&rdquo;
             &ldquo;TruthGuide,&rdquo; &ldquo;Truth Score,&rdquo; and
-            &ldquo;Match Score&rdquo; are trademarks of Truth Estate.
+            &ldquo;Match Score&rdquo; are trademarks of Truth Estate, whether
+            registered or unregistered.
           </p>
         </div>
-        <Todo>
-          Confirm trademark registration status and filing jurisdictions.
-        </Todo>
       </section>
 
       {/* Third-Party Content */}
@@ -348,29 +375,35 @@ export default function TermsContent() {
             use of our services shall not exceed the amount you have paid to
             Truth Estate in the twelve months preceding the claim.
           </p>
+          <p>
+            Nothing in these terms excludes or limits any liability that cannot
+            be excluded or limited under applicable law, including liability for
+            fraud or under the Consumer Protection Act, 2019.
+          </p>
         </div>
-        <Todo>
-          Legal review required: ensure limitation of liability clauses are
-          enforceable under Indian Consumer Protection Act 2019 and the Indian
-          Contract Act 1872.
-        </Todo>
       </section>
 
-      {/* Governing Law */}
+      {/* Governing Law & Disputes */}
       <section id="jurisdiction" className={S.section}>
-        <h2 className={S.h2}>Governing Law</h2>
+        <h2 className={S.h2}>Governing Law &amp; Disputes</h2>
         <div className={S.body}>
           <p>
             These terms are governed by and construed in accordance with the
-            laws of India. Any disputes arising from these terms or your use of
-            Truth Estate shall be subject to the exclusive jurisdiction of the
-            courts in Gurugram, Haryana, India.
+            laws of India.
+          </p>
+          <p>
+            If a dispute arises, we ask that you first contact us at{" "}
+            <a href="mailto:info@truthestate.in" className={S.link}>info@truthestate.in</a>{" "}
+            so we can try to resolve it in good faith. Any dispute that cannot
+            be resolved may be referred to arbitration by a sole arbitrator
+            under the Arbitration and Conciliation Act, 1996, with the seat and
+            venue of arbitration at Gurugram, Haryana, and proceedings conducted
+            in English. Subject to arbitration, the courts at Gurugram, Haryana
+            have exclusive jurisdiction. Nothing in this clause prevents a
+            consumer from exercising rights or remedies available under the
+            Consumer Protection Act, 2019.
           </p>
         </div>
-        <Todo>
-          Confirm registered jurisdiction once company incorporation is
-          finalised. Consider adding an arbitration clause.
-        </Todo>
       </section>
 
       <div className={S.divider} />
@@ -398,17 +431,18 @@ export default function TermsContent() {
         <h2 className={S.h2}>Contact</h2>
         <div className={S.body}>
           <p>
-            For questions about these terms, contact us at{" "}
-            <a href="mailto:legal@truthestate.in" className={S.link}>
-              legal@truthestate.in
+            For questions about these terms, or to raise a grievance, contact
+            our Grievance Officer at{" "}
+            <a href="mailto:info@truthestate.in" className={S.link}>
+              info@truthestate.in
             </a>
+            . We acknowledge grievances within 24 hours and endeavour to resolve
+            them within 15 days, in line with applicable law.
+          </p>
+          <p>
+            Truth Estate · Gurugram, Haryana, India.
           </p>
         </div>
-        <Todo>
-          Add registered business address, company registration number, and
-          grievance officer details as required by the Information Technology
-          (Intermediary Guidelines and Digital Media Ethics Code) Rules 2021.
-        </Todo>
       </section>
     </LegalLayout>
   );
