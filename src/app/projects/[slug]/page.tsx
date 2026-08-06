@@ -16,6 +16,7 @@ import {
   type LiveExtendedDetails,
 } from "@/lib/supabase";
 import ProjectProfile from "@/components/intelligence/ProjectProfile";
+import LiveProjectProfile from "@/components/intelligence/LiveProjectProfile";
 import { liveProjectIntel } from "@/lib/liveReport";
 import { breadcrumbLd, ldJson } from "@/lib/seo";
 import { relatedProjects } from "@/lib/relatedProjects";
@@ -365,7 +366,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         {liveFaqs.length > 0 && (
           <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(faqLdFor(liveFaqs))} />
         )}
-        <ProjectProfile p={intel} related={related} alternatives={alternatives} />
+        <LiveProjectProfile baked={intel} row={live} corridorPsf={corridorPsf} related={related} alternatives={alternatives} />
       </>
     );
   }
