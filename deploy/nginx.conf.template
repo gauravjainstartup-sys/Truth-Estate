@@ -78,15 +78,28 @@ server {
     try_files $uri =404;
   }
 
-  # ── legacy /projects/<slug>/locked → the report ──
-  # The old site exposed a locked (paywalled) variant of each report at
-  # /projects/<slug>/locked, and Google indexed roughly one per project. This
-  # build has no /locked route — the report itself IS the canonical page — so
-  # fold the variant onto it. A regex covers every slug in one rule instead of
-  # a per-project line in redirects.conf. Regex loses to the `=` exact matches
-  # in redirects.conf, so it can never shadow a more specific redirect.
-  location ~ ^/projects/(.+?)/locked/?$ {
-    return 301 /projects/$1;
+  # ── everything under /projects/ ──
+  # `^~` so this whole prefix is decided here, not by the generic `location /`.
+  # It lets an is_live project that has no baked file YET fall through to the
+  # live shell instead of 404ing, while a baked report still serves its own file
+  # first (try_files order). Exact `=` matches — the three redirects below and
+  # every line in redirects.conf — still beat this prefix, so no old-URL 301 is
+  # shadowed.
+  location ^~ /projects/ {
+    # legacy /projects/<slug>/locked → the report. Nested here because a
+    # top-level `^~` would otherwise shadow a top-level regex; a per-slug `=` in
+    # redirects.conf still wins over this. The old site exposed a paywalled
+    # /locked variant of each report that Google indexed; this build has no
+    # /locked route, so fold it onto the canonical report.
+    location ~ ^/projects/(.+?)/locked/?$ {
+      return 301 /projects/$1;
+    }
+    # A baked report serves its own file. An is_live project not baked yet falls
+    # to the live shell (out/live-project.html), which resolves the real slug
+    # against the live set and renders it through the report UI. The next build
+    # turns it into a static, indexable, sitemap-listed page. The shell is
+    # noindex, so a genuinely-unknown slug landing here is never indexed.
+    try_files $uri $uri.html /live-project.html;
   }
 
   # ── legacy /compare/<a>-vs-<b> the map never enumerated → the compare hub ──
