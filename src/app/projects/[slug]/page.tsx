@@ -17,6 +17,7 @@ import {
 } from "@/lib/supabase";
 import ProjectProfile from "@/components/intelligence/ProjectProfile";
 import LiveProjectProfile from "@/components/intelligence/LiveProjectProfile";
+import { getProjectSeoMeta } from "@/lib/seoCategoryGrowth";
 import { liveProjectIntel } from "@/lib/liveReport";
 import { breadcrumbLd, ldJson } from "@/lib/seo";
 import { relatedProjects } from "@/lib/relatedProjects";
@@ -222,25 +223,32 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const rows = await backlog();
   const live = rows?.find((r) => r.seoSlug === slug);
   if (live) {
-    const desc = `Independent read on ${live.name}${live.developer ? ` by ${live.developer}` : ""}${live.truthScore != null ? ` — Truth Score ${live.truthScore}/100` : ""}: delivery risk, construction pace, legal and financial signals from RERA filings and public records.`;
+    /* Category-design SEO copy — a buyer-intent title (≤60 chars) and meta
+       description (≤155), curated per project with a deterministic 7-vector
+       fallback for new ones. See src/lib/seoCategoryGrowth.ts (AG's engine). */
+    const meta = getProjectSeoMeta({
+      name: live.name,
+      developer: live.developer,
+      truthScore: live.truthScore,
+      minPriceCr: live.minPriceCr,
+      seoSlug: live.seoSlug,
+    });
     return {
-      /* No " | Truth Estate" here — the layout's title template already
-         appends it, and having both produced "… | Truth Estate | Truth
-         Estate" on all 97 reports. */
-      title: `${live.name} — Project Intelligence`,
-      description: desc,
+      /* Absolute so the layout's "… | Truth Estate" template can't double up —
+         meta.title already reads as a finished headline. */
+      title: { absolute: meta.title },
+      description: meta.description,
       alternates: { canonical: `/projects/${slug}` },
-      /* Without this every report inherited the site-wide OG title, so all
-         97 shared one card: "Truth Estate — Independent Real Estate
-         Advisory for NRI Investors". A shared social title is also a
-         weaker signal to the engines that read them. */
+      /* Per-report OG/Twitter so each of the 97 cards is distinct. Kept from
+         before — AG's branch dropped the article type and the twitter card;
+         a distinct social card is worth keeping alongside the new copy. */
       openGraph: {
         type: "article",
-        title: `${live.name} — Project Intelligence`,
-        description: desc,
+        title: meta.title,
+        description: meta.description,
         url: `/projects/${slug}`,
       },
-      twitter: { card: "summary_large_image", title: `${live.name} — Project Intelligence`, description: desc },
+      twitter: { card: "summary_large_image", title: meta.title, description: meta.description },
     };
   }
   const target = await legacyTarget(slug);
