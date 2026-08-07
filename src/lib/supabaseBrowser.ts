@@ -17,7 +17,7 @@
    ════════════════════════════════════════════════════════════════ */
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabasePublic";
-import type { LiveConfiguration, LiveExtendedDetails } from "./supabase";
+import type { LiveBacklogFull, LiveConfiguration, LiveExtendedDetails } from "./supabase";
 
 type Row = Record<string, unknown>;
 
@@ -90,6 +90,44 @@ export async function fetchExtendedLive(ids: string[]): Promise<Record<string, L
       siteMap3dHtml: s(r.site_map_3d_html),
     };
   }
+  return Object.keys(out).length ? out : null;
+}
+
+/* developer_health.financial_health — the developer's audited financial ratios,
+   the SAME table the developer dossier reads. The project report's Developer-DNA
+   financial audit rides on the project row's fin* fields (net_debt_to_equity …),
+   which are these ratios carried onto the row at build; re-read them live so a
+   financials edit in developer_health shows on the next page view — no deploy —
+   the same instant contract the assets already have.
+
+   Lean JSONB sub-select (computed_metrics only) keeps this to ~150 bytes: the
+   large analyst `notes` blob is never pulled. Only the five ratios that drive the
+   report's visible financial meters are read — the overall score isn't shown on
+   the report and is computed differently there, so it is deliberately left baked.
+   Keyed by the exact developer_name (every live-set developer matches it exactly).
+   Fails soft → the caller keeps the baked financials. */
+type LiveFinancials = Partial<
+  Pick<LiveBacklogFull, "finLeverage" | "finCoverage" | "finCash" | "finMargin" | "finInventory">
+>;
+export async function fetchDeveloperFinancialsLive(developerName: string): Promise<LiveFinancials | null> {
+  const name = developerName?.trim();
+  if (!name) return null;
+  const rs = await rows(
+    `developer_health?developer_name=eq.${encodeURIComponent(name)}&select=cm:financial_health->computed_metrics&limit=1`,
+  );
+  const cm = rs?.[0]?.cm;
+  if (!cm || typeof cm !== "object") return null;
+  const m = cm as Record<string, unknown>;
+  const out: LiveFinancials = {};
+  const put = (k: keyof LiveFinancials, v: unknown) => {
+    const x = n(v);
+    if (x != null) out[k] = x;
+  };
+  put("finLeverage", m.net_debt_to_equity);
+  put("finCoverage", m.interest_coverage_ratio);
+  put("finCash", m.ocf_to_ebitda);
+  put("finMargin", m.ebitda_margin);
+  put("finInventory", m.inventory_to_sales_years);
   return Object.keys(out).length ? out : null;
 }
 
