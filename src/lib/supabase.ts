@@ -1140,3 +1140,46 @@ export async function fetchDeveloperLedger(): Promise<Record<string, DevLedgerIt
   console.log(`[supabase] developer ledger → ${Object.keys(out).length} developers, ${rows.length} projects`);
   return out;
 }
+
+/* ── developer_health — the per-developer forensic financial read, keyed by
+   developer_name. financial_health carries the analyst's per-metric 0–100
+   scores (metric_scores) and the computed ratios (computed_metrics) behind the
+   Financial-health meters. developers_overview.financial_band is a single
+   rollup; THIS is the breakdown, so each meter reads its own real signal
+   instead of one flat band applied to all five. */
+export type DeveloperHealth = {
+  name: string;
+  financialScores: Record<string, number>; // metric_scores (0–100)
+  financialValues: Record<string, number>; // computed_metrics (ratios)
+  financialOverall: number | null;         // overall_score
+};
+
+export async function fetchDeveloperHealth(): Promise<Record<string, DeveloperHealth> | null> {
+  const rows = await sbRows("developer_health", "select=developer_name,financial_health&limit=200");
+  if (!rows) return null;
+  const numRec = (v: unknown): Record<string, number> => {
+    const rec: Record<string, number> = {};
+    const o = j(v);
+    if (o && typeof o === "object" && !Array.isArray(o))
+      for (const [k, val] of Object.entries(o as Record<string, unknown>)) {
+        const num = typeof val === "number" ? val : typeof val === "string" ? parseFloat(val) : NaN;
+        if (Number.isFinite(num)) rec[k] = num;
+      }
+    return rec;
+  };
+  const out: Record<string, DeveloperHealth> = {};
+  for (const r of rows) {
+    const name = s(r.developer_name);
+    if (!name) continue;
+    const fh = j(r.financial_health);
+    const o = fh && typeof fh === "object" && !Array.isArray(fh) ? (fh as Record<string, unknown>) : {};
+    out[devKey(name)] = {
+      name,
+      financialScores: numRec(o.metric_scores),
+      financialValues: numRec(o.computed_metrics),
+      financialOverall: n(o.overall_score),
+    };
+  }
+  console.log(`[supabase] developer health → ${Object.keys(out).length} developer(s)`);
+  return Object.keys(out).length ? out : null;
+}

@@ -1,37 +1,37 @@
 /* ════════════════════════════════════════════════════════════════
-   DEVELOPER DOSSIERS — curated prose, filed ledger, ALL of them.
+   DEVELOPER DOSSIERS — curated prose, filed ledger, real financials.
 
    What a builder is known for is editorial. How many buildings it has
-   actually handed over is not, and the hand-written numbers had drifted
-   from the pipeline that scores every project on this site:
+   handed over, and how healthy its balance sheet is, are not — and the
+   hand-written numbers had drifted from the pipeline that scores every
+   project on this site. So the numbers come from the filings:
 
-     developer   dossier said        developers_overview says
-     DLF         92% on-time / 38    84% / 31
-     Godrej      90% / 22            37% / 1
-     M3M         74% / 18            55% / 15
-     Birla       85% / 4             22% / 2
-     Smartworld  80% / 1             60% / 3
-     Emaar       —                   68% / 13
+     · performance  ← developers_overview (delivery, delays)
+     · financials   ← developer_health.financial_health (per-metric 0–100
+                       scores behind the five meters — NOT the single
+                       financial_band, which flattened all five to one band)
+     · projects      ← the live catalogue, linked to each report
 
-   Every error flattered the builder, and the project reports — which
-   read the same filings — contradicted the dossiers on the same site.
-
-   SEVENTEEN, not six. Six carry hand-written dossiers; the rest are
-   filed in developers_overview with a computed track record but no desk
-   prose yet. Both render through the SAME DeveloperIntel / DeveloperProfile
-   — the computed ones simply leave the editorial fields empty (est,
-   tagline, about, brand value), which the UI hides, and fill the factual
-   ones from the filings + the RERA ledger. So the index lists all 17 and
-   every card has a real page behind it.
+   SEVENTEEN of them (developers filed with ZERO projects are hidden). Six
+   carry hand-written dossiers; the rest render the same DeveloperProfile
+   from the filings, leaving the editorial fields empty (the UI hides them).
 
    One resolver, three consumers: the developers index, each dossier, and
-   every developer-vs-developer comparison. Same shape out; backend
-   unreachable → the curated six stand and the computed rest drop.
+   every developer-vs-developer comparison. Backend unreachable → the
+   curated six stand on their hand-set values and the computed rest drop.
    ════════════════════════════════════════════════════════════════ */
 
 import { DEVELOPERS, type DeveloperIntel, type DevLedgerItem, type FinKey, type FinRating } from "./developers";
 import { developerSlugOf } from "./projects";
-import { devKey, fetchDeveloperLedger, fetchDevelopersOverview, type LiveDeveloper } from "./supabase";
+import {
+  devKey,
+  fetchBacklogFull,
+  fetchDeveloperHealth,
+  fetchDeveloperLedger,
+  fetchDevelopersOverview,
+  type DeveloperHealth,
+  type LiveDeveloper,
+} from "./supabase";
 
 export function overlayDeveloper(curated: DeveloperIntel, live: LiveDeveloper[] | null | undefined): DeveloperIntel {
   const l = (live ?? []).find(
@@ -54,18 +54,43 @@ export function overlayDeveloper(curated: DeveloperIntel, live: LiveDeveloper[] 
   };
 }
 
-/* the pipeline's band words → the three-level rating the audit meters read */
 const FIN_KEYS: FinKey[] = ["leverage", "coverage", "cash", "margin", "inventory"];
+
+/* the pipeline's band words → the three-level rating (fallback only, when
+   developer_health has no per-metric score for a developer) */
 function bandRating(b: string | null): FinRating {
   if (b && /strong|exceptional|excellent|good|high/i.test(b)) return "strong";
   if (b && /weak|watch|poor|low|strained/i.test(b)) return "weak";
   return "moderate";
 }
 
+/* the five audit meters ← developer_health.financial_health.metric_scores keys */
+const HEALTH_KEY: Record<FinKey, string> = {
+  leverage: "net_debt_to_equity",
+  coverage: "interest_coverage_ratio",
+  cash: "ocf_to_ebitda",
+  margin: "ebitda_margin",
+  inventory: "inventory_to_sales_years",
+};
+const ratingFromScore = (sc: number | undefined): FinRating | null =>
+  sc == null ? null : sc >= 70 ? "strong" : sc >= 45 ? "moderate" : "weak";
+
+/* per-metric ratings from the analyst's 0–100 scores — the real breakdown the
+   meters should read, instead of one flat band applied to all five. */
+function financialsFromHealth(h: DeveloperHealth | undefined): Partial<Record<FinKey, FinRating>> {
+  const out: Partial<Record<FinKey, FinRating>> = {};
+  if (!h) return out;
+  for (const k of FIN_KEYS) {
+    const r = ratingFromScore(h.financialScores[HEALTH_KEY[k]]);
+    if (r) out[k] = r;
+  }
+  return out;
+}
+
 /* The public URL for a developer. The pipeline's developer_slug is the
-   canonical key (it is what backlog rows reference); fall back to the curated
-   registry, then to a slugified name — the same value the index card and the
-   detail route must both produce so a card never links to a 404. */
+   canonical key; fall back to the curated registry, then a slugified name —
+   the same value the index card and the detail route must both produce so a
+   card never links to a 404. */
 export function liveDeveloperSlug(l: LiveDeveloper): string {
   return (
     (l.slug && l.slug.trim()) ||
@@ -74,19 +99,25 @@ export function liveDeveloperSlug(l: LiveDeveloper): string {
   );
 }
 
-/* A developer filed in developers_overview but not yet given a desk dossier.
+/* A developer filed in developers_overview but not given a desk dossier.
    Editorial fields stay empty (the UI hides them); the factual ones come from
-   the filings and the RERA ledger. `computed: true` tells the UI this is a
-   filings-only profile (so it hides the Listed/Private badge it cannot know). */
-function liveOnlyDeveloper(l: LiveDeveloper, ledger: Record<string, DevLedgerItem[]> | null): DeveloperIntel {
+   the filings, its financials from developer_health, and its projects from the
+   catalogue. `computed: true` tells the UI this is a filings-only profile. */
+function liveOnlyDeveloper(
+  l: LiveDeveloper,
+  ledger: Record<string, DevLedgerItem[]> | null,
+  health: Record<string, DeveloperHealth> | null,
+): DeveloperIntel {
   const led = ledger?.[devKey(l.name)] ?? [];
   const delivered = led.filter((p) => p.ocDate || /deliver|complete|ready|occupanc/i.test(p.status ?? ""));
   const ongoing = led.filter((p) => /ongoing|under|progress|launch|new/i.test(p.status ?? "") && !p.ocDate);
   const names = (xs: DevLedgerItem[]) => [...new Set(xs.map((p) => p.name).filter(Boolean))].slice(0, 6);
 
-  const onTimePct = l.delayedPct != null ? Math.round(100 - l.delayedPct) : 0;
   const rating = bandRating(l.financialBand);
-  const financials = Object.fromEntries(FIN_KEYS.map((k) => [k, rating])) as Record<FinKey, FinRating>;
+  const financials = {
+    ...(Object.fromEntries(FIN_KEYS.map((k) => [k, rating])) as Record<FinKey, FinRating>),
+    ...financialsFromHealth(health?.[devKey(l.name)]),
+  };
 
   const verdict =
     l.total != null
@@ -114,7 +145,7 @@ function liveOnlyDeveloper(l: LiveDeveloper, ledger: Record<string, DevLedgerIte
       launched: l.total ?? 0,
       delivered: l.delivered ?? 0,
       ongoing: l.ongoing ?? Math.max(0, (l.total ?? 0) - (l.delivered ?? 0)),
-      onTimePct,
+      onTimePct: l.delayedPct != null ? Math.round(100 - l.delayedPct) : 0,
       avgDelayMonths: l.avgDelayMonths != null ? Math.round(l.avgDelayMonths * 10) / 10 : 0,
     },
     financials,
@@ -132,22 +163,61 @@ let cache: DeveloperIntel[] | undefined;
 
 export async function resolveDevelopers(): Promise<DeveloperIntel[]> {
   if (cache !== undefined) return cache;
-  const [live, ledger] = await Promise.all([fetchDevelopersOverview(), fetchDeveloperLedger()]);
-  const curated = DEVELOPERS.map((d) => overlayDeveloper(d, live));
-  // every filed developer that has no curated dossier → a computed profile
+  const [live, ledger, health, catalog] = await Promise.all([
+    fetchDevelopersOverview(),
+    fetchDeveloperLedger(),
+    fetchDeveloperHealth(),
+    fetchBacklogFull(),
+  ]);
+
+  /* the developer's projects we carry a live report for — keyed both by the
+     pipeline's developer_slug and by a normalised name, so a slug OR a name
+     match links the report. Deduped by href per developer. */
+  const bySlug = new Map<string, { name: string; href: string }[]>();
+  const byNameKey = new Map<string, { name: string; href: string }[]>();
+  for (const r of catalog ?? []) {
+    if (!r.seoSlug || !r.developer) continue;
+    const item = { name: r.name, href: `/projects/${r.seoSlug}` };
+    if (r.devSlug) (bySlug.get(r.devSlug) ?? bySlug.set(r.devSlug, []).get(r.devSlug)!).push(item);
+    const nk = devKey(r.developer);
+    (byNameKey.get(nk) ?? byNameKey.set(nk, []).get(nk)!).push(item);
+  }
+  const trackedFor = (slug: string, name: string): { name: string; href: string }[] => {
+    const seen = new Set<string>();
+    const out: { name: string; href: string }[] = [];
+    for (const it of [...(bySlug.get(slug) ?? []), ...(byNameKey.get(devKey(name)) ?? [])]) {
+      if (seen.has(it.href)) continue;
+      seen.add(it.href);
+      out.push(it);
+    }
+    return out;
+  };
+
+  const curated = DEVELOPERS.map((d) => {
+    const o = overlayDeveloper(d, live);
+    const hf = financialsFromHealth(health?.[devKey(d.name)]);
+    return {
+      ...o,
+      financials: { ...o.financials, ...hf }, // real per-metric scores win over hand-set
+      trackedProjects: trackedFor(d.slug, d.name),
+    };
+  });
+
   const curatedNames = new Set(DEVELOPERS.map((d) => d.name.toLowerCase()));
   const curatedSlugs = new Set(DEVELOPERS.map((d) => d.slug.toLowerCase()));
   const seen = new Set<string>();
   const computed: DeveloperIntel[] = [];
   for (const l of live ?? []) {
     if (curatedNames.has(l.name.toLowerCase()) || curatedSlugs.has((l.slug ?? "").toLowerCase())) continue;
+    if ((l.total ?? 0) < 1) continue; // hide developers filed with zero projects
     const slug = liveDeveloperSlug(l);
     if (!slug || seen.has(slug) || curatedSlugs.has(slug.toLowerCase())) continue;
     seen.add(slug);
-    computed.push(liveOnlyDeveloper(l, ledger));
+    const d = liveOnlyDeveloper(l, ledger, health);
+    computed.push({ ...d, trackedProjects: trackedFor(slug, l.name) });
   }
-  // curated dossiers first (hand-reviewed), then the computed rest by delivery
   computed.sort((a, b) => b.performance.delivered - a.performance.delivered);
+
   cache = [...curated, ...computed];
   console.log(`[developers] resolved ${cache.length} (${curated.length} curated + ${computed.length} computed from filings)`);
   return cache;

@@ -63,6 +63,13 @@ const OTHERS = [
      something different about the same developers. A fixture set that
      omits a view the build reads is a fixture set that hides bugs. */
   ["developers_overview", "select=*&limit=100"],
+  /* Per-developer forensic financials — financial_health carries the analyst's
+     per-metric 0–100 scores (metric_scores) behind the five Financial-health
+     meters. Snapshotted so the meters read the real per-metric signal instead
+     of the single financial_band flattened onto all five. (Same lesson as
+     developers_overview above: a fixture set that omits a view the build reads
+     is a fixture set that hides bugs.) */
+  ["developer_health", "select=developer_name,financial_health&limit=200"],
 ];
 
 const fixtures = process.env.SUPABASE_FIXTURES;

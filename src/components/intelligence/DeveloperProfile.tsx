@@ -88,9 +88,27 @@ export default function DeveloperProfile({ dev }: { dev: DeveloperIntel }) {
         <Section n="02" title="Track record">
           <div className="grid gap-10 md:grid-cols-2">
             <div>
+              {(dev.trackedProjects?.length ?? 0) > 0 && (
+                <>
+                  <SubLabel>Projects we track</SubLabel>
+                  <ul className="mt-3 space-y-2">
+                    {dev.trackedProjects!.map((pr) => (
+                      <li key={pr.href} className="flex gap-3 text-[0.95rem] font-light text-[#1a1a1a]/70">
+                        <span className="mt-[0.6em] h-1 w-1 shrink-0 rounded-full bg-[#c9a96e]" />
+                        <a
+                          href={`${basePath}${pr.href}`}
+                          className="underline decoration-[#c9a96e]/40 underline-offset-2 transition-colors hover:text-[#1a1a1a] hover:decoration-[#c9a96e]"
+                        >
+                          {pr.name}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
               {dev.signature.length > 0 && (
                 <>
-                  <SubLabel>Signature projects</SubLabel>
+                  <SubLabel className="mt-8">Signature projects</SubLabel>
                   <ul className="mt-3 space-y-2">
                     {dev.signature.map((s) => <Bullet key={s}>{s}</Bullet>)}
                   </ul>

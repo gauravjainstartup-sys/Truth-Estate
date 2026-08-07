@@ -70,6 +70,10 @@ export type DeveloperIntel = {
   /* The developer's full RERA project ledger (from the `projects` table,
      grouped by developer). Optional — attached only on live report pages. */
   ledger?: DevLedgerItem[];
+  /* The developer's projects we carry a live report for — name + report href
+     (from the catalogue). Rendered as links on the dossier so a reader can jump
+     straight to the report. Optional; empty when we track none of theirs yet. */
+  trackedProjects?: { name: string; href: string }[];
 };
 
 /* One row of the developer's project ledger — a RERA-registered project with
