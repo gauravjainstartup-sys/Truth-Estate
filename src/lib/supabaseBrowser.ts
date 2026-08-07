@@ -17,7 +17,8 @@
    ════════════════════════════════════════════════════════════════ */
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabasePublic";
-import type { LiveBacklogFull, LiveConfiguration, LiveExtendedDetails } from "./supabase";
+import { computePillarSet, mapBacklogRowFields, ocFromOverrides, type BacklogRowFields } from "./backlogRow";
+import type { LiveBacklogFull, LiveConfiguration, LiveExtendedDetails, LivePillarSet } from "./supabase";
 
 type Row = Record<string, unknown>;
 
@@ -91,6 +92,35 @@ export async function fetchExtendedLive(ids: string[]): Promise<Record<string, L
     };
   }
   return Object.keys(out).length ? out : null;
+}
+
+/* The WHOLE report row, live. Re-reads the project's backlog_listing_public_v3
+   row (Truth Score, developer track record, legal flags, ROI, location, USPs,
+   financials) AND its backlog_project_data join (construction/sales pace, the
+   forensic legal_health, the OC overrides, and the Truth-Score pillar
+   breakdown) — the same two sources the build reads — mapped through the SAME
+   mapper (backlogRow.ts). So a pipeline rerun or a backoffice edit to any of
+   these shows on the next page view, no deploy.
+
+   Keyed by the project id (the listing view id === backlog_project_data.id ===
+   the baked row.id — the same join the build makes). select=* on v3 so no field
+   the report reads is ever missed. Fails soft → the caller keeps the baked row. */
+export async function fetchBacklogRowLive(
+  id: string,
+): Promise<{ fields: BacklogRowFields; pillars: LivePillarSet | null } | null> {
+  if (!id) return null;
+  const [v3rows, bpdRows] = await Promise.all([
+    rows(`backlog_listing_public_v3?id=eq.${encodeURIComponent(id)}&select=*&limit=1`),
+    rows(
+      `backlog_project_data?id=eq.${encodeURIComponent(id)}` +
+        `&select=id,construction_pace,sales_velocity,legal_health,overrides,expected_roi&limit=1`,
+    ),
+  ]);
+  const r = v3rows?.[0];
+  if (!r) return null;
+  const bpd = bpdRows?.[0] ?? null;
+  const oc = bpd ? ocFromOverrides(bpd.overrides) : null;
+  return { fields: mapBacklogRowFields(r, bpd, oc), pillars: bpd ? computePillarSet(bpd.expected_roi) : null };
 }
 
 /* developer_health.financial_health — the developer's audited financial ratios,
