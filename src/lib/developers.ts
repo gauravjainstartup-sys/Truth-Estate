@@ -35,6 +35,11 @@ export type FinKey = (typeof FIN_METRICS)[number]["key"];
 export type DeveloperIntel = {
   slug: string;
   name: string;
+  /* true = a filings-only profile (developers_overview, no desk dossier yet):
+     the editorial fields (est/tagline/about/brandValue) are empty and the UI
+     hides them, and the Listed/Private badge is suppressed because it isn't
+     known. Absent/false = a hand-reviewed curated dossier. */
+  computed?: boolean;
   est: string;
   listed: boolean;
   listedNote: string;

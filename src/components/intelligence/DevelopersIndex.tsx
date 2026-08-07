@@ -2,7 +2,7 @@
 
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
-import { DEVELOPERS } from "@/lib/developers";
+import type { DeveloperIntel } from "@/lib/developers";
 import type { LiveDeveloper } from "@/lib/supabase";
 import { basePath, homeHref } from "@/lib/site";
 
@@ -14,27 +14,20 @@ const bandTone = (b: string | null) =>
       ? "border-[#9a4130]/30 bg-[#9a4130]/[0.07] text-[#9a4130]"
       : "border-[#9a7a2e]/35 bg-[#9a7a2e]/[0.08] text-[#8a6a1e]";
 
-export default function DevelopersIndex({ live }: { live?: LiveDeveloper[] | null }) {
+/* `developers` is the resolved universe (developersLive.resolveDevelopers): the
+   hand-reviewed dossiers first, then every other filed developer as a computed
+   profile. Numbers are the pipeline's — the same the filings and the reports
+   read — so a card never disagrees with the page behind it. A computed card
+   hides the editorial bits it has no dossier for (tagline, established, the
+   Listed/Private badge) and stands on its track record. */
+export default function DevelopersIndex({
+  developers,
+  live,
+}: {
+  developers: DeveloperIntel[];
+  live?: LiveDeveloper[] | null;
+}) {
   const { open } = useJourney();
-
-  /* THE SAME PAGE WAS PUBLISHING TWO ANSWERS.
-     The dossier cards carried hand-written performance — DLF 92% on-time
-     and 38 delivered, Godrej 90% and 22 — while the table beneath them
-     printed the pipeline's: DLF 84% and 31, Godrej 37% and ONE. Both
-     were on screen at once, about the same developers, and the project
-     reports elsewhere on the site agree with the table, not the cards.
-     The filings win; the cards are editorial about a builder, not a
-     second opinion on its record. */
-  const byName = new Map((live ?? []).map((d) => [d.name.toLowerCase(), d]));
-  const bySlug = new Map((live ?? []).map((d) => [(d.slug ?? "").toLowerCase(), d]));
-  const record = (name: string, slug: string) => {
-    const l = byName.get(name.toLowerCase()) ?? bySlug.get(slug.toLowerCase());
-    if (!l) return null;
-    return {
-      onTimePct: l.delayedPct != null ? Math.round(100 - l.delayedPct) : null,
-      delivered: l.delivered ?? null,
-    };
-  };
 
   return (
     <div className="min-h-svh bg-[#F5F0E8] text-[#1a1a1a]">
@@ -58,38 +51,34 @@ export default function DevelopersIndex({ live }: { live?: LiveDeveloper[] | nul
         </p>
 
         <div className="mt-12 grid gap-5 sm:grid-cols-2">
-          {DEVELOPERS.map((d) => (
+          {developers.map((d) => (
             <a
               key={d.slug}
               href={`${basePath}/intelligence/developers/${d.slug}`}
-              className="group rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-7 transition-all duration-300 hover:border-[#c9a96e]/40 hover:bg-white/80"
+              className="group flex flex-col rounded-2xl border border-[#1a1a1a]/8 bg-white/60 p-7 transition-all duration-300 hover:border-[#c9a96e]/40 hover:bg-white/80"
             >
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between gap-3">
                 <h2 className="font-serif text-[1.7rem] font-medium text-[#1a1a1a]">{d.name}</h2>
-                <span className={`mt-1 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.6rem] font-medium uppercase tracking-[0.1em] ${d.listed ? "border-[#1e6b45]/30 text-[#1e6b45]" : "border-[#1a1a1a]/15 text-[#1a1a1a]/40"}`}>
-                  <span className={`h-1 w-1 rounded-full ${d.listed ? "bg-[#1e6b45]" : "bg-[#1a1a1a]/30"}`} />
-                  {d.listed ? "Listed" : "Private"}
-                </span>
+                {!d.computed && (
+                  <span className={`mt-1 inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.6rem] font-medium uppercase tracking-[0.1em] ${d.listed ? "border-[#1e6b45]/30 text-[#1e6b45]" : "border-[#1a1a1a]/15 text-[#1a1a1a]/40"}`}>
+                    <span className={`h-1 w-1 rounded-full ${d.listed ? "bg-[#1e6b45]" : "bg-[#1a1a1a]/30"}`} />
+                    {d.listed ? "Listed" : "Private"}
+                  </span>
+                )}
               </div>
-              <p className="mt-2 text-[0.78rem] font-light text-[#1a1a1a]/40">Established {d.est}</p>
-              <p className="mt-4 font-serif text-[1.02rem] font-light italic leading-[1.5] text-[#1a1a1a]/60">{d.tagline}</p>
-              {(() => {
-                const r = record(d.name, d.slug);
-                const onTime = r?.onTimePct ?? d.performance.onTimePct;
-                const delivered = r?.delivered ?? d.performance.delivered;
-                return (
-                  <div className="mt-6 flex items-center gap-6 border-t border-[#1a1a1a]/8 pt-5">
-                    <span className="font-mono text-[0.8rem] text-[#1a1a1a]/55">{onTime}% <span className="text-[0.62rem] uppercase tracking-[0.08em] text-[#1a1a1a]/35">on-time</span></span>
-                    <span className="font-mono text-[0.8rem] text-[#1a1a1a]/55">{delivered} <span className="text-[0.62rem] uppercase tracking-[0.08em] text-[#1a1a1a]/35">delivered</span></span>
-                    <span className="ml-auto text-[0.8rem] text-[#c9a96e] transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
-                  </div>
-                );
-              })()}
+              {d.est && <p className="mt-2 text-[0.78rem] font-light text-[#1a1a1a]/40">Established {d.est}</p>}
+              {d.tagline && <p className="mt-4 font-serif text-[1.02rem] font-light italic leading-[1.5] text-[#1a1a1a]/60">{d.tagline}</p>}
+              <div className="mt-6 flex items-center gap-6 border-t border-[#1a1a1a]/8 pt-5">
+                <span className="font-mono text-[0.8rem] text-[#1a1a1a]/55">{d.performance.onTimePct}% <span className="text-[0.62rem] uppercase tracking-[0.08em] text-[#1a1a1a]/35">on-time</span></span>
+                <span className="font-mono text-[0.8rem] text-[#1a1a1a]/55">{d.performance.delivered} <span className="text-[0.62rem] uppercase tracking-[0.08em] text-[#1a1a1a]/35">delivered</span></span>
+                <span className="ml-auto text-[0.8rem] text-[#c9a96e] transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
+              </div>
             </a>
           ))}
         </div>
 
-        {/* ── Track records, computed — live from the filings pipeline ── */}
+        {/* ── Track records, computed — the same universe, with the delay and
+            band detail the cards don't carry ── */}
         {live && live.length > 0 && (
           <div className="mt-16">
             <div className="flex items-center gap-3">

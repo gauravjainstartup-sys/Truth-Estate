@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import DevelopersIndex from "@/components/intelligence/DevelopersIndex";
 import { fetchDevelopersOverview } from "@/lib/supabase";
+import { resolveDevelopers } from "@/lib/developersLive";
 
 export const metadata: Metadata = {
   /* Without this the route inherits metadataBase and Next emits the bare
@@ -15,6 +16,8 @@ export const metadata: Metadata = {
 /* Live filings data is pulled at build time; unreachable backend
    simply hides the computed-track-records section. */
 export default async function Page() {
-  const live = await fetchDevelopersOverview();
-  return <DevelopersIndex live={live} />;
+  /* resolveDevelopers = all 17 (curated dossiers + computed-from-filings);
+     `live` still feeds the detailed track-record table below the cards. */
+  const [developers, live] = await Promise.all([resolveDevelopers(), fetchDevelopersOverview()]);
+  return <DevelopersIndex developers={developers} live={live} />;
 }

@@ -56,15 +56,21 @@ export default function DeveloperProfile({ dev }: { dev: DeveloperIntel }) {
         <div className="mt-9 max-w-2xl">
           <Eyebrow>Developer Profile</Eyebrow>
           <h1 className="mt-5 font-serif text-[3rem] font-medium leading-[1.02] tracking-[-0.02em] md:text-[4.2rem]">{dev.name}</h1>
-          <p className="mt-5 max-w-lg font-serif text-[1.15rem] font-light italic leading-[1.5] text-[#1a1a1a]/55 md:text-[1.3rem]">{dev.tagline}</p>
-          <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-[0.78rem] font-light text-[#1a1a1a]/45">
-            <span>Established {dev.est}</span>
-            <span className="h-3 w-px bg-[#1a1a1a]/15" />
-            <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[0.68rem] font-medium uppercase tracking-[0.1em] ${dev.listed ? "border-[#1e6b45]/30 text-[#1e6b45]" : "border-[#1a1a1a]/15 text-[#1a1a1a]/45"}`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${dev.listed ? "bg-[#1e6b45]" : "bg-[#1a1a1a]/30"}`} />
-              {dev.listed ? "Listed" : "Private"}
-            </span>
-          </div>
+          {dev.tagline && (
+            <p className="mt-5 max-w-lg font-serif text-[1.15rem] font-light italic leading-[1.5] text-[#1a1a1a]/55 md:text-[1.3rem]">{dev.tagline}</p>
+          )}
+          {(dev.est || !dev.computed) && (
+            <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-[0.78rem] font-light text-[#1a1a1a]/45">
+              {dev.est && <span>Established {dev.est}</span>}
+              {dev.est && !dev.computed && <span className="h-3 w-px bg-[#1a1a1a]/15" />}
+              {!dev.computed && (
+                <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[0.68rem] font-medium uppercase tracking-[0.1em] ${dev.listed ? "border-[#1e6b45]/30 text-[#1e6b45]" : "border-[#1a1a1a]/15 text-[#1a1a1a]/45"}`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${dev.listed ? "bg-[#1e6b45]" : "bg-[#1a1a1a]/30"}`} />
+                  {dev.listed ? "Listed" : "Private"}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Truth Verdict */}
@@ -82,23 +88,37 @@ export default function DeveloperProfile({ dev }: { dev: DeveloperIntel }) {
         <Section n="02" title="Track record">
           <div className="grid gap-10 md:grid-cols-2">
             <div>
-              <SubLabel>Signature projects</SubLabel>
-              <ul className="mt-3 space-y-2">
-                {dev.signature.map((s) => <Bullet key={s}>{s}</Bullet>)}
-              </ul>
-              <SubLabel className="mt-8">Recently launched</SubLabel>
-              <ul className="mt-3 space-y-2">
-                {dev.recent.map((s) => <Bullet key={s}>{s}</Bullet>)}
-              </ul>
-              <SubLabel className="mt-8">In the pipeline</SubLabel>
-              <ul className="mt-3 space-y-2">
-                {dev.pipeline.map((s) => <Bullet key={s}>{s}</Bullet>)}
-              </ul>
+              {dev.signature.length > 0 && (
+                <>
+                  <SubLabel>Signature projects</SubLabel>
+                  <ul className="mt-3 space-y-2">
+                    {dev.signature.map((s) => <Bullet key={s}>{s}</Bullet>)}
+                  </ul>
+                </>
+              )}
+              {dev.recent.length > 0 && (
+                <>
+                  <SubLabel className="mt-8">Recently launched</SubLabel>
+                  <ul className="mt-3 space-y-2">
+                    {dev.recent.map((s) => <Bullet key={s}>{s}</Bullet>)}
+                  </ul>
+                </>
+              )}
+              {dev.pipeline.length > 0 && (
+                <>
+                  <SubLabel className="mt-8">In the pipeline</SubLabel>
+                  <ul className="mt-3 space-y-2">
+                    {dev.pipeline.map((s) => <Bullet key={s}>{s}</Bullet>)}
+                  </ul>
+                </>
+              )}
             </div>
-            <div className="border-l border-[#1a1a1a]/8 pl-8">
-              <SubLabel>Brand value</SubLabel>
-              <p className="mt-4 font-serif text-[1.3rem] font-light italic leading-[1.5] text-[#1a1a1a]/70 md:text-[1.5rem]">&ldquo;{dev.brandValue}&rdquo;</p>
-            </div>
+            {dev.brandValue && (
+              <div className="border-l border-[#1a1a1a]/8 pl-8">
+                <SubLabel>Brand value</SubLabel>
+                <p className="mt-4 font-serif text-[1.3rem] font-light italic leading-[1.5] text-[#1a1a1a]/70 md:text-[1.5rem]">&ldquo;{dev.brandValue}&rdquo;</p>
+              </div>
+            )}
           </div>
         </Section>
 
@@ -116,10 +136,12 @@ export default function DeveloperProfile({ dev }: { dev: DeveloperIntel }) {
         {/* 4 · Financials */}
         <Section n="04" title="Financial health">
           <div className="mb-7 flex flex-wrap items-center gap-x-4 gap-y-2">
-            <span className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-[0.7rem] font-medium uppercase tracking-[0.1em] ${dev.listed ? "border-[#1e6b45]/30 text-[#1e6b45]" : "border-[#1a1a1a]/15 text-[#1a1a1a]/50"}`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${dev.listed ? "bg-[#1e6b45]" : "bg-[#1a1a1a]/30"}`} />
-              {dev.listedNote}
-            </span>
+            {dev.listedNote && (
+              <span className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-[0.7rem] font-medium uppercase tracking-[0.1em] ${dev.listed ? "border-[#1e6b45]/30 text-[#1e6b45]" : "border-[#1a1a1a]/15 text-[#1a1a1a]/50"}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${dev.listed ? "bg-[#1e6b45]" : "bg-[#1a1a1a]/30"}`} />
+                {dev.listedNote}
+              </span>
+            )}
             <span className="text-[0.74rem] font-light text-[#1a1a1a]/40">Signals, not figures — directional health on each measure.</span>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

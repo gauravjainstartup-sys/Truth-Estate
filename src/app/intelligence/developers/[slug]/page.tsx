@@ -1,24 +1,24 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { DEVELOPERS, developerBySlug } from "@/lib/developers";
-import { resolveDeveloperBySlug } from "@/lib/developersLive";
+import { resolveDeveloperBySlug, resolveDevelopers } from "@/lib/developersLive";
 import DeveloperProfile from "@/components/intelligence/DeveloperProfile";
 import { breadcrumbLd, ldJson } from "@/lib/seo";
 
-export function generateStaticParams() {
-  return DEVELOPERS.map((d) => ({ slug: d.slug }));
+export async function generateStaticParams() {
+  // all 17 — curated dossiers + every developer computed from the filings
+  return (await resolveDevelopers()).map((d) => ({ slug: d.slug }));
 }
 
 export const dynamicParams = false;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const dev = developerBySlug(slug);
+  const dev = await resolveDeveloperBySlug(slug);
   if (!dev) return { title: "Developer Intelligence" };
   return {
     alternates: { canonical: `/intelligence/developers/${dev.slug}` },
     title: `${dev.name} — Developer Intelligence`,
-    description: `Independent developer intelligence on ${dev.name}: track record, delivery performance and financial health. ${dev.tagline}`,
+    description: `Independent developer intelligence on ${dev.name}: track record, delivery performance and financial health.${dev.tagline ? ` ${dev.tagline}` : ""}`,
   };
 }
 
