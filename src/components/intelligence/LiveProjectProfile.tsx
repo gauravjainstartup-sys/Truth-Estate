@@ -20,9 +20,9 @@
 
    FAIL-SAFE: if a fetch returns nothing, resolves to no project, or throws,
    `p` stays the baked value and the page is exactly what the build shipped.
-   The live layer can only ADD freshness, never break a page. Cross-project
-   aggregates the adapter can't produce alone (trackedRank; the developer's
-   grafted ledger) are carried over from the baked value.
+   The live layer can only ADD freshness, never break a page. The rank ("N of
+   M") recomputes from the live score against the baked comparison set; the
+   developer's grafted ledger is carried over from the baked value.
 
    No UI component is touched — this wraps ProjectProfile and changes only
    its data prop (founder working agreement).
@@ -32,7 +32,7 @@ import { useEffect, useState } from "react";
 import ProjectProfile from "./ProjectProfile";
 import { liveProjectIntel, matchKey } from "@/lib/reportAdapter";
 import { fetchBacklogRowLive, fetchConfigsLive, fetchDeveloperFinancialsLive, fetchExtendedLive, resolveBacklogId } from "@/lib/supabaseBrowser";
-import type { ProjectIntel } from "@/lib/projects";
+import { trackedRankOf, type ProjectIntel } from "@/lib/projects";
 import type { CorridorPsf, LiveBacklogFull } from "@/lib/supabase";
 import type { RelatedGroups } from "@/lib/relatedProjects";
 
@@ -42,12 +42,19 @@ export default function LiveProjectProfile({
   corridorPsf,
   related,
   alternatives,
+  liveScores,
 }: {
   baked: ProjectIntel;
   row: LiveBacklogFull;
   corridorPsf: CorridorPsf | null;
   related?: RelatedGroups;
   alternatives?: ProjectIntel[];
+  // Every live project's Truth Score (baked at build). The rank recomputes from
+  // THIS project's live score against this set — with its own baked score swapped
+  // for the live one — so the "ranks N of M" line matches the live score instead
+  // of lagging to the next snapshot. The comparison set itself stays baked (it
+  // only shifts when the whole corpus is re-scored, i.e. a publish).
+  liveScores?: number[];
 }) {
   const [p, setP] = useState<ProjectIntel>(baked);
 
@@ -96,18 +103,32 @@ export default function LiveProjectProfile({
       const liveDeveloper = fresh.liveDeveloper
         ? { ...fresh.liveDeveloper, ...(baked.liveDeveloper?.ledger ? { ledger: baked.liveDeveloper.ledger } : {}) }
         : baked.liveDeveloper;
+      // "Ranks N of M" from the LIVE score. Swap this project's own baked score
+      // in the comparison set for its live score (so a changed score never reads
+      // "98 of 97"), then rank normally. The set is otherwise baked — it only
+      // moves when the whole corpus is re-scored. Falls back to the baked rank if
+      // the score didn't change or the set wasn't passed.
+      const freshScore = freshRow.truthScore;
+      let trackedRank = baked.trackedRank;
+      if (liveScores?.length && freshScore != null && freshScore > 0 && freshScore !== row.truthScore) {
+        const arr = [...liveScores];
+        const i = row.truthScore != null ? arr.indexOf(row.truthScore) : -1;
+        if (i >= 0) arr[i] = freshScore;
+        else arr.push(freshScore);
+        trackedRank = trackedRankOf(freshScore, arr) ?? baked.trackedRank;
+      }
       // When the live asset tables resolved, take the whole fresh intel (media +
       // configs + row). When they DIDN'T, keep the baked asset-derived fields
       // (budget/configs/ops/psfOwn/sizeBand/tags) so an unmatched asset fetch
       // can't blank the media — but still apply every row-derived field. `fresh`
-      // lacks the server-only trackedRank, so spreading baked first preserves it.
+      // lacks the server-only trackedRank / livePillars, so set them explicitly.
       let merged: ProjectIntel;
       if (eKey || cKey) {
-        merged = { ...baked, ...fresh, ...(livePillars ? { livePillars } : {}), ...(liveDeveloper ? { liveDeveloper } : {}) };
+        merged = { ...baked, ...fresh, ...(livePillars ? { livePillars } : {}), ...(liveDeveloper ? { liveDeveloper } : {}), ...(trackedRank ? { trackedRank } : {}) };
       } else {
         const { budget, configs, ops, psfOwn, sizeBand, tags, ...rowDerived } = fresh;
         void budget; void configs; void ops; void psfOwn; void sizeBand; void tags;
-        merged = { ...baked, ...rowDerived, ...(livePillars ? { livePillars } : {}), ...(liveDeveloper ? { liveDeveloper } : {}) };
+        merged = { ...baked, ...rowDerived, ...(livePillars ? { livePillars } : {}), ...(liveDeveloper ? { liveDeveloper } : {}), ...(trackedRank ? { trackedRank } : {}) };
       }
       if (!cancelled) setP(merged);
     })().catch(() => {
@@ -116,7 +137,7 @@ export default function LiveProjectProfile({
     return () => {
       cancelled = true;
     };
-  }, [row, baked, corridorPsf]);
+  }, [row, baked, corridorPsf, liveScores]);
 
   return <ProjectProfile p={p} related={related} alternatives={alternatives} />;
 }

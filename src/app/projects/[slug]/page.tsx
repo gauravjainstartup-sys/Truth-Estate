@@ -338,9 +338,12 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     const [ext, cfg, nameIds, corridorPsf, pillarSets] = [await extended(), await configurations(), await backlogNameIds(), await fetchCorridorPsf(), await truthPillars()];
     const extKey = lookupKey(live.id, live.name, ext, nameIds, live.altIds);
     const cfgKey = lookupKey(live.id, live.name, cfg, nameIds, live.altIds);
+    // the whole live scored set — the rank basis; passed to the overlay too so the
+    // rank can recompute from this project's LIVE score without another fetch.
+    const scores = await liveScores();
     const intel = {
       ...liveProjectIntel(live, extKey ? ext![extKey] : null, cfgKey ? cfg![cfgKey] : null, corridorPsf),
-      trackedRank: trackedRankOf(live.truthScore, await liveScores()),
+      trackedRank: trackedRankOf(live.truthScore, scores),
       ...(pillarSets?.[live.id] ? { livePillars: pillarSets[live.id] } : {}),
     };
     /* Attach the developer's project ledger by matching the normalised
@@ -374,7 +377,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         {liveFaqs.length > 0 && (
           <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(faqLdFor(liveFaqs))} />
         )}
-        <LiveProjectProfile baked={intel} row={live} corridorPsf={corridorPsf} related={related} alternatives={alternatives} />
+        <LiveProjectProfile baked={intel} row={live} corridorPsf={corridorPsf} related={related} alternatives={alternatives} liveScores={scores} />
       </>
     );
   }
