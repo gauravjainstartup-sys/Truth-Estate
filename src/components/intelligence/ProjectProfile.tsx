@@ -493,7 +493,22 @@ export default function ProjectProfile({
     window.addEventListener("keydown", onKey);
     return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); };
   }, [doc]);
-  const scheduleCall = (e: FormEvent) => { e.preventDefault(); setScheduled(true); };
+  const scheduleCall = (e: FormEvent) => {
+    e.preventDefault();
+    // Persist the callback (name + phone + preferred time) as a consultation
+    // lead. This was a UI-only flag before, so every high-intent callback on the
+    // report was silently discarded despite the "an advisor will call you" promise.
+    saveLead({
+      name: lead.name.trim(),
+      email: "",
+      phone: lead.phone.trim(),
+      project: p.name,
+      intent: "consultation",
+      message: `Callback requested${lead.time ? ` — preferred time: ${lead.time}` : ""}`,
+      createdAt: Date.now(),
+    });
+    setScheduled(true);
+  };
   const stripRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (embedded) return;

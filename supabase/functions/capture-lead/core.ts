@@ -31,6 +31,10 @@ export const INTENTS = [
   "feedback",
   "shortlist-unlock",
   "custom-report",
+  // A booked consultation / requested callback — the flagship advisory enquiry.
+  // Was never an allowed intent, so the consultation flow could not reach this
+  // table at all; every booking lived only in the visitor's localStorage.
+  "consultation",
 ] as const;
 
 export type LeadBody = {

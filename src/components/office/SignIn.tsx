@@ -168,16 +168,18 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
       return;
     }
 
-    saveLead({
-      name: "",
-      email: "",
-      phone: `${dial} ${num}`.trim(),
-      intent: "buyer-office",
-      createdAt: Date.now(),
-    });
-
     onSignedIn();
     if (!isReturning) {
+      // Only a NEW sign-up is a fresh buyer-office lead. Firing on every login
+      // wrote an empty-name duplicate row per returning member and inflated the
+      // buyer-office funnel.
+      saveLead({
+        name: "",
+        email: "",
+        phone: `${dial} ${num}`.trim(),
+        intent: "buyer-office",
+        createdAt: Date.now(),
+      });
       openOnboarding(); // New users get the onboarding brief
     }
   }

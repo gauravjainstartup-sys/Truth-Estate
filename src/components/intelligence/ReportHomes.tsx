@@ -253,7 +253,11 @@ function FloorPlanRequest({ project, config }: { project: string; config: string
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            saveLead({ name: "", email: contact, project, intent: "documents", docs: [`${config} floor plan`], createdAt: Date.now() });
+            // The field accepts "Phone / WhatsApp / email" — route it to the right
+            // column instead of always filing a phone under email.
+            const c = contact.trim();
+            const isPhone = !c.includes("@") && c.replace(/\D/g, "").length >= 6;
+            saveLead({ name: "", email: isPhone ? "" : c, phone: isPhone ? c : undefined, project, intent: "documents", docs: [`${config} floor plan`], createdAt: Date.now() });
             setSent(true);
           }}
           className="flex w-full max-w-xs gap-2 px-6"

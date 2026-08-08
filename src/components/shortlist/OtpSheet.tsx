@@ -186,7 +186,7 @@ export default function OtpSheet({
             <p className="mt-3 text-center font-mono text-[0.64rem] tracking-[0.04em] text-[#1a1a1a]/40">
               {secs > 0 ? `Resend code in 0:${String(secs).padStart(2, "0")}` : <button onClick={requestCode} className="text-[#9a7a2e]">Resend code</button>}
             </p>
-            <p className="mt-1.5 text-center font-mono text-[0.58rem] tracking-[0.06em] text-[#9a7a2e]">Demo — any {OTP_LEN} digits work · MSG91 wires in later</p>
+            <p className="mt-1.5 text-center font-mono text-[0.58rem] tracking-[0.06em] text-[#1a1a1a]/35">A {OTP_LEN}-digit code was sent by SMS.</p>
           </>
         )}
       </div>

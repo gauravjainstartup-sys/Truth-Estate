@@ -220,6 +220,38 @@ export function saveConsultation(b: ConsultBooking): void {
   } catch {
     /* ignore */
   }
+  /* Persist the booking as a lead so the desk actually receives it — name,
+     mobile/email, the chosen slot, and the whole brief (budget/markets/timeline/
+     goals/prep) as structured payload. This was localStorage-only, so every
+     booking from the home page, Deal Room or NRI desk left no server trace.
+     Fire-and-forget via a dynamic import so this stays out of the journey cycle
+     and a metric/lead write can never break a booking. */
+  const contact = (b.mobile || b.email || "").trim();
+  if (contact) {
+    const bits: string[] = [];
+    if (b.reason) bits.push(`Reason: ${b.reason}`);
+    for (const [k, v] of Object.entries(b.details ?? {})) {
+      const val = Array.isArray(v) ? v.join(", ") : v;
+      if (val) bits.push(`${k}: ${val}`);
+    }
+    if (b.day || b.time) bits.push(`Slot: ${[b.day, b.time].filter(Boolean).join(" ")}`);
+    if (b.format) bits.push(`Format: ${b.format}`);
+    if (b.prep) bits.push(`Prep: ${b.prep}`);
+    void import("@/lib/journey")
+      .then((m) =>
+        m.postLead({
+          name: (b.name || "").trim(),
+          email: (b.email || "").trim(),
+          phone: (b.mobile || "").trim() || undefined,
+          project: b.context?.sourceKind === "project" ? b.context.source : undefined,
+          intent: "consultation",
+          message: bits.join(" · ").slice(0, 3900),
+          payload: b,
+          createdAt: b.createdAt || Date.now(),
+        }),
+      )
+      .catch(() => { /* lead capture must never surface an error to the visitor */ });
+  }
   /* A booked consultation is an enquiry — the strongest one. When it was
      requested from a project page, record it as a project-scoped
      lead_captured event so it feeds the brief inference (weight +4, like any

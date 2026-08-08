@@ -981,11 +981,12 @@ export type Lead = {
   email: string;
   phone?: string;
   project?: string;
-  intent: "tower-intel" | "buyer-office" | "documents" | "report-error" | "feedback" | "shortlist-unlock" | "custom-report";
+  intent: "tower-intel" | "buyer-office" | "documents" | "report-error" | "feedback" | "shortlist-unlock" | "custom-report" | "consultation";
   docs?: string[]; // requested documents (intent: "documents")
   identity?: string; // who's reporting — Developer / Investor / End User / Broker (feedback flows)
-  message?: string; // free-text detail (feedback / report-error flows)
+  message?: string; // free-text detail (feedback / report-error / consultation flows)
   buy?: BuyData;
+  payload?: unknown; // structured extras (e.g. the full consultation booking) → contact_leads.payload
   createdAt: number;
 };
 
@@ -999,7 +1000,7 @@ const CAPTURE_LEAD_URL =
    but never the visitor's submission. `keepalive` matters because most of
    these forms navigate or unmount immediately after submit — without it the
    browser cancels the request in flight and the lead is lost. */
-function postLead(l: Lead): void {
+export function postLead(l: Lead): void {
   try {
     void fetch(CAPTURE_LEAD_URL, {
       method: "POST",
@@ -1014,7 +1015,7 @@ function postLead(l: Lead): void {
         docs: l.docs,
         identity: l.identity,
         message: l.message,
-        payload: l.buy ?? null,
+        payload: l.payload ?? l.buy ?? null,
         sessionId: readSessionId(),
         source: typeof location !== "undefined" ? location.pathname : undefined,
         referrer: typeof document !== "undefined" ? document.referrer || undefined : undefined,
