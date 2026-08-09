@@ -132,15 +132,20 @@ export default function SearchPalette({ className = "", current }: { className?:
           </span>
         </button>
       ) : (
+        // No current project (index / compare / market pages): a real search
+        // box on desktop, collapsing to a bare magnifier on mobile so the
+        // header keeps room for the logo + primary CTA.
         <button
           onClick={show}
           aria-label="Search projects and developers"
           title="Search (⌘K)"
-          className={`grid h-9 w-9 place-items-center rounded-[10px] text-[#1a1a1a]/60 transition-colors hover:bg-white hover:text-[#1a1a1a] hover:ring-1 hover:ring-[#1a1a1a]/15 ${className}`}
+          className={`group flex h-9 shrink-0 items-center gap-2 rounded-[10px] text-[#1a1a1a]/55 transition-colors w-9 justify-center hover:bg-white hover:text-[#1a1a1a] hover:ring-1 hover:ring-[#1a1a1a]/15 sm:w-[13.5rem] sm:justify-start sm:px-3 sm:ring-1 sm:ring-[#1a1a1a]/12 sm:hover:ring-[#1a1a1a]/20 md:w-[17rem] ${className}`}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-[17px] w-[17px]">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-[17px] w-[17px] shrink-0 sm:h-[15px] sm:w-[15px]">
             <circle cx="11" cy="11" r="7" /><path d="m20 20-3.4-3.4" />
           </svg>
+          <span className="hidden truncate text-[0.82rem] font-normal text-[#1a1a1a]/45 sm:block">Search projects, developers…</span>
+          <span className="ml-auto hidden shrink-0 rounded-[6px] border border-[#1a1a1a]/12 px-1.5 py-0.5 font-mono text-[0.6rem] font-semibold text-[#1a1a1a]/35 md:block">⌘K</span>
         </button>
       )}
 

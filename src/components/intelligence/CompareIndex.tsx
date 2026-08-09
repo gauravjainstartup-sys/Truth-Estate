@@ -11,6 +11,8 @@ import {
   type CompareKind,
   type ProjectCompareOption,
 } from "@/lib/compare";
+import TypeAhead, { type TAItem } from "./TypeAhead";
+import SearchPalette from "./SearchPalette";
 
 
 const KIND_LABEL: Record<CompareKind, string> = { project: "Projects", developer: "Developers", market: "Markets" };
@@ -39,6 +41,13 @@ export default function CompareIndex({ projectOptions }: { projectOptions: Proje
     setA(OPTS[k][0]?.slug ?? "");
     setB(OPTS[k][1]?.slug ?? "");
   };
+  const swap = () => { setA(b); setB(a); };
+
+  // the active tab's list as type-ahead items (Truth Score rides along for projects)
+  const items: TAItem[] = opts.map((o) => {
+    const score = (o as Partial<ProjectCompareOption>).score;
+    return typeof score === "number" ? { id: o.slug, name: o.name, score } : { id: o.slug, name: o.name };
+  });
 
   const go = () => {
     if (!a || !b || a === b) return;
@@ -65,7 +74,8 @@ export default function CompareIndex({ projectOptions }: { projectOptions: Proje
       <header className="sticky top-0 z-40 border-b border-[#1a1a1a]/6 bg-[#F5F0E8]/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-6 py-4 md:px-10">
           <a href={homeHref} aria-label="Home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
-          <button onClick={() => open()} className="ml-auto rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.74rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] md:px-5">
+          <SearchPalette className="ml-auto" />
+          <button onClick={() => open()} className="rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.74rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] md:px-5">
             Request Independent Advice
           </button>
         </div>
@@ -97,9 +107,39 @@ export default function CompareIndex({ projectOptions }: { projectOptions: Proje
           </div>
 
           <div className="mt-5 grid items-end gap-4 sm:grid-cols-[1fr_auto_1fr] md:mt-6">
-            <Select label="First" value={a} onChange={setA} opts={opts} />
-            <span className="hidden pb-3 text-center font-serif text-[1.1rem] text-[#1a1a1a]/25 sm:block">vs</span>
-            <Select label="Second" value={b} onChange={setB} opts={opts} />
+            <label className="block">
+              <span className="text-[0.66rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">First</span>
+              <div className="mt-2">
+                <TypeAhead
+                  items={items}
+                  value={a}
+                  onPick={(it) => setA(it.id)}
+                  placeholder={`Search ${KIND_LABEL[kind].toLowerCase()}…`}
+                  ariaLabel={`First ${KIND_LABEL[kind].slice(0, -1).toLowerCase()}`}
+                />
+              </div>
+            </label>
+            <button
+              type="button"
+              onClick={swap}
+              aria-label="Swap the two sides"
+              title="Swap"
+              className="hidden h-11 w-11 shrink-0 items-center justify-center self-end rounded-full border border-[#1a1a1a]/15 text-[#1a1a1a]/45 transition-colors hover:border-[#c9a96e] hover:text-[#1e6b45] sm:flex"
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 4L3 8l4 4" /><path d="M3 8h14" /><path d="M17 20l4-4-4-4" /><path d="M21 16H7" /></svg>
+            </button>
+            <label className="block">
+              <span className="text-[0.66rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">Second</span>
+              <div className="mt-2">
+                <TypeAhead
+                  items={items}
+                  value={b}
+                  onPick={(it) => setB(it.id)}
+                  placeholder={`Search ${KIND_LABEL[kind].toLowerCase()}…`}
+                  ariaLabel={`Second ${KIND_LABEL[kind].slice(0, -1).toLowerCase()}`}
+                />
+              </div>
+            </label>
           </div>
 
           <div className="mt-5 flex items-center gap-4 md:mt-6">
@@ -136,17 +176,5 @@ export default function CompareIndex({ projectOptions }: { projectOptions: Proje
         )}
       </div>
     </div>
-  );
-}
-
-function Select({ label, value, onChange, opts }: { label: string; value: string; onChange: (v: string) => void; opts: { slug: string; name: string }[] }) {
-  return (
-    <label className="block">
-      <span className="text-[0.66rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">{label}</span>
-      <select value={value} onChange={(e) => onChange(e.target.value)}
-        className="mt-2 w-full rounded-sm border border-[#1a1a1a]/15 bg-white px-4 py-3 font-serif text-[1.02rem] font-light text-[#1a1a1a] outline-none transition-colors focus:border-[#c9a96e]">
-        {opts.map((o) => <option key={o.slug} value={o.slug}>{o.name}</option>)}
-      </select>
-    </label>
   );
 }
