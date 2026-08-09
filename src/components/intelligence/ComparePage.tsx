@@ -27,6 +27,11 @@ const ticketLabel = (p: ProjectIntel): string => {
 /* first positioning tag, with a graceful fallback when a live row has none */
 const tagOf = (p: ProjectIntel): string => p.tags[0]?.toLowerCase() ?? "its fundamentals";
 
+/* Some pipeline rows leak raw metric keys (net_debt_to_equity, ebitda_margin,
+   regulatory_risk…) into strengths / watch-outs. Those aren't buyer-facing
+   sentences, so drop pure snake_case tokens and keep the prose. */
+const prose = (items: string[]): string[] => items.filter((s) => !/^[a-z0-9]+(_[a-z0-9]+)+$/.test(s.trim()));
+
 /* PSF in one consistent "K" language across the row — a whole number when it
    lands on one, else one decimal (20000 → "20", 19500 → "19.5"); wrapped as
    ₹…K by the caller so a range reads "₹20K–22K", never "₹20,000–22.0k". */
@@ -174,17 +179,21 @@ function ProjectHead({ p }: { p: ProjectIntel }) {
       ? "border-[#9a7a2e]/35 bg-[#9a7a2e]/[0.08] text-[#8a6a1e]"
       : "border-[#1a1a1a]/15 bg-white/60 text-[#1a1a1a]/55";
   return (
-    <div className="min-w-0">
+    <div className="flex h-full min-w-0 flex-col">
       <a href={projectHref(p)}
         className="font-serif text-[1.25rem] font-medium leading-[1.15] text-[#1a1a1a] underline decoration-[#c9a96e]/30 underline-offset-4 hover:text-[#1e6b45] md:text-[1.6rem]">
         {p.name}
       </a>
       <p className="mt-1.5 text-[0.68rem] font-light leading-snug text-[#1a1a1a]/45 md:text-[0.74rem]">{streetAddress(p)}</p>
-      <div className="mt-3 flex items-baseline gap-2">
-        <span className="font-serif text-[2.1rem] font-medium leading-none text-[#1e6b45]">{p.truthScore}</span>
-        <span className="font-mono text-[0.52rem] uppercase tracking-[0.16em] text-[#1a1a1a]/35">/100 Truth Score</span>
+      {/* score + verdict pinned to the column's base so both sides' scores land
+          on one line however many lines the name wraps to */}
+      <div className="mt-auto pt-4">
+        <div className="flex items-baseline gap-2">
+          <span className="font-serif text-[2.1rem] font-medium leading-none text-[#1e6b45]">{p.truthScore}</span>
+          <span className="font-mono text-[0.52rem] uppercase tracking-[0.16em] text-[#1a1a1a]/35">/100 Truth Score</span>
+        </div>
+        <span className={`mt-2.5 inline-block rounded-full border px-2.5 py-1 text-[0.62rem] font-medium ${tone}`}>{reco}</span>
       </div>
-      <span className={`mt-2.5 inline-block rounded-full border px-2.5 py-1 text-[0.62rem] font-medium ${tone}`}>{reco}</span>
     </div>
   );
 }
@@ -193,6 +202,8 @@ function ProjectCompare({ r }: { r: Extract<ResolvedCompare, { kind: "project" }
   const { a, b } = r;
   const winner = a.truthScore >= b.truthScore ? a : b;
   const other = winner === a ? b : a;
+  const [aStrengths, bStrengths] = [prose(a.strengths), prose(b.strengths)];
+  const [aWatch, bWatch] = [prose(a.watchouts), prose(b.watchouts)];
 
   const [ja, jb] = [priceJourney(a), priceJourney(b)];
   const [oa, ob] = [deliveryOutlook(a), deliveryOutlook(b)];
@@ -237,7 +248,7 @@ function ProjectCompare({ r }: { r: Extract<ResolvedCompare, { kind: "project" }
       </div>
 
       <div className="mt-10">
-        <div className={`${GRID} pb-5`}>
+        <div className="grid grid-cols-[0.78fr_1fr_1fr] items-stretch gap-3 pb-5 md:gap-5">
           <span />
           <ProjectHead p={a} />
           <ProjectHead p={b} />
@@ -297,11 +308,20 @@ function ProjectCompare({ r }: { r: Extract<ResolvedCompare, { kind: "project" }
         ))}
       </Section>
 
-      {(a.strengths.length > 0 || b.strengths.length > 0) && (
+      {(aStrengths.length > 0 || bStrengths.length > 0) && (
         <Section title="Strengths">
           <div className="mt-2 grid gap-5 md:grid-cols-2">
-            {a.strengths.length > 0 && <StrengthCol name={a.name} items={a.strengths} />}
-            {b.strengths.length > 0 && <StrengthCol name={b.name} items={b.strengths} />}
+            {aStrengths.length > 0 && <PointCol name={a.name} items={aStrengths} tone="good" />}
+            {bStrengths.length > 0 && <PointCol name={b.name} items={bStrengths} tone="good" />}
+          </div>
+        </Section>
+      )}
+
+      {(aWatch.length > 0 || bWatch.length > 0) && (
+        <Section title="Watch-outs">
+          <div className="mt-2 grid gap-5 md:grid-cols-2">
+            {aWatch.length > 0 && <PointCol name={a.name} items={aWatch} tone="watch" />}
+            {bWatch.length > 0 && <PointCol name={b.name} items={bWatch} tone="watch" />}
           </div>
         </Section>
       )}
@@ -309,13 +329,16 @@ function ProjectCompare({ r }: { r: Extract<ResolvedCompare, { kind: "project" }
   );
 }
 
-function StrengthCol({ name, items }: { name: string; items: string[] }) {
+function PointCol({ name, items, tone }: { name: string; items: string[]; tone: "good" | "watch" }) {
+  // mirror the report's Strengths & watch-outs language: green "+" vs amber "!"
+  const mark = tone === "good" ? "+" : "!";
+  const color = tone === "good" ? "text-[#1e6b45]" : "text-[#9a7a2e]";
   return (
     <div className="rounded-2xl border border-[#1a1a1a]/8 bg-white/50 p-6">
       <p className="font-serif text-[1.1rem] text-[#1a1a1a]">{name}</p>
       <ul className="mt-3 space-y-2.5">
         {items.map((s) => (
-          <li key={s} className="flex gap-2.5 text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/65"><span className="mt-0.5 text-[#1e6b45]">+</span>{s}</li>
+          <li key={s} className="flex gap-2.5 text-[0.9rem] font-light leading-[1.6] text-[#1a1a1a]/65"><span className={`mt-0.5 ${color}`}>{mark}</span>{s}</li>
         ))}
       </ul>
     </div>
