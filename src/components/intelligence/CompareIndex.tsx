@@ -7,6 +7,7 @@ import { basePath, homeHref } from "@/lib/site";
 import {
   COMPARE_OPTIONS,
   POPULAR_COMPARISONS,
+  PROJECT_COMPARE_CAP,
   comparePairSlug,
   type CompareKind,
   type ProjectCompareOption,
@@ -28,6 +29,10 @@ export default function CompareIndex({ projectOptions }: { projectOptions: Proje
     developer: COMPARE_OPTIONS.developer,
     market: COMPARE_OPTIONS.market,
   };
+  // projectOptions arrives sorted by score, so the first PROJECT_COMPARE_CAP are
+  // exactly the pairs prerendered as static pages; any pair outside this set is
+  // rendered client-side on /intelligence/compare/live (no per-pair prerender).
+  const prerenderedProjectSlugs = new Set(projectOptions.slice(0, PROJECT_COMPARE_CAP).map((o) => o.slug));
   // start on Projects when we have a live set to compare; else fall back
   const initialKind: CompareKind = projectOptions.length >= 2 ? "project" : "developer";
 
@@ -51,6 +56,12 @@ export default function CompareIndex({ projectOptions }: { projectOptions: Proje
 
   const go = () => {
     if (!a || !b || a === b) return;
+    // a project pair outside the prerendered cap has no static page — render it
+    // live from the compare index instead of 404ing on the static export.
+    if (kind === "project" && !(prerenderedProjectSlugs.has(a) && prerenderedProjectSlugs.has(b))) {
+      window.location.href = `${basePath}/intelligence/compare/live?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`;
+      return;
+    }
     window.location.href = `${basePath}/intelligence/compare/${comparePairSlug(a, b)}`;
   };
 

@@ -13,10 +13,12 @@ export const metadata: Metadata = {
     "Compare any two Gurugram projects, developers or markets side by side on the same independent evidence — Truth Score anatomy, delivery, financial signals, pricing and outlook. No sponsored winner.",
 };
 
-/* The project picker + comparisons run on the live tracked set (fetched once
-   per build); developers & markets come from the curated registries. */
+/* The project picker offers EVERY scored project (not just the prerendered
+   top set): pairs within the prerendered cap open their static page, the rest
+   render client-side on /intelligence/compare/live from the compare index.
+   Developers & markets come from the curated registries. Fetched once/build. */
 export default async function Page() {
   const rows = await fetchBacklogFull();
-  const projectOptions = scoredProjectOptions(rows);
+  const projectOptions = scoredProjectOptions(rows, Number.POSITIVE_INFINITY);
   return <CompareIndex projectOptions={projectOptions} />;
 }
