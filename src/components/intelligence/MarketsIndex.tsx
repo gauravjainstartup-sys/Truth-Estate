@@ -1,6 +1,7 @@
 "use client";
 
 import Logo from "../Logo";
+import SearchPalette from "./SearchPalette";
 import GurugramMap from "./GurugramMap";
 import { useJourney } from "../journey/JourneyProvider";
 import { GURUGRAM_OVERVIEW, fmtPsf } from "@/lib/markets";
@@ -47,7 +48,8 @@ export default function MarketsIndex({
       <header className="sticky top-0 z-40 border-b border-[#1a1a1a]/6 bg-[#F5F0E8]/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-6 py-4 md:px-10">
           <a href={homeHref} aria-label="Home"><Logo color="#1a1a1a" className="h-7 w-auto" /></a>
-          <button onClick={() => open()} className="ml-auto rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.74rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] md:px-5">
+          <SearchPalette className="ml-auto" />
+          <button onClick={() => open()} className="rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.74rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55] md:px-5">
             Request Independent Advice
           </button>
         </div>
