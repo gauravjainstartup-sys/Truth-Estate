@@ -62,6 +62,9 @@ const KNOWN = new Set([
   "first_shortlist_unlocked",
   "sun_vastu_requested",
   "project_request_submitted",
+  // Deal Room mandate funnel (Stage-1 demand experiment).
+  "deal_room_mandate_started",
+  "deal_room_mandate_submitted",
 ]);
 
 const MAX_BATCH = 20;

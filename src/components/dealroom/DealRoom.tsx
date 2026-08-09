@@ -99,9 +99,9 @@ export default function DealRoom() {
               One party on your side of the table — independent, flat-fee, and never paid by a developer. We make the market compete for your deal, in writing.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-6">
-              <button onClick={enter} className="rounded-sm bg-[#2f6b4f] px-8 py-4 text-[13px] font-medium tracking-[0.06em] text-[#f4efe6] shadow-lg shadow-black/30 transition-colors hover:bg-[#37805e]">
+              <a href={`${basePath}/deal-room/mandate`} className="inline-block rounded-sm bg-[#2f6b4f] px-8 py-4 text-[13px] font-medium tracking-[0.06em] text-[#f4efe6] shadow-lg shadow-black/30 transition-colors hover:bg-[#37805e]">
                 Enter the Deal Room
-              </button>
+              </a>
               <span className="text-[12.5px] tracking-[0.04em] text-[#a9a196]">No brokerage · no developer money</span>
             </div>
           </Reveal>

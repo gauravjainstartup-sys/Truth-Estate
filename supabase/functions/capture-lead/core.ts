@@ -35,6 +35,9 @@ export const INTENTS = [
   // Was never an allowed intent, so the consultation flow could not reach this
   // table at all; every booking lived only in the visitor's localStorage.
   "consultation",
+  // A Deal Room mandate — the buyer names an asset + target and asks the market
+  // to compete. The structured mandate rides in payload.
+  "deal-room",
 ] as const;
 
 export type LeadBody = {
