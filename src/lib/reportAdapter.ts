@@ -35,6 +35,33 @@ const MANIFEST = mediaManifest as Record<string, Partial<Record<string, string>>
    unmapped URLs pass through untouched */
 const viaUrls = (s: string): string => MANIFEST.__urls?.[s] ?? s;
 
+/* The rules engine emits some strengths / watch-outs as raw metric or risk
+   KEYS (interest_coverage_ratio, net_debt_to_equity, developer_risk…) rather
+   than sentences — they come from riskInsights.*.triggered and legalTopRisks.
+   Left as-is they render as broken bullets ("ebitda_margin") on every surface
+   that shows a project's strengths/watch-outs (report, compare, search…).
+   These arrive in the RISK-triggered lists, so phrasing each as a concern is
+   directionally correct. Any other bare snake_case token is title-cased as a
+   safety net, so a raw key can never reach the UI; prose is returned as-is. */
+const SIGNAL_LABELS: Record<string, string> = {
+  interest_coverage_ratio: "Thin interest coverage",
+  net_debt_to_equity: "Elevated leverage",
+  ebitda_margin: "Compressed EBITDA margin",
+  ocf_to_ebitda: "Weak cash conversion",
+  inventory_to_sales_years: "High unsold inventory vs sales pace",
+  developer_risk: "Developer track-record risk",
+  litigation_risk: "Litigation risk on record",
+  regulatory_risk: "Regulatory risk flagged",
+  title_risk: "Title / ownership risk flagged",
+};
+const RAW_SIGNAL = /^[a-z0-9]+(?:_[a-z0-9]+)+$/;
+function humanizeSignal(s: string): string {
+  const t = s.trim();
+  if (SIGNAL_LABELS[t]) return SIGNAL_LABELS[t];
+  if (RAW_SIGNAL.test(t)) return t.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+  return s;
+}
+
 /* Per-project media/config/parse records are handy for debugging one project
    but fire ~90× during static export and bury the prebuild's egress numbers
    past the CI log-tail cap. Off by default (BUILD_DEBUG=1 restores them); an
@@ -553,7 +580,7 @@ export function liveProjectIntel(
     ...strList(row.locKeyStrengths),
     ...(row.faqLocStrength ? [row.faqLocStrength] : []),
     ...strList(row.locGrowthDrivers),
-  ]).filter((s) => s !== primaryRisk).slice(0, 5);
+  ]).filter((s) => s !== primaryRisk).slice(0, 5).map(humanizeSignal);
   const watchouts = dedupe([
     primaryRisk ?? "",
     ...listAt(riskI, "legal.triggered"),
@@ -564,7 +591,7 @@ export function liveProjectIntel(
     ...strList(row.locRisks),
     ...(row.faqLocGap ? [row.faqLocGap] : []),
     ...strList(row.locConnConstraints),
-  ]).slice(0, 5);
+  ]).slice(0, 5).map(humanizeSignal);
 
   /* priorities served → derived lower down (deriveTags), once the config
      homes, corridor psf, density and open-area signals are all in scope. */
