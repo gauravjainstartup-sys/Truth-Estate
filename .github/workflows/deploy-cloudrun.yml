@@ -368,6 +368,16 @@ jobs:
               --cpu 1 --memory 512Mi \
               --min-instances 0 --max-instances 10 \
               --quiet
+            # A prior --no-traffic staging preview PINS the service to a specific
+            # revision. After that, a plain `deploy` lands the new revision at 0%
+            # traffic — it builds and passes the smoke test on the service URL, but
+            # truthestate.in keeps serving the OLD revision. Explicitly route 100%
+            # onto the just-deployed (latest) revision so a production run always
+            # goes live, and the service returns to auto-promoting future deploys.
+            gcloud run services update-traffic "$SERVICE_NAME" \
+              --region "$GCP_REGION" --project "$GCP_PROJECT_ID" \
+              --to-latest --quiet
+            echo "Traffic routed 100% to the latest revision."
           fi
 
       - name: Smoke-test what actually went live
