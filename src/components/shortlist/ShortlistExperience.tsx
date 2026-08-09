@@ -10,6 +10,7 @@ import { rankProjectsIntel } from "@/lib/shortlist";
 import { useMatchCatalog, useMatchMarket } from "@/lib/useMatchCatalog";
 import { useAiRerank } from "@/lib/useAiRerank";
 import { basePath, homeHref } from "@/lib/site";
+import { track } from "@/lib/events";
 
 /* ════════════════════════════════════════════════════════════════
    THE STANDALONE /shortlist ROUTE — the direct-land entry.
@@ -41,6 +42,7 @@ export default function ShortlistExperience() {
 
   useEffect(() => {
     setMounted(true);
+    track("shortlist_page_reached");
     setVerified(loadVerified());
     const initial = loadBuyData();
     if (initial) { setBuy(initial); setBriefResolving(false); return; }

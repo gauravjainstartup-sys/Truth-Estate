@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import JourneyModal from "./JourneyModal";
 import TruthGuideBubble from "./TruthGuideBubble";
 import { loadAccount, type Account, type Intent } from "@/lib/journey";
+import { track } from "@/lib/events";
 
 type Ctx = { open: (intent?: Intent) => void; close: () => void; isOpen: boolean };
 
@@ -29,6 +30,9 @@ export default function JourneyProvider({ children }: { children: React.ReactNod
     setIntent(i);
     setAccount(loadAccount()); // returning-user detection
     setIsOpen(true);
+    /* The requirements / buyer-brief flow just opened — one funnel event per
+       start, tagged with the intent so buy vs invest vs research can be split. */
+    track("requirements_flow_started", { props: { intent: i ?? "unknown" } });
   };
   const close = () => setIsOpen(false);
 

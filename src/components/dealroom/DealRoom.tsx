@@ -12,6 +12,7 @@ import { useEffect, useRef, useState } from "react";
 import Logo from "../Logo";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import { basePath } from "@/lib/site";
+import { track } from "@/lib/events";
 
 
 /* subtle scroll reveal — a restrained fade-up, honours reduced-motion */
@@ -71,6 +72,8 @@ const FAQS: { q: string; a: string }[] = [
 export default function DealRoom() {
   const { openConsult } = useConsultation();
   const enter = () => openConsult({ sourceKind: "homepage" });
+
+  useEffect(() => { track("deal_room_page_viewed"); }, []);
 
   return (
     <div className="min-h-screen bg-[#14110d] text-[#f4efe6]" style={{ fontFeatureSettings: '"ss01"' }}>

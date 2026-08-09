@@ -25,6 +25,7 @@ import {
 import { usePricing } from "@/lib/usePricing";
 import { normalisePhone, normaliseIntl, phoneKnown, prettyPhone, sendOtp, sendTwilioOtp, verifyOtp, verifyTwilioOtp, signInWithGoogle, OTP_LENGTH } from "@/lib/phoneAuth";
 import { fetchEntitlements } from "@/lib/entitlements";
+import { track } from "@/lib/events";
 import { payForPackage, prewarmCheckout, type Receipt } from "@/lib/checkout";
 import { openReceipt, invalidateBilling, inr as inrFmt } from "@/lib/billing";
 
@@ -146,12 +147,15 @@ export default function UnlockModal({
        plans step with nothing on it — `cards` filters out what you own,
        and all-owned filters to empty. Send them to the receipt instead. */
     const entitled = isAllAccess() || (focus3D ? has3DAccess(slug) : hasReadAccess(slug));
-    setStep(
+    const next =
       !isSignedIn() ? "register"
       : readStake(slug) == null ? "stake"
       : entitled ? "owned"
-      : "plans",
-    );
+      : "plans";
+    setStep(next);
+    /* The sign-up form is on screen the moment we land on "register" — fire
+       here (synchronously, on open) rather than guessing at it downstream. */
+    if (next === "register") track("sign_up_form_opened", { projectSlug: slug, props: { source: "unlock", focus3D } });
     /* All-Access, because the standalone 3D tier is withdrawn and it is
        now the only way to buy the Sun & Vastu advisor. */
     setSel(focus3D ? "all" : "read");
@@ -256,7 +260,15 @@ export default function UnlockModal({
     settle();
   }
 
-  function choose(id: PackageId) { setSel(id); setPayErr(""); prewarmCheckout(); setStep("pay"); }
+  function choose(id: PackageId) {
+    // Package-click funnel events, keyed to the sticker price (₹1,100 / ₹5,100).
+    // If pricing changes in the DB, update these thresholds. Amount is also sent
+    // as a prop so the event stays interpretable regardless.
+    const price = packageById(id).inr;
+    if (price === 1100) track("package_1100_clicked", { projectSlug: slug, props: { id, price } });
+    else if (price === 5100) track("package_5100_clicked", { projectSlug: slug, props: { id, price } });
+    setSel(id); setPayErr(""); prewarmCheckout(); setStep("pay");
+  }
 
   /* REAL MONEY, AND THE GRANT IS NOT OURS TO MAKE.
 

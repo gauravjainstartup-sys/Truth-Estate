@@ -17,6 +17,7 @@
    ──────────────────────────────────────────────────────────────────────── */
 
 import { useEffect, useRef, useState } from "react";
+import { track } from "@/lib/events";
 import Logo from "../Logo";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import { basePath } from "@/lib/site";
@@ -418,6 +419,8 @@ export default function SunVastu() {
   const talk = () => openConsult({ sourceKind: "homepage" });
   const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 
+  useEffect(() => { track("sun_vastu_page_viewed"); }, []);
+
   return (
     <div className="min-h-screen bg-[#14110d] text-[#f4efe6]" style={{ fontFeatureSettings: '"ss01"' }}>
       {/* ── nav ── */}
@@ -646,6 +649,7 @@ export default function SunVastu() {
               <a
                 href={`${basePath}/${p.file}`}
                 target="_blank" rel="noopener noreferrer"
+                onClick={() => track("model_opened", { projectName: p.name, props: { source: "sun-vastu" } })}
                 className="group flex h-full flex-col overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.02] transition-all hover:border-[#c9a96e]/40 hover:bg-white/[0.04]"
               >
                 <div className="relative aspect-[16/10] overflow-hidden bg-[#0f0d09]">

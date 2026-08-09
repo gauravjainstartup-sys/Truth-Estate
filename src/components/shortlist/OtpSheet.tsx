@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { sendOtp, verifyOtp, OTP_LENGTH, type Verified } from "@/lib/shortlistAuth";
+import { signInWithGoogle } from "@/lib/phoneAuth";
+import { track } from "@/lib/events";
 import OtpDigits from "../auth/OtpDigits";
 
 /* Bottom-sheet OTP for the #1-match unlock. Mobile-only verification — the
@@ -53,6 +55,7 @@ export default function OtpSheet({
   useEffect(() => {
     if (open) {
       setStep("contact"); setOtp(Array(OTP_LEN).fill("")); setErr(null); setBusy(false);
+      track("sign_up_form_opened", { props: { source: "shortlist-otp" } });
     }
   }, [open]);
 
@@ -152,6 +155,32 @@ export default function OtpSheet({
               className="mt-3.5 w-full rounded-xl bg-[#1e6b45] py-4 text-[0.9rem] font-semibold text-white transition-colors hover:bg-[#238c55] disabled:opacity-40"
             >
               {busy ? "Sending…" : "Send code →"}
+            </button>
+
+            {/* Google is the shared alternative — it redirects out and back to
+                the shortlist signed in, where the #1 match reveals itself. */}
+            <div className="relative my-3.5 text-center">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-[#1a1a1a]/10" /></div>
+              <span className="relative bg-[#F5F0E8] px-3 text-[0.68rem] font-medium uppercase tracking-wider text-[#1a1a1a]/40">or</span>
+            </div>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={async () => {
+                if (busy) return;
+                setBusy(true); setErr(null);
+                const r = await signInWithGoogle();
+                if (!r.ok) { setBusy(false); setErr(r.error ?? "Google sign-in failed."); }
+              }}
+              className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#1a1a1a]/15 bg-white py-3.5 text-[0.88rem] font-semibold text-[#1a1a1a] transition-colors hover:bg-white/70 disabled:opacity-40"
+            >
+              <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.28v3.15C3.25 21.3 7.31 24 12 24z"/>
+                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.28C.46 8.21 0 10.05 0 12s.46 3.79 1.28 5.42l4-3.15z"/>
+                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.28 6.58l4 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+              </svg>
+              Continue with Google
             </button>
             {err && <p className="mt-2.5 text-center text-[0.72rem] text-[#9a4130]">{err}</p>}
             <p className="mt-3 text-center font-mono text-[0.62rem] leading-relaxed tracking-[0.02em] text-[#1a1a1a]/40">

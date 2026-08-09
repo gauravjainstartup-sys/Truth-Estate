@@ -560,6 +560,10 @@ export async function finishGoogleAuth(googleAccessToken: string): Promise<
       session?: { access_token: string; token_type: string; expires_in: number };
     };
     if (!data.ok || !data.userId) return { ok: false, error: data.error ?? "Couldn't complete Google sign-in." };
+    // Sign_up_success for the Google path — the OTP paths fire signed_in above,
+    // but the Google success returned silently, so GA4/Amplitude only ever saw
+    // OTP sign-ups.
+    track("signed_in", { props: { via: "google", linked: !!data.linked } });
     return { ok: true, userId: data.userId, session: data.session ?? null, linked: !!data.linked };
   } catch {
     return { ok: false, error: "Couldn't reach us just now — check your connection and try again." };

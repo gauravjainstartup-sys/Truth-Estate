@@ -9,6 +9,7 @@ import { briefChips } from "@/lib/shortlist";
 import { loadVerified, saveVerified, type Verified } from "@/lib/shortlistAuth";
 import { getSession } from "@/lib/phoneAuth";
 import { saveLead, isSignedIn, loadAccount, ACTIVE_PROJECT_COUNT, type BuyData, type DNA, type Scored } from "@/lib/journey";
+import { track } from "@/lib/events";
 
 /* ════════════════════════════════════════════════════════════════
    THE CLUBBED SHORTLIST — one surface, two homes.
@@ -87,6 +88,9 @@ export default function ShortlistCore({
   const revealed = verified != null;
 
   function handleVerified(v: Verified) {
+    /* First OTP unlock on this device? loadVerified() is still null until
+       saveVerified writes it — read before the write so this fires once ever. */
+    const firstEver = !loadVerified();
     saveVerified(v);
     const lead = top[0];
     if (lead) {
@@ -106,6 +110,7 @@ export default function ShortlistCore({
          unlockProject(), a free client-side unlock that fired a false
          report_unlocked and wrote the legacy unlock store. */
     }
+    if (firstEver) track("first_shortlist_unlocked", { projectName: top[0]?.intel.name, props: { channel: v.channel } });
     setVerified(v);
     onVerifiedChange?.(v);
     setOtpOpen(false);

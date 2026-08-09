@@ -355,11 +355,18 @@ export default function ProjectProfile({
   // embedded (the shortlist workspace) keeps its in-journey truthguide step.
   const challenge = onChallenge ?? (() => setChallengeOpen(true));
 
+  // "Get Full Read" / unlock CTAs → the click (intent), before the modal opens.
+  // NOT wired to the Google-return resume, the sign-in chip, or the 3D-focused
+  // re-open — only genuine "unlock the full read" buttons.
+  const openUnlock = () => {
+    track("unlock_full_read_clicked", { projectSlug: p.slug, projectName: p.name });
+    setUnlockOpen(true);
+  };
   // The page's primary CTA swaps by lock state: a locked read leads with the
   // sale ("Get Full Read" → unlock modal); once unlocked it leads with the
   // free advisor call.
   const primaryCta = locked
-    ? { label: "Get Full Read", onClick: () => setUnlockOpen(true) }
+    ? { label: "Get Full Read", onClick: openUnlock }
     : { label: "Get Independent Advice", onClick: consult };
 
   const dev = developerOf(p);
@@ -507,6 +514,7 @@ export default function ProjectProfile({
       message: `Callback requested${lead.time ? ` — preferred time: ${lead.time}` : ""}`,
       createdAt: Date.now(),
     });
+    track("project_request_submitted", { projectSlug: p.slug, projectName: p.name, props: { kind: "report-callback" } });
     setScheduled(true);
   };
   const stripRef = useRef<HTMLDivElement | null>(null);
@@ -651,7 +659,7 @@ export default function ProjectProfile({
           {!embedded && (
             <aside className="hidden self-start xl:col-start-2 xl:row-start-2 xl:sticky xl:top-[132px] xl:block">
               {locked ? (
-                <UnlockDesk onUnlock={() => setUnlockOpen(true)} onSample={() => setSampleOpen(true)} />
+                <UnlockDesk onUnlock={openUnlock} onSample={() => setSampleOpen(true)} />
               ) : (
               <>
               <div className="rounded-2xl border border-[#1a1a1a]/10 bg-[#FBF8F2] p-6">
@@ -906,7 +914,7 @@ export default function ProjectProfile({
                       {investorFit(p).replace(/^Best suited for\s+/i, "")}
                     </p>
                     {locked ? (
-                      <button onClick={() => setUnlockOpen(true)} className="shrink-0 text-[0.78rem] font-semibold text-[#1e6b45] transition-colors hover:text-[#238c55]">
+                      <button onClick={openUnlock} className="shrink-0 text-[0.78rem] font-semibold text-[#1e6b45] transition-colors hover:text-[#238c55]">
                         🔒 Unlock your verdict →
                       </button>
                     ) : (
@@ -1107,7 +1115,7 @@ export default function ProjectProfile({
                 child of the chapter that is not a pillar, and it was the only
                 unnumbered sibling in the report. */}
             <Section id="anatomy" n={num()} title="Truth Score anatomy" flush>
-              <ReportAnatomy p={p} locked={locked} onUnlock={() => setUnlockOpen(true)} />
+              <ReportAnatomy p={p} locked={locked} onUnlock={openUnlock} />
             </Section>
 
             {/* ── The paywall boundary. From Chapter II · Pillar I (Developer DNA)
@@ -1115,7 +1123,7 @@ export default function ProjectProfile({
                in place of the analysis; a paid reader sees everything. ── */}
             {locked ? (
               <div id="unlock" className="scroll-mt-24">
-                <LockedReport projectName={p.name} truthScore={p.truthScore} grade={scoreGrade(p.truthScore)} ticket={lockedTicket} onUnlock={() => setUnlockOpen(true)} onSample={() => setSampleOpen(true)} audience={audience} />
+                <LockedReport projectName={p.name} truthScore={p.truthScore} grade={scoreGrade(p.truthScore)} ticket={lockedTicket} onUnlock={openUnlock} onSample={() => setSampleOpen(true)} audience={audience} />
               </div>
             ) : (
             <>
@@ -1261,7 +1269,7 @@ export default function ProjectProfile({
               <>
                 <Chapter n={chap()} title="Can this report save you lakhs?" framing={`Every weak spot in this file is a number you can argue with. Here is what ${p.name}'s are worth.`} />
                 <Section id="negotiate" n={num()} title="Negotiate like a king">
-                  <ReportNegotiation p={p} locked={locked} onUnlock={() => setUnlockOpen(true)} />
+                  <ReportNegotiation p={p} locked={locked} onUnlock={openUnlock} />
                 </Section>
               </>
             )}
@@ -1324,7 +1332,7 @@ export default function ProjectProfile({
                the price-forward UnlockDesk instead. */}
             {locked ? (
               <div className="mt-12 xl:hidden">
-                <UnlockDesk onUnlock={() => setUnlockOpen(true)} onSample={() => setSampleOpen(true)} />
+                <UnlockDesk onUnlock={openUnlock} onSample={() => setSampleOpen(true)} />
               </div>
             ) : (
             <div className="mt-12 rounded-2xl border border-[#1a1a1a]/10 bg-[#FBF8F2] p-6 xl:hidden">

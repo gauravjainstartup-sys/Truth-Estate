@@ -42,6 +42,26 @@ const KNOWN = new Set([
   "stake_declared",
   "model_opened",
   "search_started",
+  /* help_centre_opened is a valid name in src/lib/events.ts but was never
+     added here, so every one of those events was silently dropped. */
+  "help_centre_opened",
+  // Funnel events added for the GA4/Amplitude spec — the click/attempt half of
+  // the funnel the "completed" events above never captured.
+  "unlock_full_read_clicked",
+  "sign_up_form_opened",
+  "package_1100_clicked",
+  "package_5100_clicked",
+  "razorpay_redirected",
+  "payment_failed",
+  // Page-reach + flow-step events (round 2) — arrival and intent points so a
+  // funnel can be built from reach → request → unlock.
+  "deal_room_page_viewed",
+  "sun_vastu_page_viewed",
+  "requirements_flow_started",
+  "shortlist_page_reached",
+  "first_shortlist_unlocked",
+  "sun_vastu_requested",
+  "project_request_submitted",
 ]);
 
 const MAX_BATCH = 20;

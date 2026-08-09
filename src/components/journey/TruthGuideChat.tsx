@@ -17,7 +17,7 @@ import {
   type GateReason,
 } from "@/lib/truthGuideChat";
 import { isSignedIn } from "@/lib/journey";
-import { normalisePhone, prettyPhone, sendOtp, verifyOtp, saveName, OTP_LENGTH } from "@/lib/phoneAuth";
+import { normalisePhone, prettyPhone, sendOtp, verifyOtp, saveName, signInWithGoogle, OTP_LENGTH } from "@/lib/phoneAuth";
 import { track } from "@/lib/events";
 import HelpCentre from "./HelpCentre";
 import { fetchBilling } from "@/lib/billing";
@@ -97,8 +97,18 @@ export default function TruthGuideChat({
   function startAuth() {
     setAuthStep("phone");
     setInput("");
+    track("sign_up_form_opened", { props: { source: "truthguide-chat" } });
     say("Happy to keep going — I just need a number to verify. What's the best mobile for you?");
     setTimeout(() => inputRef.current?.focus(), 80);
+  }
+
+  /* Google is the shared alternative to the in-thread number verify. It
+     redirects out and back signed in; the chat lifts its guest gate on return. */
+  async function googleSignIn() {
+    if (authBusy) return;
+    setAuthBusy(true);
+    const r = await signInWithGoogle();
+    if (!r.ok) { setAuthBusy(false); say(r.error ?? "Google sign-in didn't start — try the number instead."); }
   }
 
   async function handleAuth(raw: string) {
@@ -240,12 +250,21 @@ export default function TruthGuideChat({
                 Signing in doesn&apos;t get you a better answer, just more of them:
                 {" "}{ANON_MESSAGE_LIMIT} questions as a guest, {DAILY_LIMIT} a day once you&apos;re in.
               </p>
-              <button
-                onClick={startAuth}
-                className="mt-2.5 text-[0.78rem] font-semibold text-[#1e6b45] transition-opacity hover:opacity-70"
-              >
-                Sign in &rarr;
-              </button>
+              <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
+                <button
+                  onClick={startAuth}
+                  className="text-[0.78rem] font-semibold text-[#1e6b45] transition-opacity hover:opacity-70"
+                >
+                  Sign in with a number &rarr;
+                </button>
+                <button
+                  onClick={googleSignIn}
+                  disabled={authBusy}
+                  className="inline-flex items-center gap-2 rounded-full border border-[#1a1a1a]/15 bg-white px-3 py-1.5 text-[0.76rem] font-semibold text-[#1a1a1a] transition-colors hover:bg-white/70 disabled:opacity-40"
+                >
+                  <GoogleG /> Continue with Google
+                </button>
+              </div>
             </div>
           );
         })()}
@@ -286,12 +305,21 @@ export default function TruthGuideChat({
               Signing in gets you {DAILY_LIMIT} questions a day — same answers, no card.
               Either way, the project reads stay open to you.
             </p>
-            <button
-              onClick={startAuth}
-              className="mt-4 rounded-xl bg-[#1e6b45] px-6 py-3 text-[0.82rem] font-semibold text-white transition-colors hover:bg-[#238c55]"
-            >
-              Sign in &rarr;
-            </button>
+            <div className="mt-4 flex flex-col items-stretch gap-2.5">
+              <button
+                onClick={startAuth}
+                className="rounded-xl bg-[#1e6b45] px-6 py-3 text-[0.82rem] font-semibold text-white transition-colors hover:bg-[#238c55]"
+              >
+                Sign in with a number &rarr;
+              </button>
+              <button
+                onClick={googleSignIn}
+                disabled={authBusy}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#1a1a1a]/15 bg-white px-6 py-3 text-[0.82rem] font-semibold text-[#1a1a1a] transition-colors hover:bg-white/70 disabled:opacity-40"
+              >
+                <GoogleG /> Continue with Google
+              </button>
+            </div>
           </div>
         )}
 
@@ -375,6 +403,17 @@ export default function TruthGuideChat({
         </p>
       </div>
     </div>
+  );
+}
+
+function GoogleG() {
+  return (
+    <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+      <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.28v3.15C3.25 21.3 7.31 24 12 24z"/>
+      <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.28C.46 8.21 0 10.05 0 12s.46 3.79 1.28 5.42l4-3.15z"/>
+      <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.28 6.58l4 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+    </svg>
   );
 }
 

@@ -5,6 +5,7 @@ import Logo from "@/components/Logo";
 import OtpDigits from "@/components/auth/OtpDigits";
 import { saveLead, emptyBuyData, type BuyData } from "@/lib/journey";
 import { pushDemand } from "@/lib/heroSearch";
+import { track } from "@/lib/events";
 import { sendOtp, verifyOtp, maskContact, OTP_LENGTH, type Verified } from "@/lib/shortlistAuth";
 import { basePath } from "@/lib/site";
 
@@ -191,6 +192,7 @@ export default function CustomReportPage() {
       createdAt: Date.now(),
     });
     pushDemand(project.trim());
+    track("project_request_submitted", { projectName: project.trim(), props: { kind: "custom-report" } });
     setDone(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }

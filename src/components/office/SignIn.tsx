@@ -19,6 +19,7 @@ import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
 import OtpDigits from "../auth/OtpDigits";
 import { saveLead } from "@/lib/journey";
+import { track } from "@/lib/events";
 import {
   normalisePhone,
   normaliseIntl,
@@ -82,6 +83,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
 
   // Auto-detect country code on mount
   useEffect(() => {
+    track("sign_up_form_opened", { props: { source: "office-signin" } });
     detectUserCountry().then((geo) => {
       if (geo.dialCode && DIAL.some((d) => d.code === geo.dialCode)) {
         setDial(geo.dialCode);

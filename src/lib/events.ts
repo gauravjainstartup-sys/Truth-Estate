@@ -43,7 +43,27 @@ export type EventName =
   | "model_opened"
   /* Home-page search engaged — the first keystroke, or the mobile search
      surface opened. Top-of-funnel intent, distinct from chat_opened. */
-  | "search_started";
+  | "search_started"
+  /* ── Funnel events (GA4/Amplitude spec) — the click/attempt half the
+     "completed" events above never captured. All fire via track() so they
+     reach GA4 + Amplitude synchronously. ── */
+  | "unlock_full_read_clicked"   // "Get Full Read" clicked (intent, before the modal)
+  | "sign_up_form_opened"        // any sign-up / OTP form shown (props.source = which)
+  | "package_1100_clicked"       // ₹1,100 package selected
+  | "package_5100_clicked"       // ₹5,100 package selected
+  | "razorpay_redirected"        // Razorpay checkout about to open
+  | "payment_failed"             // Razorpay reported a failed payment
+  /* ── Page-reach + flow-step events (GA4/Amplitude spec, round 2). Each
+     names a place a visitor arrived or an intent they declared, so a funnel
+     can be built from arrival → request → unlock without inferring from the
+     URL. Fire via track(), so GA4 + Amplitude get them synchronously. ── */
+  | "deal_room_page_viewed"          // the Deal Room surface was reached
+  | "sun_vastu_page_viewed"          // the /sun-vastu gallery was reached
+  | "requirements_flow_started"      // the requirements / brief flow was opened
+  | "shortlist_page_reached"         // the shortlist surface was reached
+  | "first_shortlist_unlocked"       // the reader's FIRST shortlist unlock (once per device)
+  | "sun_vastu_requested"            // a Sun & Vastu 3D request was submitted
+  | "project_request_submitted";     // a project interest / request lead was submitted
 
 type Queued = {
   name: EventName;

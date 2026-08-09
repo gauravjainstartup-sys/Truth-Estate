@@ -23,6 +23,7 @@
    rotating Razorpay keys is a dashboard change, not a redeploy.
    ════════════════════════════════════════════════════════════════ */
 import { getAnonId } from "@/lib/truthGuideChat";
+import { track } from "@/lib/events";
 
 const SUPABASE_URL = "https://lyetvabfgaidvqrbmaoy.supabase.co";
 const SUPABASE_ANON_KEY =
@@ -143,7 +144,17 @@ export async function payForPackage(
       modal: { ondismiss: () => finish(null) },
       handler: (r: RzpSuccess) => finish(r),
     });
-    rzp.on("payment.failed", () => finish(null));
+    rzp.on("payment.failed", (e: unknown) => {
+      const err = (e as { error?: { code?: string; description?: string } } | null)?.error;
+      track("payment_failed", { projectSlug: slug, props: { packageId, code: err?.code, description: err?.description } });
+      finish(null);
+    });
+    // Checkout is about to take over — fire synchronously BEFORE open() so the
+    // event is out before the sheet/redirect can swallow it.
+    track("razorpay_redirected", {
+      projectSlug: slug,
+      props: { packageId, amountInr: typeof order.amountPaise === "number" ? Math.round(order.amountPaise / 100) : undefined },
+    });
     rzp.open();
   });
 

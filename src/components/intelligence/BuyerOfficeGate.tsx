@@ -9,7 +9,8 @@ import {
   isSignedIn,
 } from "@/lib/journey";
 import { CONSULT_DAYS, CONSULT_DAYPARTS, CONSULT_FORMATS, advisorFor } from "@/lib/consultation";
-import { normalisePhone, normaliseIntl, sendOtp, sendOtpIntl, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
+import { normalisePhone, normaliseIntl, sendOtp, sendOtpIntl, verifyOtp, signInWithGoogle, OTP_LENGTH } from "@/lib/phoneAuth";
+import { track } from "@/lib/events";
 
 /* THE BUYER OFFICE — the member surface for a project's unit intelligence.
    Freemium: the live 3D + a sample unit are free; the full per-unit verdict
@@ -122,11 +123,9 @@ export default function BuyerOfficeGate({
   const [outcome, setOutcome] = useState<"registered" | "unlocked">("registered");
   const [draft, setDraft] = useState<{ budgetCr: number; configs: string[]; priorities: string[] }>({ budgetCr: 6, configs: [], priorities: [] });
   const [name, setName] = useState("");
-  const [method, setMethod] = useState<"phone" | "email">("phone");
   const [dial, setDial] = useState("+91");
   const [num, setNum] = useState("");
   const [channel, setChannel] = useState<"whatsapp" | "sms">("whatsapp");
-  const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   /* Six boxes could never be filled by a four-digit code. */
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(""));
@@ -165,6 +164,14 @@ export default function BuyerOfficeGate({
     return () => { document.body.style.overflow = prev; };
   }, [open]);
 
+  /* The credential form is on screen at the "verify" step — fire once when it
+     appears so the sign-up funnel has an "opened" count for this surface. */
+  useEffect(() => {
+    if (open && step === "verify") {
+      track("sign_up_form_opened", { projectSlug: slug, projectName: project, props: { source: "buyer-office" } });
+    }
+  }, [open, step, slug, project]);
+
   if (!open) return null;
   const isIndia = dial === "+91";
   const numValid = num.replace(/\D/g, "").length >= (isIndia ? 10 : 6);
@@ -192,7 +199,10 @@ export default function BuyerOfficeGate({
 
   function persistAndJoin() {
     const buy = saveBrief();
-    saveLead({ name: name.trim() || "—", email: method === "email" ? email.trim() : "", phone: method === "phone" ? `${dial} ${num}`.trim() : undefined, project, intent: "buyer-office", buy, createdAt: Date.now() });
+    saveLead({ name: name.trim() || "—", email: "", phone: `${dial} ${num}`.trim(), project, intent: "buyer-office", buy, createdAt: Date.now() });
+    /* The Sun & Vastu 3D request is on the record now — fire the funnel event
+       synchronously so GA4 + Amplitude see the conversion. */
+    track("sun_vastu_requested", { projectSlug: slug, projectName: project, props: { source: "buyer-office", via: "otp" } });
     onJoined();
     setOutcome("registered");
     setStep("done");
@@ -204,11 +214,6 @@ export default function BuyerOfficeGate({
      "verified" when nothing had checked it. */
   async function sendCode() {
     if (busy) return;
-    if (method === "email") {
-      /* MSG91 is an SMS transport; there is no email OTP behind this. */
-      setErr("We can only verify by mobile right now — switch to phone.");
-      return;
-    }
     if (!numValid) { setErr("Enter a valid mobile number."); return; }
     const ten = isIndia ? normalisePhone(num) : normaliseIntl(dial, num);
     if (!ten) { setErr("That number doesn't look right — mind checking it?"); return; }
@@ -322,26 +327,18 @@ export default function BuyerOfficeGate({
               <p className={`mt-2.5 text-[0.86rem] font-light leading-[1.6] ${t.body}`}>Verify once. Your Buyer Office, and everything we tell you, stays on the record — yours to keep.</p>
               <div className="mt-6 flex flex-col gap-3">
                 <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" className={`${field} w-full`} />
-                <div className={`flex gap-1 rounded-md border p-1 ${t.tabWrap}`}>
-                  <Tab t={t} on={method === "phone"} onClick={() => { setMethod("phone"); setSent(false); }}>Mobile</Tab>
-                  <Tab t={t} on={method === "email"} onClick={() => { setMethod("email"); setSent(false); }}>Email</Tab>
+                <div className="flex gap-2">
+                  <select value={dial} onChange={(e) => setDial(e.target.value)} disabled={sent} className={`${field} w-[96px] shrink-0`}>
+                    {DIAL.map((d) => <option key={d.code} value={d.code} className={t.option}>{d.flag} {d.code}</option>)}
+                  </select>
+                  <input value={num} onChange={(e) => setNum(e.target.value.replace(/[^\d\s]/g, ""))} disabled={sent} placeholder="Mobile number" inputMode="tel" className={`${field} min-w-0 flex-1`} />
                 </div>
-                {method === "phone" ? (
-                  <div className="flex gap-2">
-                    <select value={dial} onChange={(e) => setDial(e.target.value)} disabled={sent} className={`${field} w-[96px] shrink-0`}>
-                      {DIAL.map((d) => <option key={d.code} value={d.code} className={t.option}>{d.flag} {d.code}</option>)}
-                    </select>
-                    <input value={num} onChange={(e) => setNum(e.target.value.replace(/[^\d\s]/g, ""))} disabled={sent} placeholder="Mobile number" inputMode="tel" className={`${field} min-w-0 flex-1`} />
-                  </div>
-                ) : (
-                  <input value={email} onChange={(e) => setEmail(e.target.value)} disabled={sent} type="email" placeholder="you@email.com" className={`${field} w-full`} />
-                )}
-                {method === "phone" && isIndia && !sent && (
+                {isIndia && !sent && (
                   <div className="flex gap-2"><Chip t={t} on={channel === "whatsapp"} onClick={() => setChannel("whatsapp")}>WhatsApp</Chip><Chip t={t} on={channel === "sms"} onClick={() => setChannel("sms")}>SMS</Chip></div>
                 )}
                 {sent && (
                   <div>
-                    <p className={`mb-2.5 text-[0.76rem] font-light ${t.body}`}>Enter the code sent {method === "email" ? "to your email" : `on ${channelName}`}</p>
+                    <p className={`mb-2.5 text-[0.76rem] font-light ${t.body}`}>Enter the code sent on {channelName}</p>
                     <OtpDigits
                       value={otp} onChange={setOtp} len={OTP_LENGTH} autoFocus onComplete={submitVerify}
                       boxClass={`h-12 w-full rounded-md border text-center text-[1.1rem] font-medium outline-none ${t.otp}`}
@@ -351,8 +348,42 @@ export default function BuyerOfficeGate({
               </div>
               {err && <p className={`mt-2.5 text-[0.78rem] ${t.err}`}>{err}</p>}
               <button disabled={busy} className={`mt-5 ${primaryBtn} disabled:opacity-60`}>{busy ? (sent ? "Verifying…" : "Sending…") : !sent ? "Send code" : "Open my Buyer Office"}</button>
+              {/* Google is the shared alternative, same as the report unlock and
+                  the sign-in screen. It saves the brief first, then redirects out
+                  to Google and back to this page signed in. */}
+              {!sent && (
+                <>
+                  <div className="relative my-4 text-center">
+                    <div className="absolute inset-0 flex items-center"><div className={`w-full border-t ${t.orLine}`} /></div>
+                    <span className={`relative px-3 text-[0.72rem] font-medium uppercase tracking-wider ${t.orText} ${t.sheetBg}`}>or</span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={async () => {
+                      if (busy) return;
+                      setBusy(true); setErr("");
+                      /* Persist the brief so the request survives the redirect;
+                         name + email are captured on return by the OAuth callback. */
+                      saveBrief();
+                      track("sun_vastu_requested", { projectSlug: slug, projectName: project, props: { source: "buyer-office", via: "google" } });
+                      const r = await signInWithGoogle();
+                      if (!r.ok) { setBusy(false); setErr(r.error); }
+                    }}
+                    className={`flex w-full items-center justify-center gap-3 rounded-md border px-6 py-3.5 text-[0.86rem] font-medium transition-colors ${t.google} disabled:opacity-60`}
+                  >
+                    <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                      <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.28v3.15C3.25 21.3 7.31 24 12 24z"/>
+                      <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.28C.46 8.21 0 10.05 0 12s.46 3.79 1.28 5.42l4-3.15z"/>
+                      <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.28 6.58l4 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                    </svg>
+                    Continue with Google
+                  </button>
+                </>
+              )}
               <button type="button" onClick={() => setStep("req")} className={`mt-3.5 ${backLink}`}>← Back</button>
-              <p className={`mt-4 text-center text-[0.68rem] font-light leading-[1.5] ${t.fine}`}>Free — no payment. We never share or spam. Front-end demo; OTP is simulated.</p>
+              <p className={`mt-4 text-center text-[0.68rem] font-light leading-[1.5] ${t.fine}`}>Free — no payment. We never share or spam.</p>
             </form>
           ) : step === "done" ? (
             <div className="text-center">
@@ -490,10 +521,6 @@ function Group({ t, label, hint, children }: { t: Tokens; label: string; hint?: 
 
 function Chip({ t, on, onClick, children }: { t: Tokens; on: boolean; onClick: () => void; children: React.ReactNode }) {
   return <button type="button" onClick={onClick} className={`rounded-full border px-3.5 py-1.5 text-[0.8rem] font-light transition-all ${on ? t.chipOn : t.chipOff}`}>{children}</button>;
-}
-
-function Tab({ t, on, onClick, children }: { t: Tokens; on: boolean; onClick: () => void; children: React.ReactNode }) {
-  return <button type="button" onClick={onClick} className={`flex-1 rounded-[5px] px-3 py-2 text-[0.82rem] font-medium transition-colors ${on ? t.tabOn : t.tabOff}`}>{children}</button>;
 }
 
 type IconName = "cube" | "sun" | "compass" | "light" | "wind" | "value" | "check" | "calendar";
