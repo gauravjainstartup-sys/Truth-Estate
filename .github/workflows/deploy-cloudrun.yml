@@ -51,6 +51,15 @@ on:
         description: "Re-pull the Supabase snapshot (otherwise reuse the cache)"
         type: boolean
         default: true
+      staging_tag:
+        # Preview escape hatch: deploy the built image as a Cloud Run revision
+        # that takes NO live traffic but gets its own tagged URL
+        # (https://<tag>---<service>-<hash>-<region>.a.run.app). Lets us click a
+        # real build on the production service without touching truthestate.in.
+        # Blank = a normal 100%-traffic production deploy.
+        description: "Preview: deploy a NO-TRAFFIC revision under this tag (e.g. dev). Blank = production deploy."
+        type: string
+        default: ""
   # Data refresh. Every 6 hours on the hour (UTC) → 05:30 / 11:30 / 17:30 /
   # 23:30 IST, so data entered across the Indian workday is live within a few
   # hours with no manual dispatch. Schedule runs ALWAYS re-pull Supabase
@@ -330,18 +339,42 @@ jobs:
 
       - name: Deploy
         run: |
-          gcloud run deploy "$SERVICE_NAME" \
-            --image "$IMAGE" \
-            --region "$GCP_REGION" \
-            --project "$GCP_PROJECT_ID" \
-            --platform managed \
-            --allow-unauthenticated \
-            --port 8080 \
-            --cpu 1 --memory 512Mi \
-            --min-instances 0 --max-instances 10 \
-            --quiet
+          if [ -n "${{ inputs.staging_tag }}" ]; then
+            echo "PREVIEW deploy: revision tagged '${{ inputs.staging_tag }}' with NO live traffic — truthestate.in is untouched."
+            gcloud run deploy "$SERVICE_NAME" \
+              --image "$IMAGE" \
+              --region "$GCP_REGION" \
+              --project "$GCP_PROJECT_ID" \
+              --platform managed \
+              --allow-unauthenticated \
+              --port 8080 \
+              --cpu 1 --memory 512Mi \
+              --min-instances 0 --max-instances 10 \
+              --no-traffic --tag "${{ inputs.staging_tag }}" \
+              --quiet
+            BASE=$(gcloud run services describe "$SERVICE_NAME" --region "$GCP_REGION" \
+                   --project "$GCP_PROJECT_ID" --format="value(status.url)")
+            TAG_URL="https://${{ inputs.staging_tag }}---${BASE#https://}"
+            echo "::notice title=Staging preview URL::$TAG_URL"
+            { echo "### 🔗 Staging preview (no live traffic)"; echo ""; echo "$TAG_URL"; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            gcloud run deploy "$SERVICE_NAME" \
+              --image "$IMAGE" \
+              --region "$GCP_REGION" \
+              --project "$GCP_PROJECT_ID" \
+              --platform managed \
+              --allow-unauthenticated \
+              --port 8080 \
+              --cpu 1 --memory 512Mi \
+              --min-instances 0 --max-instances 10 \
+              --quiet
+          fi
 
       - name: Smoke-test what actually went live
+        # Skipped for a staging preview: the live URL still serves the current
+        # production revision (the preview took no traffic), so testing it would
+        # check the wrong revision.
+        if: ${{ inputs.staging_tag == '' }}
         # A green deploy is not a working site. These are the four things
         # that have actually broken on this kind of cutover before.
         run: |
