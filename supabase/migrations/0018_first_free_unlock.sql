@@ -34,8 +34,10 @@ WHERE first_free_used IS NOT TRUE
         coalesce(array_length(p.unlocked_reports, 1), 0) > 0
      OR lower(coalesce(p.plan, '')) IN ('premium', 'all-access', 'all', 'unlimited')
      OR EXISTS (
+          -- payments.user_id and user_profiles.id can differ in type
+          -- (text vs uuid), so compare both as text.
           SELECT 1 FROM public.payments pay
-          WHERE pay.user_id = p.id
+          WHERE pay.user_id::text = p.id::text
             AND lower(coalesce(pay.status, '')) = 'completed'
         )
   );
