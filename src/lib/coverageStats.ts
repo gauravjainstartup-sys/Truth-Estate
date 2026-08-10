@@ -17,8 +17,10 @@
 import { fetchBacklogFull, fetchMicroMarkets } from "@/lib/supabase";
 import { resolveDevelopers } from "@/lib/developersLive";
 
-/* Methodology depth per project. Not row-derived — see note above. */
-export const INTELLIGENCE_SIGNALS = 80;
+/* Methodology depth per project. Not row-derived — see note above.
+   Consistent with the unlock copy ("150+ signals / 150+ checks",
+   src/components/intelligence/UnlockModal.tsx). */
+export const INTELLIGENCE_SIGNALS = 150;
 
 export type CoverageStats = {
   projects: number;
