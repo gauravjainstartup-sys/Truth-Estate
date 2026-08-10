@@ -360,7 +360,7 @@ export default function UnlockModal({
       setPayErr("That didn't go through. Nothing was charged — please try again, or your advisor can help.");
       return;
     }
-    grantPackage("read", slug);
+    grantPackage("read", slug, { amountInr: 0, mrpInr: readMrp, discountLabel: "First report free" });
     void fetchEntitlements();
     invalidateBilling();
     setStep("done");

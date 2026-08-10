@@ -1691,7 +1691,7 @@ function DocumentsSection() {
               <div key={p.id} className="flex flex-col gap-2 rounded-2xl border border-[#1a1a1a]/[0.08] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <p className="text-[0.92rem] font-medium text-[#1a1a1a]">Invoice {p.invoiceNo} — {p.item}</p>
-                  <p className="mt-0.5 text-[0.78rem] font-light text-[#1a1a1a]/45">{fmtDate(p.date)} · {INR(p.amountInr)} · paid via Razorpay</p>
+                  <p className="mt-0.5 text-[0.78rem] font-light text-[#1a1a1a]/45">{fmtDate(p.date)} · {INR(p.amountInr)} · {p.amountInr === 0 ? "complimentary" : "paid via Razorpay"}</p>
                 </div>
                 <button onClick={() => setInvoice(p)} className="shrink-0 self-start text-[0.78rem] font-medium text-[#9a7a2e] transition-colors hover:text-[#7a5f1e] sm:self-auto">
                   View / download ↗
@@ -1712,6 +1712,10 @@ function DocumentsSection() {
    ════════════════════════════════════════════════════════════════ */
 function InvoiceModal({ payment, onClose }: { payment: Payment; onClose: () => void }) {
   const account = loadAccount();
+  /* A ₹0 total is a complimentary read, not a Razorpay charge — the free
+     first report writes a real ledger row (with a `free-first-…` reference),
+     so the invoice must not claim money changed hands. */
+  const free = payment.amountInr === 0;
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
@@ -1761,7 +1765,7 @@ function InvoiceModal({ payment, onClose }: { payment: Payment; onClose: () => v
           <div className="text-right">
             <p className="text-[0.6rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/40">Seller</p>
             <p className="mt-1 font-medium text-[#1a1a1a]">Truth Estate</p>
-            <p className="text-[0.74rem]">Paid via Razorpay{payment.razorpayId ? ` · ${payment.razorpayId}` : ""}</p>
+            <p className="text-[0.74rem]">{free ? "Complimentary" : <>Paid via Razorpay{payment.razorpayId ? ` · ${payment.razorpayId}` : ""}</>}</p>
           </div>
         </div>
 
@@ -1790,7 +1794,7 @@ function InvoiceModal({ payment, onClose }: { payment: Payment; onClose: () => v
         </div>
 
         <p className="mt-4 rounded-lg bg-[#c9a96e]/[0.1] px-3.5 py-3 text-[0.74rem] font-light leading-relaxed text-[#1a1a1a]/55">
-          No GST is charged at present. This receipt confirms your payment to Truth Estate; the authoritative record is held against your account{payment.razorpayId ? " and the Razorpay reference above" : ""}.
+          No GST is charged at present. This receipt confirms your {free ? "complimentary first report from" : "payment to"} Truth Estate; the authoritative record is held against your account{!free && payment.razorpayId ? " and the Razorpay reference above" : ""}.
         </p>
 
         <div className="mt-5 flex gap-2.5">

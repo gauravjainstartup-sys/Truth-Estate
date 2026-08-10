@@ -141,7 +141,7 @@ export function receiptHtml(p: Payment): string {
   </div>
 
   <p class="note">
-    Paid securely via Razorpay. Truth Estate never stores card details.<br>
+    ${p.amountInr === 0 ? "Complimentary — your first report, on the house." : "Paid securely via Razorpay. Truth Estate never stores card details."}<br>
     This is a payment receipt, not a GST tax invoice. Need one for accounting?
     Reply to your advisor and we will raise it.
   </p>
