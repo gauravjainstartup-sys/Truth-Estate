@@ -24,7 +24,7 @@ import {
 } from "@/lib/journey";
 import { usePricing } from "@/lib/usePricing";
 import { normalisePhone, normaliseIntl, phoneKnown, prettyPhone, sendOtp, sendTwilioOtp, verifyOtp, verifyTwilioOtp, signInWithGoogle, OTP_LENGTH } from "@/lib/phoneAuth";
-import { fetchEntitlements, cachedEntitlements } from "@/lib/entitlements";
+import { fetchEntitlements, offerFirstFree } from "@/lib/entitlements";
 import { track } from "@/lib/events";
 import { payForPackage, claimFreeUnlock, prewarmCheckout, type Receipt } from "@/lib/checkout";
 import { openReceipt, invalidateBilling, inr as inrFmt } from "@/lib/billing";
@@ -139,14 +139,15 @@ export default function UnlockModal({
   const amountFor = (id: PackageId) => Math.max(packageById(id).inr - credit, 0);
   const isUpgrade = (id: PackageId) => credit > 0 && !owns(id);
   const selDiscount = discountOf(packageById(sel));
-  /* FIRST REPORT FREE. A genuinely new profile — signed in, nothing yet
-     unlocked, not All-Access — gets its first Full Read at ₹0. Applies ONLY
-     to `read` (All-Access is always paid). This decides what the sheet shows;
-     claim-free-unlock re-checks server-side and is the authority, so a stale
-     cache at worst offers a free unlock the server then declines, dropping the
-     reader onto the normal price. */
-  const _ent = cachedEntitlements();
-  const firstFree = isSignedIn() && !!_ent && _ent.userId != null && _ent.unlocked.length === 0 && !_ent.all;
+  /* FIRST REPORT FREE. A genuinely new profile — nothing yet unlocked, not
+     All-Access — gets its first Full Read at ₹0. Applies ONLY to `read`
+     (All-Access is always paid). offerFirstFree() gates the entitlements cache
+     on the CURRENT session's user, so a stale cache left by a different or
+     earlier sign-in on this device can't make a new profile read as a paying
+     returning customer. This decides what the sheet shows; claim-free-unlock
+     re-checks server-side and is the authority, so at worst it offers a free
+     unlock the server then declines, dropping the reader onto the normal price. */
+  const firstFree = offerFirstFree();
   const freeRead = (id: PackageId) => firstFree && !freeDeclined && id === "read";
   /* The struck value on a free read is the Full Read's list price (₹2,100),
      read from the same discount the paid path shows. */

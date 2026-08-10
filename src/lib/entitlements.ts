@@ -18,7 +18,7 @@
    ════════════════════════════════════════════════════════════════ */
 import { getAnonId } from "@/lib/truthGuideChat";
 import {
-  readEntitlements, writeEntitlements, serverHasAccess,
+  readEntitlements, writeEntitlements, serverHasAccess, offerFirstFree,
   type ServerEntitlements,
 } from "@/lib/entitlementsCache";
 
@@ -72,5 +72,5 @@ export function fetchEntitlements(): Promise<ServerEntitlements | null> {
   return inFlight;
 }
 
-export { readEntitlements as cachedEntitlements, serverHasAccess };
+export { readEntitlements as cachedEntitlements, serverHasAccess, offerFirstFree };
 export type { ServerEntitlements };

@@ -9,9 +9,9 @@
      • ties the *visible* Truth Score to the locked detail ("why only X?").
    ──────────────────────────────────────────────────────────────────────── */
 
-import { discountOf, isSignedIn } from "@/lib/journey";
+import { discountOf } from "@/lib/journey";
 import { usePackage } from "@/lib/usePricing";
-import { cachedEntitlements } from "@/lib/entitlements";
+import { offerFirstFree } from "@/lib/entitlements";
 
 /* Each locked section framed as the burning question it answers — the pull is
    the question, not a data dump. Generic-but-true (no fabricated findings). */
@@ -62,18 +62,14 @@ export default function LockedReport({
   const owner = audience === "owner";
   const read = usePackage("read");
   const d = discountOf(read);
-  /* First report free — a guest, or a signed-in profile that has never
-     unlocked anything. The paywall then leads with ₹0 (₹2,100 struck); a
-     returning customer who has spent their free report sees the normal price.
-     The unlock modal re-checks server-side and is the authority.
-
-     The cache counts ONLY while a session justifies it — the same gate
-     serverHasAccess() applies. A signed-out reader carrying a stale cache
-     from an earlier sign-in (or an expired session) must read as a guest;
-     otherwise this CTA quotes the paid price while the report itself stays
-     locked, the two disagreeing about the same person. */
-  const ent = isSignedIn() ? cachedEntitlements() : null;
-  const firstFree = !ent || ent.userId == null || (ent.unlocked.length === 0 && !ent.all);
+  /* First report free — offered to anyone who does not yet own a report: a
+     guest (they'll sign up to claim), or a signed-in profile with nothing
+     unlocked. offerFirstFree() gates the entitlements cache on the CURRENT
+     session's user (the same gate serverHasAccess applies), so a cache left by
+     a different or earlier sign-in is ignored — the CTA never quotes the paid
+     price off someone else's unlocks while the report itself stays locked.
+     claim-free-unlock re-checks server-side and is the authority. */
+  const firstFree = offerFirstFree();
   return (
     <div className="mt-14 border-t border-[#1a1a1a]/8 pt-12">
       {/* ── the pitch ── */}
