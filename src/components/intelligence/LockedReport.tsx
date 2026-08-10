@@ -11,6 +11,7 @@
 
 import { discountOf } from "@/lib/journey";
 import { usePackage } from "@/lib/usePricing";
+import { cachedEntitlements } from "@/lib/entitlements";
 
 /* Each locked section framed as the burning question it answers — the pull is
    the question, not a data dump. Generic-but-true (no fabricated findings). */
@@ -48,20 +49,25 @@ const OWNER_HOOKS: Record<string, string> = {
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
 export default function LockedReport({
-  projectName, truthScore = 0, grade = "", ticket = "", onUnlock, onSample, audience = "buyer",
+  projectName, truthScore = 0, grade = "", ticket = "", onUnlock, audience = "buyer",
 }: {
   projectName: string;
   truthScore?: number;
   grade?: string;
   ticket?: string;
   onUnlock: () => void;
-  onSample: () => void;
   audience?: "buyer" | "owner";
 }) {
   const lost = Math.max(0, 100 - Math.round(truthScore));
   const owner = audience === "owner";
   const read = usePackage("read");
   const d = discountOf(read);
+  /* First report free — a guest, or a signed-in profile that has never
+     unlocked anything. The paywall then leads with ₹0 (₹2,100 struck); a
+     returning customer who has spent their free report sees the normal price.
+     The unlock modal re-checks server-side and is the authority. */
+  const ent = cachedEntitlements();
+  const firstFree = !ent || ent.userId == null || (ent.unlocked.length === 0 && !ent.all);
   return (
     <div className="mt-14 border-t border-[#1a1a1a]/8 pt-12">
       {/* ── the pitch ── */}
@@ -87,25 +93,26 @@ export default function LockedReport({
           className="group mt-7 inline-flex w-full flex-col items-center justify-center gap-0.5 rounded-lg bg-[#1e6b45] px-6 py-3 text-white shadow-[0_18px_40px_-16px_rgba(30,107,69,0.6)] transition-all hover:bg-[#238c55] sm:w-auto sm:px-12"
         >
           <span className="inline-flex items-center gap-2 text-[1rem] font-semibold tracking-[0.01em]">
-            Get the full read — {inr(read.inr)}
+            {firstFree ? "Unlock First Report at ₹0" : <>Get the full read — {inr(read.inr)}</>}
             <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
           </span>
-          {d && (
-            <span className="text-[0.72rem] font-medium text-white/85">
-              <span className="text-white/55 line-through">{inr(d.mrp)}</span> · save {inr(d.mrp - read.inr)} ({d.pct}% off)
-            </span>
-          )}
+          {firstFree
+            ? <span className="text-[0.72rem] font-medium text-white/85"><span className="text-white/55 line-through">{inr(d?.mrp ?? read.inr)}</span> · your first report is free</span>
+            : d && (
+              <span className="text-[0.72rem] font-medium text-white/85">
+                <span className="text-white/55 line-through">{inr(d.mrp)}</span> · save {inr(d.mrp - read.inr)} ({d.pct}% off)
+              </span>
+            )}
         </button>
         <p className="mt-3.5 text-[0.82rem] leading-relaxed text-[#1a1a1a]/55">
-          {owner
+          {firstFree
+            ? <>Free on sign-up — no card. One missed red flag costs a great deal more.</>
+            : owner
             ? <>While it&rsquo;s still going up, what this finds is still worth acting on.</>
             : ticket
             ? <>That&rsquo;s a rounding error on {ticket} — one missed red flag costs a great deal more.</>
             : <>One missed red flag costs a great deal more than the read.</>}
         </p>
-        <button type="button" onClick={onSample} className="mt-4 inline-block text-[0.82rem] font-semibold text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]">
-          See a full sample read first →
-        </button>
       </div>
 
       {/* ── what's behind the wall — every row taps to unlock ── */}

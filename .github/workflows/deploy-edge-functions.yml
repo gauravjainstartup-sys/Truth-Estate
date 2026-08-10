@@ -52,6 +52,12 @@ jobs:
       # signature that only Razorpay and this function can produce.
       - run: supabase functions deploy razorpay-order --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
       - run: supabase functions deploy razorpay-verify --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
+      # First report free for a new profile. --no-verify-jwt like the other
+      # Razorpay paths: the browser calls it with the anon key; the real
+      # authorisation is the verified anon→user claim inside, and the atomic
+      # first_free_used flag (migration 0018) is what makes "one free" safe.
+      # Needs migration 0018 applied before it can grant.
+      - run: supabase functions deploy claim-free-unlock --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
       - run: supabase functions deploy track --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
       - run: supabase functions deploy brief --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
       - run: supabase functions deploy claim-events --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy

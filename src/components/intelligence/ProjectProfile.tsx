@@ -49,7 +49,6 @@ import ReportExplore from "./ReportExplore";
 import ReportAlternatives from "./ReportAlternatives";
 import ReportFeedback from "./ReportFeedback";
 import ReportHomes from "./ReportHomes";
-import SampleSheet from "./SampleSheet";
 import { ReportStaticContext } from "./reportStatic";
 import { basePath, homeHref } from "@/lib/site";
 import { recordReportView, markOwned, unmarkOwned, isOwned } from "@/lib/officeReports";
@@ -231,7 +230,6 @@ export default function ProjectProfile({
   const [unlockFocus3D, setUnlockFocus3D] = useState(false);
   const [threeDAccess, setThreeDAccess] = useState(false);
   const [challengeOpen, setChallengeOpen] = useState(false);
-  const [sampleOpen, setSampleOpen] = useState(false);
   /* Re-check when the server's answer lands, and when the session changes.
      Mount alone is too early: fetchEntitlements is still in flight, so a
      reader who owns this report was shown the paywall and only let in on
@@ -659,7 +657,7 @@ export default function ProjectProfile({
           {!embedded && (
             <aside className="hidden self-start xl:col-start-2 xl:row-start-2 xl:sticky xl:top-[132px] xl:block">
               {locked ? (
-                <UnlockDesk onUnlock={openUnlock} onSample={() => setSampleOpen(true)} />
+                <UnlockDesk onUnlock={openUnlock} />
               ) : (
               <>
               <div className="rounded-2xl border border-[#1a1a1a]/10 bg-[#FBF8F2] p-6">
@@ -1123,7 +1121,7 @@ export default function ProjectProfile({
                in place of the analysis; a paid reader sees everything. ── */}
             {locked ? (
               <div id="unlock" className="scroll-mt-24">
-                <LockedReport projectName={p.name} truthScore={p.truthScore} grade={scoreGrade(p.truthScore)} ticket={lockedTicket} onUnlock={openUnlock} onSample={() => setSampleOpen(true)} audience={audience} />
+                <LockedReport projectName={p.name} truthScore={p.truthScore} grade={scoreGrade(p.truthScore)} ticket={lockedTicket} onUnlock={openUnlock} audience={audience} />
               </div>
             ) : (
             <>
@@ -1332,7 +1330,7 @@ export default function ProjectProfile({
                the price-forward UnlockDesk instead. */}
             {locked ? (
               <div className="mt-12 xl:hidden">
-                <UnlockDesk onUnlock={openUnlock} onSample={() => setSampleOpen(true)} />
+                <UnlockDesk onUnlock={openUnlock} />
               </div>
             ) : (
             <div className="mt-12 rounded-2xl border border-[#1a1a1a]/10 bg-[#FBF8F2] p-6 xl:hidden">
@@ -1529,7 +1527,6 @@ export default function ProjectProfile({
         </>
       )}
     </div>
-    {!frozen && sampleOpen && <SampleSheet onClose={() => setSampleOpen(false)} />}
     </ReportStaticContext.Provider>
   );
 }
