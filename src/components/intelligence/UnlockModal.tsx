@@ -110,6 +110,10 @@ export default function UnlockModal({
   const [err, setErr] = useState("");
   const [paying, setPaying] = useState(false);
   const [payErr, setPayErr] = useState("");
+  /* The server declined the free unlock (already used / already owns it).
+     Latches the ₹0 offer off for the rest of this session so the flow can
+     never loop back to a price the server just refused. */
+  const [freeDeclined, setFreeDeclined] = useState(false);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [busy, setBusy] = useState(false);
   /* Live prices — triggers the pricing fetch and re-renders when the table's
@@ -143,7 +147,7 @@ export default function UnlockModal({
      reader onto the normal price. */
   const _ent = cachedEntitlements();
   const firstFree = isSignedIn() && !!_ent && _ent.userId != null && _ent.unlocked.length === 0 && !_ent.all;
-  const freeRead = (id: PackageId) => firstFree && id === "read";
+  const freeRead = (id: PackageId) => firstFree && !freeDeclined && id === "read";
   /* The struck value on a free read is the Full Read's list price (₹2,100),
      read from the same discount the paid path shows. */
   const readMrp = discountOf(packageById("read"))?.mrp ?? packageById("read").inr;
@@ -172,7 +176,7 @@ export default function UnlockModal({
        now the only way to buy the Sun & Vastu advisor. */
     setSel(focus3D ? "all" : "read");
     setExpanded(null);
-    setSent(false); setKnown(undefined); setOtp(Array(OTP_LEN).fill("")); setErr(""); setPaying(false); setPayErr(""); setReceipt(null);
+    setSent(false); setKnown(undefined); setOtp(Array(OTP_LEN).fill("")); setErr(""); setPaying(false); setPayErr(""); setFreeDeclined(false); setReceipt(null);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
@@ -327,19 +331,30 @@ export default function UnlockModal({
   }
 
   /* THE FREE FIRST READ. No Razorpay, no money — claim-free-unlock writes the
-     grant against the service role after re-checking eligibility. `not_eligible`
-     means the server says this profile has already used its free report, so we
-     fall through to the paid flow rather than dead-end. The grant is the
-     server's; grantPackage() only mirrors it locally, and fetchEntitlements()
-     re-reads the authority. */
+     grant against the service role after re-checking eligibility.
+
+     Called straight from the plans step: the ₹0 card claims in place, so the
+     reader never sees a second "confirm ₹0" screen after choosing it. (Still
+     reachable from the pay step's retry button after a transient failure.)
+
+     `not_eligible` means the server says this profile has already used its
+     free report (or owns this one). We latch the ₹0 offer off and drop the
+     reader onto the normal paid step — never a Razorpay sheet they didn't
+     ask for, and never a loop back to a ₹0 the server just refused. The grant
+     is the server's; grantPackage() only mirrors it locally, and
+     fetchEntitlements() re-reads the authority. */
   async function claimFree() {
+    setSel("read");
     setPaying(true);
     setPayErr("");
     const res = await claimFreeUnlock(slug);
     setPaying(false);
     if (!res.ok) {
       if (res.reason === "unverified") { setStep("register"); setErr("Please confirm your number first."); return; }
-      if (res.reason === "not_eligible") { void pay(); return; }   // already used → charge normally
+      if (res.reason === "not_eligible") { setFreeDeclined(true); setStep("pay"); return; }   // already used → the normal paid step
+      /* Transient failure keeps the ₹0 offer — land on the pay step so the
+         error has somewhere to show and the reader can try the free claim again. */
+      setStep("pay");
       setPayErr("That didn't go through. Nothing was charged — please try again, or your advisor can help.");
       return;
     }
@@ -550,9 +565,11 @@ export default function UnlockModal({
                       {/* CTA pinned to the card bottom so prices/buttons line up
                          across columns; the accordion opens below it */}
                       <div className="mt-auto pt-4">
-                        <button onClick={() => choose(c.id)}
-                          className={`w-full rounded-lg px-4 py-3 text-[0.85rem] font-semibold transition-colors ${(recommended || freeRead(c.id)) ? "bg-[#1e6b45] text-white hover:bg-[#238c55]" : "border border-[#1e6b45]/40 text-[#1e6b45] hover:bg-[#1e6b45]/[0.06]"}`}>
-                          {freeRead(c.id) ? <>Unlock First Report at ₹0 →</> : <>{ctaLabel(c.id)} — {inr(amount)} →</>}
+                        {/* The ₹0 card claims in place — no second "confirm ₹0"
+                            screen. Paid tiers still go to the pay step. */}
+                        <button onClick={() => { if (freeRead(c.id)) void claimFree(); else choose(c.id); }} disabled={freeRead(c.id) && paying}
+                          className={`w-full rounded-lg px-4 py-3 text-[0.85rem] font-semibold transition-colors disabled:opacity-60 ${(recommended || freeRead(c.id)) ? "bg-[#1e6b45] text-white hover:bg-[#238c55]" : "border border-[#1e6b45]/40 text-[#1e6b45] hover:bg-[#1e6b45]/[0.06]"}`}>
+                          {freeRead(c.id) ? (paying ? <>Unlocking…</> : <>Unlock First Report at ₹0 →</>) : <>{ctaLabel(c.id)} — {inr(amount)} →</>}
                         </button>
                         <button onClick={() => setExpanded(expanded === c.id ? null : c.id)}
                           className="mt-2 w-full text-center text-[0.74rem] font-medium text-[#1a1a1a]/45 underline decoration-[#1a1a1a]/20 underline-offset-2 transition-colors hover:text-[#1a1a1a]/75">
