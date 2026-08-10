@@ -24,9 +24,9 @@ import {
 } from "@/lib/journey";
 import { usePricing } from "@/lib/usePricing";
 import { normalisePhone, normaliseIntl, phoneKnown, prettyPhone, sendOtp, sendTwilioOtp, verifyOtp, verifyTwilioOtp, signInWithGoogle, OTP_LENGTH } from "@/lib/phoneAuth";
-import { fetchEntitlements } from "@/lib/entitlements";
+import { fetchEntitlements, cachedEntitlements } from "@/lib/entitlements";
 import { track } from "@/lib/events";
-import { payForPackage, prewarmCheckout, type Receipt } from "@/lib/checkout";
+import { payForPackage, claimFreeUnlock, prewarmCheckout, type Receipt } from "@/lib/checkout";
 import { openReceipt, invalidateBilling, inr as inrFmt } from "@/lib/billing";
 
 const DIAL = [
@@ -135,6 +135,18 @@ export default function UnlockModal({
   const amountFor = (id: PackageId) => Math.max(packageById(id).inr - credit, 0);
   const isUpgrade = (id: PackageId) => credit > 0 && !owns(id);
   const selDiscount = discountOf(packageById(sel));
+  /* FIRST REPORT FREE. A genuinely new profile — signed in, nothing yet
+     unlocked, not All-Access — gets its first Full Read at ₹0. Applies ONLY
+     to `read` (All-Access is always paid). This decides what the sheet shows;
+     claim-free-unlock re-checks server-side and is the authority, so a stale
+     cache at worst offers a free unlock the server then declines, dropping the
+     reader onto the normal price. */
+  const _ent = cachedEntitlements();
+  const firstFree = isSignedIn() && !!_ent && _ent.userId != null && _ent.unlocked.length === 0 && !_ent.all;
+  const freeRead = (id: PackageId) => firstFree && id === "read";
+  /* The struck value on a free read is the Full Read's list price (₹2,100),
+     read from the same discount the paid path shows. */
+  const readMrp = discountOf(packageById("read"))?.mrp ?? packageById("read").inr;
   /* Tied to what we actually SELL, not to this hand-written list. PLAN_CARDS
      still describes the retired read+3D tier, and without this filter
      withdrawing it from PACKAGES would have removed its price from the
@@ -314,6 +326,31 @@ export default function UnlockModal({
     if (!res.receipt) setTimeout(() => { onUnlocked(sel); onClose(); }, 1400);
   }
 
+  /* THE FREE FIRST READ. No Razorpay, no money — claim-free-unlock writes the
+     grant against the service role after re-checking eligibility. `not_eligible`
+     means the server says this profile has already used its free report, so we
+     fall through to the paid flow rather than dead-end. The grant is the
+     server's; grantPackage() only mirrors it locally, and fetchEntitlements()
+     re-reads the authority. */
+  async function claimFree() {
+    setPaying(true);
+    setPayErr("");
+    const res = await claimFreeUnlock(slug);
+    setPaying(false);
+    if (!res.ok) {
+      if (res.reason === "unverified") { setStep("register"); setErr("Please confirm your number first."); return; }
+      if (res.reason === "not_eligible") { void pay(); return; }   // already used → charge normally
+      setPayErr("That didn't go through. Nothing was charged — please try again, or your advisor can help.");
+      return;
+    }
+    grantPackage("read", slug);
+    void fetchEntitlements();
+    invalidateBilling();
+    setStep("done");
+    /* No receipt to dwell on for a ₹0 unlock — open the read straight away. */
+    setTimeout(() => { onUnlocked("read"); onClose(); }, 1400);
+  }
+
   const FIELD = "w-full rounded-md border border-[#1a1a1a]/[0.16] bg-white px-4 py-3 text-[0.95rem] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#1a1a1a]/35 focus:border-[#c9a96e]";
   const ctaLabel = (id: PackageId) =>
     id === "all" ? "Go All-Access" : id === "read3d" ? (isUpgrade("read3d") ? "Add Sun & Vastu 3D" : "Get read + 3D") : "Get the read";
@@ -471,13 +508,23 @@ export default function UnlockModal({
                           <p className="mt-0.5 text-[0.62rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/40">{c.scope}</p>
                         </div>
                         <div className="shrink-0 text-right">
-                          {d && !isUpgrade(c.id) && (
-                            <p className="text-[0.72rem] font-light leading-none text-[#1a1a1a]/35 line-through">{inr(d.mrp)}</p>
+                          {freeRead(c.id) ? (
+                            <>
+                              <p className="text-[0.72rem] font-light leading-none text-[#1a1a1a]/35 line-through">{inr(readMrp)}</p>
+                              <p className="mt-0.5 font-serif text-[1.35rem] font-semibold leading-none text-[#1e6b45]">₹0</p>
+                              <p className="mt-1 text-[0.58rem] font-bold uppercase tracking-[0.1em] text-[#1e6b45]">First report free</p>
+                            </>
+                          ) : (
+                            <>
+                              {d && !isUpgrade(c.id) && (
+                                <p className="text-[0.72rem] font-light leading-none text-[#1a1a1a]/35 line-through">{inr(d.mrp)}</p>
+                              )}
+                              <p className="mt-0.5 font-serif text-[1.35rem] font-semibold leading-none text-[#1e6b45]">{inr(amount)}</p>
+                              {isUpgrade(c.id)
+                                ? <p className="mt-1 text-[0.58rem] font-medium uppercase tracking-[0.08em] text-[#9a7a2e]">upgrade · {inr(credit)} credited</p>
+                                : d && <p className="mt-1 text-[0.58rem] font-semibold text-[#1e6b45]">save {inr(d.off)} · {d.pct}% off</p>}
+                            </>
                           )}
-                          <p className="mt-0.5 font-serif text-[1.35rem] font-semibold leading-none text-[#1e6b45]">{inr(amount)}</p>
-                          {isUpgrade(c.id)
-                            ? <p className="mt-1 text-[0.58rem] font-medium uppercase tracking-[0.08em] text-[#9a7a2e]">upgrade · {inr(credit)} credited</p>
-                            : d && <p className="mt-1 text-[0.58rem] font-semibold text-[#1e6b45]">save {inr(d.off)} · {d.pct}% off</p>}
                         </div>
                       </div>
 
@@ -504,8 +551,8 @@ export default function UnlockModal({
                          across columns; the accordion opens below it */}
                       <div className="mt-auto pt-4">
                         <button onClick={() => choose(c.id)}
-                          className={`w-full rounded-lg px-4 py-3 text-[0.85rem] font-semibold transition-colors ${recommended ? "bg-[#1e6b45] text-white hover:bg-[#238c55]" : "border border-[#1e6b45]/40 text-[#1e6b45] hover:bg-[#1e6b45]/[0.06]"}`}>
-                          {ctaLabel(c.id)} — {inr(amount)} →
+                          className={`w-full rounded-lg px-4 py-3 text-[0.85rem] font-semibold transition-colors ${(recommended || freeRead(c.id)) ? "bg-[#1e6b45] text-white hover:bg-[#238c55]" : "border border-[#1e6b45]/40 text-[#1e6b45] hover:bg-[#1e6b45]/[0.06]"}`}>
+                          {freeRead(c.id) ? <>Unlock First Report at ₹0 →</> : <>{ctaLabel(c.id)} — {inr(amount)} →</>}
                         </button>
                         <button onClick={() => setExpanded(expanded === c.id ? null : c.id)}
                           className="mt-2 w-full text-center text-[0.74rem] font-medium text-[#1a1a1a]/45 underline decoration-[#1a1a1a]/20 underline-offset-2 transition-colors hover:text-[#1a1a1a]/75">
@@ -537,24 +584,44 @@ export default function UnlockModal({
 
           {step === "pay" && (
             <div>
-              {/* dummy Razorpay checkout */}
-              <div className="-mx-6 -mt-8 mb-5 flex items-center justify-between bg-[#0b2b4a] px-6 py-4 text-white md:-mx-9 md:px-9">
-                <div className="flex items-center gap-2">
-                  <span className="grid h-7 w-7 place-items-center rounded bg-[#3395ff] font-bold">R</span>
-                  <span className="font-semibold tracking-tight">Razorpay</span>
+              {/* Razorpay for a paid read; a plain Truth Estate bar for a free one
+                  — a Razorpay header over a ₹0 unlock that never opens Razorpay
+                  would be a lie about what the button does. */}
+              {freeRead(sel) ? (
+                <div className="-mx-6 -mt-8 mb-5 flex items-center justify-between bg-[#1e6b45] px-6 py-4 text-white md:-mx-9 md:px-9">
+                  <span className="font-semibold tracking-tight">Truth Estate · your first report</span>
+                  <span className="pr-10 text-[0.78rem] text-white/80">Free</span>
                 </div>
-                {/* pr-10 reserves the top-right corner for the modal's absolute
-                    close ✕ (right-3, h-9 w-9) so it never overlaps the label */}
-                <span className="pr-10 text-[0.78rem] text-white/70">Truth Estate</span>
-              </div>
+              ) : (
+                <div className="-mx-6 -mt-8 mb-5 flex items-center justify-between bg-[#0b2b4a] px-6 py-4 text-white md:-mx-9 md:px-9">
+                  <div className="flex items-center gap-2">
+                    <span className="grid h-7 w-7 place-items-center rounded bg-[#3395ff] font-bold">R</span>
+                    <span className="font-semibold tracking-tight">Razorpay</span>
+                  </div>
+                  {/* pr-10 reserves the top-right corner for the modal's absolute
+                      close ✕ (right-3, h-9 w-9) so it never overlaps the label */}
+                  <span className="pr-10 text-[0.78rem] text-white/70">Truth Estate</span>
+                </div>
+              )}
               <div className="flex items-baseline justify-between">
                 <span className="text-[0.8rem] text-[#1a1a1a]/55">{packageById(sel).label}{isUpgrade(sel) ? " · upgrade" : ""}</span>
                 <span className="flex items-baseline gap-2">
-                  {selDiscount && !isUpgrade(sel) && <span className="text-[0.95rem] font-light text-[#1a1a1a]/35 line-through">{inr(selDiscount.mrp)}</span>}
-                  <span className="font-serif text-[1.5rem] font-semibold">{inr(amountFor(sel))}</span>
+                  {freeRead(sel) ? (
+                    <>
+                      <span className="text-[0.95rem] font-light text-[#1a1a1a]/35 line-through">{inr(readMrp)}</span>
+                      <span className="font-serif text-[1.5rem] font-semibold text-[#1e6b45]">₹0</span>
+                    </>
+                  ) : (
+                    <>
+                      {selDiscount && !isUpgrade(sel) && <span className="text-[0.95rem] font-light text-[#1a1a1a]/35 line-through">{inr(selDiscount.mrp)}</span>}
+                      <span className="font-serif text-[1.5rem] font-semibold">{inr(amountFor(sel))}</span>
+                    </>
+                  )}
                 </span>
               </div>
-              {isUpgrade(sel)
+              {freeRead(sel)
+                ? <p className="mt-1 text-[0.72rem] text-[#1e6b45]">Your first report — on the house. You save {inr(readMrp)}.</p>
+                : isUpgrade(sel)
                 ? <p className="mt-1 text-[0.72rem] text-[#1a1a1a]/45">{inr(packageById(sel).inr)} tier · {inr(credit)} already paid credited.</p>
                 : selDiscount && <p className="mt-1 text-[0.72rem] text-[#1e6b45]">{selDiscount.label} — save {inr(selDiscount.off)} ({selDiscount.pct}% off).</p>}
               {/* The three payment methods used to be rendered here as
@@ -563,15 +630,19 @@ export default function UnlockModal({
                   listing them here would now be a second, fictional choice
                   in front of the real one. */}
               <div className="mt-4 space-y-2 text-[0.85rem] text-[#1a1a1a]/60">
-                <p>UPI, credit &amp; debit cards, netbanking and wallets — all handled by Razorpay on the next screen.</p>
+                {freeRead(sel)
+                  ? <p>No card, no payment — your first full report is on us, saved to your Buyer Office for life.</p>
+                  : <p>UPI, credit &amp; debit cards, netbanking and wallets — all handled by Razorpay on the next screen.</p>}
               </div>
               {payErr && (
                 <p role="alert" className="mt-4 rounded-lg border border-[#b0503e]/30 bg-[#b0503e]/[0.06] px-4 py-3 text-[0.82rem] leading-snug text-[#8f3a2b]">{payErr}</p>
               )}
-              <button onClick={pay} disabled={paying} className="mt-6 w-full rounded-md bg-[#1e6b45] px-4 py-3.5 text-[0.92rem] font-medium text-white transition-colors hover:bg-[#238c55] disabled:opacity-60">
-                {paying ? "Opening secure checkout…" : `Pay ${inr(amountFor(sel))}`}
+              <button onClick={freeRead(sel) ? claimFree : pay} disabled={paying} className="mt-6 w-full rounded-md bg-[#1e6b45] px-4 py-3.5 text-[0.92rem] font-medium text-white transition-colors hover:bg-[#238c55] disabled:opacity-60">
+                {paying ? (freeRead(sel) ? "Unlocking…" : "Opening secure checkout…") : freeRead(sel) ? "Unlock First Report at ₹0" : `Pay ${inr(amountFor(sel))}`}
               </button>
-              <p className="mt-3 text-center text-[0.72rem] text-[#1a1a1a]/40">🔒 Secured by Razorpay. Your card details never touch our servers.</p>
+              {freeRead(sel)
+                ? <p className="mt-3 text-center text-[0.72rem] text-[#1a1a1a]/40">Phone-verified · one free report per account.</p>
+                : <p className="mt-3 text-center text-[0.72rem] text-[#1a1a1a]/40">🔒 Secured by Razorpay. Your card details never touch our servers.</p>}
               <button onClick={() => setStep("plans")} className="mt-2 w-full text-center text-[0.76rem] text-[#1a1a1a]/45 hover:text-[#1a1a1a]/70">← Change package</button>
             </div>
           )}

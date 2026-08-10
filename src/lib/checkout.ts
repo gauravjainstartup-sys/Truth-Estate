@@ -105,6 +105,24 @@ async function fn<T>(name: string, body: unknown): Promise<T | null> {
    sheet opens instantly on tap. Safe to call repeatedly. */
 export const prewarmCheckout = (): void => { void loadCheckoutJs(); };
 
+/* THE FIRST REPORT, FREE — and the grant is not ours to make either.
+
+   A new profile's first Full Read is free (phone sign-up only). Like the
+   paid path, nothing here grants access: claim-free-unlock re-checks
+   eligibility against the service role, writes the grant, and the client
+   only learns of it by re-reading entitlements. `not_eligible` is the
+   server saying this profile has already used its free report — the caller
+   then falls back to payForPackage(). */
+export async function claimFreeUnlock(slug: string | undefined): Promise<{ ok: boolean; reason?: string }> {
+  const anonId = getAnonId();
+  if (!anonId) return { ok: false, reason: "unverified" };
+  if (!slug) return { ok: false, reason: "slug_required" };
+  const res = await fn<{ ok?: boolean; reason?: string; granted?: boolean }>("claim-free-unlock", { anonId, slug });
+  if (!res) return { ok: false, reason: "network" };
+  if (!res.ok) return { ok: false, reason: res.reason ?? "error" };
+  return { ok: true };
+}
+
 export async function payForPackage(
   packageId: "read" | "read3d" | "all",
   slug: string | undefined,

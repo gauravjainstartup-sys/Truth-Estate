@@ -21,6 +21,7 @@
 import { discountOf } from "@/lib/journey";
 import { usePackage } from "@/lib/usePricing";
 import { basePath } from "@/lib/site";
+import { cachedEntitlements } from "@/lib/entitlements";
 
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
@@ -31,9 +32,13 @@ const INCLUDED: { t: string; bonus?: boolean }[] = [
   { t: "A 1:1 call with the founder who signed it off", bonus: true },
 ];
 
-export default function UnlockDesk({ onUnlock, onSample }: { onUnlock: () => void; onSample: () => void }) {
+export default function UnlockDesk({ onUnlock }: { onUnlock: () => void }) {
   const read = usePackage("read");
   const d = discountOf(read);
+  /* First report free for a new / guest profile — matches LockedReport on the
+     same page so the rail never quotes a price the paywall says is ₹0. */
+  const ent = cachedEntitlements();
+  const firstFree = !ent || ent.userId == null || (ent.unlocked.length === 0 && !ent.all);
   return (
     <div className="rounded-2xl border border-[#1a1a1a]/10 bg-[#FBF8F2] p-6">
       {/* founder as a trust seal — not a free-call offer */}
@@ -71,18 +76,16 @@ export default function UnlockDesk({ onUnlock, onSample }: { onUnlock: () => voi
         className="group mt-5 block w-full rounded-xl bg-[#1e6b45] px-5 py-3 text-center text-white transition-colors hover:bg-[#238c55]"
       >
         <span className="inline-flex items-center gap-1.5 text-[0.85rem] font-semibold">
-          Unlock the full read — {inr(read.inr)}
+          {firstFree ? "Unlock First Report at ₹0" : <>Unlock the full read — {inr(read.inr)}</>}
           <span aria-hidden className="inline-block transition-transform group-hover:translate-x-0.5">→</span>
         </span>
-        {d && (
-          <span className="mt-0.5 block text-[0.68rem] font-medium text-white/85">
-            <span className="text-white/55 line-through">{inr(d.mrp)}</span> · save {inr(d.mrp - read.inr)} ({d.pct}% off)
-          </span>
-        )}
-      </button>
-
-      <button type="button" onClick={onSample} className="mt-3 block w-full text-center text-[0.72rem] font-medium text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]">
-        See a full sample read first →
+        {firstFree
+          ? <span className="mt-0.5 block text-[0.68rem] font-medium text-white/85"><span className="text-white/55 line-through">{inr(d?.mrp ?? read.inr)}</span> · your first report is free</span>
+          : d && (
+            <span className="mt-0.5 block text-[0.68rem] font-medium text-white/85">
+              <span className="text-white/55 line-through">{inr(d.mrp)}</span> · save {inr(d.mrp - read.inr)} ({d.pct}% off)
+            </span>
+          )}
       </button>
 
       <p className="mt-5 border-t border-[#1a1a1a]/8 pt-3.5 text-[0.64rem] font-light leading-[1.5] text-[#1a1a1a]/40">
