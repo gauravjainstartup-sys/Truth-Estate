@@ -58,19 +58,24 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
   const projects = index.projects;
 
   const [devs, setDevs] = useState<DevRow[]>(() => devIndexCache ?? []);
+  const [devsLoaded, setDevsLoaded] = useState<boolean>(devIndexCache != null);
   const devFetchedRef = useRef(false);
   /* Lazy, once-per-tab: pull the developer dossiers from the shared search
-     index the first time the panel opens, so the resting page pays nothing. */
+     index the first time the panel opens, so the resting page pays nothing.
+     A non-OK/failed fetch leaves the cache null and clears the guard so the
+     next open retries — never caches an empty list as if it were the answer. */
   const ensureDevs = useCallback(() => {
-    if (devIndexCache) { setDevs(devIndexCache); return; }
+    if (devIndexCache) { setDevs(devIndexCache); setDevsLoaded(true); return; }
     if (devFetchedRef.current) return;
     devFetchedRef.current = true;
     fetch(`${basePath}/search-index.json`)
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => {
-        const list = Array.isArray(j?.d) ? (j.d as DevRow[]) : [];
+        if (!j) { devFetchedRef.current = false; return; }
+        const list = Array.isArray(j.d) ? (j.d as DevRow[]) : [];
         devIndexCache = list;
         setDevs(list);
+        setDevsLoaded(true);
       })
       .catch(() => { devFetchedRef.current = false; });
   }, []);
@@ -124,7 +129,10 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
   const typing = q.length >= 2;
   const results = useMemo(() => (typing ? fuzzySearch(q, projects, 6) : []), [q, typing, projects]);
   const devResults = useMemo(() => (typing ? searchDevelopers(q, devs, 3) : []), [q, typing, devs]);
-  const state: 1 | 2 | 3 = !typing ? 1 : results.length > 0 || devResults.length > 0 ? 2 : 3;
+  /* While the developer index is still loading, a no-project query is not yet
+     "no coverage" — a matching developer may be about to appear — so hold in
+     state 2 (which renders a "Searching…" row) rather than flashing state 3. */
+  const state: 1 | 2 | 3 = !typing ? 1 : results.length > 0 || devResults.length > 0 ? 2 : devsLoaded ? 3 : 2;
 
   const variant: "mobile" | "desktop" = mobileOpen ? "mobile" : "desktop";
   const recentLimit = variant === "mobile" ? 4 : 3;
@@ -221,7 +229,12 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
     const term = query.trim();
     if (!term) return;
     const hits = fuzzySearch(term, projects, 1);
-    if (hits.length) go(hits[0]); else requestReport();
+    if (hits.length) { go(hits[0]); return; }
+    // no project matched — open a matching developer dossier before falling
+    // back to the custom-report ask, so a developer-only query isn't a dead end
+    const devHits = searchDevelopers(term, devs, 1);
+    if (devHits.length) { goDeveloper(devHits[0]); return; }
+    requestReport();
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
@@ -306,7 +319,7 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
             {d.c != null ? `Developer · ${d.c} tracked project${d.c === 1 ? "" : "s"}` : "Developer dossier"}
           </span>
         </span>
-        <span className="shrink-0 rounded-[11px] px-2 py-[3px] text-[10.5px] font-medium leading-none" style={{ color: "#8a6d1f", border: "0.5px solid #c7a86a" }}>
+        <span className="shrink-0 rounded-[11px] px-2 py-[3px] text-[10.5px] font-medium leading-none" style={{ color: "#6a5410", border: "0.5px solid #c7a86a" }}>
           Dossier
         </span>
       </li>
@@ -328,22 +341,28 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
         </>
       );
     }
-    if (state === 2) return (
-      <>
-        {results.length > 0 && (
-          <>
-            {devResults.length > 0 && label("Projects")}
-            {results.map((p, i) => row(p, i, true))}
-          </>
-        )}
-        {devResults.length > 0 && (
-          <>
-            {label("Developers", results.length > 0)}
-            {devResults.map((d, k) => devRowEl(d, results.length + k))}
-          </>
-        )}
-      </>
-    );
+    if (state === 2) {
+      // the only way both are empty here is the dev index still loading (see state selector)
+      if (results.length === 0 && devResults.length === 0) {
+        return <li role="presentation" className="px-4 py-3 text-[13px] text-[#8b8067]">Searching&hellip;</li>;
+      }
+      return (
+        <>
+          {results.length > 0 && (
+            <>
+              {devResults.length > 0 && label("Projects")}
+              {results.map((p, i) => row(p, i, true))}
+            </>
+          )}
+          {devResults.length > 0 && (
+            <>
+              {label("Developers", results.length > 0)}
+              {devResults.map((d, k) => devRowEl(d, results.length + k))}
+            </>
+          )}
+        </>
+      );
+    }
     return (
       <>
         <li role="presentation" className="px-4 pb-1 pt-3.5 text-[13px] leading-snug text-[#4d4535]">

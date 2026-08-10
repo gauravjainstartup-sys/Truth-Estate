@@ -28,9 +28,19 @@ export async function GET() {
       ...(r.truthScore != null ? { ts: r.truthScore } : {}),
     });
   }
+  /* Only surface developers that actually have a dossier PAGE. Pages are
+     generated from resolveDevelopers() (curated + filings, deduped by name,
+     zero-project developers dropped); if this index lists a developer that
+     resolver skips, the search result 404s. Mirror the two skips here:
+     dedup filed rows against a curated NAME (not just slug — "Birla Estates"
+     is curated as slug "birla" but filed as "birla-estates"), and drop
+     developers with no filed projects. */
+  const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+  const curatedNames = new Set(DEVELOPERS.map((x) => norm(x.name)));
   const d: D[] = DEVELOPERS.map((x) => ({ n: x.name, s: x.slug }));
   for (const r of (await fetchDevelopersOverview()) ?? []) {
-    if (!r.slug || d.some((e) => e.s === r.slug)) continue;
+    if (!r.slug || (r.total ?? 0) < 1) continue;
+    if (d.some((e) => e.s === r.slug) || curatedNames.has(norm(r.name))) continue;
     d.push({ n: r.name, s: r.slug, ...(r.total != null ? { c: r.total } : {}) });
   }
   return Response.json({ p, d });
