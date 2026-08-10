@@ -110,87 +110,33 @@ function Counter({ end, suffix = "" }: { end: number; suffix?: string }) {
     Every buyer… is left alone."  →  "We decided to change that."
    ════════════════════════════════════════════════════════════════ */
 function Storytelling() {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const root = ref.current;
-    if (!root) return;
-
-    gsap.registerPlugin(ScrollTrigger);
-    ScrollTrigger.config({ ignoreMobileResize: true });
-    const pin = root.querySelector<HTMLElement>("[data-s5-pin]");
-    if (!pin) return;
-
-    const bg = pin.querySelector<HTMLElement>("[data-s5-bg]")!;
-    const dark = pin.querySelectorAll<HTMLElement>("[data-s5-d]");
-    const ivory = pin.querySelector<HTMLElement>("[data-s5-i]")!;
-
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: pin,
-        start: "top top",
-        end: "+=420%",
-        pin: true,
-        scrub: 0.6,
-        anticipatePin: 1,
-      },
-    });
-
-    // The three premises stack, building the argument.
-    tl.to(dark[0], { opacity: 1, duration: 0.06 });
-    tl.to({}, { duration: 0.06 });
-    tl.to(dark[1], { opacity: 1, duration: 0.06 });
-    tl.to({}, { duration: 0.06 });
-    tl.to(dark[2], { opacity: 1, y: 0, duration: 0.07 }); // Every buyer…
-    tl.to({}, { duration: 0.14 }); // the long pause
-    tl.to(dark[3], { opacity: 1, y: 0, duration: 0.07 }); // …is left alone.
-    tl.to({}, { duration: 0.16 }); // let it land
-
-    // Everything dissolves; warmth arrives.
-    tl.to(dark, { opacity: 0, duration: 0.08 });
-    tl.to(bg, { backgroundColor: "#F5F0E8", duration: 0.11 }, "<+=0.02");
-    tl.to({}, { duration: 0.03 });
-    tl.to(ivory, { opacity: 1, y: 0, duration: 0.1 });
-    tl.to({}, { duration: 0.14 });
-
-    const st = tl.scrollTrigger;
-    ScrollTrigger.refresh();
-    return () => {
-      st?.kill(true);
-      tl.kill();
-    };
-  }, []);
-
+  // One static screen — the whole premise comes up at once, no pinned
+  // scroll-through. Problem (four lines) resolves to the promise on the same
+  // dark screen; the warm turn is carried by the gold rule + line.
   return (
-    <div ref={ref} id="experience">
-      {/* One pinned, scrubbed narrative — desktop and mobile alike */}
-      <div data-s5-pin className="relative block h-svh overflow-hidden">
-        <div data-s5-bg className="absolute inset-0 bg-[#0a0a0a]" />
-        <div className="absolute inset-0 z-10">
-          {/* The tension — three premises stacking */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center">
-            <p data-s5-d className="font-serif text-[1.3rem] font-light leading-[1.3] text-white/45 md:text-[1.7rem] lg:text-[2.1rem]" style={{ opacity: 0 }}>
-              Every developer has a sales office.
-            </p>
-            <p data-s5-d className="mt-6 font-serif text-[1.3rem] font-light leading-[1.3] text-white/45 md:mt-7 md:text-[1.7rem] lg:text-[2.1rem]" style={{ opacity: 0 }}>
-              Every broker has an incentive.
-            </p>
-            <p data-s5-d className="mt-12 font-serif text-[2.3rem] font-medium leading-[1.06] text-white/90 md:mt-16 md:text-[3.2rem] lg:text-[4.4rem]" style={{ opacity: 0, transform: "translateY(16px)" }}>
-              Every buyer&hellip;
-            </p>
-            <p data-s5-d className="mt-5 font-serif text-[1.7rem] font-light italic leading-[1.2] text-white/50 md:text-[2.3rem] lg:text-[3rem]" style={{ opacity: 0, transform: "translateY(16px)" }}>
-              &hellip;is left alone.
-            </p>
-          </div>
-          {/* The turn */}
-          <div data-s5-i className="absolute inset-0 flex items-center justify-center px-8 text-center" style={{ opacity: 0, transform: "translateY(18px)" }}>
-            <p className="font-serif text-[2.1rem] font-medium leading-[1.1] text-[#1a1a1a] md:text-[2.8rem] lg:text-[3.8rem]">
-              We decided to change that.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+    <section
+      id="experience"
+      className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden bg-[#0a0a0a] px-8 py-28 text-center"
+    >
+      <p className="font-serif text-[1.35rem] font-light leading-[1.3] text-white/60 md:text-[1.7rem] lg:text-[2.1rem]">
+        Every developer has a sales office.
+      </p>
+      <p className="mt-5 font-serif text-[1.35rem] font-light leading-[1.3] text-white/60 md:mt-7 md:text-[1.7rem] lg:text-[2.1rem]">
+        Every broker has an incentive.
+      </p>
+      <p className="mt-11 font-serif text-[2.4rem] font-medium leading-[1.06] text-white md:mt-14 md:text-[3.2rem] lg:text-[4.4rem]">
+        Every buyer&hellip;
+      </p>
+      <p className="mt-4 font-serif text-[1.7rem] font-light italic leading-[1.2] text-white/70 md:text-[2.3rem] lg:text-[3rem]">
+        &hellip;is left alone.
+      </p>
+
+      {/* the turn — resolved on the same screen */}
+      <span aria-hidden="true" className="mt-14 block h-px w-16 bg-[#c9a96e]/50 md:mt-20" />
+      <p className="mt-8 font-serif text-[1.9rem] font-medium leading-[1.12] text-[#d4b97a] md:text-[2.6rem] lg:text-[3.5rem]">
+        We decided to change that.
+      </p>
+    </section>
   );
 }
 
@@ -233,7 +179,7 @@ function Stage({
    quieter than the green primary so the hierarchy holds. */
 function StageCTA({ label, onClick, href }: { label: string; onClick?: () => void; href?: string }) {
   const cls =
-    "group/cta mt-8 inline-flex items-center gap-3 rounded-sm border border-[#1a1a1a]/25 px-6 py-3 text-[11px] font-medium uppercase tracking-[0.12em] text-[#1a1a1a] transition-colors duration-300 hover:border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-[#F5F0E8]";
+    "group/cta mt-8 inline-flex items-center gap-3 rounded-sm border border-[#1a1a1a]/45 px-6 py-3 text-[11px] font-medium uppercase tracking-[0.12em] text-[#1a1a1a] transition-colors duration-300 hover:border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-[#F5F0E8]";
   const inner = (
     <>
       {label}
@@ -276,7 +222,7 @@ function FounderBadge() {
       </span>
       <div>
         <p className="font-serif text-[1.3rem] font-medium leading-tight text-[#1a1a1a]">Gaurav Jain</p>
-        <p className="mt-0.5 text-[0.8rem] font-light text-[#1a1a1a]/45">Founder, Truth Estate</p>
+        <p className="mt-0.5 text-[0.8rem] font-light text-[#1a1a1a]/64">Founder, Truth Estate</p>
       </div>
     </div>
   );
@@ -401,10 +347,10 @@ function IndependentRepresentation() {
               <br />
               Representation.
             </h2>
-            <p className="mt-7 font-serif text-[1.25rem] font-light italic leading-snug text-[#1a1a1a]/60 md:text-[1.7rem]">
+            <p className="mt-7 font-serif text-[1.25rem] font-light italic leading-snug text-[#1a1a1a]/75 md:text-[1.7rem]">
               From first thought to final signature &mdash; and beyond.
             </p>
-            <p className="mt-6 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/50 md:text-[1.05rem]">
+            <p className="mt-6 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/68 md:text-[1.05rem]">
               Every great property decision begins with understanding&mdash;not selling.
             </p>
           </div>
@@ -418,7 +364,7 @@ function IndependentRepresentation() {
 
         <div className="flex flex-col gap-[16vh] md:gap-[20vh]">
           <Stage kicker="Start" heading="It starts with you — not inventory.">
-            <p className="mt-5 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.05rem]">
+            <p className="mt-5 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/72 md:text-[1.05rem]">
               Your goals, priorities and timeline are the brief. We translate them into your Buyer DNA&mdash;what genuinely matters to you&mdash;before recommending a single property.
             </p>
             <div className="mt-8 max-w-md rounded-xl border border-[#1a1a1a]/12 bg-white p-6">
@@ -426,7 +372,7 @@ function IndependentRepresentation() {
               <div className="mt-5 space-y-3.5">
                 {dna.map(([label, w]) => (
                   <div key={label} className="flex items-center gap-4">
-                    <span className="w-32 shrink-0 text-[10px] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/45">
+                    <span className="w-32 shrink-0 text-[10px] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/64">
                       {label}
                     </span>
                     <span className="relative h-px flex-1 bg-[#1a1a1a]/12">
@@ -440,31 +386,31 @@ function IndependentRepresentation() {
           </Stage>
 
           <Stage kicker="Clarity" heading="See clearly. Ask freely.">
-            <p className="mt-5 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.05rem]">
+            <p className="mt-5 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/72 md:text-[1.05rem]">
               We know every project down to the unit&mdash;so you never have to guess. Ask anything, and we&rsquo;ll tell you straight.
             </p>
-            <p className="mt-7 font-serif text-[1.05rem] font-light leading-relaxed text-[#1a1a1a]/60 md:text-[1.2rem]">
+            <p className="mt-7 font-serif text-[1.05rem] font-light leading-relaxed text-[#1a1a1a]/75 md:text-[1.2rem]">
               Developer&nbsp;&middot; Location&nbsp;&middot; Project&nbsp;&middot; Tower&nbsp;&middot; Unit&nbsp;&middot; Legal&nbsp;&middot; Pricing
             </p>
             <div className="mt-8 max-w-md rounded-xl border border-[#1a1a1a]/12 bg-white p-6">
               <p className="font-serif text-[1.2rem] font-light italic leading-snug text-[#1a1a1a]/75 md:text-[1.4rem]">
                 &ldquo;Which unit in DLF Arbour is best for natural light and vastu?&rdquo;
               </p>
-              <div className="mt-5 flex flex-col gap-3 text-[0.85rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[0.92rem]">
+              <div className="mt-5 flex flex-col gap-3 text-[0.85rem] font-light leading-relaxed text-[#1a1a1a]/72 md:text-[0.92rem]">
                 <p>
-                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/45">Pick</span>
+                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/64">Pick</span>
                   Tower C &middot; higher floors &middot; east-facing
                 </p>
                 <p>
-                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/45">Light</span>
+                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/64">Light</span>
                   Open morning sun; no tower planned to the east
                 </p>
                 <p>
-                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/45">Vastu</span>
+                  <span className="mr-3 text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/64">Vastu</span>
                   North-east entry, master suite to the south-west
                 </p>
                 <p>
-                  <span className="mr-3 whitespace-nowrap text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/45">Worth knowing</span>
+                  <span className="mr-3 whitespace-nowrap text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/64">Worth knowing</span>
                   A small premium over the west-facing stacks
                 </p>
               </div>
@@ -477,7 +423,7 @@ function IndependentRepresentation() {
             kicker="Represent"
             heading={<>We represent one side. <span className="italic">Yours.</span></>}
           >
-            <p className="mt-5 max-w-md font-serif text-[1.05rem] font-light leading-relaxed text-[#1a1a1a]/60 md:text-[1.2rem]">
+            <p className="mt-5 max-w-md font-serif text-[1.05rem] font-light leading-relaxed text-[#1a1a1a]/75 md:text-[1.2rem]">
               Technology builds confidence; human judgement builds conviction. When you choose to go further, a dedicated advisor sits on your side of the table&mdash;and no one else&rsquo;s.
             </p>
             <div className="mt-8 max-w-md rounded-xl border border-[#1a1a1a]/12 bg-white p-6">
@@ -492,17 +438,17 @@ function IndependentRepresentation() {
           </Stage>
 
           <Stage kicker="Close" heading="The best offer comes to you.">
-            <p className="mt-5 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.05rem]">
+            <p className="mt-5 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/72 md:text-[1.05rem]">
               No calling ten brokers. No haggling. No wondering if you left money on the table. Our trusted network brings you the best terms available&mdash;and we secure them on your side.
             </p>
             <div className="mt-8 max-w-md rounded-xl border border-[#1a1a1a]/12 bg-white p-6">
               <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]/80">The same unit, three offers</p>
               <div className="mt-4 flex flex-col gap-1">
-                <div className="flex items-center justify-between px-3 py-2.5 text-[0.9rem] font-light text-[#1a1a1a]/55">
+                <div className="flex items-center justify-between px-3 py-2.5 text-[0.9rem] font-light text-[#1a1a1a]/72">
                   <span>Developer&rsquo;s discounted price</span>
                   <span className="font-mono text-[#1a1a1a]/70">&#8377;4.5 Cr</span>
                 </div>
-                <div className="flex items-center justify-between px-3 py-2.5 text-[0.9rem] font-light text-[#1a1a1a]/55">
+                <div className="flex items-center justify-between px-3 py-2.5 text-[0.9rem] font-light text-[#1a1a1a]/72">
                   <span>Execution partner</span>
                   <span className="font-mono text-[#1a1a1a]/70">&#8377;4.8 Cr</span>
                 </div>
@@ -520,27 +466,27 @@ function IndependentRepresentation() {
 
           {/* Climax — the relationship that doesn't end */}
           <Stage kicker="Stay" heading="Ownership Intelligence">
-            <p className="mt-5 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/55 md:text-[1.05rem]">
+            <p className="mt-5 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/72 md:text-[1.05rem]">
               Closing isn&rsquo;t the end of the relationship&mdash;it&rsquo;s the start of the next chapter. Your private portfolio terminal stays open for as long as you own.
             </p>
             <div className="mt-8 max-w-md rounded-xl border border-[#1a1a1a]/12 bg-white p-6">
               <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]/80">Portfolio Terminal</p>
-              <div className="mt-5 flex flex-col gap-4 text-[0.85rem] font-light leading-relaxed text-[#1a1a1a]/60 md:text-[0.92rem]">
+              <div className="mt-5 flex flex-col gap-4 text-[0.85rem] font-light leading-relaxed text-[#1a1a1a]/75 md:text-[0.92rem]">
                 <p>
-                  <span className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/45">Documents</span>
+                  <span className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/64">Documents</span>
                   Upload your BBA, allotment and developer letters; we flag any anomalies
                 </p>
                 <p>
-                  <span className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/45">Resale value</span>
+                  <span className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/64">Resale value</span>
                   Track your home&rsquo;s price on the dashboard, live
                 </p>
                 <p>
-                  <span className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/45">Resale, handled</span>
+                  <span className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/64">Resale, handled</span>
                   When you choose to sell, our team runs it end to end
                 </p>
               </div>
             </div>
-            <span className="mt-8 inline-flex items-center gap-2 rounded-full border border-dashed border-[#1a1a1a]/25 px-4 py-2 text-[11px] font-normal uppercase tracking-[0.22em] text-[#1a1a1a]/45">
+            <span className="mt-8 inline-flex items-center gap-2 rounded-full border border-dashed border-[#1a1a1a]/45 px-4 py-2 text-[11px] font-normal uppercase tracking-[0.22em] text-[#1a1a1a]/64">
               <span className="h-[5px] w-[5px] rounded-full bg-[#c9a96e]" />
               Coming Soon
             </span>
@@ -559,7 +505,7 @@ function IndependentRepresentation() {
         <h2 className="font-serif text-[2.2rem] font-medium leading-[1.14] text-[#1a1a1a] md:text-[3.6rem]">
           One confident decision.
           <br />
-          <span className="font-light text-[#1a1a1a]/55">Backed by independent judgement.</span>
+          <span className="font-light text-[#1a1a1a]/72">Backed by independent judgement.</span>
         </h2>
         <div className="mt-12 flex flex-col items-center gap-6 md:mt-14">
           <button
@@ -570,7 +516,7 @@ function IndependentRepresentation() {
           </button>
           <button
             onClick={() => open("research")}
-            className="group inline-flex items-center gap-2 text-[12px] font-light tracking-[0.14em] text-[#1a1a1a]/55 transition-colors duration-300 hover:text-[#1a1a1a]"
+            className="group inline-flex items-center gap-2 text-[12px] font-light tracking-[0.14em] text-[#1a1a1a]/72 transition-colors duration-300 hover:text-[#1a1a1a]"
           >
             Challenge TruthGuide
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
@@ -632,7 +578,7 @@ function ExperienceIntelligence() {
         <h2 className="font-serif text-[2.2rem] font-medium leading-[1.08] text-[#1a1a1a] md:text-[3.6rem] lg:text-[4.2rem]">
           Experience the Intelligence.
         </h2>
-        <p className="mx-auto mt-8 max-w-md font-serif text-[1.1rem] font-light leading-snug text-[#1a1a1a]/50 md:mt-10 md:text-[1.4rem]">
+        <p className="mx-auto mt-8 max-w-md font-serif text-[1.1rem] font-light leading-snug text-[#1a1a1a]/68 md:mt-10 md:text-[1.4rem]">
           The same independent thinking.
           <br />
           Choose the experience that fits you best.
@@ -644,10 +590,10 @@ function ExperienceIntelligence() {
         {/* Card 1 — TruthGuide */}
         <div
           data-ei-l
-          className="group rounded-sm border border-[#1a1a1a]/8 bg-white p-8 transition-shadow duration-500 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] md:p-10 lg:p-12"
+          className="group rounded-sm border border-[#1a1a1a]/14 bg-white p-8 transition-shadow duration-500 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] md:p-10 lg:p-12"
           style={{ opacity: 0, transform: "translateX(-32px)" }}
         >
-          <span className="text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]/70">
+          <span className="text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]">
             TruthGuide
           </span>
           <h3 className="mt-6 font-serif text-[1.6rem] font-medium leading-[1.12] text-[#1a1a1a] md:text-[1.9rem]">
@@ -655,19 +601,19 @@ function ExperienceIntelligence() {
             <br />
             conversations.
           </h3>
-          <div className="mt-8 space-y-3 text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/50 md:text-[0.95rem]">
+          <div className="mt-8 space-y-3 text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/68 md:text-[0.95rem]">
             <p>Ask natural questions.</p>
             <p>Compare projects.</p>
             <p>Understand layouts.</p>
             <p>Challenge assumptions.</p>
           </div>
-          <p className="mt-8 font-serif text-[0.85rem] font-light italic text-[#1a1a1a]/40 md:text-[0.92rem]">
+          <p className="mt-8 font-serif text-[0.85rem] font-light italic text-[#1a1a1a]/62 md:text-[0.92rem]">
             Every answer is backed by evidence.
           </p>
 
           {/* Preview */}
           <div className="mt-10 border-l border-[#c9a96e]/25 pl-5">
-            <p className="font-serif text-[1.05rem] font-light italic text-[#1a1a1a]/55 md:text-[1.15rem]">
+            <p className="font-serif text-[1.05rem] font-light italic text-[#1a1a1a]/72 md:text-[1.15rem]">
               &ldquo;Should I buy DLF Arbour?&rdquo;
             </p>
             <span
@@ -679,7 +625,7 @@ function ExperienceIntelligence() {
           <div className="mt-10">
             <button
               onClick={() => open("research")}
-              className="group/btn inline-flex items-center gap-2 text-[0.82rem] font-light tracking-[0.14em] text-[#1a1a1a]/65 transition-colors duration-400 hover:text-[#1a1a1a]"
+              className="group/btn inline-flex items-center gap-2 text-[0.82rem] font-light tracking-[0.14em] text-[#1a1a1a]/90 transition-colors duration-400 hover:text-[#1a1a1a]"
             >
               Challenge TruthGuide
               <span className="inline-block transition-transform duration-300 group-hover/btn:translate-x-1">
@@ -692,10 +638,10 @@ function ExperienceIntelligence() {
         {/* Card 2 — Truth Intelligence */}
         <div
           data-ei-r
-          className="group rounded-sm border border-[#1a1a1a]/8 bg-white p-8 transition-shadow duration-500 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] md:p-10 lg:p-12"
+          className="group rounded-sm border border-[#1a1a1a]/14 bg-white p-8 transition-shadow duration-500 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] md:p-10 lg:p-12"
           style={{ opacity: 0, transform: "translateX(32px)" }}
         >
-          <span className="text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]/70">
+          <span className="text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]">
             Truth Intelligence
           </span>
           <h3 className="mt-6 font-serif text-[1.6rem] font-medium leading-[1.12] text-[#1a1a1a] md:text-[1.9rem]">
@@ -703,20 +649,20 @@ function ExperienceIntelligence() {
             <br />
             independent research.
           </h3>
-          <div className="mt-8 space-y-3 text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/50 md:text-[0.95rem]">
+          <div className="mt-8 space-y-3 text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/68 md:text-[0.95rem]">
             <p>Read comprehensive project intelligence.</p>
             <p>Developer intelligence.</p>
             <p>Compare opportunities.</p>
             <p>Understand risks before investing.</p>
           </div>
-          <p className="mt-8 font-serif text-[0.85rem] font-light italic text-[#1a1a1a]/40 md:text-[0.92rem]">
+          <p className="mt-8 font-serif text-[0.85rem] font-light italic text-[#1a1a1a]/62 md:text-[0.92rem]">
             Independent. Evidence-backed. No sales pressure.
           </p>
 
           {/* Preview */}
           <div className="mt-10 flex items-center gap-5">
             <div className="flex flex-col">
-              <span className="text-[9px] font-light uppercase tracking-[0.35em] text-[#1a1a1a]/35">
+              <span className="text-[9px] font-light uppercase tracking-[0.35em] text-[#1a1a1a]/58">
                 Property Verdict
               </span>
               <span className="mt-2 font-serif text-[0.95rem] font-medium tracking-wide text-[#1e6b45] md:text-[1.05rem]">
@@ -725,7 +671,7 @@ function ExperienceIntelligence() {
             </div>
             <div className="ml-auto flex flex-col items-end">
               <span className="font-serif text-[2.2rem] font-light leading-none text-[#1a1a1a]/75 md:text-[2.6rem]">
-                97<span className="text-[1.1rem] text-[#1a1a1a]/35">%</span>
+                97<span className="text-[1.1rem] text-[#1a1a1a]/58">%</span>
               </span>
             </div>
           </div>
@@ -733,7 +679,7 @@ function ExperienceIntelligence() {
           <div className="mt-10">
             <a
               href={`${basePath}/intelligence`}
-              className="group/btn inline-flex items-center gap-2 text-[0.82rem] font-light tracking-[0.14em] text-[#1a1a1a]/65 transition-colors duration-400 hover:text-[#1a1a1a]"
+              className="group/btn inline-flex items-center gap-2 text-[0.82rem] font-light tracking-[0.14em] text-[#1a1a1a]/90 transition-colors duration-400 hover:text-[#1a1a1a]"
             >
               Explore Intelligence
               <span className="inline-block transition-transform duration-300 group-hover/btn:translate-x-1">
@@ -746,11 +692,11 @@ function ExperienceIntelligence() {
         {/* Card 3 — Spatial Intelligence (Sun & Vastu 3D, Beta) */}
         <div
           data-ei-o
-          className="group rounded-sm border border-[#1a1a1a]/8 bg-white p-8 transition-shadow duration-500 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] md:p-10 lg:p-12"
+          className="group rounded-sm border border-[#1a1a1a]/14 bg-white p-8 transition-shadow duration-500 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] md:p-10 lg:p-12"
           style={{ opacity: 0, transform: "translateY(28px)" }}
         >
           <span className="flex items-center gap-2.5">
-            <span className="text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]/70">
+            <span className="text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]">
               Spatial Intelligence
             </span>
             <span className="rounded-full border border-[#a2782a]/40 px-2 py-[2px] text-[8.5px] font-semibold uppercase tracking-[0.16em] text-[#a2782a]">
@@ -762,26 +708,26 @@ function ExperienceIntelligence() {
             <br />
             light &amp; vastu.
           </h3>
-          <div className="mt-8 space-y-3 text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/50 md:text-[0.95rem]">
+          <div className="mt-8 space-y-3 text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/68 md:text-[0.95rem]">
             <p>See the sun on every floor.</p>
             <p>Read daylight, heat &amp; shade.</p>
             <p>Check vastu, room by room.</p>
             <p>Compare units before you buy.</p>
           </div>
-          <p className="mt-8 font-serif text-[0.85rem] font-light italic text-[#1a1a1a]/40 md:text-[0.92rem]">
+          <p className="mt-8 font-serif text-[0.85rem] font-light italic text-[#1a1a1a]/62 md:text-[0.92rem]">
             See the home before you sign.
           </p>
 
           {/* Preview — sun/vastu read-out */}
           <div className="mt-10 flex items-center gap-5">
             <div className="flex flex-col">
-              <span className="text-[9px] font-light uppercase tracking-[0.35em] text-[#1a1a1a]/35">
+              <span className="text-[9px] font-light uppercase tracking-[0.35em] text-[#1a1a1a]/58">
                 Facing
               </span>
               <span className="mt-2 font-serif text-[0.95rem] font-medium tracking-wide text-[#1e6b45] md:text-[1.05rem]">
                 North-East
               </span>
-              <span className="mt-1.5 text-[0.78rem] font-light text-[#1a1a1a]/55">
+              <span className="mt-1.5 text-[0.78rem] font-light text-[#1a1a1a]/72">
                 Brahmasthan clear <span className="font-medium text-[#1e6b45]">&#10003;</span>
               </span>
             </div>
@@ -800,7 +746,7 @@ function ExperienceIntelligence() {
           <div className="mt-10">
             <a
               href={`${basePath}/sun-vastu`}
-              className="group/btn inline-flex items-center gap-2 text-[0.82rem] font-light tracking-[0.14em] text-[#1a1a1a]/65 transition-colors duration-400 hover:text-[#1a1a1a]"
+              className="group/btn inline-flex items-center gap-2 text-[0.82rem] font-light tracking-[0.14em] text-[#1a1a1a]/90 transition-colors duration-400 hover:text-[#1a1a1a]"
             >
               Explore Sun &amp; Vastu 3D
               <span className="inline-block transition-transform duration-300 group-hover/btn:translate-x-1">
@@ -817,7 +763,7 @@ function ExperienceIntelligence() {
         className="mx-auto mt-[12vh] max-w-xl text-center md:mt-[16vh]"
         style={{ opacity: 0, transform: "translateY(16px)" }}
       >
-        <p className="font-serif text-[0.92rem] font-light italic leading-[1.9] text-[#1a1a1a]/40 md:text-[1.15rem]">
+        <p className="font-serif text-[0.92rem] font-light italic leading-[1.9] text-[#1a1a1a]/62 md:text-[1.15rem]">
           Some decisions need data.
           <br />
           Some need dialogue.
@@ -950,14 +896,14 @@ function DecisionsSection() {
             </h2>
             <p
               data-r
-              className="mt-7 font-serif text-[1.25rem] font-light italic leading-snug text-[#1a1a1a]/60 md:text-[1.7rem]"
+              className="mt-7 font-serif text-[1.25rem] font-light italic leading-snug text-[#1a1a1a]/75 md:text-[1.7rem]"
               style={{ opacity: 0, transform: "translateY(16px)" }}
             >
               Independent thinking only matters when it changes outcomes.
             </p>
             <p
               data-r
-              className="mt-6 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/50 md:text-[1.05rem]"
+              className="mt-6 max-w-md text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/68 md:text-[1.05rem]"
               style={{ opacity: 0, transform: "translateY(16px)" }}
             >
               Not testimonials &mdash; a short record of moments where the evidence pointed somewhere the crowd didn&rsquo;t.
@@ -998,19 +944,19 @@ function DecisionsSection() {
                     <h3 className="mt-3 font-serif text-[1.7rem] font-medium leading-[1.1] text-[#1a1a1a] md:text-[2.05rem]">
                       {c.recommendation}
                     </h3>
-                    <p className="mt-4 max-w-md font-serif text-[1.05rem] font-light leading-relaxed text-[#1a1a1a]/60 md:text-[1.2rem]">
+                    <p className="mt-4 max-w-md font-serif text-[1.05rem] font-light leading-relaxed text-[#1a1a1a]/75 md:text-[1.2rem]">
                       {c.challenge}
                     </p>
 
                     {/* the reasoning card — discovered → the call → outcome */}
                     <div className="mt-8 max-w-md rounded-xl border border-[#1a1a1a]/12 bg-white p-6">
                       <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]/80">What we discovered</p>
-                      <p className="mt-3 text-[0.92rem] font-light leading-relaxed text-[#1a1a1a]/60 md:text-[0.98rem]">
+                      <p className="mt-3 text-[0.92rem] font-light leading-relaxed text-[#1a1a1a]/75 md:text-[0.98rem]">
                         {c.discovery}
                       </p>
 
                       <div className="mt-5 flex items-baseline justify-between gap-3 border-t border-dotted border-[#1a1a1a]/15 pt-4">
-                        <span className="text-[10px] font-light uppercase tracking-[0.24em] text-[#1a1a1a]/40">
+                        <span className="text-[10px] font-light uppercase tracking-[0.24em] text-[#1a1a1a]/62">
                           {money ? "Investment" : "Our call"}
                         </span>
                         <span
@@ -1025,7 +971,7 @@ function DecisionsSection() {
                       </div>
 
                       <div className="mt-5">
-                        <p className="text-[10px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/40">Outcome</p>
+                        <p className="text-[10px] font-light uppercase tracking-[0.3em] text-[#1a1a1a]/62">Outcome</p>
                         <div className="mt-3 flex flex-col gap-2.5">
                           {c.outcomes.map((o) => (
                             <p
@@ -1053,7 +999,7 @@ function DecisionsSection() {
       <div className="mx-auto mt-[16vh] max-w-2xl text-center md:mt-[22vh]">
         <p
           data-r
-          className="font-serif text-[0.92rem] font-light italic leading-[1.9] text-[#1a1a1a]/40 md:text-[1.15rem]"
+          className="font-serif text-[0.92rem] font-light italic leading-[1.9] text-[#1a1a1a]/62 md:text-[1.15rem]"
           style={{ opacity: 0, transform: "translateY(14px)" }}
         >
           Every recommendation changes a story.
@@ -1072,7 +1018,7 @@ function DecisionsSection() {
           </button>
           <button
             onClick={() => openConsult({ sourceKind: "homepage" })}
-            className="group inline-flex items-center gap-2 text-[12px] font-light tracking-[0.14em] text-[#1a1a1a]/55 transition-colors duration-300 hover:text-[#1a1a1a]"
+            className="group inline-flex items-center gap-2 text-[12px] font-light tracking-[0.14em] text-[#1a1a1a]/72 transition-colors duration-300 hover:text-[#1a1a1a]"
           >
             Request Independent Advice
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
@@ -1178,11 +1124,11 @@ function AudienceSection() {
           <div className="flex flex-none items-start justify-between gap-6">
             <div>
               <p className="text-[11px] font-light uppercase tracking-[0.34em] text-[#c9a96e]">Who We Work Best With</p>
-              <p className="mt-3 max-w-[30ch] font-serif text-[0.95rem] font-light italic leading-snug text-[#1a1a1a]/50 md:text-[1.25rem]">
+              <p className="mt-3 max-w-[30ch] font-serif text-[0.95rem] font-light italic leading-snug text-[#1a1a1a]/68 md:text-[1.25rem]">
                 Independent advice is most valuable when the decision is too important to get wrong.
               </p>
             </div>
-            <p className="shrink-0 whitespace-nowrap font-serif text-[1rem] tabular-nums text-[#1a1a1a]/30 md:text-[1.25rem]">
+            <p className="shrink-0 whitespace-nowrap font-serif text-[1rem] tabular-nums text-[#1a1a1a]/55 md:text-[1.25rem]">
               <span ref={curRef} className="font-semibold text-[#1a1a1a]">01</span> / 06
             </p>
           </div>
@@ -1202,7 +1148,7 @@ function AudienceSection() {
                 <h3 className="mt-4 max-w-[15ch] font-serif text-[2.5rem] font-semibold leading-[1.02] tracking-[-0.015em] text-[#1a1a1a] md:text-[4.2rem] lg:text-[5.2rem]">
                   {a.title}
                 </h3>
-                <p className="mt-6 max-w-[34ch] text-[1.02rem] font-light leading-relaxed text-[#1a1a1a]/55 md:max-w-[40ch] md:text-[1.35rem]">
+                <p className="mt-6 max-w-[34ch] text-[1.02rem] font-light leading-relaxed text-[#1a1a1a]/72 md:max-w-[40ch] md:text-[1.35rem]">
                   {a.line}
                 </p>
               </div>
@@ -1226,7 +1172,7 @@ function AudienceSection() {
           >
             If you value independent judgement,
             <br />
-            <span className="font-light italic text-[#1a1a1a]/55">
+            <span className="font-light italic text-[#1a1a1a]/72">
               we&rsquo;ll probably get along.
             </span>
           </h3>
@@ -1244,7 +1190,7 @@ function AudienceSection() {
             </button>
             <button
               onClick={() => openConsult({ sourceKind: "homepage" })}
-              className="group inline-flex items-center gap-2 text-[12px] font-light tracking-[0.14em] text-[#1a1a1a]/55 transition-colors duration-300 hover:text-[#1a1a1a]"
+              className="group inline-flex items-center gap-2 text-[12px] font-light tracking-[0.14em] text-[#1a1a1a]/72 transition-colors duration-300 hover:text-[#1a1a1a]"
             >
               Request Independent Advice
               <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
@@ -1421,7 +1367,7 @@ function FaqItem({
         <div ref={bodyRef} className="grid grid-cols-[auto_1fr] gap-5 pb-8 md:gap-8">
           <span aria-hidden className="invisible font-serif text-[0.85rem] leading-none tabular-nums md:text-[1rem]">00</span>
           <p
-            className="max-w-xl border-l-2 pl-5 text-[0.88rem] font-light leading-[1.85] text-[#1a1a1a]/55 transition-colors duration-500 md:text-[0.98rem]"
+            className="max-w-xl border-l-2 pl-5 text-[0.88rem] font-light leading-[1.85] text-[#1a1a1a]/72 transition-colors duration-500 md:text-[0.98rem]"
             style={{ borderColor: isOpen ? "rgba(201,169,110,0.4)" : "transparent" }}
           >
             {item.a}
@@ -1463,7 +1409,7 @@ function QuestionsSection() {
         </h2>
         <p
           data-r
-          className="mt-7 max-w-lg text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/50 md:mt-10 md:text-[1.1rem]"
+          className="mt-7 max-w-lg text-[0.95rem] font-light leading-relaxed text-[#1a1a1a]/68 md:mt-10 md:text-[1.1rem]"
           style={{ opacity: 0, transform: "translateY(16px)" }}
         >
           You should understand exactly how we work before trusting us with
@@ -1488,7 +1434,7 @@ function QuestionsSection() {
       <div className="mx-auto mt-[12vh] max-w-2xl text-center md:mt-[16vh]">
         <p
           data-r
-          className="font-serif text-[1.1rem] font-light italic leading-[1.8] text-[#1a1a1a]/40 md:text-[1.35rem]"
+          className="font-serif text-[1.1rem] font-light italic leading-[1.8] text-[#1a1a1a]/62 md:text-[1.35rem]"
           style={{ opacity: 0, transform: "translateY(14px)" }}
         >
           Good decisions begin with good questions.
@@ -1507,7 +1453,7 @@ function QuestionsSection() {
           </button>
           <button
             onClick={() => openConsult({ sourceKind: "homepage" })}
-            className="group inline-flex items-center gap-2 text-[12px] font-light tracking-[0.14em] text-[#1a1a1a]/55 transition-colors duration-300 hover:text-[#1a1a1a]"
+            className="group inline-flex items-center gap-2 text-[12px] font-light tracking-[0.14em] text-[#1a1a1a]/72 transition-colors duration-300 hover:text-[#1a1a1a]"
           >
             Request Independent Advice
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
@@ -1578,7 +1524,7 @@ function PromiseSection() {
         {/* Period — delayed reveal */}
         <span
           ref={periodRef}
-          className="mt-6 block font-serif text-[1.4rem] font-light italic text-[#c9a96e]/70 md:mt-8 md:text-[2rem]"
+          className="mt-6 block font-serif text-[1.4rem] font-light italic text-[#c9a96e] md:mt-8 md:text-[2rem]"
           style={{ opacity: 0 }}
         >
           Period.

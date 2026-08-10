@@ -1,5 +1,4 @@
 import Hero from "@/components/Hero";
-import StorySection from "@/components/StorySection";
 import ExperienceSection from "@/components/ExperienceSection";
 import Footer from "@/components/Footer";
 import { buildIndex } from "@/lib/omniIndex";
@@ -15,7 +14,6 @@ export default async function Home() {
       <link rel="preload" as="image" href={`${basePath}/images/new-hero-mobile.webp`} type="image/webp" media="(max-width: 767px)" />
       <main>
         <Hero index={index} />
-        <StorySection />
         <ExperienceSection />
       </main>
       <Footer />
