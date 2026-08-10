@@ -1560,6 +1560,13 @@ function DocumentsSection() {
   const touch = (row: { slug: string; name: string; market: string; seoSlug: string | null }) =>
     recordReportView(row.slug, row.name, row.market, row.seoSlug);
 
+  /* First report free — this profile owns nothing yet, so a previewed report
+     below unlocks at ₹0, matching the report page. The moment anything lands
+     in Purchased (a paid grant, the free grant, or All-Access) the normal
+     price returns. Derived from the office's own entitlement data, so it
+     refreshes with it. */
+  const firstFree = purchased.length === 0;
+
   return (
     <div className="animate-fade-up">
       <SectionHead
@@ -1648,7 +1655,7 @@ function DocumentsSection() {
                         onClick={() => touch({ slug: v.slug, name: v.name, market: v.market, seoSlug: v.seoSlug })}
                         className="rounded-sm bg-[#1e6b45] px-4 py-2.5 text-[0.8rem] font-medium text-white transition-colors hover:bg-[#238c55]"
                       >
-                        Unlock · {INR(packageById("read").inr)} →
+                        {firstFree ? <>Unlock · Free →</> : <>Unlock · {INR(packageById("read").inr)} →</>}
                       </a>
                       <a
                         href={reportHref(v.seoSlug)}
