@@ -99,22 +99,26 @@ export function serverHasAccess(slug: string): true | null {
 
 /* Should this reader be OFFERED their first report free?
 
-   Optimistic by design: claim-free-unlock re-checks eligibility server-side
-   and is the authority, so the client only WITHHOLDS ₹0 when the CURRENT
-   session's OWN entitlement proves they already own a report (or All-Access).
+   Reads the entitlements cache UNGATED — and that is deliberate, because it
+   MUST agree with claim-free-unlock. Both this cache (via fetchEntitlements)
+   and the claim resolve identity the SAME way: the device's event trail
+   (anon_id → newest user_id), NOT the client session. So the cache already
+   reflects exactly the account the grant will be credited to. Gating it on the
+   session id instead (a second identity that can diverge on a device that has
+   signed into more than one account) is what made the ₹0 we SHOW and the grant
+   the server MAKES disagree — ₹0 shown, then declined, then ₹0 again on the
+   next report. One identity, one answer.
 
-   The `e.userId === uid` gate is the whole point — the same one serverHasAccess
-   applies. A cached answer that belongs to a DIFFERENT user (a stale sign-in on
-   a much-tested device, an expired session, or a fetch that mapped the device
-   to a previous account) is ignored, so the paywall never quotes the paid price
-   off someone else's unlocks. Without it, the ₹0 CTA and the report's own lock
-   could disagree about the same person — which is exactly what happened.
+   No cache, or a cache with nothing unlocked and no All-Access, means eligible.
+   claim-free-unlock re-checks and remains the authority, so at worst this
+   offers a ₹0 the server then declines, dropping the reader onto the paid
+   price. A guest owns nothing, so they see the offer too (the sign-up hook);
+   the unlock modal signs them in before anything is actually claimed.
 
-   A guest owns nothing, so they see the offer too (the sign-up hook); the
-   unlock modal signs them in before anything is actually claimed. */
+   NB: serverHasAccess() DOES gate on the session — unmasking paid content is a
+   security decision that must belong to whoever is signed in right now. Whether
+   to OFFER a free unlock is not; it only has to predict the grant. */
 export function offerFirstFree(): boolean {
   const e = readEntitlements();
-  const uid = signedInUserId();
-  const mine = uid && e && e.userId === uid ? e : null;
-  return !mine || (mine.unlocked.length === 0 && !mine.all);
+  return !e || (e.unlocked.length === 0 && !e.all);
 }
