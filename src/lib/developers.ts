@@ -252,6 +252,33 @@ export const DEVELOPERS: DeveloperIntel[] = [
     verdict:
       "Global credibility with good India execution. Best for value-segment buyers who want reliability without premium pricing.",
   },
+  {
+    /* DRAFT dossier — scaffolded from RERA filings + public record, pending
+       founder review. Facts to confirm before shipping are flagged in chat:
+       founding year, the JV/parent framing, and the "Japanese township"
+       positioning. Performance & financial signals are from the filings. */
+    slug: "krisumi-corporation-private-limited",
+    name: "Krisumi Corporation Private Limited",
+    est: "2017",
+    listed: false,
+    listedNote: "Private · Krishna Group × Sumitomo Corporation (Japan)",
+    tagline: "Japanese build discipline, brought to the Dwarka Expressway.",
+    about:
+      "An India–Japan joint venture between the Krishna Group and Japan's Sumitomo Corporation — the name is Krishna + Sumitomo. Its flagship, Krisumi City in Sector 36A, is positioned as Gurugram's Japanese-quality township on the Dwarka Expressway, pairing Sumitomo's construction discipline with a low-density master plan built around light and air.",
+    signature: ["Krisumi Waterside Residences"],
+    brandValue:
+      "Japanese engineering standards and a Fortune-500 Japanese parent — buyers pay for build quality and delivery discipline, not local hype.",
+    recent: ["Krisumi Waterside Residences"],
+    pipeline: ["Waterside Residences · The Forest Reserve", "The Forest Reserve · Phase 2"],
+    performance: { launched: 7, delivered: 1, ongoing: 6, onTimePct: 86, avgDelayMonths: 5.4, lapsed: 0 },
+    financials: { leverage: "strong", coverage: "strong", cash: "strong", margin: "moderate", inventory: "moderate" },
+    finNote:
+      "Backed by Japan's Sumitomo Corporation and the Krishna Group. MCA filings show the entity effectively net-cash — roughly ₹31 Cr of debt against ~₹43 Cr cash and an ~₹832 Cr net worth. Signals, not audited figures.",
+    legal:
+      "No developer-level litigation is on the public record in the tracked filings, and no RERA legal flags are pending. As a relatively new developer the delivery history is short — the risk to weigh here is track-record length, not compliance.",
+    verdict:
+      "An India–Japan joint venture bringing Sumitomo's build discipline and a genuinely differentiated Japanese-quality product to the Dwarka Expressway. Financially it is among the strongest names on this list — effectively net-cash, with a Fortune-500 parent. The one caveat is newness: a single delivery to date, so the delivery record is still being written.",
+  },
 ];
 
 export function developerBySlug(slug: string): DeveloperIntel | undefined {
