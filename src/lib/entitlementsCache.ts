@@ -96,3 +96,25 @@ export function serverHasAccess(slug: string): true | null {
   if (e.all) return true;
   return e.unlocked.includes(slug) ? true : null;
 }
+
+/* Should this reader be OFFERED their first report free?
+
+   Optimistic by design: claim-free-unlock re-checks eligibility server-side
+   and is the authority, so the client only WITHHOLDS ₹0 when the CURRENT
+   session's OWN entitlement proves they already own a report (or All-Access).
+
+   The `e.userId === uid` gate is the whole point — the same one serverHasAccess
+   applies. A cached answer that belongs to a DIFFERENT user (a stale sign-in on
+   a much-tested device, an expired session, or a fetch that mapped the device
+   to a previous account) is ignored, so the paywall never quotes the paid price
+   off someone else's unlocks. Without it, the ₹0 CTA and the report's own lock
+   could disagree about the same person — which is exactly what happened.
+
+   A guest owns nothing, so they see the offer too (the sign-up hook); the
+   unlock modal signs them in before anything is actually claimed. */
+export function offerFirstFree(): boolean {
+  const e = readEntitlements();
+  const uid = signedInUserId();
+  const mine = uid && e && e.userId === uid ? e : null;
+  return !mine || (mine.unlocked.length === 0 && !mine.all);
+}
