@@ -181,7 +181,7 @@ export default function DeveloperProfile({ dev }: { dev: DeveloperIntel }) {
             <p className="mt-2 max-w-md text-[0.88rem] font-light text-white/55">Every project we track from this developer — Truth Score, entry price and delivery risk, side by side.</p>
           </div>
           <a
-            href={`${basePath}/intelligence?developer=${encodeURIComponent(short)}`}
+            href={`${basePath}/intelligence/projects?developer=${encodeURIComponent(short)}`}
             className="group shrink-0 rounded-sm bg-[#1e6b45] px-7 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]"
           >
             View projects <span className="inline-block transition-transform group-hover:translate-x-0.5">→</span>

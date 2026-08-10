@@ -258,13 +258,13 @@ export const DEVELOPERS: DeveloperIntel[] = [
       "Global credibility with good India execution. Best for value-segment buyers who want reliability without premium pricing.",
   },
   {
-    /* DRAFT dossier — scaffolded from RERA filings + public record. Founder-
-       confirmed: founding year (2012) and that the flagship is chosen by filed
-       (extended-assets) price — so `signature` here is only the offline
-       fallback; resolveDevelopers overrides it live with the developer's most-
-       expensive tracked project (Krisumi → The Forest Reserve · Phase 1). Still
-       to confirm before shipping: the JV/parent framing and the "Japanese
-       township" positioning. Performance & financial signals are from the filings. */
+    /* Curated dossier — scaffolded from RERA filings + public record, founder-
+       confirmed: founding year (2012), the Krishna × Sumitomo JV framing, the
+       "Japanese township" positioning, and that the flagship is chosen by filed
+       (extended-assets) price — so `signature` here is only the offline fallback;
+       resolveDevelopers overrides it live with the developer's most-expensive
+       tracked project (Krisumi → The Forest Reserve · Phase 1). Performance &
+       financial signals are from the filings. */
     slug: "krisumi-corporation-private-limited",
     name: "Krisumi Corporation Private Limited",
     shortName: "Krisumi",

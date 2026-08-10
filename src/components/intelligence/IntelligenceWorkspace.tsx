@@ -46,8 +46,7 @@ const EMPTY_INDEX: OmniIndex = { projects: [], units: {}, live: false };
 type View =
   | { type: "home" }
   | { type: "search-result"; query: string; result: ResearchResult }
-  | { type: "canvas"; query: string; parsed: Parsed }
-  | { type: "developer"; name: string };
+  | { type: "canvas"; query: string; parsed: Parsed };
 
 /* Resolve an entity name to its real routed page.
    The live index goes first and the demo set is only a fallback: this
@@ -138,12 +137,7 @@ export default function IntelligenceWorkspace({ index = EMPTY_INDEX }: { index?:
   /* deep-link handoff: /intelligence?q=… (the home hero's Enter) runs the
      ask on arrival exactly as if it were typed into the omnibox */
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    // /intelligence?developer=… — the developer dossier's "See all X projects"
-    // CTA: show the catalogue filtered to that one developer.
-    const developer = params.get("developer");
-    if (developer?.trim()) { setView({ type: "developer", name: developer.trim() }); return; }
-    const q = params.get("q");
+    const q = new URLSearchParams(window.location.search).get("q");
     if (q?.trim()) doSearch(q.trim());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -300,49 +294,7 @@ export default function IntelligenceWorkspace({ index = EMPTY_INDEX }: { index?:
         {view.type === "canvas" && (
           <CanvasView key={view.query} query={view.query} parsed={view.parsed} index={index} onFallback={fallbackToBrief} />
         )}
-        {view.type === "developer" && <DeveloperProjectsView name={view.name} index={index} />}
       </main>
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   DEVELOPER VIEW — /intelligence?developer=<name>
-
-   The catalogue filtered to a single developer, opened by the dossier's
-   "See all <X> projects" CTA. Reuses LiveProjectCard and the home grid.
-   The developer field is matched by a loose normalised prefix so the CTA's
-   short name ("Krisumi") resolves to the full filed name ("Krisumi
-   Corporation Private Limited") the index actually carries.
-   ════════════════════════════════════════════════════════════════ */
-function DeveloperProjectsView({ name, index }: { name: string; index: OmniIndex }) {
-  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
-  const key = norm(name);
-  const projects = useMemo(
-    () =>
-      index.projects
-        .filter((p) => {
-          if (!p.developer) return false;
-          const d = norm(p.developer);
-          return !!key && (d === key || d.startsWith(key) || key.startsWith(d));
-        })
-        .sort((a, b) => (b.score ?? 0) - (a.score ?? 0)),
-    [index.projects, key],
-  );
-  return (
-    <div className="mx-auto max-w-[1000px] px-6 py-[7vh] md:px-10">
-      <a href={`${basePath}/intelligence/developers`} className="text-[0.74rem] font-light text-[#1a1a1a]/40 transition-colors hover:text-[#1a1a1a]/70">← All developers</a>
-      <h1 className="mt-4 font-serif text-[2rem] font-medium tracking-[-0.01em] text-[#1a1a1a] md:text-[2.6rem]">All {name} projects</h1>
-      <p className="mt-2 text-[0.85rem] font-light text-[#1a1a1a]/45">
-        {projects.length} project{projects.length === 1 ? "" : "s"} we track — Truth Score, entry price and delivery risk.
-      </p>
-      {projects.length > 0 ? (
-        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {projects.map((p) => <LiveProjectCard key={p.slug} p={p} />)}
-        </div>
-      ) : (
-        <p className="mt-10 text-[0.95rem] font-light text-[#1a1a1a]/50">No tracked projects found for {name} yet.</p>
-      )}
     </div>
   );
 }
