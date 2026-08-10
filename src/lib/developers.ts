@@ -35,6 +35,11 @@ export type FinKey = (typeof FIN_METRICS)[number]["key"];
 export type DeveloperIntel = {
   slug: string;
   name: string;
+  /* Short, buyer-facing name for inline copy (CTAs, "See all X projects") where
+     the full legal name reads long — e.g. "Krisumi" for "Krisumi Corporation
+     Private Limited". Optional; falls back to `name` (already short for DLF,
+     M3M, Godrej, …). The hero title and formal fields always use `name`. */
+  shortName?: string;
   /* true = a filings-only profile (developers_overview, no desk dossier yet):
      the editorial fields (est/tagline/about/brandValue) are empty and the UI
      hides them, and the Listed/Private badge is suppressed because it isn't
@@ -262,6 +267,7 @@ export const DEVELOPERS: DeveloperIntel[] = [
        township" positioning. Performance & financial signals are from the filings. */
     slug: "krisumi-corporation-private-limited",
     name: "Krisumi Corporation Private Limited",
+    shortName: "Krisumi",
     est: "2012",
     listed: false,
     listedNote: "Private · Krishna Group × Sumitomo Corporation (Japan)",
