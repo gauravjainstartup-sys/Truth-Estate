@@ -595,9 +595,6 @@ export default function UnlockModal({
                 <p className="flex items-start gap-2 text-[0.76rem] leading-snug text-[#1a1a1a]/60"><span aria-hidden className="mt-[1px] text-[#9a7a2e]">↻</span><span>Re-audited <b className="font-semibold text-[#1a1a1a]/80">every month</b>, saved to your Buyer Office — <b className="font-semibold text-[#1a1a1a]/80">yours for life</b> with every update.</span></p>
                 <p className="flex items-start gap-2 text-[0.76rem] leading-snug text-[#1a1a1a]/60"><span aria-hidden className="mt-[1px] text-[#9a7a2e]">⚖</span><span>Built to <b className="font-semibold text-[#1a1a1a]/80">negotiate</b>: buyers use the fair-price band + red flags as leverage with the developer.</span></p>
               </div>
-              <p className="mt-3 text-center text-[0.72rem] leading-relaxed text-[#1a1a1a]/45">
-                Compare any projects — free. Need something custom? Shaped on your <span className="font-medium text-[#1a1a1a]/70">first free advisor call</span>.
-              </p>
             </div>
           )}
 
