@@ -66,8 +66,13 @@ on:
   # (SNAPSHOT_REFRESH forced to 1 below); retune cadence by changing the one
   # number here. GitHub crons are UTC and best-effort — they can lag a few
   # minutes under load, which is immaterial for a data refresh.
-  schedule:
-    - cron: "0 */6 * * *"
+  # PAUSED 2026-08-10 at founder's request — stop scheduled Supabase egress
+  # (free-tier cap approaching). Prod now refreshes ONLY via a manual "Run
+  # workflow" with "Refresh snapshot" checked; new live projects still appear
+  # instantly via LiveProjectShell, and code deploys reuse the cached snapshot
+  # (zero egress). Re-enable on the founder's word by uncommenting both lines.
+  # schedule:
+  #   - cron: "0 */6 * * *"
 
 # Never two production deploys at once, and never cancel one midway —
 # a half-pushed image is worse than a queued one.

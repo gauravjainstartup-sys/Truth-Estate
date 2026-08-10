@@ -17,8 +17,13 @@ on:
   # the DB/media snapshot (SNAPSHOT_REFRESH=1 below); ordinary code pushes reuse
   # the cached snapshot and cost ZERO Supabase egress. The daily cron is the
   # backstop so nothing is ever more than a day stale. GitHub may delay cron runs.
-  schedule:
-    - cron: "0 3 * * *"
+  # PAUSED 2026-08-10 at founder's request — stop the scheduled Supabase pull.
+  # NOTE: the repository_dispatch webhook above still re-pulls on every DB
+  # change (SNAPSHOT_REFRESH=1); left as-is and flagged to the founder. Manual
+  # "Run workflow" and code pushes are unaffected. Re-enable the daily backstop
+  # by uncommenting both lines.
+  # schedule:
+  #   - cron: "0 3 * * *"
 
 permissions:
   contents: read
