@@ -9,7 +9,7 @@
      • ties the *visible* Truth Score to the locked detail ("why only X?").
    ──────────────────────────────────────────────────────────────────────── */
 
-import { discountOf } from "@/lib/journey";
+import { discountOf, isSignedIn } from "@/lib/journey";
 import { usePackage } from "@/lib/usePricing";
 import { cachedEntitlements } from "@/lib/entitlements";
 
@@ -65,8 +65,14 @@ export default function LockedReport({
   /* First report free — a guest, or a signed-in profile that has never
      unlocked anything. The paywall then leads with ₹0 (₹2,100 struck); a
      returning customer who has spent their free report sees the normal price.
-     The unlock modal re-checks server-side and is the authority. */
-  const ent = cachedEntitlements();
+     The unlock modal re-checks server-side and is the authority.
+
+     The cache counts ONLY while a session justifies it — the same gate
+     serverHasAccess() applies. A signed-out reader carrying a stale cache
+     from an earlier sign-in (or an expired session) must read as a guest;
+     otherwise this CTA quotes the paid price while the report itself stays
+     locked, the two disagreeing about the same person. */
+  const ent = isSignedIn() ? cachedEntitlements() : null;
   const firstFree = !ent || ent.userId == null || (ent.unlocked.length === 0 && !ent.all);
   return (
     <div className="mt-14 border-t border-[#1a1a1a]/8 pt-12">
