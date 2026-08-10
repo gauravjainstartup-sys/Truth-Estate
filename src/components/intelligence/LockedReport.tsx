@@ -11,7 +11,7 @@
 
 import { discountOf } from "@/lib/journey";
 import { usePackage } from "@/lib/usePricing";
-import { offerFirstFree } from "@/lib/entitlements";
+import { useFirstFree } from "@/lib/useFirstFree";
 
 /* Each locked section framed as the burning question it answers — the pull is
    the question, not a data dump. Generic-but-true (no fabricated findings). */
@@ -68,8 +68,10 @@ export default function LockedReport({
      session's user (the same gate serverHasAccess applies), so a cache left by
      a different or earlier sign-in is ignored — the CTA never quotes the paid
      price off someone else's unlocks while the report itself stays locked.
-     claim-free-unlock re-checks server-side and is the authority. */
-  const firstFree = offerFirstFree();
+     claim-free-unlock re-checks server-side and is the authority. Reactive:
+     re-reads when the entitlements fetch lands or a claim updates the cache,
+     so the ₹0 doesn't persist onto the next report after the first is used. */
+  const firstFree = useFirstFree();
   return (
     <div className="mt-14 border-t border-[#1a1a1a]/8 pt-12">
       {/* ── the pitch ── */}

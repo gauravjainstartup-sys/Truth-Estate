@@ -21,7 +21,7 @@
 import { discountOf } from "@/lib/journey";
 import { usePackage } from "@/lib/usePricing";
 import { basePath } from "@/lib/site";
-import { offerFirstFree } from "@/lib/entitlements";
+import { useFirstFree } from "@/lib/useFirstFree";
 
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
@@ -36,11 +36,10 @@ export default function UnlockDesk({ onUnlock }: { onUnlock: () => void }) {
   const read = usePackage("read");
   const d = discountOf(read);
   /* First report free for a new / guest profile — matches LockedReport on the
-     same page so the rail never quotes a price the paywall says is ₹0.
-     offerFirstFree() gates the cache on the CURRENT session's user (as
-     serverHasAccess does), so a stale cache from a different/earlier sign-in
-     is ignored and a genuinely-new profile still reads as ₹0. */
-  const firstFree = offerFirstFree();
+     same page (both read the device-trail cache the claim resolves from, so the
+     rail never quotes a price the paywall or the server disagrees with).
+     Reactive, so it corrects when a claim updates the cache. */
+  const firstFree = useFirstFree();
   return (
     <div className="rounded-2xl border border-[#1a1a1a]/10 bg-[#FBF8F2] p-6">
       {/* founder as a trust seal — not a free-call offer */}

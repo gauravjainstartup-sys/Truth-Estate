@@ -24,7 +24,8 @@ import {
 } from "@/lib/journey";
 import { usePricing } from "@/lib/usePricing";
 import { normalisePhone, normaliseIntl, phoneKnown, prettyPhone, sendOtp, sendTwilioOtp, verifyOtp, verifyTwilioOtp, signInWithGoogle, OTP_LENGTH } from "@/lib/phoneAuth";
-import { fetchEntitlements, offerFirstFree } from "@/lib/entitlements";
+import { fetchEntitlements } from "@/lib/entitlements";
+import { useFirstFree } from "@/lib/useFirstFree";
 import { track } from "@/lib/events";
 import { payForPackage, claimFreeUnlock, prewarmCheckout, type Receipt } from "@/lib/checkout";
 import { openReceipt, invalidateBilling, inr as inrFmt } from "@/lib/billing";
@@ -147,7 +148,7 @@ export default function UnlockModal({
      returning customer. This decides what the sheet shows; claim-free-unlock
      re-checks server-side and is the authority, so at worst it offers a free
      unlock the server then declines, dropping the reader onto the normal price. */
-  const firstFree = offerFirstFree();
+  const firstFree = useFirstFree();
   const freeRead = (id: PackageId) => firstFree && !freeDeclined && id === "read";
   /* The struck value on a free read is the Full Read's list price (₹2,100),
      read from the same discount the paid path shows. */
