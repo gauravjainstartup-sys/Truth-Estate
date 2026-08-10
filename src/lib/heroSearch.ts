@@ -102,6 +102,23 @@ export function highlightName(name: string, query: string): NameSegment[] {
   return segs;
 }
 
+/* ── developer matches for the home dropdown ──
+   Fed by the SAME build-emitted /search-index.json the project-page palette
+   (SearchPalette) reads, so the home search surfaces the exact developer set —
+   and ranked the same way: name prefix wins, then substring, capped small. */
+export type DevRow = { n: string; s: string; c?: number };
+export function searchDevelopers(query: string, devs: DevRow[], limit = 3): DevRow[] {
+  const t = norm(query);
+  if (t.length < 2) return [];
+  const rank = (hay: string) => (hay.startsWith(t) ? 0 : hay.includes(t) ? 1 : -1);
+  return devs
+    .map((x) => ({ x, r: rank(x.n.toLowerCase()) }))
+    .filter((e) => e.r >= 0)
+    .sort((a, b) => a.r - b.r)
+    .slice(0, limit)
+    .map((e) => e.x);
+}
+
 /* scored = we hold a Truth Score for it (so it can show a verdict chip). */
 export function coveredProjects(projects: OmniProject[]): OmniProject[] {
   return projects.filter((p) => p.score != null);

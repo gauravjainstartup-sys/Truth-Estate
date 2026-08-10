@@ -23,6 +23,7 @@ import { scoreTag, type OmniIndex, type OmniProject, type ScoreTag } from "@/lib
 import {
   fuzzySearch, highlightName, defaultList, coveredNearby, coveredCountLabel,
   rowMeta, TAG_CHIP, getRecentSlugs, pushRecentSlug, pushDemand,
+  searchDevelopers, type DevRow,
 } from "@/lib/heroSearch";
 import { projectHref } from "@/lib/projectHref";
 import { basePath } from "@/lib/site";
@@ -31,8 +32,13 @@ import { track } from "@/lib/events";
 const DEBOUNCE_MS = 150;
 const MOBILE_MQ = "(max-width: 767px)";
 
+/* Developer dossiers come from the SAME /search-index.json the project-page
+   palette reads — fetched once, lazily, on first open and cached for the tab. */
+let devIndexCache: DevRow[] | null = null;
+
 type NavItem =
   | { kind: "project"; p: OmniProject }
+  | { kind: "developer"; d: DevRow }
   | { kind: "action"; action: "report" };
 
 /* Truth Score chip — the score number, then the canonical tag pill (layout B). */
@@ -50,6 +56,24 @@ function ScoreTagChip({ score, tag }: { score: number; tag: ScoreTag }) {
 
 export default function HeroSearch({ index }: { index: OmniIndex }) {
   const projects = index.projects;
+
+  const [devs, setDevs] = useState<DevRow[]>(() => devIndexCache ?? []);
+  const devFetchedRef = useRef(false);
+  /* Lazy, once-per-tab: pull the developer dossiers from the shared search
+     index the first time the panel opens, so the resting page pays nothing. */
+  const ensureDevs = useCallback(() => {
+    if (devIndexCache) { setDevs(devIndexCache); return; }
+    if (devFetchedRef.current) return;
+    devFetchedRef.current = true;
+    fetch(`${basePath}/search-index.json`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        const list = Array.isArray(j?.d) ? (j.d as DevRow[]) : [];
+        devIndexCache = list;
+        setDevs(list);
+      })
+      .catch(() => { devFetchedRef.current = false; });
+  }, []);
 
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -99,7 +123,8 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
   const q = debounced;
   const typing = q.length >= 2;
   const results = useMemo(() => (typing ? fuzzySearch(q, projects, 6) : []), [q, typing, projects]);
-  const state: 1 | 2 | 3 = !typing ? 1 : results.length > 0 ? 2 : 3;
+  const devResults = useMemo(() => (typing ? searchDevelopers(q, devs, 3) : []), [q, typing, devs]);
+  const state: 1 | 2 | 3 = !typing ? 1 : results.length > 0 || devResults.length > 0 ? 2 : 3;
 
   const variant: "mobile" | "desktop" = mobileOpen ? "mobile" : "desktop";
   const recentLimit = variant === "mobile" ? 4 : 3;
@@ -118,12 +143,15 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
 
   const navItems: NavItem[] = useMemo(() => {
     if (state === 1) return [...recentProjects, ...mostList].map((p) => ({ kind: "project", p }) as NavItem);
-    if (state === 2) return results.map((p) => ({ kind: "project", p }) as NavItem);
+    if (state === 2) return [
+      ...results.map((p) => ({ kind: "project", p }) as NavItem),
+      ...devResults.map((d) => ({ kind: "developer", d }) as NavItem),
+    ];
     return [
       { kind: "action", action: "report" },
       ...nearby.map((p) => ({ kind: "project", p }) as NavItem),
     ];
-  }, [state, recentProjects, mostList, results, nearby]);
+  }, [state, recentProjects, mostList, results, devResults, nearby]);
 
   useEffect(() => { setActive(-1); }, [q, state, variant]);
 
@@ -159,7 +187,7 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
     };
   }, [mobileOpen]);
 
-  const openMobile = useCallback(() => { triggerRef.current?.blur(); setMobileOpen(true); markSearchStarted(); }, [markSearchStarted]);
+  const openMobile = useCallback(() => { triggerRef.current?.blur(); setMobileOpen(true); markSearchStarted(); ensureDevs(); }, [markSearchStarted, ensureDevs]);
   const closeMobile = useCallback(() => { setMobileOpen(false); setQuery(""); setActive(-1); }, []);
 
   const go = useCallback((p: OmniProject) => {
@@ -177,10 +205,15 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
     window.location.href = `${basePath}/get-custom-project-report${term ? `?project=${encodeURIComponent(term)}` : ""}`;
   }, [query, q]);
 
+  const goDeveloper = useCallback((d: DevRow) => {
+    window.location.href = `${basePath}/intelligence/developers/${d.s}`;
+  }, []);
+
   const activate = useCallback((item: NavItem) => {
     if (item.kind === "project") go(item.p);
+    else if (item.kind === "developer") goDeveloper(item.d);
     else requestReport();
-  }, [go, requestReport]);
+  }, [go, goDeveloper, requestReport]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -207,9 +240,10 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
     }
   };
 
+  const totalHits = results.length + devResults.length;
   const announce =
     state === 1 ? "Showing suggested projects."
-    : state === 2 ? `${results.length} result${results.length === 1 ? "" : "s"} for ${q}.`
+    : state === 2 ? `${totalHits} result${totalHits === 1 ? "" : "s"} for ${q}.`
     : `No coverage yet for ${q}. Request a custom report, or view covered projects nearby.`;
 
   const hasContent = state === 1 ? navItems.length > 0 : true;
@@ -249,6 +283,35 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
       {text}
     </li>
   );
+  /* developer row — same shell as a project row, with a Dossier chip in place
+     of the Truth Score. Routes to the developer's dossier page. */
+  const devRowEl = (d: DevRow, i: number) => {
+    const segs = highlightName(d.n, q);
+    return (
+      <li
+        key={`dev-${d.s}-${i}`}
+        id={optId(i)}
+        role="option"
+        aria-selected={active === i}
+        onMouseDown={(e) => e.preventDefault()}
+        onMouseEnter={() => setActive(i)}
+        onClick={() => goDeveloper(d)}
+        className={`flex min-h-[44px] cursor-pointer items-center gap-3 px-4 py-2 ${active === i ? "bg-[#e5dcc5]" : ""}`}
+      >
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-serif text-[16px] leading-tight text-[#1f1b12]">
+            {segs.map((s, k) => (s.hit ? <b key={k} className="font-semibold">{s.t}</b> : <span key={k}>{s.t}</span>))}
+          </span>
+          <span className="mt-0.5 block truncate text-[11px] text-[#7c7364]">
+            {d.c != null ? `Developer · ${d.c} tracked project${d.c === 1 ? "" : "s"}` : "Developer dossier"}
+          </span>
+        </span>
+        <span className="shrink-0 rounded-[11px] px-2 py-[3px] text-[10.5px] font-medium leading-none" style={{ color: "#8a6d1f", border: "0.5px solid #c7a86a" }}>
+          Dossier
+        </span>
+      </li>
+    );
+  };
 
   /* the listbox children for the current state — shared by both surfaces */
   const panelChildren = () => {
@@ -265,7 +328,22 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
         </>
       );
     }
-    if (state === 2) return <>{results.map((p, i) => row(p, i, true))}</>;
+    if (state === 2) return (
+      <>
+        {results.length > 0 && (
+          <>
+            {devResults.length > 0 && label("Projects")}
+            {results.map((p, i) => row(p, i, true))}
+          </>
+        )}
+        {devResults.length > 0 && (
+          <>
+            {label("Developers", results.length > 0)}
+            {devResults.map((d, k) => devRowEl(d, results.length + k))}
+          </>
+        )}
+      </>
+    );
     return (
       <>
         <li role="presentation" className="px-4 pb-1 pt-3.5 text-[13px] leading-snug text-[#4d4535]">
@@ -318,7 +396,7 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
             autoComplete="off"
             value={query}
             onChange={(e) => { if (!isMobile) { setQuery(e.target.value); setOpen(true); if (e.target.value.trim()) markSearchStarted(); } }}
-            onFocus={() => { if (!isMobile) setOpen(true); }}
+            onFocus={() => { if (!isMobile) { setOpen(true); ensureDevs(); } }}
             onBlur={() => { if (!isMobile) { setOpen(false); setActive(-1); } }}
             onClick={() => { if (isMobile) openMobile(); }}
             onKeyDown={(e) => {
