@@ -262,22 +262,27 @@ export const DEVELOPERS: DeveloperIntel[] = [
     est: "2017",
     listed: false,
     listedNote: "Private · Krishna Group × Sumitomo Corporation (Japan)",
-    tagline: "Japanese build discipline, brought to the Dwarka Expressway.",
+    tagline: "Japanese build quality, brought to the Dwarka Expressway.",
     about:
-      "An India–Japan joint venture between the Krishna Group and Japan's Sumitomo Corporation — the name is Krishna + Sumitomo. Its flagship, Krisumi City in Sector 36A, is positioned as Gurugram's Japanese-quality township on the Dwarka Expressway, pairing Sumitomo's construction discipline with a low-density master plan built around light and air.",
+      "An India–Japan joint venture between the Krishna Group and Japan's Sumitomo Corporation — the name is Krishna + Sumitomo. Its flagship, Krisumi City in Sector 36A, is positioned as Gurugram's Japanese-quality township on the Dwarka Expressway, pairing Sumitomo's construction quality with a low-density master plan built around light and air.",
     signature: ["Krisumi Waterside Residences"],
     brandValue:
-      "Japanese engineering standards and a Fortune-500 Japanese parent — buyers pay for build quality and delivery discipline, not local hype.",
+      "Japanese engineering standards and a Fortune-500 Japanese parent — buyers pay for build quality and a differentiated Japanese product, not local hype.",
     recent: ["Krisumi Waterside Residences"],
     pipeline: ["Waterside Residences · The Forest Reserve", "The Forest Reserve · Phase 2"],
-    performance: { launched: 7, delivered: 1, ongoing: 6, onTimePct: 86, avgDelayMonths: 5.4, lapsed: 0 },
+    /* From live developers_overview (7 filed · 1 delivered · 6 ongoing · 6 of 7
+       delayed → 86% delayed, so 14% on-time; avg slip ~15.5 mo, median 11.4).
+       The delivery record is short AND currently delay-prone — do NOT restate
+       this as "on-time": onTimePct ≥ 85 would trigger a false "delivers on time,
+       consistently" highlight on the project report. */
+    performance: { launched: 7, delivered: 1, ongoing: 6, onTimePct: 14, avgDelayMonths: 15.5, lapsed: 0 },
     financials: { leverage: "strong", coverage: "strong", cash: "strong", margin: "moderate", inventory: "moderate" },
     finNote:
       "Backed by Japan's Sumitomo Corporation and the Krishna Group. MCA filings show the entity effectively net-cash — roughly ₹31 Cr of debt against ~₹43 Cr cash and an ~₹832 Cr net worth. Signals, not audited figures.",
     legal:
-      "No developer-level litigation is on the public record in the tracked filings, and no RERA legal flags are pending. As a relatively new developer the delivery history is short — the risk to weigh here is track-record length, not compliance.",
+      "No developer-level litigation is on the public record in the tracked filings, and no RERA legal flags are pending. The risk to weigh here is delivery, not compliance: the history is short (one project delivered) and currently delay-prone — most of the filed pipeline is running behind its committed possession dates.",
     verdict:
-      "An India–Japan joint venture bringing Sumitomo's build discipline and a genuinely differentiated Japanese-quality product to the Dwarka Expressway. Financially it is among the strongest names on this list — effectively net-cash, with a Fortune-500 parent. The one caveat is newness: a single delivery to date, so the delivery record is still being written.",
+      "An India–Japan joint venture bringing Sumitomo's build quality and a genuinely differentiated Japanese product to the Dwarka Expressway. Financially it is among the strongest names on this list — effectively net-cash, with a Fortune-500 parent. The caveat is delivery: just one project handed over so far, and across the filed pipeline roughly 86% of projects are running late — by about 15 months on average. Strong balance sheet and product; a delivery record that still has to prove itself.",
   },
 ];
 
