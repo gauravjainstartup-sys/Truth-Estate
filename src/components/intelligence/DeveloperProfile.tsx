@@ -29,6 +29,8 @@ export default function DeveloperProfile({ dev }: { dev: DeveloperIntel }) {
   // consultation opens knowing it ("We'll review DLF's track record…").
   const open = () => openConsult({ source: dev.name, sourceKind: "developer" });
   const p = dev.performance;
+  // Buyer-facing short name for the end CTA; formal `dev.name` stays in the hero.
+  const short = dev.shortName ?? dev.name;
 
   return (
     <div className="min-h-svh bg-[#F5F0E8] text-[#1a1a1a]">
@@ -110,7 +112,7 @@ export default function DeveloperProfile({ dev }: { dev: DeveloperIntel }) {
               )}
               {dev.signature.length > 0 && (
                 <>
-                  <SubLabel className="mt-8">Signature projects</SubLabel>
+                  <SubLabel className="mt-8">Flagship projects</SubLabel>
                   <ul className="mt-3 space-y-2">
                     {dev.signature.map((s) => <Bullet key={s}>{s}</Bullet>)}
                   </ul>
@@ -172,20 +174,18 @@ export default function DeveloperProfile({ dev }: { dev: DeveloperIntel }) {
           <p className="mt-6 max-w-2xl text-[0.85rem] font-light leading-[1.7] text-[#1a1a1a]/45">{dev.finNote}</p>
         </Section>
 
-        {/* Legal footnote + CTA */}
-        <div className="mt-14 border-t border-[#1a1a1a]/8 pt-8">
-          <SubLabel>Legal & compliance</SubLabel>
-          <p className="mt-3 max-w-2xl text-[0.9rem] font-light leading-[1.75] text-[#1a1a1a]/55">{dev.legal}</p>
-        </div>
-
-        <div className="mt-12 flex flex-col items-start gap-5 rounded-2xl bg-[#1a1a1a] p-9 text-white md:flex-row md:items-center md:justify-between md:p-10">
+        {/* End CTA — browse every project this developer files, in the catalogue */}
+        <div className="mt-14 flex flex-col items-start gap-5 rounded-2xl bg-[#1a1a1a] p-9 text-white md:flex-row md:items-center md:justify-between md:p-10">
           <div>
-            <p className="font-serif text-[1.5rem] font-medium leading-[1.2] md:text-[1.8rem]">Considering a {dev.name} project?</p>
-            <p className="mt-2 text-[0.88rem] font-light text-white/55">Get an independent, project-specific read before you commit.</p>
+            <p className="font-serif text-[1.5rem] font-medium leading-[1.2] md:text-[1.8rem]">See all {short} projects</p>
+            <p className="mt-2 max-w-md text-[0.88rem] font-light text-white/55">Every project we track from this developer — Truth Score, entry price and delivery risk, side by side.</p>
           </div>
-          <button onClick={() => open()} className="shrink-0 rounded-sm bg-[#1e6b45] px-7 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
-            Request Independent Advice
-          </button>
+          <a
+            href={`${basePath}/intelligence/projects?developer=${encodeURIComponent(short)}`}
+            className="group shrink-0 rounded-sm bg-[#1e6b45] px-7 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]"
+          >
+            View projects <span className="inline-block transition-transform group-hover:translate-x-0.5">→</span>
+          </a>
         </div>
 
         <p className="mt-8 text-[0.72rem] font-light leading-[1.7] text-[#1a1a1a]/35">

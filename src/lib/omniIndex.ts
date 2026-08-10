@@ -11,7 +11,8 @@
    ════════════════════════════════════════════════════════════════ */
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import path from "node:path";
-import { fetchBacklogFull } from "@/lib/supabase";
+import { fetchBacklogFull, fetchExtendedDetails, fetchConfigurations, fetchBacklogNameIds, fetchCorridorPsf } from "@/lib/supabase";
+import { liveProjectIntel, matchKey } from "@/lib/reportAdapter";
 import { PROJECTS } from "@/lib/journey";
 import { projectSlug, TOWER_INTEL } from "@/lib/projects";
 import { verdictFromScore, type OmniIndex, type OmniProject, type OmniUnit } from "@/lib/omni";
@@ -133,29 +134,45 @@ function ensureModelled(projects: OmniProject[]): OmniProject[] {
 
 export async function buildIndex(): Promise<OmniIndex> {
   const units = loadUnits();
-  const rows = await fetchBacklogFull();
+  /* The catalogue/search price must be the SAME "from ₹X Cr" the report
+     quotes — the project's own filed ₹/sqft (project_extended_details
+     .price_range_sqft lower bound) × its smallest super area, with the
+     listing min_price_cr only as the last-resort fallback. Extended assets
+     are the source of truth for price. Reading the listing column directly
+     (as this did) printed NO price for projects whose min_price_cr is blank
+     — e.g. all three Krisumi projects — even though their filed ₹/sqft is on
+     record. So we join the extended/config tables and reuse liveProjectIntel's
+     own ticket, keeping card, search and report from ever quoting two prices. */
+  const [rows, ext, cfg, nameIds, corridorPsf] = await Promise.all([
+    fetchBacklogFull(), fetchExtendedDetails(), fetchConfigurations(), fetchBacklogNameIds(), fetchCorridorPsf(),
+  ]);
   if (rows && rows.length) {
-    const projects: OmniProject[] = rows.map((r) => ({
-      slug: r.slug,
-      seoSlug: r.seoSlug,
-      name: r.name,
-      developer: r.developer,
-      location: [r.location, r.microMarket].filter(Boolean).join(" · ") || null,
-      score: r.truthScore,
-      minPriceCr: r.minPriceCr,
-      minBhk: r.minBhk,
-      config: r.config,
-      deliveryYear: yearOf(r.deliveryYear) ?? yearOf(r.predicted),
-      redFlags: r.redFlags,
-      delayRisk: r.delayRisk,
-      has3D: !!ADVISORS[r.slug],
-      advisorFile: ADVISORS[r.slug] ?? null,
-      lat: COORDS[r.slug]?.lat ?? null,
-      lng: COORDS[r.slug]?.lng ?? null,
-      verdict: verdictFromScore(r.truthScore),
-      sources: countSources(r) || null,
-      updatedAt: r.lastQprDate ?? r.legalLastUpdated ?? r.registrationDate ?? null,
-    }));
+    const projects: OmniProject[] = rows.map((r) => {
+      const eKey = matchKey(r.id, r.name, ext, nameIds, r.altIds);
+      const cKey = matchKey(r.id, r.name, cfg, nameIds, r.altIds);
+      const heroCr = liveProjectIntel(r, eKey ? ext![eKey] : null, cKey ? cfg![cKey] : null, corridorPsf).budget?.[0] ?? 0;
+      return {
+        slug: r.slug,
+        seoSlug: r.seoSlug,
+        name: r.name,
+        developer: r.developer,
+        location: [r.location, r.microMarket].filter(Boolean).join(" · ") || null,
+        score: r.truthScore,
+        minPriceCr: heroCr > 0 ? heroCr : r.minPriceCr,
+        minBhk: r.minBhk,
+        config: r.config,
+        deliveryYear: yearOf(r.deliveryYear) ?? yearOf(r.predicted),
+        redFlags: r.redFlags,
+        delayRisk: r.delayRisk,
+        has3D: !!ADVISORS[r.slug],
+        advisorFile: ADVISORS[r.slug] ?? null,
+        lat: COORDS[r.slug]?.lat ?? null,
+        lng: COORDS[r.slug]?.lng ?? null,
+        verdict: verdictFromScore(r.truthScore),
+        sources: countSources(r) || null,
+        updatedAt: r.lastQprDate ?? r.legalLastUpdated ?? r.registrationDate ?? null,
+      };
+    });
     return { projects: ensureModelled(projects), units, live: true };
   }
   // fail-soft: the curated desk set keeps the omnibox working without the view

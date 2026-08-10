@@ -23,12 +23,17 @@
 
 import { DEVELOPERS, type DeveloperIntel, type DevLedgerItem, type FinKey, type FinRating } from "./developers";
 import { developerSlugOf } from "./projects";
+import { liveProjectIntel, matchKey } from "./reportAdapter";
 import {
   devKey,
   fetchBacklogFull,
+  fetchBacklogNameIds,
+  fetchConfigurations,
+  fetchCorridorPsf,
   fetchDeveloperHealth,
   fetchDeveloperLedger,
   fetchDevelopersOverview,
+  fetchExtendedDetails,
   type DeveloperHealth,
   type LiveDeveloper,
 } from "./supabase";
@@ -163,28 +168,38 @@ let cache: DeveloperIntel[] | undefined;
 
 export async function resolveDevelopers(): Promise<DeveloperIntel[]> {
   if (cache !== undefined) return cache;
-  const [live, ledger, health, catalog] = await Promise.all([
+  const [live, ledger, health, catalog, ext, cfg, nameIds, corridorPsf] = await Promise.all([
     fetchDevelopersOverview(),
     fetchDeveloperLedger(),
     fetchDeveloperHealth(),
     fetchBacklogFull(),
+    fetchExtendedDetails(),
+    fetchConfigurations(),
+    fetchBacklogNameIds(),
+    fetchCorridorPsf(),
   ]);
 
   /* the developer's projects we carry a live report for — keyed both by the
      pipeline's developer_slug and by a normalised name, so a slug OR a name
-     match links the report. Deduped by href per developer. */
-  const bySlug = new Map<string, { name: string; href: string }[]>();
-  const byNameKey = new Map<string, { name: string; href: string }[]>();
+     match links the report. Each item carries its entry ticket (the SAME
+     extended-assets "from ₹X Cr" the report and catalogue quote) so the
+     flagship can be chosen strictly by price. Deduped by href per developer. */
+  type Track = { name: string; href: string; cr: number };
+  const bySlug = new Map<string, Track[]>();
+  const byNameKey = new Map<string, Track[]>();
   for (const r of catalog ?? []) {
     if (!r.seoSlug || !r.developer) continue;
-    const item = { name: r.name, href: `/projects/${r.seoSlug}` };
+    const eKey = matchKey(r.id, r.name, ext, nameIds, r.altIds);
+    const cKey = matchKey(r.id, r.name, cfg, nameIds, r.altIds);
+    const cr = liveProjectIntel(r, eKey ? ext![eKey] : null, cKey ? cfg![cKey] : null, corridorPsf).budget?.[0] ?? 0;
+    const item: Track = { name: r.name, href: `/projects/${r.seoSlug}`, cr };
     if (r.devSlug) (bySlug.get(r.devSlug) ?? bySlug.set(r.devSlug, []).get(r.devSlug)!).push(item);
     const nk = devKey(r.developer);
     (byNameKey.get(nk) ?? byNameKey.set(nk, []).get(nk)!).push(item);
   }
-  const trackedFor = (slug: string, name: string): { name: string; href: string }[] => {
+  const trackedFull = (slug: string, name: string): Track[] => {
     const seen = new Set<string>();
-    const out: { name: string; href: string }[] = [];
+    const out: Track[] = [];
     for (const it of [...(bySlug.get(slug) ?? []), ...(byNameKey.get(devKey(name)) ?? [])]) {
       if (seen.has(it.href)) continue;
       seen.add(it.href);
@@ -192,13 +207,24 @@ export async function resolveDevelopers(): Promise<DeveloperIntel[]> {
     }
     return out;
   };
+  const trackedFor = (slug: string, name: string) =>
+    trackedFull(slug, name).map((t) => ({ name: t.name, href: t.href }));
+  /* Flagship = the developer's most-expensive tracked project, by the filed
+     extended-assets price. period. Null when we track none of theirs with a
+     price yet — the dossier then keeps its hand-set / delivered fallback. */
+  const flagshipFor = (slug: string, name: string): string | null => {
+    const priced = trackedFull(slug, name).filter((t) => t.cr > 0).sort((a, b) => b.cr - a.cr);
+    return priced[0]?.name ?? null;
+  };
 
   const curated = DEVELOPERS.map((d) => {
     const o = overlayDeveloper(d, live);
     const hf = financialsFromHealth(health?.[devKey(d.name)]);
+    const flag = flagshipFor(d.slug, d.name);
     return {
       ...o,
       financials: { ...o.financials, ...hf }, // real per-metric scores win over hand-set
+      signature: flag ? [flag] : o.signature, // flagship = most-expensive tracked project, by extended-assets price
       trackedProjects: trackedFor(d.slug, d.name),
     };
   });
@@ -214,7 +240,8 @@ export async function resolveDevelopers(): Promise<DeveloperIntel[]> {
     if (!slug || seen.has(slug) || curatedSlugs.has(slug.toLowerCase())) continue;
     seen.add(slug);
     const d = liveOnlyDeveloper(l, ledger, health);
-    computed.push({ ...d, trackedProjects: trackedFor(slug, l.name) });
+    const flag = flagshipFor(slug, l.name);
+    computed.push({ ...d, signature: flag ? [flag] : d.signature, trackedProjects: trackedFor(slug, l.name) });
   }
   computed.sort((a, b) => b.performance.delivered - a.performance.delivered);
 

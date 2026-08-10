@@ -57,14 +57,20 @@ export default function ProjectsIndex({
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<Sort>("score");
   const [corridor, setCorridor] = useState<string | null>(null);
+  // ?developer=<name> deep-link from a dossier's "See all X projects" CTA —
+  // filters THIS catalogue (and its ProjectOptionCard grid) to one builder.
+  const [devFilter, setDevFilter] = useState<string | null>(null);
 
   /* ?q=SPR lands here pre-filtered — the corridor pages link straight into
      the grid rather than dropping the reader at all ninety-seven. Read on
      mount rather than during render: the server has no URL, and seeding
      state from window during render is a hydration mismatch. */
   useEffect(() => {
-    const seed = new URLSearchParams(window.location.search).get("q");
+    const params = new URLSearchParams(window.location.search);
+    const seed = params.get("q");
     if (seed) setQ(seed);
+    const dev = params.get("developer");
+    if (dev?.trim()) setDevFilter(dev.trim());
   }, []);
 
   const scores = projects.map((p) => p.truthScore).filter((s) => s > 0);
@@ -87,6 +93,16 @@ export default function ProjectsIndex({
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase();
     let out = indexed;
+    if (devFilter) {
+      // Exact (normalised) developer match, so a short CTA name ("Krisumi")
+      // resolves to the full filed name and can't drag in a project that merely
+      // mentions the developer in its text.
+      const key = devFilter.toLowerCase().replace(/[^a-z0-9]/g, "");
+      out = out.filter((x) => {
+        const d = (x.p.developer ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+        return !!key && (d === key || d.startsWith(key) || key.startsWith(d));
+      });
+    }
     if (needle) out = out.filter((x) => x.hay.includes(needle));
     if (corridor) out = out.filter((x) => (x.p.marketShort || x.p.market) === corridor);
     const list = out.map((x) => x.p);
@@ -100,9 +116,18 @@ export default function ProjectsIndex({
       : sort === "priceDesc" ? (b.budget?.[0] ?? 0) - (a.budget?.[0] ?? 0)
       : a.name.localeCompare(b.name),
     );
-  }, [indexed, q, corridor, sort]);
+  }, [indexed, q, corridor, sort, devFilter]);
 
   const filtered = q.trim() !== "" || corridor != null;
+  // When arrived via a developer's "See all X projects" CTA, the page reframes
+  // to that builder (heading, crumb, intro) and the global stat row is hidden —
+  // its counts describe the whole universe, not this one developer.
+  const devActive = !!devFilter && devFilter.trim() !== "";
+  const displayCrumb = devActive ? devFilter! : crumb;
+  const displayHeading = devActive ? `All ${devFilter} projects` : heading;
+  const displayIntro = devActive
+    ? `Every ${devFilter} project we track — one Truth Score each, built from delivery, legal, developer strength, liquidity, pricing and construction.`
+    : intro;
 
   return (
     <div className="min-h-svh bg-[#F5F0E8] text-[#1a1a1a]">
@@ -119,25 +144,27 @@ export default function ProjectsIndex({
       <div className="mx-auto max-w-7xl px-6 pb-[14vh] pt-[7vh] md:px-10">
         <div className="flex items-center gap-2 text-[0.74rem] font-light text-[#1a1a1a]/35">
           <a href={`${basePath}/intelligence`} className="transition-colors hover:text-[#1a1a1a]/70">Intelligence</a>
-          <span className="text-[#1a1a1a]/20">/</span><span className="text-[#1a1a1a]/55">{crumb}</span>
+          <span className="text-[#1a1a1a]/20">/</span><span className="text-[#1a1a1a]/55">{displayCrumb}</span>
         </div>
 
         <p className="mt-8 text-[11px] font-medium uppercase tracking-[0.34em] text-[#c9a96e]">Project Intelligence</p>
-        <h1 className="mt-5 max-w-2xl font-serif text-[2.6rem] font-medium leading-[1.04] tracking-[-0.02em] md:text-[4rem]">{heading}</h1>
+        <h1 className="mt-5 max-w-2xl font-serif text-[2.6rem] font-medium leading-[1.04] tracking-[-0.02em] md:text-[4rem]">{displayHeading}</h1>
         <p className="mt-6 max-w-2xl text-[1rem] font-light leading-[1.85] text-[#1a1a1a]/60 md:text-[1.05rem]">
-          {intro}
+          {displayIntro}
         </p>
-        <div className="mt-8 flex flex-wrap gap-x-10 gap-y-3">
-          {/* The fallback was ACTIVE_PROJECT_COUNT — a hand-set 127 against a
-              live 312. A stat that wrong is worse than a stat missing, so
-              when the pipeline cannot answer the tile simply does not draw. */}
-          {stats?.tracked != null && <Stat v={stats.tracked.toLocaleString("en-IN")} k="RERA projects tracked · live" />}
-          {stats?.delayed != null && stats.delayed > 0 && (
-            <Stat v={`${Math.round((stats.delayed / stats.tracked) * 100)}%`} k="of them running delayed" />
-          )}
-          {projects.length > 0 && <Stat v={`${projects.length}`} k="scored & listed here" />}
-          {hi > 0 && <Stat v={`${lo}–${hi}`} k="Truth Score range" />}
-        </div>
+        {!devActive && (
+          <div className="mt-8 flex flex-wrap gap-x-10 gap-y-3">
+            {/* The fallback was ACTIVE_PROJECT_COUNT — a hand-set 127 against a
+                live 312. A stat that wrong is worse than a stat missing, so
+                when the pipeline cannot answer the tile simply does not draw. */}
+            {stats?.tracked != null && <Stat v={stats.tracked.toLocaleString("en-IN")} k="RERA projects tracked · live" />}
+            {stats?.delayed != null && stats.delayed > 0 && (
+              <Stat v={`${Math.round((stats.delayed / stats.tracked) * 100)}%`} k="of them running delayed" />
+            )}
+            {projects.length > 0 && <Stat v={`${projects.length}`} k="scored & listed here" />}
+            {hi > 0 && <Stat v={`${lo}–${hi}`} k="Truth Score range" />}
+          </div>
+        )}
 
         {/* ── The tracked universe — every project live from the pipeline ── */}
         <div className="mt-11 flex items-center gap-3">

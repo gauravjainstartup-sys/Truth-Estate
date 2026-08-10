@@ -35,6 +35,11 @@ export type FinKey = (typeof FIN_METRICS)[number]["key"];
 export type DeveloperIntel = {
   slug: string;
   name: string;
+  /* Short, buyer-facing name for inline copy (CTAs, "See all X projects") where
+     the full legal name reads long — e.g. "Krisumi" for "Krisumi Corporation
+     Private Limited". Optional; falls back to `name` (already short for DLF,
+     M3M, Godrej, …). The hero title and formal fields always use `name`. */
+  shortName?: string;
   /* true = a filings-only profile (developers_overview, no desk dossier yet):
      the editorial fields (est/tagline/about/brandValue) are empty and the UI
      hides them, and the Listed/Private badge is suppressed because it isn't
@@ -251,6 +256,42 @@ export const DEVELOPERS: DeveloperIntel[] = [
     legal: "Clean RERA compliance. International governance standards applied.",
     verdict:
       "Global credibility with good India execution. Best for value-segment buyers who want reliability without premium pricing.",
+  },
+  {
+    /* Curated dossier — scaffolded from RERA filings + public record, founder-
+       confirmed: founding year (2012), the Krishna × Sumitomo JV framing, the
+       "Japanese township" positioning, and that the flagship is chosen by filed
+       (extended-assets) price — so `signature` here is only the offline fallback;
+       resolveDevelopers overrides it live with the developer's most-expensive
+       tracked project (Krisumi → The Forest Reserve · Phase 1). Performance &
+       financial signals are from the filings. */
+    slug: "krisumi-corporation-private-limited",
+    name: "Krisumi Corporation Private Limited",
+    shortName: "Krisumi",
+    est: "2012",
+    listed: false,
+    listedNote: "Private · Krishna Group × Sumitomo Corporation (Japan)",
+    tagline: "Japanese build quality, brought to the Dwarka Expressway.",
+    about:
+      "An India–Japan joint venture between the Krishna Group and Japan's Sumitomo Corporation — the name is Krishna + Sumitomo. Its flagship, Krisumi City in Sector 36A, is positioned as Gurugram's Japanese-quality township on the Dwarka Expressway, pairing Sumitomo's construction quality with a low-density master plan built around light and air.",
+    signature: ["Krisumi The Forest Reserve · Phase 1"],
+    brandValue:
+      "Japanese engineering standards and a Fortune-500 Japanese parent — buyers pay for build quality and a differentiated Japanese product, not local hype.",
+    recent: ["Krisumi Waterside Residences"],
+    pipeline: ["Krisumi The Forest Reserve · Phase 2"],
+    /* From live developers_overview (7 filed · 1 delivered · 6 ongoing · 6 of 7
+       delayed → 86% delayed, so 14% on-time; avg slip ~15.5 mo, median 11.4).
+       The delivery record is short AND currently delay-prone — do NOT restate
+       this as "on-time": onTimePct ≥ 85 would trigger a false "delivers on time,
+       consistently" highlight on the project report. */
+    performance: { launched: 7, delivered: 1, ongoing: 6, onTimePct: 14, avgDelayMonths: 15.5, lapsed: 0 },
+    financials: { leverage: "strong", coverage: "strong", cash: "strong", margin: "moderate", inventory: "moderate" },
+    finNote:
+      "Backed by Japan's Sumitomo Corporation and the Krishna Group. MCA filings show the entity effectively net-cash — roughly ₹31 Cr of debt against ~₹43 Cr cash and an ~₹832 Cr net worth. Signals, not audited figures.",
+    legal:
+      "No developer-level litigation is on the public record in the tracked filings, and no RERA legal flags are pending. The risk to weigh here is delivery, not compliance: the history is short (one project delivered) and currently delay-prone — most of the filed pipeline is running behind its committed possession dates.",
+    verdict:
+      "An India–Japan joint venture bringing Sumitomo's build quality and a genuinely differentiated Japanese product to the Dwarka Expressway. Financially it is among the strongest names on this list — effectively net-cash, with a Fortune-500 parent. The caveat is delivery: just one project handed over so far, and across the filed pipeline roughly 86% of projects are running late — by about 15 months on average. Strong balance sheet and product; a delivery record that still has to prove itself.",
   },
 ];
 
