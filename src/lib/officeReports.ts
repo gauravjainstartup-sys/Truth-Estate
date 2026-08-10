@@ -172,7 +172,7 @@ export function listPayments(): Payment[] {
 /* Best-effort: called from journey.ts after a (dummy) successful payment.
    Deduped on (slug + item + amount) so a re-grant never mints a second
    invoice for the same purchase. */
-export function addPayment(input: { slug: string | null; item: string; amountInr: number; razorpayId?: string; date?: number }): Payment | null {
+export function addPayment(input: { slug: string | null; item: string; amountInr: number; mrpInr?: number; discountLabel?: string; razorpayId?: string; date?: number }): Payment | null {
   if (typeof window === "undefined") return null;
   const list = listPayments();
   if (list.some((p) => p.slug === input.slug && p.item === input.item && p.amountInr === input.amountInr)) return null;
@@ -184,6 +184,10 @@ export function addPayment(input: { slug: string | null; item: string; amountInr
     slug: input.slug,
     item: input.item,
     amountInr: input.amountInr,
+    /* A struck list price only when it exceeds what was paid — the same rule
+       the remote mapping uses, so a free read reads "₹2,100 → First report
+       free" here exactly as it does off the server. */
+    ...(input.mrpInr != null && input.mrpInr > input.amountInr ? { mrpInr: input.mrpInr, discountLabel: input.discountLabel ?? "Offer" } : {}),
     date,
     ...(input.razorpayId ? { razorpayId: input.razorpayId } : {}),
     invoiceNo,

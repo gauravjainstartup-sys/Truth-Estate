@@ -1454,8 +1454,12 @@ function fireEvent(name: string, detail: Record<string, unknown> = {}): void {
     .catch(() => { /* a metric must never break a purchase */ });
 }
 
-/* Grant entitlements after a (dummy) successful payment. */
-export function grantPackage(pkg: PackageId, slug?: string): void {
+/* Grant entitlements after a successful payment — or a free unlock. `receipt`
+   carries what was actually collected so the Office invoice is truthful: a
+   free first read passes { amountInr: 0, mrpInr: 2100, discountLabel: "First
+   report free" } and the invoice reads ₹0, not the list price. Omitted → the
+   package list price, the paid path's behaviour, unchanged. */
+export function grantPackage(pkg: PackageId, slug?: string, receipt?: { amountInr?: number; mrpInr?: number; discountLabel?: string }): void {
   const a = loadAccess();
   if (pkg === "all") {
     a.all = true;
@@ -1484,7 +1488,7 @@ export function grantPackage(pkg: PackageId, slug?: string): void {
     projectSlug: slug,
     props: {
       package: pkg,
-      amountInr: packageById(pkg).inr,
+      amountInr: receipt?.amountInr ?? packageById(pkg).inr,
     },
   });
   /* …and the access it bought. There are two unlock stores: unlockProject
@@ -1507,13 +1511,14 @@ export function grantPackage(pkg: PackageId, slug?: string): void {
      resolved from the view recorded when the buyer opened the report. */
   void import("@/lib/officeReports")
     .then((m) => {
-      const amountInr = packageById(pkg).inr;
+      const amountInr = receipt?.amountInr ?? packageById(pkg).inr;
+      const extra = { mrpInr: receipt?.mrpInr, discountLabel: receipt?.discountLabel };
       if (pkg === "all") {
-        m.addPayment({ slug: null, item: "All-Access — every report & 3D across the site", amountInr });
+        m.addPayment({ slug: null, item: "All-Access — every report & 3D across the site", amountInr, ...extra });
       } else if (slug) {
         const v = m.getView(slug);
         const item = v?.name ? `Full read — ${v.name}${v.market ? ` (${v.market})` : ""}` : "Full read";
-        m.addPayment({ slug, item, amountInr });
+        m.addPayment({ slug, item, amountInr, ...extra });
       }
     })
     .catch(() => {
