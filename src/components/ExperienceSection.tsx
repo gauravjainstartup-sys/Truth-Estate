@@ -7,6 +7,7 @@ import { useJourney } from "./journey/JourneyProvider";
 import { useConsultation } from "./consultation/ConsultationProvider";
 import { PRIMARY_CTA } from "@/lib/journey";
 import { basePath } from "@/lib/site";
+import type { CoverageStats } from "@/lib/coverageStats";
 
 
 /* ── Shared reveal: any [data-r] child fades up on intersect ── */
@@ -628,7 +629,7 @@ function ExperienceIntelligence() {
         {/* Card 1 — TruthGuide */}
         <div
           data-ei-l
-          className="group rounded-sm border border-[#1a1a1a]/14 bg-white p-8 transition-shadow duration-500 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] md:p-10 lg:p-12"
+          className="group flex h-full flex-col rounded-sm border border-[#1a1a1a]/14 bg-white p-8 transition-shadow duration-500 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] md:p-10 lg:p-12"
           style={{ opacity: 0, transform: "translateX(-32px)" }}
         >
           <span className="text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]">
@@ -660,7 +661,7 @@ function ExperienceIntelligence() {
             />
           </div>
 
-          <div className="mt-10">
+          <div className="mt-auto pt-10">
             <button
               onClick={() => open("research")}
               className="group/btn inline-flex items-center gap-2 rounded-sm border border-[#1e6b45]/40 px-5 py-2.5 text-[0.82rem] font-medium tracking-[0.1em] text-[#1e6b45] transition-all duration-300 hover:border-[#1e6b45] hover:bg-[#1e6b45] hover:text-white"
@@ -676,7 +677,7 @@ function ExperienceIntelligence() {
         {/* Card 2 — Truth Intelligence */}
         <div
           data-ei-r
-          className="group rounded-sm border border-[#1a1a1a]/14 bg-white p-8 transition-shadow duration-500 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] md:p-10 lg:p-12"
+          className="group flex h-full flex-col rounded-sm border border-[#1a1a1a]/14 bg-white p-8 transition-shadow duration-500 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] md:p-10 lg:p-12"
           style={{ opacity: 0, transform: "translateX(32px)" }}
         >
           <span className="text-[10px] font-light uppercase tracking-[0.5em] text-[#c9a96e]">
@@ -714,7 +715,7 @@ function ExperienceIntelligence() {
             </div>
           </div>
 
-          <div className="mt-10">
+          <div className="mt-auto pt-10">
             <a
               href={`${basePath}/intelligence`}
               className="group/btn inline-flex items-center gap-2 rounded-sm border border-[#1e6b45]/40 px-5 py-2.5 text-[0.82rem] font-medium tracking-[0.1em] text-[#1e6b45] transition-all duration-300 hover:border-[#1e6b45] hover:bg-[#1e6b45] hover:text-white"
@@ -730,7 +731,7 @@ function ExperienceIntelligence() {
         {/* Card 3 — Spatial Intelligence (Sun & Vastu 3D, Beta) */}
         <div
           data-ei-o
-          className="group rounded-sm border border-[#1a1a1a]/14 bg-white p-8 transition-shadow duration-500 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] md:p-10 lg:p-12"
+          className="group flex h-full flex-col rounded-sm border border-[#1a1a1a]/14 bg-white p-8 transition-shadow duration-500 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] md:p-10 lg:p-12"
           style={{ opacity: 0, transform: "translateY(28px)" }}
         >
           <span className="flex items-center gap-2.5">
@@ -781,7 +782,7 @@ function ExperienceIntelligence() {
             </span>
           </div>
 
-          <div className="mt-10">
+          <div className="mt-auto pt-10">
             <a
               href={`${basePath}/sun-vastu`}
               className="group/btn inline-flex items-center gap-2 rounded-sm border border-[#1e6b45]/40 px-5 py-2.5 text-[0.82rem] font-medium tracking-[0.1em] text-[#1e6b45] transition-all duration-300 hover:border-[#1e6b45] hover:bg-[#1e6b45] hover:text-white"
@@ -1620,16 +1621,20 @@ function PromiseSection() {
 /* ════════════════════════════════════════════════════════════════
    SECTION 12 — COVERAGE
    ════════════════════════════════════════════════════════════════ */
-const metrics = [
-  { value: 100, suffix: "+", label: "Projects Analysed" },
-  { value: 80, suffix: "+", label: "Intelligence Signals" },
-  { value: 15, suffix: "", label: "Developers Covered" },
-  { value: 7, suffix: "", label: "Micro Markets" },
-];
-
-function CoverageSection() {
+function CoverageSection({ stats }: { stats: CoverageStats }) {
   const ref = useRef<HTMLDivElement>(null);
   useReveal(ref, 0.15);
+
+  /* Counts read live from the backlog at build time (src/lib/coverageStats.ts),
+     so the band tracks the published set on its own. Projects / developers /
+     micro-markets are exact counts; "Intelligence Signals" is a methodology
+     figure, so it alone keeps the "+". */
+  const metrics = [
+    { value: stats.projects, suffix: "", label: "Projects Analysed" },
+    { value: stats.signals, suffix: "+", label: "Intelligence Signals" },
+    { value: stats.developers, suffix: "", label: "Developers Covered" },
+    { value: stats.markets, suffix: "", label: "Micro Markets" },
+  ];
 
   return (
     <div ref={ref} className="bg-[#0a0a0a] px-6 pb-[10vh] pt-[10vh] md:px-8 md:pb-[14vh] md:pt-[14vh]">
@@ -1696,7 +1701,7 @@ function CoverageSection() {
 /* ════════════════════════════════════════════════════════════════
    MAIN EXPORT
    ════════════════════════════════════════════════════════════════ */
-export default function ExperienceSection() {
+export default function ExperienceSection({ stats }: { stats: CoverageStats }) {
   return (
     <section>
       <Storytelling />
@@ -1707,7 +1712,7 @@ export default function ExperienceSection() {
       <QuestionsSection />
       <div className="h-[20vh] bg-gradient-to-b from-[#F5F0E8] to-[#0a0a0a] md:h-[30vh]" />
       <PromiseSection />
-      <CoverageSection />
+      <CoverageSection stats={stats} />
     </section>
   );
 }
