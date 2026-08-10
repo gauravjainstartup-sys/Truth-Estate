@@ -663,7 +663,7 @@ function ExperienceIntelligence() {
           <div className="mt-10">
             <button
               onClick={() => open("research")}
-              className="group/btn inline-flex items-center gap-2 text-[0.82rem] font-light tracking-[0.14em] text-[#1a1a1a]/90 transition-colors duration-400 hover:text-[#1a1a1a]"
+              className="group/btn inline-flex items-center gap-2 rounded-sm border border-[#1e6b45]/40 px-5 py-2.5 text-[0.82rem] font-medium tracking-[0.1em] text-[#1e6b45] transition-all duration-300 hover:border-[#1e6b45] hover:bg-[#1e6b45] hover:text-white"
             >
               Challenge TruthGuide
               <span className="inline-block transition-transform duration-300 group-hover/btn:translate-x-1">
@@ -717,7 +717,7 @@ function ExperienceIntelligence() {
           <div className="mt-10">
             <a
               href={`${basePath}/intelligence`}
-              className="group/btn inline-flex items-center gap-2 text-[0.82rem] font-light tracking-[0.14em] text-[#1a1a1a]/90 transition-colors duration-400 hover:text-[#1a1a1a]"
+              className="group/btn inline-flex items-center gap-2 rounded-sm border border-[#1e6b45]/40 px-5 py-2.5 text-[0.82rem] font-medium tracking-[0.1em] text-[#1e6b45] transition-all duration-300 hover:border-[#1e6b45] hover:bg-[#1e6b45] hover:text-white"
             >
               Explore Intelligence
               <span className="inline-block transition-transform duration-300 group-hover/btn:translate-x-1">
@@ -784,7 +784,7 @@ function ExperienceIntelligence() {
           <div className="mt-10">
             <a
               href={`${basePath}/sun-vastu`}
-              className="group/btn inline-flex items-center gap-2 text-[0.82rem] font-light tracking-[0.14em] text-[#1a1a1a]/90 transition-colors duration-400 hover:text-[#1a1a1a]"
+              className="group/btn inline-flex items-center gap-2 rounded-sm border border-[#1e6b45]/40 px-5 py-2.5 text-[0.82rem] font-medium tracking-[0.1em] text-[#1e6b45] transition-all duration-300 hover:border-[#1e6b45] hover:bg-[#1e6b45] hover:text-white"
             >
               Explore Sun &amp; Vastu 3D
               <span className="inline-block transition-transform duration-300 group-hover/btn:translate-x-1">
