@@ -253,23 +253,26 @@ export const DEVELOPERS: DeveloperIntel[] = [
       "Global credibility with good India execution. Best for value-segment buyers who want reliability without premium pricing.",
   },
   {
-    /* DRAFT dossier — scaffolded from RERA filings + public record, pending
-       founder review. Facts to confirm before shipping are flagged in chat:
-       founding year, the JV/parent framing, and the "Japanese township"
-       positioning. Performance & financial signals are from the filings. */
+    /* DRAFT dossier — scaffolded from RERA filings + public record. Founder-
+       confirmed: founding year (2012) and that the flagship is chosen by filed
+       (extended-assets) price — so `signature` here is only the offline
+       fallback; resolveDevelopers overrides it live with the developer's most-
+       expensive tracked project (Krisumi → The Forest Reserve · Phase 1). Still
+       to confirm before shipping: the JV/parent framing and the "Japanese
+       township" positioning. Performance & financial signals are from the filings. */
     slug: "krisumi-corporation-private-limited",
     name: "Krisumi Corporation Private Limited",
-    est: "2017",
+    est: "2012",
     listed: false,
     listedNote: "Private · Krishna Group × Sumitomo Corporation (Japan)",
     tagline: "Japanese build quality, brought to the Dwarka Expressway.",
     about:
       "An India–Japan joint venture between the Krishna Group and Japan's Sumitomo Corporation — the name is Krishna + Sumitomo. Its flagship, Krisumi City in Sector 36A, is positioned as Gurugram's Japanese-quality township on the Dwarka Expressway, pairing Sumitomo's construction quality with a low-density master plan built around light and air.",
-    signature: ["Krisumi Waterside Residences"],
+    signature: ["Krisumi The Forest Reserve · Phase 1"],
     brandValue:
       "Japanese engineering standards and a Fortune-500 Japanese parent — buyers pay for build quality and a differentiated Japanese product, not local hype.",
     recent: ["Krisumi Waterside Residences"],
-    pipeline: ["Waterside Residences · The Forest Reserve", "The Forest Reserve · Phase 2"],
+    pipeline: ["Krisumi The Forest Reserve · Phase 2"],
     /* From live developers_overview (7 filed · 1 delivered · 6 ongoing · 6 of 7
        delayed → 86% delayed, so 14% on-time; avg slip ~15.5 mo, median 11.4).
        The delivery record is short AND currently delay-prone — do NOT restate

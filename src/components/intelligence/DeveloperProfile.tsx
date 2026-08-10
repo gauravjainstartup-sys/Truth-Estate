@@ -110,7 +110,7 @@ export default function DeveloperProfile({ dev }: { dev: DeveloperIntel }) {
               )}
               {dev.signature.length > 0 && (
                 <>
-                  <SubLabel className="mt-8">Signature projects</SubLabel>
+                  <SubLabel className="mt-8">Flagship projects</SubLabel>
                   <ul className="mt-3 space-y-2">
                     {dev.signature.map((s) => <Bullet key={s}>{s}</Bullet>)}
                   </ul>
