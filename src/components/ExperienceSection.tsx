@@ -110,33 +110,71 @@ function Counter({ end, suffix = "" }: { end: number; suffix?: string }) {
     Every buyer… is left alone."  →  "We decided to change that."
    ════════════════════════════════════════════════════════════════ */
 function Storytelling() {
-  // One static screen — the whole premise comes up at once, no pinned
-  // scroll-through. Problem (four lines) resolves to the promise on the same
-  // dark screen; the warm turn is carried by the gold rule + line.
-  return (
-    <section
-      id="experience"
-      className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden bg-[#0a0a0a] px-8 py-28 text-center"
-    >
-      <p className="font-serif text-[1.35rem] font-light leading-[1.3] text-white/60 md:text-[1.7rem] lg:text-[2.1rem]">
-        Every developer has a sales office.
-      </p>
-      <p className="mt-5 font-serif text-[1.35rem] font-light leading-[1.3] text-white/60 md:mt-7 md:text-[1.7rem] lg:text-[2.1rem]">
-        Every broker has an incentive.
-      </p>
-      <p className="mt-11 font-serif text-[2.4rem] font-medium leading-[1.06] text-white md:mt-14 md:text-[3.2rem] lg:text-[4.4rem]">
-        Every buyer&hellip;
-      </p>
-      <p className="mt-4 font-serif text-[1.7rem] font-light italic leading-[1.2] text-white/70 md:text-[2.3rem] lg:text-[3rem]">
-        &hellip;is left alone.
-      </p>
+  const ref = useRef<HTMLDivElement>(null);
 
-      {/* the turn — resolved on the same screen */}
-      <span aria-hidden="true" className="mt-14 block h-px w-16 bg-[#c9a96e]/50 md:mt-20" />
-      <p className="mt-8 font-serif text-[1.9rem] font-medium leading-[1.12] text-[#d4b97a] md:text-[2.6rem] lg:text-[3.5rem]">
-        We decided to change that.
-      </p>
-    </section>
+  // The page still HOLDS (pins) like before — but as just two beats, not the
+  // old line-by-line reveal: beat 1 brings up all four premises together on
+  // the first scroll; beat 2 brings in the turn on one more scroll.
+  useEffect(() => {
+    const root = ref.current;
+    if (!root) return;
+    gsap.registerPlugin(ScrollTrigger);
+    ScrollTrigger.config({ ignoreMobileResize: true });
+    const pin = root.querySelector<HTMLElement>("[data-s5-pin]");
+    if (!pin) return;
+    const g1 = pin.querySelector<HTMLElement>("[data-s5-g1]");
+    const g2 = pin.querySelector<HTMLElement>("[data-s5-g2]");
+
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: pin,
+        start: "top top",
+        end: "+=150%", // short hold — two beats, not the old ~4.2× scroll
+        pin: true,
+        scrub: 0.6,
+        anticipatePin: 1,
+      },
+    });
+    tl.to(g1, { opacity: 1, y: 0, duration: 0.4 }); // beat 1 — four premises, together
+    tl.to({}, { duration: 0.25 }); // hold
+    tl.to(g2, { opacity: 1, y: 0, duration: 0.4 }); // beat 2 — the turn
+    tl.to({}, { duration: 0.3 }); // let it land
+
+    const st = tl.scrollTrigger;
+    ScrollTrigger.refresh();
+    return () => {
+      st?.kill(true);
+      tl.kill();
+    };
+  }, []);
+
+  return (
+    <div ref={ref} id="experience">
+      <div data-s5-pin className="relative flex h-svh flex-col items-center justify-center overflow-hidden bg-[#0a0a0a] px-8 text-center">
+        {/* Beat 1 — all four premises arrive together on the first scroll */}
+        <div data-s5-g1 style={{ opacity: 0, transform: "translateY(16px)" }}>
+          <p className="font-serif text-[1.35rem] font-light leading-[1.3] text-white/60 md:text-[1.7rem] lg:text-[2.1rem]">
+            Every developer has a sales office.
+          </p>
+          <p className="mt-5 font-serif text-[1.35rem] font-light leading-[1.3] text-white/60 md:mt-7 md:text-[1.7rem] lg:text-[2.1rem]">
+            Every broker has an incentive.
+          </p>
+          <p className="mt-11 font-serif text-[2.4rem] font-medium leading-[1.06] text-white md:mt-14 md:text-[3.2rem] lg:text-[4.4rem]">
+            Every buyer&hellip;
+          </p>
+          <p className="mt-4 font-serif text-[1.7rem] font-light italic leading-[1.2] text-white/70 md:text-[2.3rem] lg:text-[3rem]">
+            &hellip;is left alone.
+          </p>
+        </div>
+        {/* Beat 2 — the turn arrives on the next scroll */}
+        <div data-s5-g2 style={{ opacity: 0, transform: "translateY(16px)" }}>
+          <span aria-hidden="true" className="mx-auto mt-14 block h-px w-16 bg-[#c9a96e]/50 md:mt-20" />
+          <p className="mt-8 font-serif text-[1.9rem] font-medium leading-[1.12] text-[#d4b97a] md:text-[2.6rem] lg:text-[3.5rem]">
+            We decided to change that.
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 
