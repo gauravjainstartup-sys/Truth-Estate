@@ -1567,6 +1567,11 @@ function DocumentsSection() {
      refreshes with it. */
   const firstFree = purchased.length === 0;
 
+  /* A complimentary read has no invoice — it's not a sale. The Invoices
+     section lists only rows where money actually changed hands; the free
+     first report shows as "Complimentary" on its Purchased row instead. */
+  const invoices = payments.filter((p) => p.amountInr > 0);
+
   return (
     <div className="animate-fade-up">
       <SectionHead
@@ -1610,11 +1615,13 @@ function DocumentsSection() {
                       >
                         {row.allAccess ? "Browse reports →" : "Open report →"}
                       </a>
-                      {pay && (
+                      {pay && (pay.amountInr === 0 ? (
+                        <span className="text-[0.78rem] font-medium text-[#1e6b45]">Complimentary</span>
+                      ) : (
                         <button onClick={() => setInvoice(pay)} className="text-[0.78rem] font-medium text-[#9a7a2e] transition-colors hover:text-[#7a5f1e]">
                           Invoice ↗
                         </button>
-                      )}
+                      ))}
                     </>
                   }
                 >
@@ -1682,12 +1689,12 @@ function DocumentsSection() {
         )}
       </section>
 
-      {/* ── Invoices ── */}
-      {payments.length > 0 && (
+      {/* ── Invoices ── (paid reads only; a complimentary read is not a sale) */}
+      {invoices.length > 0 && (
         <section className="mt-8">
-          <SubHead title="Invoices" count={String(payments.length)} />
+          <SubHead title="Invoices" count={String(invoices.length)} />
           <div className="flex flex-col gap-3">
-            {[...payments].sort((a, b) => b.date - a.date).map((p) => (
+            {[...invoices].sort((a, b) => b.date - a.date).map((p) => (
               <div key={p.id} className="flex flex-col gap-2 rounded-2xl border border-[#1a1a1a]/[0.08] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <p className="text-[0.92rem] font-medium text-[#1a1a1a]">Invoice {p.invoiceNo} — {p.item}</p>
