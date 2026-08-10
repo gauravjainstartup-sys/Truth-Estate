@@ -7,6 +7,7 @@ import Logo from "../Logo";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import { loadBuyData, hasPreferences, deriveDNA, clearAllDemoData, saveLead, hasReadAccess, has3DAccess, readStake, packageById, isSignedIn, AUTH_EVENT } from "@/lib/journey";
 import { ENTITLEMENTS_EVENT } from "@/lib/entitlementsCache";
+import { fetchEntitlements } from "@/lib/entitlements";
 import { negotiationLevers } from "@/lib/negotiation";
 import type { RelatedGroups, RelatedProject } from "@/lib/relatedProjects";
 import type { ConsultProfileChip } from "@/lib/consultation";
@@ -239,6 +240,14 @@ export default function ProjectProfile({
     read();
     window.addEventListener(ENTITLEMENTS_EVENT, read);
     window.addEventListener(AUTH_EVENT, read);
+    /* Poke the server for the fresh answer on every report open — the gate
+       above is only as good as the cache it reads. The unlock cards do this
+       too (useFirstFree), but they only mount while LOCKED, and a client-side
+       navigation between reports never remounts the app shell that otherwise
+       refreshes entitlements; without this, a report the signed-in reader owns
+       could stay masked until their next hard load. fetch() dedupes in-flight,
+       so this costs nothing when a card already asked. */
+    void fetchEntitlements();
     return () => {
       window.removeEventListener(ENTITLEMENTS_EVENT, read);
       window.removeEventListener(AUTH_EVENT, read);
