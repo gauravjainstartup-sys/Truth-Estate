@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { has3DAccess, saveLead } from "@/lib/journey";
 import { track } from "@/lib/events";
 import BuyerOfficeGate from "./BuyerOfficeGate";
+import OtpSheet from "../shortlist/OtpSheet";
+import type { Verified } from "@/lib/shortlistAuth";
+import { normalisePhone } from "@/lib/phoneAuth";
 import { useConsultation } from "../consultation/ConsultationProvider";
 import type { ProjectIntel, TowerIntelMeta } from "@/lib/projects";
 import { basePath } from "@/lib/site";
@@ -26,6 +29,9 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
   const [access, setAccess] = useState(false); // paid: single-project unlock or membership
   const [modal, setModal] = useState(false); // the 3D advisor (modelled projects)
   const [gateStart, setGateStart] = useState<GateStart | null>(null); // Buyer Office surface (null = closed)
+  // Walkthrough early-access: the number the 3D iframe collected, held until an
+  // OTP verifies it (null = no pending capture / sheet closed).
+  const [earlyLead, setEarlyLead] = useState<{ phone: string; cc: string; unit: string } | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   const has3D = !!meta?.file;
@@ -64,9 +70,14 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
       if (d.type === "te-pay") openGate(has3DAccess(slug) ? "home" : "req");
       // "Talk to an advisor" from a unit — close the model and open the consult flow with the unit as source.
       if (d.type === "te-consult") { setModal(false); openConsult({ source: project.name, sourceKind: "project", intent: "buy" }); }
-      // Walk-through early-access — capture the mobile number into the app's lead store.
+      // Walk-through early-access — the number the iframe collected is NOT
+      // verified, so don't write it straight to the lead store. Route it through
+      // the same OTP sheet the shortlist uses; the lead is saved only once a
+      // code confirms the number (see onEarlyAccessVerified). The iframe always
+      // prepends +91, so normalise to the ten digits and seed the sheet.
       if (d.type === "te-lead" && d.phone) {
-        saveLead({ name: "", email: "", phone: String(d.phone), project: project.name, intent: "tower-intel", message: `walkthrough-early-access · ${String(d.unit ?? "")}`.trim(), createdAt: Date.now() });
+        const ten = normalisePhone(String(d.phone));
+        setEarlyLead({ phone: ten ?? String(d.phone).replace(/\D/g, ""), cc: "+91", unit: String(d.unit ?? "") });
       }
     };
     window.addEventListener("message", onMsg);
@@ -93,6 +104,22 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
   function onSeeUnitIntel() {
     setGateStart(null);
     if (has3D && !modal) setModal(true); // fresh open; onLoad posts entitlement
+  }
+
+  // The early-access number is verified — now it's a real lead. Save it with the
+  // verified contact (the sheet also signs the visitor in, as every other
+  // verified capture does), then close the sheet.
+  function onEarlyAccessVerified(v: Verified) {
+    saveLead({
+      name: v.name ?? "",
+      email: v.email ?? "",
+      phone: v.channel === "mobile" ? `${v.cc ?? ""} ${v.contact}`.trim() : String(v.contact),
+      project: project.name,
+      intent: "tower-intel",
+      message: ["walkthrough-early-access", earlyLead?.unit].filter(Boolean).join(" · "),
+      createdAt: Date.now(),
+    });
+    setEarlyLead(null);
   }
 
   const src = meta?.file ? `${basePath}/${meta.file}?v=${ADVISOR_V}` : undefined;
@@ -178,6 +205,20 @@ export default function TowerIntel({ project, meta }: { project: ProjectIntel; m
         onClose={() => setGateStart(null)}
         onJoined={() => { /* free register — lead saved in the gate */ }}
         onSeeUnitIntel={onSeeUnitIntel}
+      />
+
+      {/* Verify the walkthrough early-access number before it becomes a lead —
+          the same OTP sheet the shortlist uses, seeded with what the iframe
+          collected so the visitor confirms rather than retypes. */}
+      <OtpSheet
+        open={earlyLead !== null}
+        onClose={() => setEarlyLead(null)}
+        onVerified={onEarlyAccessVerified}
+        presetPhone={earlyLead?.phone ?? ""}
+        presetCc={earlyLead?.cc ?? "+91"}
+        source="tower-intel-early-access"
+        title="Confirm your early access"
+        subtitle="Verify your number and we'll put you first in line for the walkthrough."
       />
     </>
   );
