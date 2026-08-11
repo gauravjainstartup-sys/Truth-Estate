@@ -38,6 +38,8 @@ import ReportConstruction from "./ReportConstruction";
 import ReportLegal from "./ReportLegal";
 import ReportLocation from "./ReportLocation";
 import SearchPalette from "./SearchPalette";
+import OtpDigits from "../auth/OtpDigits";
+import { normalisePhone, sendOtp, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
 import ReportNegotiation from "./ReportNegotiation";
 import AccountChip from "../AccountChip";
 import ZoomStage from "./ZoomStage";
@@ -497,6 +499,12 @@ export default function ProjectProfile({
   const [scheduled, setScheduled] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [lead, setLead] = useState({ name: "", phone: "", time: "" });
+  // Callback OTP — the number is verified before the lead is saved, the same
+  // seam every other form uses. `cbSent` flips the panel to the code step.
+  const [cbSent, setCbSent] = useState(false);
+  const [cbOtp, setCbOtp] = useState<string[]>(Array(OTP_LENGTH).fill(""));
+  const [cbBusy, setCbBusy] = useState(false);
+  const [cbErr, setCbErr] = useState("");
   // document viewer (masterplan / brochure pages / payment plan)
   const [doc, setDoc] = useState<{ title: string; pages: string[]; idx: number } | { title: string; pdf: string } | null>(null);
   useEffect(() => {
@@ -507,15 +515,41 @@ export default function ProjectProfile({
     window.addEventListener("keydown", onKey);
     return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); };
   }, [doc]);
-  const scheduleCall = (e: FormEvent) => {
-    e.preventDefault();
-    // Persist the callback (name + phone + preferred time) as a consultation
-    // lead. This was a UI-only flag before, so every high-intent callback on the
-    // report was silently discarded despite the "an advisor will call you" promise.
+  // Step 1 of the callback: send the code to the number entered. India-only,
+  // like the app's other +91-first surfaces — a non-Indian number comes back
+  // null and is asked to be corrected rather than sent an SMS that never lands.
+  async function sendCallbackCode() {
+    if (cbBusy) return;
+    if (!lead.name.trim()) { setCbErr("Please enter your name."); return; }
+    const ten = normalisePhone(lead.phone);
+    if (!ten) { setCbErr("That number doesn't look right — mind checking it?"); return; }
+    setCbErr(""); setCbBusy(true);
+    const r = await sendOtp(ten);
+    setCbBusy(false);
+    if (!r.ok) { setCbErr(r.error); return; }
+    setCbSent(true);
+  }
+
+  const scheduleCall = async (e?: FormEvent) => {
+    e?.preventDefault();
+    if (cbBusy) return;
+    // Before the code is sent, "Confirm" sends it. Once sent, "Confirm" verifies.
+    if (!cbSent) { await sendCallbackCode(); return; }
+    const ten = normalisePhone(lead.phone);
+    if (!ten) { setCbErr("That number doesn't look right — go back and check it."); return; }
+    if (!cbOtp.every((d) => d !== "")) { setCbErr(`Enter the ${OTP_LENGTH}-digit code.`); return; }
+    setCbErr(""); setCbBusy(true);
+    const r = await verifyOtp(ten, cbOtp.join(""), lead.name.trim());
+    setCbBusy(false);
+    if (!r.ok) { setCbErr(r.error); return; }
+    // Only here — after a server-confirmed code — is the callback persisted as a
+    // consultation lead, so the number in the pipeline is a verified one. (This
+    // was a UI-only flag before the lead was persisted at all; now it is both
+    // persisted and verified.)
     saveLead({
       name: lead.name.trim(),
       email: "",
-      phone: lead.phone.trim(),
+      phone: `+91 ${ten}`.trim(),
       project: p.name,
       intent: "consultation",
       message: `Callback requested${lead.time ? ` — preferred time: ${lead.time}` : ""}`,
@@ -687,13 +721,30 @@ export default function ProjectProfile({
                   <div className="mt-4 rounded-xl border border-[#1e6b45]/20 bg-[#1e6b45]/[0.06] px-4 py-3.5 text-[0.8rem] font-medium leading-[1.55] text-[#1e6b45]">✓ Thanks{lead.name ? `, ${lead.name.trim().split(" ")[0]}` : ""} — an advisor will call you{lead.time ? ` ${lead.time.toLowerCase()}` : " shortly"}. Expect a Gurugram number.</div>
                 ) : formOpen ? (
                   <form onSubmit={scheduleCall} className="mt-4 space-y-2">
-                    <input required value={lead.name} onChange={(e) => setLead({ ...lead, name: e.target.value })} placeholder="Your name" className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3.5 py-2.5 text-[0.8rem] outline-none transition-colors focus:border-[#1e6b45]" />
-                    <input required type="tel" value={lead.phone} onChange={(e) => setLead({ ...lead, phone: e.target.value })} placeholder="Phone / WhatsApp" className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3.5 py-2.5 text-[0.8rem] outline-none transition-colors focus:border-[#1e6b45]" />
-                    <select required value={lead.time} onChange={(e) => setLead({ ...lead, time: e.target.value })} className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3.5 py-2.5 text-[0.8rem] text-[#1a1a1a]/80 outline-none transition-colors focus:border-[#1e6b45]">
+                    <input required disabled={cbSent} value={lead.name} onChange={(e) => setLead({ ...lead, name: e.target.value })} placeholder="Your name" className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3.5 py-2.5 text-[0.8rem] outline-none transition-colors focus:border-[#1e6b45] disabled:opacity-60" />
+                    <input required disabled={cbSent} type="tel" value={lead.phone} onChange={(e) => setLead({ ...lead, phone: e.target.value })} placeholder="Phone / WhatsApp" className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3.5 py-2.5 text-[0.8rem] outline-none transition-colors focus:border-[#1e6b45] disabled:opacity-60" />
+                    <select required disabled={cbSent} value={lead.time} onChange={(e) => setLead({ ...lead, time: e.target.value })} className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3.5 py-2.5 text-[0.8rem] text-[#1a1a1a]/80 outline-none transition-colors focus:border-[#1e6b45] disabled:opacity-60">
                       <option value="" disabled>Preferred time</option>
                       <option>Today · morning</option><option>Today · evening</option><option>Tomorrow</option><option>This weekend</option>
                     </select>
-                    <button type="submit" className="w-full rounded-lg bg-[#1e6b45] px-4 py-2.5 text-[0.8rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Confirm the callback</button>
+                    {cbSent && (
+                      <div className="pt-1">
+                        <p className="mb-2 text-[0.72rem] font-light leading-[1.5] text-[#1a1a1a]/55">Enter the {OTP_LENGTH}-digit code we sent to confirm your number.</p>
+                        <OtpDigits
+                          value={cbOtp} onChange={setCbOtp} len={OTP_LENGTH} autoFocus onComplete={() => scheduleCall()}
+                          boxClass="h-11 w-full rounded-lg border border-[#1a1a1a]/12 bg-white text-center text-[1rem] font-medium text-[#1a1a1a] outline-none transition-colors focus:border-[#1e6b45]"
+                        />
+                        {/* Re-enables the fields and steps back to "Confirm" — which
+                            re-sends on the next tap, so this doubles as a resend. */}
+                        <button type="button" onClick={() => { setCbSent(false); setCbOtp(Array(OTP_LENGTH).fill("")); setCbErr(""); }} className="mt-2 text-[0.68rem] font-medium text-[#9a7a2e] transition-colors hover:text-[#1a1a1a]/80">
+                          Wrong number? Change it
+                        </button>
+                      </div>
+                    )}
+                    {cbErr && <p className="text-[0.72rem] leading-[1.5] text-[#b3402a]">{cbErr}</p>}
+                    <button type="submit" disabled={cbBusy} className="w-full rounded-lg bg-[#1e6b45] px-4 py-2.5 text-[0.8rem] font-semibold text-white transition-colors hover:bg-[#238c55] disabled:opacity-60">
+                      {cbBusy ? (cbSent ? "Verifying…" : "Sending…") : cbSent ? "Verify & confirm" : "Confirm the callback"}
+                    </button>
                   </form>
                 ) : (
                   <div className="mt-5">

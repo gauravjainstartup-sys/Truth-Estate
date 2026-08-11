@@ -30,12 +30,24 @@ export default function OtpSheet({
   onVerified,
   title = "Unlock your #1 match",
   subtitle = "Verify once — your shortlist stays saved, and your top match is revealed instantly.",
+  presetPhone,
+  presetCc,
+  source = "shortlist-otp",
 }: {
   open: boolean;
   onClose: () => void;
   onVerified: (v: Verified) => void;
   title?: string;
   subtitle?: string;
+  /* Seed a number a caller already collected (e.g. the 3D walkthrough's
+     early-access field) so the visitor confirms rather than retypes it.
+     Undefined for the shortlist, which starts from an empty field — so its
+     behaviour is unchanged. */
+  presetPhone?: string;
+  presetCc?: string;
+  /* Funnel label for this surface. Defaults to the shortlist so existing
+     callers stay identical. */
+  source?: string;
 }) {
   const [cc, setCc] = useState("+91");
   const [phone, setPhone] = useState("");
@@ -55,8 +67,13 @@ export default function OtpSheet({
   useEffect(() => {
     if (open) {
       setStep("contact"); setOtp(Array(OTP_LEN).fill("")); setErr(null); setBusy(false);
-      track("sign_up_form_opened", { props: { source: "shortlist-otp" } });
+      /* Only seed when a caller supplies a number — the shortlist passes
+         nothing, so it keeps whatever the visitor had typed. */
+      if (presetPhone !== undefined) setPhone(presetPhone);
+      if (presetCc !== undefined) setCc(presetCc);
+      track("sign_up_form_opened", { props: { source } });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   // resend countdown
