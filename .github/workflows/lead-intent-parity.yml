@@ -1,0 +1,40 @@
+name: Lead-Intent Parity
+
+# Every lead is POSTed to the `capture-lead` edge function, which rejects any
+# intent not on its allow-list (supabase/functions/capture-lead/core.ts). The
+# browser fires that POST and ignores the response, so a rejected lead vanishes
+# with no row and no error — a SILENT leak (the class of bug that lost phone-only
+# leads until migration 0019). This job fails the build the moment the client's
+# `Lead.intent` union (src/lib/journey.ts) can send an intent the server would
+# reject, so the client and the allow-list can never drift apart unnoticed.
+#
+# Static source check — no network, no secrets. Runs on every PR and push to
+# main so a mismatch can never merge or ship.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lead-intent-parity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Assert client Lead.intent is a subset of the capture-lead allow-list
+        run: node scripts/lead-intent-parity.mjs

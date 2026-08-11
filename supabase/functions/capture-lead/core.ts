@@ -22,7 +22,8 @@ export type FetchLike = (url: string, init?: Record<string, unknown>) => Promise
 
 /* Mirrors the Lead union in src/lib/journey.ts. An unknown intent is
    rejected rather than stored, so a typo in a new form surfaces in the
-   logs instead of quietly creating an uncategorisable row. */
+   logs instead of quietly creating an uncategorisable row. CI holds this
+   mirror in parity with the client union — see scripts/lead-intent-parity.mjs. */
 export const INTENTS = [
   "tower-intel",
   "buyer-office",
