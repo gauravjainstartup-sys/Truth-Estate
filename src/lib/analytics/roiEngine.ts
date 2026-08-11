@@ -10,7 +10,10 @@
    • Expected CAGR   = Base + Truth-Score quality kicker  (quality lifts/drags)
        kicker = clamp(slope × (TruthScore − neutral), ±cap)
    • Delay cost      = Base × (predicted delay ÷ holding) (opportunity cost of
-                       the slip, in CAGR terms — capital sits idle)
+                       the slip, in CAGR terms — capital sits idle), CAPPED at
+                       `delayCostCap` so no single factor (and no stale/garbled
+                       RERA date) can overwhelm the market base or drive the
+                       headline to a false-precision near-zero.
    • Risk-Adj CAGR   = Expected − Delay cost
    • Rental          = rentalYield of the *then-value*, only for the years the
                        ready asset is held (holding − time-to-possession); it
@@ -42,6 +45,10 @@ export interface RoiParams {
   scoreSlope: number;
   /** Max absolute quality kicker, % — a great score can never dominate the base. */
   scoreCap: number;
+  /** Max CAGR points the predicted delay can remove — mirrors scoreCap so no
+   *  single factor overwhelms the market base, and bounds the headline against
+   *  a stale/garbled RERA date producing an absurd 80-month "delay". */
+  delayCostCap: number;
   /** Post-possession rental yield on the then-value, %/yr. */
   rentalYield: number;
   /** Default holding horizon from today, years. */
@@ -55,6 +62,7 @@ export const DEFAULT_ROI_PARAMS: RoiParams = {
   scoreNeutral: 60,
   scoreSlope: 0.1,
   scoreCap: 4.0,
+  delayCostCap: 4.0,
   rentalYield: 2.5,
   holdYears: 8,
 };
@@ -187,8 +195,8 @@ export function computeRoi(input: RoiInput, params: RoiParams = DEFAULT_ROI_PARA
   const delayMonths = possession && rera ? Math.max(0, yearsBetween(rera, possession) * 12) : 0;
   const rentableYears = Math.max(0, holdYears - yearsToPossession);
 
-  // ── delay cost & risk-adjusted CAGR ──
-  const delayCost = base * (delayMonths / 12) / holdYears;
+  // ── delay cost & risk-adjusted CAGR (delay cost capped — see delayCostCap) ──
+  const delayCost = Math.min(params.delayCostCap, base * (delayMonths / 12) / holdYears);
   const riskAdjustedCagr = expectedCagr - delayCost;
 
   // ── cash-flow returns ──
@@ -201,7 +209,7 @@ export function computeRoi(input: RoiInput, params: RoiParams = DEFAULT_ROI_PARA
   const bandCagr = (marketDelta: number, delayDeltaMonths: number): number => {
     const exp = base + marketDelta + qualityKicker;
     const dm = Math.max(0, delayMonths + delayDeltaMonths);
-    return exp - base * (dm / 12) / holdYears;
+    return exp - Math.min(params.delayCostCap, base * (dm / 12) / holdYears);
   };
   const bands: RoiBands = {
     bear: round1(bandCagr(-3, +12)),
