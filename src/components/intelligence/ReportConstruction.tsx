@@ -12,6 +12,15 @@ function pdfHref(u: string): string {
   return /^https?:\/\//i.test(u) ? u : `${basePath}/${u.replace(/^\//, "")}`;
 }
 
+/* An image src, same rule as pdfHref. The live overlay (remoteMedia) hands the
+   render / hero / site image straight through as an ABSOLUTE R2 URL for a
+   just-uploaded asset; the build hands a same-origin materialized path. Gluing
+   basePath in front of an absolute URL — `${basePath}/https://…` — produced
+   `/https://…`, a broken src, so the <img> failed and the layer behind it (the
+   satellite) showed through with a tiny broken-image glyph. Pass an absolute
+   URL through untouched; only a relative path gets the basePath prefix. */
+const asset = (u: string): string => (/^(https?:\/\/|data:)/i.test(u) ? u : `${basePath}/${u.replace(/^\//, "")}`);
+
 /* The QPR vintage behind the construction read — "Month Year", pulled from the
    QPR's own date so the bracket tracks the data itself, not the row's refresh
    date. Falls back to the quarter label, then to nothing. Keeps the header
@@ -108,8 +117,8 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
         {heroImg ? (
           <div className="mt-4">
             <RenderVsReality
-              left={render ? <img loading="lazy" src={`${basePath}/${render}`} alt={`${p.name} — developer render`} className="h-full w-full object-cover" draggable={false} /> : <RenderStandin />}
-              right={<img loading="lazy" src={`${basePath}/${heroImg}`} alt={`${p.name} — site aerial`} className="h-full w-full object-cover" draggable={false} />}
+              left={render ? <img loading="lazy" src={asset(render)} alt={`${p.name} — developer render`} className="h-full w-full object-cover" draggable={false} /> : <RenderStandin />}
+              right={<img loading="lazy" src={asset(heroImg)} alt={`${p.name} — site aerial`} className="h-full w-full object-cover" draggable={false} />}
               leftChip="The brochure · artist's impression"
               rightChip={`The site · ${site?.asOf ?? p.ops?.reviewed ?? "satellite"}`}
             />
@@ -124,7 +133,7 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
               <span className="text-[0.58rem] font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/35">Marketing image</span>
             </div>
             <div className="aspect-[4/3] w-full">
-              {render ? <img src={`${basePath}/${render}`} alt={`${p.name} developer render`} className="h-full w-full object-cover" /> : <RenderStandin />}
+              {render ? <img src={asset(render)} alt={`${p.name} developer render`} className="h-full w-full object-cover" /> : <RenderStandin />}
             </div>
             <figcaption className="px-5 py-2.5 text-[0.7rem] font-light text-[#1a1a1a]/50">Developer render{p.ops?.launch ? ` · ${p.ops.launch} launch imagery` : ""}. Artist&apos;s impression.</figcaption>
           </figure>
@@ -135,7 +144,7 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
               <span className="text-[0.58rem] font-medium uppercase tracking-[0.1em] text-[#1e6b45]/70">Our field visit</span>
             </div>
             <div className="relative aspect-[4/3] w-full">
-              {site ? <img src={`${basePath}/${site.src}`} alt={`${p.name} site, ${site.asOf}`} className="h-full w-full object-cover" /> : <SiteStandin pct={builtPct} />}
+              {site ? <img src={asset(site.src)} alt={`${p.name} site, ${site.asOf}`} className="h-full w-full object-cover" /> : <SiteStandin pct={builtPct} />}
               <span className="absolute bottom-2.5 right-2.5 rounded bg-[#141110]/75 px-2 py-1 font-mono text-[0.6rem] tracking-[0.06em] text-white">{siteAsOf}</span>
             </div>
             <figcaption className="px-5 py-2.5 text-[0.7rem] font-light text-[#1a1a1a]/50">{site?.note ?? `Structure at ${builtPct}% — verified against QPR ${o.qpr}.`}</figcaption>
