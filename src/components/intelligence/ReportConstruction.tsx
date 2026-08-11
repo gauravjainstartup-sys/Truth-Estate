@@ -117,7 +117,7 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
         {heroImg ? (
           <div className="mt-4">
             <RenderVsReality
-              left={render ? <img loading="lazy" src={asset(render)} alt={`${p.name} — developer render`} className="h-full w-full object-cover" draggable={false} /> : <RenderStandin />}
+              left={render ? <img loading="lazy" src={asset(render)} alt={`${p.name} — developer render`} className="h-full w-full bg-[#0b1f1a] object-contain" draggable={false} /> : <RenderStandin />}
               right={<img loading="lazy" src={asset(heroImg)} alt={`${p.name} — site aerial`} className="h-full w-full object-cover" draggable={false} />}
               leftChip="The brochure · artist's impression"
               rightChip={`The site · ${site?.asOf ?? p.ops?.reviewed ?? "satellite"}`}
@@ -133,7 +133,7 @@ export default function ReportConstruction({ p }: { p: ProjectIntel }) {
               <span className="text-[0.58rem] font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/35">Marketing image</span>
             </div>
             <div className="aspect-[4/3] w-full">
-              {render ? <img src={asset(render)} alt={`${p.name} developer render`} className="h-full w-full object-cover" /> : <RenderStandin />}
+              {render ? <img src={asset(render)} alt={`${p.name} developer render`} className="h-full w-full bg-[#0b1f1a] object-contain" /> : <RenderStandin />}
             </div>
             <figcaption className="px-5 py-2.5 text-[0.7rem] font-light text-[#1a1a1a]/50">Developer render{p.ops?.launch ? ` · ${p.ops.launch} launch imagery` : ""}. Artist&apos;s impression.</figcaption>
           </figure>
