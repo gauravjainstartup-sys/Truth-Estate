@@ -1054,20 +1054,29 @@ export function liveProjectIntel(
 
   /* ── ROI model — the pipeline's own projection replaces the corridor
      approximation wherever the view has computed it ── */
-  const crFromAbs = (abs: number | null): number | null => (abs != null ? Math.round((abs / 1e7) * 100) / 100 : null);
   const liveRoi: RoiModel | undefined =
     row.roiIdealCagr != null && row.roiActualCagr != null && row.roiCostCr != null
       ? (() => {
           const ticketCr = Math.round(row.roiCostCr! * 10) / 10;
           const horizonYears = row.roiExitYears ?? 5;
           const grow = (r: number) => Math.round(ticketCr * Math.pow(1 + r / 100, horizonYears) * 100) / 100;
-          const benchValueCr = crFromAbs(row.roiIdealProfit) != null ? Math.round((ticketCr + crFromAbs(row.roiIdealProfit)!) * 100) / 100 : grow(row.roiIdealCagr!);
-          const adjValueCr = crFromAbs(row.roiAdjProfit) != null ? Math.round((ticketCr + crFromAbs(row.roiAdjProfit)!) * 100) / 100 : grow(row.roiActualCagr!);
+          /* benchCagr = the corridor/city base rate. adjCagr = our Truth-Score-
+             adjusted expected CAGR (expected_cagr_num). A delivery DELAY is an
+             execution risk surfaced in the construction timeline — it is NOT
+             subtracted from the appreciation rate. (roi_actual_cagr does exactly
+             that, knocking ~1.5 pts/yr of delay off the CAGR, which drove
+             pathological near-zero/negative rates on delayed projects: a 3-yr-late
+             tower still sits in a corridor compounding ~11%, the buyer just waits
+             longer to realise it — that belongs in the timeline, not the rate.) */
+          const benchCagr = Math.round((row.roiCityCagr ?? row.roiIdealCagr!) * 10) / 10;
+          const adjCagr = Math.round((row.expectedCagrNum ?? row.roiIdealCagr!) * 10) / 10;
+          const benchValueCr = grow(benchCagr);
+          const adjValueCr = grow(adjCagr);
           return {
             horizonYears,
             corridor3Y: row.roiCityCagr != null ? `~${Math.round(row.roiCityCagr * 10) / 10}% CAGR (city benchmark)` : "the tracked city benchmark",
-            benchCagr: Math.round(row.roiIdealCagr! * 10) / 10,
-            adjCagr: Math.round(row.roiActualCagr! * 10) / 10,
+            benchCagr,
+            adjCagr,
             ticketCr,
             benchValueCr,
             adjValueCr,

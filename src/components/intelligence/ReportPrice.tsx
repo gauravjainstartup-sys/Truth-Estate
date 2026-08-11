@@ -171,7 +171,7 @@ export default function ReportPrice({ p, sample = false }: { p: ProjectIntel; sa
                 <>
                   <p className="text-[0.6rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/45">5-year projection · unlocked</p>
                   <p className="text-[2.3rem] font-normal leading-none tracking-[-0.02em] tabular-nums text-[#1e6b45]">{roi.adjCagr}%<span className="text-[0.85rem] text-[#1a1a1a]/40"> CAGR</span></p>
-                  <p className="text-[0.72rem] font-light leading-[1.5] text-[#1a1a1a]/50">execution-adjusted base case · corridor benchmark {roi.benchCagr}% · min. 5-yr hold</p>
+                  <p className="text-[0.72rem] font-light leading-[1.5] text-[#1a1a1a]/50">{roi.benchCagr}% corridor base, lifted by this project&apos;s Truth Score · delivery-delay risk shown in the timeline · min. 5-yr hold</p>
                 </>
               ) : (
                 <>
@@ -287,7 +287,7 @@ export default function ReportPrice({ p, sample = false }: { p: ProjectIntel; sa
               <><b className="font-semibold text-[#1a1a1a]">Front-loaded cash pulls XIRR back toward CAGR</b> ({calc.xirr.toFixed(1)}% vs {projCagr.toFixed(1)}%) — add stamp duty and it can dip below. Same asset, same exit; the payment structure decides your real return. Switch to a construction-linked primary to see the other side.</>
             )}
           </div>
-          <p className="mt-3 text-[0.62rem] font-light italic text-[#1a1a1a]/35">Modelled on the corridor-anchored, execution-adjusted CAGR of {projCagr.toFixed(1)}% — an estimate, not a promise. Taxes, stamp duty &amp; charges excluded.</p>
+          <p className="mt-3 text-[0.62rem] font-light italic text-[#1a1a1a]/35">Modelled on the corridor-anchored, Truth-Score-adjusted CAGR of {projCagr.toFixed(1)}% — an estimate, not a promise; delivery-delay risk is reflected in the timeline, not this rate. Taxes, stamp duty &amp; charges excluded.</p>
         </div>
       </div>
       </>)}
