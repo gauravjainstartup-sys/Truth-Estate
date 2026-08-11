@@ -874,7 +874,7 @@ export function projectFaqs(p: ProjectIntel): { q: string; a: string }[] {
   if (roi) {
     faqs.push({
       q: `What return could ${p.name} realistically deliver?`,
-      a: `Anchored to the corridor's tracked 3-year appreciation of ${roi.corridor3Y}, our ${roi.horizonYears}-year model projects roughly ${roi.benchCagr}% CAGR at the market benchmark and ${roi.adjCagr}% on an execution-adjusted basis. A modelled outcome — not a guarantee.`,
+      a: `Anchored to the corridor's tracked 3-year appreciation of ${roi.corridor3Y}, our ${roi.horizonYears}-year model projects roughly ${roi.adjCagr}% CAGR (Truth-Score-adjusted), against a ${roi.benchCagr}% corridor benchmark; delivery-delay risk is tracked separately in the construction timeline, not netted off this rate. A modelled outcome — not a guarantee.`,
     });
   }
   faqs.push({
