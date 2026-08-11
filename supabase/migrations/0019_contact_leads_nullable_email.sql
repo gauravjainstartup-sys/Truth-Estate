@@ -1,0 +1,37 @@
+-- ════════════════════════════════════════════════════════════════
+-- 0019 — ALLOW LEADS WITHOUT AN EMAIL (the phone-first majority)
+--
+-- 0005 fixed exactly this class of failure for `name` and `phone`:
+--   23502: null value in column "…" of relation "contact_leads"
+--          violates not-null constraint
+-- …but it stopped one column short. `email` was still NOT NULL, and
+-- Truth Estate is phone-first — capture-lead sends email:null for every
+-- phone-only lead (buyer-office, shortlist, tower-intel, deal-room,
+-- custom-report, and phone consultations). So the SAME 23502 error simply
+-- moved to the email column, and because capture-lead is fire-and-forget,
+-- nothing surfaced: every phone-only lead was silently rejected at insert.
+--
+-- Measured impact before this fix: across the window where lead capture
+-- was live, ~31 `lead_captured` events fired but 0 phone-only rows reached
+-- contact_leads — only leads that happened to carry an email got through.
+--
+-- The product rule (a lead must carry at least ONE of email or phone) is
+-- still enforced in capture-lead (core.ts), where it can require "either",
+-- rather than in a column constraint that can only demand "both".
+-- ════════════════════════════════════════════════════════════════
+
+alter table public.contact_leads alter column email drop not null;
+
+-- ── VERIFY ──────────────────────────────────────────────────────
+-- A phone-only lead now inserts (submit any buyer-office / shortlist /
+-- 3D early-access form, then):
+--
+--   select created_at, intent, name, coalesce(phone, email) as contact,
+--          project_name, source, status
+--     from public.contact_leads
+--    where intent is not null
+--    order by created_at desc limit 20;
+--
+-- `intent is not null` isolates rows written through capture-lead; the two
+-- June 2026 rows predate every column this project added.
+-- ════════════════════════════════════════════════════════════════
