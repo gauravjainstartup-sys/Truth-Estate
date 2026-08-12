@@ -24,6 +24,7 @@ import { MARKETS } from "./markets";
 import { corridorKey } from "./journey";
 import type { DeveloperIntel, FinBand, FinKey, FinRating, LegalCase } from "./developers";
 import { developerSlugOf, type ProjectIntel, type ProjectOps, type RoiModel, type ScoreInputKey } from "./projects";
+import { computeRoi, DEFAULT_ROI_PARAMS } from "./analytics/roiEngine";
 import mediaManifest from "./live-media.manifest.json";
 
 /* Media now arrives as Supabase Storage URLs, which pass straight through.
@@ -1052,50 +1053,50 @@ export function liveProjectIntel(
         }
       : undefined;
 
-  /* ── ROI model — the pipeline's own projection replaces the corridor
-     approximation wherever the view has computed it ── */
-  /* Gate on a CAGR, NOT on the ticket. adjCagr is the whole point of the live
-     model, and it is price-independent — a row can carry expected_cagr_num +
-     roi_ideal_cagr but no filed price (roi_property_cost_cr / min_price all
-     null), as the Krisumi rows do. The old gate also required roiCostCr, so
-     those rows fell through to the corridor fallback in projects.ts (which
-     re-introduced the delay-penalised ~2.7% this model exists to replace). We
-     now build on the CAGR and null the ₹-value projections when there is no
-     ticket to grow — the numbers stay honest (no invented entry price). */
-  const cagrSrc = row.expectedCagrNum ?? row.roiIdealCagr;
-  const liveRoi: RoiModel | undefined =
-    cagrSrc != null
-      ? (() => {
-          const horizonYears = row.roiExitYears ?? 5;
-          /* benchCagr = the corridor/city base rate. adjCagr = our Truth-Score-
-             adjusted expected CAGR (expected_cagr_num). A delivery DELAY is an
-             execution risk surfaced in the construction timeline — it is NOT
-             subtracted from the appreciation rate. (roi_actual_cagr does exactly
-             that, knocking ~1.5 pts/yr of delay off the CAGR, which drove
-             pathological near-zero/negative rates on delayed projects: a 3-yr-late
-             tower still sits in a corridor compounding ~11%, the buyer just waits
-             longer to realise it — that belongs in the timeline, not the rate.) */
-          const benchCagr = Math.round((row.roiCityCagr ?? row.roiIdealCagr ?? cagrSrc) * 10) / 10;
-          const adjCagr = Math.round(cagrSrc * 10) / 10;
-          /* ticket only drives the ₹ projections; absent price → null values. */
-          const ticketRaw = row.roiCostCr ?? row.minPriceCr;
-          const ticketCr = ticketRaw != null ? Math.round(ticketRaw * 10) / 10 : null;
-          const grow = (r: number): number | null =>
-            ticketCr != null ? Math.round(ticketCr * Math.pow(1 + r / 100, horizonYears) * 100) / 100 : null;
-          const benchValueCr = grow(benchCagr);
-          const adjValueCr = grow(adjCagr);
-          return {
-            horizonYears,
-            corridor3Y: row.roiCityCagr != null ? `~${Math.round(row.roiCityCagr * 10) / 10}% CAGR (city benchmark)` : "the tracked city benchmark",
-            benchCagr,
-            adjCagr,
-            ticketCr,
-            benchValueCr,
-            adjValueCr,
-            deltaCr: adjValueCr != null && benchValueCr != null ? Math.round((adjValueCr - benchValueCr) * 100) / 100 : null,
-          };
-        })()
-      : undefined;
+  /* ── ROI model — SINGLE SOURCE OF TRUTH: the roiEngine ──
+     Every ROI surface reads the SAME model. This liveRoi feeds the verdict, FAQ,
+     compare and TruthGuide (all via roiModel(p)); the price panel calls the
+     engine directly with the same inputs. So the number can never disagree
+     across the report. We no longer surface the pipeline's expected_cagr_num /
+     roi_actual_cagr here — the engine (India 9% + Gurgaon 0.5% + Truth-Score
+     kicker − the cost of the predicted delay) is the authority.
+       • benchCagr = Expected CAGR   — "if it delivers on our forecast"
+       • adjCagr   = Risk-Adjusted   — realistic, the predicted delay priced in
+     Everything anchors to our PREDICTED delivery date; RERA enters only as the
+     yardstick for the delay (predicted − RERA). The CAGRs are date-independent,
+     so computing at build time here matches the panel's client-side compute to
+     the decimal. ₹-value projections need a ticket — null when there's no filed
+     price (we never invent one). */
+  const hasRoi = row.truthScore != null || row.expectedCagrNum != null || row.roiIdealCagr != null;
+  const liveRoi: RoiModel | undefined = hasRoi
+    ? (() => {
+        const eng = computeRoi({
+          entryPriceCr: row.roiCostCr ?? row.minPriceCr ?? 1,
+          truthScore: row.truthScore ?? DEFAULT_ROI_PARAMS.scoreNeutral,
+          possessionDate: row.predictedDeliveryDate ?? null, // our predicted delivery — the anchor
+          reraDate: row.reraPromiseDate ?? null,             // only to measure the slip
+        });
+        const horizonYears = DEFAULT_ROI_PARAMS.holdYears;
+        const benchCagr = eng.expectedCagr;
+        const adjCagr = eng.riskAdjustedCagr;
+        const ticketRaw = row.roiCostCr ?? row.minPriceCr;
+        const ticketCr = ticketRaw != null ? Math.round(ticketRaw * 10) / 10 : null;
+        const grow = (r: number): number | null =>
+          ticketCr != null ? Math.round(ticketCr * Math.pow(1 + r / 100, horizonYears) * 100) / 100 : null;
+        const benchValueCr = grow(benchCagr);
+        const adjValueCr = grow(adjCagr);
+        return {
+          horizonYears,
+          corridor3Y: row.roiCityCagr != null ? `~${Math.round(row.roiCityCagr * 10) / 10}% CAGR (city benchmark)` : "the tracked city benchmark",
+          benchCagr,
+          adjCagr,
+          ticketCr,
+          benchValueCr,
+          adjValueCr,
+          deltaCr: adjValueCr != null && benchValueCr != null ? Math.round((adjValueCr - benchValueCr) * 100) / 100 : null,
+        };
+      })()
+    : undefined;
 
   /* ── construction & sales — the QPR read. The "% RERA required by quarter-end"
      is the FILED figure from the construction_pace module (expected_pct_at_qpr) —
