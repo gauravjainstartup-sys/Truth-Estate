@@ -209,8 +209,9 @@ export function LockPill({ label }: { label: string }) {
   );
 }
 
-/* The watch-outs block has no leading row to tease, so it dissolves whole:
-   a couple of faded placeholder lines under the pill. */
+/* Faded placeholder lines standing in for the REST of a gated block once its
+   real tease is shown — e.g. the remaining watch-outs after the first red flag
+   on each side stays visible. Dissolves under the pill. */
 export function LockLines() {
   const line = (w: string) => <div className={`h-3 ${w} rounded bg-gradient-to-r from-[#1a1a1a]/[0.05] via-[#1a1a1a]/[0.11] to-[#1a1a1a]/[0.05]`} />;
   return (
