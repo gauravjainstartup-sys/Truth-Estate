@@ -133,6 +133,9 @@ export default function DealRoomMandate() {
       if (!alive) return;
       setResale(r);
       setResaleLoading(false);
+      // Nothing came back (timeout / miss) — clear the guard so re-entering the
+      // step tries again rather than staying blank forever.
+      if (!r.text) { resaleFetchedFor.current = ""; return; }
       // Seed the target at ~10% below the market low when the buyer hasn't set
       // one yet — a sensible "steal" starting point they can drag from.
       if (r.low) setD((p) => (digitsToNum(p.target) === 0 ? { ...p, target: inrGroup(Math.round(r.low! * 0.9)) } : p));
@@ -351,7 +354,7 @@ export default function DealRoomMandate() {
                     <span className={label}>Your target closing price</span>
                     <div className="relative">
                       <span className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 font-serif text-[1.9rem] leading-none text-[#6f685c]">₹</span>
-                      <input value={d.target} onChange={(e) => set("target", e.target.value)} inputMode="numeric" placeholder="2,10,00,000"
+                      <input value={d.target} onChange={(e) => { const dg = e.target.value.replace(/\D/g, ""); set("target", dg ? inrGroup(Number(dg)) : ""); }} inputMode="numeric" placeholder="2,10,00,000"
                         className="w-full rounded-2xl border border-[#c9a96e]/25 bg-[#191510] py-5 pl-12 pr-5 font-serif text-[1.9rem] leading-none text-[#f4efe6] placeholder-[#4a453d] outline-none transition-colors focus:border-[#c9a96e]" />
                     </div>
                     {/* simple helper text (replaces the old two-line write-up) */}
@@ -363,7 +366,7 @@ export default function DealRoomMandate() {
                     {resaleLoading && (
                       <p className="mt-4 flex items-center gap-2 text-[0.82rem] text-[#a9a196]">
                         <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#c9a96e]/30 border-t-[#c9a96e]" aria-hidden />
-                        Reading the live market for {d.project.trim() || "this project"}…
+                        Reading the live market for {d.project.trim() || "this project"}… <span className="text-[#6f685c]">a few seconds</span>
                       </p>
                     )}
                     {/* Live market range + the "steal deal → high entry" bar. */}

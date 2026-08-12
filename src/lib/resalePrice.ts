@@ -43,7 +43,7 @@ export async function fetchResalePrice(
   project: string,
   city: string,
   config: string,
-  timeoutMs = 35000,
+  timeoutMs = 60000, // grounded top-model lookups can spike; don't abort a valid answer
 ): Promise<ResalePrice> {
   const p = project.trim();
   if (!p) return EMPTY;
