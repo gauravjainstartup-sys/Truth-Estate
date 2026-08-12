@@ -21,6 +21,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Logo from "@/components/Logo";
+import Footer from "@/components/Footer";
 import OtpDigits from "@/components/auth/OtpDigits";
 import { basePath } from "@/lib/site";
 import { track } from "@/lib/events";
@@ -193,8 +194,8 @@ export default function DealRoomMandate() {
       {screen === "landing" && <Landing openWizard={openWizard} eyebrow={eyebrow} btnPrimary={btnPrimary} />}
 
       {screen === "wizard" && (
-        <div className="mx-auto max-w-5xl px-6 pb-24 pt-6 md:px-10">
-          <div className="grid gap-10 md:grid-cols-[200px_1fr] md:gap-14">
+        <div className="mx-auto flex min-h-[calc(100dvh-96px)] max-w-5xl items-start px-6 pb-16 pt-6 md:items-center md:px-10">
+          <div className="grid w-full gap-10 md:grid-cols-[200px_1fr] md:gap-14">
             {/* spine */}
             <aside className="md:sticky md:top-6 md:self-start">
               <div className="flex gap-2 overflow-x-auto md:flex-col md:gap-0">
@@ -290,9 +291,12 @@ export default function DealRoomMandate() {
                     </div>
                     <div><span className={label}>Mobile number</span>
                       <div className="flex gap-3">
-                        <select value={dial} onChange={(e) => setDial(e.target.value)} disabled={otpSent} className={`${field} w-[110px] shrink-0 appearance-none`}>
-                          {DIAL.map((x) => <option key={x.code} value={x.code} className="bg-[#191510]">{x.flag} {x.code}</option>)}
-                        </select>
+                        {/* fixed-width wrapper so the dial select can't balloon over the number field */}
+                        <div className="w-[116px] shrink-0">
+                          <select value={dial} onChange={(e) => setDial(e.target.value)} disabled={otpSent} className={`${field} appearance-none`}>
+                            {DIAL.map((x) => <option key={x.code} value={x.code} className="bg-[#191510]">{x.flag} {x.code}</option>)}
+                          </select>
+                        </div>
                         <input value={num} onChange={(e) => setNum(e.target.value.replace(/[^\d\s]/g, ""))} disabled={otpSent} inputMode="tel" placeholder="98xxxxxx21" className={`${field} min-w-0 flex-1`} />
                       </div>
                     </div>
@@ -424,6 +428,10 @@ function Landing({ openWizard, eyebrow, btnPrimary }: { openWizard: () => void; 
           </div>
         </div>
       </section>
+
+      {/* The footer belongs to the marketing landing only — the wizard and the
+         confirmation stay an immersive, distraction-free dark room. */}
+      <Footer precededByDark />
     </>
   );
 }

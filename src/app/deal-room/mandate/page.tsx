@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import DealRoomMandate from "@/components/dealroom/DealRoomMandate";
-import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
   // Path-relative canonical — without it Next emits the bare root URL as this
@@ -28,11 +27,8 @@ export const metadata: Metadata = {
 
 export default function DealRoomMandatePage() {
   return (
-    <>
-      <main>
-        <DealRoomMandate />
-      </main>
-      <Footer precededByDark />
-    </>
+    <main>
+      <DealRoomMandate />
+    </main>
   );
 }
