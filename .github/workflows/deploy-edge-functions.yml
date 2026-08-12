@@ -34,6 +34,11 @@ jobs:
       # function has to be added here consciously — and so one function
       # failing to bundle cannot silently skip the others.
       - run: supabase functions deploy challenge-router --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
+      # Deal Room step 2: the project's current resale price, grounded in live
+      # Google Search (gemini-2.5-pro, thinking on) — reuses GEMINI_API_KEY.
+      # --no-verify-jwt: the browser calls it with the anon key like the other
+      # public functions; it holds no secret beyond the model key it owns.
+      - run: supabase functions deploy resale-price --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
       - run: supabase functions deploy capture-lead --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
       - run: supabase functions deploy chat-signin --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
       # Twilio Verify for non-+91 numbers. --no-verify-jwt: the browser calls

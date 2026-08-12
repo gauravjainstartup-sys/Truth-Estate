@@ -29,6 +29,7 @@ import { saveLead, isSignedIn, loadAccount } from "@/lib/journey";
 import { getSession, signInWithGoogle } from "@/lib/phoneAuth";
 import { sendOtp, verifyOtp, OTP_LENGTH } from "@/lib/shortlistAuth";
 import { saveMandate } from "@/lib/dealRoomMandate";
+import { fetchResalePrice } from "@/lib/resalePrice";
 
 /* Cohort capacity is real — keep SEATS_CLAIMED truthful and bump it by hand as
    mandates land (concierge-maintained). Scarcity must never be faked. */
@@ -62,6 +63,11 @@ export default function DealRoomMandate() {
   const [step, setStep] = useState(0);
   const [d, setD] = useState<Draft>(emptyDraft);
   const [projectNames, setProjectNames] = useState<string[]>([]); // type-ahead suggestions (free text still allowed)
+  // Current resale price for the chosen project (live, via Gemini). null = not
+  // resolved, "" = checked but nothing reliable found, "₹…" = a real figure.
+  const [resale, setResale] = useState<string | null>(null);
+  const [resaleLoading, setResaleLoading] = useState(false);
+  const resaleFetchedFor = useRef("");
 
   // auth (buyer step)
   const [dial, setDial] = useState("+91");
@@ -94,6 +100,27 @@ export default function DealRoomMandate() {
     } catch { /* a bad draft must never break the page */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /* On step 2, pull the project's current resale price once per project+city.
+     Fired here (not on submit) so it resolves in the background while the buyer
+     reads and types their target. Grounded server-side; "" means show nothing. */
+  useEffect(() => {
+    if (step !== 1) return;
+    const proj = d.project.trim();
+    if (!proj) return;
+    const key = `${proj}|${d.city}`;
+    if (resaleFetchedFor.current === key) return;
+    resaleFetchedFor.current = key;
+    setResale(null);
+    setResaleLoading(true);
+    let alive = true;
+    fetchResalePrice(proj, d.city).then((price) => {
+      if (!alive) return;
+      setResale(price);
+      setResaleLoading(false);
+    });
+    return () => { alive = false; };
+  }, [step, d.project, d.city]);
 
   function openWizard() {
     setScreen("wizard"); setStep(0); setErr("");
@@ -275,14 +302,28 @@ export default function DealRoomMandate() {
                       <input value={d.target} onChange={(e) => set("target", e.target.value)} inputMode="numeric" placeholder="2,10,00,000"
                         className="w-full rounded-2xl border border-[#c9a96e]/25 bg-[#191510] py-5 pl-12 pr-5 font-serif text-[1.9rem] leading-none text-[#f4efe6] placeholder-[#4a453d] outline-none transition-colors focus:border-[#c9a96e]" />
                     </div>
-                    {/* Honest market read: a promise to ground the number, not an invented one. */}
-                    <div className="mt-4 rounded-xl border border-[#c9a96e]/20 bg-gradient-to-b from-[#221c13] to-[#1d1811] p-5">
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-[0.58rem] uppercase tracking-[0.16em] text-[#c9a96e]">The market read</span>
-                        <span className="rounded-full border border-[#c9a96e]/30 px-2.5 py-1 font-mono text-[0.56rem] uppercase tracking-[0.06em] text-[#a9a196]">on your call</span>
+                    {/* simple helper text (replaces the old two-line write-up) */}
+                    <p className="mt-3 text-[0.78rem] text-[#6f685c]">The number you&apos;d be thrilled to close at — we ground it against the market before we float.</p>
+
+                    {/* Why we're superior: the project's CURRENT resale price, pulled live
+                        (Gemini top model + Google Search grounding) so the target reads as
+                        the number we drive the market BELOW. Hidden unless a real figure comes back. */}
+                    {resaleLoading && (
+                      <p className="mt-4 flex items-center gap-2 text-[0.82rem] text-[#a9a196]">
+                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#c9a96e]/30 border-t-[#c9a96e]" aria-hidden />
+                        Reading the live market for {d.project.trim() || "this project"}…
+                      </p>
+                    )}
+                    {!resaleLoading && resale ? (
+                      <div className="mt-4 overflow-hidden rounded-xl border border-[#c9a96e]/20 bg-gradient-to-b from-[#221c13] to-[#1d1811] p-5">
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-[0.58rem] uppercase tracking-[0.16em] text-[#c9a96e]">Current market resale</span>
+                          <span className="rounded-full border border-[#c9a96e]/30 px-2.5 py-1 font-mono text-[0.56rem] uppercase tracking-[0.06em] text-[#a9a196]">live · indicative</span>
+                        </div>
+                        <p className="mt-2.5 font-serif text-[1.5rem] leading-none text-[#e7cf95]">{resale}</p>
+                        <p className="mt-2.5 text-[0.8rem] leading-relaxed text-[#6f685c]">Typical asking price for <span className="text-[#a9a196]">{d.project.trim() || "this project"}</span> in today&apos;s resale market. Your target is the number we push the market below — that gap is the win.</p>
                       </div>
-                      <p className="mt-3 text-[0.86rem] leading-relaxed text-[#a9a196]">Before we float, your advisor grounds your target against <span className="text-[#f4efe6]">{d.project.trim() || "the project"}</span>&apos;s filed rates and recent closings — and tells you honestly how hard your number is to hit. No broker&apos;s guess; the actual record.</p>
-                    </div>
+                    ) : null}
                   </div>
 
                   {/* the context, secondary */}
