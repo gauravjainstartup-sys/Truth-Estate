@@ -9,6 +9,7 @@ import { fmtPsf, pillars, priceJourney, deliveryOutlook, roiModel, type ProjectI
 import { streetAddress } from "./ProjectOptionCard";
 import { compareTitle, type ResolvedCompare } from "@/lib/compare";
 import { basePath, homeHref } from "@/lib/site";
+import { useUnlocked, Gate, LockRow, LockLines, LockPill, CompareUnlock } from "./CompareGate";
 
 
 const rateVal = (r: FinRating) => (r === "strong" ? 3 : r === "moderate" ? 2 : 1);
@@ -195,6 +196,9 @@ function ProjectHead({ p }: { p: ProjectIntel }) {
 
 function ProjectCompare({ r }: { r: Extract<ResolvedCompare, { kind: "project" }> }) {
   const { a, b } = r;
+  // Lead gate — project↔project only. Signed in reveals every gated block; the
+  // page is otherwise fully public, so this is conversion, not access control.
+  const unlocked = useUnlocked();
   const winner = a.truthScore >= b.truthScore ? a : b;
   const other = winner === a ? b : a;
 
@@ -258,15 +262,24 @@ function ProjectCompare({ r }: { r: Extract<ResolvedCompare, { kind: "project" }
           b={jb ? `₹${kNum(jb.currentLow)}K–${kNum(jb.currentHigh)}K` : b.psf ? `₹${kNum(b.psf.avg)}K avg` : "—"}
           subA={ja ? `from ₹${kNum(ja.launchPsf)}K at launch` : undefined}
           subB={jb ? `from ₹${kNum(jb.launchPsf)}K at launch` : undefined} />
-        <Row label="Premium since launch"
-          a={ja ? `+${ja.premiumPct}%` : "—"} b={jb ? `+${jb.premiumPct}%` : "—"}
-          subA={ja ? `over ${ja.years} yrs` : undefined} subB={jb ? `over ${jb.years} yrs` : undefined}
-          win={ja && jb ? winHigher(ja.premiumPct, jb.premiumPct) : undefined} />
-        <Row label="5-yr growth outlook"
-          a={olA ?? "—"} b={olB ?? "—"}
-          subA={olA ? "exact CAGR inside the report" : undefined}
-          subB={olB ? "exact CAGR inside the report" : undefined}
-          win={olA && olB ? winHigher(OUTLOOK_VAL[olA], OUTLOOK_VAL[olB]) : undefined} />
+        <Gate
+          open={unlocked}
+          tease={
+            <Row label="Premium since launch"
+              a={ja ? `+${ja.premiumPct}%` : "—"} b={jb ? `+${jb.premiumPct}%` : "—"}
+              subA={ja ? `over ${ja.years} yrs` : undefined} subB={jb ? `over ${jb.years} yrs` : undefined}
+              win={ja && jb ? winHigher(ja.premiumPct, jb.premiumPct) : undefined} />
+          }
+          full={
+            <Row label="5-yr growth outlook"
+              a={olA ?? "—"} b={olB ?? "—"}
+              subA={olA ? "exact CAGR inside the report" : undefined}
+              subB={olB ? "exact CAGR inside the report" : undefined}
+              win={olA && olB ? winHigher(OUTLOOK_VAL[olA], OUTLOOK_VAL[olB]) : undefined} />
+          }
+          locked={<LockRow label="5-yr growth outlook" />}
+          invite={<CompareUnlock />}
+        />
       </Section>
 
       <Section title="The build">
@@ -296,9 +309,15 @@ function ProjectCompare({ r }: { r: Extract<ResolvedCompare, { kind: "project" }
       </Section>
 
       <Section title="Trust, pillar by pillar" note="The same five-pillar model that builds the Truth Score — weighted 28 · 22 · 22 · 18 · 10.">
-        {pilA.map((pl, i) => (
-          <Row key={pl.key} label={pl.label} a={<PillarVal pl={pl} />} b={<PillarVal pl={pilB[i]} />} win={winHigher(pl.score, pilB[i].score)} />
-        ))}
+        <Gate
+          open={unlocked}
+          tease={<Row key={pilA[0].key} label={pilA[0].label} a={<PillarVal pl={pilA[0]} />} b={<PillarVal pl={pilB[0]} />} win={winHigher(pilA[0].score, pilB[0].score)} />}
+          full={pilA.slice(1).map((pl, i) => (
+            <Row key={pl.key} label={pl.label} a={<PillarVal pl={pl} />} b={<PillarVal pl={pilB[i + 1]} />} win={winHigher(pl.score, pilB[i + 1].score)} />
+          ))}
+          locked={pilA.slice(1).map((pl) => <LockRow key={pl.key} label={pl.label} />)}
+          invite={<LockPill label="All five pillars, side by side" />}
+        />
       </Section>
 
       {(a.strengths.length > 0 || b.strengths.length > 0) && (
@@ -312,10 +331,21 @@ function ProjectCompare({ r }: { r: Extract<ResolvedCompare, { kind: "project" }
 
       {(a.watchouts.length > 0 || b.watchouts.length > 0) && (
         <Section title="Watch-outs">
-          <div className="mt-2 grid gap-5 md:grid-cols-2">
-            {a.watchouts.length > 0 && <PointCol name={a.name} items={a.watchouts} tone="watch" />}
-            {b.watchouts.length > 0 && <PointCol name={b.name} items={b.watchouts} tone="watch" />}
-          </div>
+          {unlocked ? (
+            <div className="mt-2 grid gap-5 md:grid-cols-2">
+              {a.watchouts.length > 0 && <PointCol name={a.name} items={a.watchouts} tone="watch" />}
+              {b.watchouts.length > 0 && <PointCol name={b.name} items={b.watchouts} tone="watch" />}
+            </div>
+          ) : (
+            <div className="relative">
+              <div aria-hidden className="pointer-events-none [-webkit-mask-image:linear-gradient(180deg,#000_0,transparent_88%)] [mask-image:linear-gradient(180deg,#000_0,transparent_88%)]">
+                <LockLines />
+              </div>
+              <div className="relative z-10 -mt-14 flex justify-center">
+                <LockPill label="Every red flag, both sides" />
+              </div>
+            </div>
+          )}
         </Section>
       )}
     </>
