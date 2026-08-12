@@ -25,6 +25,8 @@ import {
   type Peer,
   type UnitIntel,
 } from "@/lib/challengeChat";
+import { linkify, type ChatLink } from "@/lib/chatLinks";
+import { basePath } from "@/lib/site";
 
 export default function ChallengeChat({
   p, open, onClose, locked, onUnlock, has3DModel, has3DAccess, onUnlock3D,
@@ -43,6 +45,7 @@ export default function ChallengeChat({
   const [typing, setTyping] = useState(false);
   const [peers, setPeers] = useState<Peer[]>([]);
   const [units, setUnits] = useState<UnitIntel[]>([]);
+  const [links, setLinks] = useState<ChatLink[]>([]);
   const [loaded, setLoaded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -60,7 +63,7 @@ export default function ChallengeChat({
   useEffect(() => {
     if (!open) return;
     setTimeout(() => inputRef.current?.focus(), 350);
-    if (!loaded) loadChatData(p).then(({ peers: pr, units: u }) => { setPeers(pr); setUnits(u); setLoaded(true); }).catch(() => {});
+    if (!loaded) loadChatData(p).then(({ peers: pr, units: u, links: lk }) => { setPeers(pr); setUnits(u); setLinks(lk); setLoaded(true); }).catch(() => {});
   }, [open, p, loaded]);
 
   // when the visitor unlocks mid-conversation, celebrate + invite the deep ask
@@ -137,7 +140,7 @@ export default function ChallengeChat({
               </div>
             ) : (
               <div key={m.id}>
-                <Bubble>{m.text}</Bubble>
+                <Bubble>{linkify(m.text, links, basePath)}</Bubble>
                 {m.gate && (
                   <button
                     onClick={m.gate === "3d" ? onUnlock3D : onUnlock}
