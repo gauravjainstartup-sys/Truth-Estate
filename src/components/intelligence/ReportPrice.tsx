@@ -47,6 +47,12 @@ export default function ReportPrice({ p, sample = false }: { p: ProjectIntel; sa
 
   const r: RoiResult = useMemo(() => computeRoi(roiInputFor(p, holdYears, today)), [p, holdYears, today]);
   const outlook: "Low" | "Medium" | "High" = r.expectedCagr >= 11 ? "High" : r.expectedCagr >= 9 ? "Medium" : "Low";
+  // "Perfect time to exit": under a construction-linked buy the annualised
+  // return (XIRR) is sharpest around possession — you stop paying in and realise
+  // the appreciation, and post-possession rent (2.5%) trails the price CAGR, so a
+  // longer hold trades XIRR for absolute gain + yield. We surface the possession
+  // window as that inflection, not a spurious single "optimal year".
+  const exitLabel = p.ops?.construction?.predictedDate ?? (today ? `~${r.yearsToPossession.toFixed(1)} yrs out` : "at possession");
 
   if (!journey && !roi) return null;
 
@@ -167,6 +173,20 @@ export default function ReportPrice({ p, sample = false }: { p: ProjectIntel; sa
                   <b className="font-semibold text-[#1a1a1a]">Your cash works harder than the price grows.</b> You pay in instalments as it&apos;s built and earn ~{DEFAULT_ROI_PARAMS.rentalYield}% rent once it&apos;s ready, so your real return on the money you deploy (XIRR) is about <b className="font-semibold text-[#1e6b45]">{r.riskAdjustedXirr.toFixed(1)}% / yr</b>.
                 </p>
               )}
+            </div>
+
+            {/* rental yield + when-to-exit — the two things buyers ask after the headline */}
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-[#1a1a1a]/10 bg-[#FBF8F2] p-4">
+                <p className="text-[0.56rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/45">Rental yield · once ready</p>
+                <p className="mt-1 font-serif text-[1.7rem] leading-none tabular-nums text-[#1a1a1a]">~{DEFAULT_ROI_PARAMS.rentalYield}<span className="text-[0.8rem] text-[#1a1a1a]/40">% / yr</span></p>
+                <p className="mt-1.5 text-[0.72rem] font-light leading-[1.5] text-[#1a1a1a]/55">On the finished flat&apos;s value{today && r.rentableYears > 0.4 ? ` — about ${r.rentableYears.toFixed(0)} rentable ${r.rentableYears < 1.5 ? "year" : "years"} in this ${holdYears}-yr hold` : ", once it's handed over"}. Already folded into the XIRR above.</p>
+              </div>
+              <div className="rounded-xl border border-[#1a1a1a]/10 bg-[#FBF8F2] p-4">
+                <p className="text-[0.56rem] font-medium uppercase tracking-[0.14em] text-[#1a1a1a]/45">Sharpest exit · peak XIRR</p>
+                <p className="mt-1 font-serif text-[1.7rem] leading-none text-[#1a1a1a]">{exitLabel}</p>
+                <p className="mt-1.5 text-[0.72rem] font-light leading-[1.5] text-[#1a1a1a]/55">Your annualised return peaks around possession. Hold beyond it to keep compounding and earn rent — more total gain, a little less per year.</p>
+              </div>
             </div>
 
             {/* anchors */}
