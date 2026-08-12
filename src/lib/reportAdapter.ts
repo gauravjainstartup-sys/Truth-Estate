@@ -1054,12 +1054,19 @@ export function liveProjectIntel(
 
   /* ── ROI model — the pipeline's own projection replaces the corridor
      approximation wherever the view has computed it ── */
+  /* Gate on a CAGR, NOT on the ticket. adjCagr is the whole point of the live
+     model, and it is price-independent — a row can carry expected_cagr_num +
+     roi_ideal_cagr but no filed price (roi_property_cost_cr / min_price all
+     null), as the Krisumi rows do. The old gate also required roiCostCr, so
+     those rows fell through to the corridor fallback in projects.ts (which
+     re-introduced the delay-penalised ~2.7% this model exists to replace). We
+     now build on the CAGR and null the ₹-value projections when there is no
+     ticket to grow — the numbers stay honest (no invented entry price). */
+  const cagrSrc = row.expectedCagrNum ?? row.roiIdealCagr;
   const liveRoi: RoiModel | undefined =
-    row.roiIdealCagr != null && row.roiActualCagr != null && row.roiCostCr != null
+    cagrSrc != null
       ? (() => {
-          const ticketCr = Math.round(row.roiCostCr! * 10) / 10;
           const horizonYears = row.roiExitYears ?? 5;
-          const grow = (r: number) => Math.round(ticketCr * Math.pow(1 + r / 100, horizonYears) * 100) / 100;
           /* benchCagr = the corridor/city base rate. adjCagr = our Truth-Score-
              adjusted expected CAGR (expected_cagr_num). A delivery DELAY is an
              execution risk surfaced in the construction timeline — it is NOT
@@ -1068,8 +1075,13 @@ export function liveProjectIntel(
              pathological near-zero/negative rates on delayed projects: a 3-yr-late
              tower still sits in a corridor compounding ~11%, the buyer just waits
              longer to realise it — that belongs in the timeline, not the rate.) */
-          const benchCagr = Math.round((row.roiCityCagr ?? row.roiIdealCagr!) * 10) / 10;
-          const adjCagr = Math.round((row.expectedCagrNum ?? row.roiIdealCagr!) * 10) / 10;
+          const benchCagr = Math.round((row.roiCityCagr ?? row.roiIdealCagr ?? cagrSrc) * 10) / 10;
+          const adjCagr = Math.round(cagrSrc * 10) / 10;
+          /* ticket only drives the ₹ projections; absent price → null values. */
+          const ticketRaw = row.roiCostCr ?? row.minPriceCr;
+          const ticketCr = ticketRaw != null ? Math.round(ticketRaw * 10) / 10 : null;
+          const grow = (r: number): number | null =>
+            ticketCr != null ? Math.round(ticketCr * Math.pow(1 + r / 100, horizonYears) * 100) / 100 : null;
           const benchValueCr = grow(benchCagr);
           const adjValueCr = grow(adjCagr);
           return {
@@ -1080,7 +1092,7 @@ export function liveProjectIntel(
             ticketCr,
             benchValueCr,
             adjValueCr,
-            deltaCr: Math.round((adjValueCr - benchValueCr) * 100) / 100,
+            deltaCr: adjValueCr != null && benchValueCr != null ? Math.round((adjValueCr - benchValueCr) * 100) / 100 : null,
           };
         })()
       : undefined;

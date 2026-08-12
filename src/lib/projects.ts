@@ -761,10 +761,13 @@ export type RoiModel = {
   corridor3Y: string;
   benchCagr: number;
   adjCagr: number;
-  ticketCr: number;
-  benchValueCr: number;
-  adjValueCr: number;
-  deltaCr: number;
+  /* The ₹-value projections need an entry price; a handful of live rows carry a
+     CAGR but no ticket (no filed price yet), so these are null there — the CAGR
+     still stands (it is price-independent). Consumers must guard on null. */
+  ticketCr: number | null;
+  benchValueCr: number | null;
+  adjValueCr: number | null;
+  deltaCr: number | null;
 };
 
 export function roiModel(p: ProjectIntel): RoiModel | null {

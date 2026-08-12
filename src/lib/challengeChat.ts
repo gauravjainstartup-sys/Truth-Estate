@@ -282,7 +282,7 @@ export function answerChallenge(
       if (locked) return gate(`This is the number most buyers come for. ${market ? `The ${p.marketShort} corridor's tracked 3-year appreciation is ${market.appreciation3Y}. ` : ""}The exact ${roi?.horizonYears ?? 5}-year CAGR we project for ${p.name} — at the benchmark and on an execution-adjusted basis — and whether it beats the corridor, is inside the read.`);
       return open(
         roi
-          ? `Anchored to the corridor's tracked 3-year appreciation of ${roi.corridor3Y}, our ${roi.horizonYears}-year model projects ~${roi.adjCagr}% CAGR (Truth-Score-adjusted) against a ~${roi.benchCagr}% corridor benchmark — a ${ticket} entry modelling to ~${inr(roi.adjValueCr)} Cr; delivery delay is tracked in the timeline, not netted off the rate. A modelled outcome, not a guarantee.`
+          ? `Anchored to the corridor's tracked 3-year appreciation of ${roi.corridor3Y}, our ${roi.horizonYears}-year model projects ~${roi.adjCagr}% CAGR (Truth-Score-adjusted) against a ~${roi.benchCagr}% corridor benchmark${roi.adjValueCr != null ? ` — a ${ticket} entry modelling to ~${inr(roi.adjValueCr)} Cr` : ""}; delivery delay is tracked in the timeline, not netted off the rate. A modelled outcome, not a guarantee.`
           : `We don't have a published ROI model for ${p.name} yet, so I won't invent a number. The corridor read in the Location section is your best guide.`,
       );
 
@@ -407,7 +407,7 @@ export function buildChallengeContext(
   if (o?.construction) { const c = o.construction; paid.push(`CONSTRUCTION: ${c.actualPct}% built vs ${c.expectedPct}% expected, ${c.absorptionPct}% sold. Execution-adjusted handover ${c.predictedDate} vs RERA ${c.reraDate}.`); }
   if (market) paid.push(`LOCATION/MARKET: ${market.verdict} Tracked 3-yr appreciation ${market.appreciation3Y}. ${market.futureTrend}`);
   paid.push(`LEGAL: ${p.liveLegal?.headline ? `${p.liveLegal.headline}${p.liveLegal.keyFlags?.length ? ` Key flags: ${p.liveLegal.keyFlags.slice(0, 3).join("; ")}.` : ""}` : `Developer legal signal: ${p.anatomy.legal}${o?.reraId ? `; project RERA-registered (${o.reraId})` : ""}. Nothing critical outstanding on our current read.`}`);
-  if (roi) paid.push(`ROI MODEL: ${roi.horizonYears}-yr projection anchored to corridor 3-yr appreciation of ${roi.corridor3Y} — ~${roi.adjCagr}% CAGR (Truth-Score-adjusted) vs ~${roi.benchCagr}% corridor benchmark; delivery delay tracked in the timeline, not netted off the rate; ${ticketLabel(p)} entry models to ~₹${roi.adjValueCr} Cr. Modelled, not guaranteed.`);
+  if (roi) paid.push(`ROI MODEL: ${roi.horizonYears}-yr projection anchored to corridor 3-yr appreciation of ${roi.corridor3Y} — ~${roi.adjCagr}% CAGR (Truth-Score-adjusted) vs ~${roi.benchCagr}% corridor benchmark; delivery delay tracked in the timeline, not netted off the rate${roi.adjValueCr != null ? `; ${ticketLabel(p)} entry models to ~₹${roi.adjValueCr} Cr` : ""}. Modelled, not guaranteed.`);
   paid.push(`PRICING VERDICT: ${p.reason} Pricing & value graded ${p.anatomy.pricing}.`);
   if (p.watchouts?.length) paid.push(`RED FLAGS / WATCHOUTS: ${p.watchouts.join("; ")}.`);
   if (p.ops?.usps?.length) paid.push(`USPs: ${p.ops.usps.map((u) => u.title).join("; ")}.`);
