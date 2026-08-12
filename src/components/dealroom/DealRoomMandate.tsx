@@ -29,7 +29,7 @@ import { saveLead, isSignedIn, loadAccount } from "@/lib/journey";
 import { getSession, signInWithGoogle } from "@/lib/phoneAuth";
 import { sendOtp, verifyOtp, OTP_LENGTH } from "@/lib/shortlistAuth";
 import { saveMandate } from "@/lib/dealRoomMandate";
-import { fetchResalePrice } from "@/lib/resalePrice";
+import { fetchResalePrice, type ResalePrice } from "@/lib/resalePrice";
 
 /* Cohort capacity is real — keep SEATS_CLAIMED truthful and bump it by hand as
    mandates land (concierge-maintained). Scarcity must never be faked. */
@@ -46,15 +46,28 @@ const STAGES = ["Still exploring", "Comparing a few", "Finalised it"] as const;
 const TIMELINES = ["Within 30 days", "Within 60 days", "Within 90 days", "Flexible"];
 const FUNDING = ["Self-funded", "Home loan approved", "Home loan in process", "Not sure yet"];
 
+/* Buyer configurations. Real ones come from the selected project's filed unit
+   types (compare-index `configs`, i.e. the extended-assets data); this full
+   spread is the fallback when we track none for that project. */
+const DEFAULT_CONFIGS = ["1 BHK / Studio", "2 BHK", "3 BHK", "4 BHK", "5 BHK", "Penthouse"];
+
 const DRAFT_KEY = "truthEstate.dealRoomDraft";
 const PHASES = ["The asset", "The terms", "The buyer"];
 
+/* Indian digit grouping for a rupee amount (45000000 -> "4,50,00,000"). */
+function inrGroup(n: number): string {
+  const s = String(Math.max(0, Math.round(n)));
+  if (s.length <= 3) return s;
+  return s.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ",") + "," + s.slice(-3);
+}
+const digitsToNum = (s: string): number => Number((s || "").replace(/[^\d]/g, "")) || 0;
+
 type Draft = {
-  city: string; project: string; unit: string; stage: string;
+  city: string; project: string; config: string; unit: string; stage: string;
   target: string; timeline: string; funding: string; offer: string;
 };
 const emptyDraft: Draft = {
-  city: CITIES[0], project: "", unit: "", stage: "Finalised it",
+  city: CITIES[0], project: "", config: "", unit: "", stage: "Finalised it",
   target: "", timeline: TIMELINES[0], funding: FUNDING[0], offer: "",
 };
 
@@ -63,9 +76,10 @@ export default function DealRoomMandate() {
   const [step, setStep] = useState(0);
   const [d, setD] = useState<Draft>(emptyDraft);
   const [projectNames, setProjectNames] = useState<string[]>([]); // type-ahead suggestions (free text still allowed)
-  // Current resale price for the chosen project (live, via Gemini). null = not
-  // resolved, "" = checked but nothing reliable found, "₹…" = a real figure.
-  const [resale, setResale] = useState<string | null>(null);
+  const [projectConfigs, setProjectConfigs] = useState<Record<string, string[]>>({}); // name -> filed unit types
+  // Current market price for the chosen project+config (live, via Gemini).
+  // null = not resolved; text "" = checked, nothing reliable; else a figure/range.
+  const [resale, setResale] = useState<ResalePrice | null>(null);
   const [resaleLoading, setResaleLoading] = useState(false);
   const resaleFetchedFor = useRef("");
 
@@ -101,42 +115,58 @@ export default function DealRoomMandate() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* On step 2, pull the project's current resale price once per project+city.
-     Fired here (not on submit) so it resolves in the background while the buyer
-     reads and types their target. Grounded server-side; "" means show nothing. */
+  /* On step 2, pull the current market price for the chosen project + config,
+     once per unique combination. Fired here (not on submit) so it resolves in
+     the background while the buyer reads and sets their target. Grounded
+     server-side; a blank text means show nothing. */
   useEffect(() => {
     if (step !== 1) return;
     const proj = d.project.trim();
     if (!proj) return;
-    const key = `${proj}|${d.city}`;
+    const key = `${proj}|${d.city}|${d.config}`;
     if (resaleFetchedFor.current === key) return;
     resaleFetchedFor.current = key;
     setResale(null);
     setResaleLoading(true);
     let alive = true;
-    fetchResalePrice(proj, d.city).then((price) => {
+    fetchResalePrice(proj, d.city, d.config).then((r) => {
       if (!alive) return;
-      setResale(price);
+      setResale(r);
       setResaleLoading(false);
+      // Seed the target at ~10% below the market low when the buyer hasn't set
+      // one yet — a sensible "steal" starting point they can drag from.
+      if (r.low) setD((p) => (digitsToNum(p.target) === 0 ? { ...p, target: inrGroup(Math.round(r.low! * 0.9)) } : p));
     });
     return () => { alive = false; };
-  }, [step, d.project, d.city]);
+  }, [step, d.project, d.city, d.config]);
 
   function openWizard() {
     setScreen("wizard"); setStep(0); setErr("");
     track("deal_room_mandate_started", {});
     window.scrollTo(0, 0);
-    // Load tracked-project names for the step-1 type-ahead (free text still works).
+    // Load tracked project names (type-ahead) + their filed unit types (the
+    // config selector). Free text and the default configs both still work.
     if (projectNames.length === 0) {
       fetch(`${basePath}/compare-index.json`)
         .then((r) => (r.ok ? r.json() : null))
-        .then((idx: Record<string, { name?: string }> | null) => {
+        .then((idx: Record<string, { name?: string; configs?: string[] }> | null) => {
           if (!idx) return;
-          const names = Array.from(new Set(Object.values(idx).map((p) => p?.name).filter((n): n is string => !!n))).sort();
-          setProjectNames(names);
+          const entries = Object.values(idx).filter((p): p is { name: string; configs?: string[] } => !!p?.name);
+          setProjectNames(Array.from(new Set(entries.map((p) => p.name))).sort());
+          const cfg: Record<string, string[]> = {};
+          for (const p of entries) {
+            if (Array.isArray(p.configs) && p.configs.length) cfg[p.name] = p.configs;
+          }
+          setProjectConfigs(cfg);
         })
         .catch(() => { /* type-ahead is a nicety; free text always works */ });
     }
+  }
+  // The configurations to offer for the currently typed project: its filed unit
+  // types when we track them, else the full fallback spread.
+  function configsFor(project: string): string[] {
+    const c = projectConfigs[project.trim()];
+    return c && c.length ? c : DEFAULT_CONFIGS;
   }
   function go(n: number) { setStep(n); setErr(""); window.scrollTo(0, 0); }
 
@@ -153,12 +183,13 @@ export default function DealRoomMandate() {
       phone: how === "otp" ? `${dial} ${num}`.trim() : (s?.phone ?? ""),
       project: draft.project.trim() || undefined,
       intent: "deal-room",
-      message: `Deal Room mandate — ${draft.city} · target ${draft.target || "—"} · ${draft.timeline}`,
+      message: `Deal Room mandate — ${draft.city} · ${draft.project.trim() || "—"}${draft.config ? ` (${draft.config})` : ""} · target ${draft.target || "—"} · ${draft.timeline}`,
       payload: {
         kind: "deal-room-mandate",
         cohort: COHORT,
         city: draft.city,
         project: draft.project.trim(),
+        config: draft.config || null,
         unit: draft.unit.trim() || null,
         stage: draft.stage,
         targetPrice: draft.target.trim() || null,
@@ -174,6 +205,7 @@ export default function DealRoomMandate() {
     saveMandate({
       city: draft.city,
       project: draft.project.trim(),
+      config: draft.config,
       unit: draft.unit.trim(),
       stage: draft.stage,
       target: draft.target.trim(),
@@ -232,6 +264,17 @@ export default function DealRoomMandate() {
   const field = "w-full rounded-xl border border-[#c9a96e]/20 bg-[#191510] px-4 py-3.5 text-[1rem] text-[#f4efe6] placeholder-[#6f685c] outline-none transition-colors focus:border-[#c9a96e]";
   const eyebrow = "font-mono text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-[#c9a96e]";
 
+  // ── step-2 "steal deal → high entry" bar, anchored on the live market range ──
+  const targetNum = digitsToNum(d.target);
+  const mktLow = resale?.low ?? null;
+  const mktHigh = resale?.high ?? null;
+  const hasBar = mktLow != null && mktHigh != null;
+  const barMin = hasBar ? Math.round(mktLow! * 0.8) : 0; // "steal deal" floor (~20% below market low)
+  const barMax = hasBar ? Math.round(mktHigh! * 1.03) : 0; // "high entry" (~market top)
+  const barVal = hasBar ? Math.min(barMax, Math.max(barMin, targetNum || Math.round(mktLow! * 0.9))) : 0;
+  const barPct = (v: number) => (barMax > barMin ? Math.min(100, Math.max(0, ((v - barMin) / (barMax - barMin)) * 100)) : 0);
+  const mktMid = hasBar ? (mktLow! + mktHigh!) / 2 : 0;
+
   // The landing is the founder-frozen dark creative; it opens the flow in-page.
   if (screen === "landing") return <DealRoomLanding onEnter={openWizard} />;
 
@@ -265,7 +308,7 @@ export default function DealRoomMandate() {
                 <div>
                   <span className={eyebrow}>Step 1 of 3 · The asset</span>
                   <h2 className="mt-2 font-serif text-[1.85rem] font-medium leading-tight">Which home are you buying?</h2>
-                  <p className="mt-3 max-w-[50ch] text-[0.96rem] leading-relaxed text-[#a9a196]">Just the city and the project — we&apos;ll pin the exact unit together on the call.</p>
+                  <p className="mt-3 max-w-[50ch] text-[0.96rem] leading-relaxed text-[#a9a196]">The city, the project and the configuration — enough for us to read the market for you.</p>
                   <div className="mt-8 flex flex-col gap-7">
                     <div><span className={label}>City</span>
                       <select value={d.city} onChange={(e) => set("city", e.target.value)} className={`${field} appearance-none`}>
@@ -273,12 +316,21 @@ export default function DealRoomMandate() {
                       </select>
                     </div>
                     <div><span className={label}>Project name</span>
-                      <input value={d.project} onChange={(e) => set("project", e.target.value)} list="dr-projects" autoComplete="off" placeholder="Start typing — pick a tracked project, or type any name" className={field} />
+                      <input value={d.project} onChange={(e) => { set("project", e.target.value); set("config", ""); }} list="dr-projects" autoComplete="off" placeholder="Start typing — pick a tracked project, or type any name" className={field} />
                       <datalist id="dr-projects">{projectNames.map((n) => <option key={n} value={n} />)}</datalist>
                       {projectNames.length > 0 && <p className="mt-2 text-[0.72rem] text-[#6f685c]">{projectNames.length}+ tracked projects to pick from — or type any name.</p>}
                     </div>
+                    <div><span className={label}>Configuration</span>
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                        {configsFor(d.project).map((c) => (
+                          <button key={c} type="button" onClick={() => set("config", c)} aria-pressed={d.config === c}
+                            className={`rounded-xl border px-3 py-3 text-[0.84rem] transition-colors ${d.config === c ? "border-[#c9a96e] bg-[#c9a96e]/[0.12] text-[#e7cf95]" : "border-[#c9a96e]/20 bg-[#191510] text-[#a9a196] hover:border-[#c9a96e]/50 hover:text-[#f4efe6]"}`}>{c}</button>
+                        ))}
+                      </div>
+                      <p className="mt-2 text-[0.72rem] text-[#6f685c]">{projectConfigs[d.project.trim()]?.length ? "From this project’s filed unit types." : "Pick the configuration you’re buying."}</p>
+                    </div>
                     <div><span className={label}>Unit details <span className="ml-1 text-[#6f685c]">optional</span></span>
-                      <input value={d.unit} onChange={(e) => set("unit", e.target.value)} placeholder="Tower / floor / configuration, if you know it" className={field} />
+                      <input value={d.unit} onChange={(e) => set("unit", e.target.value)} placeholder="Tower / floor, if you know it" className={field} />
                     </div>
                   </div>
                   <div className="mt-9 flex justify-between">
@@ -314,16 +366,54 @@ export default function DealRoomMandate() {
                         Reading the live market for {d.project.trim() || "this project"}…
                       </p>
                     )}
-                    {!resaleLoading && resale ? (
+                    {/* Live market range + the "steal deal → high entry" bar. */}
+                    {!resaleLoading && hasBar && (
                       <div className="mt-4 overflow-hidden rounded-xl border border-[#c9a96e]/20 bg-gradient-to-b from-[#221c13] to-[#1d1811] p-5">
                         <div className="flex items-center justify-between">
-                          <span className="font-mono text-[0.58rem] uppercase tracking-[0.16em] text-[#c9a96e]">Current market resale</span>
+                          <span className="font-mono text-[0.58rem] uppercase tracking-[0.16em] text-[#c9a96e]">Current market {mktLow === mktHigh ? "price" : "range"}</span>
                           <span className="rounded-full border border-[#c9a96e]/30 px-2.5 py-1 font-mono text-[0.56rem] uppercase tracking-[0.06em] text-[#a9a196]">live · indicative</span>
                         </div>
-                        <p className="mt-2.5 font-serif text-[1.5rem] leading-none text-[#e7cf95]">{resale}</p>
-                        <p className="mt-2.5 text-[0.8rem] leading-relaxed text-[#6f685c]">Typical asking price for <span className="text-[#a9a196]">{d.project.trim() || "this project"}</span> in today&apos;s resale market. Your target is the number we push the market below — that gap is the win.</p>
+                        <p className="mt-2 font-serif text-[1.35rem] leading-none text-[#e7cf95]">{resale!.text}</p>
+                        <p className="mt-2 text-[0.76rem] text-[#6f685c]">What {d.project.trim() || "this project"}{d.config ? ` (${d.config})` : ""} trades at today. Slide to set the price you want us to hit.</p>
+
+                        <div className="relative mt-6 select-none">
+                          <div className="relative h-2.5 rounded-full bg-gradient-to-r from-[#1e6b45] via-[#c9a96e] to-[#8a5a2b]">
+                            {/* market band */}
+                            <div className="absolute inset-y-0 rounded-full bg-[#14110d]/35 ring-1 ring-inset ring-[#f4efe6]/40" style={{ left: `${barPct(mktLow!)}%`, right: `${100 - barPct(mktHigh!)}%` }} aria-hidden />
+                          </div>
+                          {/* thumb */}
+                          <div className="pointer-events-none absolute top-1/2 z-10 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#c9a96e] bg-[#f4efe6] shadow-[0_2px_8px_rgba(0,0,0,.55)]" style={{ left: `${barPct(barVal)}%` }} aria-hidden />
+                          {/* interactive range (invisible, on top) */}
+                          <input type="range" min={barMin} max={barMax} step={50000} value={barVal}
+                            onChange={(e) => set("target", inrGroup(Number(e.target.value)))}
+                            aria-label="Your target closing price"
+                            className="absolute inset-x-0 top-1/2 h-6 w-full -translate-y-1/2 cursor-pointer appearance-none bg-transparent opacity-0" />
+                        </div>
+                        <div className="mt-2.5 flex justify-between font-mono text-[0.56rem] uppercase tracking-[0.12em]">
+                          <span className="text-[#7fd0a3]">◀ Steal deal</span>
+                          <span className="text-[#d99a4e]">High entry ▶</span>
+                        </div>
+                        <div className="mt-3 border-t border-[#c9a96e]/10 pt-3">
+                          {(() => {
+                            const t = targetNum || barVal;
+                            let node;
+                            if (!t) node = <span className="text-[#6f685c]">slide to set your target.</span>;
+                            else if (t <= mktLow!) node = <span className="text-[#7fd0a3]">~{Math.max(1, Math.round(((mktMid - t) / mktMid) * 100))}% below market — a strong ask we go get.</span>;
+                            else if (t <= mktHigh!) node = <span className="text-[#d9b45e]">within today’s market range.</span>;
+                            else node = <span className="text-[#e6a189]">~{Math.round(((t - mktMid) / mktMid) * 100)}% above market — we’d aim lower.</span>;
+                            return <p className="text-[0.9rem] text-[#f4efe6]">Your target <b className="font-serif text-[1.05rem] text-[#e7cf95]">₹{inrGroup(t)}</b> — {node}</p>;
+                          })()}
+                        </div>
                       </div>
-                    ) : null}
+                    )}
+                    {/* Reliable figure but no parseable total (e.g. a rate) — show it, no bar. */}
+                    {!resaleLoading && resale?.text && !hasBar && (
+                      <div className="mt-4 overflow-hidden rounded-xl border border-[#c9a96e]/20 bg-gradient-to-b from-[#221c13] to-[#1d1811] p-5">
+                        <span className="font-mono text-[0.58rem] uppercase tracking-[0.16em] text-[#c9a96e]">Current market price</span>
+                        <p className="mt-2 font-serif text-[1.4rem] leading-none text-[#e7cf95]">{resale.text}</p>
+                        <p className="mt-2 text-[0.78rem] text-[#6f685c]">What {d.project.trim() || "this project"} trades at today. Your target is the number we push the market below.</p>
+                      </div>
+                    )}
                   </div>
 
                   {/* the context, secondary */}

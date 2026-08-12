@@ -22,7 +22,7 @@ export type FetchLike = (url: string, init: Record<string, unknown>) => Promise<
   text: () => Promise<string>;
 }>;
 
-export type ResaleBody = { project?: string; city?: string; model?: string; debug?: boolean };
+export type ResaleBody = { project?: string; city?: string; config?: string; model?: string; debug?: boolean };
 export type ResaleAnswer =
   | { ok: true; price: string; debug?: unknown }
   | { ok: false; debug?: unknown };
@@ -39,27 +39,27 @@ export function pickModel(requested: string | undefined, fallback: string): stri
    guess. Google Search grounding (wired in getResalePrice) gives it live
    listings; these rules make it decline rather than invent when the data
    isn't there. */
-export function resalePrompt(project: string, city: string): string {
+export function resalePrompt(project: string, city: string, config = ""): string {
   const where = city ? `${project}, ${city}` : project;
+  const unit = config.trim() ? `a ${config.trim()} unit` : "a standard unit";
   return [
-    `You are a precise real-estate data researcher. Use Google Search to find the CURRENT secondary-market (RESALE) price for ONE specific residential project. Search live listing portals (99acres, MagicBricks, Housing.com, NoBroker, Square Yards) and sources from roughly the last 6 months.`,
+    `You are a precise real-estate data researcher. Use Google Search to find the CURRENT MARKET PRICE for ONE specific residential project. Prefer the secondary (RESALE) market; if the project is too new to have resale trades, use the current selling / asking price. Search live listing portals (99acres, MagicBricks, Housing.com, NoBroker, Square Yards) and sources from roughly the last 6 months.`,
     ``,
     `PROJECT: "${project}"`,
     `CITY: "${city || "(not given — infer only if the project name is unambiguous)"}"`,
+    `CONFIGURATION: "${config.trim() || "(not given — price a standard unit)"}"`,
     ``,
-    `TASK: Report the typical current resale asking price for a standard unit in THIS EXACT project (${where}).`,
+    `TASK: Report the current market TOTAL price for ${unit} in THIS EXACT project (${where}), as a tight range — a typical low to a typical high for that configuration.`,
     ``,
     `NON-NEGOTIABLE RULES — a blank beats a wrong number:`,
-    `1. CORROBORATE. Only report a figure supported by at least two current, project-specific sources. Never substitute a sector/locality average or a different project's price.`,
-    `2. VERIFY IDENTITY. Confirm the listings are for THIS project and city, not a similarly named one elsewhere.`,
-    `3. REFUSE WHEN UNSURE. If you cannot find reliable, project-specific resale data, output exactly: NONE. Do not estimate, infer, extrapolate, or fall back to training data. Guessing is a failure.`,
-    `4. STAY TIGHT. Give the single most-cited figure. Only give a range if sources genuinely cluster within ~15%.`,
+    `1. CORROBORATE across at least two current, project-specific sources. Never substitute a sector/locality average or a different project's price.`,
+    `2. VERIFY IDENTITY — the listings must be THIS project in THIS city, not a similarly named one elsewhere.`,
+    `3. REFUSE WHEN UNSURE. If you cannot find reliable, project-specific data, output exactly: NONE. Never estimate, infer, extrapolate, or fall back to training data. Guessing is a failure.`,
+    `4. TOTAL PRICE ONLY — the all-in unit price, never per-square-foot. Keep the range tight: typical units, not the cheapest-to-priciest extremes.`,
     ``,
-    `OUTPUT — exactly ONE line, nothing else (no reasoning, no sources, no labels, no markdown):`,
-    `- A price with Indian comma grouping, prefixed with the rupee sign, plus a unit.`,
-    `- Total-price form:  ₹2,25,00,000`,
-    `- Per-square-foot form:  ₹18,500/sq ft`,
-    `- If BOTH a total and a per-sq-ft rate are well supported, output them comma-separated:  ₹2,25,00,000, ₹18,500/sq ft`,
+    `OUTPUT — exactly ONE line, nothing else (no per-sq-ft, no reasoning, no sources, no labels, no markdown):`,
+    `- A total-price range with Indian comma grouping:  ₹4,90,00,000 - ₹5,20,00,000`,
+    `- If only a single figure is reliable, give just it:  ₹5,03,00,000`,
     `- If no reliable data:  NONE`,
   ].join("\n");
 }
@@ -78,9 +78,10 @@ export function sanitizePrice(raw: string): string {
     "";
   line = line.replace(/^["'\s]+|["'\s.]+$/g, "");
   if (!line || /^none$/i.test(line) || !/\d/.test(line)) return "";
-  // A real answer is short. If the model added prose, salvage only the ₹ tokens.
+  // A real answer is short. If the model added prose, salvage the ₹ figure(s) —
+  // a range "₹A - ₹B" or a single "₹A".
   if (line.length > 60 || !/[₹]/.test(line)) {
-    const m = line.match(/₹\s?[\d,]+(?:\s*\/\s*sq\.?\s*ft)?(?:\s*,\s*₹\s?[\d,]+(?:\s*\/\s*sq\.?\s*ft)?)?/i);
+    const m = line.match(/₹\s?[\d,]+(?:\s*(?:[-–—]|to)\s*₹\s?[\d,]+)?/i);
     return m ? m[0].replace(/\s+/g, " ").trim() : "";
   }
   return line;
@@ -97,6 +98,7 @@ export async function getResalePrice(
 ): Promise<ResaleAnswer> {
   const project = (body.project ?? "").trim();
   const city = (body.city ?? "").trim();
+  const config = (body.config ?? "").trim();
   if (!project) {
     console.error("[resale-price] no project supplied");
     return { ok: false };
@@ -113,7 +115,7 @@ export async function getResalePrice(
       method: "POST",
       headers: { "content-type": "application/json", "x-goog-api-key": opts.apiKey },
       body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: resalePrompt(project, city) }] }],
+        contents: [{ role: "user", parts: [{ text: resalePrompt(project, city, config) }] }],
         /* Live web grounding is what makes "without hallucination" real — the
            model retrieves current listings instead of leaning on training
            data. No ungrounded fallback: if grounding is unavailable we return
@@ -150,6 +152,6 @@ export async function getResalePrice(
     return body.debug ? { ok: true, price: "", debug: { model, finish: finish ?? null, raw: "" } } : { ok: true, price: "" };
   }
   const price = sanitizePrice(text);
-  console.log(`[resale-price] model=${model} project="${project}" city="${city}" finish=${finish ?? "?"} -> ${price ? `"${price}"` : "(blank)"}`);
+  console.log(`[resale-price] model=${model} project="${project}" city="${city}" config="${config}" finish=${finish ?? "?"} -> ${price ? `"${price}"` : "(blank)"}`);
   return body.debug ? { ok: true, price, debug: { model, finish: finish ?? null, raw: text.slice(0, 500) } } : { ok: true, price };
 }

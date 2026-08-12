@@ -17,6 +17,7 @@ export const MANDATE_KEY = "truthEstate.dealRoomMandate";
 export type SavedMandate = {
   city: string;
   project: string;
+  config: string;
   unit: string;
   stage: string; // buyer readiness — "Still exploring" | "Comparing a few" | "Finalised it"
   target: string;

@@ -26,17 +26,25 @@ const eq = (a, b, m) => { assert.equal(a, b, `${m} (got ${JSON.stringify(a)})`);
 
 /* ── 1 · the prompt refuses rather than guesses ── */
 {
-  const p = resalePrompt("M3M Mansion", "Gurugram");
+  const p = resalePrompt("M3M Mansion", "Gurugram", "3 BHK");
   ok(p.includes("M3M Mansion") && p.includes("Gurugram"), "prompt carries project + city");
+  ok(p.includes("3 BHK"), "prompt carries the configuration");
   ok(/NONE/.test(p), "prompt tells the model to output NONE when unsure");
   ok(/Google Search/i.test(p), "prompt asks it to ground on Google Search");
-  ok(/comma/i.test(p) || p.includes("2,25,00,000"), "prompt specifies Indian comma format");
+  ok(/range/i.test(p) && /TOTAL PRICE ONLY/i.test(p), "prompt asks for a total-price range, no per-sq-ft");
+  ok(/comma/i.test(p), "prompt specifies Indian comma format");
+  ok(resalePrompt("X", "").includes("standard unit"), "prompt handles a missing configuration");
 }
 
 /* ── 2 · sanitizePrice defends the UI ── */
 {
   eq(sanitizePrice("₹2,25,00,000"), "₹2,25,00,000", "clean total passes through");
-  eq(sanitizePrice("₹2,25,00,000, ₹18,500/sq ft"), "₹2,25,00,000, ₹18,500/sq ft", "total + rate pass through");
+  eq(sanitizePrice("₹4,90,00,000 - ₹5,20,00,000"), "₹4,90,00,000 - ₹5,20,00,000", "total range passes through");
+  eq(
+    sanitizePrice("The current range is roughly ₹4,90,00,000 - ₹5,20,00,000 for a 3 BHK."),
+    "₹4,90,00,000 - ₹5,20,00,000",
+    "salvages a range out of prose",
+  );
   eq(sanitizePrice("`₹18,500/sq ft`"), "₹18,500/sq ft", "strips markdown backticks");
   eq(sanitizePrice("NONE"), "", "NONE → blank");
   eq(sanitizePrice("none"), "", "none → blank");
