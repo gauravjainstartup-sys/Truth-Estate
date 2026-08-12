@@ -134,7 +134,7 @@ export function CompareUnlock() {
       </span>
       <p className="mt-4 text-[0.62rem] font-bold uppercase tracking-[0.2em] text-[#9a7a2e]">Free · no card</p>
       <h3 className="mt-2.5 font-serif text-[1.4rem] font-medium leading-tight text-[#1a1a1a]">
-        {step === "phone" ? "See which one makes you more" : "Enter the code we just sent"}
+        {step === "phone" ? "See which one is the better buy" : "Enter the code we just sent"}
       </h3>
       <p className="mx-auto mt-2.5 max-w-[34ch] text-[0.84rem] font-light leading-relaxed text-[#1a1a1a]/60">
         {step === "phone"
