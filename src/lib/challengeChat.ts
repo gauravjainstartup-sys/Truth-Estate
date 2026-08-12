@@ -28,6 +28,7 @@ import {
   marketOf,
   rankContext,
 } from "@/lib/projects";
+import { buildChatLinks, type ChatLink } from "@/lib/chatLinks";
 import { AREA_ALIASES, type OmniIndex, type OmniUnit } from "@/lib/omni";
 import { READ_FROM_INR } from "@/lib/journey";
 import { basePath as BASE_PATH } from "@/lib/site";
@@ -69,9 +70,9 @@ async function fetchOmni(): Promise<OmniIndex | null> {
   return omniCache;
 }
 
-export async function loadChatData(p: ProjectIntel): Promise<{ peers: Peer[]; units: UnitIntel[] }> {
+export async function loadChatData(p: ProjectIntel): Promise<{ peers: Peer[]; units: UnitIntel[]; links: ChatLink[] }> {
   const idx = await fetchOmni();
-  if (!idx) return { peers: [], units: [] };
+  if (!idx) return { peers: [], units: [], links: [] };
   const me = idx.projects.find((x) => x.slug === p.slug);
   const myKey = corridorKey(me?.location) ?? corridorKey(p.market) ?? corridorKey(p.marketShort);
   const scored = idx.projects.filter((x) => x.slug !== p.slug && typeof x.score === "number" && (x.score ?? 0) > 0);
@@ -79,7 +80,7 @@ export async function loadChatData(p: ProjectIntel): Promise<{ peers: Peer[]; un
   const pool = (same.length >= 2 ? same : scored).sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, 3);
   const peers = pool.map((x) => ({ name: x.name, score: Math.round(x.score ?? 0), sameCorridor: !!myKey && corridorKey(x.location) === myKey }));
   const units = idx.units?.[p.slug] ?? [];
-  return { peers, units };
+  return { peers, units, links: buildChatLinks(idx.projects) };
 }
 
 function peerLine(p: ProjectIntel, peers: Peer[]): string {
