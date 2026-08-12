@@ -21,7 +21,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Logo from "@/components/Logo";
-import Footer from "@/components/Footer";
+import DealRoomLanding from "./DealRoomLanding";
 import OtpDigits from "@/components/auth/OtpDigits";
 import { basePath } from "@/lib/site";
 import { track } from "@/lib/events";
@@ -43,13 +43,6 @@ const DIAL = [
 const STAGES = ["Still exploring", "Comparing a few", "Finalised it"] as const;
 const TIMELINES = ["Within 30 days", "Within 60 days", "Within 90 days", "Flexible"];
 const FUNDING = ["Self-funded", "Home loan approved", "Home loan in process", "Not sure yet"];
-
-const STEPS = [
-  { id: "name your asset & mandate", n: "Step 1", h: "Name your asset & mandate", p: "The home you want, your target price, timeline and how you're funding it.", when: "~2 minutes" },
-  { id: "we call to lock it", n: "Step 2", h: "We call to lock it", p: "An advisor confirms the mandate, grounds your target against the real market, and floats it.", when: "within 24 hours" },
-  { id: "the market answers", n: "Step 3", h: "The market answers", p: "Brokers, owners and developers send written offers with the full cost break-up.", when: "2–4 days" },
-  { id: "you compare & pick", n: "Step 4", h: "You compare & pick", p: "Offers side by side against the market read. Like one? We set up the call and hold everyone to the record.", when: "you decide" },
-];
 
 const DRAFT_KEY = "truthEstate.dealRoomDraft";
 const PHASES = ["The asset", "The terms", "The buyer"];
@@ -183,15 +176,16 @@ export default function DealRoomMandate() {
   const field = "w-full rounded-xl border border-[#c9a96e]/20 bg-[#191510] px-4 py-3.5 text-[1rem] text-[#f4efe6] placeholder-[#6f685c] outline-none transition-colors focus:border-[#c9a96e]";
   const eyebrow = "font-mono text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-[#c9a96e]";
 
+  // The landing is the founder-frozen dark creative; it opens the flow in-page.
+  if (screen === "landing") return <DealRoomLanding onEnter={openWizard} />;
+
   return (
     <div className="min-h-screen bg-[#14110d] text-[#f4efe6]" style={{ fontFeatureSettings: '"ss01"' }}>
       {/* nav */}
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 md:px-10">
         <a href={`${basePath}/`} aria-label="Truth Estate — home"><Logo className="h-9 w-auto opacity-85" /></a>
-        <a href={`${basePath}/deal-room`} className="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-[#a9a196] transition-colors hover:text-[#f4efe6]">About the Deal Room</a>
+        <button onClick={() => { setScreen("landing"); window.scrollTo(0, 0); }} className="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-[#a9a196] transition-colors hover:text-[#f4efe6]">← The Deal Room</button>
       </nav>
-
-      {screen === "landing" && <Landing openWizard={openWizard} eyebrow={eyebrow} btnPrimary={btnPrimary} />}
 
       {screen === "wizard" && (
         <div className="mx-auto flex min-h-[calc(100dvh-96px)] max-w-5xl items-start px-6 pb-16 pt-6 md:items-center md:px-10">
@@ -360,7 +354,7 @@ export default function DealRoomMandate() {
           </p>
           <div className="mt-9 flex justify-center gap-4">
             <a href={`${basePath}/office`} className={btnPrimary}>Track my mandate →</a>
-            <a href={`${basePath}/deal-room`} className={btnGhost}>About the Deal Room</a>
+            <button onClick={() => { setScreen("landing"); window.scrollTo(0, 0); }} className={btnGhost}>Back to the Deal Room</button>
           </div>
         </div>
       )}
@@ -368,102 +362,3 @@ export default function DealRoomMandate() {
   );
 }
 
-/* ── the crawlable landing (initial static render) ── */
-function Landing({ openWizard, eyebrow, btnPrimary }: { openWizard: () => void; eyebrow: string; btnPrimary: string }) {
-  return (
-    <>
-      <header className="mx-auto max-w-6xl px-6 pb-14 pt-10 md:px-10">
-        <div className="grid items-center gap-14 md:grid-cols-[1.02fr_.98fr]">
-          <div>
-            <span className={eyebrow}>The Deal Room · {COHORT}</span>
-            <h1 className="mt-4 font-serif text-[clamp(2.2rem,4.6vw,3.4rem)] font-medium leading-[1.05]">You&apos;ve chosen the home. Let the market <span className="italic text-[#e7cf95]">fight</span> for the price.</h1>
-            <p className="mt-5 max-w-[34ch] text-[1.1rem] leading-snug">Name the asset. The market sends <span className="text-[#e7cf95]">written offers</span>. You pick.</p>
-            <div className="mt-8 flex flex-wrap items-center gap-4">
-              <button onClick={openWizard} className={btnPrimary}>Claim your seat →</button>
-              <span className="text-[0.8rem] text-[#6f685c]">2-minute mandate · we call you within 24 hours</span>
-            </div>
-            <div className="mt-8 max-w-[420px] rounded-2xl border border-[#c9a96e]/20 bg-gradient-to-b from-[#1d1811] to-[#191510] p-4">
-              <div className="flex items-baseline justify-between">
-                <span className="font-mono text-[0.62rem] uppercase tracking-[0.18em] text-[#a9a196]">{COHORT}</span>
-                <span className="font-mono text-[0.72rem] text-[#d99a4e]">{SEATS_TOTAL} seats this month</span>
-              </div>
-              <div className="mt-3 flex gap-1.5">
-                {Array.from({ length: SEATS_TOTAL }).map((_, i) => <span key={i} className={`h-[7px] flex-1 rounded-[3px] ${i < SEATS_CLAIMED ? "bg-gradient-to-r from-[#c9a96e] to-[#e7cf95]" : "bg-white/[0.06]"}`} />)}
-              </div>
-            </div>
-          </div>
-          <OffersLadder />
-        </div>
-      </header>
-
-      {/* how it works */}
-      <section className="border-t border-[#c9a96e]/10 py-14">
-        <div className="mx-auto max-w-6xl px-6 md:px-10">
-          <span className={eyebrow}>How the cohort works</span>
-          <h2 className="mt-3 font-serif text-[1.8rem] font-medium">Four steps. You do two minutes; we do the chasing.</h2>
-          <p className="mt-2 max-w-[52ch] text-[0.95rem] text-[#a9a196]">Concierge-run this month — a real advisor owns your mandate end to end.</p>
-          <div className="mt-8 grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
-            {STEPS.map((s) => (
-              <div key={s.id} className="rounded-2xl border border-[#c9a96e]/10 bg-[#1d1811] p-5">
-                <div className="font-mono text-[0.66rem] tracking-[0.1em] text-[#c9a96e]">{s.n}</div>
-                <h3 className="mt-3 font-serif text-[1.05rem] leading-tight">{s.h}</h3>
-                <p className="mt-1.5 text-[0.82rem] leading-relaxed text-[#a9a196]">{s.p}</p>
-                <div className="mt-3 font-mono text-[0.58rem] uppercase tracking-[0.1em] text-[#6f685c]">{s.when}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* trust */}
-      <section className="border-t border-[#c9a96e]/10 py-14">
-        <div className="mx-auto max-w-6xl px-6 md:px-10">
-          <span className={eyebrow}>Why you can trust the room</span>
-          <h2 className="mt-3 font-serif text-[1.8rem] font-medium">Neutral by design.</h2>
-          <p className="mt-2 max-w-[56ch] text-[0.95rem] text-[#a9a196]">We already publish forensic reads on 300+ NCR projects and take no money from any developer or broker. The Deal Room puts that same neutrality to work on your one deal.</p>
-          <div className="mt-6 flex flex-wrap gap-2.5">
-            {["Sellers pay us nothing — ever", "Every offer & promise on the record", "No upfront cost to join", "We earn only from what we save you"].map((t) => (
-              <span key={t} className="inline-flex items-center gap-2 rounded-full border border-[#c9a96e]/20 px-4 py-2 font-mono text-[0.68rem] text-[#a9a196]"><span className="h-[5px] w-[5px] rounded-full bg-[#c9a96e]" />{t}</span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* The footer belongs to the marketing landing only — the wizard and the
-         confirmation stay an immersive, distraction-free dark room. */}
-      <Footer precededByDark />
-    </>
-  );
-}
-
-/* Illustrative concept of how offers come back — clearly labelled, never a
-   claim about a specific asset. */
-function OffersLadder() {
-  const rows = [
-    { src: "Broker · RERA-verified", meta: "all-in · 90-day", price: "₹2.19 Cr", best: false },
-    { src: "Owner · direct resale", meta: "all-in · flexible", price: "₹2.12 Cr", best: false },
-    { src: "Channel partner", meta: "all-in · subvention", price: "₹2.08 Cr", best: false },
-    { src: "Owner · direct resale", meta: "all-in · 60-day · paperwork clean", price: "₹2.03 Cr", best: true },
-  ];
-  return (
-    <div className="rounded-3xl border border-[#c9a96e]/20 bg-gradient-to-b from-[#221c13] to-[#1d1811] p-6 shadow-[0_40px_90px_-50px_rgba(0,0,0,.9)]">
-      <div className="flex items-baseline justify-between">
-        <span className="font-mono text-[0.6rem] uppercase tracking-[0.2em] text-[#c9a96e]">Your mandate · live</span>
-        <span className="font-mono text-[0.62rem] text-[#6f685c]">illustrative</span>
-      </div>
-      <div className="mt-2 font-serif text-[1.05rem]">3 BHK · Tower B · Sector-quality project</div>
-      <div className="mb-4 font-mono text-[0.68rem] text-[#a9a196]">Your target <span className="text-[#f4efe6]">₹2.10 Cr</span> · market read <span className="text-[#f4efe6]">₹2.18–2.26 Cr</span></div>
-      {rows.map((r, i) => (
-        <div key={i} className={`mb-2.5 grid grid-cols-[1fr_auto] items-center gap-3 rounded-xl border px-3.5 py-3 ${r.best ? "border-[#2e8b57] bg-gradient-to-r from-[#1e6b45]/[0.16] to-[#191510]" : "border-[#c9a96e]/10 bg-[#191510]"}`}>
-          <div><div className="text-[0.82rem] font-medium">{r.src}</div><div className="font-mono text-[0.6rem] uppercase tracking-[0.04em] text-[#6f685c]">{r.meta}</div></div>
-          <div className={`text-right font-mono text-[0.98rem] ${r.best ? "text-[#e7cf95]" : ""}`}>{r.price}{r.best && <div className="text-[0.56rem] uppercase tracking-[0.06em] text-[#7fd0a3]">best offer</div>}</div>
-        </div>
-      ))}
-      <div className="mt-3.5 flex items-center justify-between border-t border-[#c9a96e]/10 pt-3.5">
-        <div className="font-serif text-[1.15rem] text-[#e7cf95]">₹7 lakh<span className="block font-mono text-[0.6rem] uppercase tracking-[0.14em] text-[#a9a196]">below your target</span></div>
-        <div className="max-w-[16ch] text-right font-mono text-[0.58rem] leading-relaxed text-[#6f685c]">4 written offers in 3 days · every promise recorded</div>
-      </div>
-      <div className="mt-3 text-center font-mono text-[0.56rem] tracking-[0.04em] text-[#6f685c]">Prices are all-in property cost — excl. GST, stamp duty &amp; registration.</div>
-    </div>
-  );
-}
