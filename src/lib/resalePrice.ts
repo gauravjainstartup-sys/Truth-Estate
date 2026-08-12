@@ -19,12 +19,14 @@ const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5ZXR2YWJmZ2FpZHZxcmJtYW95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MDI2MzEsImV4cCI6MjA5MzI3ODYzMX0.zJzqyfhANxChklw7bEiOc7PwSq2R9wiJIpS39wCYS_8";
 
 export type ResalePrice = {
+  status: "ok" | "error"; // "ok" = we heard back (text may still be ""); "error" = couldn't reach it
   text: string; // display string, e.g. "₹4,90,00,000 - ₹5,20,00,000" (or "" when unknown)
   low: number | null; // total ₹ low, when parseable
   high: number | null; // total ₹ high, when parseable
 };
 
-const EMPTY: ResalePrice = { text: "", low: null, high: null };
+const EMPTY_OK: ResalePrice = { status: "ok", text: "", low: null, high: null }; // heard back, no reliable price
+const ERR: ResalePrice = { status: "error", text: "", low: null, high: null }; // timeout / network / bad response
 
 /* Pull total-rupee figures out of the reply. Totals only — anything tagged
    "/sq ft" or smaller than ₹1,00,000 is ignored, so a stray rate never
@@ -46,7 +48,7 @@ export async function fetchResalePrice(
   timeoutMs = 60000, // grounded top-model lookups can spike; don't abort a valid answer
 ): Promise<ResalePrice> {
   const p = project.trim();
-  if (!p) return EMPTY;
+  if (!p) return EMPTY_OK;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
@@ -60,14 +62,15 @@ export async function fetchResalePrice(
       body: JSON.stringify({ project: p, city: city.trim(), config: config.trim() }),
       signal: ctrl.signal,
     });
-    if (!res.ok) return EMPTY;
+    if (!res.ok) return ERR;
     const data = (await res.json()) as { ok?: boolean; price?: string };
-    const text = data?.ok && typeof data.price === "string" ? data.price.trim() : "";
-    if (!text) return EMPTY;
-    return { text, ...parseTotals(text) };
+    if (!data?.ok) return ERR;
+    const text = typeof data.price === "string" ? data.price.trim() : "";
+    if (!text) return EMPTY_OK; // heard back, but no reliable price — show nothing
+    return { status: "ok", text, ...parseTotals(text) };
   } catch {
-    /* timeout, network, CORS, bad JSON — all mean "no number to show" */
-    return EMPTY;
+    /* timeout, network, CORS, bad JSON — a reachability problem, offer a retry */
+    return ERR;
   } finally {
     clearTimeout(timer);
   }

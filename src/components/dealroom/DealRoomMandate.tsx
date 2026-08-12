@@ -119,28 +119,31 @@ export default function DealRoomMandate() {
      once per unique combination. Fired here (not on submit) so it resolves in
      the background while the buyer reads and sets their target. Grounded
      server-side; a blank text means show nothing. */
-  useEffect(() => {
-    if (step !== 1) return;
+  function loadResale() {
     const proj = d.project.trim();
     if (!proj) return;
-    const key = `${proj}|${d.city}|${d.config}`;
-    if (resaleFetchedFor.current === key) return;
-    resaleFetchedFor.current = key;
+    resaleFetchedFor.current = `${proj}|${d.city}|${d.config}`;
     setResale(null);
     setResaleLoading(true);
-    let alive = true;
     fetchResalePrice(proj, d.city, d.config).then((r) => {
-      if (!alive) return;
       setResale(r);
       setResaleLoading(false);
-      // Nothing came back (timeout / miss) — clear the guard so re-entering the
-      // step tries again rather than staying blank forever.
-      if (!r.text) { resaleFetchedFor.current = ""; return; }
+      // Errors and misses must not stick — clear the guard so re-entering the
+      // step (or the "Check again" button) tries again instead of staying blank.
+      if (r.status === "error" || !r.text) { resaleFetchedFor.current = ""; return; }
       // Seed the target at ~10% below the market low when the buyer hasn't set
       // one yet — a sensible "steal" starting point they can drag from.
       if (r.low) setD((p) => (digitsToNum(p.target) === 0 ? { ...p, target: inrGroup(Math.round(r.low! * 0.9)) } : p));
     });
-    return () => { alive = false; };
+  }
+
+  useEffect(() => {
+    if (step !== 1) return;
+    const proj = d.project.trim();
+    if (!proj) return;
+    if (resaleFetchedFor.current === `${proj}|${d.city}|${d.config}`) return;
+    loadResale();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, d.project, d.city, d.config]);
 
   function openWizard() {
@@ -368,6 +371,13 @@ export default function DealRoomMandate() {
                         <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#c9a96e]/30 border-t-[#c9a96e]" aria-hidden />
                         Reading the live market for {d.project.trim() || "this project"}… <span className="text-[#6f685c]">a few seconds</span>
                       </p>
+                    )}
+                    {/* Reachability problem (timeout / network) — offer a retry rather than a silent blank. */}
+                    {!resaleLoading && resale?.status === "error" && (
+                      <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-[#c9a96e]/20 bg-[#1d1811] px-4 py-3">
+                        <span className="text-[0.82rem] text-[#a9a196]">Couldn&apos;t read the live market just now.</span>
+                        <button type="button" onClick={loadResale} className="shrink-0 rounded-lg border border-[#c9a96e]/40 px-3 py-1.5 font-mono text-[0.62rem] uppercase tracking-[0.12em] text-[#e7cf95] transition-colors hover:bg-[#c9a96e]/10">Check again</button>
+                      </div>
                     )}
                     {/* Live market range + the "steal deal → high entry" bar. */}
                     {!resaleLoading && hasBar && (
