@@ -337,14 +337,25 @@ function ProjectCompare({ r }: { r: Extract<ResolvedCompare, { kind: "project" }
               {b.watchouts.length > 0 && <PointCol name={b.name} items={b.watchouts} tone="watch" />}
             </div>
           ) : (
-            <div className="relative">
-              <div aria-hidden className="pointer-events-none [-webkit-mask-image:linear-gradient(180deg,#000_0,transparent_88%)] [mask-image:linear-gradient(180deg,#000_0,transparent_88%)]">
-                <LockLines />
+            /* Truth-brand: a company that sells the unflattering truth never
+               paywalls its warnings. Show ONE real red flag on each side even
+               when locked, then dissolve the rest behind the free unlock. */
+            <>
+              <div className="mt-2 grid gap-5 md:grid-cols-2">
+                {a.watchouts.length > 0 && <PointCol name={a.name} items={a.watchouts.slice(0, 1)} tone="watch" />}
+                {b.watchouts.length > 0 && <PointCol name={b.name} items={b.watchouts.slice(0, 1)} tone="watch" />}
               </div>
-              <div className="relative z-10 -mt-14 flex justify-center">
-                <LockPill label="Every red flag, both sides" />
-              </div>
-            </div>
+              {(a.watchouts.length > 1 || b.watchouts.length > 1) && (
+                <div className="relative mt-5">
+                  <div aria-hidden className="pointer-events-none [-webkit-mask-image:linear-gradient(180deg,#000_0,transparent_88%)] [mask-image:linear-gradient(180deg,#000_0,transparent_88%)]">
+                    <LockLines />
+                  </div>
+                  <div className="relative z-10 -mt-14 flex justify-center">
+                    <LockPill label="Every red flag, both sides" />
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </Section>
       )}
