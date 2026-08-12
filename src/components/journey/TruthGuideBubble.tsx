@@ -10,10 +10,17 @@ import { useJourney } from "./JourneyProvider";
 export default function TruthGuideBubble() {
   const { open, isOpen } = useJourney();
   const pathname = usePathname();
-  // Project detail pages render their own project-scoped "Challenge our read"
-  // (ProjectProfile) — suppress the generic site-wide bubble there so there's
-  // one, project-aware entry rather than two competing ones.
-  if (isOpen || pathname?.startsWith("/investors") || pathname?.startsWith("/projects/") || pathname?.startsWith("/intelligence/projects/") || pathname?.startsWith("/get-custom-project-report")) return null;
+  const p = pathname ?? "";
+  // Founder call: the site-wide TruthGuide lives ONLY on home, the Intelligence
+  // pages (markets, developers, compare, the projects index) and developer
+  // pages. Everywhere else — legal, about, vision, consultation/office, the
+  // custom-report flow, investors — carries no bubble.
+  const allowed = p === "/" || p.startsWith("/intelligence") || p.startsWith("/developers");
+  // Project REPORTS render their own project-scoped "Challenge our read"
+  // (ProjectProfile) — suppress the generic bubble there so there's one,
+  // project-aware entry rather than two competing ones.
+  const onProjectReport = p.startsWith("/projects/") || p.startsWith("/intelligence/projects/");
+  if (isOpen || !allowed || onProjectReport) return null;
   return (
     <>
       {/* Desktop — the full pill. */}

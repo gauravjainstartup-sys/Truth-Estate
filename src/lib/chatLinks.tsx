@@ -5,9 +5,10 @@
    corridor list), so it leaks nothing a locked visitor couldn't already see.
    Pure + reusable: the project chat and the (coming) site-wide chat share it. */
 import type { ReactNode } from "react";
-import type { OmniProject } from "@/lib/omni";
+import type { OmniIndex, OmniProject } from "@/lib/omni";
 import { developerSlugOf } from "@/lib/projects";
 import { MARKETS } from "@/lib/markets";
+import { basePath } from "@/lib/site";
 
 export type ChatLink = { name: string; href: string; kind: "project" | "developer" | "market" };
 
@@ -40,6 +41,24 @@ export function buildChatLinks(projects: OmniProject[]): ChatLink[] {
     if (m.short && m.short !== m.name) add(m.short, `/intelligence/markets/${m.slug}`, "market");
   }
   return links;
+}
+
+/* One-shot loader for the site-wide chat (which, unlike the project chat, has
+   no ProjectIntel to piggyback on). Fetches the same PUBLIC omni-index and
+   caches the built link table for the session. Empty on failure — links are a
+   progressive enhancement, never a blocker. */
+let linkCache: ChatLink[] | null = null;
+export async function loadChatLinks(): Promise<ChatLink[]> {
+  if (linkCache) return linkCache;
+  try {
+    const res = await fetch(`${basePath}/omni-index.json`, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return [];
+    const idx = (await res.json()) as OmniIndex;
+    linkCache = buildChatLinks(idx.projects ?? []);
+    return linkCache;
+  } catch {
+    return [];
+  }
 }
 
 const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
