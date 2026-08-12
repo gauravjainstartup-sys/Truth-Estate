@@ -7,10 +7,18 @@ on:
   workflow_dispatch:
   # Near-real-time publish: Supabase Database Webhook → the `publish-deploy`
   # Edge Function → this repository_dispatch. A DB edit rebuilds the site with
-  # fresh data (SNAPSHOT_REFRESH=1) in ~3–4 min, no manual step. The Edge
-  # Function debounces bursts so a bulk pipeline rewrite is one rebuild, not many.
-  repository_dispatch:
-    types: [supabase-data-changed]
+  # fresh data (SNAPSHOT_REFRESH=1) in ~3–4 min, no manual step.
+  # PAUSED 2026-08-12 — this was the open cached-egress hole. Each DB write
+  # triggered a full prebuild: snapshot-supabase (every view) + materialize-media
+  # (ALL project media re-downloaded from Supabase Storage, not just what
+  # changed). The Aug 10–11 data-pipeline writes fired it repeatedly → the
+  # cached-egress spike (2.45 GB on Aug 10). The per-burst debounce doesn't help
+  # writes spread over hours. New/updated projects still reach users via
+  # LiveProjectShell's live fetch; DB edits now publish to the static export only
+  # on a manual "Run workflow" (or restore auto-publish once materialize-media
+  # pulls incrementally). Re-enable by uncommenting the two lines below.
+  # repository_dispatch:
+  #   types: [supabase-data-changed]
   # Scheduled DATA refresh — the site is a static export, so this re-fetches
   # Supabase and redeploys, surfacing DB edits with no manual step. The schedule,
   # the manual "Run workflow" button, AND the repository_dispatch webhook re-pull
