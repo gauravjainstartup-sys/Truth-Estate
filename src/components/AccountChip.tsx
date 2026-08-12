@@ -31,10 +31,21 @@ function maskPhone(p: string | null | undefined): string {
 export default function AccountChip({
   onSignIn,
   className = "",
+  tone = "light",
 }: {
   onSignIn?: () => void;
   className?: string;
+  /* "dark" recolours the sign-in link + the initial ring for a dark header
+     (the Deal Room); the dropdown popover stays on cream either way. */
+  tone?: "light" | "dark";
 }) {
+  const dark = tone === "dark";
+  const linkTone = dark
+    ? "text-[#f4efe6]/70 hover:text-[#f4efe6]"
+    : "text-[#1a1a1a]/45 hover:text-[#1a1a1a]";
+  const ringTone = dark
+    ? "bg-[#c9a96e]/15 text-[#e7cf95] shadow-[inset_0_0_0_1.5px_#c9a96e]"
+    : "bg-[#1e6b45]/10 text-[#1e6b45] shadow-[inset_0_0_0_1.5px_#1e6b45]";
   /* Auth is localStorage, which does not exist during the prerender.
      Starting as "signed out" and correcting after mount is what keeps
      the server's markup and the client's first render identical. */
@@ -77,7 +88,7 @@ export default function AccountChip({
     return onSignIn ? (
       <button
         onClick={onSignIn}
-        className={`inline-flex items-center gap-1.5 text-[11px] font-light tracking-[0.16em] text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a] ${className}`}
+        className={`inline-flex items-center gap-1.5 text-[11px] font-light tracking-[0.16em] transition-colors ${linkTone} ${className}`}
       >
         <UserIcon className="h-[15px] w-[15px]" />
         <span className="hidden sm:inline">SIGN IN</span>
@@ -85,7 +96,7 @@ export default function AccountChip({
     ) : (
       <a
         href={`${basePath}/office`}
-        className={`inline-flex items-center gap-1.5 text-[11px] font-light tracking-[0.16em] text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a] ${className}`}
+        className={`inline-flex items-center gap-1.5 text-[11px] font-light tracking-[0.16em] transition-colors ${linkTone} ${className}`}
       >
         <UserIcon className="h-[15px] w-[15px]" />
         <span className="hidden sm:inline">SIGN IN</span>
@@ -112,7 +123,7 @@ export default function AccountChip({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Your account"
-        className="grid h-8 w-8 place-items-center rounded-full bg-[#1e6b45]/10 text-[12px] font-bold text-[#1e6b45] shadow-[inset_0_0_0_1.5px_#1e6b45] transition-opacity hover:opacity-80"
+        className={`grid h-8 w-8 place-items-center rounded-full text-[12px] font-bold transition-opacity hover:opacity-80 ${ringTone}`}
       >
         {name ? name.charAt(0).toUpperCase() : <UserIcon className="h-[15px] w-[15px]" />}
       </button>

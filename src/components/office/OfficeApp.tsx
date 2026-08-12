@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import Logo from "../Logo";
 import SignIn from "./SignIn";
 import { isSignedIn, clearAllDemoData, loadAccount, packageById, type BuyData } from "@/lib/journey";
+import { loadMandate, type SavedMandate } from "@/lib/dealRoomMandate";
 import { rankProjectsIntel } from "@/lib/shortlist";
 import { useMatchCatalog, useMatchMarket } from "@/lib/useMatchCatalog";
 import ProjectOptionCard from "../intelligence/ProjectOptionCard";
@@ -231,6 +232,7 @@ export default function OfficeApp({ section }: { section: SectionKey }) {
           {section === "home" && <DashboardHome name={loadAccount()?.name ?? null} onEditBrief={() => setBriefEditOpen(true)} refreshKey={briefVersion} />}
           {section === "requirements" && <RequirementsSection onEdit={() => setBriefEditOpen(true)} onPromote={promote} refreshKey={briefVersion} />}
           {section === "recommendations" && <RecommendationsSection thread={active} onActivate={() => setPayOpen(true)} />}
+          {section === "deal-room" && <DealRoomSection />}
           {section === "deal" && <DealSection thread={active} onAdvance={advanceTo} onActivate={() => setPayOpen(true)} />}
           {section === "advice" && <AdviceSection thread={active} onReschedule={(c) => patchThread(active.id, { call: c })} />}
           {section === "documents" && <DocumentsSection />}
@@ -270,6 +272,101 @@ function SectionHead({ kicker, title, sub }: { kicker: string; title: string; su
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <div className={`rounded-xl border border-[#1a1a1a]/[0.08] bg-white p-6 ${className}`}>{children}</div>;
+}
+
+/* ── Deal Room: the cohort mandate the buyer commissioned, tracked here.
+   Reads the mandate the flow mirrored to localStorage (dealRoomMandate.ts);
+   independent of the paid "My Deal" thread above. ── */
+const DR_PIPELINE: { t: string; when: string; body: string }[] = [
+  { t: "Mandate received", when: "", body: "Your brief is in — the asset, your target and your terms, on the record." },
+  { t: "The lock-in call", when: "within 24h", body: "An advisor confirms the mandate and grounds your target against filed rates and recent closings." },
+  { t: "We float it to the market", when: "day 1", body: "Verified brokers, owners and developers compete for you — you stay anonymous." },
+  { t: "Written offers land", when: "2–4 days", body: "All-in, in writing, posted here as they arrive." },
+  { t: "You compare, we connect", when: "when you’re ready", body: "Like an offer? We set up the meeting and keep every promise on the record." },
+];
+const DR_CURRENT = 1;
+
+function DealRoomSection() {
+  const [m, setM] = useState<SavedMandate | null | undefined>(undefined);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setM(loadMandate());
+  }, []);
+
+  if (m === undefined) return <SectionHead kicker="Deal Room" title="Your Deal Room" />;
+
+  if (!m) {
+    return (
+      <div>
+        <SectionHead kicker="Deal Room" title="No live mandate yet" sub="Commission a mandate and the market goes to work for you — every step tracked right here." />
+        <Link href="/deal-room" className="inline-flex items-center gap-2 rounded-sm bg-[#1e6b45] px-7 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">Start a Deal Room mandate →</Link>
+      </div>
+    );
+  }
+
+  const facts: { k: string; v: string }[] = [
+    { k: "The asset", v: m.config ? `${m.project} · ${m.config}` : m.project },
+    { k: "City", v: m.city },
+    { k: "Your target", v: m.target ? `₹ ${m.target}` : "To ground on the call" },
+    { k: "Timeline", v: m.timeline },
+    { k: "Where you are", v: m.stage },
+    { k: "Funding", v: m.funding },
+  ];
+
+  return (
+    <div>
+      <SectionHead kicker="Deal Room" title={`The market is working for ${m.project}`} sub="Your mandate is logged — here's exactly where it stands. An advisor calls within 24 hours to confirm it." />
+
+      <Card>
+        <p className="text-[0.62rem] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/40">Your mandate</p>
+        <dl className="mt-4 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+          {facts.map((f) => (
+            <div key={f.k}>
+              <dt className="text-[0.72rem] font-light uppercase tracking-[0.12em] text-[#1a1a1a]/40">{f.k}</dt>
+              <dd className="mt-1 text-[0.98rem] font-light text-[#1a1a1a]">{f.v}</dd>
+            </div>
+          ))}
+          {m.offer ? (
+            <div className="sm:col-span-2">
+              <dt className="text-[0.72rem] font-light uppercase tracking-[0.12em] text-[#1a1a1a]/40">Offer already in hand</dt>
+              <dd className="mt-1 text-[0.98rem] font-light text-[#1a1a1a]">{m.offer}</dd>
+            </div>
+          ) : null}
+        </dl>
+      </Card>
+
+      <div className="mt-8">
+        <p className="text-[0.62rem] font-light uppercase tracking-[0.2em] text-[#1a1a1a]/40">Where it goes from here</p>
+        <ol className="mt-5">
+          {DR_PIPELINE.map((s, i) => {
+            const done = i < DR_CURRENT;
+            const current = i === DR_CURRENT;
+            const last = i === DR_PIPELINE.length - 1;
+            return (
+              <li key={s.t} className="relative flex gap-4 pb-7 last:pb-0">
+                {!last && <span className="absolute left-[13px] top-8 bottom-1 w-px bg-[#1a1a1a]/12" aria-hidden />}
+                <span className={"relative z-10 mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full border text-[0.72rem] " + (done ? "border-[#1e6b45] bg-[#1e6b45] text-white" : current ? "border-[#1e6b45] bg-[#1e6b45]/10 text-[#1e6b45]" : "border-[#1a1a1a]/20 text-[#1a1a1a]/40")}>
+                  {done ? "✓" : i + 1}
+                </span>
+                <div className={done || current ? "" : "opacity-60"}>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <h3 className="font-serif text-[1.12rem] font-medium leading-tight text-[#1a1a1a]">{s.t}</h3>
+                    {current && <span className="rounded-full border border-[#1e6b45]/40 px-2.5 py-0.5 text-[0.56rem] font-medium uppercase tracking-[0.12em] text-[#1e6b45]">Next</span>}
+                    {s.when && <span className="text-[0.7rem] font-light text-[#1a1a1a]/40">{s.when}</span>}
+                  </div>
+                  <p className="mt-1.5 max-w-[54ch] text-[0.9rem] font-light leading-relaxed text-[#1a1a1a]/55">{s.body}</p>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+
+      <p className="mt-8 max-w-2xl border-l-2 border-[#1a1a1a]/15 pl-4 text-[0.8rem] font-light leading-relaxed text-[#1a1a1a]/50">
+        <b className="font-medium text-[#1a1a1a]/70">How we&apos;re paid — plainly.</b> Nothing to join. A fully refundable ₹11,000 holds your seat when you&apos;re ready to meet a seller — back in 60 days if nothing closes. After that we earn only a share of what we save you versus the market, never a rupee from the sellers.
+      </p>
+    </div>
+  );
 }
 
 function LockBadge({ label = "Locked" }: { label?: string }) {

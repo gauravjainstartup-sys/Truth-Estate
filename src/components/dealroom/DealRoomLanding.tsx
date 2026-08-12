@@ -16,7 +16,8 @@
 
 import { useState } from "react";
 import Logo from "@/components/Logo";
-import { homeHref } from "@/lib/site";
+import AccountChip from "@/components/AccountChip";
+import { basePath, homeHref } from "@/lib/site";
 import { DEAL_ROOM_CSS } from "./dealRoomLandingCss";
 
 /* Overrides on top of the prototype's scoped CSS:
@@ -31,6 +32,9 @@ const OVERRIDES = `
         --sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; }
 .te-dr header{ min-height: calc(100svh - 74px); display:flex; align-items:center; }
 .te-dr header > .wrap{ width:100%; }
+/* Account dropdown lives on a cream popover — keep its links dark despite the
+   scoped a-tag color:inherit rule (which would otherwise render them light). */
+.te-dr [role="menu"] a{ color:#1a1a1a; }
 .te-dr .lightsec{
   --ground:#F5F0E8; --ground-2:#ece4d5; --card:#fffdf9; --card-2:#f5efe1;
   --ink:#1a1a1a; --ink-soft:#39342b; --ink-mute:#6f6858; --ink-faint:#9c9482;
@@ -79,6 +83,10 @@ export default function DealRoomLanding({ onEnter }: { onEnter: () => void }) {
           <div className="nav-r">
             <a className="lk" href="#work">How it works</a>
             <a className="lk" href="#savings">Savings</a>
+            <a href={`${basePath}/intelligence/projects`} aria-label="Search projects" style={{ display: "inline-flex", alignItems: "center" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
+            </a>
+            <AccountChip tone="dark" />
             <button className="btn btn-ghost" onClick={onEnter}>Enter the Deal Room</button>
           </div>
         </div>
