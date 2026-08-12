@@ -65,6 +65,7 @@ const KNOWN = new Set([
   // Deal Room mandate funnel (Stage-1 demand experiment).
   "deal_room_mandate_started",
   "deal_room_mandate_submitted",
+  "deal_room_track_viewed",
 ]);
 
 const MAX_BATCH = 20;
@@ -79,8 +80,10 @@ const ALLOW_ORIGIN = [
      A CORS rejection is indistinguishable from a dead network in the UI.
      Both URL forms Cloud Run issues: the newer hash style and the older
      project-number style the existing service still uses. */
-  /^https:\/\/truthestate-[a-z0-9-]+\.a\.run\.app$/,
-  /^https:\/\/truthestate-[a-z0-9-]+\.[a-z0-9-]+\.run\.app$/,
+  /* A `tag---` prefix also matches Cloud Run revision URLs (the `dev---…`
+     staging tag), so OTP and sign-in work on the staging revision too. */
+  /^https:\/\/([a-z0-9-]+---)?truthestate-[a-z0-9-]+\.a\.run\.app$/,
+  /^https:\/\/([a-z0-9-]+---)?truthestate-[a-z0-9-]+\.[a-z0-9-]+\.run\.app$/,
   /^http:\/\/localhost(:\d+)?$/,
   /^http:\/\/127\.0\.0\.1(:\d+)?$/,
 ];

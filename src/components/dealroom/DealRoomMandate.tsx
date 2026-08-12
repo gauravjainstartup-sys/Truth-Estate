@@ -28,6 +28,7 @@ import { track } from "@/lib/events";
 import { saveLead, isSignedIn, loadAccount } from "@/lib/journey";
 import { getSession, signInWithGoogle } from "@/lib/phoneAuth";
 import { sendOtp, verifyOtp, OTP_LENGTH } from "@/lib/shortlistAuth";
+import { saveMandate } from "@/lib/dealRoomMandate";
 
 /* Cohort capacity is real — keep SEATS_CLAIMED truthful and bump it by hand as
    mandates land (concierge-maintained). Scarcity must never be faked. */
@@ -60,6 +61,7 @@ export default function DealRoomMandate() {
   const [screen, setScreen] = useState<"landing" | "wizard" | "done">("landing");
   const [step, setStep] = useState(0);
   const [d, setD] = useState<Draft>(emptyDraft);
+  const [projectNames, setProjectNames] = useState<string[]>([]); // type-ahead suggestions (free text still allowed)
 
   // auth (buyer step)
   const [dial, setDial] = useState("+91");
@@ -97,6 +99,17 @@ export default function DealRoomMandate() {
     setScreen("wizard"); setStep(0); setErr("");
     track("deal_room_mandate_started", {});
     window.scrollTo(0, 0);
+    // Load tracked-project names for the step-1 type-ahead (free text still works).
+    if (projectNames.length === 0) {
+      fetch(`${basePath}/compare-index.json`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((idx: Record<string, { name?: string }> | null) => {
+          if (!idx) return;
+          const names = Array.from(new Set(Object.values(idx).map((p) => p?.name).filter((n): n is string => !!n))).sort();
+          setProjectNames(names);
+        })
+        .catch(() => { /* type-ahead is a nicety; free text always works */ });
+    }
   }
   function go(n: number) { setStep(n); setErr(""); window.scrollTo(0, 0); }
 
@@ -128,6 +141,22 @@ export default function DealRoomMandate() {
         via: how,
       },
       createdAt: Date.now(),
+    });
+    /* Mirror the mandate locally so /deal-room/track can show the buyer where
+       it stands. Convenience only — the contact_lead above is the record. */
+    saveMandate({
+      city: draft.city,
+      project: draft.project.trim(),
+      unit: draft.unit.trim(),
+      stage: draft.stage,
+      target: draft.target.trim(),
+      timeline: draft.timeline,
+      funding: draft.funding,
+      offer: draft.offer.trim(),
+      name: name.trim() || acct?.name || "",
+      phone: how === "otp" ? `${dial} ${num}`.trim() : (s?.phone ?? ""),
+      via: how,
+      submittedAt: Date.now(),
     });
     track("deal_room_mandate_submitted", {
       projectName: draft.project.trim() || undefined,
@@ -217,7 +246,9 @@ export default function DealRoomMandate() {
                       </select>
                     </div>
                     <div><span className={label}>Project name</span>
-                      <input value={d.project} onChange={(e) => set("project", e.target.value)} placeholder="Search 300+ tracked projects, or type any name" className={field} />
+                      <input value={d.project} onChange={(e) => set("project", e.target.value)} list="dr-projects" autoComplete="off" placeholder="Start typing — pick a tracked project, or type any name" className={field} />
+                      <datalist id="dr-projects">{projectNames.map((n) => <option key={n} value={n} />)}</datalist>
+                      {projectNames.length > 0 && <p className="mt-2 text-[0.72rem] text-[#6f685c]">{projectNames.length}+ tracked projects to pick from — or type any name.</p>}
                     </div>
                     <div><span className={label}>Unit details <span className="ml-1 text-[#6f685c]">optional</span></span>
                       <input value={d.unit} onChange={(e) => set("unit", e.target.value)} placeholder="Tower / floor / configuration, if you know it" className={field} />
@@ -234,7 +265,27 @@ export default function DealRoomMandate() {
                 <div>
                   <span className={eyebrow}>Step 2 of 3 · The terms</span>
                   <h2 className="mt-2 font-serif text-[1.85rem] font-medium leading-tight">What would a win look like?</h2>
-                  <p className="mt-3 max-w-[50ch] text-[0.96rem] leading-relaxed text-[#a9a196]">Set your target. On the call we ground it against the real market before we float — so you negotiate from the truth.</p>
+                  <p className="mt-3 max-w-[52ch] text-[0.96rem] leading-relaxed text-[#a9a196]">Name the number you&apos;d be thrilled to close at. On the call we ground it against the real market before we float — so you negotiate from the truth.</p>
+
+                  {/* the number, big — the hero of this step */}
+                  <div className="mt-8">
+                    <span className={label}>Your target closing price</span>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 font-serif text-[1.9rem] leading-none text-[#6f685c]">₹</span>
+                      <input value={d.target} onChange={(e) => set("target", e.target.value)} inputMode="numeric" placeholder="2,10,00,000"
+                        className="w-full rounded-2xl border border-[#c9a96e]/25 bg-[#191510] py-5 pl-12 pr-5 font-serif text-[1.9rem] leading-none text-[#f4efe6] placeholder-[#4a453d] outline-none transition-colors focus:border-[#c9a96e]" />
+                    </div>
+                    {/* Honest market read: a promise to ground the number, not an invented one. */}
+                    <div className="mt-4 rounded-xl border border-[#c9a96e]/20 bg-gradient-to-b from-[#221c13] to-[#1d1811] p-5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-[0.58rem] uppercase tracking-[0.16em] text-[#c9a96e]">The market read</span>
+                        <span className="rounded-full border border-[#c9a96e]/30 px-2.5 py-1 font-mono text-[0.56rem] uppercase tracking-[0.06em] text-[#a9a196]">on your call</span>
+                      </div>
+                      <p className="mt-3 text-[0.86rem] leading-relaxed text-[#a9a196]">Before we float, your advisor grounds your target against <span className="text-[#f4efe6]">{d.project.trim() || "the project"}</span>&apos;s filed rates and recent closings — and tells you honestly how hard your number is to hit. No broker&apos;s guess; the actual record.</p>
+                    </div>
+                  </div>
+
+                  {/* the context, secondary */}
                   <div className="mt-8 flex flex-col gap-7">
                     <div><span className={label}>How set are you on this home?</span>
                       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -244,16 +295,8 @@ export default function DealRoomMandate() {
                         ))}
                       </div>
                     </div>
-                    <div><span className={label}>Your target closing price</span>
-                      <input value={d.target} onChange={(e) => set("target", e.target.value)} inputMode="numeric" placeholder="₹ 2,10,00,000" className={field} />
-                      {/* Honest market read: a promise to ground the number, not an invented one. */}
-                      <div className="mt-4 rounded-xl border border-[#c9a96e]/20 bg-gradient-to-b from-[#221c13] to-[#1d1811] p-5">
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono text-[0.58rem] uppercase tracking-[0.16em] text-[#c9a96e]">The market read</span>
-                          <span className="rounded-full border border-[#c9a96e]/30 px-2.5 py-1 font-mono text-[0.56rem] uppercase tracking-[0.06em] text-[#a9a196]">on your call</span>
-                        </div>
-                        <p className="mt-3 text-[0.86rem] leading-relaxed text-[#a9a196]">Before we float, your advisor grounds your target against <span className="text-[#f4efe6]">{d.project.trim() || "the project"}</span>&apos;s filed rates and recent closings — and tells you honestly how hard your number is to hit. No broker&apos;s guess; the actual record.</p>
-                      </div>
+                    <div><span className={label}>Already been quoted a price? <span className="ml-1 text-[#6f685c]">optional</span></span>
+                      <textarea value={d.offer} onChange={(e) => set("offer", e.target.value)} placeholder="Paste what a broker or owner quoted — base, floor rise, charges. It sharpens our benchmark." className={`${field} min-h-[76px] resize-y text-[0.92rem]`} />
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div><span className={label}>Timeline to close</span>
@@ -262,9 +305,6 @@ export default function DealRoomMandate() {
                       <div><span className={label}>How are you funding it?</span>
                         <select value={d.funding} onChange={(e) => set("funding", e.target.value)} className={`${field} appearance-none`}>{FUNDING.map((f) => <option key={f} className="bg-[#191510]">{f}</option>)}</select>
                       </div>
-                    </div>
-                    <div><span className={label}>Already been quoted a price? <span className="ml-1 text-[#6f685c]">optional</span></span>
-                      <textarea value={d.offer} onChange={(e) => set("offer", e.target.value)} placeholder="Paste what a broker or owner quoted — base, floor rise, charges. It sharpens our benchmark." className={`${field} min-h-[76px] resize-y text-[0.92rem]`} />
                     </div>
                   </div>
                   <div className="mt-9 flex justify-between">
@@ -353,7 +393,7 @@ export default function DealRoomMandate() {
             <b className="text-[#a9a196]">How we&apos;re paid — plainly.</b> Nothing to join. When you&apos;re confident enough to meet a seller, a fully refundable <b className="text-[#a9a196]">₹11,000</b> holds your seat — back in 60 days if nothing closes, no questions. After that we earn only a share of what we actually save you versus the market — never a rupee from the sellers, and nothing if we don&apos;t beat it. All figures are on the property price only, <b className="text-[#a9a196]">excluding GST, stamp duty &amp; registration.</b>
           </p>
           <div className="mt-9 flex justify-center gap-4">
-            <a href={`${basePath}/office`} className={btnPrimary}>Track my mandate →</a>
+            <a href={`${basePath}/deal-room/track`} className={btnPrimary}>Track my mandate →</a>
             <button onClick={() => { setScreen("landing"); window.scrollTo(0, 0); }} className={btnGhost}>Back to the Deal Room</button>
           </div>
         </div>

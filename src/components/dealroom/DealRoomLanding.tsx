@@ -15,9 +15,45 @@
    ════════════════════════════════════════════════════════════════ */
 
 import { useState } from "react";
+import Logo from "@/components/Logo";
+import { homeHref } from "@/lib/site";
 import { DEAL_ROOM_CSS } from "./dealRoomLandingCss";
 
+/* Overrides on top of the prototype's scoped CSS:
+   · route type through the site's loaded fonts (Playfair + Geist),
+   · make the hero full-height,
+   · flip the MIDDLE sections to the site's cream light theme (dark hero +
+     dark close, light between — the home-page rhythm), by re-declaring the
+     design tokens on `.lightsec`,
+   · style the FOMO / scarcity cues. */
+const OVERRIDES = `
+.te-dr{ --serif: var(--font-playfair), Georgia, "Times New Roman", serif;
+        --sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; }
+.te-dr header{ min-height: calc(100svh - 74px); display:flex; align-items:center; }
+.te-dr header > .wrap{ width:100%; }
+.te-dr .lightsec{
+  --ground:#F5F0E8; --ground-2:#ece4d5; --card:#fffdf9; --card-2:#f5efe1;
+  --ink:#1a1a1a; --ink-soft:#39342b; --ink-mute:#6f6858; --ink-faint:#9c9482;
+  --gold:#9a7a2e; --gold-deep:#7d6222; --gold-lite:#8a6a24;
+  --green:#2f6b4f; --green-hi:#256045; --green-soft:#1e6b45;
+  --line:rgba(26,26,26,.10); --line-2:rgba(26,26,26,.18);
+  color:var(--ink);
+}
+.te-dr .lightsec:not(.band){ background:var(--ground); }
+/* FOMO cues */
+.te-dr .fomo{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:22px; }
+.te-dr .fomo .seatbar{ display:flex; gap:4px; }
+.te-dr .fomo .seatbar i{ width:16px; height:6px; border-radius:2px; background:rgba(244,239,230,.12); }
+.te-dr .fomo .seatbar i.f{ background:linear-gradient(90deg,var(--gold-deep),var(--gold-lite)); }
+.te-dr .fomo .txt{ font-size:12.5px; letter-spacing:.02em; color:var(--gold-lite); }
+.te-dr .fomo .txt b{ color:var(--ink); }
+.te-dr .pulse{ width:7px; height:7px; border-radius:999px; background:var(--green-soft); box-shadow:0 0 0 0 rgba(143,201,171,.5); }
+@media(prefers-reduced-motion:no-preference){ .te-dr .pulse{ animation:tedrpulse 2s infinite; } @keyframes tedrpulse{ 0%{box-shadow:0 0 0 0 rgba(143,201,171,.45)} 70%{box-shadow:0 0 0 7px rgba(143,201,171,0)} 100%{box-shadow:0 0 0 0 rgba(143,201,171,0)} } }
+`;
+
 const TABS = ["Audit", "Recommend", "Strategise", "Compete", "Close"];
+const SEATS_TOTAL = 10;
+const SEATS_TAKEN = 6;
 
 const trimNum = (n: number) => n.toFixed(2).replace(/\.?0+$/, "");
 const inr = (lakhs: number) => (lakhs >= 100 ? "₹" + trimNum(lakhs / 100) + " Cr" : "₹" + Math.round(lakhs) + " L");
@@ -34,11 +70,12 @@ export default function DealRoomLanding({ onEnter }: { onEnter: () => void }) {
   return (
     <div className="te-dr">
       <style dangerouslySetInnerHTML={{ __html: DEAL_ROOM_CSS }} />
+      <style dangerouslySetInnerHTML={{ __html: OVERRIDES }} />
 
       {/* nav */}
       <nav>
         <div className="nav-in">
-          <div className="word">Truth<b>Estate</b></div>
+          <a href={homeHref} aria-label="Truth Estate — home" style={{ display: "inline-flex" }}><Logo color="#f4efe6" className="h-8 w-auto" /></a>
           <div className="nav-r">
             <a className="lk" href="#work">How it works</a>
             <a className="lk" href="#savings">Savings</a>
@@ -58,6 +95,13 @@ export default function DealRoomLanding({ onEnter }: { onEnter: () => void }) {
               <div className="hero-cta">
                 <button className="btn btn-go" onClick={onEnter}>Enter the Deal Room →</button>
                 <span className="chip-rec">Every offer on record, not verbal</span>
+              </div>
+              <div className="fomo">
+                <span className="pulse" aria-hidden="true" />
+                <div className="seatbar" aria-hidden="true">
+                  {Array.from({ length: SEATS_TOTAL }).map((_, i) => <i key={i} className={i < SEATS_TAKEN ? "f" : ""} />)}
+                </div>
+                <span className="txt">{"August cohort · "}<b>{SEATS_TOTAL - SEATS_TAKEN} of {SEATS_TOTAL} seats left</b>{" — a limited number of mandates, personally run."}</span>
               </div>
             </div>
             <div>
@@ -94,7 +138,7 @@ export default function DealRoomLanding({ onEnter }: { onEnter: () => void }) {
       </header>
 
       {/* trust band */}
-      <section className="band">
+      <section className="band lightsec">
         <div className="wrap" style={{ padding: "40px 24px" }}>
           <div className="tb">
             <div className="cell"><div className="big">10–15%</div><div className="cap">better than negotiating alone, typically — a capability, not a promise</div></div>
@@ -106,7 +150,7 @@ export default function DealRoomLanding({ onEnter }: { onEnter: () => void }) {
       </section>
 
       {/* stitched workflow */}
-      <section id="work">
+      <section id="work" className="lightsec">
         <div className="wrap sec">
           <div>
             <p className="eyebrow">One represented journey</p>
@@ -197,7 +241,7 @@ export default function DealRoomLanding({ onEnter }: { onEnter: () => void }) {
       </section>
 
       {/* on record */}
-      <section className="band">
+      <section className="band lightsec">
         <div className="wrap sec">
           <div>
             <p className="eyebrow">On record</p>
@@ -224,7 +268,7 @@ export default function DealRoomLanding({ onEnter }: { onEnter: () => void }) {
       </section>
 
       {/* potential savings */}
-      <section id="savings">
+      <section id="savings" className="lightsec">
         <div className="wrap sec">
           <div>
             <p className="eyebrow">Potential savings</p>
@@ -255,7 +299,7 @@ export default function DealRoomLanding({ onEnter }: { onEnter: () => void }) {
       </section>
 
       {/* offers table */}
-      <section className="band">
+      <section className="band lightsec">
         <div className="wrap sec">
           <div>
             <p className="eyebrow">What comes back</p>
@@ -274,7 +318,7 @@ export default function DealRoomLanding({ onEnter }: { onEnter: () => void }) {
       </section>
 
       {/* who pays whom */}
-      <section>
+      <section className="lightsec">
         <div className="wrap sec">
           <div>
             <p className="eyebrow">Whose side are they on</p>
@@ -289,7 +333,7 @@ export default function DealRoomLanding({ onEnter }: { onEnter: () => void }) {
       </section>
 
       {/* faq */}
-      <section>
+      <section className="lightsec">
         <div className="wrap sec" id="faq">
           <div><p className="eyebrow">Straight answers</p><h2>The questions every serious buyer asks.</h2></div>
           <div className="faq">

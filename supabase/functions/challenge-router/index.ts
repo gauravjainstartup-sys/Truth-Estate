@@ -44,8 +44,10 @@ const ALLOW_ORIGIN = [
      any log to say otherwise. */
   /^https:\/\/gauravjainstartup-sys\.github\.io$/,
   /^https:\/\/(www\.)?truthestate\.in$/,
-  /^https:\/\/truthestate-[a-z0-9-]+\.a\.run\.app$/,
-  /^https:\/\/truthestate-[a-z0-9-]+\.[a-z0-9-]+\.run\.app$/,
+  /* A `tag---` prefix also matches Cloud Run revision URLs (the `dev---…`
+     staging tag), so OTP and sign-in work on the staging revision too. */
+  /^https:\/\/([a-z0-9-]+---)?truthestate-[a-z0-9-]+\.a\.run\.app$/,
+  /^https:\/\/([a-z0-9-]+---)?truthestate-[a-z0-9-]+\.[a-z0-9-]+\.run\.app$/,
   /^http:\/\/localhost(:\d+)?$/,
   /^http:\/\/127\.0\.0\.1(:\d+)?$/,
 ];
