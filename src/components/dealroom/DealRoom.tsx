@@ -11,6 +11,7 @@
 import { useEffect, useRef, useState } from "react";
 import Logo from "../Logo";
 import { useConsultation } from "../consultation/ConsultationProvider";
+import MandateFlow, { hasPendingMandate } from "./MandateFlow";
 import { basePath } from "@/lib/site";
 import { track } from "@/lib/events";
 
@@ -73,7 +74,17 @@ export default function DealRoom() {
   const { openConsult } = useConsultation();
   const enter = () => openConsult({ sourceKind: "homepage" });
 
-  useEffect(() => { track("deal_room_page_viewed"); }, []);
+  // The join flow opens in-page over this landing (there is no separate route).
+  const [screen, setScreen] = useState<"landing" | "flow">("landing");
+  const openFlow = () => { setScreen("flow"); window.scrollTo(0, 0); };
+
+  useEffect(() => {
+    track("deal_room_page_viewed");
+    // Resume a Google round-trip that stashed a mandate draft before redirecting.
+    if (hasPendingMandate()) setScreen("flow");
+  }, []);
+
+  if (screen === "flow") return <MandateFlow onExitToLanding={() => setScreen("landing")} />;
 
   return (
     <div className="min-h-screen bg-[#14110d] text-[#f4efe6]" style={{ fontFeatureSettings: '"ss01"' }}>
@@ -99,9 +110,9 @@ export default function DealRoom() {
               One party on your side of the table — independent, flat-fee, and never paid by a developer. We make the market compete for your deal, in writing.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-6">
-              <a href={`${basePath}/deal-room/mandate`} className="inline-block rounded-sm bg-[#2f6b4f] px-8 py-4 text-[13px] font-medium tracking-[0.06em] text-[#f4efe6] shadow-lg shadow-black/30 transition-colors hover:bg-[#37805e]">
+              <button onClick={openFlow} className="inline-block rounded-sm bg-[#2f6b4f] px-8 py-4 text-[13px] font-medium tracking-[0.06em] text-[#f4efe6] shadow-lg shadow-black/30 transition-colors hover:bg-[#37805e]">
                 Enter the Deal Room
-              </a>
+              </button>
               <span className="text-[12.5px] tracking-[0.04em] text-[#a9a196]">No brokerage · no developer money</span>
             </div>
           </Reveal>
@@ -274,7 +285,7 @@ export default function DealRoom() {
               Independent. Flat-fee. On your side of the table — in writing.
             </p>
             <div className="mt-10">
-              <button onClick={enter} className="rounded-sm bg-[#2f6b4f] px-9 py-4 text-[13px] font-medium tracking-[0.06em] text-[#f4efe6] shadow-lg shadow-black/30 transition-colors hover:bg-[#37805e]">
+              <button onClick={openFlow} className="rounded-sm bg-[#2f6b4f] px-9 py-4 text-[13px] font-medium tracking-[0.06em] text-[#f4efe6] shadow-lg shadow-black/30 transition-colors hover:bg-[#37805e]">
                 Enter the Deal Room
               </button>
             </div>
