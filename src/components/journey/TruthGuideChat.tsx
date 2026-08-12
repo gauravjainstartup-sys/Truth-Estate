@@ -17,6 +17,8 @@ import {
   type GateReason,
 } from "@/lib/truthGuideChat";
 import { isSignedIn } from "@/lib/journey";
+import { linkify, loadChatLinks, type ChatLink } from "@/lib/chatLinks";
+import { basePath } from "@/lib/site";
 import { normalisePhone, prettyPhone, sendOtp, verifyOtp, saveName, signInWithGoogle, OTP_LENGTH } from "@/lib/phoneAuth";
 import { track } from "@/lib/events";
 import HelpCentre from "./HelpCentre";
@@ -49,6 +51,7 @@ export default function TruthGuideChat({
   /* Paid-audience only, and "paid" is the server's word. Asked once on
      mount; null until we know, so the entry never flickers in and out. */
   const [hasPurchases, setHasPurchases] = useState<boolean | null>(null);
+  const [links, setLinks] = useState<ChatLink[]>([]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -57,6 +60,7 @@ export default function TruthGuideChat({
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 350);
     trackedProjectCount().then(setProjectCount).catch(() => {});
+    loadChatLinks().then(setLinks).catch(() => {});
     fetchBilling()
       .then((b) => setHasPurchases(!!b?.payments.some((x) => x.status === "completed")))
       .catch(() => setHasPurchases(false));
@@ -235,7 +239,7 @@ export default function TruthGuideChat({
             </div>
           ) : (
             <div key={m.id}>
-              <Bubble>{m.text}</Bubble>
+              <Bubble>{linkify(m.text, links, basePath)}</Bubble>
             </div>
           ),
         )}
