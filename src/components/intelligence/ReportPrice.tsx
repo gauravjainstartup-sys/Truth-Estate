@@ -197,7 +197,7 @@ export default function ReportPrice({ p, sample = false }: { p: ProjectIntel; sa
               <Anchor k="Range if the market runs cold → hot" v={`${r.bands.bear.toFixed(1)}% – ${r.bands.bull.toFixed(1)}%`} faint />
             </div>
 
-            <p className="mt-4 text-[0.62rem] font-light italic text-[#1a1a1a]/35">A modeled estimate, not a promise{today ? `, recalculated for ${new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}` : ""} — the delay and rentable window shift as the date moves. Taxes, stamp duty &amp; charges excluded.</p>
+            <p className="mt-4 text-[0.62rem] font-light italic text-[#1a1a1a]/35">A modeled estimate, not a promise{today ? `, recalculated for ${new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}` : ""} — the delay and rentable window shift as the date moves. It models the property&apos;s price return only: registration &amp; stamp duty (~6–7%), interiors &amp; furnishing, and ongoing maintenance &amp; property tax are not included.</p>
           </div>
         </>
       )}
