@@ -45,7 +45,8 @@ export async function fetchResalePrice(
   project: string,
   city: string,
   config: string,
-  timeoutMs = 60000, // grounded top-model lookups can spike; don't abort a valid answer
+  model = "", // "" = server default; pass e.g. "gemini-2.5-flash" for a faster lookup
+  timeoutMs = 60000, // grounded lookups can spike; don't abort a valid answer
 ): Promise<ResalePrice> {
   const p = project.trim();
   if (!p) return EMPTY_OK;
@@ -59,7 +60,7 @@ export async function fetchResalePrice(
         apikey: SUPABASE_ANON_KEY,
         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
       },
-      body: JSON.stringify({ project: p, city: city.trim(), config: config.trim() }),
+      body: JSON.stringify({ project: p, city: city.trim(), config: config.trim(), ...(model ? { model } : {}) }),
       signal: ctrl.signal,
     });
     if (!res.ok) return ERR;

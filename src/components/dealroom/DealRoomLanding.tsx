@@ -35,6 +35,10 @@ const OVERRIDES = `
 /* Account dropdown lives on a cream popover — keep its links dark despite the
    scoped a-tag color:inherit rule (which would otherwise render them light). */
 .te-dr [role="menu"] a{ color:#1a1a1a; }
+/* .sec's padding shorthand (84px 0) was wiping .wrap's 24px side gutter — the
+   content sat flush to the left edge on mobile (fine on desktop only because
+   max-width centres it). Restore the horizontal gutter for every section. */
+.te-dr .wrap.sec{ padding-left:24px; padding-right:24px; }
 .te-dr .lightsec{
   --ground:#F5F0E8; --ground-2:#ece4d5; --card:#fffdf9; --card-2:#f5efe1;
   --ink:#1a1a1a; --ink-soft:#39342b; --ink-mute:#6f6858; --ink-faint:#9c9482;

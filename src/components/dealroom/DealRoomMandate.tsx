@@ -78,10 +78,14 @@ export default function DealRoomMandate() {
   const [d, setD] = useState<Draft>(emptyDraft);
   const [projectNames, setProjectNames] = useState<string[]>([]); // type-ahead suggestions (free text still allowed)
   const [projectConfigs, setProjectConfigs] = useState<Record<string, string[]>>({}); // name -> filed unit types
-  // Current market price for the chosen project+config (live, via Gemini).
-  // null = not resolved; text "" = checked, nothing reliable; else a figure/range.
+  const [projectPrices, setProjectPrices] = useState<Record<string, [number, number]>>({}); // name -> filed budget [lowCr, highCr]
+  const [projOpen, setProjOpen] = useState(false); // custom project autocomplete dropdown
+  // Current market price for the chosen project+config. Filed-data range for a
+  // tracked project (instant), else a grounded Gemini lookup. null = not resolved;
+  // text "" = checked, nothing reliable; else a figure/range.
   const [resale, setResale] = useState<ResalePrice | null>(null);
   const [resaleLoading, setResaleLoading] = useState(false);
+  const [resolvingPrice, setResolvingPrice] = useState(false); // the loader between the asset + terms steps
   const resaleFetchedFor = useRef("");
 
   // auth (buyer step)
@@ -116,36 +120,58 @@ export default function DealRoomMandate() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* On step 2, pull the current market price for the chosen project + config,
-     once per unique combination. Fired here (not on submit) so it resolves in
-     the background while the buyer reads and sets their target. Grounded
-     server-side; a blank text means show nothing. */
+  /* The market price for the chosen project+config. If we track the project we
+     already hold its filed budget — return that instantly, no model call. Only
+     projects we don't track hit Gemini (the fast flash model, grounded). */
+  function dbPriceFor(project: string): ResalePrice | null {
+    const b = projectPrices[project.trim()];
+    if (!b || !(b[0] > 0)) return null;
+    const low = Math.round(b[0] * 1e7);
+    const high = Math.round(b[1] * 1e7);
+    const text = low === high ? `₹${inrGroup(low)}` : `₹${inrGroup(low)} - ₹${inrGroup(high)}`;
+    return { status: "ok", text, low, high };
+  }
+  async function resolvePrice(project: string, city: string, config: string): Promise<ResalePrice> {
+    return dbPriceFor(project) ?? fetchResalePrice(project, city, config, "gemini-2.5-flash");
+  }
+  const seedTarget = (r: ResalePrice) => {
+    if (r.low) setD((p) => (digitsToNum(p.target) === 0 ? { ...p, target: inrGroup(Math.round(r.low! * 0.9)) } : p));
+  };
+
+  /* Step 1 → the loader interstitial → step 2. The price is resolved WHILE the
+     loader shows, so the terms step opens with the range + bar already there. */
+  async function goToTerms() {
+    const proj = d.project.trim();
+    if (!proj) return;
+    setErr(""); setProjOpen(false);
+    setResolvingPrice(true);
+    window.scrollTo(0, 0);
+    resaleFetchedFor.current = `${proj}|${d.city}|${d.config}`;
+    const [priced] = await Promise.all([
+      resolvePrice(proj, d.city, d.config),
+      new Promise((r) => setTimeout(r, 900)), // a floor so the loader reads as deliberate, never a flash
+    ]);
+    setResale(priced);
+    if (priced.status === "error" || !priced.text) resaleFetchedFor.current = "";
+    else seedTarget(priced);
+    setResolvingPrice(false);
+    setStep(1);
+  }
+
+  /* Retry from the "Check again" button on the terms step (no interstitial). */
   function loadResale() {
     const proj = d.project.trim();
     if (!proj) return;
     resaleFetchedFor.current = `${proj}|${d.city}|${d.config}`;
     setResale(null);
     setResaleLoading(true);
-    fetchResalePrice(proj, d.city, d.config).then((r) => {
+    resolvePrice(proj, d.city, d.config).then((r) => {
       setResale(r);
       setResaleLoading(false);
-      // Errors and misses must not stick — clear the guard so re-entering the
-      // step (or the "Check again" button) tries again instead of staying blank.
       if (r.status === "error" || !r.text) { resaleFetchedFor.current = ""; return; }
-      // Seed the target at ~10% below the market low when the buyer hasn't set
-      // one yet — a sensible "steal" starting point they can drag from.
-      if (r.low) setD((p) => (digitsToNum(p.target) === 0 ? { ...p, target: inrGroup(Math.round(r.low! * 0.9)) } : p));
+      seedTarget(r);
     });
   }
-
-  useEffect(() => {
-    if (step !== 1) return;
-    const proj = d.project.trim();
-    if (!proj) return;
-    if (resaleFetchedFor.current === `${proj}|${d.city}|${d.config}`) return;
-    loadResale();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, d.project, d.city, d.config]);
 
   function openWizard() {
     setScreen("wizard"); setStep(0); setErr("");
@@ -156,15 +182,18 @@ export default function DealRoomMandate() {
     if (projectNames.length === 0) {
       fetch(`${basePath}/compare-index.json`)
         .then((r) => (r.ok ? r.json() : null))
-        .then((idx: Record<string, { name?: string; configs?: string[] }> | null) => {
+        .then((idx: Record<string, { name?: string; configs?: string[]; budget?: [number, number] }> | null) => {
           if (!idx) return;
-          const entries = Object.values(idx).filter((p): p is { name: string; configs?: string[] } => !!p?.name);
+          const entries = Object.values(idx).filter((p): p is { name: string; configs?: string[]; budget?: [number, number] } => !!p?.name);
           setProjectNames(Array.from(new Set(entries.map((p) => p.name))).sort());
           const cfg: Record<string, string[]> = {};
+          const price: Record<string, [number, number]> = {};
           for (const p of entries) {
             if (Array.isArray(p.configs) && p.configs.length) cfg[p.name] = p.configs;
+            if (Array.isArray(p.budget) && p.budget[0] > 0) price[p.name] = [p.budget[0], p.budget[1] ?? p.budget[0]];
           }
           setProjectConfigs(cfg);
+          setProjectPrices(price);
         })
         .catch(() => { /* type-ahead is a nicety; free text always works */ });
     }
@@ -280,7 +309,6 @@ export default function DealRoomMandate() {
   const barMax = hasBar ? Math.round(mktHigh! * 1.03) : 0; // "high entry" (~market top)
   const barVal = hasBar ? Math.min(barMax, Math.max(barMin, targetNum || Math.round(mktLow! * 0.9))) : 0;
   const barPct = (v: number) => (barMax > barMin ? Math.min(100, Math.max(0, ((v - barMin) / (barMax - barMin)) * 100)) : 0);
-  const mktMid = hasBar ? (mktLow! + mktHigh!) / 2 : 0;
 
   // The landing is the founder-frozen dark creative; it opens the flow in-page.
   if (screen === "landing") return <DealRoomLanding onEnter={openWizard} />;
@@ -299,7 +327,16 @@ export default function DealRoomMandate() {
         </div>
       </nav>
 
-      {screen === "wizard" && (
+      {/* The loader between the asset and terms steps, while the price resolves. */}
+      {screen === "wizard" && resolvingPrice && (
+        <div className="mx-auto flex min-h-[calc(100dvh-160px)] max-w-2xl flex-col items-center justify-center px-6 text-center">
+          <span className="h-10 w-10 animate-spin rounded-full border-2 border-[#c9a96e]/25 border-t-[#c9a96e]" aria-hidden />
+          <p className="mt-7 font-serif text-[1.6rem] font-medium leading-tight text-[#f4efe6]">Fetching the best &amp; latest rates for {d.project.trim() || "your project"}…</p>
+          <p className="mt-3 max-w-[42ch] text-[0.92rem] leading-relaxed text-[#a9a196]">Reading filed rates and live listings so your target starts from the truth — one moment.</p>
+        </div>
+      )}
+
+      {screen === "wizard" && !resolvingPrice && (
         <div className="mx-auto flex min-h-[calc(100dvh-96px)] max-w-5xl items-start px-6 pb-16 pt-6 md:items-center md:px-10">
           <div className="grid w-full gap-10 md:grid-cols-[200px_1fr] md:gap-14">
             {/* spine */}
@@ -329,8 +366,31 @@ export default function DealRoomMandate() {
                       </select>
                     </div>
                     <div><span className={label}>Project name</span>
-                      <input value={d.project} onChange={(e) => { set("project", e.target.value); set("config", ""); }} list="dr-projects" autoComplete="off" placeholder="Start typing — pick a tracked project, or type any name" className={field} />
-                      <datalist id="dr-projects">{projectNames.map((n) => <option key={n} value={n} />)}</datalist>
+                      {/* Custom autocomplete — native <datalist> doesn't render a usable
+                          dropdown on iOS Safari, so we filter + list matches ourselves. */}
+                      <div className="relative">
+                        <input value={d.project}
+                          onChange={(e) => { set("project", e.target.value); set("config", ""); setProjOpen(true); }}
+                          onFocus={() => setProjOpen(true)}
+                          onBlur={() => setTimeout(() => setProjOpen(false), 140)}
+                          autoComplete="off" placeholder="Start typing — pick a tracked project, or type any name" className={field} />
+                        {projOpen && d.project.trim().length >= 2 && (() => {
+                          const q = d.project.trim().toLowerCase();
+                          const matches = projectNames.filter((n) => n.toLowerCase().includes(q)).slice(0, 8);
+                          if (!matches.length) return null;
+                          return (
+                            <ul className="absolute left-0 right-0 z-30 mt-1 max-h-64 overflow-auto rounded-xl border border-[#c9a96e]/25 bg-[#1d1811] py-1 shadow-[0_20px_44px_-18px_rgba(0,0,0,.75)]">
+                              {matches.map((n) => (
+                                <li key={n}>
+                                  <button type="button"
+                                    onMouseDown={(e) => { e.preventDefault(); set("project", n); set("config", ""); setProjOpen(false); }}
+                                    className="block w-full px-4 py-2.5 text-left text-[0.9rem] text-[#f4efe6] transition-colors hover:bg-[#c9a96e]/[0.12]">{n}</button>
+                                </li>
+                              ))}
+                            </ul>
+                          );
+                        })()}
+                      </div>
                       {projectNames.length > 0 && <p className="mt-2 text-[0.72rem] text-[#6f685c]">{projectNames.length}+ tracked projects to pick from — or type any name.</p>}
                     </div>
                     <div><span className={label}>Configuration</span>
@@ -348,7 +408,7 @@ export default function DealRoomMandate() {
                   </div>
                   <div className="mt-9 flex justify-between">
                     <button onClick={() => setScreen("landing")} className="text-[0.85rem] text-[#a9a196] hover:text-[#f4efe6]">← Back</button>
-                    <button onClick={() => go(1)} disabled={!d.project.trim()} className={btnPrimary}>Continue →</button>
+                    <button onClick={goToTerms} disabled={!d.project.trim()} className={btnPrimary}>Continue →</button>
                   </div>
                 </div>
               )}
@@ -394,7 +454,7 @@ export default function DealRoomMandate() {
                           <span className="rounded-full border border-[#c9a96e]/30 px-2.5 py-1 font-mono text-[0.56rem] uppercase tracking-[0.06em] text-[#a9a196]">live · indicative</span>
                         </div>
                         <p className="mt-2 font-serif text-[1.35rem] leading-none text-[#e7cf95]">{resale!.text}</p>
-                        <p className="mt-2 text-[0.76rem] text-[#6f685c]">What {d.project.trim() || "this project"}{d.config ? ` (${d.config})` : ""} trades at today. Slide to set the price you want us to hit.</p>
+                        <p className="mt-2 text-[0.76rem] text-[#6f685c]">What {d.project.trim() || "this project"} is trading at today. Slide to set the price you want us to hit.</p>
 
                         <div className="relative mt-6 select-none">
                           <div className="relative h-2.5 rounded-full bg-gradient-to-r from-[#1e6b45] via-[#c9a96e] to-[#8a5a2b]">
@@ -418,9 +478,11 @@ export default function DealRoomMandate() {
                             const t = targetNum || barVal;
                             let node;
                             if (!t) node = <span className="text-[#6f685c]">slide to set your target.</span>;
-                            else if (t <= mktLow!) node = <span className="text-[#7fd0a3]">~{Math.max(1, Math.round(((mktMid - t) / mktMid) * 100))}% below market — a strong ask we go get.</span>;
+                            // Measure against the floor/ceiling of the range, not its mid —
+                            // a wide (project-level) range would otherwise read as a huge "% below".
+                            else if (t < mktLow!) node = <span className="text-[#7fd0a3]">~{Math.max(1, Math.round(((mktLow! - t) / mktLow!) * 100))}% below the market floor — a strong ask we go get.</span>;
                             else if (t <= mktHigh!) node = <span className="text-[#d9b45e]">within today’s market range.</span>;
-                            else node = <span className="text-[#e6a189]">~{Math.round(((t - mktMid) / mktMid) * 100)}% above market — we’d aim lower.</span>;
+                            else node = <span className="text-[#e6a189]">~{Math.round(((t - mktHigh!) / mktHigh!) * 100)}% above the market — we’d aim lower.</span>;
                             return <p className="text-[0.9rem] text-[#f4efe6]">Your target <b className="font-serif text-[1.05rem] text-[#e7cf95]">₹{inrGroup(t)}</b> — {node}</p>;
                           })()}
                         </div>
