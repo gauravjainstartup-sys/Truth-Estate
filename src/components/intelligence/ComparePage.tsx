@@ -218,11 +218,11 @@ function ProjectCompare({ r }: { r: Extract<ResolvedCompare, { kind: "project" }
     const v = hs.map((h) => h.superSqft);
     return `${Math.min(...v).toLocaleString("en-IN")}–${Math.max(...v).toLocaleString("en-IN")} sq ft`;
   };
-  const unitsLine = (p: ProjectIntel, o: ReturnType<typeof deliveryOutlook>) => {
-    const total = p.ops?.units;
-    if (!o || total == null) return undefined;
-    return `${Math.round((total * o.absorptionPct) / 100).toLocaleString("en-IN")} of ${total.toLocaleString("en-IN")} units`;
-  };
+  /* small green quality pill for the vitals rows — mirrors the report's Vitals
+     strip (Low-density ≤50 /acre, Green ≥80% open area) */
+  const vtag = (t: string) => (
+    <span className="ml-1.5 inline-block rounded-full border border-[#1e6b45]/25 bg-[#1e6b45]/[0.06] px-1.5 py-0.5 align-middle text-[0.5rem] font-medium uppercase tracking-[0.08em] text-[#1e6b45]">{t}</span>
+  );
   const OUTLOOK_VAL = { High: 3, Medium: 2, Low: 1 } as const;
   const outlookOf = (m: ReturnType<typeof roiModel>) =>
     m ? ((m.adjCagr >= 8.5 ? "High" : m.adjCagr >= 6 ? "Medium" : "Low") as keyof typeof OUTLOOK_VAL) : null;
@@ -256,6 +256,36 @@ function ProjectCompare({ r }: { r: Extract<ResolvedCompare, { kind: "project" }
         <Row label="Corridor" a={a.marketShort} b={b.marketShort} />
       </div>
 
+      <Section title="Vitals' comparison">
+        <Row label="Total units"
+          a={a.ops?.units != null ? a.ops.units.toLocaleString("en-IN") : "—"}
+          b={b.ops?.units != null ? b.ops.units.toLocaleString("en-IN") : "—"} />
+        <Row label="Towers"
+          a={a.ops?.towers != null ? String(a.ops.towers) : "—"}
+          b={b.ops?.towers != null ? String(b.ops.towers) : "—"} />
+        <Row label="Floors" a={a.ops?.floors ?? "—"} b={b.ops?.floors ?? "—"} />
+        <Row label="Land"
+          a={a.ops?.landAcres != null ? `${a.ops.landAcres} acre` : "—"}
+          b={b.ops?.landAcres != null ? `${b.ops.landAcres} acre` : "—"} />
+        <Row label="Density"
+          a={a.ops?.density != null ? <>{a.ops.density} / acre{a.ops.density <= 50 && vtag("Low-density")}</> : "—"}
+          b={b.ops?.density != null ? <>{b.ops.density} / acre{b.ops.density <= 50 && vtag("Low-density")}</> : "—"} />
+        <Row label="Open area"
+          a={a.ops?.openAreaPct != null ? <>{a.ops.openAreaPct}%{a.ops.openAreaPct >= 80 && vtag("Green")}</> : "—"}
+          b={b.ops?.openAreaPct != null ? <>{b.ops.openAreaPct}%{b.ops.openAreaPct >= 80 && vtag("Green")}</> : "—"} />
+        <Row label="Possession" a={a.ops?.possession ?? "—"} b={b.ops?.possession ?? "—"} />
+      </Section>
+
+      <Section title="The homes">
+        <Row label="Configurations" a={a.configs.join(" · ")} b={b.configs.join(" · ")} />
+        <Row label="Super area" a={supRange(a) ?? "—"} b={supRange(b) ?? "—"} />
+        <Row label="Best carpet efficiency"
+          a={effA != null ? `${effA}%` : "—"} b={effB != null ? `${effB}%` : "—"}
+          subA={effA != null ? "carpet ÷ super, best layout" : undefined}
+          subB={effB != null ? "carpet ÷ super, best layout" : undefined}
+          win={effA != null && effB != null ? winHigher(effA, effB) : undefined} />
+      </Section>
+
       <Section title="The money">
         <Row label="Price today"
           a={ja ? `₹${kNum(ja.currentLow)}K–${kNum(ja.currentHigh)}K` : a.psf ? `₹${kNum(a.psf.avg)}K avg` : "—"}
@@ -287,25 +317,6 @@ function ProjectCompare({ r }: { r: Extract<ResolvedCompare, { kind: "project" }
           a={oa ? `${oa.actualPct}% vs ${oa.expectedPct}%` : "—"} b={ob ? `${ob.actualPct}% vs ${ob.expectedPct}%` : "—"}
           subA={oa ? `QPR ${oa.qpr}` : undefined} subB={ob ? `QPR ${ob.qpr}` : undefined}
           win={oa && ob ? winHigher(oa.aheadOfPlan, ob.aheadOfPlan) : undefined} />
-        <Row label="Expected OC"
-          a={oa ? oa.predictedDate : "—"} b={ob ? ob.predictedDate : "—"}
-          subA={oa && oa.ahead !== 0 ? `${Math.abs(oa.ahead)} mo ${oa.ahead > 0 ? "before" : "after"} the RERA date` : undefined}
-          subB={ob && ob.ahead !== 0 ? `${Math.abs(ob.ahead)} mo ${ob.ahead > 0 ? "before" : "after"} the RERA date` : undefined}
-          win={oa && ob ? winHigher(oa.ahead, ob.ahead) : undefined} />
-        <Row label="Units sold"
-          a={oa ? `${oa.absorptionPct}%` : "—"} b={ob ? `${ob.absorptionPct}%` : "—"}
-          subA={unitsLine(a, oa)} subB={unitsLine(b, ob)}
-          win={oa && ob ? winHigher(oa.absorptionPct, ob.absorptionPct) : undefined} />
-      </Section>
-
-      <Section title="The homes">
-        <Row label="Configurations" a={a.configs.join(" · ")} b={b.configs.join(" · ")} />
-        <Row label="Super area" a={supRange(a) ?? "—"} b={supRange(b) ?? "—"} />
-        <Row label="Best carpet efficiency"
-          a={effA != null ? `${effA}%` : "—"} b={effB != null ? `${effB}%` : "—"}
-          subA={effA != null ? "carpet ÷ super, best layout" : undefined}
-          subB={effB != null ? "carpet ÷ super, best layout" : undefined}
-          win={effA != null && effB != null ? winHigher(effA, effB) : undefined} />
       </Section>
 
       <Section title="Trust, pillar by pillar" note="The same five-pillar model that builds the Truth Score — weighted 28 · 22 · 22 · 18 · 10.">
