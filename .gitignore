@@ -49,6 +49,8 @@ public/live-media/
 .data-snapshot/
 # extracted advisor intelligence + local render artifacts (regenerable output)
 /scratchpad/
+# ad-hoc working dumps (Lighthouse exports, one-off scripts, xlsx, screenshots) — never source
+/scratch/
 # db3d local render/debug artifacts (regenerable — before/after shots, demos, vendored libs)
 db3d/**/shot-current.png
 db3d/**/shot-new.png
