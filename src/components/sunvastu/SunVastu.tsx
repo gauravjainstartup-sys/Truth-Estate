@@ -38,10 +38,10 @@ const C = {
 /* ── the projects with the simulation LIVE (keyed to the committed 3D
    advisors in /public/tower-intel — these render standalone) ───────────── */
 const LIVE: { name: string; file: string; preview: string; towers: number; note: string }[] = [
+  { name: "Birla Arika", file: "tower-intel/birla-arika.html", preview: "tower-intel/birla-arika-preview.jpg", towers: 4, note: "G+40 · 4 BHK 4300 / 4900 · true-north model" },
   { name: "Puri The Aravallis", file: "tower-intel/puri-the-aravallis.html", preview: "tower-intel/puri-the-aravallis-preview.jpg", towers: 2, note: "G+42 quad-core · south deck" },
   { name: "Elan The Presidential", file: "tower-intel/elan-the-presidential.html", preview: "tower-intel/elan-the-presidential-preview.jpg", towers: 8, note: "lagoon-facing heads & wings" },
   { name: "Elan The Emperor", file: "tower-intel/elan-the-emperor.html", preview: "tower-intel/elan-the-emperor-preview.jpg", towers: 5, note: "NE-sunrise corners" },
-  { name: "Birla Arika", file: "tower-intel/birla-arika.html", preview: "tower-intel/birla-arika-preview.jpg", towers: 4, note: "six sanctioned plates" },
   { name: "Ashiana Amarah Phase - 1 & 1A", file: "tower-intel/ashiana-amarah-phase-1.html", preview: "tower-intel/ashiana-amarah-phase-1-preview.jpg", towers: 4, note: "Stilt+14 · amenity-facing decks" },
   { name: "Ashiana Amarah Phase - 2", file: "tower-intel/ashiana-amarah-phase-2.html", preview: "tower-intel/ashiana-amarah-phase-2-preview.jpg", towers: 4, note: "Stilt+14 · central greenway" },
   { name: "Ashiana Amarah Phase - 3 & 3A", file: "tower-intel/ashiana-amarah-phase-3.html", preview: "tower-intel/ashiana-amarah-phase-3-preview.jpg", towers: 4, note: "Stilt+14 · eastern park" },

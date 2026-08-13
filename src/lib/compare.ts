@@ -64,8 +64,22 @@ export function resolvableProjectPairs(pairs: Iterable<string>, projectSlugs: It
    comparable. */
 export const PROJECT_COMPARE_CAP = 40;
 
-export type LiveCompareRow = { slug: string; name: string; truthScore: number | null };
-export type ProjectCompareOption = { slug: string; name: string; score: number };
+export type LiveCompareRow = {
+  slug: string;
+  name: string;
+  truthScore: number | null;
+  developer?: string | null;
+  microMarket?: string | null;
+  minPriceCr?: number | null;
+};
+export type ProjectCompareOption = {
+  slug: string;
+  name: string;
+  score: number;
+  developer?: string | null;
+  market?: string | null;
+  minPriceCr?: number | null;
+};
 
 export function scoredProjectOptions(
   rows: LiveCompareRow[] | null | undefined,
@@ -75,12 +89,43 @@ export function scoredProjectOptions(
     .filter((r): r is LiveCompareRow & { truthScore: number } => typeof r.truthScore === "number" && r.truthScore > 0)
     .sort((a, b) => b.truthScore - a.truthScore)
     .slice(0, cap)
-    .map((r) => ({ slug: r.slug, name: r.name, score: r.truthScore }));
+    .map((r) => ({
+      slug: r.slug,
+      name: r.name,
+      score: r.truthScore,
+      developer: r.developer ?? null,
+      market: r.microMarket ?? null,
+      minPriceCr: r.minPriceCr ?? null,
+    }));
 }
 
-/* every prerendered project pair among the scored/capped set */
-export const projectComparePairs = (opts: { slug: string }[]): string[] =>
-  pairsOf(opts.map((o) => o.slug));
+/* High-intent project pair generator: filters out synthetic/irrelevant pairs.
+   Pairs are kept if projects share the same developer, same corridor, top-tier score (>=75),
+   or close price band (<= 2.5 Cr difference). */
+export const projectComparePairs = (opts: ProjectCompareOption[]): string[] => {
+  const out: string[] = [];
+  const sorted = [...opts].sort((a, b) => a.slug.localeCompare(b.slug));
+
+  for (let i = 0; i < sorted.length; i++) {
+    for (let j = i + 1; j < sorted.length; j++) {
+      const a = sorted[i];
+      const b = sorted[j];
+
+      const sameDev = Boolean(a.developer && b.developer && a.developer.trim().toLowerCase() === b.developer.trim().toLowerCase());
+      const sameMarket = Boolean(a.market && b.market && a.market.trim().toLowerCase() === b.market.trim().toLowerCase());
+      const bothTopTier = a.score >= 75 && b.score >= 75;
+      const closePrice =
+        typeof a.minPriceCr === "number" &&
+        typeof b.minPriceCr === "number" &&
+        Math.abs(a.minPriceCr - b.minPriceCr) <= 2.5;
+
+      if (sameDev || sameMarket || bothTopTier || closePrice) {
+        out.push(comparePairSlug(a.slug, b.slug));
+      }
+    }
+  }
+  return out;
+};
 
 /* developer/market pairs — curated registries, fully real */
 export const DEV_PAIRS: string[] = pairsOf(DEVELOPERS.map((d) => d.slug));
