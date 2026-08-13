@@ -76,12 +76,13 @@ export function systemPrompt(ctx: Ctx, locked: boolean): string {
     ``,
     `RULES:`,
     `1. Answer ONLY from the context below. Never invent facts, numbers or findings. If something isn't in the context, say we haven't assessed it — do not guess.`,
-    `2. Be concise and conversational — 2-4 sentences, like a sharp WhatsApp reply. No headings.`,
+    `2. Be concise and conversational — 2-4 sentences for a simple question, like a sharp WhatsApp reply. For a comparison or a "final verdict", open with the recommendation, then give 3-5 short reasons (a few sentences, or one short line each). No headings, no markdown.`,
     `3. Be honest, even about weaknesses — conceding a weak pillar builds trust. You are not a salesperson.`,
-    `4. Stay on this project and real-estate buying; politely decline anything else.`,
+    `4. You MAY compare "${ctx.name}" against any project in the TRACKED PROJECTS scoreboard below, using their public facts, when the visitor asks — name the other project and give a clear verdict with reasons. Otherwise stay on ${ctx.name} and real-estate buying; politely decline anything unrelated.`,
     locked
       ? `5. This visitor has NOT unlocked the paid read. For any question needing a PAID TOPIC, do NOT answer it — give a short honest teaser from the PUBLIC facts only, then say the full answer is inside the read. Never fabricate the paid answer.`
       : `5. This visitor HAS unlocked the full read — answer fully from the PAID READ section.`,
+    `6. If the visitor asks for the brochure, price list, payment plan, site plan or floor plan and a DOCUMENTS link is provided below, share the DIRECT link. If no such link is in the context, say we don't have that document on file — never invent a URL.`,
     ``,
     `PUBLIC FACTS (always usable):`,
     ctx.publicKnowledge ?? "(none provided)",
@@ -173,6 +174,15 @@ export const GENERAL_MAX_TOKENS = 1500;
    cheaper. Flash accepts 0; Pro would need >= 128. */
 export const GENERAL_THINKING_BUDGET = 0;
 
+/* Project ("Challenge our read") mode used to fall back to the 600-token
+   default with thinking ON, so a "final verdict comparing two projects" spent
+   the budget on reasoning and clipped mid-sentence. It now gets the same
+   generous, thinking-off allowance as the scoreboard chat — the answer is
+   retrieval + judgement over facts we already supply, so this is the reply's
+   own budget, not one shared with hidden reasoning. */
+export const PROJECT_MAX_TOKENS = 1500;
+export const PROJECT_THINKING_BUDGET = 0;
+
 function generalSystemPrompt(ctx: Ctx): string {
   const paid = ctx.paidKnowledge
     ? `\n\n${ctx.paidKnowledge}`
@@ -208,6 +218,11 @@ export async function routeChallenge(
     /* Server-side context builder for general mode. Supplied by index.ts,
        which owns the DB credentials. Absent in the offline harness. */
     generalContext?: (unlocked: string[]) => Promise<{ publicKnowledge: string; paidKnowledge: string | null; projectCount: number }>;
+    /* Server-side documents/extended-details for ONE project, by slug or name.
+       Used in project mode so the chat can quote real pricing and hand over a
+       brochure/payment-plan/site-plan link. Also supplied by index.ts; absent
+       offline. Returns null when the project has no extended row. */
+    projectExtras?: (slugOrName: string) => Promise<string | null>;
   },
 ): Promise<RouterAnswer> {
   const question = (body.question ?? "").trim();
@@ -250,6 +265,33 @@ export async function routeChallenge(
       console.error("[challenge-router] project mode: no publicKnowledge supplied");
       return { ok: false };
     }
+    /* Enrich the single-project context so "Challenge our read" can (a) give a
+       real head-to-head verdict against any other project the visitor names,
+       and (b) hand over documents. Both are built SERVER-SIDE (the scoreboard
+       and the extended row), so a stale or hostile client cannot influence
+       them — and both fail SOFT: any error just answers without that block. */
+    const extras: string[] = [];
+    if (opts.generalContext) {
+      try {
+        const board = await opts.generalContext(body.unlockedProjects ?? []);
+        if (board.projectCount) {
+          extras.push(
+            `\n\n── TRACKED PROJECTS (public scoreboard — you MAY compare "${ctx.name}" against any project below on these public facts) ──\n${board.publicKnowledge}`,
+          );
+        }
+      } catch (e) {
+        console.error("[challenge-router] project mode: scoreboard fetch failed", e instanceof Error ? e.message : e);
+      }
+    }
+    if (opts.projectExtras && (ctx.slug || ctx.name)) {
+      try {
+        const docs = await opts.projectExtras(ctx.slug || ctx.name || "");
+        if (docs) extras.push(`\n\n${docs}`);
+      } catch (e) {
+        console.error("[challenge-router] project mode: extras fetch failed", e instanceof Error ? e.message : e);
+      }
+    }
+    if (extras.length) ctx = { ...ctx, publicKnowledge: `${ctx.publicKnowledge}${extras.join("")}` };
   }
 
   const sys = mode === "general"
@@ -261,7 +303,7 @@ export async function routeChallenge(
     fetchImpl: opts.fetchImpl,
     ...(mode === "general"
       ? { maxTokens: GENERAL_MAX_TOKENS, thinkingBudget: GENERAL_THINKING_BUDGET }
-      : {}),
+      : { maxTokens: PROJECT_MAX_TOKENS, thinkingBudget: PROJECT_THINKING_BUDGET }),
   });
   if (!text) {
     console.error(`[challenge-router] no text returned for mode=${mode}`);

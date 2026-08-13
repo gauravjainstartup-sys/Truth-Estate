@@ -98,4 +98,45 @@ function fakeGemini(reply, capture) {
   ok(empty.ok === false, "empty candidate → ok:false");
 }
 
+/* ── 7 · project mode: raised budget, thinking off, scoreboard + docs ── */
+{
+  const cap = {};
+  const ans = await routeChallenge(
+    { mode: "project", question: "this project or M3M Golf Hills — final verdict", locked: false, context: unlockedCtx },
+    {
+      apiKey: "k",
+      model: "gemini-2.5-flash",
+      fetchImpl: fakeGemini("Verdict: Arbour, on delivery and score.", cap),
+      // stub the server-side builders (real ones hit the DB)
+      generalContext: async () => ({
+        publicKnowledge:
+          "TRACKED PROJECTS (2):\n- DLF The Arbour · 92\n- M3M Golf Hills · Truth Score 71 · SPR · from ₹3.2 Cr",
+        paidKnowledge: null,
+        projectCount: 2,
+      }),
+      projectExtras: async () =>
+        "── EXTENDED DETAILS & DOCUMENTS (this project) ──\nDOCUMENTS:\n- Brochure: https://x/brochure.pdf",
+    },
+  );
+  ok(ans.ok === true, "project mode returns ok:true");
+  ok(cap.body.generationConfig.maxOutputTokens === 1500, "project mode raises maxOutputTokens 600 → 1500 (fixes truncation)");
+  ok(cap.body.generationConfig.thinkingConfig?.thinkingBudget === 0, "project mode disables thinking (budget is the reply's own)");
+  const sys = cap.body.systemInstruction.parts[0].text;
+  ok(sys.includes("M3M Golf Hills"), "project prompt now carries the scoreboard → can compare a second project");
+  ok(sys.includes("Brochure: https://x/brochure.pdf"), "project prompt now carries the brochure link → can hand it over");
+  ok(/compare/i.test(sys), "project prompt permits comparison");
+}
+
+/* ── 8 · project mode still answers with NO server builders (fail-soft) ── */
+{
+  const cap = {};
+  const ans = await routeChallenge(
+    { mode: "project", question: "how many towers?", locked: true, context: lockedCtx },
+    { apiKey: "k", model: "m", fetchImpl: fakeGemini("Five.", cap) },
+  );
+  ok(ans.ok === true && ans.text === "Five.", "project mode works without generalContext/projectExtras (offline-safe)");
+  ok(cap.body.generationConfig.maxOutputTokens === 1500, "raised budget applies even without the extra context");
+  ok(!cap.body.systemInstruction.parts[0].text.includes("public scoreboard"), "no scoreboard block appended when the builder is absent");
+}
+
 console.log(`\n${pass} checks passed.`);

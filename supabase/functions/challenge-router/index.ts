@@ -22,7 +22,7 @@
      # optional: supabase secrets set GEMINI_MODEL=gemini-2.5-flash
    ════════════════════════════════════════════════════════════════ */
 import { routeChallenge, type Body, type FetchLike } from "./core.ts";
-import { buildGeneralContext, type FetchLike as CtxFetch } from "./context.ts";
+import { buildGeneralContext, buildProjectExtras, type FetchLike as CtxFetch } from "./context.ts";
 import { logTurn, type FetchLike as LogFetch } from "./chatlog.ts";
 
 const MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
@@ -80,6 +80,11 @@ Deno.serve(async (req: Request) => {
         buildGeneralContext(
           { url: DB_URL, key: DB_KEY, fetchImpl: fetch as unknown as CtxFetch },
           unlocked,
+        ),
+      projectExtras: (slugOrName) =>
+        buildProjectExtras(
+          { url: DB_URL, key: DB_KEY, fetchImpl: fetch as unknown as CtxFetch },
+          slugOrName,
         ),
     });
 
