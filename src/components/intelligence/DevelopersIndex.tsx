@@ -4,16 +4,7 @@ import Logo from "../Logo";
 import SearchPalette from "./SearchPalette";
 import { useJourney } from "../journey/JourneyProvider";
 import type { DeveloperIntel } from "@/lib/developers";
-import type { LiveDeveloper } from "@/lib/supabase";
 import { basePath, homeHref } from "@/lib/site";
-
-
-const bandTone = (b: string | null) =>
-  b && /strong|good|high/i.test(b)
-    ? "border-[#238c55]/30 bg-[#238c55]/[0.08] text-[#1c7a4c]"
-    : b && /weak|poor|low/i.test(b)
-      ? "border-[#9a4130]/30 bg-[#9a4130]/[0.07] text-[#9a4130]"
-      : "border-[#9a7a2e]/35 bg-[#9a7a2e]/[0.08] text-[#8a6a1e]";
 
 /* `developers` is the resolved universe (developersLive.resolveDevelopers): the
    hand-reviewed dossiers first, then every other filed developer as a computed
@@ -23,10 +14,8 @@ const bandTone = (b: string | null) =>
    Listed/Private badge) and stands on its track record. */
 export default function DevelopersIndex({
   developers,
-  live,
 }: {
   developers: DeveloperIntel[];
-  live?: LiveDeveloper[] | null;
 }) {
   const { open } = useJourney();
 
@@ -78,44 +67,6 @@ export default function DevelopersIndex({
             </a>
           ))}
         </div>
-
-        {/* ── Track records, computed — the same universe, with the delay and
-            band detail the cards don't carry ── */}
-        {live && live.length > 0 && (
-          <div className="mt-16">
-            <div className="flex items-center gap-3">
-              <span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">Track records, computed</span>
-              <span className="rounded-full border border-[#1e6b45]/35 bg-[#1e6b45]/[0.06] px-2.5 py-0.5 font-mono text-[0.54rem] tracking-[0.14em] text-[#1e6b45]">LIVE · FROM THE FILINGS</span>
-              <span className="h-px flex-1 bg-[#1a1a1a]/10" />
-            </div>
-            <p className="mt-2 text-[0.8rem] font-light leading-[1.6] text-[#1a1a1a]/50">
-              Delivery and delay numbers computed straight from RERA filings by our pipeline — refreshed with every deploy. Full dossiers follow as each developer clears review.
-            </p>
-            <div className="mt-5 overflow-x-auto rounded-2xl border border-[#1a1a1a]/10 bg-white/60">
-              <div className="min-w-[640px]">
-                <div className="grid grid-cols-[1.6fr_repeat(4,minmax(84px,0.7fr))_1.2fr] gap-3 border-b border-[#1a1a1a]/[0.08] bg-[#1a1a1a]/[0.02] px-5 py-2.5">
-                  {["Developer", "Projects", "Delivered", "Delayed", "Avg delay", "Health signals"].map((h) => (
-                    <span key={h} className="font-mono text-[0.54rem] uppercase tracking-[0.14em] text-[#1a1a1a]/40">{h}</span>
-                  ))}
-                </div>
-                {live.map((d, i) => (
-                  <div key={`${d.name}-${i}`} className={`grid grid-cols-[1.6fr_repeat(4,minmax(84px,0.7fr))_1.2fr] items-center gap-3 px-5 py-3 ${i > 0 ? "border-t border-[#1a1a1a]/[0.06]" : ""}`}>
-                    <span className="truncate font-serif text-[0.98rem] font-medium">{d.name}</span>
-                    <span className="font-mono text-[0.76rem] tabular-nums text-[#1a1a1a]/60">{d.total ?? "—"}</span>
-                    <span className="font-mono text-[0.76rem] tabular-nums text-[#1e6b45]">{d.delivered ?? "—"}</span>
-                    <span className="font-mono text-[0.76rem] tabular-nums text-[#1a1a1a]/60">{d.delayedPct != null ? `${Math.round(d.delayedPct)}%` : "—"}</span>
-                    <span className="font-mono text-[0.76rem] tabular-nums text-[#1a1a1a]/60">{d.avgDelayMonths != null ? `${Math.round(d.avgDelayMonths)} mo` : "—"}</span>
-                    <span className="flex flex-wrap gap-1.5">
-                      {d.financialBand && <span className={`rounded-full border px-2 py-0.5 text-[0.56rem] font-medium uppercase tracking-[0.06em] ${bandTone(d.financialBand)}`}>FIN · {d.financialBand}</span>}
-                      {d.legalBand && <span className={`rounded-full border px-2 py-0.5 text-[0.56rem] font-medium uppercase tracking-[0.06em] ${bandTone(d.legalBand)}`}>LEGAL · {d.legalBand}</span>}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <p className="mt-3 text-[0.68rem] font-light text-[#1a1a1a]/40">Computed from public filings, unedited · deep dossiers above are hand-reviewed.</p>
-          </div>
-        )}
       </div>
     </div>
   );
