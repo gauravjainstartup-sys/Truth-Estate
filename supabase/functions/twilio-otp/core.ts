@@ -225,11 +225,13 @@ export async function handleTwilioOtp(body: Body, deps: Deps): Promise<Result> {
       p_user_id: userId, p_phone: e164,
       p_anon_id: body.anonId ?? null, p_session_id: body.sessionId ?? null, p_name: body.name ?? null,
     }, env, fetchImpl);
+    /* Best-effort: the account exists and the phone is OTP-verified, so a merge
+       hiccup must never fail the sign-in. */
     await rpc("resolve_and_merge_verified_identity", {
       p_target_id: userId,
       p_verified_phone: e164,
       p_phone_is_verified: true,
-    }, env, fetchImpl);
+    }, env, fetchImpl).catch((e) => console.error("[twilio-otp] identity merge non-fatal:", e instanceof Error ? e.message : e));
     await stampSignIn(userId, body.anonId, body.sessionId, env, fetchImpl);
     const session = await mintSession(userId, env, now());
     console.log(`[twilio-otp] ok user=${userId} chats=${linked?.chats_claimed ?? 0} session=${session ? "minted" : "off"}`);

@@ -2,13 +2,19 @@
 -- 0021 — UNIFIED IDENTITY MERGE & CANONICAL ACCOUNT RESOLUTION
 --
 -- SAFE BY CONSTRUCTION IDENTITY MERGER:
---   1. Transactional advisory locks (pg_advisory_xact_lock) on target & source UUIDs
---      to prevent concurrent sign-in race conditions.
+--   1. Transactional advisory locks (pg_advisory_xact_lock): the target, plus the
+--      target+source pair in canonical (sorted) order, so two concurrent sign-ins
+--      merging the same pair can never deadlock.
 --   2. Enforces cryptographically verified identifiers ONLY:
 --      • google_sub: Permanent Google ID verified by Supabase /auth/v1/user.
 --      • phone: Verified via fresh SMS/Twilio OTP (phone_verified = true).
 --      • NEVER merges on a bare, caller-supplied or unverified email.
 -- ════════════════════════════════════════════════════════════════
+
+-- Defensively drop the earlier, unsafe helper this migration supersedes — the
+-- first cut of 0021 created resolve_and_merge_identity(uuid,text,text,text) with
+-- a bare-email merge path. No-op where it never ran (e.g. production).
+drop function if exists public.resolve_and_merge_identity(uuid, text, text, text);
 
 create or replace function public.resolve_and_merge_verified_identity(
   p_target_id          uuid,
@@ -44,7 +50,10 @@ begin
      limit 1;
 
     if v_source_id is not null then
-      perform pg_advisory_xact_lock(hashtext(v_source_id::text));
+      -- lock the target+source pair in canonical (sorted) order — deadlock-safe
+      perform pg_advisory_xact_lock(
+        least(hashtext(p_target_id::text), hashtext(v_source_id::text)),
+        greatest(hashtext(p_target_id::text), hashtext(v_source_id::text)));
       perform public.merge_user_profiles(p_target_id, v_source_id);
       v_merged := v_merged + 1;
     end if;
@@ -60,7 +69,10 @@ begin
      limit 1;
 
     if v_source_id is not null then
-      perform pg_advisory_xact_lock(hashtext(v_source_id::text));
+      -- lock the target+source pair in canonical (sorted) order — deadlock-safe
+      perform pg_advisory_xact_lock(
+        least(hashtext(p_target_id::text), hashtext(v_source_id::text)),
+        greatest(hashtext(p_target_id::text), hashtext(v_source_id::text)));
       perform public.merge_user_profiles(p_target_id, v_source_id);
       v_merged := v_merged + 1;
     end if;
