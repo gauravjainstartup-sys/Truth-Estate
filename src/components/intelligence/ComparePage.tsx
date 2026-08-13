@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Logo from "../Logo";
 import SearchPalette from "./SearchPalette";
 import { projectHref } from "@/lib/projectHref";
@@ -8,6 +9,7 @@ import { RATING_META, FIN_METRICS, type FinRating } from "@/lib/developers";
 import { fmtPsf, pillars, priceJourney, deliveryOutlook, roiModel, type ProjectIntel, type Pillar } from "@/lib/projects";
 import { streetAddress } from "./ProjectOptionCard";
 import { compareTitle, type ResolvedCompare } from "@/lib/compare";
+import { track } from "@/lib/events";
 import { basePath, homeHref } from "@/lib/site";
 import { useUnlocked, Gate, LockRow, LockLines, LockPill, CompareUnlock } from "./CompareGate";
 
@@ -104,6 +106,13 @@ function Pill({ children, tone = "neutral" }: { children: React.ReactNode; tone?
 
 export default function ComparePage({ r }: { r: ResolvedCompare }) {
   const { open } = useJourney();
+
+  /* Fire a type-specific "compare opened" event once per page (on top of the
+     generic page_viewed): compare_projects / compare_developers / compare_markets. */
+  useEffect(() => {
+    const name = r.kind === "developer" ? "compare_developers" : r.kind === "market" ? "compare_markets" : "compare_projects";
+    track(name, { props: { a: r.a.name, b: r.b.name } });
+  }, [r.kind, r.a.name, r.b.name]);
 
   return (
     <div className="min-h-svh bg-[#F5F0E8] text-[#1a1a1a]">
