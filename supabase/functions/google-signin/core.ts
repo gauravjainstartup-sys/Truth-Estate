@@ -262,6 +262,7 @@ export async function handleGoogleSignin(body: Body, deps: Deps): Promise<Result
       ...(g.avatar ? { avatar_url: g.avatar } : {}),
     }, env, fetchImpl);
     await rpc("merge_user_profiles", { p_target: target, p_source: g.userId }, env, fetchImpl);
+    await rpc("resolve_and_merge_verified_identity", { p_target_id: target, p_google_sub: g.sub }, env, fetchImpl);
     const session = await mintSession(target, env, now());
     console.log(`[google-signin] linked google=${g.userId} -> account=${target} session=${session ? "minted" : "off"}`);
     return ok({ userId: target, linked: true, ...(session ? { session } : {}) });

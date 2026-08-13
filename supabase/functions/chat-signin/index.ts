@@ -395,6 +395,13 @@ Deno.serve(async (req: Request) => {
       p_session_id: body.sessionId ?? null,
       p_name: body.name ?? null,
     });
+    /* Best-effort: the account is already created and the phone OTP-verified, so
+       a merge hiccup (a network blip on the RPC) must never fail the sign-in. */
+    await rpc("resolve_and_merge_verified_identity", {
+      p_target_id: userId,
+      p_verified_phone: `+91${phone}`,
+      p_phone_is_verified: true,
+    }).catch((e) => console.error("[chat-signin] identity merge non-fatal:", e instanceof Error ? e.message : e));
 
     await stampSignIn(userId, body.anonId, body.sessionId);
     /* A real session — but only on this verified path, and only once the
