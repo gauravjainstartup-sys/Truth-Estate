@@ -21,7 +21,7 @@
    curated six stand on their hand-set values and the computed rest drop.
    ════════════════════════════════════════════════════════════════ */
 
-import { DEVELOPERS, type DeveloperIntel, type DevLedgerItem, type FinKey, type FinRating } from "./developers";
+import { avgSlippageFromLedger, DEVELOPERS, type DeveloperIntel, type DevLedgerItem, type FinKey, type FinRating } from "./developers";
 import { developerSlugOf } from "./projects";
 import { liveProjectIntel, matchKey } from "./reportAdapter";
 import {
@@ -263,11 +263,7 @@ export async function resolveDevelopers(): Promise<DeveloperIntel[]> {
      and avg_delay_months is null for all (delay_months is filed as text). Null
      when the developer has no delayed project on file — the caller then keeps
      whatever the overview/hand-set carried (0 for a clean record). */
-  const avgDelayFor = (name: string): number | null => {
-    const late = (ledger?.[devKey(name)] ?? []).filter((p) => p.isDelayed === true && p.delayMonths != null);
-    if (!late.length) return null;
-    return Math.round((late.reduce((sum, p) => sum + (p.delayMonths as number), 0) / late.length) * 10) / 10;
-  };
+  const avgDelayFor = (name: string): number | null => avgSlippageFromLedger(ledger?.[devKey(name)]);
 
   const curated = DEVELOPERS.map((d) => {
     const o = overlayDeveloper(d, live);

@@ -93,6 +93,21 @@ export type DevLedgerItem = {
   delayMonths: number | null;
 };
 
+/* Average slippage in months from the filed ledger: the mean of delay_months
+   over the developer's delayed projects. The ONE honest source for "avg delay /
+   slippage" — the rollup columns (developers_overview.avg_delay_months /
+   avg_developer_delay, and the v3 row's developer_avg_delay_months) drift stale
+   or read null, so the developer page AND the project report both compute it
+   from the ledger through this single function. Null when the developer has no
+   delayed project on file (a clean record renders 0). */
+export function avgSlippageFromLedger(
+  items: Pick<DevLedgerItem, "isDelayed" | "delayMonths">[] | null | undefined,
+): number | null {
+  const late = (items ?? []).filter((p) => p.isDelayed === true && p.delayMonths != null);
+  if (!late.length) return null;
+  return Math.round((late.reduce((sum, p) => sum + (p.delayMonths as number), 0) / late.length) * 10) / 10;
+}
+
 export type LegalCase = {
   title: string;
   court: string;

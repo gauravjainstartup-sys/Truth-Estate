@@ -101,7 +101,16 @@ export default function LiveProjectProfile({
       // its track record + financial audit reflect live values) but keep the
       // server-grafted ledger — the pure adapter can't produce it.
       const liveDeveloper = fresh.liveDeveloper
-        ? { ...fresh.liveDeveloper, ...(baked.liveDeveloper?.ledger ? { ledger: baked.liveDeveloper.ledger } : {}) }
+        ? {
+            ...fresh.liveDeveloper,
+            ...(baked.liveDeveloper?.ledger ? { ledger: baked.liveDeveloper.ledger } : {}),
+            // Avg slippage is computed from the filed ledger at build time (the
+            // row's developer_avg_delay_months is stale/null); keep that baked
+            // value while launched/delivered/on-time stay live from the row.
+            ...(baked.liveDeveloper?.performance?.avgDelayMonths != null
+              ? { performance: { ...fresh.liveDeveloper.performance, avgDelayMonths: baked.liveDeveloper.performance.avgDelayMonths } }
+              : {}),
+          }
         : baked.liveDeveloper;
       // "Ranks N of M" from the LIVE score. Swap this project's own baked score
       // in the comparison set for its live score (so a changed score never reads
