@@ -20,8 +20,7 @@
    ════════════════════════════════════════════════════════════════ */
 
 import { useEffect, useRef, useState } from "react";
-import Logo from "@/components/Logo";
-import AccountChip from "@/components/AccountChip";
+import SiteHeader from "./SiteHeader";
 import DealRoomLanding from "./DealRoomLanding";
 import OtpDigits from "@/components/auth/OtpDigits";
 import { basePath } from "@/lib/site";
@@ -315,17 +314,8 @@ export default function DealRoomMandate() {
 
   return (
     <div className="min-h-screen bg-[#14110d] text-[#f4efe6]" style={{ fontFeatureSettings: '"ss01"' }}>
-      {/* nav */}
-      <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 md:px-10">
-        <a href={`${basePath}/`} aria-label="Truth Estate — home"><Logo className="h-9 w-auto opacity-85" /></a>
-        <div className="flex items-center gap-5">
-          <a href={`${basePath}/intelligence/projects`} aria-label="Search projects" className="text-[#a9a196] transition-colors hover:text-[#f4efe6]">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
-          </a>
-          <AccountChip tone="dark" />
-          <button onClick={() => { setScreen("landing"); window.scrollTo(0, 0); }} className="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-[#a9a196] transition-colors hover:text-[#f4efe6]">← The Deal Room</button>
-        </div>
-      </nav>
+      {/* nav — the shared site menu */}
+      <SiteHeader />
 
       {/* The loader between the asset and terms steps, while the price resolves. */}
       {screen === "wizard" && resolvingPrice && (
