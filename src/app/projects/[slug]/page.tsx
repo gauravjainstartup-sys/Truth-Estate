@@ -21,6 +21,7 @@ import { getProjectSeoMeta } from "@/lib/seoCategoryGrowth";
 import { liveProjectIntel } from "@/lib/liveReport";
 import { breadcrumbLd, ldJson } from "@/lib/seo";
 import { relatedProjects } from "@/lib/relatedProjects";
+import { avgSlippageFromLedger } from "@/lib/developers";
 import { basePath as BASE } from "@/lib/site";
 
 /* ONE URL per project: /projects/<seo slug>, the address truthestate.in
@@ -351,7 +352,18 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     const ledgerMap = await developerLedger();
     if (intel.liveDeveloper && ledgerMap) {
       const items = ledgerMap[devKey(intel.liveDeveloper.name)];
-      if (items?.length) intel.liveDeveloper = { ...intel.liveDeveloper, ledger: items };
+      if (items?.length) {
+        // Avg slippage from the filed ledger, NOT the v3 row's stale
+        // developer_avg_delay_months (null → "0 mo" on the report). Same
+        // computation the developer page uses, so the report and the dossier
+        // always agree. launched/delivered/ongoing/on-time stay from the row.
+        const avg = avgSlippageFromLedger(items);
+        intel.liveDeveloper = {
+          ...intel.liveDeveloper,
+          ledger: items,
+          ...(avg != null ? { performance: { ...intel.liveDeveloper.performance, avgDelayMonths: avg } } : {}),
+        };
+      }
     }
     const liveFaqs = projectFaqs(intel);
 
