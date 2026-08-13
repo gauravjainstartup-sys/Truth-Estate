@@ -150,14 +150,16 @@ function liveOnlyDeveloper(
     ...financialsFromHealth(health?.[devKey(l.name)]),
   };
 
-  const verdict =
-    l.total != null
-      ? `Track record computed from ${l.total} RERA filing${l.total === 1 ? "" : "s"}: ${l.delivered ?? 0} delivered${
-          l.ongoing != null ? `, ${l.ongoing} ongoing` : ""
-        }${l.delayedPct != null ? `, ${Math.round(l.delayedPct)}% delayed` : ""}${
-          l.avgDelayMonths != null ? ` (avg ${Math.round(l.avgDelayMonths)} mo slippage)` : ""
-        }. A full editorial dossier is in review.`
-      : "Track record is being computed from public RERA filings. A full editorial dossier is in review.";
+  const totalCount = l.total ?? 0;
+  const deliveredCount = l.delivered ?? 0;
+  const ongoingCount = l.ongoing ?? Math.max(0, totalCount - deliveredCount);
+  const plural = (n: number) => (n === 1 ? "" : "s");
+  const strongFins = FIN_KEYS.filter((k) => financials[k] === "strong").length;
+  const weakFins = FIN_KEYS.filter((k) => financials[k] === "weak").length;
+  const finPhrase = strongFins >= 3 ? "a strong balance sheet" : weakFins >= 3 ? "a stretched balance sheet" : "a mixed financial profile";
+  const verdict = totalCount > 0
+    ? `${l.name} is building in Gurugram on ${finPhrase} — ${ongoingCount} project${plural(ongoingCount)} under construction${deliveredCount > 0 ? `, ${deliveredCount} delivered so far` : ", none delivered here yet"}. The full delivery, pricing and financial forensics on each project are inside its report.`
+    : `${l.name} is tracked here on delivery, pricing and financial health — the full forensic read on each project is inside its report.`;
 
   return {
     slug: liveDeveloperSlug(l),
@@ -167,7 +169,7 @@ function liveOnlyDeveloper(
     listed: false,
     listedNote: "",
     tagline: "",
-    about: `${l.name}'s record below is computed directly from public RERA filings — delivery, delays and financial signals. A full editorial dossier is in review.`,
+    about: `${l.name} is an active developer in Gurugram with ${totalCount} project${plural(totalCount)} we track. The read below is our own — delivery and delay history from public filings, financial health from published financials. For the full audited numbers and a project-by-project breakdown, open any ${l.name} report.`,
     signature: names(delivered),
     brandValue: "",
     recent: [],
@@ -180,9 +182,7 @@ function liveOnlyDeveloper(
       avgDelayMonths: l.avgDelayMonths != null ? Math.round(l.avgDelayMonths * 10) / 10 : 0,
     },
     financials,
-    finNote: l.financialBand
-      ? `Financial band from public filings: ${l.financialBand}. Signals, not audited figures.`
-      : "Financial signals are computed from public filings as they are filed.",
+    finNote: `A directional read on ${l.name}'s financial health. The full audited financials and the per-project forensics are inside each report — unlock one for the complete numbers.`,
     legal: l.legalBand
       ? `Legal band from public filings: ${l.legalBand}. No project-level defect is implied.`
       : "No developer-level litigation is on record in the tracked filings.",

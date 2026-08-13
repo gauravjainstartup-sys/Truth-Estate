@@ -287,7 +287,7 @@ export const DEVELOPERS: DeveloperIntel[] = [
     performance: { launched: 7, delivered: 1, ongoing: 6, onTimePct: 14, avgDelayMonths: 15.5, lapsed: 0 },
     financials: { leverage: "strong", coverage: "strong", cash: "strong", margin: "moderate", inventory: "moderate" },
     finNote:
-      "Backed by Japan's Sumitomo Corporation and the Krishna Group. MCA filings show the entity effectively net-cash — roughly ₹31 Cr of debt against ~₹43 Cr cash and an ~₹832 Cr net worth. Signals, not audited figures.",
+      "Backed by Japan's Sumitomo Corporation and the Krishna Group. MCA filings show the entity effectively net-cash — roughly ₹31 Cr of debt against ~₹43 Cr cash and an ~₹832 Cr net worth. The full audited breakdown is inside the reports.",
     legal:
       "No developer-level litigation is on the public record in the tracked filings, and no RERA legal flags are pending. The risk to weigh here is delivery, not compliance: the history is short (one project delivered) and currently delay-prone — most of the filed pipeline is running behind its committed possession dates.",
     verdict:
