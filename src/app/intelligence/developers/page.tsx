@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import DevelopersIndex from "@/components/intelligence/DevelopersIndex";
-import { fetchDevelopersOverview } from "@/lib/supabase";
 import { resolveDevelopers } from "@/lib/developersLive";
 
 export const metadata: Metadata = {
@@ -13,11 +12,9 @@ export const metadata: Metadata = {
     "Independent developer dossiers for Gurugram real estate — track record, delivery performance and financial health. No paid rankings.",
 };
 
-/* Live filings data is pulled at build time; unreachable backend
-   simply hides the computed-track-records section. */
 export default async function Page() {
-  /* resolveDevelopers = all 17 (curated dossiers + computed-from-filings);
-     `live` still feeds the detailed track-record table below the cards. */
-  const [developers, live] = await Promise.all([resolveDevelopers(), fetchDevelopersOverview()]);
-  return <DevelopersIndex developers={developers} live={live} />;
+  /* resolveDevelopers = the whole universe: the hand-reviewed dossiers first,
+     then every other filed developer as a computed-from-filings profile. */
+  const developers = await resolveDevelopers();
+  return <DevelopersIndex developers={developers} />;
 }
