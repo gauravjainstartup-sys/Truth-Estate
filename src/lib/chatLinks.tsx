@@ -71,7 +71,7 @@ const CLS: Record<ChatLink["kind"], string> = {
 /* Split plain assistant text into nodes, wrapping the FIRST mention of each
    known entity in a link. Longest names are tried first ("DLF The Arbour"
    before "DLF"); word boundaries stop "SPR" matching inside "SPRING". */
-export function linkify(text: string, links: ChatLink[], basePath = ""): ReactNode[] {
+export function linkify(text: string, links: ChatLink[], basePath = "", seen?: Set<string>): ReactNode[] {
   if (!text || links.length === 0) return [text];
   const uniq = [...links].sort((a, b) => b.name.length - a.name.length);
   const byName = new Map(uniq.map((l) => [l.name.toLowerCase(), l]));
@@ -82,7 +82,9 @@ export function linkify(text: string, links: ChatLink[], basePath = ""): ReactNo
     return [text];
   }
   const out: ReactNode[] = [];
-  const linked = new Set<string>();
+  // Shared across lines when rendering a multi-line answer, so an entity still
+  // links on its FIRST mention only (not once per line).
+  const linked = seen ?? new Set<string>();
   let last = 0;
   for (const m of text.matchAll(re)) {
     const idx = m.index ?? 0;
@@ -101,4 +103,57 @@ export function linkify(text: string, links: ChatLink[], basePath = ""): ReactNo
   }
   if (last < text.length) out.push(text.slice(last));
   return out.length ? out : [text];
+}
+
+/* Inline formatting inside ONE line: **bold** spans + entity links. The shared
+   `seen` set keeps entity linking to the first mention across the whole answer. */
+function inline(text: string, links: ChatLink[], basePath: string, seen: Set<string>): ReactNode[] {
+  const out: ReactNode[] = [];
+  text.split(/(\*\*[^*\n]+\*\*)/g).forEach((part, i) => {
+    if (!part) return;
+    const b = part.match(/^\*\*([^*\n]+)\*\*$/);
+    if (b) {
+      out.push(
+        <strong key={`b${i}`} className="font-semibold text-[#1a1a1a]">{linkify(b[1], links, basePath, seen)}</strong>,
+      );
+    } else {
+      out.push(<span key={`t${i}`}>{linkify(part, links, basePath, seen)}</span>);
+    }
+  });
+  return out;
+}
+
+/* TruthGuide replies arrive as light markdown — real newlines, "1./2./3."
+   or "- " lists, and **bold** labels. The bubble used to print that raw, so
+   asterisks showed and every line ran together. renderChat turns it into real
+   blocks: numbered/bulleted rows keep their marker, bold renders, entity names
+   still link (once). Used by both the project and the site-wide chat. */
+export function renderChat(text: string, links: ChatLink[], basePath = ""): ReactNode {
+  if (!text) return null;
+  const seen = new Set<string>();
+  const lines = text.split(/\r?\n/).map((l) => l.replace(/\s+$/, ""));
+  const blocks: ReactNode[] = [];
+  lines.forEach((line, i) => {
+    if (!line.trim()) return; // collapse blank lines — spacing comes from the gap
+    const num = line.match(/^\s*(\d+)[.)]\s+(.*)$/);
+    const bul = line.match(/^\s*[-*•]\s+(.*)$/);
+    if (num) {
+      blocks.push(
+        <div key={i} className="flex gap-2">
+          <span className="shrink-0 font-semibold tabular-nums text-[#1e6b45]">{num[1]}.</span>
+          <span className="min-w-0">{inline(num[2], links, basePath, seen)}</span>
+        </div>,
+      );
+    } else if (bul) {
+      blocks.push(
+        <div key={i} className="flex gap-2">
+          <span className="shrink-0 text-[#1e6b45]">•</span>
+          <span className="min-w-0">{inline(bul[1], links, basePath, seen)}</span>
+        </div>,
+      );
+    } else {
+      blocks.push(<p key={i}>{inline(line, links, basePath, seen)}</p>);
+    }
+  });
+  return <div className="space-y-2">{blocks}</div>;
 }

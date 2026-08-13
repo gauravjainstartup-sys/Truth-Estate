@@ -25,7 +25,7 @@ import {
   type Peer,
   type UnitIntel,
 } from "@/lib/challengeChat";
-import { linkify, type ChatLink } from "@/lib/chatLinks";
+import { renderChat, type ChatLink } from "@/lib/chatLinks";
 import { basePath } from "@/lib/site";
 
 export default function ChallengeChat({
@@ -47,6 +47,7 @@ export default function ChallengeChat({
   const [units, setUnits] = useState<UnitIntel[]>([]);
   const [links, setLinks] = useState<ChatLink[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [expanded, setExpanded] = useState(false); // maximize the panel for long comparisons
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const prevLocked = useRef(locked);
@@ -95,10 +96,10 @@ export default function ChallengeChat({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-end justify-center sm:items-stretch sm:justify-end">
+    <div className={`fixed inset-0 z-[90] flex ${expanded ? "items-center justify-center sm:p-6" : "items-end justify-center sm:items-stretch sm:justify-end"}`}>
       <div className="absolute inset-0 bg-[#0B1F1A]/40 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative z-10 flex max-h-[90svh] w-full flex-col overflow-hidden rounded-t-2xl bg-[#F5F0E8] shadow-[0_-30px_80px_-24px_rgba(11,31,26,0.6)] sm:h-full sm:max-h-none sm:w-[420px] sm:rounded-none">
+      <div className={`relative z-10 flex w-full flex-col overflow-hidden bg-[#F5F0E8] shadow-[0_-30px_80px_-24px_rgba(11,31,26,0.6)] ${expanded ? "h-[100svh] max-h-none rounded-none sm:h-[88vh] sm:w-[min(900px,94vw)] sm:rounded-2xl" : "max-h-[90svh] rounded-t-2xl sm:h-full sm:max-h-none sm:w-[420px] sm:rounded-none"}`}>
         {/* header — dark, brand-consistent with the TruthGuide bubble */}
         <div className="relative flex shrink-0 items-center justify-between gap-3 bg-[#0a0a0a] px-5 py-4 text-white">
           <div className="flex items-center gap-3">
@@ -108,7 +109,16 @@ export default function ChallengeChat({
               <p className="truncate text-[0.9rem] font-medium leading-tight">{p.name}</p>
             </div>
           </div>
-          <button onClick={onClose} aria-label="Close" className="-mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white/55 transition-colors hover:bg-white/10 hover:text-white">✕</button>
+          <div className="-mr-1 flex shrink-0 items-center gap-0.5">
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              aria-label={expanded ? "Restore chat size" : "Maximize chat"}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-white/55 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              {expanded ? <IconRestore /> : <IconExpand />}
+            </button>
+            <button onClick={onClose} aria-label="Close" className="flex h-8 w-8 items-center justify-center rounded-full text-white/55 transition-colors hover:bg-white/10 hover:text-white">✕</button>
+          </div>
         </div>
 
         {/* thread */}
@@ -140,7 +150,7 @@ export default function ChallengeChat({
               </div>
             ) : (
               <div key={m.id}>
-                <Bubble>{linkify(m.text, links, basePath)}</Bubble>
+                <Bubble>{renderChat(m.text, links, basePath)}</Bubble>
                 {m.gate && (
                   <button
                     onClick={m.gate === "3d" ? onUnlock3D : onUnlock}
@@ -204,4 +214,12 @@ function Bubble({ children }: { children: React.ReactNode }) {
 
 function Dot({ d = "0s" }: { d?: string }) {
   return <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#1a1a1a]/40" style={{ animationDelay: d }} />;
+}
+
+const ICON = { width: 13, height: 13, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2.2, strokeLinecap: "round", strokeLinejoin: "round" } as const;
+function IconExpand() {
+  return <svg {...ICON} aria-hidden><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>;
+}
+function IconRestore() {
+  return <svg {...ICON} aria-hidden><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7" /></svg>;
 }
