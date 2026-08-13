@@ -254,6 +254,21 @@ export async function resolveDevelopers(): Promise<DeveloperIntel[]> {
     return names.filter((n) => !t.has(nameKey(n)));
   };
 
+  /* Average delay in months, computed FRESH from the filed per-project
+     delay_months (projects.delay_months, via the ledger) — the mean over the
+     developer's delayed projects. This is the canonical source and matches the
+     back-office portfolio table exactly. The developers_overview rollup columns
+     are not read for this: avg_developer_delay drifts stale against the filings
+     (Tulip stored 55.5 vs a filed 39.4), computed_avg_delay reads 0 for most,
+     and avg_delay_months is null for all (delay_months is filed as text). Null
+     when the developer has no delayed project on file — the caller then keeps
+     whatever the overview/hand-set carried (0 for a clean record). */
+  const avgDelayFor = (name: string): number | null => {
+    const late = (ledger?.[devKey(name)] ?? []).filter((p) => p.isDelayed === true && p.delayMonths != null);
+    if (!late.length) return null;
+    return Math.round((late.reduce((sum, p) => sum + (p.delayMonths as number), 0) / late.length) * 10) / 10;
+  };
+
   const curated = DEVELOPERS.map((d) => {
     const o = overlayDeveloper(d, live);
     const hf = financialsFromHealth(health?.[devKey(d.name)]);
@@ -261,6 +276,7 @@ export async function resolveDevelopers(): Promise<DeveloperIntel[]> {
     const tracked = trackedFor(d.slug, d.name);
     return {
       ...o,
+      performance: { ...o.performance, avgDelayMonths: avgDelayFor(d.name) ?? o.performance.avgDelayMonths }, // avg delay from the live filings, not the stale rollup
       financials: { ...o.financials, ...hf }, // real per-metric scores win over hand-set
       signature: flag ? [flag] : o.signature, // flagship = most-expensive tracked project, by extended-assets price
       recent: dropTracked(o.recent, tracked),
@@ -284,6 +300,7 @@ export async function resolveDevelopers(): Promise<DeveloperIntel[]> {
     const tracked = trackedFor(slug, l.name);
     computed.push({
       ...d,
+      performance: { ...d.performance, avgDelayMonths: avgDelayFor(l.name) ?? d.performance.avgDelayMonths }, // avg delay from the live filings, not the stale rollup
       signature: flag ? [flag] : dropTracked(d.signature, tracked),
       recent: dropTracked(d.recent, tracked),
       pipeline: dropTracked(d.pipeline, tracked),
