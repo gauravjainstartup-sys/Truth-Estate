@@ -217,3 +217,98 @@ export async function buildGeneralContext(
 ): Promise<BuiltContext> {
   return renderContext(await getLiveData(deps), unlockedProjects);
 }
+
+/* ════════════════════════════════════════════════════════════════
+   PROJECT DOCUMENTS & EXTENDED DETAILS (project mode only)
+
+   The scoreboard view is shallow — the brochure, payment plan, site plan
+   and launch-price / size / floors detail live in project_extended_details,
+   which keys on backlog_projects.id, NOT on the listing name. We bridge
+   listing name → backlog id → extended row (the same name bridge the site's
+   catalogue uses) and key the result by slug, so the per-project chat can
+   quote real pricing and hand over a document link when asked.
+
+   Fails soft everywhere: a missing table, a 400 or an unmatched name simply
+   yields no block, and the chat answers from the public facts as before.
+   ════════════════════════════════════════════════════════════════ */
+type ExtEntry = {
+  brochureUrl: string | null;
+  paymentPlanUrl: string | null;
+  siteMapUrl: string | null;
+  priceRangeSqft: string | null;
+  superAreaRange: string | null;
+  floorsRange: string | null;
+  totalTowers: number | null;
+  launchPrice: number | null;
+};
+
+let extCache: { at: number; index: Record<string, ExtEntry> } | null = null;
+
+async function fetchExtIndex(deps: DbDeps, now = Date.now()): Promise<Record<string, ExtEntry>> {
+  if (extCache && now - extCache.at < CACHE_TTL_MS) return extCache.index;
+  const [ext, names] = await Promise.all([
+    rows<Record<string, unknown>>(
+      "project_extended_details?select=backlog_id,brochure_url,payment_plan_url,site_map_image_url,price_range_sqft,super_area_range,floors_range,total_towers,launch_price&limit=400",
+      deps,
+    ),
+    // project_name is the current column; the bridge mirrors fetchBacklogNameIds.
+    rows<{ id: string | number; project_name: string }>("backlog_projects?select=id,project_name&limit=2000", deps),
+  ]);
+  const nameById = new Map<string, string>();
+  for (const r of names) if (r.id != null && r.project_name) nameById.set(String(r.id), r.project_name);
+  const index: Record<string, ExtEntry> = {};
+  for (const r of ext) {
+    const name = nameById.get(String(r.backlog_id ?? ""));
+    if (!name) continue;
+    const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
+    const num = (v: unknown) => (v == null || v === "" || Number.isNaN(Number(v)) ? null : Number(v));
+    index[slugify(name)] = {
+      brochureUrl: str(r.brochure_url),
+      paymentPlanUrl: str(r.payment_plan_url),
+      siteMapUrl: str(r.site_map_image_url),
+      priceRangeSqft: str(r.price_range_sqft),
+      superAreaRange: str(r.super_area_range),
+      floorsRange: str(r.floors_range),
+      totalTowers: num(r.total_towers),
+      launchPrice: num(r.launch_price),
+    };
+  }
+  // Never replace a good cache with an empty read (a transient blip or a
+  // renamed column would otherwise strip every project's documents).
+  if (Object.keys(index).length === 0 && extCache) return extCache.index;
+  extCache = { at: now, index };
+  return index;
+}
+
+export function resetExtCache(): void {
+  extCache = null;
+}
+
+export async function buildProjectExtras(deps: DbDeps, slugOrName: string): Promise<string | null> {
+  const key = slugify(slugOrName);
+  if (!key) return null;
+  const e = (await fetchExtIndex(deps))[key];
+  if (!e) return null;
+
+  const facts: string[] = [];
+  if (e.priceRangeSqft) facts.push(`base rate ${e.priceRangeSqft}/sqft`);
+  if (e.superAreaRange) facts.push(`sizes ${e.superAreaRange} sqft`);
+  if (e.floorsRange) facts.push(`floors ${e.floorsRange}`);
+  if (e.totalTowers != null) facts.push(`${e.totalTowers} towers`);
+  if (e.launchPrice != null) facts.push(`launch price ${inr(e.launchPrice)}`);
+
+  const docs: string[] = [];
+  if (e.brochureUrl) docs.push(`Brochure: ${e.brochureUrl}`);
+  if (e.paymentPlanUrl) docs.push(`Payment plan: ${e.paymentPlanUrl}`);
+  if (e.siteMapUrl) docs.push(`Site plan: ${e.siteMapUrl}`);
+
+  if (!facts.length && !docs.length) return null;
+
+  const lines = ["── EXTENDED DETAILS & DOCUMENTS (this project) ──"];
+  if (facts.length) lines.push(facts.join(" · "));
+  if (docs.length) {
+    lines.push("DOCUMENTS — share the DIRECT link if the visitor asks for the brochure / payment plan / site plan:");
+    lines.push(...docs.map((d) => `- ${d}`));
+  }
+  return lines.join("\n");
+}
