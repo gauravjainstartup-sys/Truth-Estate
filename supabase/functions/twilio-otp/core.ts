@@ -225,6 +225,11 @@ export async function handleTwilioOtp(body: Body, deps: Deps): Promise<Result> {
       p_user_id: userId, p_phone: e164,
       p_anon_id: body.anonId ?? null, p_session_id: body.sessionId ?? null, p_name: body.name ?? null,
     }, env, fetchImpl);
+    await rpc("resolve_and_merge_verified_identity", {
+      p_target_id: userId,
+      p_verified_phone: e164,
+      p_phone_is_verified: true,
+    }, env, fetchImpl);
     await stampSignIn(userId, body.anonId, body.sessionId, env, fetchImpl);
     const session = await mintSession(userId, env, now());
     console.log(`[twilio-otp] ok user=${userId} chats=${linked?.chats_claimed ?? 0} session=${session ? "minted" : "off"}`);

@@ -395,6 +395,11 @@ Deno.serve(async (req: Request) => {
       p_session_id: body.sessionId ?? null,
       p_name: body.name ?? null,
     });
+    await rpc("resolve_and_merge_verified_identity", {
+      p_target_id: userId,
+      p_verified_phone: `+91${phone}`,
+      p_phone_is_verified: true,
+    });
 
     await stampSignIn(userId, body.anonId, body.sessionId);
     /* A real session — but only on this verified path, and only once the
