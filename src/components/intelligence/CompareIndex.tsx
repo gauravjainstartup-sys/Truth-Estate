@@ -7,7 +7,6 @@ import { basePath, homeHref } from "@/lib/site";
 import {
   COMPARE_OPTIONS,
   POPULAR_COMPARISONS,
-  PROJECT_COMPARE_CAP,
   comparePairSlug,
   type CompareKind,
   type ProjectCompareOption,
@@ -20,7 +19,7 @@ const KIND_LABEL: Record<CompareKind, string> = { project: "Projects", developer
 
 type PopularEntry = { label: string; pair: string; kind: CompareKind; scores?: [number, number] };
 
-export default function CompareIndex({ projectOptions }: { projectOptions: ProjectCompareOption[] }) {
+export default function CompareIndex({ projectOptions, prerenderedPairs }: { projectOptions: ProjectCompareOption[]; prerenderedPairs: string[] }) {
   const { open } = useJourney();
 
   // real projects (live scored set) + curated developer/market registries
@@ -29,10 +28,12 @@ export default function CompareIndex({ projectOptions }: { projectOptions: Proje
     developer: COMPARE_OPTIONS.developer,
     market: COMPARE_OPTIONS.market,
   };
-  // projectOptions arrives sorted by score, so the first PROJECT_COMPARE_CAP are
-  // exactly the pairs prerendered as static pages; any pair outside this set is
-  // rendered client-side on /intelligence/compare/live (no per-pair prerender).
-  const prerenderedProjectSlugs = new Set(projectOptions.slice(0, PROJECT_COMPARE_CAP).map((o) => o.slug));
+  // The EXACT set of project pairs prerendered as static pages — the high-intent
+  // filter from generateStaticParams (same developer / same corridor / both
+  // top-tier / close price) plus the demand-proven indexable pairs. Any pair
+  // outside this set has no static page and is rendered client-side on
+  // /intelligence/compare/live instead of 404ing on the static export.
+  const prerenderedPairSet = new Set(prerenderedPairs);
   // start on Projects when we have a live set to compare; else fall back
   const initialKind: CompareKind = projectOptions.length >= 2 ? "project" : "developer";
 
@@ -58,7 +59,7 @@ export default function CompareIndex({ projectOptions }: { projectOptions: Proje
     if (!a || !b || a === b) return;
     // a project pair outside the prerendered cap has no static page — render it
     // live from the compare index instead of 404ing on the static export.
-    if (kind === "project" && !(prerenderedProjectSlugs.has(a) && prerenderedProjectSlugs.has(b))) {
+    if (kind === "project" && !prerenderedPairSet.has(comparePairSlug(a, b))) {
       window.location.href = `${basePath}/intelligence/compare/live?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`;
       return;
     }
