@@ -232,6 +232,11 @@ function ProjectCompare({ r }: { r: Extract<ResolvedCompare, { kind: "project" }
   const vtag = (t: string) => (
     <span className="ml-1.5 inline-block rounded-full border border-[#1e6b45]/25 bg-[#1e6b45]/[0.06] px-1.5 py-0.5 align-middle text-[0.5rem] font-medium uppercase tracking-[0.08em] text-[#1e6b45]">{t}</span>
   );
+  const unitsLine = (p: ProjectIntel, o: ReturnType<typeof deliveryOutlook>) => {
+    const total = p.ops?.units;
+    if (!o || total == null) return undefined;
+    return `${Math.round((total * o.absorptionPct) / 100).toLocaleString("en-IN")} of ${total.toLocaleString("en-IN")} units`;
+  };
   const OUTLOOK_VAL = { High: 3, Medium: 2, Low: 1 } as const;
   const outlookOf = (m: ReturnType<typeof roiModel>) =>
     m ? ((m.adjCagr >= 8.5 ? "High" : m.adjCagr >= 6 ? "Medium" : "Low") as keyof typeof OUTLOOK_VAL) : null;
@@ -322,10 +327,26 @@ function ProjectCompare({ r }: { r: Extract<ResolvedCompare, { kind: "project" }
       </Section>
 
       <Section title="The build">
+        {/* Construction progress stays open on the public page; the delivery
+            forecast and the sold-through figure sit behind the free unlock —
+            field names shown, values gated, same treatment as the pillars. */}
         <Row label="Built vs RERA-due"
           a={oa ? `${oa.actualPct}% vs ${oa.expectedPct}%` : "—"} b={ob ? `${ob.actualPct}% vs ${ob.expectedPct}%` : "—"}
           subA={oa ? `QPR ${oa.qpr}` : undefined} subB={ob ? `QPR ${ob.qpr}` : undefined}
           win={oa && ob ? winHigher(oa.aheadOfPlan, ob.aheadOfPlan) : undefined} />
+        {unlocked ? (
+          <Row label="Expected OC"
+            a={oa ? oa.predictedDate : "—"} b={ob ? ob.predictedDate : "—"}
+            subA={oa && oa.ahead !== 0 ? `${Math.abs(oa.ahead)} mo ${oa.ahead > 0 ? "before" : "after"} the RERA date` : undefined}
+            subB={ob && ob.ahead !== 0 ? `${Math.abs(ob.ahead)} mo ${ob.ahead > 0 ? "before" : "after"} the RERA date` : undefined}
+            win={oa && ob ? winHigher(oa.ahead, ob.ahead) : undefined} />
+        ) : <LockRow label="Expected OC" />}
+        {unlocked ? (
+          <Row label="Units sold"
+            a={oa ? `${oa.absorptionPct}%` : "—"} b={ob ? `${ob.absorptionPct}%` : "—"}
+            subA={unitsLine(a, oa)} subB={unitsLine(b, ob)}
+            win={oa && ob ? winHigher(oa.absorptionPct, ob.absorptionPct) : undefined} />
+        ) : <LockRow label="Units sold" />}
       </Section>
 
       <Section title="Trust, pillar by pillar" note="The same five-pillar model that builds the Truth Score — weighted 28 · 22 · 22 · 18 · 10.">
