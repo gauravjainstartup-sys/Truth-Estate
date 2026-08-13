@@ -80,13 +80,39 @@ const HEALTH_KEY: Record<FinKey, string> = {
 const ratingFromScore = (sc: number | undefined): FinRating | null =>
   sc == null ? null : sc >= 70 ? "strong" : sc >= 45 ? "moderate" : "weak";
 
-/* per-metric ratings from the analyst's 0–100 scores — the real breakdown the
-   meters should read, instead of one flat band applied to all five. */
+/* Fallback when the analyst's 0–100 metric_scores aren't saved for a developer
+   (financials filed & scored in the back-office, but only metrics/raw_financials
+   persisted — not the metric_scores/overall_score the meters read). Derive the
+   three-level rating straight from the filed raw_financials so each meter still
+   reads its own real signal instead of one flat band. Standard corporate-finance
+   thresholds computed off the absolute ₹ figures (unit-safe); direction matches
+   the analyst's own bands. */
+function ratingsFromRawFinancials(raw: Record<string, number> | undefined): Partial<Record<FinKey, FinRating>> {
+  const out: Partial<Record<FinKey, FinRating>> = {};
+  if (!raw) return out;
+  const v = (k: string): number | null => (Number.isFinite(raw[k]) ? raw[k] : null);
+  const lower = (x: number, strongMax: number, modMax: number): FinRating => (x <= strongMax ? "strong" : x <= modMax ? "moderate" : "weak"); // lower ratio = healthier
+  const higher = (x: number, strongMin: number, modMin: number): FinRating => (x >= strongMin ? "strong" : x >= modMin ? "moderate" : "weak"); // higher ratio = healthier
+  const equity = v("equity"), debt = v("total_debt"), cash = v("cash_and_equivalents");
+  const ebit = v("ebit"), ebitda = v("ebitda"), revenue = v("revenue");
+  const interest = v("interest_expense"), ocf = v("operating_cash_flow"), inventory = v("inventory");
+  if (equity != null && equity > 0 && debt != null && cash != null) out.leverage = lower((debt - cash) / equity, 0.5, 1.0);
+  if (interest != null && interest > 0 && ebit != null) out.coverage = higher(ebit / interest, 4, 2);
+  if (ebitda != null && ebitda > 0 && ocf != null) out.cash = higher(ocf / ebitda, 0.6, 0.2);
+  if (revenue != null && revenue > 0 && inventory != null) out.inventory = lower(inventory / revenue, 3, 6);
+  if (revenue != null && revenue > 0 && ebitda != null) out.margin = higher(ebitda / revenue, 0.2, 0.1);
+  return out;
+}
+
+/* per-metric ratings — the analyst's 0–100 scores when saved, else derived from
+   the filed raw_financials, so the meters read the real breakdown rather than
+   one flat band applied to all five. */
 function financialsFromHealth(h: DeveloperHealth | undefined): Partial<Record<FinKey, FinRating>> {
   const out: Partial<Record<FinKey, FinRating>> = {};
   if (!h) return out;
+  const fromRaw = ratingsFromRawFinancials(h.rawFinancials);
   for (const k of FIN_KEYS) {
-    const r = ratingFromScore(h.financialScores[HEALTH_KEY[k]]);
+    const r = ratingFromScore(h.financialScores[HEALTH_KEY[k]]) ?? fromRaw[k] ?? null;
     if (r) out[k] = r;
   }
   return out;

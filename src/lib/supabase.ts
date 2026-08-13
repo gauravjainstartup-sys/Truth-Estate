@@ -992,6 +992,7 @@ export type DeveloperHealth = {
   name: string;
   financialScores: Record<string, number>; // metric_scores (0–100)
   financialValues: Record<string, number>; // computed_metrics (ratios)
+  rawFinancials: Record<string, number>;   // raw_financials (absolute ₹ Cr figures) — the fallback when the analyst's 0–100 scores aren't saved yet
   financialOverall: number | null;         // overall_score
 };
 
@@ -1018,6 +1019,7 @@ export async function fetchDeveloperHealth(): Promise<Record<string, DeveloperHe
       name,
       financialScores: numRec(o.metric_scores),
       financialValues: numRec(o.computed_metrics),
+      rawFinancials: numRec(o.raw_financials),
       financialOverall: n(o.overall_score),
     };
   }
