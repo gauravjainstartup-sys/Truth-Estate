@@ -192,6 +192,33 @@ function liveOnlyDeveloper(
 
 let cache: DeveloperIntel[] | undefined;
 
+/* Editorial overlay for the filings-computed developers — a founding year,
+   listed/private, and a one-liner: the facts the pipeline doesn't carry, so
+   these cards read like the hand-reviewed dossiers rather than a bare stat
+   line. Years are each developer's commonly-cited establishment year, verified
+   against public records; Whiteland's is genuinely ambiguous (2021 entity vs a
+   2012 founder-legacy) so it carries NO year rather than a guessed one. "listed"
+   tracks the entity that actually builds in Gurugram — so Eldeco reads Private
+   (the Gurgaon arm, Eldeco Infrastructure & Properties, is unlisted; the listed
+   Eldeco Housing is a separate UP company). Matched to the filed developer_name
+   by a loose normalise. */
+const DEV_EDITORIAL: { name: string; est: string; listed: boolean; tagline: string }[] = [
+  { name: "Sobha", est: "1995", listed: true, tagline: "Backward-integrated build quality, at the top of its corridor." },
+  { name: "Oberoi Realty", est: "1980", listed: true, tagline: "Mumbai-grade luxury, newly landed in Gurugram." },
+  { name: "Experion", est: "2006", listed: false, tagline: "Singapore-backed patient capital on the expressway." },
+  { name: "Whiteland", est: "", listed: false, tagline: "Branded-residence luxury on the Southern Peripheral Road." },
+  { name: "Ashiana Group", est: "1979", listed: true, tagline: "Kid-centric and senior-living homes across New Gurgaon." },
+  { name: "Central Park", est: "1999", listed: false, tagline: "Resort-style, service-led luxury on Sohna Road." },
+  { name: "Signature Global", est: "2014", listed: true, tagline: "Affordable-housing scale, now reaching mid-premium." },
+  { name: "Tulip", est: "2005", listed: false, tagline: "Value-led volume on Sohna Road and the SPR." },
+  { name: "Elan", est: "2013", listed: false, tagline: "Retail-led developer, now building branded residences." },
+  { name: "Puri Constructions", est: "1971", listed: false, tagline: "A five-decade Delhi builder — boutique, low-volume." },
+  { name: "Max Estates", est: "2016", listed: true, tagline: "Max Group's wellness-led move into grade-A real estate." },
+  { name: "ELDECO", est: "1975", listed: false, tagline: "A five-decade township builder, value-focused across the NCR." },
+];
+const editorialNorm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
+const DEV_EDITORIAL_MAP = new Map(DEV_EDITORIAL.map((e) => [editorialNorm(e.name), e]));
+
 export async function resolveDevelopers(): Promise<DeveloperIntel[]> {
   if (cache !== undefined) return cache;
   const [live, ledger, health, catalog, ext, cfg, nameIds, corridorPsf] = await Promise.all([
@@ -294,8 +321,14 @@ export async function resolveDevelopers(): Promise<DeveloperIntel[]> {
     const d = liveOnlyDeveloper(l, ledger, health);
     const flag = flagshipFor(slug, l.name);
     const tracked = trackedFor(slug, l.name);
+    /* Editorial overlay: a founding year + listed/private + one-liner turns a
+       bare filings card into a dossier-style one. `computed: false` lets the
+       card and detail header show the est + Listed/Private badge (both gate on
+       it); the track-record numbers below stay pipeline-computed as before. */
+    const ed = DEV_EDITORIAL_MAP.get(editorialNorm(l.name));
     computed.push({
       ...d,
+      ...(ed ? { est: ed.est, listed: ed.listed, tagline: ed.tagline, computed: false } : {}),
       performance: { ...d.performance, avgDelayMonths: avgDelayFor(l.name) ?? d.performance.avgDelayMonths }, // avg delay from the live filings, not the stale rollup
       signature: flag ? [flag] : dropTracked(d.signature, tracked),
       recent: dropTracked(d.recent, tracked),
