@@ -59,6 +59,9 @@ export type EventName =
      URL. Fire via track(), so GA4 + Amplitude get them synchronously. ── */
   | "deal_room_page_viewed"          // the Deal Room surface was reached
   | "sun_vastu_page_viewed"          // the /sun-vastu gallery was reached
+  | "compare_projects"               // a project-vs-project compare page opened
+  | "compare_developers"             // a developer-vs-developer compare page opened
+  | "compare_markets"                // a market-vs-market compare page opened
   | "requirements_flow_started"      // the requirements / brief flow was opened
   | "shortlist_page_reached"         // the shortlist surface was reached
   | "first_shortlist_unlocked"       // the reader's FIRST shortlist unlock (once per device)
