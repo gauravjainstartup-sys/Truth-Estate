@@ -180,8 +180,12 @@ export type LiveDeveloper = {
 export async function fetchDevelopersOverview(): Promise<LiveDeveloper[] | null> {
   const rows = await sbRows(
     "developers_overview",
-    // 17 developers are filed; a limit of 12 silently dropped five of them
-    "select=developer_name,developer_slug,total_projects,delivered,ongoing,delayed_pct,avg_delay_months,financial_band,legal_band&order=delivered.desc.nullslast&limit=50",
+    // 17 developers are filed; a limit of 12 silently dropped five of them.
+    // avg_developer_delay is pulled alongside avg_delay_months because the
+    // latter is null for EVERY developer in the view (delay_months is filed as
+    // text like "4.6 mo", so the view's AVG() can't aggregate it) — the real,
+    // parsed average lands in avg_developer_delay instead.
+    "select=developer_name,developer_slug,total_projects,delivered,ongoing,delayed_pct,avg_delay_months,avg_developer_delay,financial_band,legal_band&order=delivered.desc.nullslast&limit=50",
   );
   if (!rows) return null;
   const out: LiveDeveloper[] = [];
@@ -195,7 +199,11 @@ export async function fetchDevelopersOverview(): Promise<LiveDeveloper[] | null>
       delivered: n(r.delivered),
       ongoing: n(r.ongoing),
       delayedPct: n(r.delayed_pct),
-      avgDelayMonths: n(r.avg_delay_months),
+      // Prefer the intended column; fall back to the parsed per-developer
+      // average when it's null (which, today, is always) so a delayed developer
+      // never renders "0 mo" beside a non-100% on-time score. NOT
+      // computed_avg_delay — that reads 0 even for fully-delayed developers.
+      avgDelayMonths: n(r.avg_delay_months) ?? n(r.avg_developer_delay),
       financialBand: s(r.financial_band),
       legalBand: s(r.legal_band),
     });
