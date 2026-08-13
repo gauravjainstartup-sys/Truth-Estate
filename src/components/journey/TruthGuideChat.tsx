@@ -17,7 +17,7 @@ import {
   type GateReason,
 } from "@/lib/truthGuideChat";
 import { isSignedIn } from "@/lib/journey";
-import { linkify, loadChatLinks, type ChatLink } from "@/lib/chatLinks";
+import { renderChat, loadChatLinks, type ChatLink } from "@/lib/chatLinks";
 import { basePath } from "@/lib/site";
 import { normalisePhone, prettyPhone, sendOtp, verifyOtp, saveName, signInWithGoogle, OTP_LENGTH } from "@/lib/phoneAuth";
 import { track } from "@/lib/events";
@@ -239,7 +239,7 @@ export default function TruthGuideChat({
             </div>
           ) : (
             <div key={m.id}>
-              <Bubble>{linkify(m.text, links, basePath)}</Bubble>
+              <Bubble>{renderChat(m.text, links, basePath)}</Bubble>
             </div>
           ),
         )}
