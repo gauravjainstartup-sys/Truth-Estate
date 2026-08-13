@@ -164,7 +164,7 @@ export default function DeveloperProfile({ dev }: { dev: DeveloperIntel }) {
                 {dev.listedNote}
               </span>
             )}
-            <span className="text-[0.74rem] font-light text-[#1a1a1a]/40">Signals, not figures — directional health on each measure.</span>
+            <span className="text-[0.74rem] font-light text-[#1a1a1a]/40">A read on each measure — the full audited numbers are inside the reports.</span>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {FIN_METRICS.map((m) => (
@@ -189,7 +189,7 @@ export default function DeveloperProfile({ dev }: { dev: DeveloperIntel }) {
         </div>
 
         <p className="mt-8 text-[0.72rem] font-light leading-[1.7] text-[#1a1a1a]/35">
-          Independent assessment by Truth Estate. No developer can pay for a higher score or a better placement. Performance figures are our own tracked estimates; financial signals are directional reads from public filings and parent-group strength — not a substitute for project-level due diligence.
+          Independent assessment by Truth Estate. No developer can pay for a higher score or a better placement. Performance figures are our own tracked estimates. For the full audited financials and project-level forensics, open the reports.
         </p>
       </div>
     </div>
