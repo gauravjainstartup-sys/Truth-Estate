@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/site";
-import { DEVELOPERS } from "@/lib/developers";
+import { resolveDevelopers } from "@/lib/developersLive";
 import { MARKETS } from "@/lib/markets";
 import { BEST_PROJECTS } from "@/lib/bestProjects";
 import { INDEXABLE_COMPARE_PAIRS } from "@/lib/indexableCompares";
@@ -53,7 +53,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   /* The PUBLIC address, not the internal id — this file is what Google
      reads, so a mismatch here is the whole migration wasted. */
   rows.forEach((r) => add(`/projects/${r.seoSlug}`, 0.8, "weekly"));
-  DEVELOPERS.forEach((d) => add(`/intelligence/developers/${d.slug}`, 0.6, "monthly"));
+  /* EVERY developer we render a page for — curated dossiers AND the
+     filings-computed profiles (Signature Global, Sobha, Eldeco, …). This used
+     to list only the curated registry, so 12 of 19 live developer pages were
+     built and indexable but never submitted to Google. resolveDevelopers() is
+     the same source generateStaticParams uses, so the sitemap can't drift from
+     the pages again. */
+  (await resolveDevelopers()).forEach((d) => add(`/intelligence/developers/${d.slug}`, 0.6, "monthly"));
   MARKETS.forEach((m) => add(`/intelligence/markets/${m.slug}`, 0.6, "monthly"));
   /* Compare pairs: only the demand-proven allowlist is listed. The full
      combinatorial /intelligence/compare/<pair> set stays noindex + out of the
