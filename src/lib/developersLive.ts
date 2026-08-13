@@ -216,16 +216,30 @@ export async function resolveDevelopers(): Promise<DeveloperIntel[]> {
     const priced = trackedFull(slug, name).filter((t) => t.cr > 0).sort((a, b) => b.cr - a.cr);
     return priced[0]?.name ?? null;
   };
+  /* A project already shown — and LINKED — under "Projects we track" must not
+     also appear as a plain-text bullet under "Recently launched" / "In the
+     pipeline". On a new developer every filing is both tracked and "ongoing",
+     so pipeline = names(ongoing) simply mirrored the tracked column and read as
+     a bug. Flagship is deliberately one of the tracked projects (the priciest),
+     so it stays; only the redundant plain lists are trimmed. */
+  const nameKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const dropTracked = (names: string[], tracked: { name: string }[]): string[] => {
+    const t = new Set(tracked.map((x) => nameKey(x.name)));
+    return names.filter((n) => !t.has(nameKey(n)));
+  };
 
   const curated = DEVELOPERS.map((d) => {
     const o = overlayDeveloper(d, live);
     const hf = financialsFromHealth(health?.[devKey(d.name)]);
     const flag = flagshipFor(d.slug, d.name);
+    const tracked = trackedFor(d.slug, d.name);
     return {
       ...o,
       financials: { ...o.financials, ...hf }, // real per-metric scores win over hand-set
       signature: flag ? [flag] : o.signature, // flagship = most-expensive tracked project, by extended-assets price
-      trackedProjects: trackedFor(d.slug, d.name),
+      recent: dropTracked(o.recent, tracked),
+      pipeline: dropTracked(o.pipeline, tracked),
+      trackedProjects: tracked,
     };
   });
 
@@ -241,7 +255,14 @@ export async function resolveDevelopers(): Promise<DeveloperIntel[]> {
     seen.add(slug);
     const d = liveOnlyDeveloper(l, ledger, health);
     const flag = flagshipFor(slug, l.name);
-    computed.push({ ...d, signature: flag ? [flag] : d.signature, trackedProjects: trackedFor(slug, l.name) });
+    const tracked = trackedFor(slug, l.name);
+    computed.push({
+      ...d,
+      signature: flag ? [flag] : dropTracked(d.signature, tracked),
+      recent: dropTracked(d.recent, tracked),
+      pipeline: dropTracked(d.pipeline, tracked),
+      trackedProjects: tracked,
+    });
   }
   computed.sort((a, b) => b.performance.delivered - a.performance.delivered);
 
