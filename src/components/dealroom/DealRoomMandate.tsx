@@ -78,6 +78,8 @@ export default function DealRoomMandate() {
   const [projectNames, setProjectNames] = useState<string[]>([]); // type-ahead suggestions (free text still allowed)
   const [projectConfigs, setProjectConfigs] = useState<Record<string, string[]>>({}); // name -> filed unit types
   const [projectPrices, setProjectPrices] = useState<Record<string, [number, number]>>({}); // name -> filed budget [lowCr, highCr]
+  const [projectPsf, setProjectPsf] = useState<Record<string, { low: number; high: number }>>({}); // name -> the project's own filed ₹/sq-ft band
+  const [projectHomes, setProjectHomes] = useState<Record<string, { config: string; superSqft: number }[]>>({}); // name -> per-config super areas
   const [projOpen, setProjOpen] = useState(false); // custom project autocomplete dropdown
   // Current market price for the chosen project+config. Filed-data range for a
   // tracked project (instant), else a grounded Gemini lookup. null = not resolved;
@@ -85,6 +87,7 @@ export default function DealRoomMandate() {
   const [resale, setResale] = useState<ResalePrice | null>(null);
   const [resaleLoading, setResaleLoading] = useState(false);
   const [resolvingPrice, setResolvingPrice] = useState(false); // the loader between the asset + terms steps
+  const [resaleBasis, setResaleBasis] = useState<"config" | "project" | "market" | null>(null); // how the shown range was derived
   const resaleFetchedFor = useRef("");
 
   // auth (buyer step)
@@ -119,10 +122,31 @@ export default function DealRoomMandate() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* The market price for the chosen project+config. If we track the project we
-     already hold its filed budget — return that instantly, no model call. Only
-     projects we don't track hit Gemini (the fast flash model, grounded). */
-  function dbPriceFor(project: string): ResalePrice | null {
+  /* The tightest market range we can stand behind for the chosen project+config,
+     resolved in this order — instantly from filed data first, the model only as
+     a last resort:
+       1. CONFIG range — this config's super area × the project's own filed ₹/sq-ft
+          band (psfOwn). Same rate the report prices units at, so the Deal Room and
+          the report never quote two different numbers; shown as a band (area ×
+          [rate low, rate high]) rather than the report's single point.
+       2. PROJECT range — the project's filed budget span across all configs, when
+          we track the project but not this config's area.
+       3. MARKET — a grounded Gemini lookup for projects we don't track at all. */
+  function configPriceFor(project: string, config: string): ResalePrice | null {
+    const psf = projectPsf[project.trim()];
+    const homes = projectHomes[project.trim()];
+    const cfg = config.trim().toLowerCase();
+    if (!psf || !(psf.low > 0) || !homes?.length || !cfg) return null;
+    const areas = homes.filter((h) => h.config.trim().toLowerCase() === cfg && h.superSqft > 0).map((h) => h.superSqft);
+    if (!areas.length) return null;
+    const lakh = (v: number) => Math.round(v / 1e5) * 1e5; // clean, indicative granularity
+    const low = lakh(Math.min(...areas) * psf.low);
+    const high = lakh(Math.max(...areas) * psf.high);
+    if (!(low > 0)) return null;
+    const text = low === high ? `₹${inrGroup(low)}` : `₹${inrGroup(low)} - ₹${inrGroup(high)}`;
+    return { status: "ok", text, low, high };
+  }
+  function budgetPriceFor(project: string): ResalePrice | null {
     const b = projectPrices[project.trim()];
     if (!b || !(b[0] > 0)) return null;
     const low = Math.round(b[0] * 1e7);
@@ -130,8 +154,12 @@ export default function DealRoomMandate() {
     const text = low === high ? `₹${inrGroup(low)}` : `₹${inrGroup(low)} - ₹${inrGroup(high)}`;
     return { status: "ok", text, low, high };
   }
-  async function resolvePrice(project: string, city: string, config: string): Promise<ResalePrice> {
-    return dbPriceFor(project) ?? fetchResalePrice(project, city, config, "gemini-2.5-flash");
+  async function resolvePrice(project: string, city: string, config: string): Promise<{ price: ResalePrice; basis: "config" | "project" | "market" }> {
+    const byConfig = configPriceFor(project, config);
+    if (byConfig) return { price: byConfig, basis: "config" };
+    const byBudget = budgetPriceFor(project);
+    if (byBudget) return { price: byBudget, basis: "project" };
+    return { price: await fetchResalePrice(project, city, config, "gemini-2.5-flash"), basis: "market" };
   }
   const seedTarget = (r: ResalePrice) => {
     if (r.low) setD((p) => (digitsToNum(p.target) === 0 ? { ...p, target: inrGroup(Math.round(r.low! * 0.9)) } : p));
@@ -146,13 +174,14 @@ export default function DealRoomMandate() {
     setResolvingPrice(true);
     window.scrollTo(0, 0);
     resaleFetchedFor.current = `${proj}|${d.city}|${d.config}`;
-    const [priced] = await Promise.all([
+    const [res] = await Promise.all([
       resolvePrice(proj, d.city, d.config),
       new Promise((r) => setTimeout(r, 900)), // a floor so the loader reads as deliberate, never a flash
     ]);
-    setResale(priced);
-    if (priced.status === "error" || !priced.text) resaleFetchedFor.current = "";
-    else seedTarget(priced);
+    setResale(res.price);
+    setResaleBasis(res.basis);
+    if (res.price.status === "error" || !res.price.text) resaleFetchedFor.current = "";
+    else seedTarget(res.price);
     setResolvingPrice(false);
     setStep(1);
   }
@@ -164,11 +193,12 @@ export default function DealRoomMandate() {
     resaleFetchedFor.current = `${proj}|${d.city}|${d.config}`;
     setResale(null);
     setResaleLoading(true);
-    resolvePrice(proj, d.city, d.config).then((r) => {
-      setResale(r);
+    resolvePrice(proj, d.city, d.config).then((res) => {
+      setResale(res.price);
+      setResaleBasis(res.basis);
       setResaleLoading(false);
-      if (r.status === "error" || !r.text) { resaleFetchedFor.current = ""; return; }
-      seedTarget(r);
+      if (res.price.status === "error" || !res.price.text) { resaleFetchedFor.current = ""; return; }
+      seedTarget(res.price);
     });
   }
 
@@ -179,20 +209,41 @@ export default function DealRoomMandate() {
     // Load tracked project names (type-ahead) + their filed unit types (the
     // config selector). Free text and the default configs both still work.
     if (projectNames.length === 0) {
+      type Band = { low?: number; high?: number };
+      type IdxEntry = {
+        name?: string;
+        configs?: string[];
+        budget?: [number, number];
+        psf?: Band; // market ₹/sq-ft corridor
+        psfOwn?: Band; // the project's OWN current asking ₹/sq-ft (what units are priced at)
+        ops?: { homes?: { config?: string; superSqft?: number }[] };
+      };
       fetch(`${basePath}/compare-index.json`)
         .then((r) => (r.ok ? r.json() : null))
-        .then((idx: Record<string, { name?: string; configs?: string[]; budget?: [number, number] }> | null) => {
+        .then((idx: Record<string, IdxEntry> | null) => {
           if (!idx) return;
-          const entries = Object.values(idx).filter((p): p is { name: string; configs?: string[]; budget?: [number, number] } => !!p?.name);
+          const entries = Object.values(idx).filter((p): p is IdxEntry & { name: string } => !!p?.name);
           setProjectNames(Array.from(new Set(entries.map((p) => p.name))).sort());
           const cfg: Record<string, string[]> = {};
           const price: Record<string, [number, number]> = {};
+          const psf: Record<string, { low: number; high: number }> = {};
+          const homes: Record<string, { config: string; superSqft: number }[]> = {};
           for (const p of entries) {
             if (Array.isArray(p.configs) && p.configs.length) cfg[p.name] = p.configs;
             if (Array.isArray(p.budget) && p.budget[0] > 0) price[p.name] = [p.budget[0], p.budget[1] ?? p.budget[0]];
+            // The project's own filed rate (psfOwn) is the truth we price against;
+            // fall back to the market corridor (psf) only when it isn't filed.
+            const band = (p.psfOwn?.low ?? 0) > 0 ? p.psfOwn! : (p.psf?.low ?? 0) > 0 ? p.psf! : null;
+            if (band) psf[p.name] = { low: band.low!, high: (band.high ?? 0) > 0 ? band.high! : band.low! };
+            const hs = (p.ops?.homes ?? [])
+              .filter((h) => (h.superSqft ?? 0) > 0 && !!h.config)
+              .map((h) => ({ config: h.config!, superSqft: h.superSqft! }));
+            if (hs.length) homes[p.name] = hs;
           }
           setProjectConfigs(cfg);
           setProjectPrices(price);
+          setProjectPsf(psf);
+          setProjectHomes(homes);
         })
         .catch(() => { /* type-ahead is a nicety; free text always works */ });
     }
@@ -444,7 +495,7 @@ export default function DealRoomMandate() {
                           <span className="rounded-full border border-[#c9a96e]/30 px-2.5 py-1 font-mono text-[0.56rem] uppercase tracking-[0.06em] text-[#a9a196]">live · indicative</span>
                         </div>
                         <p className="mt-2 font-serif text-[1.35rem] leading-none text-[#e7cf95]">{resale!.text}</p>
-                        <p className="mt-2 text-[0.76rem] text-[#6f685c]">What {d.project.trim() || "this project"} is trading at today. Slide to set the price you want us to hit.</p>
+                        <p className="mt-2 text-[0.76rem] text-[#6f685c]">What {resaleBasis === "config" && d.config.trim() ? `a ${d.config.trim()} at ` : ""}{d.project.trim() || "this project"} is trading at today. Slide to set the price you want us to hit.</p>
 
                         <div className="relative mt-6 select-none">
                           <div className="relative h-2.5 rounded-full bg-gradient-to-r from-[#1e6b45] via-[#c9a96e] to-[#8a5a2b]">
