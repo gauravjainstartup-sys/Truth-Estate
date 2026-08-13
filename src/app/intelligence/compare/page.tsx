@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import CompareIndex from "@/components/intelligence/CompareIndex";
 import { fetchBacklogFull } from "@/lib/supabase";
-import { scoredProjectOptions } from "@/lib/compare";
+import { scoredProjectOptions, projectComparePairs, resolvableProjectPairs } from "@/lib/compare";
+import { INDEXABLE_COMPARE_PAIRS } from "@/lib/indexableCompares";
 
 export const metadata: Metadata = {
   /* Without this the route inherits metadataBase and Next emits the bare
@@ -20,5 +21,14 @@ export const metadata: Metadata = {
 export default async function Page() {
   const rows = await fetchBacklogFull();
   const projectOptions = scoredProjectOptions(rows, Number.POSITIVE_INFINITY);
-  return <CompareIndex projectOptions={projectOptions} />;
+  /* The exact set of project pairs that get a static page — MUST mirror
+     generateStaticParams in [pair]/page.tsx: the high-intent filtered pairs
+     among the scored/capped set, plus the demand-proven indexable pairs.
+     CompareIndex routes any pair outside this set to /compare/live, so a picker
+     selection of two "unrelated" projects never 404s on the static export. */
+  const prerenderedPairs = [
+    ...projectComparePairs(scoredProjectOptions(rows)),
+    ...resolvableProjectPairs(INDEXABLE_COMPARE_PAIRS, (rows ?? []).map((r) => r.slug)),
+  ];
+  return <CompareIndex projectOptions={projectOptions} prerenderedPairs={prerenderedPairs} />;
 }
