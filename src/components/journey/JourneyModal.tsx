@@ -1597,10 +1597,7 @@ function AdvisorCard({ advisor, onBook }: { advisor: Advisor; onBook: (slot: str
         <div className="flex-1">
           <p className="font-serif text-[1.3rem] font-medium text-[#1a1a1a] md:text-[1.5rem]">{advisor.name}</p>
           <p className="mt-1 text-[0.85rem] font-light text-[#1a1a1a]/55">
-            {advisor.experience} · {advisor.specialisation}
-          </p>
-          <p className="mt-1 text-[0.8rem] font-light text-[#1a1a1a]/40">
-            Speaks {advisor.languages.join(", ")}
+            {advisor.specialisation}
           </p>
         </div>
       </div>

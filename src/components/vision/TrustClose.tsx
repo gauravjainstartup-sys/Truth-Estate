@@ -30,18 +30,16 @@ export default function TrustClose() {
           only to you — helps you make the call.
         </p>
 
-        <div className="mt-12 grid gap-px overflow-hidden rounded-xl border border-white/8 bg-white/8 sm:grid-cols-3">
+        <div className="mt-12 max-w-sm overflow-hidden rounded-xl border border-white/8">
           {ADVISORS.map((a) => (
             <div key={a.name} className="bg-[#0d0d0f] p-7">
               <div className="flex items-center gap-3">
                 <span className="flex h-11 w-11 items-center justify-center rounded-full border border-[#c9a96e]/30 font-serif text-[0.95rem] text-[#c9a96e]">{a.initials}</span>
                 <div>
                   <p className="text-[0.95rem] text-white/90">{a.name}</p>
-                  <p className="font-mono text-[0.66rem] tracking-[0.04em] text-white/35">{a.experience.toUpperCase()}</p>
+                  <p className="font-mono text-[0.66rem] tracking-[0.04em] text-white/35">{a.specialisation.toUpperCase()}</p>
                 </div>
               </div>
-              <p className="mt-5 text-[0.86rem] font-light leading-[1.6] text-white/55">{a.specialisation}</p>
-              <p className="mt-3 text-[0.74rem] font-light text-white/30">{a.languages.join(" · ")}</p>
             </div>
           ))}
         </div>
