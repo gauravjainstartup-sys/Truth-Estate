@@ -1235,6 +1235,28 @@ export function liveProjectIntel(
     return m ? +m[1] * 100 + (m[2] ? Math.min(+m[2], 12) : 0) : Number.MAX_SAFE_INTEGER;
   };
 
+  /* Milestone source. Genuine when it's a {url, source_name, reported_date}
+     object (RERA / registry / press); a bare string ("Local Authority") is a
+     label with no link. Some pipeline URLs arrived markdown-wrapped
+     ("[https://x](https://x)"), so unwrap to the clean href. */
+  const cleanUrl = (u: string): string | undefined => {
+    let s = u.trim();
+    const md = /^\[.*?\]\((https?:\/\/[^)]+)\)$/.exec(s); // [text](url) → url
+    if (md) s = md[1];
+    s = s.replace(/^[[(]+|[\])]+$/g, "").trim();
+    return /^https?:\/\//i.test(s) ? s : undefined;
+  };
+  const normSource = (raw: unknown): { name: string; url?: string; date?: string } | undefined => {
+    if (typeof raw === "string") { const s = raw.trim(); return s ? { name: s } : undefined; }
+    const o = obj(raw); if (!o) return undefined;
+    const name = tIn(o, ["source_name", "name", "source", "publisher"]);
+    const rawUrl = tIn(o, ["url", "link", "href"]);
+    const url = rawUrl ? cleanUrl(rawUrl) : undefined;
+    const date = tIn(o, ["reported_date", "date", "as_of"]);
+    if (!name && !url) return undefined;
+    return { name: name ?? "Source", ...(url ? { url } : {}), ...(date ? { date } : {}) };
+  };
+
   const infraRaw: { sort: number; item: NonNullable<NonNullable<ProjectOps["location"]>["infra"]>[number] }[] = [];
   for (const it of asArr(row.locPlannedInfra).slice(0, 6)) {
     const title = tIn(it, ["name", "title", "project"]);
@@ -1249,6 +1271,7 @@ export function liveProjectIntel(
         body: textAt(it, "impact.description") ?? tIn(it, ["details", "description", "body", "summary", "impact_reasoning"]) ?? "",
         impact: /high/i.test(textAt(it, "impact.level") ?? tIn(it, ["impact", "importance"]) ?? "") ? "High" : "Medium",
         eta: fmtEta(rawEta),
+        source: normSource(obj(it)?.source),
       },
     });
   }
@@ -1267,6 +1290,7 @@ export function liveProjectIntel(
         body: [scale, marketImpact].filter(Boolean).join(" — "),
         impact: "Medium",
         eta: fmtEta(rawEta),
+        source: normSource(obj(it)?.source),
       },
     });
   }
