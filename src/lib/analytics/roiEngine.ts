@@ -109,6 +109,11 @@ export interface RoiResult {
   // ── cash-flow returns ──
   expectedXirr: number | null;
   riskAdjustedXirr: number | null;
+  // ── rupee bifurcation of the risk-adjusted hold (scales with entryPriceCr;
+  //    capital = the resale gain, rent = income collected once ready) ──
+  exitValueCr: number; // resale value at exit
+  capitalGainCr: number; // exitValueCr − entry
+  rentCollectedCr: number; // total rent over the rentable window
   // ── context & range ──
   corridorCagr: number | null;
   bands: RoiBands;
@@ -202,8 +207,17 @@ export function computeRoi(input: RoiInput, params: RoiParams = DEFAULT_ROI_PARA
   // ── cash-flow returns ──
   const flows = (g: number): number[] =>
     buildCashflows(input.entryPriceCr, g, yearsToPossession, holdYears, params.rentalYield);
+  const raFlows = flows(riskAdjustedCagr);
   const expectedXirr = xirrAnnual(flows(expectedCagr));
-  const riskAdjustedXirr = xirrAnnual(flows(riskAdjustedCagr));
+  const riskAdjustedXirr = xirrAnnual(raFlows);
+
+  // ── rupee bifurcation of the risk-adjusted path: sale is the final flow,
+  //    rent is every positive flow between possession and exit ──
+  const lastM = raFlows.length - 1;
+  const possM = Math.max(1, Math.min(lastM, Math.round(yearsToPossession * 12)));
+  const rentCollectedCr = raFlows.slice(possM, lastM).reduce((s, c) => s + Math.max(0, c), 0);
+  const exitValueCr = raFlows[lastM];
+  const capitalGainCr = exitValueCr - input.entryPriceCr;
 
   // ── bull / bear on the two dominant uncertainties: market ±3, delivery ∓6/+12mo ──
   const bandCagr = (marketDelta: number, delayDeltaMonths: number): number => {
@@ -230,6 +244,9 @@ export function computeRoi(input: RoiInput, params: RoiParams = DEFAULT_ROI_PARA
     riskAdjustedCagr: round1(riskAdjustedCagr),
     expectedXirr: expectedXirr == null ? null : round1(expectedXirr),
     riskAdjustedXirr: riskAdjustedXirr == null ? null : round1(riskAdjustedXirr),
+    exitValueCr: round2(exitValueCr),
+    capitalGainCr: round2(capitalGainCr),
+    rentCollectedCr: round2(rentCollectedCr),
     corridorCagr: input.corridorCagr ?? null,
     bands,
   };
