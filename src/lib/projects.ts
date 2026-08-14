@@ -249,7 +249,7 @@ export type ProjectOps = {
   location?: {
     pois?: { name: string; sub: string; rating?: number; dist: string; key?: boolean }[];
     connectivity?: { icon: string; name: string; sub: string; dist: string; tag: string; direct?: boolean }[];
-    infra?: { cat: string; status: string; title: string; body: string; impact: "High" | "Medium"; eta: string }[];
+    infra?: { cat: string; status: string; title: string; body: string; impact: "High" | "Medium"; eta: string; source?: { name: string; url?: string; date?: string } }[];
     /* Rich geo intel — drives the interactive map + connectivity readout.
        When present, the Location pillar renders the map-led layout. */
     geo?: LocationGeo;

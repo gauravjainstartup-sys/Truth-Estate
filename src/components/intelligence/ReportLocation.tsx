@@ -251,6 +251,22 @@ function InfraSection({ infra }: { infra: InfraItems }) {
                     <span className="w-[4.2rem] whitespace-nowrap text-right font-mono text-[0.74rem] font-semibold tabular-nums">{rowEta(it)}</span>
                   </div>
                   {it.body && <p className="mt-1 max-w-[52rem] text-[0.74rem] font-light leading-[1.55] text-[#1a1a1a]/55 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3] overflow-hidden lg:[-webkit-line-clamp:2]">{it.body}</p>}
+                  {/* Proof, not promises: a genuine, dated citation renders as a
+                      link; a bare label (e.g. "Local Authority", no URL) shows
+                      muted, never as a fake link. */}
+                  {it.source && (
+                    <p className="mt-1.5 text-[0.62rem] font-light text-[#1a1a1a]/40">
+                      Source:{" "}
+                      {it.source.url ? (
+                        <a href={it.source.url} target="_blank" rel="noopener noreferrer" className="font-medium text-[#1e6b45]/85 transition-colors hover:text-[#1e6b45] hover:underline">
+                          {it.source.name} <span aria-hidden>↗</span>
+                        </a>
+                      ) : (
+                        <span>{it.source.name}</span>
+                      )}
+                      {it.source.date && <span className="text-[#1a1a1a]/30"> · {it.source.date}</span>}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
