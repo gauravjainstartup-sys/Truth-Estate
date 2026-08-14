@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Logo from "../Logo";
 import { useJourney } from "../journey/JourneyProvider";
+import { useConsultation } from "../consultation/ConsultationProvider";
 import ShortlistCore from "./ShortlistCore";
 import { loadVerified, maskContact, type Verified } from "@/lib/shortlistAuth";
-import { loadBuyData, hasPreferences, deriveDNA } from "@/lib/journey";
+import { loadBuyData, hasPreferences, deriveDNA, type BuyData, type DNA } from "@/lib/journey";
 import { rankProjectsIntel } from "@/lib/shortlist";
 import { useMatchCatalog, useMatchMarket } from "@/lib/useMatchCatalog";
 import { useAiRerank } from "@/lib/useAiRerank";
@@ -24,8 +25,24 @@ import { track } from "@/lib/events";
    ════════════════════════════════════════════════════════════════ */
 
 
+/* The /shortlist buyer already has a full brief. "Request independent advice"
+   must open the consultation ("schedule time with the founder") form — NOT
+   re-open the requirements journey — and hand the advisor the same warm profile
+   the in-app path passes (mirrors JourneyModal.consultProfile), so the call is
+   fast-tracked past what we already know rather than re-asking it. */
+function buyConsultProfile(dna: DNA, buy: BuyData): { label: string; value: string }[] {
+  return [
+    { label: "Budget", value: dna.budgetRange },
+    { label: "Markets", value: dna.markets.length ? dna.markets.slice(0, 3).join(", ") : "Open to guidance" },
+    { label: "Delivery", value: dna.timeline },
+    ...(buy.priorities.length ? [{ label: "Priorities", value: buy.priorities.join(", ") }] : []),
+    ...(buy.notes?.trim() ? [{ label: "In their words", value: buy.notes.trim() }] : []),
+  ];
+}
+
 export default function ShortlistExperience() {
   const { open, isOpen } = useJourney();
+  const { openConsult } = useConsultation();
 
   const [mounted, setMounted] = useState(false);
   const [buy, setBuy] = useState<ReturnType<typeof loadBuyData>>(null);
@@ -117,7 +134,9 @@ export default function ShortlistExperience() {
               recs={recs}
               scannedCount={catalog.length}
               onRefine={() => open("buy")}
-              onConsult={() => open()}
+              onConsult={() =>
+                openConsult({ sourceKind: "journey", intent: "buy", profile: buyConsultProfile(dna, buy) })
+              }
               onVerifiedChange={setVerified}
             />
           ) : (
