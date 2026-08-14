@@ -31,6 +31,16 @@ function roiInputFor(p: ProjectIntel, holdYears: number, asOf: Date | undefined)
 }
 
 const crStr = (v: number) => `₹${v.toFixed(2)} Cr`;
+/* One PSF format across the whole chapter — full rupees with commas (₹35,000),
+   never a mix of ₹35,000 and 36.0k. A range drops the second ₹: ₹34,000–36,000. */
+const psfRange = (lo: number, hi: number) => (lo === hi ? fmtPsf(lo) : `${fmtPsf(lo)}–${fmtPsf(hi).replace(/^₹/, "")}`);
+/* How long the premium has had to accrue — months under a year, else years. */
+const sinceLaunch = (years: number): string => {
+  const m = Math.round(years * 12);
+  if (m < 12) return `${m} month${m === 1 ? "" : "s"}`;
+  const y = Math.round(years * 10) / 10;
+  return `${Number.isInteger(y) ? y.toFixed(0) : y.toFixed(1)} year${y >= 2 ? "s" : ""}`;
+};
 
 export default function ReportPrice({ p, sample = false }: { p: ProjectIntel; sample?: boolean }) {
   const journey = priceJourney(p);
@@ -86,8 +96,8 @@ export default function ReportPrice({ p, sample = false }: { p: ProjectIntel; sa
 
           <div className="mt-5 grid grid-cols-2 overflow-hidden rounded-2xl border border-[#1a1a1a]/8 bg-white/60 lg:grid-cols-3">
             <PStat v={fmtPsf(journey.launchPsf)} sub="/sqft" k={`Launch · ${journey.launchDate}`} />
-            <PStat v={`${fmtPsf(journey.currentLow)}–${(journey.currentHigh / 1000).toFixed(1)}k`} k="Current range · today" />
-            <PStat v={`+${journey.premiumPct}%`} k="Premium to date" accent className="col-span-2 lg:col-span-1" />
+            <PStat v={psfRange(journey.currentLow, journey.currentHigh)} k="Current range · today" />
+            <PStat v={`+${journey.premiumPct}%`} k={`Premium to date · over ${sinceLaunch(journey.years)}`} accent className="col-span-2 lg:col-span-1" />
           </div>
 
           <div className="mt-4 grid gap-4 lg:grid-cols-[1.55fr_1fr]">
@@ -110,7 +120,7 @@ export default function ReportPrice({ p, sample = false }: { p: ProjectIntel; sa
                   Launch {fmtPsf(journey.launchPsf)}
                 </span>
                 <span className="absolute bottom-[48%] right-[58.8%] whitespace-nowrap rounded-full border border-[#1a1a1a]/10 bg-white/95 px-2.5 py-1 text-[0.68rem] font-semibold tabular-nums text-[#1a1a1a] shadow-sm backdrop-blur-[2px] sm:bottom-[38%]">
-                  Today {fmtPsf(journey.currentLow)}–{(journey.currentHigh / 1000).toFixed(1)}k
+                  Today {psfRange(journey.currentLow, journey.currentHigh)}
                 </span>
               </div>
               <div className="relative mt-2 h-4 font-mono text-[0.62rem] tracking-[0.04em] text-[#1a1a1a]/45">
@@ -126,7 +136,7 @@ export default function ReportPrice({ p, sample = false }: { p: ProjectIntel; sa
                 <>
                   <div>
                     <p className="text-[0.58rem] font-medium uppercase tracking-[0.14em] text-[#1e6b45]">
-                      Return on your cash{showingXirr ? " · XIRR" : ""}
+                      Return on your cash flow{showingXirr ? " · XIRR" : ""}
                     </p>
                     <p className="mt-1 font-serif text-[3rem] font-medium leading-none tracking-[-0.02em] tabular-nums text-[#1e6b45]">
                       {cashReturn.toFixed(1)}<span className="text-[0.9rem] font-normal text-[#1a1a1a]/40"> % / yr</span>
@@ -151,7 +161,7 @@ export default function ReportPrice({ p, sample = false }: { p: ProjectIntel; sa
                       <span key={o} className={`px-3.5 py-1.5 text-[0.72rem] ${o === outlook ? "bg-[#1e6b45] font-bold text-white" : "text-[#1a1a1a]/35"}`}>{o}</span>
                     ))}
                   </span>
-                  <p className="text-[0.68rem] font-light leading-[1.5] text-[#1a1a1a]/45">The return on your cash (XIRR), the capital-vs-rent split, and when to exit are all inside.</p>
+                  <p className="text-[0.68rem] font-light leading-[1.5] text-[#1a1a1a]/45">The return on your cash flow (XIRR), the capital-vs-rent split, and when to exit are all inside.</p>
                   <button onClick={openUnitIntel} className="mt-1 rounded-lg bg-[#1e6b45] px-4 py-2 text-[0.74rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Unlock the projection →</button>
                   <p className="text-[0.56rem] text-[#1a1a1a]/35">Free with membership · or ₹{packageById("read").inr.toLocaleString("en-IN")} this project</p>
                 </div>
@@ -164,44 +174,17 @@ export default function ReportPrice({ p, sample = false }: { p: ProjectIntel; sa
       {/* ── the paid, interactive model (dropped in the frozen sample) ── */}
       {unlocked && !isStatic && (
         <>
-          {/* ── c · where the return comes from — capital vs rental ── */}
-          {today && totalProfit > 0 && (
-            <>
-              <div className="mt-10 flex items-center gap-3">
-                <span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">Where the return comes from</span>
-                <span className="h-px flex-1 bg-[#1a1a1a]/10" />
-              </div>
-              <div className="mt-4 rounded-2xl border border-[#1a1a1a]/10 bg-white/70 p-6">
-                <p className="text-[0.78rem] font-light leading-[1.6] text-[#1a1a1a]/60">
-                  Two engines, not one: the price rising, and rent arriving once it&apos;s ready. Over a {holdYears}-year hold, on a {crStr(r.entryPriceCr)} entry.
-                </p>
-                <div className="mt-4 flex h-11 overflow-hidden rounded-lg border border-[#1a1a1a]/8">
-                  <div className="flex items-center justify-start bg-[#1e6b45] px-3 text-[0.72rem] font-semibold text-white transition-[width] duration-500" style={{ width: `${capPct}%` }}>Capital {capPct}%</div>
-                  <div className="flex items-center justify-start bg-[#9a7a2e] px-3 text-[0.72rem] font-semibold text-white transition-[width] duration-500" style={{ width: `${rentPct}%` }}>Rent {rentPct}%</div>
-                </div>
-                <div className="mt-4 grid grid-cols-2 overflow-hidden rounded-xl border border-[#1a1a1a]/8 sm:grid-cols-4">
-                  <BifCell k="Exit value" v={crStr(r.exitValueCr)} />
-                  <BifCell k="Capital gain" v={crStr(r.capitalGainCr)} tone="green" />
-                  <BifCell k="Rent collected" v={crStr(r.rentCollectedCr)} tone="gold" />
-                  <BifCell k="Total profit" v={crStr(totalProfit)} />
-                </div>
-                <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[0.72rem] font-light text-[#1a1a1a]/50">
-                  <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[#1e6b45]" />Capital appreciation — the resale gain</span>
-                  <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[#9a7a2e]" />Rental income — collected while held</span>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* ── d · when to exit — the same entry, different holds ── */}
+          {/* ── the return, and when to take it — bifurcation + exit, clubbed ── */}
           <div className="mt-10 flex items-center gap-3">
             <span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">If you enter today, when do you exit?</span>
             <span className="h-px flex-1 bg-[#1a1a1a]/10" />
           </div>
           <div className="mt-4 rounded-2xl border border-[#1a1a1a]/10 bg-white/70 p-6">
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-[#1a1a1a]/45">Holding period</span>
-              <div className="w-[220px]"><Seg options={["5 yr", "8 yr", "10 yr"]} active={[5, 8, 10].indexOf(holdYears) < 0 ? 1 : [5, 8, 10].indexOf(holdYears)} onPick={(i) => setHoldYears([5, 8, 10][i])} /></div>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <p className="max-w-[34rem] text-[0.78rem] font-light leading-[1.6] text-[#1a1a1a]/60">
+                Two engines, not one: the price rising, and rent once it&apos;s ready. Pick a hold — the return, the money and the split all move with it{today ? ` — on a ${crStr(r.entryPriceCr)} entry` : ""}.
+              </p>
+              <div className="w-[220px] shrink-0"><Seg options={["5 yr", "8 yr", "10 yr"]} active={[5, 8, 10].indexOf(holdYears) < 0 ? 1 : [5, 8, 10].indexOf(holdYears)} onPick={(i) => setHoldYears([5, 8, 10][i])} /></div>
             </div>
 
             <div className="mt-5 grid gap-5 sm:grid-cols-[auto_1fr] sm:items-center">
@@ -210,19 +193,26 @@ export default function ReportPrice({ p, sample = false }: { p: ProjectIntel; sa
                 <p className="mt-1 font-serif text-[3.2rem] font-medium leading-none tracking-[-0.02em] tabular-nums text-[#1e6b45]">{cashReturn.toFixed(1)}<span className="text-[0.85rem] font-normal text-[#1a1a1a]/40"> % / yr</span></p>
               </div>
               {today && (
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   <BoxStat k="Exit value" v={crStr(r.exitValueCr)} />
                   <BoxStat k="Capital gain" v={crStr(r.capitalGainCr)} tone="green" />
                   <BoxStat k="Rent collected" v={crStr(r.rentCollectedCr)} tone="gold" />
+                  <BoxStat k="Total profit" v={crStr(totalProfit)} />
                 </div>
               )}
             </div>
 
             {today && totalProfit > 0 && (
-              <div className="mt-4 flex h-8 overflow-hidden rounded-md border border-[#1a1a1a]/8">
-                <div className="flex items-center bg-[#1e6b45] px-2.5 text-[0.66rem] font-semibold text-white transition-[width] duration-500" style={{ width: `${capPct}%` }}>Capital {capPct}%</div>
-                <div className="flex items-center bg-[#9a7a2e] px-2.5 text-[0.66rem] font-semibold text-white transition-[width] duration-500" style={{ width: `${rentPct}%` }}>Rent {rentPct}%</div>
-              </div>
+              <>
+                <div className="mt-4 flex h-9 overflow-hidden rounded-md border border-[#1a1a1a]/8">
+                  <div className="flex items-center bg-[#1e6b45] px-2.5 text-[0.68rem] font-semibold text-white transition-[width] duration-500" style={{ width: `${capPct}%` }}>Capital {capPct}%</div>
+                  <div className="flex items-center bg-[#9a7a2e] px-2.5 text-[0.68rem] font-semibold text-white transition-[width] duration-500" style={{ width: `${rentPct}%` }}>Rent {rentPct}%</div>
+                </div>
+                <div className="mt-2.5 flex flex-wrap gap-x-5 gap-y-1 text-[0.72rem] font-light text-[#1a1a1a]/50">
+                  <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[#1e6b45]" />Capital appreciation — the resale gain</span>
+                  <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[#9a7a2e]" />Rental income — collected while held</span>
+                </div>
+              </>
             )}
 
             <p className="mt-4 border-t border-[#1a1a1a]/8 pt-4 text-[0.8rem] font-light leading-[1.6] text-[#1a1a1a]/65">{exitNote}</p>
@@ -237,12 +227,15 @@ export default function ReportPrice({ p, sample = false }: { p: ProjectIntel; sa
             )}
           </div>
 
-          {/* ── e · the waterfall — how the appreciation is built ── */}
+          {/* ── e · the price-growth engine that feeds the XIRR ── */}
           <div className="mt-10 flex items-center gap-3">
-            <span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">How we get to {r.riskAdjustedCagr.toFixed(1)}% price growth</span>
+            <span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">The price-growth engine behind that return</span>
             <span className="h-px flex-1 bg-[#1a1a1a]/10" />
           </div>
           <div className="mt-4 rounded-2xl border border-[#1a1a1a]/10 bg-white/70 p-6">
+            <p className="mb-5 text-[0.8rem] font-light leading-[1.6] text-[#1a1a1a]/60">
+              Your return starts with how fast the price itself grows. That price CAGR — <b className="font-semibold text-[#1a1a1a]">{r.riskAdjustedCagr.toFixed(1)}%/yr</b>, the market rate lifted for quality and docked for the delay — is only half the story; staged payments and rent lift it to the <b className="font-semibold text-[#1e6b45]">{cashReturn.toFixed(1)}% {showingXirr ? "XIRR" : "return"}</b> above.
+            </p>
             <div className="flex flex-col gap-3">
               <FallRow label={<><b className="font-semibold text-[#1a1a1a]">Gurgaon market</b> — India {DEFAULT_ROI_PARAMS.indiaCagr}% + Gurgaon {DEFAULT_ROI_PARAMS.gurgaonAdd}%</>} value={`${r.base.toFixed(1)}%`} lo={0} hi={r.base} tone="base" r={r} />
               <FallRow label={<><b className="font-semibold text-[#1a1a1a]">+ This project&apos;s quality</b> — Truth Score {p.truthScore}/100</>} value={`${r.qualityKicker >= 0 ? "+" : ""}${r.qualityKicker.toFixed(1)}%`} lo={Math.min(r.base, r.base + r.qualityKicker)} hi={Math.max(r.base, r.base + r.qualityKicker)} tone={r.qualityKicker >= 0 ? "up" : "down"} r={r} />
@@ -317,17 +310,6 @@ function Anchor({ k, v, you, faint }: { k: string; v: string; you?: boolean; fai
     <div className={`flex items-center justify-between border-t border-[#1a1a1a]/8 px-4 py-3 text-[0.85rem] first:border-t-0 ${you ? "bg-[#9a7a2e]/[0.08]" : ""}`}>
       <span className={you ? "font-semibold text-[#1a1a1a]" : "text-[#1a1a1a]/60"}>{k}</span>
       <span className={`font-serif tabular-nums ${you ? "font-semibold text-[#9a7a2e]" : faint ? "text-[#1a1a1a]/40" : "text-[#1a1a1a]"}`}>{v}</span>
-    </div>
-  );
-}
-
-/* a rupee-bifurcation cell in the 4-up grid */
-function BifCell({ k, v, tone }: { k: string; v: string; tone?: "green" | "gold" }) {
-  const c = tone === "green" ? "text-[#1e6b45]" : tone === "gold" ? "text-[#8a6a1e]" : "text-[#1a1a1a]";
-  return (
-    <div className="border-b border-r border-[#1a1a1a]/[0.06] p-3.5">
-      <p className="text-[0.54rem] font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/40">{k}</p>
-      <p className={`mt-1 font-serif text-[1.25rem] font-medium tabular-nums ${c}`}>{v}</p>
     </div>
   );
 }
