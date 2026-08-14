@@ -159,15 +159,18 @@ export const CONSULT_DAYPARTS: { part: DayPart; window: string; slots: string[] 
   { part: "Evening", window: "5 – 8 PM", slots: ["5:30 PM", "6:30 PM", "7:30 PM"] },
 ];
 
-/* Advisor assignment — intelligent default by intent, with a graceful
-   fallback. Mirrors the advisor roster used elsewhere in the product. */
+/* Advisor assignment. Truth Estate is founder-led — one accountable advisor
+   across every intent, not a fictional roster — so all four resolve to the
+   founder. Kept per-intent so a future team can differentiate again. */
 export type ConsultAdvisor = { name: string; initials: string; focus: string };
 
+const FOUNDER: ConsultAdvisor = { name: "Gaurav Jain", initials: "GJ", focus: "Founder, Truth Estate" };
+
 const ADVISOR_BY_INTENT: Record<ConsultIntent, ConsultAdvisor> = {
-  buy: { name: "Aarav Mehta", initials: "AM", focus: "Luxury end-use · Golf Course Extension" },
-  invest: { name: "Nisha Kapoor", initials: "NK", focus: "Investment strategy · Emerging corridors" },
-  advice: { name: "Aarav Mehta", initials: "AM", focus: "Independent advisory · Decision review" },
-  research: { name: "Nisha Kapoor", initials: "NK", focus: "Market intelligence · Comparative research" },
+  buy: FOUNDER,
+  invest: FOUNDER,
+  advice: FOUNDER,
+  research: FOUNDER,
 };
 
 export function advisorFor(intent: ConsultIntent | null): ConsultAdvisor {

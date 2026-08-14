@@ -742,40 +742,24 @@ export function deriveDNA(d: BuyData): DNA {
   };
 }
 
-/* ── Advisors ── */
+/* ── Advisor ──
+   Founder-led: one accountable advisor, not a roster. Every advisor card —
+   the consultation form, the office, and the journey's schedule step — shows
+   the founder (see ADVISOR_BY_INTENT in lib/consultation.ts for the single-
+   card surfaces). Booking slots stay so the schedule step still works. */
 export type Advisor = {
   name: string;
   initials: string;
-  experience: string;
   specialisation: string;
-  languages: string[];
   slots: string[];
 };
 
 export const ADVISORS: Advisor[] = [
   {
-    name: "Aarav Mehta",
-    initials: "AM",
-    experience: "14 years",
-    specialisation: "Golf Course Extension · Luxury",
-    languages: ["English", "Hindi"],
+    name: "Gaurav Jain",
+    initials: "GJ",
+    specialisation: "Founder, Truth Estate",
     slots: ["Today · 6:00 PM", "Tomorrow · 11:30 AM", "Thu · 4:00 PM"],
-  },
-  {
-    name: "Nisha Kapoor",
-    initials: "NK",
-    experience: "11 years",
-    specialisation: "SPR · Investment Strategy",
-    languages: ["English", "Hindi", "Punjabi"],
-    slots: ["Tomorrow · 10:00 AM", "Tomorrow · 5:30 PM", "Fri · 1:00 PM"],
-  },
-  {
-    name: "Rohan Verma",
-    initials: "RV",
-    experience: "9 years",
-    specialisation: "New Gurgaon · Value Buying",
-    languages: ["English", "Hindi"],
-    slots: ["Today · 7:30 PM", "Wed · 12:00 PM", "Sat · 11:00 AM"],
   },
 ];
 
