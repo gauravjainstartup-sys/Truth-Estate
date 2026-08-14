@@ -152,14 +152,35 @@ function liveOnlyDeveloper(
 
   const totalCount = l.total ?? 0;
   const deliveredCount = l.delivered ?? 0;
-  const ongoingCount = l.ongoing ?? Math.max(0, totalCount - deliveredCount);
   const plural = (n: number) => (n === 1 ? "" : "s");
   const strongFins = FIN_KEYS.filter((k) => financials[k] === "strong").length;
   const weakFins = FIN_KEYS.filter((k) => financials[k] === "weak").length;
-  const finPhrase = strongFins >= 3 ? "a strong balance sheet" : weakFins >= 3 ? "a stretched balance sheet" : "a mixed financial profile";
+  const finWord = strongFins >= 3 ? "strong" : weakFins >= 3 ? "stretched" : "mixed";
+
+  /* Truth Verdict = our bottom-line JUDGMENT — delivery record first (what a
+     buyer is actually exposed to), then financial standing. Deliberately kept
+     distinct from "About" below, which says who the developer is and what we
+     cover: the two used to open the same way ("<name> is … in Gurugram"),
+     restate the same counts, and close on the same "inside its report".
+     onTimePct / delayedCount come off the overview so they match the on-time %
+     in Performance exactly; avgLate is the ledger mean, as Performance shows.
+     The tone scales with the record — no "weak spot" for a developer that is
+     mostly on schedule. */
+  const onTimePct = l.delayedPct != null ? Math.round(100 - l.delayedPct) : null;
+  const delayedCount = Math.round((totalCount * (l.delayedPct ?? 0)) / 100);
+  const avgLate = avgSlippageFromLedger(led);
+  const lateClause = `${delayedCount} of ${totalCount} behind schedule${avgLate ? `, ${avgLate} months late on average` : ""}`;
+  const deliveryLead =
+    delayedCount === 0
+      ? deliveredCount > 0
+        ? `A clean delivery record — ${deliveredCount} project${plural(deliveredCount)} handed over on schedule, the rest on track`
+        : `An early-stage record — projects on schedule so far, none delivered yet`
+      : onTimePct != null && onTimePct < 50
+        ? `Delivery is the weak spot — just ${onTimePct}% of ${l.name}'s filed projects are on schedule (${lateClause})${deliveredCount > 0 ? `, ${deliveredCount} delivered` : ""}`
+        : `Mostly on schedule, with gaps — ${lateClause} across ${l.name}'s ${totalCount} filed projects${deliveredCount > 0 ? `, ${deliveredCount} delivered` : ""}`;
   const verdict = totalCount > 0
-    ? `${l.name} is building in Gurugram on ${finPhrase} — ${ongoingCount} project${plural(ongoingCount)} under construction${deliveredCount > 0 ? `, ${deliveredCount} delivered so far` : ", none delivered here yet"}. The full delivery, pricing and financial forensics on each project are inside its report.`
-    : `${l.name} is tracked here on delivery, pricing and financial health — the full forensic read on each project is inside its report.`;
+    ? `${deliveryLead}. The balance sheet reads ${finWord}.`
+    : `${l.name} is tracked here on delivery, pricing and financial health.`;
 
   return {
     slug: liveDeveloperSlug(l),
@@ -169,7 +190,7 @@ function liveOnlyDeveloper(
     listed: false,
     listedNote: "",
     tagline: "",
-    about: `${l.name} is an active developer in Gurugram with ${totalCount} project${plural(totalCount)} we track. The read below is our own — delivery and delay history from public filings, financial health from published financials. For the full audited numbers and a project-by-project breakdown, open any ${l.name} report.`,
+    about: `${l.name} is an active Gurugram developer. The read below is our own — delivery and delay history from public RERA filings, financial health from published financials, not the developer's marketing.`,
     signature: names(delivered),
     brandValue: "",
     recent: [],
@@ -215,6 +236,10 @@ const DEV_EDITORIAL: { name: string; est: string; listed: boolean; tagline: stri
   { name: "Puri Constructions", est: "1971", listed: false, tagline: "A five-decade Delhi builder — boutique, low-volume." },
   { name: "Max Estates", est: "2016", listed: true, tagline: "Max Group's wellness-led move into grade-A real estate." },
   { name: "ELDECO", est: "1975", listed: false, tagline: "A five-decade township builder, value-focused across the NCR." },
+  /* Conscient carries no undisputed founding year (the filed entity dates to a
+     1990 CIN, the real-estate brand is cited later), so it gets none rather than
+     a guessed one — same call as Whiteland. Private per its MCA company_type. */
+  { name: "Conscient", est: "", listed: false, tagline: "Value homes in New Gurgaon, with a premium turn on the Golf Course Extension." },
 ];
 const editorialNorm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
 const DEV_EDITORIAL_MAP = new Map(DEV_EDITORIAL.map((e) => [editorialNorm(e.name), e]));
@@ -336,11 +361,13 @@ export async function resolveDevelopers(): Promise<DeveloperIntel[]> {
     computed.push({
       ...d,
       ...(ed ? { est: ed.est, listed: ed.listed, tagline: ed.tagline, computed: false } : {}),
-      /* "we track N" must be the count we actually catalogue (with reports),
-         not the developer's full RERA filing count — a delivered project we
-         don't cover otherwise inflates the number past the list below it. */
+      /* About = who they are + what WE cover + how we read it — kept clear of
+         the Truth Verdict, which is the delivery/financial judgment. The count
+         is our catalogued coverage (tracked.length), NOT the full RERA filing
+         count: a delivered project we don't cover would inflate it past the
+         list below. */
       about: tracked.length > 0
-        ? `${l.name} is an active developer in Gurugram — we track ${tracked.length} of its project${tracked.length === 1 ? "" : "s"} in depth. The read below is our own: delivery and delay history from public filings, financial health from published financials. For the full audited numbers and a project-by-project breakdown, open any ${l.name} report.`
+        ? `${l.name} is an active Gurugram developer; we hold in-depth reports on ${tracked.length} of its project${tracked.length === 1 ? "" : "s"}. The read below is our own — delivery and delay history from public RERA filings, financial health from published financials, not the developer's marketing.`
         : d.about,
       performance: { ...d.performance, avgDelayMonths: avgDelayFor(l.name) ?? d.performance.avgDelayMonths }, // avg delay from the live filings, not the stale rollup
       signature: flag ? [flag] : dropTracked(d.signature, tracked, l.name),
