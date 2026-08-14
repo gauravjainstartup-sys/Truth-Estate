@@ -276,9 +276,16 @@ export async function resolveDevelopers(): Promise<DeveloperIntel[]> {
      a bug. Flagship is deliberately one of the tracked projects (the priciest),
      so it stays; only the redundant plain lists are trimmed. */
   const nameKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-  const dropTracked = (names: string[], tracked: { name: string }[]): string[] => {
-    const t = new Set(tracked.map((x) => nameKey(x.name)));
-    return names.filter((n) => !t.has(nameKey(n)));
+  const dropTracked = (names: string[], tracked: { name: string }[], devName: string): string[] => {
+    /* Filings carry the BARE project name ("Elaira Residences Phase 2"), while a
+       catalogued/tracked project carries the BRANDED one ("Conscient Elaira
+       Residences Phase 2"). Strip the leading developer name from both sides
+       before comparing, so the same project isn't listed twice under two
+       spellings (tracked link + plain pipeline bullet). */
+    const dev = nameKey(devName);
+    const strip = (k: string) => (dev && (k === dev || k.startsWith(dev + " ")) ? k.slice(dev.length).trim() : k);
+    const t = new Set(tracked.map((x) => strip(nameKey(x.name))));
+    return names.filter((n) => !t.has(strip(nameKey(n))));
   };
 
   /* Average delay in months, computed FRESH from the filed per-project
@@ -302,8 +309,8 @@ export async function resolveDevelopers(): Promise<DeveloperIntel[]> {
       performance: { ...o.performance, avgDelayMonths: avgDelayFor(d.name) ?? o.performance.avgDelayMonths }, // avg delay from the live filings, not the stale rollup
       financials: { ...o.financials, ...hf }, // real per-metric scores win over hand-set
       signature: flag ? [flag] : o.signature, // flagship = most-expensive tracked project, by extended-assets price
-      recent: dropTracked(o.recent, tracked),
-      pipeline: dropTracked(o.pipeline, tracked),
+      recent: dropTracked(o.recent, tracked, d.name),
+      pipeline: dropTracked(o.pipeline, tracked, d.name),
       trackedProjects: tracked,
     };
   });
@@ -329,10 +336,16 @@ export async function resolveDevelopers(): Promise<DeveloperIntel[]> {
     computed.push({
       ...d,
       ...(ed ? { est: ed.est, listed: ed.listed, tagline: ed.tagline, computed: false } : {}),
+      /* "we track N" must be the count we actually catalogue (with reports),
+         not the developer's full RERA filing count — a delivered project we
+         don't cover otherwise inflates the number past the list below it. */
+      about: tracked.length > 0
+        ? `${l.name} is an active developer in Gurugram — we track ${tracked.length} of its project${tracked.length === 1 ? "" : "s"} in depth. The read below is our own: delivery and delay history from public filings, financial health from published financials. For the full audited numbers and a project-by-project breakdown, open any ${l.name} report.`
+        : d.about,
       performance: { ...d.performance, avgDelayMonths: avgDelayFor(l.name) ?? d.performance.avgDelayMonths }, // avg delay from the live filings, not the stale rollup
-      signature: flag ? [flag] : dropTracked(d.signature, tracked),
-      recent: dropTracked(d.recent, tracked),
-      pipeline: dropTracked(d.pipeline, tracked),
+      signature: flag ? [flag] : dropTracked(d.signature, tracked, l.name),
+      recent: dropTracked(d.recent, tracked, l.name),
+      pipeline: dropTracked(d.pipeline, tracked, l.name),
       trackedProjects: tracked,
     });
   }
