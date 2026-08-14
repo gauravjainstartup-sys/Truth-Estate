@@ -32,6 +32,10 @@ export type Turn = {
   model?: string;
   tier?: string;
   latencyMs?: number;
+  /* Which project a "Challenge our read" chat was about (null for the
+     site-wide TruthGuide). Stored in the `project` column added by migration
+     0022; the insert below degrades gracefully until that migration lands. */
+  project?: string | null;
 };
 
 /* Roles as the table already uses them. The tool_name/tool_input/
@@ -76,6 +80,7 @@ export async function logTurn(deps: LogDeps, t: Turn): Promise<void> {
     created_at: now,
     model_used: null as string | null,
     latency_ms: null as number | null,
+    project: t.project ?? null,
   };
 
   const rows = [
@@ -95,8 +100,8 @@ export async function logTurn(deps: LogDeps, t: Turn): Promise<void> {
     },
   ];
 
-  try {
-    const res = await deps.fetchImpl(`${deps.url}/rest/v1/chat_sessions`, {
+  const post = (payload: Record<string, unknown>[]) =>
+    deps.fetchImpl(`${deps.url}/rest/v1/chat_sessions`, {
       method: "POST",
       headers: {
         apikey: deps.key,
@@ -104,9 +109,34 @@ export async function logTurn(deps: LogDeps, t: Turn): Promise<void> {
         "content-type": "application/json",
         Prefer: "return=minimal",
       },
-      body: JSON.stringify(rows),
+      body: JSON.stringify(payload),
     });
-    if (!res.ok) {
+
+  try {
+    let res = await post(rows);
+    /* The `project` column arrives in migration 0022. Until it is applied,
+       PostgREST 400s with 'column "project" ... does not exist' (PGRST204 /
+       42703). Strip project and retry ONCE, so tagging is forward-compatible
+       and its absence never regresses the logging that already worked. Any
+       other 400 (e.g. PGRST102) is a real error — reported, not retried. */
+    if (!res.ok && res.status === 400) {
+      const errText = await res.text();
+      if (/project/i.test(errText)) {
+        const stripped = rows.map((r) => {
+          const clone = { ...r } as Record<string, unknown>;
+          delete clone.project;
+          return clone;
+        });
+        res = await post(stripped);
+        if (!res.ok) {
+          console.error(`[chatlog] retry insert HTTP ${res.status}: ${(await res.text()).slice(0, 400)}`);
+        } else {
+          console.log(`[chatlog] stored 2 rows (project col pending 0022) session=${t.sessionId}`);
+        }
+      } else {
+        console.error(`[chatlog] insert HTTP ${res.status}: ${errText.slice(0, 400)}`);
+      }
+    } else if (!res.ok) {
       console.error(`[chatlog] insert HTTP ${res.status}: ${(await res.text()).slice(0, 400)}`);
     } else {
       console.log(`[chatlog] stored 2 rows session=${t.sessionId} latency=${t.latencyMs ?? "-"}ms`);
