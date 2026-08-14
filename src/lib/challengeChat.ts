@@ -379,6 +379,19 @@ export function buildChallengeContext(
     o?.reraId && `RERA ${o.reraId}`,
   ].filter(Boolean).join(" · ");
 
+  /* Per-configuration layout table — super area, carpet area and carpet-
+     efficiency. This is PUBLIC (the compare pages show it openly and it is
+     not in PAID_TOPICS), and WE DO HAVE IT for every project — so it belongs
+     in the context. Without it the model wrongly told buyers we "haven't
+     assessed layouts / units" when asked about sizes or efficiency. */
+  const layouts = (o?.homes ?? [])
+    .map((h) => {
+      const carpet = h.carpetSqft != null ? `${h.carpetSqft.toLocaleString("en-IN")} sq ft carpet` : "carpet NA";
+      const eff = h.carpetSqft != null && h.superSqft > 0 ? ` · ${Math.round((h.carpetSqft / h.superSqft) * 100)}% carpet-efficient` : "";
+      return `- ${h.config}${h.variant ? ` (${h.variant})` : ""}: ${h.superSqft.toLocaleString("en-IN")} sq ft super, ${carpet}${eff}`;
+    })
+    .join("\n");
+
   /* The score and the band are the public scoreboard; the FINDING behind
      them is not. `why` carries the audit line — "2 RERA projects, 0
      delivered, 50% on-time" — and putting it in publicKnowledge meant an
@@ -395,6 +408,7 @@ export function buildChallengeContext(
     `TRUTH SCORE: ${p.truthScore}/100 ("${grade}")${ctx.topPct <= 25 ? `, top ${ctx.topPct}% of tracked projects` : `, ranks ${ctx.rank} of ${ctx.total} tracked`}.`,
     `TICKET: ${ticketLabel(p)}${psf ? ` · corridor ${psf}` : ""}.`,
     vitals && `VITALS: ${vitals}.`,
+    layouts && `LAYOUTS / FLOOR PLANS (per configuration — super area, carpet area and carpet-efficiency; these ARE assessed and PUBLIC. Answer any layout / size / carpet / efficiency question directly from these; you may say which configuration is the most carpet-efficient here. For "better layouts than another project", give this project's layout facts, then point to the Compare tool or offer a call — do NOT claim we haven't assessed layouts):\n${layouts}`,
     `PILLAR SUMMARY (weights: location 26%, developer 25%, construction 22%, legal 15%, USPs 12%):\n${pubPillars}`,
     `COMPARISON: Truth Estate DOES compare projects — buyers can line up any two side-by-side in the Compare tool, and the full read carries a ranked side-by-side vs the closest alternatives. This project ranks ${ctx.topPct <= 25 ? `in the top ${ctx.topPct}%` : `#${ctx.rank} of ${ctx.total}`} of all tracked projects${market ? ` and #${ctx.corridorRank} in the ${p.marketShort} corridor` : ""}.${peers.length ? ` ${peerLine(p, peers)} (These peer names + Truth Scores are the PUBLIC scoreboard — use them for a head-to-head. You may say how ${p.name} ranks vs them by score.)` : ""} You hold only the SCORE-level scoreboard for other projects (name + Truth Score), NOT their deep audit/verdict/ROI — for those, point the buyer to that project's own read or the Compare tool. NEVER say Truth Estate doesn't compare.`,
     `SUN & VASTU: Per-unit sunlight/daylight hours, Vastu scores with room-by-room reasoning, and cross-ventilation are the "Sun & Vastu 3D" model — included with All-Access, NOT part of the ${inr(READ_FROM_INR)} read. ${access.has3DModel ? `It is available for ${p.name}.` : `Its 3D model is still in production for ${p.name}.`}${!access.has3DAccess ? ` This visitor has NOT unlocked it — if they ask about sun/daylight/Vastu/ventilation/facing, describe what the 3D model covers and point them to it; do NOT give per-unit specifics.` : ""}`,
