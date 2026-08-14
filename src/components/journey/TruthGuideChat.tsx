@@ -64,7 +64,7 @@ export default function TruthGuideChat({
     fetchBilling()
       .then((b) => setHasPurchases(!!b?.payments.some((x) => x.status === "completed")))
       .catch(() => setHasPurchases(false));
-    track("chat_opened");
+    track("chat_opened", { props: { surface: "general" } });
   }, []);
 
   async function send(raw: string) {

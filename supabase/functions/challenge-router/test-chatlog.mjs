@@ -52,5 +52,28 @@ const TURN = { sessionId: "s1", anonId: "a1", question: "q", answer: "a", model:
   try { await logTurn(DB(bad), TURN); } catch { threw = true; }
   ok(!threw, "DB rejection never propagates either"); }
 
+/* Project tag (migration 0022) — a "Challenge our read" chat records which
+   project it was about, on both rows so the PGRST102 key-set guard holds. */
+{ const { f, calls } = spy();
+  await logTurn(DB(f), { ...TURN, project: "M3M Elie Saab" });
+  const [u, b] = calls[0].rows;
+  ok(u.project === "M3M Elie Saab" && b.project === "M3M Elie Saab", "project tag on both rows"); }
+
+/* Forward-compat: before 0022 is applied, PostgREST 400s about the missing
+   `project` column. logTurn must strip project and retry ONCE — so project
+   chats keep logging (untagged) and general logging never regresses. */
+{ const calls = [];
+  const f = async (_url, init) => {
+    const rows = JSON.parse(init.body);
+    calls.push(rows);
+    if (calls.length === 1) {
+      return { ok: false, status: 400, text: async () => `column "project" of relation "chat_sessions" does not exist` };
+    }
+    return { ok: true, status: 201, text: async () => "" };
+  };
+  await logTurn(DB(f), { ...TURN, project: "M3M Elie Saab" });
+  ok(calls.length === 2, "missing project column → retries once");
+  ok(!("project" in calls[1][0]) && !("project" in calls[1][1]), "retry payload has project stripped from both rows"); }
+
 console.log(`\n${pass} checks passed${fail ? `, ${fail} FAILED` : ""}.`);
 process.exit(fail ? 1 : 0);

@@ -11,6 +11,7 @@
    ════════════════════════════════════════════════════════════════ */
 import type { ProjectIntel } from "@/lib/projects";
 import { buildChallengeContext, type ChallengeAnswer, type Peer, type ChatAccess, type UnitIntel } from "@/lib/challengeChat";
+import { getSessionId, getAnonId, getTier } from "@/lib/truthGuideChat";
 
 const DEFAULT_URL = "https://lyetvabfgaidvqrbmaoy.supabase.co/functions/v1/challenge-router";
 /* public anon key (same as src/lib/supabase.ts — RLS is the boundary);
@@ -51,7 +52,23 @@ export async function askChallengeRemote(
         apikey: SUPABASE_ANON_KEY,
         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
       },
-      body: JSON.stringify({ question, locked, history: history.slice(-8), context }),
+      /* mode + session identifiers so the server records this project chat to
+         chat_sessions (grouped by session, tagged with the project) — the
+         site-wide TruthGuide already sent these; the project chat did not, so
+         its turns were never logged. Only question + answer text are stored;
+         the paid context is never persisted. */
+      body: JSON.stringify({
+        mode: "project",
+        question,
+        locked,
+        history: history.slice(-8),
+        context,
+        projectSlug: p.slug,
+        projectName: p.name,
+        tier: getTier(),
+        sessionId: getSessionId(),
+        anonId: getAnonId(),
+      }),
       signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) return null;

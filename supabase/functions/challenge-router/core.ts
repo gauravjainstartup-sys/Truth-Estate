@@ -31,6 +31,10 @@ export type Body = {
   /* Stable per browser across "start fresh" — links a device's separate
      conversations so they can be claimed together on verification. */
   anonId?: string;
+  /* mode:"project" only — which project the "Challenge our read" chat is
+     scoped to, so the logged turn records what it was about. */
+  projectSlug?: string;
+  projectName?: string;
 };
 export type RouterAnswer =
   | { ok: true; text: string; gate: boolean; followups?: string[] }

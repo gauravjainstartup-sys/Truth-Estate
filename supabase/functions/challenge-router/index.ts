@@ -86,11 +86,20 @@ Deno.serve(async (req: Request) => {
         ),
     });
 
-    /* Record the turn. Awaited rather than fired-and-forgotten because the
-       isolate can be torn down the moment we respond, which would drop the
-       write — it is one insert to the same region, and logTurn swallows its
-       own failures so a logging outage can never cost a visitor an answer. */
-    if (body.mode === "general" && answer.ok) {
+    /* Record the turn — BOTH modes now. The site-wide TruthGuide (general)
+       and the per-project "Challenge our read" (project) both log to
+       chat_sessions, grouped by session_id; project turns also carry which
+       project they were about. Previously only general was logged, so a
+       project chat showed up in Amplitude but never in Supabase.
+
+       Needs a sessionId to group under — a project chat that doesn't send one
+       has nothing to join and is skipped (logTurn guards this too).
+
+       Awaited rather than fired-and-forgotten because the isolate can be torn
+       down the moment we respond, which would drop the write — it is one
+       insert to the same region, and logTurn swallows its own failures so a
+       logging outage can never cost a visitor an answer. */
+    if (answer.ok && body.sessionId) {
       await logTurn(
         { url: DB_URL, key: DB_KEY, fetchImpl: fetch as unknown as LogFetch },
         {
@@ -101,6 +110,7 @@ Deno.serve(async (req: Request) => {
           model: MODEL,
           tier: body.tier,
           latencyMs: Date.now() - startedAt,
+          project: body.mode === "general" ? null : (body.projectName ?? body.projectSlug ?? null),
         },
       );
     }

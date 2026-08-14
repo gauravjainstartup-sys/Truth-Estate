@@ -27,6 +27,7 @@ import {
 } from "@/lib/challengeChat";
 import { renderChat, type ChatLink } from "@/lib/chatLinks";
 import { basePath } from "@/lib/site";
+import { track } from "@/lib/events";
 
 export default function ChallengeChat({
   p, open, onClose, locked, onUnlock, has3DModel, has3DAccess, onUnlock3D,
@@ -58,6 +59,16 @@ export default function ChallengeChat({
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [msgs, typing]);
+
+  // funnel event when the project chat opens — the same chat_opened the
+  // site-wide TruthGuide fires, tagged surface:"project" + which project, so
+  // GA4 / Amplitude can tell project-chat opens apart from general ones.
+  // (Keyed on open alone → fires once per open, not on every background load.)
+  useEffect(() => {
+    if (!open) return;
+    track("chat_opened", { projectSlug: p.slug, projectName: p.name, props: { surface: "project" } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   // focus the input when the panel opens; load corridor rivals + per-unit
   // Sun/Vastu lines in the background (public scoreboard + 3D data)
