@@ -104,8 +104,9 @@ export default function Hero({ index }: { index: OmniIndex }) {
         <source media="(max-width:767px)" type="image/avif" srcSet={`${IMG}/new-hero-mobile.avif`} />
         <source media="(max-width:767px)" type="image/webp" srcSet={`${IMG}/new-hero-mobile.webp`} />
         <source media="(max-width:767px)" srcSet={`${IMG}/new-hero-mobile.jpg`} />
-        <source type="image/webp" srcSet={`${IMG}/final_hero_desktop.webp`} />
-        <img src={`${IMG}/final_hero_desktop.webp`} alt="" aria-hidden="true" fetchPriority="high"
+        <source type="image/avif" srcSet={`${IMG}/new-hero-desktop.avif`} />
+        <source type="image/webp" srcSet={`${IMG}/new-hero-desktop.webp`} />
+        <img src={`${IMG}/new-hero-desktop.webp`} alt="" aria-hidden="true" fetchPriority="high"
           className="teh2-img absolute inset-0 h-full w-full object-cover" />
       </picture>
 

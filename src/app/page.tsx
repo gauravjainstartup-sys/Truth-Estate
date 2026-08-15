@@ -11,8 +11,9 @@ export default async function Home() {
   return (
     <>
       {/* Preload the above-the-fold hero image per breakpoint (LCP). */}
-      <link rel="preload" as="image" href={`${basePath}/images/new-hero-desktop.webp`} type="image/webp" media="(min-width: 768px)" />
-      <link rel="preload" as="image" href={`${basePath}/images/new-hero-mobile.webp`} type="image/webp" media="(max-width: 767px)" />
+      <link rel="preload" as="image" href={`${basePath}/images/new-hero-desktop.avif`} type="image/avif" media="(min-width: 768px)" fetchPriority="high" />
+      <link rel="preload" as="image" href={`${basePath}/images/new-hero-mobile.avif`} type="image/avif" media="(max-width: 767px)" fetchPriority="high" />
+      <link rel="preload" as="image" href={`${basePath}/images/new-hero-mobile.webp`} type="image/webp" media="(max-width: 767px)" fetchPriority="high" />
       <main>
         <Hero index={index} />
         <StorySection />

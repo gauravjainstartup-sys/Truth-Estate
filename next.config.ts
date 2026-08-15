@@ -19,7 +19,10 @@ const nextConfig: NextConfig = {
   ...(BASE_PATH ? { basePath: BASE_PATH } : {}),
   images: {
     unoptimized: true,
+    formats: ["image/avif", "image/webp"],
   },
+  compress: true,
+  reactStrictMode: true,
 };
 
 export default nextConfig;
