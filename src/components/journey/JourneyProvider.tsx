@@ -2,10 +2,21 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import JourneyModal from "./JourneyModal";
+import dynamic from "next/dynamic";
 import TruthGuideBubble from "./TruthGuideBubble";
 import { loadAccount, type Account, type Intent } from "@/lib/journey";
 import { track } from "@/lib/events";
+
+/* The journey modal is the single heaviest thing this provider can render —
+   1,800 lines that pull in the shortlist, project profile, location picker
+   (maps), the TruthGuide chat and, through it, the Supabase client. None of
+   it belongs in the homepage's first paint: the modal only ever mounts after
+   a deliberate CTA click (`isOpen && …` below). Loading it with next/dynamic
+   splits that whole subtree into its own chunk fetched on first open, so the
+   initial JS a visitor downloads drops by the modal's entire weight. ssr:false
+   is safe and changes no rendered HTML — `isOpen` is false at build and on
+   first paint, so the modal was never in the prerendered markup either way. */
+const JourneyModal = dynamic(() => import("./JourneyModal"), { ssr: false });
 
 type Ctx = { open: (intent?: Intent) => void; close: () => void; isOpen: boolean };
 

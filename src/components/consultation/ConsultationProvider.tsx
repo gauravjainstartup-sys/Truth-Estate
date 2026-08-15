@@ -1,8 +1,16 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import ConsultationJourney from "./ConsultationJourney";
+import dynamic from "next/dynamic";
 import type { ConsultContext } from "@/lib/consultation";
+
+/* Same reasoning as the journey modal: the consultation flow only mounts on a
+   deliberate "Request advice" click (`isOpen && …` below), never on first
+   paint, so it has no business in the homepage's initial JS. next/dynamic
+   splits it into its own chunk fetched on first open. ssr:false is safe and
+   changes no rendered HTML — isOpen is false at build and first paint, so it
+   was never in the prerendered markup. */
+const ConsultationJourney = dynamic(() => import("./ConsultationJourney"), { ssr: false });
 
 type Ctx = {
   openConsult: (context?: ConsultContext) => void;

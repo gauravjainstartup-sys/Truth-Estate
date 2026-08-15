@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+/* gsap + ScrollTrigger are NOT imported here at module scope on purpose — that
+   pulled ~44 KB into the homepage's first-load JS for two below-the-fold
+   animations. They're imported dynamically inside the effects that use them. */
 import { useJourney } from "./journey/JourneyProvider";
 import { useConsultation } from "./consultation/ConsultationProvider";
 import { PRIMARY_CTA } from "@/lib/journey";
@@ -119,33 +120,51 @@ function Storytelling() {
   useEffect(() => {
     const root = ref.current;
     if (!root) return;
-    gsap.registerPlugin(ScrollTrigger);
-    ScrollTrigger.config({ ignoreMobileResize: true });
-    const pin = root.querySelector<HTMLElement>("[data-s5-pin]");
-    if (!pin) return;
-    const g1 = pin.querySelector<HTMLElement>("[data-s5-g1]");
-    const g2 = pin.querySelector<HTMLElement>("[data-s5-g2]");
+    /* GSAP + ScrollTrigger (~44 KB gz) drive this below-the-fold pin only.
+       Importing them statically dragged that weight into the homepage's first
+       paint; loading on mount keeps them out of the initial JS and fetches
+       them a tick later — long before anyone scrolls this far. The `cancelled`
+       guard covers an unmount that beats the async import. */
+    let cancelled = false;
+    let cleanup: (() => void) | undefined;
+    (async () => {
+      const [{ default: gsap }, { ScrollTrigger }] = await Promise.all([
+        import("gsap"),
+        import("gsap/ScrollTrigger"),
+      ]);
+      if (cancelled || !ref.current) return;
+      gsap.registerPlugin(ScrollTrigger);
+      ScrollTrigger.config({ ignoreMobileResize: true });
+      const pin = root.querySelector<HTMLElement>("[data-s5-pin]");
+      if (!pin) return;
+      const g1 = pin.querySelector<HTMLElement>("[data-s5-g1]");
+      const g2 = pin.querySelector<HTMLElement>("[data-s5-g2]");
 
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: pin,
-        start: "top top",
-        end: "+=150%", // short hold — two beats, not the old ~4.2× scroll
-        pin: true,
-        scrub: 0.6,
-        anticipatePin: 1,
-      },
-    });
-    tl.to(g1, { opacity: 1, y: 0, duration: 0.4 }); // beat 1 — four premises, together
-    tl.to({}, { duration: 0.25 }); // hold
-    tl.to(g2, { opacity: 1, y: 0, duration: 0.4 }); // beat 2 — the turn
-    tl.to({}, { duration: 0.3 }); // let it land
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: pin,
+          start: "top top",
+          end: "+=150%", // short hold — two beats, not the old ~4.2× scroll
+          pin: true,
+          scrub: 0.6,
+          anticipatePin: 1,
+        },
+      });
+      tl.to(g1, { opacity: 1, y: 0, duration: 0.4 }); // beat 1 — four premises, together
+      tl.to({}, { duration: 0.25 }); // hold
+      tl.to(g2, { opacity: 1, y: 0, duration: 0.4 }); // beat 2 — the turn
+      tl.to({}, { duration: 0.3 }); // let it land
 
-    const st = tl.scrollTrigger;
-    ScrollTrigger.refresh();
+      const st = tl.scrollTrigger;
+      ScrollTrigger.refresh();
+      cleanup = () => {
+        st?.kill(true);
+        tl.kill();
+      };
+    })();
     return () => {
-      st?.kill(true);
-      tl.kill();
+      cancelled = true;
+      cleanup?.();
     };
   }, []);
 
@@ -331,39 +350,55 @@ function IndependentRepresentation() {
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    gsap.registerPlugin(ScrollTrigger);
-    const mm = gsap.matchMedia();
-    mm.add("(min-width: 1024px)", () => {
-      const col = root.querySelector<HTMLElement>("[data-leftcol]");
-      const thesis = root.querySelector<HTMLElement>("[data-thesis]");
-      if (!col || !thesis) return;
-      // Offset that centres the thesis block in the viewport (measured from the
-      // untransformed left column + block width, so it's transform-independent).
-      const centreX = () => {
-        const cr = col.getBoundingClientRect();
-        return Math.max(0, window.innerWidth / 2 - (cr.left + thesis.offsetWidth / 2));
-      };
-      const tw = gsap.fromTo(
-        thesis,
-        { x: centreX },
-        {
-          x: 0,
-          ease: "none",
-          scrollTrigger: {
-            trigger: root,
-            start: "top top",
-            end: "+=78%",
-            scrub: 0.5,
-            invalidateOnRefresh: true,
-          },
-        }
-      );
-      return () => {
-        tw.scrollTrigger?.kill();
-        tw.kill();
-      };
-    });
-    return () => mm.revert();
+    // Deferred for the same reason as the Storytelling pin above: this
+    // desktop-only slide sits below the fold, so GSAP loads on mount rather
+    // than in the first-paint bundle.
+    let cancelled = false;
+    let cleanup: (() => void) | undefined;
+    (async () => {
+      const [{ default: gsap }, { ScrollTrigger }] = await Promise.all([
+        import("gsap"),
+        import("gsap/ScrollTrigger"),
+      ]);
+      if (cancelled || !rootRef.current) return;
+      gsap.registerPlugin(ScrollTrigger);
+      const mm = gsap.matchMedia();
+      mm.add("(min-width: 1024px)", () => {
+        const col = root.querySelector<HTMLElement>("[data-leftcol]");
+        const thesis = root.querySelector<HTMLElement>("[data-thesis]");
+        if (!col || !thesis) return;
+        // Offset that centres the thesis block in the viewport (measured from the
+        // untransformed left column + block width, so it's transform-independent).
+        const centreX = () => {
+          const cr = col.getBoundingClientRect();
+          return Math.max(0, window.innerWidth / 2 - (cr.left + thesis.offsetWidth / 2));
+        };
+        const tw = gsap.fromTo(
+          thesis,
+          { x: centreX },
+          {
+            x: 0,
+            ease: "none",
+            scrollTrigger: {
+              trigger: root,
+              start: "top top",
+              end: "+=78%",
+              scrub: 0.5,
+              invalidateOnRefresh: true,
+            },
+          }
+        );
+        return () => {
+          tw.scrollTrigger?.kill();
+          tw.kill();
+        };
+      });
+      cleanup = () => mm.revert();
+    })();
+    return () => {
+      cancelled = true;
+      cleanup?.();
+    };
   }, []);
 
   const dna: [string, number][] = [
