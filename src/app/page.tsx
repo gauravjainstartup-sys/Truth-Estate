@@ -11,9 +11,15 @@ export default async function Home() {
   const [index, coverage] = await Promise.all([buildIndex(), buildCoverageStats()]);
   return (
     <>
-      {/* Preload the above-the-fold hero image per breakpoint (LCP). */}
-      <link rel="preload" as="image" href={`${basePath}/images/new-hero-desktop.webp`} type="image/webp" media="(min-width: 768px)" />
-      <link rel="preload" as="image" href={`${basePath}/images/new-hero-mobile.webp`} type="image/webp" media="(max-width: 767px)" />
+      {/* Preload the above-the-fold hero image per breakpoint (LCP). The URL,
+         type and media MUST match what <Hero>'s <picture> actually serves, or
+         the browser fetches the preloaded file AND the one the picture picks —
+         mobile was doing exactly that (a 339 KB webp preload wasted alongside
+         the 35 KB avif the picture chose). Both now preload the AVIF the picture
+         prefers; `type` lets a non-AVIF browser skip the preload and fall to the
+         picture's webp, so there is no wasted fetch either way. */}
+      <link rel="preload" as="image" href={`${basePath}/images/new-hero-desktop.avif`} type="image/avif" media="(min-width: 768px)" fetchPriority="high" />
+      <link rel="preload" as="image" href={`${basePath}/images/new-hero-mobile.avif`} type="image/avif" media="(max-width: 767px)" fetchPriority="high" />
       <main>
         <Hero index={index} />
         <ExperienceSection stats={coverage} />
