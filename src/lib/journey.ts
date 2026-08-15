@@ -965,7 +965,11 @@ export type Lead = {
   email: string;
   phone?: string;
   project?: string;
-  intent: "tower-intel" | "buyer-office" | "documents" | "report-error" | "feedback" | "shortlist-unlock" | "custom-report" | "consultation";
+  // MUST stay a subset of capture-lead's INTENTS allow-list
+  // (supabase/functions/capture-lead/core.ts). An intent here that the server
+  // doesn't allow-list is a SILENT lead drop — CI enforces this via
+  // scripts/lead-intent-parity.mjs.
+  intent: "tower-intel" | "buyer-office" | "documents" | "report-error" | "feedback" | "shortlist-unlock" | "custom-report" | "consultation" | "deal-room";
   docs?: string[]; // requested documents (intent: "documents")
   identity?: string; // who's reporting — Developer / Investor / End User / Broker (feedback flows)
   message?: string; // free-text detail (feedback / report-error / consultation flows)

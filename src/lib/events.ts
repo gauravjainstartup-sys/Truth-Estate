@@ -66,7 +66,11 @@ export type EventName =
   | "shortlist_page_reached"         // the shortlist surface was reached
   | "first_shortlist_unlocked"       // the reader's FIRST shortlist unlock (once per device)
   | "sun_vastu_requested"            // a Sun & Vastu 3D request was submitted
-  | "project_request_submitted";     // a project interest / request lead was submitted
+  | "project_request_submitted"      // a project interest / request lead was submitted
+  /* ── Deal Room mandate funnel (Stage-1 demand experiment). ── */
+  | "deal_room_mandate_started"      // the mandate wizard was opened
+  | "deal_room_mandate_submitted"    // a Deal Room mandate was submitted — the demand signal
+  | "deal_room_track_viewed";        // the buyer reopened /deal-room/track to watch their mandate
 
 type Queued = {
   name: EventName;

@@ -75,6 +75,7 @@ export type SectionKey =
   | "home"
   | "requirements"
   | "recommendations"
+  | "deal-room"
   | "advice"
   | "deal"
   | "documents"
@@ -85,6 +86,9 @@ export const SECTIONS: { key: SectionKey; label: string; path: string; paidOnly?
   { key: "home", label: "Home", path: "/office" },
   { key: "requirements", label: "My Requirements", path: "/office/requirements" },
   { key: "recommendations", label: "Recommendations", path: "/office/recommendations" },
+  // The Deal Room mandate the buyer commissioned — tracked here from the free
+  // cohort join, distinct from "My Deal" (the paid, mandate-activated deal room).
+  { key: "deal-room", label: "Deal Room", path: "/office/deal-room" },
   { key: "advice", label: "Independent Advice", path: "/office/advice" },
   { key: "deal", label: "My Deal", path: "/office/deal", paidOnly: true },
   { key: "documents", label: "Documents & Reports", path: "/office/documents" },
