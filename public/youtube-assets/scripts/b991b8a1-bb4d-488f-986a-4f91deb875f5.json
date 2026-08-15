@@ -1,0 +1,69 @@
+{
+  "slug": "b991b8a1-bb4d-488f-986a-4f91deb875f5",
+  "projectName": "Sobha City Phase - 5",
+  "developer": "Sobha",
+  "location": "Sector 108",
+  "truthScore": 74,
+  "scoreTag": "Solid",
+  "price": "₹3.20 Cr",
+  "cagr": "12.38%",
+  "deliveryYear": "Within 1 Yr",
+  "delayRisk": "Elevated Risk",
+  "redFlags": 2,
+  "youtubeShortScript": {
+    "durationSeconds": 60,
+    "sections": [
+      {
+        "timestamp": "0:00-0:10",
+        "title": "Intro Hook",
+        "narration": "Is Sobha City Phase - 5 in Sector 108 worth your money? Let’s look at the independent forensic data.",
+        "visual": "Hero render elevation + Truth Score badge pop-in"
+      },
+      {
+        "timestamp": "0:10-0:25",
+        "title": "Price & ROI",
+        "narration": "Starting at ₹3.20 Cr, our financial model projects a 5-year CAGR of 12.38%, comparing favorably to Sector 108 benchmarks.",
+        "visual": "Price comparison chart + 5-Year CAGR meter"
+      },
+      {
+        "timestamp": "0:25-0:40",
+        "title": "Construction & Risk",
+        "narration": "Promised delivery is Within 1 Yr. We assess delay risk as Elevated Risk with 2 active red flags on record.",
+        "visual": "Construction progress timeline + Red flag alert badge"
+      },
+      {
+        "timestamp": "0:40-1:00",
+        "title": "Final Verdict",
+        "narration": "Sobha City Phase - 5 earns a Truth Score of 74 out of 100 — rated Solid. Get the full 150-check report at Truth Estate.",
+        "visual": "Final verdict card + CTA overlay"
+      }
+    ]
+  },
+  "youtubeExplainerScript": {
+    "durationSeconds": 180,
+    "title": "Sobha City Phase - 5 Gurugram Review & Audit | Truth Score 74/100",
+    "description": "Full independent review of Sobha City Phase - 5 by Sobha in Sector 108, Gurugram. RERA RERA-GRG-701-2020. Truth Score 74/100.",
+    "sections": [
+      {
+        "title": "Project Overview",
+        "text": "Sobha City Phase - 5 by Sobha located in Sector 108."
+      },
+      {
+        "title": "Financial & ROI Analysis",
+        "text": "Price starts at ₹3.20 Cr with 12.38% expected CAGR."
+      },
+      {
+        "title": "Construction Audit",
+        "text": "Target delivery: Within 1 Yr. Risk rating: Elevated Risk."
+      },
+      {
+        "title": "Legal Check",
+        "text": "RERA ID RERA-GRG-701-2020. Red flags: 2."
+      },
+      {
+        "title": "Verdict & Buying Advice",
+        "text": "Final score 74/100 (Solid)."
+      }
+    ]
+  }
+}

@@ -67,33 +67,6 @@ const columns: {
   },
 ];
 
-const orgSchema = {
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  name: "Truth Estate",
-  description:
-    "Independent real estate intelligence for premium property decisions in Gurugram.",
-  areaServed: [
-    "Golf Course Road, Gurugram",
-    "Golf Course Extension Road, Gurugram",
-    "SPR, Gurugram",
-    "Dwarka Expressway, Gurugram",
-    "New Gurgaon",
-    "Sohna",
-  ],
-  knowsAbout: [
-    "Gurugram Real Estate",
-    "Luxury Apartments",
-    "Independent Buyer Representation",
-    "Developer Intelligence",
-    "Project Intelligence",
-    "Price Discovery",
-    "Legal Due Diligence",
-    "Investment Analysis",
-    "Real Estate AI",
-  ],
-};
-
 /* ── Social icons ── */
 function LinkedInIcon() {
   return (
@@ -261,13 +234,7 @@ export default function Footer({
               Designed in India. Built for independent property decisions.
             </p>
           </div>
-        </div>
-
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
-        />
-      </footer>
+        </div>      </footer>
     </>
   );
 }

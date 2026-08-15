@@ -1,0 +1,69 @@
+{
+  "slug": "baf56825-09f6-4d71-9e5a-23e487552c38",
+  "projectName": "Ashiana Amarah Phase - 4",
+  "developer": "Ashiana Group",
+  "location": "Sector 93",
+  "truthScore": 75,
+  "scoreTag": "Solid",
+  "price": "₹2.30 Cr",
+  "cagr": "12.5%",
+  "deliveryYear": "3-5 Yrs",
+  "delayRisk": "Elevated Risk",
+  "redFlags": 1,
+  "youtubeShortScript": {
+    "durationSeconds": 60,
+    "sections": [
+      {
+        "timestamp": "0:00-0:10",
+        "title": "Intro Hook",
+        "narration": "Is Ashiana Amarah Phase - 4 in Sector 93 worth your money? Let’s look at the independent forensic data.",
+        "visual": "Hero render elevation + Truth Score badge pop-in"
+      },
+      {
+        "timestamp": "0:10-0:25",
+        "title": "Price & ROI",
+        "narration": "Starting at ₹2.30 Cr, our financial model projects a 5-year CAGR of 12.5%, comparing favorably to Sector 93 benchmarks.",
+        "visual": "Price comparison chart + 5-Year CAGR meter"
+      },
+      {
+        "timestamp": "0:25-0:40",
+        "title": "Construction & Risk",
+        "narration": "Promised delivery is 3-5 Yrs. We assess delay risk as Elevated Risk with 1 active red flags on record.",
+        "visual": "Construction progress timeline + Red flag alert badge"
+      },
+      {
+        "timestamp": "0:40-1:00",
+        "title": "Final Verdict",
+        "narration": "Ashiana Amarah Phase - 4 earns a Truth Score of 75 out of 100 — rated Solid. Get the full 150-check report at Truth Estate.",
+        "visual": "Final verdict card + CTA overlay"
+      }
+    ]
+  },
+  "youtubeExplainerScript": {
+    "durationSeconds": 180,
+    "title": "Ashiana Amarah Phase - 4 Gurugram Review & Audit | Truth Score 75/100",
+    "description": "Full independent review of Ashiana Amarah Phase - 4 by Ashiana Group in Sector 93, Gurugram. RERA RERA-GRG-1594-2024. Truth Score 75/100.",
+    "sections": [
+      {
+        "title": "Project Overview",
+        "text": "Ashiana Amarah Phase - 4 by Ashiana Group located in Sector 93."
+      },
+      {
+        "title": "Financial & ROI Analysis",
+        "text": "Price starts at ₹2.30 Cr with 12.5% expected CAGR."
+      },
+      {
+        "title": "Construction Audit",
+        "text": "Target delivery: 3-5 Yrs. Risk rating: Elevated Risk."
+      },
+      {
+        "title": "Legal Check",
+        "text": "RERA ID RERA-GRG-1594-2024. Red flags: 1."
+      },
+      {
+        "title": "Verdict & Buying Advice",
+        "text": "Final score 75/100 (Solid)."
+      }
+    ]
+  }
+}

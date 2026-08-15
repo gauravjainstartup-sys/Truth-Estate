@@ -5,6 +5,8 @@ import { BEST_PROJECTS, bestProjectsBySlug } from "@/lib/bestProjects";
 import { fetchBacklogFull, fetchCorridorPsf, fetchPriceEnvelopes, fetchTrackedStats } from "@/lib/supabase";
 import { liveProjectIntel } from "@/lib/liveReport";
 import type { ProjectIntel } from "@/lib/projects";
+import { SITE_URL } from "@/lib/site";
+import { ldJson } from "@/lib/seo";
 
 /* ════════════════════════════════════════════════════════════════
    /best-projects/<filter> — the old site's landing pages, rebuilt.
@@ -45,6 +47,17 @@ export async function generateMetadata(
     alternates: { canonical: `/best-projects/${page.slug}` },
     title: page.title,
     description: page.description,
+    openGraph: {
+      title: page.title,
+      description: page.description,
+      url: `/best-projects/${page.slug}`,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: page.title,
+      description: page.description,
+    },
   };
 }
 
@@ -97,13 +110,34 @@ export default async function Page({ params }: { params: Promise<{ filter: strin
     console.warn(`[urls]   withheld from this price page (listed price contradicts its own filed rate): ${dropped.join(", ")}`);
   }
 
+  const collectionLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: page.title,
+    description: page.description,
+    url: `${SITE_URL}/best-projects/${page.slug}`,
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: projects.length,
+      itemListElement: projects.map((p, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        name: p.name,
+        url: `${SITE_URL}/projects/${p.seoSlug || p.slug}`,
+      })),
+    },
+  };
+
   return (
-    <ProjectsIndex
-      projects={projects}
-      stats={stats}
-      crumb={page.title}
-      heading={page.h1}
-      intro={page.intro}
-    />
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(collectionLd)} />
+      <ProjectsIndex
+        projects={projects}
+        stats={stats}
+        crumb={page.title}
+        heading={page.h1}
+        intro={page.intro}
+      />
+    </>
   );
 }

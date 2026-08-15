@@ -1,0 +1,69 @@
+{
+  "slug": "a1ee32aa-2a73-4bc6-89f7-29d08bddc6c6",
+  "projectName": "Signature Global Titanium SPR",
+  "developer": "Signature Global",
+  "location": "Sector 71",
+  "truthScore": 71,
+  "scoreTag": "Solid",
+  "price": "₹5.00 Cr",
+  "cagr": "12.02%",
+  "deliveryYear": "5+ Yrs",
+  "delayRisk": "High Risk",
+  "redFlags": 3,
+  "youtubeShortScript": {
+    "durationSeconds": 60,
+    "sections": [
+      {
+        "timestamp": "0:00-0:10",
+        "title": "Intro Hook",
+        "narration": "Is Signature Global Titanium SPR in Sector 71 worth your money? Let’s look at the independent forensic data.",
+        "visual": "Hero render elevation + Truth Score badge pop-in"
+      },
+      {
+        "timestamp": "0:10-0:25",
+        "title": "Price & ROI",
+        "narration": "Starting at ₹5.00 Cr, our financial model projects a 5-year CAGR of 12.02%, comparing favorably to Sector 71 benchmarks.",
+        "visual": "Price comparison chart + 5-Year CAGR meter"
+      },
+      {
+        "timestamp": "0:25-0:40",
+        "title": "Construction & Risk",
+        "narration": "Promised delivery is 5+ Yrs. We assess delay risk as High Risk with 3 active red flags on record.",
+        "visual": "Construction progress timeline + Red flag alert badge"
+      },
+      {
+        "timestamp": "0:40-1:00",
+        "title": "Final Verdict",
+        "narration": "Signature Global Titanium SPR earns a Truth Score of 71 out of 100 — rated Solid. Get the full 150-check report at Truth Estate.",
+        "visual": "Final verdict card + CTA overlay"
+      }
+    ]
+  },
+  "youtubeExplainerScript": {
+    "durationSeconds": 180,
+    "title": "Signature Global Titanium SPR Gurugram Review & Audit | Truth Score 71/100",
+    "description": "Full independent review of Signature Global Titanium SPR by Signature Global in Sector 71, Gurugram. RERA RERA-GRG-1641-2024. Truth Score 71/100.",
+    "sections": [
+      {
+        "title": "Project Overview",
+        "text": "Signature Global Titanium SPR by Signature Global located in Sector 71."
+      },
+      {
+        "title": "Financial & ROI Analysis",
+        "text": "Price starts at ₹5.00 Cr with 12.02% expected CAGR."
+      },
+      {
+        "title": "Construction Audit",
+        "text": "Target delivery: 5+ Yrs. Risk rating: High Risk."
+      },
+      {
+        "title": "Legal Check",
+        "text": "RERA ID RERA-GRG-1641-2024. Red flags: 3."
+      },
+      {
+        "title": "Verdict & Buying Advice",
+        "text": "Final score 71/100 (Solid)."
+      }
+    ]
+  }
+}

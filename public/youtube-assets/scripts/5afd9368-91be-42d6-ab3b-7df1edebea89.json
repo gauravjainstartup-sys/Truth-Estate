@@ -1,0 +1,69 @@
+{
+  "slug": "5afd9368-91be-42d6-ab3b-7df1edebea89",
+  "projectName": "Ashiana Amarah Phase - 3 & 3A",
+  "developer": "Ashiana Group",
+  "location": "Sector 93",
+  "truthScore": 79,
+  "scoreTag": "Solid",
+  "price": "₹2.50 Cr",
+  "cagr": "12.98%",
+  "deliveryYear": "1-3 Yrs",
+  "delayRisk": "Watchlist",
+  "redFlags": 1,
+  "youtubeShortScript": {
+    "durationSeconds": 60,
+    "sections": [
+      {
+        "timestamp": "0:00-0:10",
+        "title": "Intro Hook",
+        "narration": "Is Ashiana Amarah Phase - 3 & 3A in Sector 93 worth your money? Let’s look at the independent forensic data.",
+        "visual": "Hero render elevation + Truth Score badge pop-in"
+      },
+      {
+        "timestamp": "0:10-0:25",
+        "title": "Price & ROI",
+        "narration": "Starting at ₹2.50 Cr, our financial model projects a 5-year CAGR of 12.98%, comparing favorably to Sector 93 benchmarks.",
+        "visual": "Price comparison chart + 5-Year CAGR meter"
+      },
+      {
+        "timestamp": "0:25-0:40",
+        "title": "Construction & Risk",
+        "narration": "Promised delivery is 1-3 Yrs. We assess delay risk as Watchlist with 1 active red flags on record.",
+        "visual": "Construction progress timeline + Red flag alert badge"
+      },
+      {
+        "timestamp": "0:40-1:00",
+        "title": "Final Verdict",
+        "narration": "Ashiana Amarah Phase - 3 & 3A earns a Truth Score of 79 out of 100 — rated Solid. Get the full 150-check report at Truth Estate.",
+        "visual": "Final verdict card + CTA overlay"
+      }
+    ]
+  },
+  "youtubeExplainerScript": {
+    "durationSeconds": 180,
+    "title": "Ashiana Amarah Phase - 3 & 3A Gurugram Review & Audit | Truth Score 79/100",
+    "description": "Full independent review of Ashiana Amarah Phase - 3 & 3A by Ashiana Group in Sector 93, Gurugram. RERA RERA-GRG-1440-2023. Truth Score 79/100.",
+    "sections": [
+      {
+        "title": "Project Overview",
+        "text": "Ashiana Amarah Phase - 3 & 3A by Ashiana Group located in Sector 93."
+      },
+      {
+        "title": "Financial & ROI Analysis",
+        "text": "Price starts at ₹2.50 Cr with 12.98% expected CAGR."
+      },
+      {
+        "title": "Construction Audit",
+        "text": "Target delivery: 1-3 Yrs. Risk rating: Watchlist."
+      },
+      {
+        "title": "Legal Check",
+        "text": "RERA ID RERA-GRG-1440-2023. Red flags: 1."
+      },
+      {
+        "title": "Verdict & Buying Advice",
+        "text": "Final score 79/100 (Solid)."
+      }
+    ]
+  }
+}

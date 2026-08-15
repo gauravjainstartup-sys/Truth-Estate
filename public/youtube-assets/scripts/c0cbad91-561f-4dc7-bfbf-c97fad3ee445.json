@@ -1,0 +1,69 @@
+{
+  "slug": "c0cbad91-561f-4dc7-bfbf-c97fad3ee445",
+  "projectName": "Godrej Aristocrat",
+  "developer": "Godrej",
+  "location": "Sector 49",
+  "truthScore": 63,
+  "scoreTag": "Fair",
+  "price": "₹4.30 Cr",
+  "cagr": "11.06%",
+  "deliveryYear": "3-5 Yrs",
+  "delayRisk": "High Risk",
+  "redFlags": 5,
+  "youtubeShortScript": {
+    "durationSeconds": 60,
+    "sections": [
+      {
+        "timestamp": "0:00-0:10",
+        "title": "Intro Hook",
+        "narration": "Is Godrej Aristocrat in Sector 49 worth your money? Let’s look at the independent forensic data.",
+        "visual": "Hero render elevation + Truth Score badge pop-in"
+      },
+      {
+        "timestamp": "0:10-0:25",
+        "title": "Price & ROI",
+        "narration": "Starting at ₹4.30 Cr, our financial model projects a 5-year CAGR of 11.06%, comparing favorably to Sector 49 benchmarks.",
+        "visual": "Price comparison chart + 5-Year CAGR meter"
+      },
+      {
+        "timestamp": "0:25-0:40",
+        "title": "Construction & Risk",
+        "narration": "Promised delivery is 3-5 Yrs. We assess delay risk as High Risk with 5 active red flags on record.",
+        "visual": "Construction progress timeline + Red flag alert badge"
+      },
+      {
+        "timestamp": "0:40-1:00",
+        "title": "Final Verdict",
+        "narration": "Godrej Aristocrat earns a Truth Score of 63 out of 100 — rated Fair. Get the full 150-check report at Truth Estate.",
+        "visual": "Final verdict card + CTA overlay"
+      }
+    ]
+  },
+  "youtubeExplainerScript": {
+    "durationSeconds": 180,
+    "title": "Godrej Aristocrat Gurugram Review & Audit | Truth Score 63/100",
+    "description": "Full independent review of Godrej Aristocrat by Godrej in Sector 49, Gurugram. RERA RERA-GRG-1480-2023. Truth Score 63/100.",
+    "sections": [
+      {
+        "title": "Project Overview",
+        "text": "Godrej Aristocrat by Godrej located in Sector 49."
+      },
+      {
+        "title": "Financial & ROI Analysis",
+        "text": "Price starts at ₹4.30 Cr with 11.06% expected CAGR."
+      },
+      {
+        "title": "Construction Audit",
+        "text": "Target delivery: 3-5 Yrs. Risk rating: High Risk."
+      },
+      {
+        "title": "Legal Check",
+        "text": "RERA ID RERA-GRG-1480-2023. Red flags: 5."
+      },
+      {
+        "title": "Verdict & Buying Advice",
+        "text": "Final score 63/100 (Fair)."
+      }
+    ]
+  }
+}

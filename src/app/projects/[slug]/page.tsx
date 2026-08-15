@@ -263,25 +263,71 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 /* The Truth Score is our independent assessment of a third-party
    development — modelled as a Product review so Google and AI engines can
    read the rating (out of 100) and who stands behind it. */
-function productLdFor(p: { name: string; developer?: string | null; reason?: string | null; truthScore?: number | null }) {
+function productLdFor(p: any) {
+  const lowInr = p.budget?.[0] && p.budget[0] > 0 ? Math.round(p.budget[0] * 10000000) : undefined;
+  const highInr = p.budget?.[1] && p.budget[1] > 0 ? Math.round(p.budget[1] * 10000000) : undefined;
+  const heroImage = p.ops?.media?.hero || p.ops?.media?.heroImage;
+  const addr = p.ops?.address;
+
+  const offerLd = lowInr
+    ? highInr && highInr > lowInr
+      ? {
+          "@type": "AggregateOffer",
+          priceCurrency: "INR",
+          lowPrice: lowInr,
+          highPrice: highInr,
+          offerCount: p.ops?.homes?.length || 1,
+        }
+      : {
+          "@type": "Offer",
+          priceCurrency: "INR",
+          price: lowInr,
+        }
+    : undefined;
+
+  const placeLd = addr
+    ? {
+        "@type": "Place",
+        name: `${p.name}, ${addr}`,
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: addr,
+          addressLocality: "Gurugram",
+          addressRegion: "Haryana",
+          addressCountry: "IN",
+        },
+        ...(p.ops?.location?.geo
+          ? {
+              geo: {
+                "@type": "GeoCoordinates",
+                latitude: p.ops.location.geo.lat,
+                longitude: p.ops.location.geo.lng,
+              },
+            }
+          : {}),
+      }
+    : undefined;
+
+  const reason = p.reason || p.recommendation || p.verdict;
+
   return {
     "@context": "https://schema.org",
     "@type": "Product",
     name: p.name,
     category: "Residential real estate",
     ...(p.developer ? { brand: { "@type": "Organization", name: p.developer } } : {}),
-    ...(p.reason ? { description: p.reason } : {}),
-    /* Omitted rather than sent as null when a project has not been scored:
-       a Rating with no ratingValue is invalid structured data, and an
-       invalid block can cost the whole page its rich result. */
-    ...(p.truthScore != null
+    ...(reason ? { description: reason } : {}),
+    ...(heroImage ? { image: [heroImage] } : {}),
+    ...(offerLd ? { offers: offerLd } : {}),
+    ...(placeLd ? { location: placeLd } : {}),
+    ...(p.truthScore != null && p.truthScore > 0
       ? {
           review: {
             "@type": "Review",
             name: `Truth Score for ${p.name}`,
             reviewRating: { "@type": "Rating", ratingValue: p.truthScore, bestRating: 100, worstRating: 0 },
             author: { "@type": "Organization", name: "Truth Estate" },
-            ...(p.reason ? { reviewBody: p.reason } : {}),
+            ...(reason ? { reviewBody: reason } : {}),
           },
         }
       : {}),

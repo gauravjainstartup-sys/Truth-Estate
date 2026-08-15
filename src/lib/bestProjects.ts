@@ -88,9 +88,9 @@ export const BEST_PROJECTS: BestProjectsPage[] = [
   {
     slug: "under-3-cr-gurugram",
     h1: "Best projects in Gurugram under ₹3 Cr.",
-    title: "Best Projects in Gurugram Under ₹3 Cr",
+    title: "Best Projects in Gurugram Under ₹3 Cr — Scored",
     description:
-      "Every tracked Gurugram project with an entry price under ₹3 Cr, independently scored on delivery, legal, developer strength, liquidity, pricing and construction. No paid rankings.",
+      "Every tracked Gurugram project under ₹3 Cr, independently scored on delivery, legal health, developer strength, pricing & construction. No paid rankings.",
     intro:
       "Every project we track whose entry price sits under ₹3 Cr — each one carrying the same Truth Score, built from the same six audited inputs as the rest of the catalogue. No developer pays to appear here, and none can move a score.",
     match: underCr(3),
@@ -99,9 +99,9 @@ export const BEST_PROJECTS: BestProjectsPage[] = [
   {
     slug: "under-5-cr-gurugram",
     h1: "Best projects in Gurugram under ₹5 Cr.",
-    title: "Best Projects in Gurugram Under ₹5 Cr",
+    title: "Best Projects in Gurugram Under ₹5 Cr — Scored",
     description:
-      "Every tracked Gurugram project with an entry price under ₹5 Cr, independently scored on delivery, legal, developer strength, liquidity, pricing and construction. No paid rankings.",
+      "Every tracked Gurugram project under ₹5 Cr, independently scored on delivery, RERA legal checks, developer health, and pricing. No paid rankings.",
     intro:
       "Every project we track whose entry price sits under ₹5 Cr — each one carrying the same Truth Score, built from the same six audited inputs as the rest of the catalogue. No developer pays to appear here, and none can move a score.",
     match: underCr(5),
@@ -110,9 +110,9 @@ export const BEST_PROJECTS: BestProjectsPage[] = [
   {
     slug: "under-8-cr-gurugram",
     h1: "Best projects in Gurugram under ₹8 Cr.",
-    title: "Best Projects in Gurugram Under ₹8 Cr",
+    title: "Best Projects in Gurugram Under ₹8 Cr — Scored",
     description:
-      "Every tracked Gurugram project with an entry price under ₹8 Cr, independently scored on delivery, legal, developer strength, liquidity, pricing and construction. No paid rankings.",
+      "Every tracked Gurugram project under ₹8 Cr, independently scored on delivery, RERA legal checks, developer health, and pricing. No paid rankings.",
     intro:
       "Every project we track whose entry price sits under ₹8 Cr — each one carrying the same Truth Score, built from the same six audited inputs as the rest of the catalogue. No developer pays to appear here, and none can move a score.",
     match: underCr(8),
@@ -121,9 +121,9 @@ export const BEST_PROJECTS: BestProjectsPage[] = [
   {
     slug: "luxury-above-10-cr",
     h1: "Luxury projects in Gurugram above ₹10 Cr.",
-    title: "Luxury Projects in Gurugram Above ₹10 Cr",
+    title: "Luxury Projects in Gurugram Above ₹10 Cr — Scored",
     description:
-      "Gurugram's ₹10 Cr-and-above residential projects, independently scored on delivery, legal, developer strength, liquidity, pricing and construction. No paid rankings.",
+      "Gurugram ₹10 Cr+ luxury residential projects, independently scored on delivery, RERA title checks, developer strength, & build pace. No paid rankings.",
     intro:
       "The projects we track that start at ₹10 Cr and above. A larger cheque buys a bigger flat, not a safer one — every project here is scored on the same six audited inputs as everything else in the catalogue.",
     match: (r) => r.minPriceCr != null && r.minPriceCr >= 10,
@@ -132,9 +132,9 @@ export const BEST_PROJECTS: BestProjectsPage[] = [
   {
     slug: "high-appreciation-cagr",
     h1: "Gurugram projects with the strongest expected appreciation.",
-    title: "Highest Appreciation Projects in Gurugram — Expected CAGR",
+    title: "High-Appreciation Projects in Gurugram (CAGR)",
     description:
-      "Gurugram projects with the highest expected CAGR against a city baseline of 9%, from the same pipeline that scores delivery, legal and construction risk.",
+      "Gurugram projects with the highest expected CAGR against a 9% city baseline, from the pipeline scoring delivery, legal and construction risk.",
     /* THE BASELINE IS ON THE PAGE ON PURPOSE. "High appreciation" means
        nothing without the number it beats; roi_city_cagr is 9 across the
        set, and 12 is the first threshold clearly above it. */
@@ -145,9 +145,9 @@ export const BEST_PROJECTS: BestProjectsPage[] = [
   {
     slug: "lowest-construction-delays",
     h1: "Gurugram projects least likely to run late.",
-    title: "Gurugram Projects With the Lowest Delay Risk",
+    title: "Lowest Delay Risk Projects in Gurugram — Ranked",
     description:
-      "Gurugram projects with a modelled delay probability of 30% or less, from construction pace measured against the RERA-promised date.",
+      "Gurugram projects with a modelled delay risk ≤ 30%, from construction pace measured against RERA-promised dates. Unbiased due diligence.",
     intro:
       "Projects whose modelled chance of running late is 30% or below — computed from construction pace against the date the developer promised RERA, not from what a brochure says. Most of the tracked set sits well above this.",
     match: (r) => r.delayChancePct != null && r.delayChancePct <= 30,
@@ -155,9 +155,9 @@ export const BEST_PROJECTS: BestProjectsPage[] = [
   {
     slug: "new-launches",
     h1: "New launches in Gurugram.",
-    title: "New Launches in Gurugram — Independently Scored",
+    title: "New Launches in Gurugram — Scored & Audited",
     description:
-      "Gurugram projects registered with RERA in the last two years, independently scored on delivery, legal, developer strength, liquidity, pricing and construction.",
+      "Gurugram projects registered with RERA in the last two years, independently scored on delivery, legal health, builder history, and pricing.",
     /* The honest caveat belongs on this page more than any other: a new
        launch has no construction history to score, so its delivery risk
        leans almost entirely on the developer's record. */

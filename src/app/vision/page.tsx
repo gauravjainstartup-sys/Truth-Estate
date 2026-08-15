@@ -12,9 +12,22 @@ export const metadata: Metadata = {
      ROOT url as the canonical — telling Google this page is a duplicate of
      the home page. 25 pages in the sitemap were doing exactly that. */
   alternates: { canonical: "/vision" },
-  title: "Truth Estate — Independent Real Estate Intelligence",
+  title: { absolute: "Our Vision — Independent Real Estate Advisory | Truth Estate" },
   description:
     "Bloomberg-grade intelligence and independent advisory for high-value property decisions in India. Proof, not promises.",
+  openGraph: {
+    title: "Our Vision — Independent Real Estate Advisory | Truth Estate",
+    description:
+      "Bloomberg-grade intelligence and independent advisory for high-value property decisions in India. Proof, not promises.",
+    url: "/vision",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Our Vision — Independent Real Estate Advisory | Truth Estate",
+    description:
+      "Bloomberg-grade intelligence and independent advisory for high-value property decisions in India.",
+  },
 };
 
 export default async function VisionPage() {

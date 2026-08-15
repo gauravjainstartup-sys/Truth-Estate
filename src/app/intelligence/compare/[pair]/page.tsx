@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { IS_PRODUCTION_ORIGIN } from "@/lib/site";
 import {
   fetchBacklogFull,
   fetchExtendedDetails,
@@ -16,7 +17,6 @@ import {
   DEV_PAIRS,
   MARKET_PAIRS,
   resolvePairLive,
-  compareTitle,
   scoredProjectOptions,
   projectComparePairs,
   splitPair,
@@ -25,11 +25,10 @@ import {
 import ComparePage from "@/components/intelligence/ComparePage";
 import { breadcrumbLd, ldJson } from "@/lib/seo";
 
-/* Project comparisons run on the LIVE tracked set (backlog_listing_public_v3):
-   the scored rows define the picker AND the prerendered pairs, and each project
-   resolves through the same liveProjectIntel adapter the live report pages use.
-   Developer/market pairs resolve synchronously off the curated registries. The
-   backlog + join tables are fetched once per build (fail-soft). */
+export const INDEXABLE_COMPARE_PAIRS = new Set([
+  "dlf-the-arbour-vs-m3m-altitude",
+  "m3m-capital-vs-smartworld-the-edition",
+]);
 
 let backlogCache: LiveBacklogFull[] | null | undefined;
 async function backlog(): Promise<LiveBacklogFull[] | null> {
@@ -56,8 +55,6 @@ async function liveScores(): Promise<number[]> {
   return (rows ?? []).map((r) => r.truthScore).filter((s): s is number => typeof s === "number" && s > 0);
 }
 
-/* extended/config tables key on backlog_projects.id; join on the row id, else
-   bridge through the project name (resolved per table) */
 function lookupKey<T>(
   rowId: string,
   name: string,
@@ -76,9 +73,6 @@ async function scoredOpts() {
   return scoredProjectOptions(await backlog());
 }
 
-/* Resolve a live project pair → two rich ProjectIntels (the same shape the
-   sample pair used, so ComparePage renders unchanged). Only pairs within the
-   scored/capped set resolve — everything else falls through to dev/market. */
 async function resolveProjectPair(pair: string): Promise<ResolvedCompare | null> {
   const sp = splitPair(pair);
   if (!sp) return null;
@@ -118,11 +112,28 @@ export async function generateMetadata({ params }: { params: Promise<{ pair: str
   const { pair } = await params;
   const r = await resolve(pair);
   if (!r) return { title: "Compare" };
-  const title = compareTitle(r);
+  const title = `${r.a.name} vs ${r.b.name}`;
+  const desc = `Independent side-by-side comparison of ${title}: measured on the same evidence — score, signals, delivery, pricing and outlook. No paid rankings.`;
+  const isIndexable = INDEXABLE_COMPARE_PAIRS.has(pair);
+
   return {
     title: `${title} — Compare`,
-    description: `Independent side-by-side comparison of ${title}: measured on the same evidence — score, signals, delivery, pricing and outlook. No paid rankings.`,
+    description: desc,
     alternates: { canonical: `/intelligence/compare/${pair}` },
+    robots: IS_PRODUCTION_ORIGIN && isIndexable
+      ? { index: true, follow: true }
+      : { index: false, follow: true },
+    openGraph: {
+      title: `${title} — Compare`,
+      description: desc,
+      url: `/intelligence/compare/${pair}`,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${title} — Compare`,
+      description: desc,
+    },
   };
 }
 
@@ -131,11 +142,12 @@ export default async function Page({ params }: { params: Promise<{ pair: string 
   const r = await resolve(pair);
   if (!r) notFound();
 
+  const title = `${r.a.name} vs ${r.b.name}`;
   const breadcrumb = breadcrumbLd([
     { name: "Home", path: "" },
     { name: "Intelligence", path: "/intelligence" },
     { name: "Compare", path: "/intelligence/compare" },
-    { name: compareTitle(r), path: `/intelligence/compare/${pair}` },
+    { name: title, path: `/intelligence/compare/${pair}` },
   ]);
 
   return (

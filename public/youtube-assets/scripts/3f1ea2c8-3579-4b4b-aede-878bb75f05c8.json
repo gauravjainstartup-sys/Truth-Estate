@@ -1,0 +1,69 @@
+{
+  "slug": "3f1ea2c8-3579-4b4b-aede-878bb75f05c8",
+  "projectName": "M3M Crown Phase - 1",
+  "developer": "M3M",
+  "location": "Sector 111",
+  "truthScore": 75,
+  "scoreTag": "Solid",
+  "price": "₹3.10 Cr",
+  "cagr": "12.5%",
+  "deliveryYear": "1-3 Yrs",
+  "delayRisk": "Watchlist",
+  "redFlags": 2,
+  "youtubeShortScript": {
+    "durationSeconds": 60,
+    "sections": [
+      {
+        "timestamp": "0:00-0:10",
+        "title": "Intro Hook",
+        "narration": "Is M3M Crown Phase - 1 in Sector 111 worth your money? Let’s look at the independent forensic data.",
+        "visual": "Hero render elevation + Truth Score badge pop-in"
+      },
+      {
+        "timestamp": "0:10-0:25",
+        "title": "Price & ROI",
+        "narration": "Starting at ₹3.10 Cr, our financial model projects a 5-year CAGR of 12.5%, comparing favorably to Sector 111 benchmarks.",
+        "visual": "Price comparison chart + 5-Year CAGR meter"
+      },
+      {
+        "timestamp": "0:25-0:40",
+        "title": "Construction & Risk",
+        "narration": "Promised delivery is 1-3 Yrs. We assess delay risk as Watchlist with 2 active red flags on record.",
+        "visual": "Construction progress timeline + Red flag alert badge"
+      },
+      {
+        "timestamp": "0:40-1:00",
+        "title": "Final Verdict",
+        "narration": "M3M Crown Phase - 1 earns a Truth Score of 75 out of 100 — rated Solid. Get the full 150-check report at Truth Estate.",
+        "visual": "Final verdict card + CTA overlay"
+      }
+    ]
+  },
+  "youtubeExplainerScript": {
+    "durationSeconds": 180,
+    "title": "M3M Crown Phase - 1 Gurugram Review & Audit | Truth Score 75/100",
+    "description": "Full independent review of M3M Crown Phase - 1 by M3M in Sector 111, Gurugram. RERA RERA-GRG-1262-2023. Truth Score 75/100.",
+    "sections": [
+      {
+        "title": "Project Overview",
+        "text": "M3M Crown Phase - 1 by M3M located in Sector 111."
+      },
+      {
+        "title": "Financial & ROI Analysis",
+        "text": "Price starts at ₹3.10 Cr with 12.5% expected CAGR."
+      },
+      {
+        "title": "Construction Audit",
+        "text": "Target delivery: 1-3 Yrs. Risk rating: Watchlist."
+      },
+      {
+        "title": "Legal Check",
+        "text": "RERA ID RERA-GRG-1262-2023. Red flags: 2."
+      },
+      {
+        "title": "Verdict & Buying Advice",
+        "text": "Final score 75/100 (Solid)."
+      }
+    ]
+  }
+}

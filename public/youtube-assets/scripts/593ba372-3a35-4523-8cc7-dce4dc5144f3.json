@@ -1,0 +1,69 @@
+{
+  "slug": "593ba372-3a35-4523-8cc7-dce4dc5144f3",
+  "projectName": "Birla Arika",
+  "developer": "Birla Estates",
+  "location": "Sector 31-32A",
+  "truthScore": 64,
+  "scoreTag": "Fair",
+  "price": "₹10.50 Cr",
+  "cagr": "11.18%",
+  "deliveryYear": "5+ Yrs",
+  "delayRisk": "High Risk",
+  "redFlags": 3,
+  "youtubeShortScript": {
+    "durationSeconds": 60,
+    "sections": [
+      {
+        "timestamp": "0:00-0:10",
+        "title": "Intro Hook",
+        "narration": "Is Birla Arika in Sector 31-32A worth your money? Let’s look at the independent forensic data.",
+        "visual": "Hero render elevation + Truth Score badge pop-in"
+      },
+      {
+        "timestamp": "0:10-0:25",
+        "title": "Price & ROI",
+        "narration": "Starting at ₹10.50 Cr, our financial model projects a 5-year CAGR of 11.18%, comparing favorably to Sector 31-32A benchmarks.",
+        "visual": "Price comparison chart + 5-Year CAGR meter"
+      },
+      {
+        "timestamp": "0:25-0:40",
+        "title": "Construction & Risk",
+        "narration": "Promised delivery is 5+ Yrs. We assess delay risk as High Risk with 3 active red flags on record.",
+        "visual": "Construction progress timeline + Red flag alert badge"
+      },
+      {
+        "timestamp": "0:40-1:00",
+        "title": "Final Verdict",
+        "narration": "Birla Arika earns a Truth Score of 64 out of 100 — rated Fair. Get the full 150-check report at Truth Estate.",
+        "visual": "Final verdict card + CTA overlay"
+      }
+    ]
+  },
+  "youtubeExplainerScript": {
+    "durationSeconds": 180,
+    "title": "Birla Arika Gurugram Review & Audit | Truth Score 64/100",
+    "description": "Full independent review of Birla Arika by Birla Estates in Sector 31-32A, Gurugram. RERA RERA-GRG-1823-2024. Truth Score 64/100.",
+    "sections": [
+      {
+        "title": "Project Overview",
+        "text": "Birla Arika by Birla Estates located in Sector 31-32A."
+      },
+      {
+        "title": "Financial & ROI Analysis",
+        "text": "Price starts at ₹10.50 Cr with 11.18% expected CAGR."
+      },
+      {
+        "title": "Construction Audit",
+        "text": "Target delivery: 5+ Yrs. Risk rating: High Risk."
+      },
+      {
+        "title": "Legal Check",
+        "text": "RERA ID RERA-GRG-1823-2024. Red flags: 3."
+      },
+      {
+        "title": "Verdict & Buying Advice",
+        "text": "Final score 64/100 (Fair)."
+      }
+    ]
+  }
+}

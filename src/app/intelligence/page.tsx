@@ -3,7 +3,7 @@ import IntelligenceWorkspace from "@/components/intelligence/IntelligenceWorkspa
 import { buildIndex } from "@/lib/omniIndex";
 
 export const metadata: Metadata = {
-  title: "Truth Intelligence — Independent Property Research",
+  title: "Gurugram Real Estate Intelligence & Truth Scores",
   description:
     "Independent Gurugram real estate intelligence: unbiased Truth Scores for projects, developer track records, location analysis and side-by-side comparisons. Evidence over marketing — no paid rankings.",
   keywords: [
@@ -15,10 +15,17 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: "/intelligence" },
   openGraph: {
-    title: "Truth Intelligence — Independent Property Research",
+    title: "Gurugram Real Estate Intelligence & Truth Scores",
     description:
       "Unbiased Truth Scores, developer intelligence and location analysis for Gurugram real estate. Evidence over marketing.",
     url: "/intelligence",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Gurugram Real Estate Intelligence & Truth Scores",
+    description:
+      "Unbiased Truth Scores, developer intelligence and location analysis for Gurugram real estate.",
   },
 };
 

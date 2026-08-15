@@ -1,0 +1,69 @@
+{
+  "slug": "c368764b-3ff5-48f1-b0d9-683281a70129",
+  "projectName": "Godrej Miraya",
+  "developer": "Godrej",
+  "location": "Sector 43",
+  "truthScore": 58,
+  "scoreTag": "Watch",
+  "price": "₹10.50 Cr",
+  "cagr": "10.46%",
+  "deliveryYear": "5+ Yrs",
+  "delayRisk": "High Risk",
+  "redFlags": 5,
+  "youtubeShortScript": {
+    "durationSeconds": 60,
+    "sections": [
+      {
+        "timestamp": "0:00-0:10",
+        "title": "Intro Hook",
+        "narration": "Is Godrej Miraya in Sector 43 worth your money? Let’s look at the independent forensic data.",
+        "visual": "Hero render elevation + Truth Score badge pop-in"
+      },
+      {
+        "timestamp": "0:10-0:25",
+        "title": "Price & ROI",
+        "narration": "Starting at ₹10.50 Cr, our financial model projects a 5-year CAGR of 10.46%, comparing favorably to Sector 43 benchmarks.",
+        "visual": "Price comparison chart + 5-Year CAGR meter"
+      },
+      {
+        "timestamp": "0:25-0:40",
+        "title": "Construction & Risk",
+        "narration": "Promised delivery is 5+ Yrs. We assess delay risk as High Risk with 5 active red flags on record.",
+        "visual": "Construction progress timeline + Red flag alert badge"
+      },
+      {
+        "timestamp": "0:40-1:00",
+        "title": "Final Verdict",
+        "narration": "Godrej Miraya earns a Truth Score of 58 out of 100 — rated Watch. Get the full 150-check report at Truth Estate.",
+        "visual": "Final verdict card + CTA overlay"
+      }
+    ]
+  },
+  "youtubeExplainerScript": {
+    "durationSeconds": 180,
+    "title": "Godrej Miraya Gurugram Review & Audit | Truth Score 58/100",
+    "description": "Full independent review of Godrej Miraya by Godrej in Sector 43, Gurugram. RERA RERA-GRG-1698-2024. Truth Score 58/100.",
+    "sections": [
+      {
+        "title": "Project Overview",
+        "text": "Godrej Miraya by Godrej located in Sector 43."
+      },
+      {
+        "title": "Financial & ROI Analysis",
+        "text": "Price starts at ₹10.50 Cr with 10.46% expected CAGR."
+      },
+      {
+        "title": "Construction Audit",
+        "text": "Target delivery: 5+ Yrs. Risk rating: High Risk."
+      },
+      {
+        "title": "Legal Check",
+        "text": "RERA ID RERA-GRG-1698-2024. Red flags: 5."
+      },
+      {
+        "title": "Verdict & Buying Advice",
+        "text": "Final score 58/100 (Watch)."
+      }
+    ]
+  }
+}

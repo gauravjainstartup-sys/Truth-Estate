@@ -1,0 +1,69 @@
+{
+  "slug": "6e84eba0-b288-4cfa-b988-0e1ef9f144b4",
+  "projectName": "Godrej Habitat",
+  "developer": "Godrej",
+  "location": "Sector 3",
+  "truthScore": 56,
+  "scoreTag": "Watch",
+  "price": "₹1.40 Cr",
+  "cagr": "10.22%",
+  "deliveryYear": "Within 1 Yr",
+  "delayRisk": "High Risk",
+  "redFlags": 5,
+  "youtubeShortScript": {
+    "durationSeconds": 60,
+    "sections": [
+      {
+        "timestamp": "0:00-0:10",
+        "title": "Intro Hook",
+        "narration": "Is Godrej Habitat in Sector 3 worth your money? Let’s look at the independent forensic data.",
+        "visual": "Hero render elevation + Truth Score badge pop-in"
+      },
+      {
+        "timestamp": "0:10-0:25",
+        "title": "Price & ROI",
+        "narration": "Starting at ₹1.40 Cr, our financial model projects a 5-year CAGR of 10.22%, comparing favorably to Sector 3 benchmarks.",
+        "visual": "Price comparison chart + 5-Year CAGR meter"
+      },
+      {
+        "timestamp": "0:25-0:40",
+        "title": "Construction & Risk",
+        "narration": "Promised delivery is Within 1 Yr. We assess delay risk as High Risk with 5 active red flags on record.",
+        "visual": "Construction progress timeline + Red flag alert badge"
+      },
+      {
+        "timestamp": "0:40-1:00",
+        "title": "Final Verdict",
+        "narration": "Godrej Habitat earns a Truth Score of 56 out of 100 — rated Watch. Get the full 150-check report at Truth Estate.",
+        "visual": "Final verdict card + CTA overlay"
+      }
+    ]
+  },
+  "youtubeExplainerScript": {
+    "durationSeconds": 180,
+    "title": "Godrej Habitat Gurugram Review & Audit | Truth Score 56/100",
+    "description": "Full independent review of Godrej Habitat by Godrej in Sector 3, Gurugram. RERA RERA-GRG-163-2019. Truth Score 56/100.",
+    "sections": [
+      {
+        "title": "Project Overview",
+        "text": "Godrej Habitat by Godrej located in Sector 3."
+      },
+      {
+        "title": "Financial & ROI Analysis",
+        "text": "Price starts at ₹1.40 Cr with 10.22% expected CAGR."
+      },
+      {
+        "title": "Construction Audit",
+        "text": "Target delivery: Within 1 Yr. Risk rating: High Risk."
+      },
+      {
+        "title": "Legal Check",
+        "text": "RERA ID RERA-GRG-163-2019. Red flags: 5."
+      },
+      {
+        "title": "Verdict & Buying Advice",
+        "text": "Final score 56/100 (Watch)."
+      }
+    ]
+  }
+}

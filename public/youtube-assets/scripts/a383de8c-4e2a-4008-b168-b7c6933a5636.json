@@ -1,0 +1,69 @@
+{
+  "slug": "a383de8c-4e2a-4008-b168-b7c6933a5636",
+  "projectName": "Ashiana Anmol Phase - 3",
+  "developer": "Ashiana Group",
+  "location": "Sector 33",
+  "truthScore": 74,
+  "scoreTag": "Solid",
+  "price": "₹1.30 Cr",
+  "cagr": "12.38%",
+  "deliveryYear": "1-3 Yrs",
+  "delayRisk": "Low Risk",
+  "redFlags": 2,
+  "youtubeShortScript": {
+    "durationSeconds": 60,
+    "sections": [
+      {
+        "timestamp": "0:00-0:10",
+        "title": "Intro Hook",
+        "narration": "Is Ashiana Anmol Phase - 3 in Sector 33 worth your money? Let’s look at the independent forensic data.",
+        "visual": "Hero render elevation + Truth Score badge pop-in"
+      },
+      {
+        "timestamp": "0:10-0:25",
+        "title": "Price & ROI",
+        "narration": "Starting at ₹1.30 Cr, our financial model projects a 5-year CAGR of 12.38%, comparing favorably to Sector 33 benchmarks.",
+        "visual": "Price comparison chart + 5-Year CAGR meter"
+      },
+      {
+        "timestamp": "0:25-0:40",
+        "title": "Construction & Risk",
+        "narration": "Promised delivery is 1-3 Yrs. We assess delay risk as Low Risk with 2 active red flags on record.",
+        "visual": "Construction progress timeline + Red flag alert badge"
+      },
+      {
+        "timestamp": "0:40-1:00",
+        "title": "Final Verdict",
+        "narration": "Ashiana Anmol Phase - 3 earns a Truth Score of 74 out of 100 — rated Solid. Get the full 150-check report at Truth Estate.",
+        "visual": "Final verdict card + CTA overlay"
+      }
+    ]
+  },
+  "youtubeExplainerScript": {
+    "durationSeconds": 180,
+    "title": "Ashiana Anmol Phase - 3 Gurugram Review & Audit | Truth Score 74/100",
+    "description": "Full independent review of Ashiana Anmol Phase - 3 by Ashiana Group in Sector 33, Gurugram. RERA RERA-GRG-929-2021. Truth Score 74/100.",
+    "sections": [
+      {
+        "title": "Project Overview",
+        "text": "Ashiana Anmol Phase - 3 by Ashiana Group located in Sector 33."
+      },
+      {
+        "title": "Financial & ROI Analysis",
+        "text": "Price starts at ₹1.30 Cr with 12.38% expected CAGR."
+      },
+      {
+        "title": "Construction Audit",
+        "text": "Target delivery: 1-3 Yrs. Risk rating: Low Risk."
+      },
+      {
+        "title": "Legal Check",
+        "text": "RERA ID RERA-GRG-929-2021. Red flags: 2."
+      },
+      {
+        "title": "Verdict & Buying Advice",
+        "text": "Final score 74/100 (Solid)."
+      }
+    ]
+  }
+}

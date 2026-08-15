@@ -110,6 +110,10 @@ const orgLd = {
   logo: `${SITE_URL}/favicon.ico`,
   image: OG_IMAGE,
   slogan: "Less promises. More proof.",
+  sameAs: [
+    "https://www.linkedin.com/company/truth-estate/",
+    "https://x.com/truthestateggn",
+  ],
   description:
     "Truth Estate is an independent, evidence-first real estate advisory for NRIs and discerning buyers in India. It provides forensic due diligence, unbiased Truth Scores and end-to-end representation — never influenced by developer marketing.",
   knowsAbout: [

@@ -5,6 +5,7 @@ import { resolveMarketBySlug } from "@/lib/marketsLive";
 import { buildIndex } from "@/lib/omniIndex";
 import MarketProfile from "@/components/intelligence/MarketProfile";
 import { breadcrumbLd, ldJson } from "@/lib/seo";
+import { SITE_URL } from "@/lib/site";
 
 export function generateStaticParams() {
   return MARKETS.map((m) => ({ slug: m.slug }));
@@ -16,10 +17,23 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const m = marketBySlug(slug);
   if (!m) return { title: "Location Intelligence" };
+  const title = `${m.name}, Gurugram — Location Intelligence & Price Trends`;
+  const desc = `Independent location intelligence on ${m.name}, Gurugram: verdict, project count, price band, current & future trends. ${m.info}`;
   return {
     alternates: { canonical: `/intelligence/markets/${m.slug}` },
-    title: `${m.name} — Location Intelligence`,
-    description: `Independent intelligence on ${m.name}, Gurugram: verdict, project count, price band, current and future trends, and the projects we track. ${m.info}`,
+    title,
+    description: desc,
+    openGraph: {
+      title,
+      description: desc,
+      url: `/intelligence/markets/${m.slug}`,
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: desc,
+    },
   };
 }
 
@@ -46,9 +60,28 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     { name: m.name, path: `/intelligence/markets/${m.slug}` },
   ]);
 
+  const collectionLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: `${m.name}, Gurugram — Location Intelligence & Price Trends`,
+    description: `Independent location intelligence and tracked residential projects in ${m.name}, Gurugram.`,
+    url: `${SITE_URL}/intelligence/markets/${m.slug}`,
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: projects.length,
+      itemListElement: projects.map((p, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        name: p.name,
+        url: `${SITE_URL}/projects/${p.slug}`,
+      })),
+    },
+  };
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(breadcrumb)} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(collectionLd)} />
       <MarketProfile
         m={m}
         projects={projects}

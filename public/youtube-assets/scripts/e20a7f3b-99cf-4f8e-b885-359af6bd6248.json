@@ -1,0 +1,69 @@
+{
+  "slug": "e20a7f3b-99cf-4f8e-b885-359af6bd6248",
+  "projectName": "Ashiana Mulberry Phase - 4",
+  "developer": "Ashiana Group",
+  "location": "Sector 2",
+  "truthScore": 68,
+  "scoreTag": "Fair",
+  "price": "₹2.30 Cr",
+  "cagr": "11.66%",
+  "deliveryYear": "3-5 Yrs",
+  "delayRisk": "Elevated Risk",
+  "redFlags": 2,
+  "youtubeShortScript": {
+    "durationSeconds": 60,
+    "sections": [
+      {
+        "timestamp": "0:00-0:10",
+        "title": "Intro Hook",
+        "narration": "Is Ashiana Mulberry Phase - 4 in Sector 2 worth your money? Let’s look at the independent forensic data.",
+        "visual": "Hero render elevation + Truth Score badge pop-in"
+      },
+      {
+        "timestamp": "0:10-0:25",
+        "title": "Price & ROI",
+        "narration": "Starting at ₹2.30 Cr, our financial model projects a 5-year CAGR of 11.66%, comparing favorably to Sector 2 benchmarks.",
+        "visual": "Price comparison chart + 5-Year CAGR meter"
+      },
+      {
+        "timestamp": "0:25-0:40",
+        "title": "Construction & Risk",
+        "narration": "Promised delivery is 3-5 Yrs. We assess delay risk as Elevated Risk with 2 active red flags on record.",
+        "visual": "Construction progress timeline + Red flag alert badge"
+      },
+      {
+        "timestamp": "0:40-1:00",
+        "title": "Final Verdict",
+        "narration": "Ashiana Mulberry Phase - 4 earns a Truth Score of 68 out of 100 — rated Fair. Get the full 150-check report at Truth Estate.",
+        "visual": "Final verdict card + CTA overlay"
+      }
+    ]
+  },
+  "youtubeExplainerScript": {
+    "durationSeconds": 180,
+    "title": "Ashiana Mulberry Phase - 4 Gurugram Review & Audit | Truth Score 68/100",
+    "description": "Full independent review of Ashiana Mulberry Phase - 4 by Ashiana Group in Sector 2, Gurugram. RERA RERA-GRG-2030-2025. Truth Score 68/100.",
+    "sections": [
+      {
+        "title": "Project Overview",
+        "text": "Ashiana Mulberry Phase - 4 by Ashiana Group located in Sector 2."
+      },
+      {
+        "title": "Financial & ROI Analysis",
+        "text": "Price starts at ₹2.30 Cr with 11.66% expected CAGR."
+      },
+      {
+        "title": "Construction Audit",
+        "text": "Target delivery: 3-5 Yrs. Risk rating: Elevated Risk."
+      },
+      {
+        "title": "Legal Check",
+        "text": "RERA ID RERA-GRG-2030-2025. Red flags: 2."
+      },
+      {
+        "title": "Verdict & Buying Advice",
+        "text": "Final score 68/100 (Fair)."
+      }
+    ]
+  }
+}

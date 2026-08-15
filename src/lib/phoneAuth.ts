@@ -28,13 +28,24 @@
    and rewriting those call sites is a separate job from putting a real
    OTP in the chat. This file is where that bridge gets cut later.
    ════════════════════════════════════════════════════════════════ */
-import { setSignedIn, signOut, loadAccount, saveAccount, emptyBuyData } from "@/lib/journey";
+import { setSignedIn, signOut, loadAccount, saveAccount, emptyBuyData, type BuyData } from "@/lib/journey";
 import { getAnonId, getSessionId } from "@/lib/truthGuideChat";
 import { track } from "@/lib/events";
+import { basePath } from "@/lib/site";
+import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = "https://lyetvabfgaidvqrbmaoy.supabase.co";
 const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5ZXR2YWJmZ2FpZHZxcmJtYW95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MDI2MzEsImV4cCI6MjA5MzI3ODYzMX0.zJzqyfhANxChklw7bEiOc7PwSq2R9wiJIpS39wCYS_8";
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    flowType: "implicit",
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  },
+});
 
 const SESSION_STORE = "truthEstate.sbSession";
 
@@ -178,6 +189,106 @@ export async function phoneKnown(phone: string, dial: string = INDIA_DIAL): Prom
   }
 }
 
+/* ── International (non-+91) via Twilio Verify ───────────────────
+   Both hit the twilio-otp Edge Function with the anon key, exactly as
+   the +91 path hits chat-signin: the browser never asserts its own
+   identity — the function proves it, inside, against Twilio.
+
+   What AG had here POSTed to /api/auth/twilio/* — dead on this static
+   export, there is no server — and on "verify" minted a FAKE local
+   token (`twilio_sess_${Date.now()}`, a random `usr_…`), so any code the
+   UI accepted signed you in as a fabricated user. These call the real
+   function and store the REAL session (null until PROJECT_JWT_SECRET is
+   set), the same shape verifyOtp writes.
+
+   The number is normalised HERE so the two call sites (SignIn, the
+   paywall) can pass raw keystrokes: normaliseIntl folds "+44 7911…",
+   "07911…" and "7911…" to one canonical local part, so the E.164 the
+   function builds can never double the country code. */
+export async function sendTwilioOtp(dial: string, phone: string): Promise<AuthResult> {
+  const cc = dial.replace(/\D/g, "");
+  const full = normaliseIntl(dial, phone);
+  const local = full ? full.slice(cc.length) : "";
+  if (!local) return { ok: false, error: "That number doesn't look right — mind checking it?" };
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/twilio-otp`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({ action: "send", dial: cc, phone: local }),
+      signal: AbortSignal.timeout(20000),
+    });
+    const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+    if (!data.ok) return { ok: false, error: data.error ?? "Couldn't send the code. Check the number and try again." };
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "Couldn't reach us just now — check your connection and try again." };
+  }
+}
+
+export async function verifyTwilioOtp(dial: string, phone: string, code: string, name?: string): Promise<AuthResult> {
+  const cc = dial.replace(/\D/g, "");
+  const full = normaliseIntl(dial, phone);
+  const local = full ? full.slice(cc.length) : "";
+  if (!local) return { ok: false, error: "That number doesn't look right — go back and check it." };
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/twilio-otp`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({
+        action: "check",
+        dial: cc,
+        phone: local,
+        code: code.replace(/\D/g, ""),
+        anonId: getAnonId(),
+        sessionId: getSessionId(),
+        ...(name?.trim() ? { name: name.trim() } : {}),
+      }),
+      signal: AbortSignal.timeout(20000),
+    });
+    const data = (await res.json().catch(() => ({}))) as {
+      ok?: boolean; error?: string; userId?: string;
+      chatsClaimed?: number; leadsClaimed?: number;
+      session?: { access_token: string; token_type: string; expires_in: number };
+    };
+    if (!data.ok || !data.userId) {
+      return { ok: false, error: data.error ?? "That code didn't match. Try again, or ask for a new one." };
+    }
+
+    /* A different account on this shared handset — drop the previous
+       one's cached unlocks/brief, exactly as verifyOtp does. */
+    const previous = getSession()?.user_id ?? null;
+    if (previous && previous !== data.userId) {
+      console.info("[signin] different account on this device — clearing the previous one's state");
+      signOut();
+    }
+
+    /* Canonical E.164, matching what the function stored on the profile,
+       so a later phone lookup resolves the same shape. */
+    const e164 = `+${cc}${local}`;
+    try {
+      window.localStorage.setItem(
+        SESSION_STORE,
+        JSON.stringify({ access_token: data.session?.access_token ?? null, user_id: data.userId, phone: e164 }),
+      );
+    } catch { /* a full quota must not block a verified sign-in */ }
+
+    setSignedIn();
+    /* Under the anon_id, so it is swept up with the pre-sign-in trail. */
+    track("signed_in", { props: { via: "twilio", chatsClaimed: data.chatsClaimed ?? 0, leadsClaimed: data.leadsClaimed ?? 0 } });
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "Couldn't reach us just now — check your connection and try again." };
+  }
+}
+
 export async function sendOtp(phone10: string): Promise<AuthResult> {
   try {
     const { ok, data } = await callFn("send-otp", { phone: phone10 });
@@ -272,14 +383,14 @@ export async function verifyOtp(
    user_profiles row directly, under the RLS own-row policies — no edge
    function. Both return null/false with no session, so the office falls
    back to its localStorage copy when sessions aren't live. */
-export type MyProfile = { id: string; name: string | null; phone: string | null; email: string | null };
+export type MyProfile = { id: string; name: string | null; phone: string | null; email: string | null; phone_verified: boolean };
 
 export async function fetchMyProfile(): Promise<MyProfile | null> {
   const token = getSession()?.access_token;
   if (!token) return null;
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/user_profiles?select=id,name,phone,email&limit=1`,
+      `${SUPABASE_URL}/rest/v1/user_profiles?select=id,name,phone,email,phone_verified&limit=1`,
       { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
     );
     if (!res.ok) return null;
@@ -290,11 +401,13 @@ export async function fetchMyProfile(): Promise<MyProfile | null> {
   }
 }
 
-export async function updateMyProfile(patch: Partial<Pick<MyProfile, "name" | "email">>): Promise<boolean> {
+export type ProfileUpdateResult = { ok: true } | { ok: false; error: string };
+
+export async function updateMyProfile(patch: Partial<Pick<MyProfile, "name" | "email" | "phone">>): Promise<ProfileUpdateResult> {
   const session = getSession();
   const token = session?.access_token;
   const uid = session?.user_id;
-  if (!token || !uid) return false;
+  if (!token || !uid) return { ok: false, error: "Not signed in" };
   try {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/user_profiles?id=eq.${encodeURIComponent(uid)}`,
@@ -310,13 +423,150 @@ export async function updateMyProfile(patch: Partial<Pick<MyProfile, "name" | "e
         signal: AbortSignal.timeout(8000),
       },
     );
-    return res.ok;
+    if (!res.ok) {
+      if (res.status === 409 || res.status === 400) {
+        return { ok: false, error: "This mobile number or email is already linked to another member profile." };
+      }
+      return { ok: false, error: "Couldn't update profile right now." };
+    }
+    return { ok: true };
   } catch {
-    return false;
+    return { ok: false, error: "Network error — please check your connection." };
   }
 }
 
-export function getSession(): { access_token: string | null; user_id: string | null; phone: string } | null {
+/* ── The stated brief, kept on the account ──────────────────────────
+   The office brief lived only in localStorage, which sign-out wipes — so an
+   edited brief reverted to the /brief inference on the next sign-in. These
+   persist it on the user's OWN user_profiles row (jsonb `brief` column,
+   migration 0016), under the session and the own-row RLS policy — the same
+   boundary updateMyProfile uses. No session → both no-op and the office keeps
+   its localStorage copy, so this is inert until real sessions are on. */
+export async function saveBriefToServer(buy: BuyData): Promise<void> {
+  const session = getSession();
+  const token = session?.access_token;
+  const uid = session?.user_id;
+  if (!token || !uid) return; // signed out / soft mode — localStorage is the store
+  try {
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/user_profiles?id=eq.${encodeURIComponent(uid)}`,
+      {
+        method: "PATCH",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({ brief: buy }),
+        signal: AbortSignal.timeout(8000),
+      },
+    );
+  } catch { /* best effort — the localStorage copy is already saved */ }
+}
+
+export async function fetchMyBrief(): Promise<BuyData | null> {
+  const session = getSession();
+  const token = session?.access_token;
+  const uid = session?.user_id;
+  if (!token || !uid) return null;
+  try {
+    /* Filter by id (like the write) rather than leaning on RLS to pick the
+       row, so read and write always target the same profile. */
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/user_profiles?id=eq.${encodeURIComponent(uid)}&select=brief`,
+      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
+    );
+    if (!res.ok) { console.warn(`[brief] server read failed: HTTP ${res.status}`); return null; }
+    const rows = (await res.json().catch(() => null)) as { brief?: BuyData | null }[] | null;
+    const brief = Array.isArray(rows) && rows[0]?.brief ? rows[0].brief : null;
+    console.info(`[brief] server read ok — ${brief ? "found a saved brief" : "no saved brief on this account"}`);
+    return brief;
+  } catch (e) {
+    console.warn("[brief] server read error", e);
+    return null;
+  }
+}
+
+/* Set before a "Link Google" flow: the phone account's own session token,
+   stashed so it survives the OAuth redirect. Its presence on return tells
+   the callback to LINK (fold Google into this account) rather than sign in
+   fresh. One-shot — finishGoogleAuth consumes it. */
+const LINK_TOKEN_KEY = "truthEstate.googleLinkToken";
+
+export async function signInWithGoogle(redirectTo?: string, link = false): Promise<AuthResult> {
+  if (typeof window === "undefined") return { ok: false, error: "Window undefined" };
+  try {
+    /* A plain sign-in must never inherit a stale link intent from an
+       abandoned earlier attempt. */
+    if (!link) { try { window.localStorage.removeItem(LINK_TOKEN_KEY); } catch { /* ignore */ } }
+    const origin = window.location.origin;
+    const target = redirectTo || window.location.href;
+    const callbackUrl = `${origin}${basePath}/auth/callback?next=${encodeURIComponent(target)}`;
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: callbackUrl,
+        queryParams: {
+          access_type: "offline",
+          prompt: "consent",
+        },
+      },
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Google Sign-In failed";
+    return { ok: false, error: message };
+  }
+}
+
+/* Link Google to the account the user is signed into NOW (a phone account).
+   Stash its token, then run the same OAuth — the callback + google-signin
+   do the actual linking. */
+export async function beginGoogleLink(): Promise<AuthResult> {
+  const token = getSession()?.access_token;
+  if (!token) return { ok: false, error: "Sign in first, then link Google." };
+  try { window.localStorage.setItem(LINK_TOKEN_KEY, token); } catch { /* ignore */ }
+  return signInWithGoogle(undefined, true);
+}
+
+/* Called from the OAuth callback with the Supabase-issued Google access
+   token. Hands it to google-signin, which verifies the Google identity and
+   returns the CANONICAL account (resolved by google_sub, or linked to the
+   stashed phone account) + a real session for it. Returns what to store. */
+export async function finishGoogleAuth(googleAccessToken: string): Promise<
+  { ok: true; userId: string; session: { access_token: string; token_type: string; expires_in: number } | null; linked: boolean }
+  | { ok: false; error: string }
+> {
+  let linkToken: string | null = null;
+  try { linkToken = window.localStorage.getItem(LINK_TOKEN_KEY); } catch { /* ignore */ }
+  try { window.localStorage.removeItem(LINK_TOKEN_KEY); } catch { /* ignore */ }
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/google-signin`, {
+      method: "POST",
+      headers: { "content-type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({
+        action: linkToken ? "link" : "signin",
+        googleToken: googleAccessToken,
+        ...(linkToken ? { linkToken } : {}),
+        anonId: getAnonId(), sessionId: getSessionId(),
+      }),
+      signal: AbortSignal.timeout(20000),
+    });
+    const data = (await res.json().catch(() => ({}))) as {
+      ok?: boolean; error?: string; userId?: string; linked?: boolean;
+      session?: { access_token: string; token_type: string; expires_in: number };
+    };
+    if (!data.ok || !data.userId) return { ok: false, error: data.error ?? "Couldn't complete Google sign-in." };
+    return { ok: true, userId: data.userId, session: data.session ?? null, linked: !!data.linked };
+  } catch {
+    return { ok: false, error: "Couldn't reach us just now — check your connection and try again." };
+  }
+}
+
+export function getSession(): { access_token: string | null; user_id: string | null; phone: string | null; email?: string | null; provider?: string } | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(SESSION_STORE);

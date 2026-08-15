@@ -1,0 +1,69 @@
+{
+  "slug": "18315554-dc1f-4e66-95a8-971080467611",
+  "projectName": "BIRLA PRAVAAH",
+  "developer": "Birla Estates",
+  "location": "Sector 71",
+  "truthScore": 61,
+  "scoreTag": "Fair",
+  "price": "₹3.30 Cr",
+  "cagr": "10.82%",
+  "deliveryYear": "5+ Yrs",
+  "delayRisk": "Elevated Risk",
+  "redFlags": 4,
+  "youtubeShortScript": {
+    "durationSeconds": 60,
+    "sections": [
+      {
+        "timestamp": "0:00-0:10",
+        "title": "Intro Hook",
+        "narration": "Is BIRLA PRAVAAH in Sector 71 worth your money? Let’s look at the independent forensic data.",
+        "visual": "Hero render elevation + Truth Score badge pop-in"
+      },
+      {
+        "timestamp": "0:10-0:25",
+        "title": "Price & ROI",
+        "narration": "Starting at ₹3.30 Cr, our financial model projects a 5-year CAGR of 10.82%, comparing favorably to Sector 71 benchmarks.",
+        "visual": "Price comparison chart + 5-Year CAGR meter"
+      },
+      {
+        "timestamp": "0:25-0:40",
+        "title": "Construction & Risk",
+        "narration": "Promised delivery is 5+ Yrs. We assess delay risk as Elevated Risk with 4 active red flags on record.",
+        "visual": "Construction progress timeline + Red flag alert badge"
+      },
+      {
+        "timestamp": "0:40-1:00",
+        "title": "Final Verdict",
+        "narration": "BIRLA PRAVAAH earns a Truth Score of 61 out of 100 — rated Fair. Get the full 150-check report at Truth Estate.",
+        "visual": "Final verdict card + CTA overlay"
+      }
+    ]
+  },
+  "youtubeExplainerScript": {
+    "durationSeconds": 180,
+    "title": "BIRLA PRAVAAH Gurugram Review & Audit | Truth Score 61/100",
+    "description": "Full independent review of BIRLA PRAVAAH by Birla Estates in Sector 71, Gurugram. RERA RERA-GRG-2071-2025. Truth Score 61/100.",
+    "sections": [
+      {
+        "title": "Project Overview",
+        "text": "BIRLA PRAVAAH by Birla Estates located in Sector 71."
+      },
+      {
+        "title": "Financial & ROI Analysis",
+        "text": "Price starts at ₹3.30 Cr with 10.82% expected CAGR."
+      },
+      {
+        "title": "Construction Audit",
+        "text": "Target delivery: 5+ Yrs. Risk rating: Elevated Risk."
+      },
+      {
+        "title": "Legal Check",
+        "text": "RERA ID RERA-GRG-2071-2025. Red flags: 4."
+      },
+      {
+        "title": "Verdict & Buying Advice",
+        "text": "Final score 61/100 (Fair)."
+      }
+    ]
+  }
+}

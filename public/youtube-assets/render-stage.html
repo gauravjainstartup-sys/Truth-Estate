@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Truth Estate Broadcast Render Stage</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body, html { width: 1920px; height: 1080px; overflow: hidden; background: #070604; font-family: 'Cinzel', 'Playfair Display', Georgia, serif; color: #f6f1e8; }
+    
+    /* Stage Container */
+    #stage { position: relative; width: 1920px; height: 1080px; background: #0b0907; overflow: hidden; }
+    
+    /* Hero Image Parallax Layer */
+    .bg-layer { position: absolute; inset: -40px; background-size: cover; background-position: center; filter: brightness(0.35) contrast(1.1); transform: scale(1.05); animation: kenburns 25s ease-in-out infinite alternate; }
+    @keyframes kenburns {
+      0% { transform: scale(1.05) translate(0, 0); }
+      100% { transform: scale(1.15) translate(-20px, -15px); }
+    }
+    
+    /* Vignette & Gradient Overlay */
+    .overlay { position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(7,6,4,0.3) 0%, rgba(7,6,4,0.92) 80%); }
+
+    /* Top Brand Bar */
+    .brand-bar { position: absolute; top: 60px; left: 80px; right: 80px; display: flex; justify-content: space-between; align-items: center; z-index: 20; }
+    .brand-logo { font-size: 32px; font-weight: 700; letter-spacing: 0.15em; color: #f6f1e8; text-transform: uppercase; border-left: 4px solid #c9a96e; padding-left: 18px; }
+    .brand-tag { font-family: 'Courier New', monospace; font-size: 16px; color: #c9a96e; letter-spacing: 0.3em; text-transform: uppercase; background: rgba(23,19,14,0.8); border: 1px solid rgba(201,169,110,0.3); padding: 8px 20px; border-radius: 8px; backdrop-filter: blur(10px); }
+
+    /* Main Content Stage Cards */
+    .content-card { position: absolute; top: 220px; left: 80px; right: 80px; bottom: 200px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-center: center; z-index: 30; transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1); opacity: 0; transform: translateY(30px); }
+    .content-card.active { opacity: 1; transform: translateY(0); }
+
+    /* Card 1: Project Title */
+    .project-loc { font-family: 'Courier New', monospace; font-size: 22px; color: #c9a96e; letter-spacing: 0.25em; text-transform: uppercase; margin-bottom: 12px; }
+    .project-title { font-size: 72px; font-weight: 500; color: #ffffff; text-shadow: 0 10px 30px rgba(0,0,0,0.8); line-height: 1.1; margin-bottom: 16px; }
+    .project-dev { font-size: 28px; color: rgba(246,241,232,0.75); font-weight: 300; }
+
+    /* Card 2: Financial Grid */
+    .stat-grid { display: flex; gap: 40px; margin-top: 30px; }
+    .stat-box { background: rgba(20,17,13,0.85); border: 1px solid rgba(201,169,110,0.35); border-radius: 20px; padding: 36px 60px; text-align: center; backdrop-filter: blur(15px); box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
+    .stat-lbl { font-family: 'Courier New', monospace; font-size: 16px; color: rgba(179,170,158,0.7); uppercase; tracking: 0.2em; }
+    .stat-val { font-size: 56px; font-weight: 700; color: #f6f1e8; margin-top: 8px; }
+    .stat-val.green { color: #2ebb71; }
+
+    /* Card 3: Red Flags Alert */
+    .alert-box { background: rgba(45,15,12,0.85); border: 2px solid rgba(224,86,56,0.6); border-radius: 20px; padding: 40px 70px; backdrop-filter: blur(15px); text-align: center; }
+    .alert-title { font-size: 40px; color: #ff6b4a; font-weight: 600; margin-bottom: 12px; }
+    .alert-desc { font-size: 24px; color: rgba(246,241,232,0.85); font-weight: 300; }
+
+    /* Card 4: Truth Score Gauge */
+    .score-circle { width: 220px; height: 220px; border-radius: 50%; border: 6px solid #c9a96e; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(23,19,14,0.9); box-shadow: 0 0 50px rgba(201,169,110,0.3); margin-bottom: 24px; }
+    .score-num { font-size: 80px; font-weight: 700; color: #ffffff; line-height: 1; }
+    .score-max { font-size: 20px; color: rgba(201,169,110,0.8); font-family: 'Courier New', monospace; }
+
+    /* Bottom Subtitle / Kinetic Caption Bar */
+    .caption-bar { position: absolute; bottom: 50px; left: 80px; right: 80px; height: 100px; background: rgba(17,14,10,0.92); border: 1px solid rgba(201,169,110,0.3); border-radius: 20px; display: flex; justify-content: center; align-items: center; padding: 0 50px; backdrop-filter: blur(15px); z-index: 40; box-shadow: 0 10px 40px rgba(0,0,0,0.7); }
+    .caption-text { font-size: 28px; font-weight: 400; color: #f6f1e8; text-align: center; line-height: 1.3; }
+    .caption-text span.highlight { color: #c9a96e; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div id="stage">
+    <!-- Hero Image Layer -->
+    <div id="bgLayer" class="bg-layer" style="background-image: url('/live-media/0589d7c8-0006-41af-9286-6e744e54139e-render-elevation.webp');"></div>
+    <div class="overlay"></div>
+
+    <!-- Top Brand Header -->
+    <div class="brand-bar">
+      <div class="brand-logo">TRUTH ESTATE</div>
+      <div class="brand-tag">INDEPENDENT FORENSIC AUDIT</div>
+    </div>
+
+    <!-- Section 1: Intro Card -->
+    <div id="card0" class="content-card active">
+      <div class="project-loc">GOLF COURSE EXTENSION ROAD · SECTOR 65, GURUGRAM</div>
+      <div class="project-title">M3M Elie Saab Branded Residences</div>
+      <div class="project-dev">Haute-Couture Architecture by M3M &amp; Smartworld</div>
+    </div>
+
+    <!-- Section 2: Financial Card -->
+    <div id="card1" class="content-card">
+      <div class="project-loc">FINANCIAL &amp; ROI AUDIT</div>
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="stat-lbl">STARTING PRICE</div>
+          <div class="stat-val">₹12.30 Cr</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-lbl">EXPECTED 5-YR CAGR</div>
+          <div class="stat-val green">11.9%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Construction & Legal Flags -->
+    <div id="card2" class="content-card">
+      <div class="alert-box">
+        <div class="alert-title">⚠️ 2 ACTIVE RED FLAGS IDENTIFIED</div>
+        <div class="alert-desc">Target Handover: 2028 | Historical Developer Delay Buffer: 14.8 Months</div>
+      </div>
+    </div>
+
+    <!-- Section 4: Truth Score Verdict -->
+    <div id="card3" class="content-card">
+      <div class="score-circle">
+        <div class="score-num">82</div>
+        <div class="score-max">/ 100</div>
+      </div>
+      <div class="project-title" style="font-size: 48px;">Truth Score: 82/100 (Strong Tier)</div>
+      <div class="project-dev">Recommended for HNIs with Verified BBA Escrow Terms</div>
+    </div>
+
+    <!-- Bottom Caption Bar -->
+    <div class="caption-bar">
+      <div id="captionText" class="caption-text">
+        Is <span class="highlight">M3M Elie Saab</span> in Sector 65 Gurugram worth twelve crore rupees? Let’s examine the independent forensic data.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const captions = [
+      "Is <span class='highlight'>M3M Elie Saab</span> in Sector 65 Gurugram worth twelve crore rupees? Let’s examine the independent forensic data.",
+      "Starting at <span class='highlight'>₹12.30 Cr</span>, this haute couture residence offers an <span class='highlight'>11.9% 5-year CAGR</span> with private lift access.",
+      "Target delivery is <span class='highlight'>2028</span>. Developer litigation risk is flagged for review — verify HRERA escrow accounts before booking.",
+      "M3M Elie Saab earns a <span class='highlight'>Truth Score of 82/100</span> — rated Strong. Get the full 150-point report at Truth Estate."
+    ];
+
+    function setScene(secIndex) {
+      for (let i = 0; i < 4; i++) {
+        const c = document.getElementById("card" + i);
+        if (c) c.classList.toggle("active", i === secIndex);
+      }
+      const cap = document.getElementById("captionText");
+      if (cap && captions[secIndex]) cap.innerHTML = captions[secIndex];
+    }
+
+    // Expose control to Playwright / window
+    window.setScene = setScene;
+  </script>
+</body>
+</html>

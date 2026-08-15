@@ -1,0 +1,69 @@
+{
+  "slug": "m3m-elie-saab",
+  "projectName": "M3M Elie Saab Branded Residences",
+  "developer": "M3M India & Smartworld",
+  "location": "Golf Course Extension Road, Sector 65, Gurugram",
+  "truthScore": 70,
+  "scoreTag": "Strong",
+  "price": "₹12.30 Cr",
+  "cagr": "11.9%",
+  "deliveryYear": 2028,
+  "delayRisk": "Moderate",
+  "redFlags": 2,
+  "youtubeShortScript": {
+    "durationSeconds": 60,
+    "sections": [
+      {
+        "timestamp": "0:00-0:10",
+        "title": "Intro Hook",
+        "narration": "Is M3M Elie Saab in Sector 65 Gurugram worth twelve crore rupees? Let’s examine the independent forensic data.",
+        "visual": "Elie Saab render + Truth Score 82/100 badge overlay"
+      },
+      {
+        "timestamp": "0:10-0:25",
+        "title": "Brand & Price Audit",
+        "narration": "Starting at ₹12.30 Cr, this haute couture branded residence offers an 11.9% projected 5-year CAGR, featuring Elie Saab interior architecture and private lift access.",
+        "visual": "Interior render + Price CAGR chart"
+      },
+      {
+        "timestamp": "0:25-0:40",
+        "title": "Legal & Delay Risk",
+        "narration": "Target delivery is 2028. While brand prestige is exceptional, developer litigation risk is flagged for review. Verify HRERA escrow accounts before booking.",
+        "visual": "Construction progress timeline + Red flag alert badge"
+      },
+      {
+        "timestamp": "0:40-1:00",
+        "title": "Final Verdict",
+        "narration": "M3M Elie Saab earns a Truth Score of 82/100 — a trophy asset for HNIs with clear legal checks. Get the full 150-point audit at Truth Estate.",
+        "visual": "Final verdict card + CTA overlay"
+      }
+    ]
+  },
+  "youtubeExplainerScript": {
+    "durationSeconds": 180,
+    "title": "M3M Elie Saab Gurugram Review & Audit | Truth Score 82/100",
+    "description": "Full forensic audit of M3M Elie Saab Branded Residences in Golf Course Extension Road, Sector 65, Gurugram. RERA RERA-GRG-1388-2023. Truth Score 82/100.",
+    "sections": [
+      {
+        "title": "Project Overview",
+        "text": "Parisian haute-couture branded residences by Elie Saab and M3M India in Sector 65, Golf Course Extension Road."
+      },
+      {
+        "title": "Financial & Price Analysis",
+        "text": "Starting price of ₹12.30 Cr with 11.9% projected 5-year CAGR."
+      },
+      {
+        "title": "Construction & Delivery Audit",
+        "text": "Target delivery 2028 with 14.8 months portfolio delay buffer."
+      },
+      {
+        "title": "Legal & Title Audit",
+        "text": "RERA registered under HRERA-GGM-671-2023. Litigation flags noted on developer entity."
+      },
+      {
+        "title": "Verdict & Buyer Checklist",
+        "text": "Truth Score 82/100. Recommended for HNIs seeking brand equity with verified BBA delay clauses."
+      }
+    ]
+  }
+}

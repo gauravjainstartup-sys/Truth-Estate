@@ -7,7 +7,7 @@ export const metadata: Metadata = {
      ROOT url as the canonical — telling Google this page is a duplicate of
      the home page. 25 pages in the sitemap were doing exactly that. */
   alternates: { canonical: "/pricing" },
-  title: "Engagement Models",
+  title: "Pricing & Engagement Models — Independent Advisory",
   description:
     "Explore how Truth Estate supports your property decision — from independent research intelligence to dedicated buyer representation.",
   keywords: [
@@ -20,10 +20,17 @@ export const metadata: Metadata = {
     "NRI Real Estate Advisory",
   ],
   openGraph: {
-    title: "Engagement Models",
+    title: "Pricing & Engagement Models — Independent Advisory",
     description:
       "Choose how Truth Estate supports your decision. From self-directed intelligence to dedicated buyer representation.",
+    url: "/pricing",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Pricing & Engagement Models — Independent Advisory",
+    description:
+      "Choose how Truth Estate supports your decision. From self-directed intelligence to dedicated buyer representation.",
   },
 };
 
