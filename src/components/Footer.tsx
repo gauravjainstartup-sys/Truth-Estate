@@ -65,32 +65,11 @@ const columns: {
   },
 ];
 
-const orgSchema = {
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  name: "Truth Estate",
-  description:
-    "Independent real estate intelligence for premium property decisions in Gurugram.",
-  areaServed: [
-    "Golf Course Road, Gurugram",
-    "Golf Course Extension Road, Gurugram",
-    "SPR, Gurugram",
-    "Dwarka Expressway, Gurugram",
-    "New Gurgaon",
-    "Sohna",
-  ],
-  knowsAbout: [
-    "Gurugram Real Estate",
-    "Luxury Apartments",
-    "Independent Buyer Representation",
-    "Developer Intelligence",
-    "Project Intelligence",
-    "Price Discovery",
-    "Legal Due Diligence",
-    "Investment Analysis",
-    "Real Estate AI",
-  ],
-};
+/* The Organization entity is emitted ONCE, site-wide, from src/app/layout.tsx
+   (@id .../#organization, with sameAs, areaServed incl. Gurugram, knowsAbout).
+   A second Organization node here — no @id, a different areaServed — split the
+   entity graph and weakened knowledge-panel reconciliation, so it was removed.
+   Any future schema on the footer must reference the @id, not spawn a node. */
 
 /* ── Social icons ── */
 function LinkedInIcon() {
@@ -265,11 +244,6 @@ export default function Footer({
             </p>
           </div>
         </div>
-
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
-        />
       </footer>
     </>
   );

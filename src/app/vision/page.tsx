@@ -12,7 +12,9 @@ export const metadata: Metadata = {
      ROOT url as the canonical — telling Google this page is a duplicate of
      the home page. 25 pages in the sitemap were doing exactly that. */
   alternates: { canonical: "/vision" },
-  title: "Truth Estate — Independent Real Estate Intelligence",
+  // { absolute } so the "%s | Truth Estate" template doesn't double-brand, and
+  // distinct from the homepage title so the two don't compete for one query.
+  title: { absolute: "Our Vision — Truth Estate" },
   description:
     "Bloomberg-grade intelligence and independent advisory for high-value property decisions in India. Proof, not promises.",
 };

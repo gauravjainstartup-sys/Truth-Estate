@@ -9,9 +9,15 @@ export const metadata: Metadata = {
      ROOT url as the canonical — telling Google this page is a duplicate of
      the home page. 25 pages in the sitemap were doing exactly that. */
   alternates: { canonical: "/intelligence/projects" },
-  title: "Project Intelligence",
+  title: "Gurugram Projects, Ranked by Truth Score",
   description:
     "Independent Truth Scores for Gurugram residential projects — built from six audited inputs: delivery, legal, developer strength, liquidity, pricing and construction. No paid rankings.",
+  openGraph: {
+    title: "Gurugram Projects, Ranked by Truth Score",
+    description: "Independent Truth Scores for Gurugram residential projects — delivery, legal, pricing and more. No paid rankings.",
+    url: "/intelligence/projects",
+    type: "website",
+  },
 };
 
 /* The projects index is the tracked universe, live from Supabase: every row
