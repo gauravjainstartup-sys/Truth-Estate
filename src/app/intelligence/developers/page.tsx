@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import DevelopersIndex from "@/components/intelligence/DevelopersIndex";
 import { resolveDevelopers } from "@/lib/developersLive";
+import { collectionLd, ldJson } from "@/lib/seo";
 
 export const metadata: Metadata = {
   /* Without this the route inherits metadataBase and Next emits the bare
@@ -22,5 +23,16 @@ export default async function Page() {
   /* resolveDevelopers = the whole universe: the hand-reviewed dossiers first,
      then every other filed developer as a computed-from-filings profile. */
   const developers = await resolveDevelopers();
-  return <DevelopersIndex developers={developers} />;
+  const ld = collectionLd({
+    name: "Top Gurugram Developers, Ranked",
+    description: "Independent developer dossiers for Gurugram — track record, delivery and financial health.",
+    path: "/intelligence/developers",
+    items: developers.filter((d) => d.slug && d.name).map((d) => ({ name: d.name, path: `/intelligence/developers/${d.slug}` })),
+  });
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(ld)} />
+      <DevelopersIndex developers={developers} />
+    </>
+  );
 }
