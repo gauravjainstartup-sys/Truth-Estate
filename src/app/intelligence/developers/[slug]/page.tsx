@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { resolveDeveloperBySlug, resolveDevelopers } from "@/lib/developersLive";
 import DeveloperProfile from "@/components/intelligence/DeveloperProfile";
-import { breadcrumbLd, ldJson } from "@/lib/seo";
+import { breadcrumbLd, developerLd, ldJson } from "@/lib/seo";
 
 export async function generateStaticParams() {
   // all 17 — curated dossiers + every developer computed from the filings
@@ -42,9 +42,17 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     { name: dev.name, path: `/intelligence/developers/${dev.slug}` },
   ]);
 
+  const devOrg = developerLd({
+    name: dev.name,
+    slug: dev.slug,
+    est: dev.est || undefined,
+    description: dev.tagline || undefined,
+  });
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(breadcrumb)} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(devOrg)} />
       <DeveloperProfile dev={dev} />
     </>
   );

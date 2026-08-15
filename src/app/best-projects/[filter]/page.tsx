@@ -5,6 +5,7 @@ import { BEST_PROJECTS, bestProjectsBySlug } from "@/lib/bestProjects";
 import { fetchBacklogFull, fetchCorridorPsf, fetchPriceEnvelopes, fetchTrackedStats } from "@/lib/supabase";
 import { liveProjectIntel } from "@/lib/liveReport";
 import type { ProjectIntel } from "@/lib/projects";
+import { collectionLd, ldJson } from "@/lib/seo";
 
 /* ════════════════════════════════════════════════════════════════
    /best-projects/<filter> — the old site's landing pages, rebuilt.
@@ -97,13 +98,26 @@ export default async function Page({ params }: { params: Promise<{ filter: strin
     console.warn(`[urls]   withheld from this price page (listed price contradicts its own filed rate): ${dropped.join(", ")}`);
   }
 
+  /* CollectionPage + ItemList of exactly the projects this filter surfaces —
+     the commercial-intent ranking these pages exist to answer. Built from the
+     same `matched` rows the grid renders, so it never over-claims. */
+  const ld = collectionLd({
+    name: page.title,
+    description: page.description,
+    path: `/best-projects/${page.slug}`,
+    items: matched.filter((r) => r.seoSlug && r.name).slice(0, 60).map((r) => ({ name: r.name, path: `/projects/${r.seoSlug}` })),
+  });
+
   return (
-    <ProjectsIndex
-      projects={projects}
-      stats={stats}
-      crumb={page.title}
-      heading={page.h1}
-      intro={page.intro}
-    />
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(ld)} />
+      <ProjectsIndex
+        projects={projects}
+        stats={stats}
+        crumb={page.title}
+        heading={page.h1}
+        intro={page.intro}
+      />
+    </>
   );
 }
