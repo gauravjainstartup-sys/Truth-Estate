@@ -25,6 +25,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   add("/pricing", 0.7, "monthly");
   add("/methodology", 0.7, "monthly");
   add("/sun-vastu", 0.7, "monthly");
+  add("/deal-room", 0.8, "weekly");
+  add("/premiumbuyeroffice", 0.8, "monthly");
   add("/get-custom-project-report", 0.8, "monthly");
   add("/about", 0.6, "monthly");
   add("/vision", 0.6, "monthly");

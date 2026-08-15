@@ -17,8 +17,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!dev) return { title: "Developer Intelligence" };
   return {
     alternates: { canonical: `/intelligence/developers/${dev.slug}` },
-    title: `${dev.name} — Developer Intelligence`,
+    title: `${dev.name}, Gurugram — Track Record & Financials`,
     description: `Independent developer intelligence on ${dev.name}: track record, delivery performance and financial health.${dev.tagline ? ` ${dev.tagline}` : ""}`,
+    openGraph: {
+      title: `${dev.name} — Gurugram Developer Intelligence`,
+      description: `${dev.name}'s delivery track record and financial health, independently assessed. No paid rankings.`,
+      url: `/intelligence/developers/${dev.slug}`,
+      type: "profile",
+    },
   };
 }
 

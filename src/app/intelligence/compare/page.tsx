@@ -9,9 +9,15 @@ export const metadata: Metadata = {
      ROOT url as the canonical — telling Google this page is a duplicate of
      the home page. 25 pages in the sitemap were doing exactly that. */
   alternates: { canonical: "/intelligence/compare" },
-  title: "Compare — Truth Estate Intelligence",
+  title: "Compare Gurugram Projects Side by Side",
   description:
     "Compare any two Gurugram projects, developers or markets side by side on the same independent evidence — Truth Score anatomy, delivery, financial signals, pricing and outlook. No sponsored winner.",
+  openGraph: {
+    title: "Compare Gurugram Projects Side by Side",
+    description: "Two Gurugram projects, developers or markets on the same evidence — Truth Score, delivery, pricing. No sponsored winner.",
+    url: "/intelligence/compare",
+    type: "website",
+  },
 };
 
 /* The project picker offers EVERY scored project (not just the prerendered

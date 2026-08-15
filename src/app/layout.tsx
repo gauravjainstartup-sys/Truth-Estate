@@ -132,6 +132,7 @@ const orgLd = {
     "Repatriation of property sale proceeds",
   ],
   areaServed: [
+    { "@type": "City", name: "Gurugram", containedInPlace: { "@type": "State", name: "Haryana" } },
     { "@type": "Country", name: "India" },
     { "@type": "Country", name: "United Kingdom" },
     { "@type": "Country", name: "United States" },
@@ -141,6 +142,13 @@ const orgLd = {
     { "@type": "Country", name: "Australia" },
   ],
   serviceType: "Independent real estate advisory",
+  /* The verified brand profiles — the primary signal Google/AI engines use to
+     reconcile Truth Estate into a knowledge panel. Must be the REAL profiles
+     (the same URLs the footer links), never a guessed handle. */
+  sameAs: [
+    "https://www.linkedin.com/company/truth-estate/",
+    "https://x.com/truthestateggn",
+  ],
 };
 
 const websiteLd = {

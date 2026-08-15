@@ -18,8 +18,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!m) return { title: "Location Intelligence" };
   return {
     alternates: { canonical: `/intelligence/markets/${m.slug}` },
-    title: `${m.name} — Location Intelligence`,
+    title: `${m.name}, Gurugram — Price Trends & Projects`,
     description: `Independent intelligence on ${m.name}, Gurugram: verdict, project count, price band, current and future trends, and the projects we track. ${m.info}`,
+    openGraph: {
+      title: `${m.name}, Gurugram — Location Intelligence`,
+      description: `Verdict, project count, price band and outlook for ${m.name}, Gurugram — independently assessed.`,
+      url: `/intelligence/markets/${m.slug}`,
+      type: "website",
+    },
   };
 }
 
