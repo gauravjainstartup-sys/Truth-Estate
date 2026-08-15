@@ -17,6 +17,14 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  /* The mono face is only ever used below the fold (the "₹4.5 Cr" price
+     comparison mock, a handful of numeric readouts) — never in the hero or
+     any LCP element. next/font preloads every configured face at high
+     priority by default, so the default put a ~20 KB woff2 in front of the
+     hero image on the initial load for text no first screen shows. preload:
+     false drops that early fetch; the face still loads (display: swap) the
+     moment a mono element scrolls into play. */
+  preload: false,
 });
 
 const playfair = Playfair_Display({
