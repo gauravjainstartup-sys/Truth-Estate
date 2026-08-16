@@ -474,7 +474,7 @@ export default function ProjectProfile({
     { id: "roi", label: "Price & returns", show: !!roi },
     { id: "verdict", label: "The verdict", show: true },
     { id: "strengths", label: "Strengths & watch-outs", show: p.strengths.length > 0 || p.watchouts.length > 0 },
-    { id: "negotiate", label: "Negotiate", show: levers.length > 0 },
+    { id: "negotiate", label: "The Deal Room", show: levers.length > 0 },
     { id: "faqs", label: "Straight answers", show: faqs.length > 0 },
   ]
     .filter((t) => t.show && (!locked || FREE_IDS.has(t.id)));
@@ -1348,7 +1348,7 @@ export default function ProjectProfile({
             {levers.length > 0 && (
               <>
                 <Chapter n={chap()} title="Can this report save you lakhs?" framing={`Every weak spot in this file is a number you can argue with. Here is what ${p.name}'s are worth.`} />
-                <Section id="negotiate" n={num()} title="Negotiate like a king">
+                <Section id="negotiate" n={num()} title="The Deal Room">
                   <ReportNegotiation p={p} locked={locked} onUnlock={openUnlock} />
                 </Section>
               </>
