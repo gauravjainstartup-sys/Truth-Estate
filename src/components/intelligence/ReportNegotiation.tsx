@@ -198,3 +198,35 @@ function LockMark() {
     </svg>
   );
 }
+
+/* ── The Deal Room, teased at the top of an unlocked report ──────────
+   The founder leads the dossier with the Deal Room, so an unlocked reader
+   meets the savings headline early and jumps to the full chapter, which
+   still lands after the evidence it rests on. Reuses savingRange and the
+   same lever gate as the section — no figure invented, and it renders
+   nothing when the project yields no leverage (so the jump never dangles). */
+export function DealRoomTeaser({ p }: { p: ProjectIntel }) {
+  const levers = negotiationLevers(p);
+  if (!levers.length) return null;
+  const ticketCr = p.budget?.[0] ?? 0;
+  const saving = ticketCr > 0 ? savingRange(ticketCr) : null;
+  return (
+    <a
+      href="#negotiate"
+      className="group mt-4 block rounded-2xl border border-[#c9a96e]/35 bg-[#c9a96e]/[0.08] px-6 py-5 no-underline transition-colors hover:bg-[#c9a96e]/[0.13] md:px-7"
+    >
+      <p className="text-[0.6rem] font-bold uppercase tracking-[0.22em] text-[#9a7a2e]">The Deal Room</p>
+      <p className="mt-2 font-serif text-[1.3rem] font-medium leading-[1.35] text-[#1a1a1a] md:text-[1.5rem]">
+        {saving
+          ? <>This read can save you <span className="text-[#1e6b45]">{saving}</span> at the table.</>
+          : <>This read is your argument at the table.</>}
+      </p>
+      <p className="mt-1.5 max-w-2xl text-[0.86rem] font-light leading-snug text-[#1a1a1a]/60">
+        {levers.length === 1 ? "One point" : `${levers.length} points`} in {p.name}&rsquo;s own filings you can argue with — each with the exact ask.
+      </p>
+      <span aria-hidden className="mt-3 inline-flex items-center gap-1.5 text-[0.8rem] font-semibold text-[#9a7a2e] transition-transform group-hover:translate-x-0.5">
+        Jump to The Deal Room &darr;
+      </span>
+    </a>
+  );
+}

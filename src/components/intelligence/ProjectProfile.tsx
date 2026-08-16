@@ -40,7 +40,7 @@ import ReportLocation from "./ReportLocation";
 import SearchPalette from "./SearchPalette";
 import OtpDigits from "../auth/OtpDigits";
 import { normalisePhone, sendOtp, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
-import ReportNegotiation from "./ReportNegotiation";
+import ReportNegotiation, { DealRoomTeaser } from "./ReportNegotiation";
 import AccountChip from "../AccountChip";
 import ZoomStage from "./ZoomStage";
 import PdfScroller from "./PdfScroller";
@@ -1027,6 +1027,11 @@ export default function ProjectProfile({
                 <ReportDossier projectName={p.name} truthScore={p.truthScore} grade={scoreGrade(p.truthScore)} ticket={lockedTicket} onUnlock={openUnlock} audience={audience} />
               </div>
             )}
+
+            {/* Unlocked: the Deal Room, teased at the top with its savings
+                headline, jumping to the full chapter that still lands after the
+                evidence. Mirrors where the locked dossier leads with it. */}
+            {!locked && <DealRoomTeaser p={p} />}
 
             <Chapter n={chap()} title="What are you actually buying?" framing="The facts of the asset — before we weigh trust." />
 
