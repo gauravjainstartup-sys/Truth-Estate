@@ -26,7 +26,8 @@ import {
 import ComparePage from "@/components/intelligence/ComparePage";
 import { INDEXABLE_COMPARE_PAIRS } from "@/lib/indexableCompares";
 import { IS_PRODUCTION_ORIGIN } from "@/lib/site";
-import { breadcrumbLd, ldJson } from "@/lib/seo";
+import { breadcrumbLd, collectionLd, ldJson } from "@/lib/seo";
+import { projectHref } from "@/lib/projectHref";
 
 /* Project comparisons run on the LIVE tracked set (backlog_listing_public_v3):
    the scored rows define the picker AND the prerendered pairs, and each project
@@ -161,9 +162,20 @@ export default async function Page({ params }: { params: Promise<{ pair: string 
     { name: compareTitle(r), path: `/intelligence/compare/${pair}` },
   ]);
 
+  const itemList = collectionLd({
+    name: compareTitle(r),
+    description: `Side-by-side comparison of ${r.a.name} vs ${r.b.name}: Truth Score, legal risk, delivery timeline and price analysis.`,
+    path: `/intelligence/compare/${pair}`,
+    items: [
+      { name: r.a.name, path: projectHref(r.a) },
+      { name: r.b.name, path: projectHref(r.b) },
+    ],
+  });
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(breadcrumb)} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(itemList)} />
       <ComparePage r={r} />
     </>
   );

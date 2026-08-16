@@ -22,7 +22,7 @@ import { liveProjectIntel } from "@/lib/liveReport";
 import { breadcrumbLd, ldJson } from "@/lib/seo";
 import { relatedProjects } from "@/lib/relatedProjects";
 import { avgSlippageFromLedger } from "@/lib/developers";
-import { basePath as BASE } from "@/lib/site";
+import { basePath as BASE, SITE_URL } from "@/lib/site";
 
 /* ONE URL per project: /projects/<seo slug>, the address truthestate.in
    has been serving and Google has indexed — see seoSlug() in lib/supabase.
@@ -281,16 +281,41 @@ function productLdFor(p: { name: string; developer?: string | null; reason?: str
     category: "Residential real estate",
     ...(p.developer ? { brand: { "@type": "Organization", name: p.developer } } : {}),
     ...(p.reason ? { description: p.reason } : {}),
-    /* Omitted rather than sent as null when a project has not been scored:
-       a Rating with no ratingValue is invalid structured data, and an
-       invalid block can cost the whole page its rich result. */
+    /* Omitted rather than sent as null when a project has not been scored */
     ...(p.truthScore != null
       ? {
+          additionalProperty: [
+            {
+              "@type": "PropertyValue",
+              name: "Truth Score",
+              value: p.truthScore,
+              maxValue: 100,
+              unitText: "points",
+            },
+          ],
           review: {
             "@type": "Review",
-            name: `Truth Score for ${p.name}`,
-            reviewRating: { "@type": "Rating", ratingValue: p.truthScore, bestRating: 100, worstRating: 0 },
-            author: { "@type": "Organization", name: "Truth Estate" },
+            name: `Truth Estate Assessment — ${p.name}`,
+            itemReviewed: {
+              "@type": "Product",
+              name: p.name,
+            },
+            reviewRating: {
+              "@type": "Rating",
+              ratingValue: p.truthScore,
+              bestRating: 100,
+              worstRating: 0,
+            },
+            author: {
+              "@type": "Organization",
+              name: "Truth Estate Advisory",
+              url: SITE_URL,
+            },
+            publisher: {
+              "@type": "Organization",
+              name: "Truth Estate",
+              url: SITE_URL,
+            },
             ...(p.reason ? { reviewBody: p.reason } : {}),
           },
         }

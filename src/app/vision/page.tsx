@@ -6,6 +6,7 @@ import MarketIntelligence from "@/components/vision/MarketIntelligence";
 import TruthScoreAnatomy from "@/components/vision/TruthScoreAnatomy";
 import TruthGuidePreview from "@/components/vision/TruthGuidePreview";
 import TrustClose from "@/components/vision/TrustClose";
+import { breadcrumbLd, ldJson } from "@/lib/seo";
 
 export const metadata: Metadata = {
   /* Without this the route inherits metadataBase and Next emits the bare
@@ -19,16 +20,24 @@ export const metadata: Metadata = {
     "Bloomberg-grade intelligence and independent advisory for high-value property decisions in India. Proof, not promises.",
 };
 
+const breadcrumb = breadcrumbLd([
+  { name: "Home", path: "" },
+  { name: "Vision", path: "/vision" },
+]);
+
 export default async function VisionPage() {
   const overview = await fetchTrackedOverview();
   return (
-    <main className="bg-[#0a0a0a]">
-      <VisionHero activeProjects={overview?.activeProjects} />
-      <BuyerJourneySection />
-      <MarketIntelligence />
-      <TruthScoreAnatomy />
-      <TruthGuidePreview />
-      <TrustClose />
-    </main>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(breadcrumb)} />
+      <main className="bg-[#0a0a0a]">
+        <VisionHero activeProjects={overview?.activeProjects} />
+        <BuyerJourneySection />
+        <MarketIntelligence />
+        <TruthScoreAnatomy />
+        <TruthGuidePreview />
+        <TrustClose />
+      </main>
+    </>
   );
 }

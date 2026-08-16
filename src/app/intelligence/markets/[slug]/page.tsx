@@ -4,7 +4,8 @@ import { MARKETS, marketBySlug } from "@/lib/markets";
 import { resolveMarketBySlug } from "@/lib/marketsLive";
 import { buildIndex } from "@/lib/omniIndex";
 import MarketProfile from "@/components/intelligence/MarketProfile";
-import { breadcrumbLd, ldJson } from "@/lib/seo";
+import { breadcrumbLd, collectionLd, ldJson } from "@/lib/seo";
+import { projectHref } from "@/lib/projectHref";
 
 export function generateStaticParams() {
   return MARKETS.map((m) => ({ slug: m.slug }));
@@ -52,9 +53,19 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     { name: m.name, path: `/intelligence/markets/${m.slug}` },
   ]);
 
+  const ld = collectionLd({
+    name: `${m.name}, Gurugram — Tracked Projects`,
+    description: `Independent intelligence and tracked residential projects in ${m.name}, Gurugram.`,
+    path: `/intelligence/markets/${m.slug}`,
+    items: projects.map((p) => ({ name: p.name, path: projectHref(p) })),
+  });
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(breadcrumb)} />
+      {projects.length > 0 && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(ld)} />
+      )}
       <MarketProfile
         m={m}
         projects={projects}
