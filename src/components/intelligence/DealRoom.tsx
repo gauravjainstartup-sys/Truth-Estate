@@ -132,12 +132,14 @@ export function AuctionCard({ ticketCr, compact = false }: { ticketCr: number; c
           );
         })}
       </div>
-      <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-2.5">
-        <span className="text-[0.66rem] font-medium uppercase tracking-[0.1em] text-white/45">Best so far</span>
-        <span className="flex items-baseline gap-2">
-          <span className="font-mono text-[1rem] font-semibold text-[#5fd39a]">{cr(best)}</span>
-          <span className="rounded-full bg-[#5fd39a]/15 px-2 py-0.5 font-mono text-[0.68rem] font-bold text-[#5fd39a]">−{save(saveCr)} vs market</span>
-        </span>
+      <div className="mt-3 border-t border-white/10 pt-2.5">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="shrink-0 whitespace-nowrap text-[0.62rem] font-medium uppercase tracking-[0.1em] text-white/45">Best so far</span>
+          <span className="whitespace-nowrap font-mono text-[1.05rem] font-semibold text-[#5fd39a]">{cr(best)}</span>
+        </div>
+        <div className="mt-1.5 flex justify-end">
+          <span className="whitespace-nowrap rounded-full bg-[#5fd39a]/15 px-2.5 py-0.5 font-mono text-[0.66rem] font-bold text-[#5fd39a]">−{save(saveCr)} vs market</span>
+        </div>
       </div>
     </div>
   );

@@ -135,9 +135,9 @@ export default function DealRoomSheet({
                   <input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" inputMode="tel" placeholder="Phone / WhatsApp" className={field} />
                 </div>
                 {deal && (
-                  <div className="mt-5 flex items-center justify-between rounded-xl border border-[#c9a96e]/25 bg-white/[0.04] px-4 py-3">
-                    <span className="text-[0.72rem] font-light text-white/55">Your target</span>
-                    <span className="font-mono text-[0.9rem] font-semibold text-white">{cr(targetCr)} <span className="font-sans text-[0.7rem] font-medium text-[#5fd39a]">· save {save(saveCr)}</span></span>
+                  <div className="mt-5 flex items-baseline justify-between gap-2 rounded-xl border border-[#c9a96e]/25 bg-white/[0.04] px-4 py-3">
+                    <span className="shrink-0 whitespace-nowrap text-[0.72rem] font-light text-white/55">Your target</span>
+                    <span className="whitespace-nowrap text-right font-mono text-[0.9rem] font-semibold text-white">{cr(targetCr)} <span className="font-sans text-[0.7rem] font-medium text-[#5fd39a]">· save {save(saveCr)}</span></span>
                   </div>
                 )}
                 <p className="mt-4 text-[0.68rem] font-light leading-relaxed text-white/40">Neutral · on the record · we earn a share only of what we save you. No spam — one text when the first offer lands.</p>
