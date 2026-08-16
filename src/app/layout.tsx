@@ -12,6 +12,15 @@ import Analytics from "@/components/Analytics";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  /* preload:false — next/font otherwise emits a High-priority
+     <link rel=preload as=font> for Geist as one of the very first <head>
+     nodes, ahead of the hero image and the render-blocking CSS. Geist is the
+     body/sans face (subhead, nav, chips); it is NOT the LCP element, so that
+     head-of-line priority is spent on the wrong thing on Slow-4G. Dropping the
+     preload frees the critical path; the face still loads via @font-face and
+     swaps in with size-matched metrics (no layout shift). Playfair — the LCP
+     <h1> face — deliberately KEEPS its preload below. */
+  preload: false,
 });
 
 const geistMono = Geist_Mono({
