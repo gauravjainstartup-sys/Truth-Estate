@@ -41,6 +41,7 @@ import SearchPalette from "./SearchPalette";
 import OtpDigits from "../auth/OtpDigits";
 import { normalisePhone, sendOtp, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
 import ReportNegotiation from "./ReportNegotiation";
+import DealRoom, { DealRoomStickyBar, dealSavingCr } from "./DealRoom";
 import AccountChip from "../AccountChip";
 import ZoomStage from "./ZoomStage";
 import PdfScroller from "./PdfScroller";
@@ -779,6 +780,10 @@ export default function ProjectProfile({
               </button>
               </>
               )}
+              {/* The Deal Room, compact — directly under the unlock/desk card. */}
+              {(p.budget?.[0] ?? 0) > 0 && (
+                <DealRoom variant="rail" projectName={p.name} ticketCr={p.budget?.[0] ?? 0} onStart={consult} />
+              )}
             </aside>
           )}
 
@@ -1070,6 +1075,15 @@ export default function ProjectProfile({
                 </div>
               </div>
             </Section>
+
+            {/* The Deal Room — "let the market compete for your price." Free
+                and pre-paywall: a full-width band right after Vitals, seen even
+                by guests. Illustrative auction off the project's filed price. */}
+            {!sample && !embedded && (p.budget?.[0] ?? 0) > 0 && (
+              <div className="mt-14">
+                <DealRoom variant="band" projectName={p.name} ticketCr={p.budget?.[0] ?? 0} onStart={consult} />
+              </div>
+            )}
 
             {/* 02 · Masterplan — the plan itself, then one honest read of it */}
             {ops?.media?.masterplan && (
@@ -1590,6 +1604,13 @@ export default function ProjectProfile({
           </span>
         </button>
       </>)}
+
+      {/* The Deal Room — mobile sticky bar (phones only; ≥768 uses the rail
+          card / desktop pill). Docks after the reader is engaged; dismiss
+          quiets it for 7 days. Hidden while the in-page band is on screen. */}
+      {!sample && !embedded && (p.budget?.[0] ?? 0) > 0 && (
+        <DealRoomStickyBar savingCr={dealSavingCr(p.budget?.[0] ?? 0)} onStart={consult} />
+      )}
 
       {/* Sample read — a faint diagonal tiled watermark + a persistent badge so
           the dummy report can never be mistaken for a paid one. */}
