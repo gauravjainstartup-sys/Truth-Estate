@@ -12,11 +12,13 @@ import Analytics from "@/components/Analytics";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
   /* The mono face is only ever used below the fold (the "₹4.5 Cr" price
      comparison mock, a handful of numeric readouts) — never in the hero or
      any LCP element. next/font preloads every configured face at high
@@ -31,6 +33,7 @@ const playfair = Playfair_Display({
   variable: "--font-playfair",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 const OG_IMAGE = `${SITE_URL}/images/og-truth-estate.png`;

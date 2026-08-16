@@ -143,6 +143,27 @@ export default function ReportNegotiation({
 
       {held.length > 0 && <Withheld levers={held} onUnlock={onUnlock} start={shown.length} />}
 
+      {/* ── In-line Deal Room trigger card ── */}
+      <div className="my-8 rounded-2xl border border-[#c9a96e]/30 bg-[#c9a96e]/[0.07] p-6 text-center md:p-8">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#9a7a2e]">
+          Buyer-Side Representation
+        </p>
+        <h3 className="mt-2.5 font-serif text-[1.35rem] font-medium leading-tight text-[#1a1a1a] md:text-[1.65rem]">
+          Enter the Private Deal Room for {p.name}
+        </h3>
+        <p className="mx-auto mt-2.5 max-w-xl text-[0.9rem] font-light leading-relaxed text-[#1a1a1a]/70">
+          Buyers negotiating off these advised levers typically settle <b className="font-semibold text-[#1a1a1a]">5&ndash;10% under</b> prevailing corridor rates. We make the market compete for your deal, in writing.
+        </p>
+        <div className="mt-5 flex justify-center">
+          <a
+            href={`/deal-room?project=${encodeURIComponent(p.name)}`}
+            className="inline-flex items-center gap-2 rounded-full border border-[#c9a24b] bg-[#c9a24b] px-6 py-2.5 text-[13px] font-semibold text-[#0b1a12] shadow-sm transition-all hover:bg-[#d4b05a]"
+          >
+            Access Deal Room & Representation &rarr;
+          </a>
+        </div>
+      </div>
+
       {!locked && (
         <p className="mt-5 text-[0.78rem] font-light italic leading-relaxed text-[#1a1a1a]/45">
           Leverage is not a discount. The best outcome on most of these is a better payment structure, a written date

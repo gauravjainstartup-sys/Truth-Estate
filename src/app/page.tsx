@@ -1,9 +1,11 @@
+import dynamic from "next/dynamic";
 import Hero from "@/components/Hero";
-import ExperienceSection from "@/components/ExperienceSection";
 import Footer from "@/components/Footer";
 import { buildIndex } from "@/lib/omniIndex";
 import { buildCoverageStats } from "@/lib/coverageStats";
 import { basePath } from "@/lib/site";
+
+const ExperienceSection = dynamic(() => import("@/components/ExperienceSection"));
 
 export default async function Home() {
   /* the hero's ask line reads the same index the /intelligence omnibox does;

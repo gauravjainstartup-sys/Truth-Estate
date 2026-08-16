@@ -156,7 +156,9 @@ function Storytelling() {
       tl.to({}, { duration: 0.3 }); // let it land
 
       const st = tl.scrollTrigger;
-      ScrollTrigger.refresh();
+      requestAnimationFrame(() => {
+        ScrollTrigger.refresh();
+      });
       cleanup = () => {
         st?.kill(true);
         tl.kill();
