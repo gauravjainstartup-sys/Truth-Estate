@@ -29,7 +29,7 @@ import { useLiveVitals } from "@/lib/useLiveVitals";
 import MatchScore from "./MatchScore";
 import TowerIntel, { openUnitIntel } from "./TowerIntel";
 import UnlockModal from "./UnlockModal";
-import LockedReport from "./LockedReport";
+import ReportDossier from "./ReportDossier";
 import UnlockDesk from "./UnlockDesk";
 import ChallengeChat from "./ChallengeChat";
 import ReportAnatomy from "./ReportAnatomy";
@@ -1181,7 +1181,7 @@ export default function ProjectProfile({
                in place of the analysis; a paid reader sees everything. ── */}
             {locked ? (
               <div id="unlock" className="scroll-mt-24">
-                <LockedReport projectName={p.name} truthScore={p.truthScore} grade={scoreGrade(p.truthScore)} ticket={lockedTicket} onUnlock={openUnlock} audience={audience} />
+                <ReportDossier projectName={p.name} truthScore={p.truthScore} grade={scoreGrade(p.truthScore)} ticket={lockedTicket} onUnlock={openUnlock} audience={audience} />
               </div>
             ) : (
             <>
