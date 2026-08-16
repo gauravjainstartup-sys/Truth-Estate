@@ -5,7 +5,7 @@ import { BEST_PROJECTS, bestProjectsBySlug } from "@/lib/bestProjects";
 import { fetchBacklogFull, fetchCorridorPsf, fetchPriceEnvelopes, fetchTrackedStats } from "@/lib/supabase";
 import { liveProjectIntel } from "@/lib/liveReport";
 import type { ProjectIntel } from "@/lib/projects";
-import { collectionLd, ldJson } from "@/lib/seo";
+import { breadcrumbLd, collectionLd, ldJson } from "@/lib/seo";
 
 /* ════════════════════════════════════════════════════════════════
    /best-projects/<filter> — the old site's landing pages, rebuilt.
@@ -108,8 +108,16 @@ export default async function Page({ params }: { params: Promise<{ filter: strin
     items: matched.filter((r) => r.seoSlug && r.name).slice(0, 60).map((r) => ({ name: r.name, path: `/projects/${r.seoSlug}` })),
   });
 
+  const breadcrumb = breadcrumbLd([
+    { name: "Home", path: "" },
+    { name: "Intelligence", path: "/intelligence" },
+    { name: "Best Projects", path: "/intelligence/projects" },
+    { name: page.title, path: `/best-projects/${page.slug}` },
+  ]);
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(breadcrumb)} />
       <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(ld)} />
       <ProjectsIndex
         projects={projects}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Methodology from "@/components/methodology/Methodology";
 import Footer from "@/components/Footer";
+import { breadcrumbLd, ldJson } from "@/lib/seo";
 
 export const metadata: Metadata = {
   /* Without this the route inherits metadataBase and Next emits the bare
@@ -26,9 +27,15 @@ export const metadata: Metadata = {
   },
 };
 
+const breadcrumb = breadcrumbLd([
+  { name: "Home", path: "" },
+  { name: "Methodology", path: "/methodology" },
+]);
+
 export default function MethodologyPage() {
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(breadcrumb)} />
       <main>
         <Methodology />
       </main>

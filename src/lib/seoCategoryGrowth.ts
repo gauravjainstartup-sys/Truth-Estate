@@ -52,9 +52,11 @@ export function getProjectSeoMeta(input: ProjectSeoInput): ProjectSeoOutput {
   const key = p.toLowerCase();
   if (overrideMap.has(key)) {
     const matched = overrideMap.get(key)!;
+    const title = matched.title.length > 60 ? matched.title.slice(0, 57) + "..." : matched.title;
+    const desc = matched.desc.length > 155 ? matched.desc.slice(0, 152) + "..." : matched.desc;
     return {
-      title: matched.title,
-      description: matched.desc,
+      title: title.trim(),
+      description: desc.trim(),
       primaryEmotion: matched.emotion,
     };
   }

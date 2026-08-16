@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import NRIDesk from "@/components/nri/NRIDesk";
 import Footer from "@/components/Footer";
+import { breadcrumbLd, ldJson } from "@/lib/seo";
 
 export const metadata: Metadata = {
   /* Without this the route inherits metadataBase and Next emits the bare
@@ -30,9 +31,15 @@ export const metadata: Metadata = {
   },
 };
 
+const breadcrumb = breadcrumbLd([
+  { name: "Home", path: "" },
+  { name: "NRI Desk", path: "/nri" },
+]);
+
 export default function NRIPage() {
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(breadcrumb)} />
       <main>
         <NRIDesk />
       </main>
