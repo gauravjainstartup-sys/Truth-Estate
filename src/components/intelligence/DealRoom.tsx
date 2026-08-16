@@ -176,28 +176,27 @@ export default function DealRoom({
 
   if (variant === "rail") {
     return (
-      <div ref={ref} className={panelClass("mt-4 p-5")}>
+      <div ref={ref} className={panelClass("mt-4 p-4")}>
         <style>{STYLE}</style>
         <Glow />
         <div className="relative">
-          <p className="text-[0.58rem] font-bold uppercase tracking-[0.22em] text-[#c9a96e]">{COPY.eyebrow}</p>
-          <p className="mt-1.5 font-serif text-[1.22rem] font-medium leading-[1.2] text-white">{COPY.headline}</p>
+          <p className="text-[0.56rem] font-bold uppercase tracking-[0.2em] text-[#c9a96e]">{COPY.eyebrow}</p>
+          <p className="mt-1 font-serif text-[1.05rem] font-medium leading-[1.2] text-white">{COPY.headline}</p>
           {potRange && (
-            <div className="tdr-rise mt-3">
-              <p className="text-[0.55rem] font-bold uppercase tracking-[0.16em] text-[#c9a96e]/80">Potential saving</p>
-              <p className="font-serif text-[1.7rem] font-semibold leading-none text-[#e3c07f]">{potRange}</p>
+            <div className="tdr-rise mt-2.5 flex items-baseline justify-between gap-2">
+              <span className="shrink-0 whitespace-nowrap text-[0.52rem] font-bold uppercase tracking-[0.12em] text-[#c9a96e]/80">Potential saving</span>
+              <span className="whitespace-nowrap font-serif text-[1.35rem] font-semibold leading-none text-[#e3c07f]">{potRange}</span>
             </div>
           )}
           {deal && (
-            <div className="mt-3 flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.05] px-3.5 py-2.5">
-              <span className="tdr-pulse pl-3 text-[0.55rem] font-semibold uppercase tracking-[0.12em] text-[#5fd39a]">3 competing</span>
-              <span className="font-mono text-[0.82rem] font-semibold text-[#5fd39a]">best {cr(deal.best)}</span>
+            <div className="mt-2.5 flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.05] px-3 py-1.5">
+              <span className="tdr-pulse pl-3 text-[0.52rem] font-semibold uppercase tracking-[0.1em] text-[#5fd39a]">3 competing</span>
+              <span className="whitespace-nowrap font-mono text-[0.78rem] font-semibold text-[#5fd39a]">best {cr(deal.best)}</span>
             </div>
           )}
-          <button onClick={onStart} className="group mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#2f9a68] px-5 py-3 text-[0.86rem] font-semibold text-white transition-colors hover:bg-[#38b37c]">
+          <button onClick={onStart} className="group mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#2f9a68] px-5 py-2.5 text-[0.84rem] font-semibold text-white transition-colors hover:bg-[#38b37c]">
             {COPY.button} <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
           </button>
-          <p className="mt-2.5 text-center text-[0.6rem] font-light leading-[1.4] text-white/40">{COPY.fine}</p>
         </div>
       </div>
     );

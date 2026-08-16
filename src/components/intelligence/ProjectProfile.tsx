@@ -712,7 +712,7 @@ export default function ProjectProfile({
       <div className={`mx-auto ${embedded ? "max-w-6xl pt-[6vh]" : "max-w-7xl pt-4 md:pt-7"} px-6 pb-[12vh] md:px-10`}>
         <div className={embedded ? "" : "xl:grid xl:grid-cols-[minmax(0,1fr)_300px] xl:gap-14"}>
           {!embedded && (
-            <aside className="hidden self-start xl:col-start-2 xl:row-start-2 xl:sticky xl:top-[132px] xl:block">
+            <aside className="hidden self-start xl:col-start-2 xl:row-start-2 xl:sticky xl:top-[132px] xl:block xl:max-h-[calc(100vh-152px)] xl:overflow-y-auto xl:[-ms-overflow-style:none] xl:[scrollbar-width:none] xl:[&::-webkit-scrollbar]:hidden">
               {locked ? (
                 <UnlockDesk onUnlock={openUnlock} />
               ) : null}
