@@ -183,7 +183,9 @@ function setupMobilePinned(root: HTMLElement) {
   tl.to(verdict, { opacity: 1, filter: "brightness(1) blur(0px)", duration: 0.16, ease: "none" }, ">-0.04");
   tl.to({}, { duration: 0.1 });
 
-  ScrollTrigger.refresh();
+  requestAnimationFrame(() => {
+    ScrollTrigger.refresh();
+  });
 
   return () => {
     tl.scrollTrigger?.kill(true);

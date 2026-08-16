@@ -106,7 +106,7 @@ export default function Hero({ index }: { index: OmniIndex }) {
         <source media="(max-width:767px)" srcSet={`${IMG}/new-hero-mobile.jpg`} />
         <source type="image/avif" srcSet={`${IMG}/new-hero-desktop.avif`} />
         <source type="image/webp" srcSet={`${IMG}/new-hero-desktop.webp`} />
-        <img src={`${IMG}/new-hero-desktop.webp`} alt="" aria-hidden="true" fetchPriority="high"
+        <img src={`${IMG}/new-hero-mobile.avif`} alt="" aria-hidden="true" fetchPriority="high"
           className="teh2-img absolute inset-0 h-full w-full object-cover" />
       </picture>
 
