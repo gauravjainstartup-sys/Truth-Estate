@@ -27,14 +27,28 @@ export default function Analytics() {
   if (!IS_PRODUCTION_ORIGIN) return null;
   return (
     <>
-      {/* ── GA4 (gtag.js) ── */}
-      <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`} strategy="afterInteractive" />
+      {/* ── GA4 (gtag.js) ──
+         lazyOnload, NOT afterInteractive. afterInteractive makes Next inject a
+         High-priority cross-origin <link rel=preload as=script> for gtag.js
+         into <head>; on Slow-4G mobile that fetch lands inside the FCP/LCP
+         window and contends — on the one pipe — with the render-blocking CSS
+         and the LCP hero, while its execution competes for the main thread the
+         (text) LCP element is waiting on. lazyOnload injects no head preload
+         and runs after window.load, off the critical path. The inline stub
+         below stays afterInteractive so window.gtag + dataLayer exist early and
+         queue any events; gtag.js drains the queue once it loads. */}
+      <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`} strategy="lazyOnload" />
       <Script id="ga4-init" strategy="afterInteractive">
         {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}window.gtag=gtag;gtag('js',new Date());gtag('config','${GA4_ID}');`}
       </Script>
 
-      {/* ── Amplitude (autocapture + session replay @ 100%) ── */}
-      <Script src={`https://cdn.amplitude.com/script/${AMPLITUDE_KEY}.js`} strategy="afterInteractive"
+      {/* ── Amplitude (autocapture + session replay @ 100%) ──
+         lazyOnload for the same reason, and it matters more here: session
+         replay + autocapture is heavy main-thread instrumentation. Deferring it
+         off afterInteractive keeps it out of the LCP paint window entirely.
+         events.ts forwards funnel events via optional-chained window.amplitude,
+         so nothing breaks while it loads late. */}
+      <Script src={`https://cdn.amplitude.com/script/${AMPLITUDE_KEY}.js`} strategy="lazyOnload"
         onLoad={() => {
           try {
             const w = window as unknown as {
