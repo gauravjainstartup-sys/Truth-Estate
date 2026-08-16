@@ -60,6 +60,9 @@ const save = (c: number) => {
   const l = c * 100;
   return l < 100 ? `₹${Math.round(l)} L` : `₹${(Math.round(c * 10) / 10).toFixed(1)} Cr`;
 };
+/* The FOMO figure: what the read is worth at the table — the 5–10% band the
+   desk settles across, applied to this project's entry ticket. */
+const potentialRange = (market: number) => `${save(market * 0.05)} – ${save(market * 0.1)}`;
 
 const STYLE = `
   .tdr .tdr-pulse{position:relative;}
@@ -164,17 +167,21 @@ export default function DealRoom({
   onStart?: () => void;
 }) {
   const ref = useReveal<HTMLDivElement>();
+  const deal = computeDeal(ticketCr);
+  const potRange = deal ? potentialRange(deal.market) : null;
 
   if (variant === "rail") {
-    const deal = computeDeal(ticketCr);
     return (
       <div ref={ref} className="tdr mt-4 rounded-2xl border border-[#c9a96e]/35 bg-[#c9a96e]/[0.08] p-5">
         <style>{STYLE}</style>
         <p className="text-[0.58rem] font-bold uppercase tracking-[0.22em] text-[#9a7a2e]">{COPY.eyebrow}</p>
         <p className="mt-1.5 font-serif text-[1.18rem] font-medium leading-[1.25] text-[#1a1a1a]">{COPY.headline}</p>
         <p className="mt-2 text-[0.76rem] font-light leading-[1.5] text-[#1a1a1a]/60">{COPY.subRail}</p>
+        {potRange && (
+          <p className="mt-3 text-[0.82rem] text-[#1e6b45]">Potential saving <b className="font-semibold">{potRange}</b></p>
+        )}
         {deal && (
-          <div className="tdr-best mt-3.5 rounded-xl border border-[#1a1a1a]/10 bg-white/70 px-3.5 py-3">
+          <div className="tdr-best mt-3 rounded-xl border border-[#1a1a1a]/10 bg-white/70 px-3.5 py-3">
             <div className="flex items-center justify-between text-[0.56rem] font-medium uppercase tracking-[0.12em]">
               <span className="tdr-pulse pl-3 text-[#1e6b45]">3 competing</span>
               <span className="text-[#1a1a1a]/40">2 days left</span>
@@ -202,7 +209,14 @@ export default function DealRoom({
         <div>
           <p className="text-[0.62rem] font-bold uppercase tracking-[0.24em] text-[#9a7a2e]">{COPY.eyebrow}</p>
           <h2 className="mt-2.5 font-serif text-[1.9rem] font-medium leading-[1.1] text-[#1a1a1a] md:text-[2.3rem]">{COPY.headline}</h2>
-          <p className="mt-3.5 max-w-xl text-[0.96rem] font-light leading-[1.7] text-[#1a1a1a]/65">{COPY.subBand(projectName)}</p>
+          {potRange && (
+            <div className="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span className="text-[0.6rem] font-bold uppercase tracking-[0.16em] text-[#1e6b45]/75">Potential saving</span>
+              <span className="font-serif text-[1.9rem] font-semibold leading-none text-[#1e6b45] md:text-[2.15rem]">{potRange}</span>
+              <span className="w-full text-[0.72rem] font-light leading-snug text-[#1a1a1a]/50">the 5&ndash;10% our buyers typically settle under the asking price</span>
+            </div>
+          )}
+          <p className="mt-4 max-w-xl text-[0.96rem] font-light leading-[1.7] text-[#1a1a1a]/65">{COPY.subBand(projectName)}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Chip>Written offers</Chip><Chip>Anonymous</Chip><Chip>₹0 to start</Chip>
           </div>
@@ -273,7 +287,7 @@ export function DealRoomStickyBar({ savingCr, onStart }: { savingCr: number; onS
         <div className="min-w-0 flex-1">
           <p className="truncate text-[0.82rem] font-semibold leading-tight text-[#1a1a1a]">{COPY.headline.replace(/\.$/, "")}</p>
           <p className="truncate text-[0.68rem] font-light text-[#1a1a1a]/55">
-            Offers in 2–4 days · ₹0 to start{savingCr > 0 ? ` · save ~${save(savingCr)}` : ""}
+            Offers in 2–4 days · ₹0 to start{savingCr > 0 ? ` · save up to ~${save(savingCr)}` : ""}
           </p>
         </div>
         <button onClick={onStart} className="shrink-0 rounded-lg bg-[#1e6b45] px-4 py-2.5 text-[0.8rem] font-semibold text-white transition-colors hover:bg-[#238c55]">
@@ -287,9 +301,9 @@ export function DealRoomStickyBar({ savingCr, onStart }: { savingCr: number; onS
   );
 }
 
-/* Illustrative saving for the sticky bar's subline, without rendering the
-   whole card — same computation as the card. */
+/* The FOMO figure for the sticky bar's subline (potential saving, high end
+   of the 5–10% band) — without rendering the whole card. */
 export function dealSavingCr(ticketCr: number): number {
   const d = computeDeal(ticketCr);
-  return d ? d.saveCr : 0;
+  return d ? d.market * 0.1 : 0;
 }

@@ -709,77 +709,11 @@ export default function ProjectProfile({
 
       <div className={`mx-auto ${embedded ? "max-w-6xl pt-[6vh]" : "max-w-7xl pt-4 md:pt-7"} px-6 pb-[12vh] md:px-10`}>
         <div className={embedded ? "" : "xl:grid xl:grid-cols-[minmax(0,1fr)_300px] xl:gap-14"}>
-          {/* The Independent Desk — a calm, constant companion, not a sales column.
-              The report does the persuading; this holds one human way to get help.
-              Advice is the product; the deep layer is one quiet line, not a billboard. */}
           {!embedded && (
             <aside className="hidden self-start xl:col-start-2 xl:row-start-2 xl:sticky xl:top-[132px] xl:block">
               {locked ? (
                 <UnlockDesk onUnlock={openUnlock} />
-              ) : (
-              <>
-              <div className="rounded-2xl border border-[#1a1a1a]/10 bg-[#FBF8F2] p-6">
-                <div className="flex items-center gap-3">
-                  {/* the human is the seal — the real founder, not a badge */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={`${basePath}/images/founder-gaurav.webp`} alt="Gaurav Jain — Founder, Truth Estate" className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-[#B29668]/50" />
-                  <div className="min-w-0">
-                    <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#9a7a2e]">The Independent Desk</p>
-                    <p className="mt-0.5 text-[0.82rem] font-semibold leading-tight text-[#1a1a1a]">Gaurav Jain</p>
-                    <p className="truncate text-[0.64rem] font-light text-[#1a1a1a]/45">Founder, Truth Estate</p>
-                  </div>
-                </div>
-
-                <p className="mt-4 font-serif text-[1.32rem] font-medium leading-[1.24] text-[#1a1a1a]">Talk to someone who has actually read this file.</p>
-
-                {scheduled ? (
-                  <div className="mt-4 rounded-xl border border-[#1e6b45]/20 bg-[#1e6b45]/[0.06] px-4 py-3.5 text-[0.8rem] font-medium leading-[1.55] text-[#1e6b45]">✓ Thanks{lead.name ? `, ${lead.name.trim().split(" ")[0]}` : ""} — an advisor will call you{lead.time ? ` ${lead.time.toLowerCase()}` : " shortly"}. Expect a Gurugram number.</div>
-                ) : formOpen ? (
-                  <form onSubmit={scheduleCall} className="mt-4 space-y-2">
-                    <input required disabled={cbSent} value={lead.name} onChange={(e) => setLead({ ...lead, name: e.target.value })} placeholder="Your name" className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3.5 py-2.5 text-[0.8rem] outline-none transition-colors focus:border-[#1e6b45] disabled:opacity-60" />
-                    <input required disabled={cbSent} type="tel" value={lead.phone} onChange={(e) => setLead({ ...lead, phone: e.target.value })} placeholder="Phone / WhatsApp" className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3.5 py-2.5 text-[0.8rem] outline-none transition-colors focus:border-[#1e6b45] disabled:opacity-60" />
-                    <select required disabled={cbSent} value={lead.time} onChange={(e) => setLead({ ...lead, time: e.target.value })} className="w-full rounded-lg border border-[#1a1a1a]/12 bg-white px-3.5 py-2.5 text-[0.8rem] text-[#1a1a1a]/80 outline-none transition-colors focus:border-[#1e6b45] disabled:opacity-60">
-                      <option value="" disabled>Preferred time</option>
-                      <option>Today · morning</option><option>Today · evening</option><option>Tomorrow</option><option>This weekend</option>
-                    </select>
-                    {cbSent && (
-                      <div className="pt-1">
-                        <p className="mb-2 text-[0.72rem] font-light leading-[1.5] text-[#1a1a1a]/55">Enter the {OTP_LENGTH}-digit code we sent to confirm your number.</p>
-                        <OtpDigits
-                          value={cbOtp} onChange={setCbOtp} len={OTP_LENGTH} autoFocus onComplete={() => scheduleCall()}
-                          boxClass="h-11 w-full rounded-lg border border-[#1a1a1a]/12 bg-white text-center text-[1rem] font-medium text-[#1a1a1a] outline-none transition-colors focus:border-[#1e6b45]"
-                        />
-                        {/* Re-enables the fields and steps back to "Confirm" — which
-                            re-sends on the next tap, so this doubles as a resend. */}
-                        <button type="button" onClick={() => { setCbSent(false); setCbOtp(Array(OTP_LENGTH).fill("")); setCbErr(""); }} className="mt-2 text-[0.68rem] font-medium text-[#9a7a2e] transition-colors hover:text-[#1a1a1a]/80">
-                          Wrong number? Change it
-                        </button>
-                      </div>
-                    )}
-                    {cbErr && <p className="text-[0.72rem] leading-[1.5] text-[#b3402a]">{cbErr}</p>}
-                    <button type="submit" disabled={cbBusy} className="w-full rounded-lg bg-[#1e6b45] px-4 py-2.5 text-[0.8rem] font-semibold text-white transition-colors hover:bg-[#238c55] disabled:opacity-60">
-                      {cbBusy ? (cbSent ? "Verifying…" : "Sending…") : cbSent ? "Verify & confirm" : "Confirm the callback"}
-                    </button>
-                  </form>
-                ) : (
-                  <div className="mt-5">
-                    <button onClick={() => setFormOpen(true)} className="group flex w-full items-center justify-between rounded-xl bg-[#1e6b45] px-5 py-3.5 text-[0.85rem] font-semibold text-white transition-colors hover:bg-[#238c55]">
-                      Book a 15-minute call <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
-                    </button>
-                    <button onClick={consult} className="mt-2.5 w-full text-center text-[0.72rem] font-medium text-[#1a1a1a]/45 transition-colors hover:text-[#1a1a1a]/80">or ask a question first</button>
-                  </div>
-                )}
-
-                <p className="mt-5 border-t border-[#1a1a1a]/8 pt-3.5 text-[0.64rem] font-light leading-[1.5] text-[#1a1a1a]/40">Every file crosses the founder&apos;s desk before it ships. Independent — no inventory, no builder commission.</p>
-              </div>
-
-              {/* one quiet way to explore the product first — a line, not a billboard */}
-              <button onClick={() => jumpTo("tower-intel")} className="group mt-4 flex w-full items-center gap-2.5 px-1 text-left text-[0.72rem] font-light text-[#1a1a1a]/50 transition-colors hover:text-[#1a1a1a]/80">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" className="h-4 w-4 shrink-0 text-[#9a7a2e]" aria-hidden><path d="M12 2 21 7v10l-9 5-9-5V7z" /><path d="M3 7l9 5 9-5M12 12v10" /></svg>
-                Rather explore first? <span className="font-medium text-[#1a1a1a]/75 group-hover:text-[#1e6b45]">Walk the Sun &amp; Vastu 3D →</span>
-              </button>
-              </>
-              )}
+              ) : null}
               {/* The Deal Room, compact — directly under the unlock/desk card. */}
               {(p.budget?.[0] ?? 0) > 0 && (
                 <DealRoom variant="rail" projectName={p.name} ticketCr={p.budget?.[0] ?? 0} onStart={consult} />
@@ -1420,32 +1354,13 @@ export default function ProjectProfile({
               </>
             )}
 
-            {/* The Independent Desk on mobile — the desktop rail is hidden below
-               xl, so the founder gets a face here, right before the CTA. When
-               locked, the free-call block would leak conversions, so it becomes
-               the price-forward UnlockDesk instead. */}
-            {locked ? (
+            {/* Locked-only on mobile (the desktop rail is hidden below xl): the
+               price-forward UnlockDesk. The unlocked free founder-call card was
+               removed at the founder's request — the Deal Room is the CTA now. */}
+            {locked && (
               <div className="mt-12 xl:hidden">
                 <UnlockDesk onUnlock={openUnlock} />
               </div>
-            ) : (
-            <div className="mt-12 rounded-2xl border border-[#1a1a1a]/10 bg-[#FBF8F2] p-6 xl:hidden">
-              <div className="flex items-center gap-3.5">
-                {/* the human is the seal — the real founder, not a badge */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`${basePath}/images/founder-gaurav.webp`} alt="Gaurav Jain — Founder, Truth Estate" className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-[#B29668]/50" />
-                <div className="min-w-0">
-                  <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#9a7a2e]">The Independent Desk</p>
-                  <p className="mt-0.5 text-[0.9rem] font-semibold leading-tight text-[#1a1a1a]">Gaurav Jain</p>
-                  <p className="text-[0.7rem] font-light text-[#1a1a1a]/45">Founder, Truth Estate</p>
-                </div>
-              </div>
-              <p className="mt-4 font-serif text-[1.28rem] font-medium leading-[1.26] text-[#1a1a1a]">Talk to someone who has actually read this file.</p>
-              <button onClick={consult} className="group mt-4 flex w-full items-center justify-between rounded-xl bg-[#1e6b45] px-5 py-3.5 text-[0.85rem] font-semibold text-white transition-colors hover:bg-[#238c55]">
-                Book a 15-minute call <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
-              </button>
-              <p className="mt-4 border-t border-[#1a1a1a]/8 pt-3.5 text-[0.64rem] font-light leading-[1.5] text-[#1a1a1a]/40">Every file crosses the founder&apos;s desk before it ships. Independent — no inventory, no builder commission.</p>
-            </div>
             )}
 
             {/* CTA — three actions, weighted */}
