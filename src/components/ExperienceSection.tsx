@@ -121,13 +121,17 @@ function Storytelling() {
     const root = ref.current;
     if (!root) return;
     /* GSAP + ScrollTrigger (~44 KB gz) drive this below-the-fold pin only.
-       Importing them statically dragged that weight into the homepage's first
-       paint; loading on mount keeps them out of the initial JS and fetches
-       them a tick later — long before anyone scrolls this far. The `cancelled`
+       Two levers keep their weight off the homepage's LCP window: (1) they're
+       dynamically imported (out of the first-load bundle), and (2) that import
+       is not even STARTED until this section approaches the viewport — on
+       mount it would parse/execute ~44 KB right when the hero <h1> is trying to
+       paint (the measured LCP element), inflating render delay. An
+       IntersectionObserver with a 600px rootMargin binds the animation well
+       before the user scrolls here, so behaviour is unchanged. The `cancelled`
        guard covers an unmount that beats the async import. */
     let cancelled = false;
     let cleanup: (() => void) | undefined;
-    (async () => {
+    const start = async () => {
       const [{ default: gsap }, { ScrollTrigger }] = await Promise.all([
         import("gsap"),
         import("gsap/ScrollTrigger"),
@@ -156,14 +160,24 @@ function Storytelling() {
       tl.to({}, { duration: 0.3 }); // let it land
 
       const st = tl.scrollTrigger;
-      ScrollTrigger.refresh();
+      // rAF the refresh so the full-document layout it forces is its own task,
+      // not tacked onto the import-resolution long task.
+      requestAnimationFrame(() => { if (!cancelled) ScrollTrigger.refresh(); });
       cleanup = () => {
         st?.kill(true);
         tl.kill();
       };
-    })();
+    };
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        io.disconnect();
+        start();
+      }
+    }, { rootMargin: "600px" });
+    io.observe(root);
     return () => {
       cancelled = true;
+      io.disconnect();
       cleanup?.();
     };
   }, []);
@@ -350,12 +364,14 @@ function IndependentRepresentation() {
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    // Deferred for the same reason as the Storytelling pin above: this
-    // desktop-only slide sits below the fold, so GSAP loads on mount rather
-    // than in the first-paint bundle.
+    // Deferred for the same reason as the Storytelling pin above, and gated the
+    // same way: the GSAP import isn't started until this section nears the
+    // viewport (IntersectionObserver, 600px margin), so its parse never lands
+    // in the LCP window. This slide is desktop-only (matchMedia), so on the
+    // mobile Lighthouse run it does no work at all.
     let cancelled = false;
     let cleanup: (() => void) | undefined;
-    (async () => {
+    const start = async () => {
       const [{ default: gsap }, { ScrollTrigger }] = await Promise.all([
         import("gsap"),
         import("gsap/ScrollTrigger"),
@@ -394,9 +410,17 @@ function IndependentRepresentation() {
         };
       });
       cleanup = () => mm.revert();
-    })();
+    };
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        io.disconnect();
+        start();
+      }
+    }, { rootMargin: "600px" });
+    io.observe(root);
     return () => {
       cancelled = true;
+      io.disconnect();
       cleanup?.();
     };
   }, []);
