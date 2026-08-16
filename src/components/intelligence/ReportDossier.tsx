@@ -25,20 +25,19 @@ import { discountOf } from "@/lib/journey";
 import { usePackage } from "@/lib/usePricing";
 import { useFirstFree } from "@/lib/useFirstFree";
 
-/* The dossier, in reading order — the Deal Room first: it is the line that
-   pays for the read. Each row is the burning QUESTION (the pull) and the
-   VALUE the reader walks away with (the promise). Generic-but-true — no
-   fabricated, project-specific findings, so it is honest on all 97 reports. */
+/* The dossier's paid chapters, in reading order. Each row is the burning
+   QUESTION (the pull) and the VALUE the reader walks away with (the promise).
+   Generic-but-true — no fabricated, project-specific findings, so it is
+   honest on all 97 reports. */
 type Row = { n: string; t: string; q: string; get: string };
 const ROWS: Row[] = [
-  { n: "I", t: "The Deal Room", q: "The price the market will actually give you.", get: "What it saves you — negotiated on your side, in writing." },
-  { n: "II", t: "Developer DNA", q: "Has this builder finished on time before?", get: "Grounds to hold them to the delivery date." },
-  { n: "III", t: "Construction & sales", q: "On pace for its RERA date — or quietly slipping?", get: "Build-versus-promise, in numbers." },
-  { n: "IV", t: "Location intelligence", q: "What will actually move this price?", get: "The corridor, the catalysts and the connectivity that count." },
-  { n: "V", t: "Legal & compliance", q: "Anything to clear before you sign?", get: "The issues to fix — or the reason to walk." },
-  { n: "VI", t: "Project USPs", q: "Which claims hold real value?", get: "Real value, sorted from brochure gloss." },
-  { n: "VII", t: "Price & ROI model", q: "Does it beat the corridor?", get: "Your five-year CAGR, hold period and exit." },
-  { n: "VIII", t: "The Verdict", q: "So — should you buy it?", get: "A clear buy / caution / avoid for your budget and risk." },
+  { n: "I", t: "Developer DNA", q: "Has this builder finished on time before?", get: "Grounds to hold them to the delivery date." },
+  { n: "II", t: "Construction & sales", q: "On pace for its RERA date — or quietly slipping?", get: "Build-versus-promise, in numbers." },
+  { n: "III", t: "Location intelligence", q: "What will actually move this price?", get: "The corridor, the catalysts and the connectivity that count." },
+  { n: "IV", t: "Legal & compliance", q: "Anything to clear before you sign?", get: "The issues to fix — or the reason to walk." },
+  { n: "V", t: "Project USPs", q: "Which claims hold real value?", get: "Real value, sorted from brochure gloss." },
+  { n: "VI", t: "Price & ROI model", q: "Does it beat the corridor?", get: "Your five-year CAGR, hold period and exit." },
+  { n: "VII", t: "The Verdict", q: "So — should you buy it?", get: "A clear buy / caution / avoid for your budget and risk." },
 ];
 
 /* Owner path has already bought. Only the sentences that assume a decision
@@ -48,7 +47,6 @@ const OWNER_Q: Record<string, string> = {
   "The Verdict": "Where does this leave you now?",
 };
 const OWNER_GET: Record<string, string> = {
-  "The Deal Room": "What the desk can still win you while it is going up.",
   "Legal & compliance": "The clauses that protect you — and the ones that do not.",
   "The Verdict": "Hold, push the developer, or get out.",
 };

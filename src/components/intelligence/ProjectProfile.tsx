@@ -40,7 +40,7 @@ import ReportLocation from "./ReportLocation";
 import SearchPalette from "./SearchPalette";
 import OtpDigits from "../auth/OtpDigits";
 import { normalisePhone, sendOtp, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
-import ReportNegotiation, { DealRoomTeaser } from "./ReportNegotiation";
+import ReportNegotiation from "./ReportNegotiation";
 import AccountChip from "../AccountChip";
 import ZoomStage from "./ZoomStage";
 import PdfScroller from "./PdfScroller";
@@ -474,7 +474,7 @@ export default function ProjectProfile({
     { id: "roi", label: "Price & returns", show: !!roi },
     { id: "verdict", label: "The verdict", show: true },
     { id: "strengths", label: "Strengths & watch-outs", show: p.strengths.length > 0 || p.watchouts.length > 0 },
-    { id: "negotiate", label: "The Deal Room", show: levers.length > 0 },
+    { id: "negotiate", label: "Negotiate", show: levers.length > 0 },
     { id: "faqs", label: "Straight answers", show: faqs.length > 0 },
   ]
     .filter((t) => t.show && (!locked || FREE_IDS.has(t.id)));
@@ -1028,11 +1028,6 @@ export default function ProjectProfile({
               </div>
             )}
 
-            {/* Unlocked: the Deal Room, teased at the top with its savings
-                headline, jumping to the full chapter that still lands after the
-                evidence. Mirrors where the locked dossier leads with it. */}
-            {!locked && <DealRoomTeaser p={p} />}
-
             <Chapter n={chap()} title="What are you actually buying?" framing="The facts of the asset — before we weigh trust." />
 
             {/* Match Score now leads the report body as the "Your Fit" band (above) */}
@@ -1353,7 +1348,7 @@ export default function ProjectProfile({
             {levers.length > 0 && (
               <>
                 <Chapter n={chap()} title="Can this report save you lakhs?" framing={`Every weak spot in this file is a number you can argue with. Here is what ${p.name}'s are worth.`} />
-                <Section id="negotiate" n={num()} title="The Deal Room">
+                <Section id="negotiate" n={num()} title="Negotiate like a king">
                   <ReportNegotiation p={p} locked={locked} onUnlock={openUnlock} />
                 </Section>
               </>
