@@ -1347,16 +1347,26 @@ export default function ProjectProfile({
       {/* Mobile: a single, clean primary CTA. When unlocked, the founder's face
           rides beside the advisor call (advice reads as a person); when locked,
           a clean full-width "Get Full Read" drives the sale. */}
+      {/* Mobile / Desktop Persistent Deal Room Sticky Bar */}
       {!frozen && (
-      <div className="sticky bottom-0 z-40 flex items-center gap-3 border-t border-[#1a1a1a]/10 bg-[#F5F0E8]/95 px-6 py-3 backdrop-blur md:hidden">
-        {!locked && (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img src={`${basePath}/images/founder-gaurav.webp`} alt="Gaurav Jain — Founder, Truth Estate" className="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-[#B29668]/50" />
-        )}
-        <button onClick={primaryCta.onClick} className="flex-1 rounded-sm bg-[#1e6b45] px-5 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
-          {primaryCta.label}
-        </button>
-      </div>
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#c9a24b]/40 bg-[#14110d]/95 px-6 py-3 shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.5)] backdrop-blur-md">
+          <div className="mx-auto flex max-w-7xl items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="font-serif text-[13.5px] font-medium text-[#f6f1e8] md:text-[15px]">
+                {p.name} — <span className="text-[#c9a24b]">Deal Room Active</span>
+              </span>
+              <span className="hidden rounded-full bg-[#c9a24b]/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#e7cf95] md:inline-block">
+                2 Buyer Mandates Active
+              </span>
+            </div>
+            <a
+              href={`${basePath}/deal-room?project=${encodeURIComponent(p.name)}`}
+              className="flex items-center gap-1.5 rounded-full border border-[#c9a24b]/60 px-4 py-1.5 text-[12px] font-medium text-[#e7cf95] transition-colors hover:border-[#c9a24b] hover:bg-[#c9a24b]/15 md:text-[13px]"
+            >
+              Enter Deal Room &rarr;
+            </a>
+          </div>
+        </div>
       )}
 
       {/* Document viewer — masterplan / brochure pages / payment plan */}
