@@ -464,8 +464,9 @@ export default function ProjectProfile({
     { id: "negotiate", label: "Negotiate", show: levers.length > 0 },
     { id: "faqs", label: "Straight answers", show: faqs.length > 0 },
   ]
-    .filter((t) => t.show && (!locked || FREE_IDS.has(t.id)))
-    .concat(locked ? [{ id: "unlock", label: "Unlock full read", show: true }] : []);
+    .filter((t) => t.show && (!locked || FREE_IDS.has(t.id)));
+  // The dossier now leads the locked page, so it leads the index too.
+  if (locked) toc.unshift({ id: "unlock", label: "The dossier", show: true });
 
   /* Sequential section numbers — only counts sections that actually render,
      so hidden modules never leave a gap in the sequence. */
@@ -1003,6 +1004,17 @@ export default function ProjectProfile({
               </div>
             )}
 
+            {/* The dossier — surfaced HIGH, right after the hero, so the
+                proprietary read and the value of unlocking lead the page and
+                drive the decision, rather than sitting buried below the free
+                sections. Locked only; a paid reader drops straight into the
+                report body. The unlock anchor lives here now. */}
+            {locked && (
+              <div id="unlock" className="mt-4 scroll-mt-24">
+                <ReportDossier projectName={p.name} truthScore={p.truthScore} grade={scoreGrade(p.truthScore)} ticket={lockedTicket} onUnlock={openUnlock} audience={audience} />
+              </div>
+            )}
+
             <Chapter n={chap()} title="What are you actually buying?" framing="The facts of the asset — before we weigh trust." />
 
             {/* Match Score now leads the report body as the "Your Fit" band (above) */}
@@ -1177,13 +1189,10 @@ export default function ProjectProfile({
             </Section>
 
             {/* ── The paywall boundary. From Chapter II · Pillar I (Developer DNA)
-               down, a guest sees the LockedReport (unlock card + redacted teaser)
-               in place of the analysis; a paid reader sees everything. ── */}
-            {locked ? (
-              <div id="unlock" className="scroll-mt-24">
-                <ReportDossier projectName={p.name} truthScore={p.truthScore} grade={scoreGrade(p.truthScore)} ticket={lockedTicket} onUnlock={openUnlock} audience={audience} />
-              </div>
-            ) : (
+               down, the analysis is paid: a guest sees nothing here (the dossier
+               that names it, and the unlock, has already led the page up top);
+               a paid reader sees everything. ── */}
+            {locked ? null : (
             <>
             {/* Pillar I · Developer DNA — track record + financial audit */}
             {dev && (
