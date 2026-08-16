@@ -118,7 +118,21 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
     return () => { cancelAnimationFrame(id); mq.removeEventListener("change", apply); };
   }, []);
 
-  useEffect(() => { setRecentSlugs(getRecentSlugs()); }, []);
+  useEffect(() => {
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      const id = (window as unknown as { requestIdleCallback: (cb: () => void) => number }).requestIdleCallback(() => {
+        setRecentSlugs(getRecentSlugs());
+      });
+      return () => {
+        if ("cancelIdleCallback" in window) {
+          (window as unknown as { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(id);
+        }
+      };
+    } else {
+      const id = setTimeout(() => setRecentSlugs(getRecentSlugs()), 100);
+      return () => clearTimeout(id);
+    }
+  }, []);
 
   useEffect(() => {
     const id = setTimeout(() => setDebounced(query.trim()), DEBOUNCE_MS);

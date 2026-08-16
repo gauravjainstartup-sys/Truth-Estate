@@ -39,7 +39,7 @@ const geistMono = Geist_Mono({
 const playfair = Playfair_Display({
   variable: "--font-playfair",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 const OG_IMAGE = `${SITE_URL}/images/og-truth-estate.png`;
