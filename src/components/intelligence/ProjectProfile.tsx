@@ -41,7 +41,8 @@ import SearchPalette from "./SearchPalette";
 import OtpDigits from "../auth/OtpDigits";
 import { normalisePhone, sendOtp, verifyOtp, OTP_LENGTH } from "@/lib/phoneAuth";
 import ReportNegotiation from "./ReportNegotiation";
-import DealRoom, { DealRoomStickyBar, dealSavingCr } from "./DealRoom";
+import DealRoom, { DealRoomStickyBar } from "./DealRoom";
+import DealRoomSheet from "./DealRoomSheet";
 import AccountChip from "../AccountChip";
 import ZoomStage from "./ZoomStage";
 import PdfScroller from "./PdfScroller";
@@ -240,6 +241,7 @@ export default function ProjectProfile({
      no backend, OTP or payment, so the founder can review both states on the
      preview link. REMOVE before promoting this branch to production. */
   const [demoUnlocked, setDemoUnlocked] = useState(false);
+  const [dealRoomOpen, setDealRoomOpen] = useState(false);
   /* Re-check when the server's answer lands, and when the session changes.
      Mount alone is too early: fetchEntitlements is still in flight, so a
      reader who owns this report was shown the paywall and only let in on
@@ -716,7 +718,7 @@ export default function ProjectProfile({
               ) : null}
               {/* The Deal Room, compact — directly under the unlock/desk card. */}
               {(p.budget?.[0] ?? 0) > 0 && (
-                <DealRoom variant="rail" projectName={p.name} ticketCr={p.budget?.[0] ?? 0} onStart={consult} />
+                <DealRoom variant="rail" projectName={p.name} ticketCr={p.budget?.[0] ?? 0} onStart={() => setDealRoomOpen(true)} />
               )}
             </aside>
           )}
@@ -1015,7 +1017,7 @@ export default function ProjectProfile({
                 by guests. Illustrative auction off the project's filed price. */}
             {!sample && !embedded && (p.budget?.[0] ?? 0) > 0 && (
               <div className="mt-14">
-                <DealRoom variant="band" projectName={p.name} ticketCr={p.budget?.[0] ?? 0} onStart={consult} />
+                <DealRoom variant="band" projectName={p.name} ticketCr={p.budget?.[0] ?? 0} onStart={() => setDealRoomOpen(true)} />
               </div>
             )}
 
@@ -1524,7 +1526,13 @@ export default function ProjectProfile({
           card / desktop pill). Docks after the reader is engaged; dismiss
           quiets it for 7 days. Hidden while the in-page band is on screen. */}
       {!sample && !embedded && (p.budget?.[0] ?? 0) > 0 && (
-        <DealRoomStickyBar savingCr={dealSavingCr(p.budget?.[0] ?? 0)} onStart={consult} />
+        <DealRoomStickyBar ticketCr={p.budget?.[0] ?? 0} onStart={() => setDealRoomOpen(true)} />
+      )}
+
+      {/* The Deal Room sheet — the whole flow (details → target → contact →
+          open), opened by every Deal Room CTA. */}
+      {(p.budget?.[0] ?? 0) > 0 && (
+        <DealRoomSheet open={dealRoomOpen} onClose={() => setDealRoomOpen(false)} projectName={p.name} ticketCr={p.budget?.[0] ?? 0} />
       )}
 
       {/* Sample read — a faint diagonal tiled watermark + a persistent badge so
