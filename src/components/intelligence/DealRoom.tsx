@@ -166,13 +166,28 @@ export default function DealRoom({
   const ref = useReveal<HTMLDivElement>();
 
   if (variant === "rail") {
+    const deal = computeDeal(ticketCr);
     return (
       <div ref={ref} className="tdr mt-4 rounded-2xl border border-[#c9a96e]/35 bg-[#c9a96e]/[0.08] p-5">
         <style>{STYLE}</style>
         <p className="text-[0.58rem] font-bold uppercase tracking-[0.22em] text-[#9a7a2e]">{COPY.eyebrow}</p>
         <p className="mt-1.5 font-serif text-[1.18rem] font-medium leading-[1.25] text-[#1a1a1a]">{COPY.headline}</p>
         <p className="mt-2 text-[0.76rem] font-light leading-[1.5] text-[#1a1a1a]/60">{COPY.subRail}</p>
-        <div className="mt-3.5"><AuctionCard ticketCr={ticketCr} compact /></div>
+        {deal && (
+          <div className="tdr-best mt-3.5 rounded-xl border border-[#1a1a1a]/10 bg-white/70 px-3.5 py-3">
+            <div className="flex items-center justify-between text-[0.56rem] font-medium uppercase tracking-[0.12em]">
+              <span className="tdr-pulse pl-3 text-[#1e6b45]">3 competing</span>
+              <span className="text-[#1a1a1a]/40">2 days left</span>
+            </div>
+            <div className="mt-2 flex items-baseline justify-between">
+              <span className="text-[0.64rem] uppercase tracking-[0.1em] text-[#1a1a1a]/45">Best so far</span>
+              <span className="font-mono text-[1.05rem] font-semibold text-[#1e6b45]">{cr(deal.best)}</span>
+            </div>
+            <div className="mt-1.5 flex justify-end">
+              <span className="rounded-full bg-[#1e6b45]/[0.1] px-2 py-0.5 font-mono text-[0.64rem] font-bold text-[#1e6b45]">−{save(deal.saveCr)} vs market</span>
+            </div>
+          </div>
+        )}
         <div className="mt-3.5"><Cta label={COPY.button} onClick={onStart} full /></div>
         <p className="mt-2.5 text-center text-[0.62rem] font-light leading-[1.4] text-[#1a1a1a]/40">{COPY.fine}</p>
       </div>
