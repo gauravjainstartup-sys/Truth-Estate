@@ -312,49 +312,74 @@ function IndependentRepresentation() {
     const spine = spineRef.current;
     const fill = fillRef.current;
     if (!root || !spine || !fill) return;
-    const stages = Array.from(root.querySelectorAll<HTMLElement>("[data-stage]"));
 
-    let ticking = false;
-    const update = () => {
-      ticking = false;
-      const vh = window.innerHeight;
-      const sr = spine.getBoundingClientRect();
-      const fillH = Math.max(0, Math.min(vh * 0.5 - sr.top, sr.height));
-      fill.style.height = `${fillH}px`;
-      const fillBottom = sr.top + fillH;
-      const focus = vh * 0.4;
+    let cleanup: (() => void) | undefined;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        io.disconnect();
 
-      stages.forEach((el) => {
-        const r = el.getBoundingClientRect();
-        const anchor = r.top + 14;
-        const op =
-          anchor >= focus
-            ? Math.max(0.16, Math.min(1, 1 - (anchor - focus) / (vh * 0.5))) // upcoming, fading in
-            : Math.max(0.42, Math.min(1, 1 - (focus - anchor) / (vh * 1.3))); // passed, stays visible
-        el.style.opacity = op.toFixed(3);
+        // Cache stage elements and dotcore sub-nodes once at setup
+        const stageData = Array.from(root.querySelectorAll<HTMLElement>("[data-stage]")).map((el) => ({
+          el,
+          core: el.querySelector<HTMLElement>("[data-dotcore]"),
+        }));
 
-        const core = el.querySelector<HTMLElement>("[data-dotcore]");
-        if (core) {
-          const active = fillBottom >= r.top + 13;
-          core.style.background = active ? "#c9a96e" : "rgba(201,169,110,0.3)";
-          core.style.transform = active ? "scale(1.3)" : "scale(1)";
-        }
-      });
-    };
+        let ticking = false;
+        const update = () => {
+          ticking = false;
+          const vh = window.innerHeight;
+          const sr = spine.getBoundingClientRect();
+          const fillH = Math.max(0, Math.min(vh * 0.5 - sr.top, sr.height));
+          const fillBottom = sr.top + fillH;
+          const focus = vh * 0.4;
 
-    const onScroll = () => {
-      if (!ticking) {
-        ticking = true;
-        requestAnimationFrame(update);
-      }
-    };
+          // ── READ PHASE (zero layout thrashing) ──
+          const rects = stageData.map((s) => s.el.getBoundingClientRect());
 
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    update();
+          // ── WRITE PHASE (batched style updates) ──
+          fill.style.height = `${fillH}px`;
+          for (let i = 0; i < stageData.length; i++) {
+            const { el, core } = stageData[i];
+            const r = rects[i];
+            const anchor = r.top + 14;
+            const op =
+              anchor >= focus
+                ? Math.max(0.16, Math.min(1, 1 - (anchor - focus) / (vh * 0.5))) // upcoming, fading in
+                : Math.max(0.42, Math.min(1, 1 - (focus - anchor) / (vh * 1.3))); // passed, stays visible
+            el.style.opacity = op.toFixed(3);
+
+            if (core) {
+              const active = fillBottom >= r.top + 13;
+              core.style.background = active ? "#c9a96e" : "rgba(201,169,110,0.3)";
+              core.style.transform = active ? "scale(1.3)" : "scale(1)";
+            }
+          }
+        };
+
+        const onScroll = () => {
+          if (!ticking) {
+            ticking = true;
+            requestAnimationFrame(update);
+          }
+        };
+
+        window.addEventListener("scroll", onScroll, { passive: true });
+        window.addEventListener("resize", onScroll);
+        update();
+
+        cleanup = () => {
+          window.removeEventListener("scroll", onScroll);
+          window.removeEventListener("resize", onScroll);
+        };
+      },
+      { rootMargin: "600px" }
+    );
+
+    io.observe(root);
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      io.disconnect();
+      cleanup?.();
     };
   }, []);
 
@@ -927,49 +952,74 @@ function DecisionsSection() {
     const spine = spineRef.current;
     const fill = fillRef.current;
     if (!root || !spine || !fill) return;
-    const nodes = Array.from(root.querySelectorAll<HTMLElement>("[data-node]"));
 
-    let ticking = false;
-    const update = () => {
-      ticking = false;
-      const vh = window.innerHeight;
-      const sr = spine.getBoundingClientRect();
-      const fillH = Math.max(0, Math.min(vh * 0.5 - sr.top, sr.height));
-      fill.style.height = `${fillH}px`;
-      const fillBottom = sr.top + fillH;
-      const focus = vh * 0.4;
+    let cleanup: (() => void) | undefined;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        io.disconnect();
 
-      nodes.forEach((el) => {
-        const r = el.getBoundingClientRect();
-        const anchor = r.top + 14;
-        const op =
-          anchor >= focus
-            ? Math.max(0.16, Math.min(1, 1 - (anchor - focus) / (vh * 0.5)))
-            : Math.max(0.42, Math.min(1, 1 - (focus - anchor) / (vh * 1.3)));
-        el.style.opacity = op.toFixed(3);
+        // Cache node elements and dotcore sub-nodes once at setup
+        const nodeData = Array.from(root.querySelectorAll<HTMLElement>("[data-node]")).map((el) => ({
+          el,
+          core: el.querySelector<HTMLElement>("[data-dotcore]"),
+        }));
 
-        const core = el.querySelector<HTMLElement>("[data-dotcore]");
-        if (core) {
-          const active = fillBottom >= r.top + 13;
-          core.style.background = active ? "#c9a96e" : "rgba(201,169,110,0.3)";
-          core.style.transform = active ? "scale(1.3)" : "scale(1)";
-        }
-      });
-    };
+        let ticking = false;
+        const update = () => {
+          ticking = false;
+          const vh = window.innerHeight;
+          const sr = spine.getBoundingClientRect();
+          const fillH = Math.max(0, Math.min(vh * 0.5 - sr.top, sr.height));
+          const fillBottom = sr.top + fillH;
+          const focus = vh * 0.4;
 
-    const onScroll = () => {
-      if (!ticking) {
-        ticking = true;
-        requestAnimationFrame(update);
-      }
-    };
+          // ── READ PHASE (zero layout thrashing) ──
+          const rects = nodeData.map((n) => n.el.getBoundingClientRect());
 
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    update();
+          // ── WRITE PHASE (batched style updates) ──
+          fill.style.height = `${fillH}px`;
+          for (let i = 0; i < nodeData.length; i++) {
+            const { el, core } = nodeData[i];
+            const r = rects[i];
+            const anchor = r.top + 14;
+            const op =
+              anchor >= focus
+                ? Math.max(0.16, Math.min(1, 1 - (anchor - focus) / (vh * 0.5)))
+                : Math.max(0.42, Math.min(1, 1 - (focus - anchor) / (vh * 1.3)));
+            el.style.opacity = op.toFixed(3);
+
+            if (core) {
+              const active = fillBottom >= r.top + 13;
+              core.style.background = active ? "#c9a96e" : "rgba(201,169,110,0.3)";
+              core.style.transform = active ? "scale(1.3)" : "scale(1)";
+            }
+          }
+        };
+
+        const onScroll = () => {
+          if (!ticking) {
+            ticking = true;
+            requestAnimationFrame(update);
+          }
+        };
+
+        window.addEventListener("scroll", onScroll, { passive: true });
+        window.addEventListener("resize", onScroll);
+        update();
+
+        cleanup = () => {
+          window.removeEventListener("scroll", onScroll);
+          window.removeEventListener("resize", onScroll);
+        };
+      },
+      { rootMargin: "600px" }
+    );
+
+    io.observe(root);
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      io.disconnect();
+      cleanup?.();
     };
   }, []);
 
@@ -1173,43 +1223,61 @@ function AudienceSection() {
   // to the next as you scroll (a sibling of the opening "…is left alone" beat).
   // A persistent eyebrow, an NN/06 counter and the bottom rail keep your place.
   useEffect(() => {
+    const root = ref.current;
     const track = trackRef.current;
-    if (!track) return;
+    if (!root || !track) return;
     const fps = Array.from(track.querySelectorAll<HTMLElement>("[data-fp]"));
     const cur = curRef.current;
     const fill = fillRef.current;
     const N = fps.length;
     if (!N) return;
 
-    let ticking = false;
-    const update = () => {
-      ticking = false;
-      const vh = window.innerHeight;
-      const scrollable = track.offsetHeight - vh;
-      const p = scrollable > 0 ? Math.max(0, Math.min(1, -track.getBoundingClientRect().top / scrollable)) : 0;
-      const af = p * (N - 1); // active-float: which persona holds the screen
-      fps.forEach((el, i) => {
-        const op = Math.max(0, 1 - Math.abs(i - af) * 1.7);
-        el.style.opacity = op.toFixed(3);
-        el.style.transform = `translateY(calc(-50% + ${((i - af) * 38).toFixed(1)}px))`;
-        el.style.pointerEvents = op > 0.5 ? "auto" : "none";
-      });
-      if (cur) cur.textContent = `0${Math.min(N, Math.max(1, Math.round(af) + 1))}`.slice(-2);
-      if (fill) fill.style.width = `${(p * 100).toFixed(2)}%`;
-    };
+    let cleanup: (() => void) | undefined;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        io.disconnect();
 
-    const onScroll = () => {
-      if (!ticking) {
-        ticking = true;
-        requestAnimationFrame(update);
-      }
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    update();
+        let ticking = false;
+        const update = () => {
+          ticking = false;
+          const vh = window.innerHeight;
+          const scrollable = track.offsetHeight - vh;
+          const p = scrollable > 0 ? Math.max(0, Math.min(1, -track.getBoundingClientRect().top / scrollable)) : 0;
+          const af = p * (N - 1); // active-float: which persona holds the screen
+          fps.forEach((el, i) => {
+            const op = Math.max(0, 1 - Math.abs(i - af) * 1.7);
+            el.style.opacity = op.toFixed(3);
+            el.style.transform = `translateY(calc(-50% + ${((i - af) * 38).toFixed(1)}px))`;
+            el.style.pointerEvents = op > 0.5 ? "auto" : "none";
+          });
+          if (cur) cur.textContent = `0${Math.min(N, Math.max(1, Math.round(af) + 1))}`.slice(-2);
+          if (fill) fill.style.width = `${(p * 100).toFixed(2)}%`;
+        };
+
+        const onScroll = () => {
+          if (!ticking) {
+            ticking = true;
+            requestAnimationFrame(update);
+          }
+        };
+
+        window.addEventListener("scroll", onScroll, { passive: true });
+        window.addEventListener("resize", onScroll);
+        update();
+
+        cleanup = () => {
+          window.removeEventListener("scroll", onScroll);
+          window.removeEventListener("resize", onScroll);
+        };
+      },
+      { rootMargin: "600px" }
+    );
+
+    io.observe(root);
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      io.disconnect();
+      cleanup?.();
     };
   }, []);
 
