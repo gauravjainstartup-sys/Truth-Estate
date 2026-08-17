@@ -33,8 +33,9 @@ const DBG = process.env.BUILD_DEBUG === "1";
 type Row = Record<string, unknown>;
 
 async function readFixture(view: string): Promise<Row[] | null> {
+  if (typeof window !== "undefined") return null;
   try {
-    const fs = await import("fs/promises");
+    const fs = await import(/* webpackIgnore: true */ "fs/promises");
     const raw = await fs.readFile(`${process.env.SUPABASE_FIXTURES}/${view}.json`, "utf8");
     const rows = JSON.parse(raw) as Row[];
     console.log(`[supabase] fixtures · ${view} → ${rows.length} rows`);
