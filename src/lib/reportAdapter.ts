@@ -1522,11 +1522,15 @@ export function liveProjectIntel(
        a second verdict word that could contradict the label. */
     reason:
       composeVerdict({
+        // demand = the project's real absorption (same signal as the
+        // "inventory has gone — demand has been strong" bullet), NOT the
+        // fundamentals pillar, which can move the opposite way.
+        demand: velocityPct,
         location: numAt(ruleV, "pillar_scores.location_score"),
         developer: numAt(ruleV, "pillar_scores.developer_score"),
         legal: numAt(ruleV, "pillar_scores.legal_score"),
-        fundamentals: numAt(ruleV, "pillar_scores.fundamentals_score"),
         roi: numAt(ruleV, "pillar_scores.roi_score"),
+        fundamentals: numAt(ruleV, "pillar_scores.fundamentals_score"),
       }) ??
       textAt(ruleV, "verdict") ??
       row.insight ??
