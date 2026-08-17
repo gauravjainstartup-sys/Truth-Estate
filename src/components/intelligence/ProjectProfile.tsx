@@ -52,6 +52,7 @@ import ReportExplore from "./ReportExplore";
 import ReportAlternatives from "./ReportAlternatives";
 import ReportFeedback from "./ReportFeedback";
 import ReportHomes from "./ReportHomes";
+import ExecutiveDossierTeaser from "./ExecutiveDossierTeaser";
 import { ReportStaticContext } from "./reportStatic";
 import { basePath, homeHref } from "@/lib/site";
 import { recordReportView, markOwned, unmarkOwned, isOwned } from "@/lib/officeReports";
@@ -919,6 +920,9 @@ export default function ProjectProfile({
           <div className="min-w-0 xl:col-start-1 xl:row-start-2 mt-10 xl:mt-0">
             {/* Your Fit — the personal counterpart to the Truth Score, leading the body */}
             <MatchScore project={p} variant="band" />
+
+            {/* 11/10 Executive Telemetry Index & Proprietary Teaser Bento (Scrolls 1 to 2) */}
+            <ExecutiveDossierTeaser p={p} locked={locked} onUnlock={openUnlock} />
 
             {/* The short answer — structured executive read */}
             {(() => {
