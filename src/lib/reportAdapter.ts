@@ -25,6 +25,7 @@ import { corridorKey } from "./journey";
 import type { DeveloperIntel, FinBand, FinKey, FinRating, LegalCase } from "./developers";
 import { developerSlugOf, type ProjectIntel, type ProjectOps, type RoiModel, type ScoreInputKey } from "./projects";
 import { computeRoi, DEFAULT_ROI_PARAMS } from "./analytics/roiEngine";
+import { composeVerdict } from "./verdictComposer";
 import mediaManifest from "./live-media.manifest.json";
 
 /* Media now arrives as Supabase Storage URLs, which pass straight through.
@@ -1505,19 +1506,28 @@ export function liveProjectIntel(
     recommendation,
     confidence,
     tags,
-    /* The rules engine's verdict phrase leads — "Institution-Grade with
-       Prime Location Tailwinds" — because it is the only one of these that
-       is an assessment. `insight` came first and is a stat restatement on
-       91 of the 97 rows ("Strong Buy project. 64% construction complete.
-       1137/1137 units sold."), which both repeated the recommendation
-       printed beside it and restated the two figures already shown as
-       pointers underneath.
+    /* Composed per project from the same pillar_scores that build the Truth
+       Score (verdictComposer) — each report names its own two strongest
+       pillars and its one genuine watchpoint, so no two reports with
+       different data read alike. This replaces the rules engine's
+       `verdict` phrase, whose vocabulary collapsed ~100 of the reports onto
+       "High Conviction … Prime Location Tailwinds" and, per the note at the
+       top of this file, arrived broken on roughly two in three of them.
 
-       riskVerdictCleaned is dropped from the chain entirely: it holds a
-       JSON array, not prose, so the one row that ever fell through to it
-       would have rendered `[{"tag":"Debt Servicing Risk"…}]` as its
-       headline. */
+       The DB `verdict` phrase remains the first fallback (for a row whose
+       scores are missing), then `insight`, then the generic scored line.
+       `riskVerdictCleaned` stays out of the chain — it holds a JSON array,
+       not prose. The recommendation label ("Strong Buy" / "Watchlist") is
+       printed beside this, so the composed line is specifics only and never
+       a second verdict word that could contradict the label. */
     reason:
+      composeVerdict({
+        location: numAt(ruleV, "pillar_scores.location_score"),
+        developer: numAt(ruleV, "pillar_scores.developer_score"),
+        legal: numAt(ruleV, "pillar_scores.legal_score"),
+        fundamentals: numAt(ruleV, "pillar_scores.fundamentals_score"),
+        roi: numAt(ruleV, "pillar_scores.roi_score"),
+      }) ??
       textAt(ruleV, "verdict") ??
       row.insight ??
       `Independently scored ${Math.round(row.truthScore ?? 0)}/100 by our pipeline from RERA filings and public records.`,
