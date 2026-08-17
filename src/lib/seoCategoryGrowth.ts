@@ -24,12 +24,20 @@ const ANGLES = [
   "CURIOSITY",
 ] as const;
 
-// Create lookup map for pre-computed 97 curated project SEO overrides
+// Create lookup map for pre-computed 107 curated project SEO overrides
 const overrideMap = new Map<string, { title: string; desc: string; emotion: string }>();
+
+// The override key is normalised the same way on both sides of the lookup:
+// trimmed, internal runs of whitespace collapsed to one, lowercased. The
+// snapshot `name` these overrides were generated from can carry a double
+// space (e.g. "Birla Navya - Avik  (PHASE-2)") that the runtime project name
+// renders with a single space — without collapsing, that one report would
+// miss its curated title and fall through to the dynamic engine.
+const normKey = (s: string) => s.trim().replace(/\s+/g, " ").toLowerCase();
 
 (seoOverrides as Array<any>).forEach((item) => {
   if (item.projectName) {
-    overrideMap.set(item.projectName.trim().toLowerCase(), {
+    overrideMap.set(normKey(item.projectName), {
       title: item.seoTitle,
       desc: item.metaDescription,
       emotion: item.primaryEmotion,
@@ -49,7 +57,7 @@ export function getProjectSeoMeta(input: ProjectSeoInput): ProjectSeoOutput {
   const pr = input.minPriceCr;
 
   // 1. Check if exact pre-curated override exists
-  const key = p.toLowerCase();
+  const key = normKey(p);
   if (overrideMap.has(key)) {
     const matched = overrideMap.get(key)!;
     const title = matched.title.length > 60 ? matched.title.slice(0, 57) + "..." : matched.title;
