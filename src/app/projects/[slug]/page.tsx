@@ -296,10 +296,6 @@ function productLdFor(p: { name: string; developer?: string | null; reason?: str
           review: {
             "@type": "Review",
             name: `Truth Estate Assessment — ${p.name}`,
-            itemReviewed: {
-              "@type": "Product",
-              name: p.name,
-            },
             reviewRating: {
               "@type": "Rating",
               ratingValue: p.truthScore,
@@ -317,6 +313,14 @@ function productLdFor(p: { name: string; developer?: string | null; reason?: str
               url: SITE_URL,
             },
             ...(p.reason ? { reviewBody: p.reason } : {}),
+          },
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: p.truthScore,
+            bestRating: 100,
+            worstRating: 0,
+            ratingCount: 1,
+            reviewCount: 1,
           },
         }
       : {}),
