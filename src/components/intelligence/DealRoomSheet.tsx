@@ -28,6 +28,7 @@ import { track } from "@/lib/events";
 import { saveLead, isSignedIn, loadAccount } from "@/lib/journey";
 import { getSession } from "@/lib/phoneAuth";
 import { sendOtp, verifyOtp, OTP_LENGTH } from "@/lib/shortlistAuth";
+import { saveMandate } from "@/lib/dealRoomMandate";
 import OtpDigits from "@/components/auth/OtpDigits";
 
 type Step = "details" | "target" | "verify" | "done";
@@ -116,6 +117,28 @@ export default function DealRoomSheet({
       ...(projectSlug ? { projectSlug } : {}), projectName,
       props: { via, source: "report", targetCr: Number(targetCr.toFixed(2)) },
     });
+    /* Mirror the mandate locally so /deal-room/track can show it and every Deal
+       Room surface on this project flips to "created · track". Convenience only
+       — the contact_lead above is the record. The fields the lighter report flow
+       doesn't ask are confirmed on the advisor call, stated honestly as such. */
+    try {
+      saveMandate({
+        city: "Gurugram",
+        project: projectName,
+        config: "",
+        unit: "",
+        stage: "To confirm on the call",
+        target: `${targetCr.toFixed(2)} Cr`,
+        timeline: "To confirm on the call",
+        funding: "To confirm on the call",
+        offer: "",
+        name: name.trim() || acct?.name || "",
+        phone: via === "otp" ? `${dial} ${num}`.trim() : (s?.phone ?? ""),
+        via: "otp",
+        submittedAt: Date.now(),
+      });
+      window.dispatchEvent(new Event("te:dealroom:created"));
+    } catch { /* the mirror must never block the confirmation */ }
     setStep("done");
   }
 
@@ -179,7 +202,7 @@ export default function DealRoomSheet({
                 )}
                 <ol className="mt-6 space-y-3">
                   {[
-                    "Name your target price — anonymously.",
+                    "Set your target price — anonymously.",
                     "Verified brokers, owners & developers send written offers in 2–4 days.",
                     "You pick the best. Walk away any time; ₹0 to start.",
                   ].map((t, i) => (
@@ -287,7 +310,7 @@ export default function DealRoomSheet({
 
           {/* footer CTA */}
           <div className="shrink-0 border-t border-white/10 px-6 py-4">
-            {step === "details" && <button onClick={() => setStep("target")} className={primary} disabled={!deal}>Name your target <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span></button>}
+            {step === "details" && <button onClick={() => setStep("target")} className={primary} disabled={!deal}>Set your target <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span></button>}
             {step === "target" && (
               <div className="flex items-center gap-3">
                 <button onClick={() => setStep("details")} className="shrink-0 rounded-lg border border-white/15 px-4 py-3.5 text-[0.86rem] font-medium text-white/70 transition-colors hover:bg-white/5">Back</button>

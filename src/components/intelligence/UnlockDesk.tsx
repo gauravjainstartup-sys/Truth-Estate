@@ -29,7 +29,7 @@ const INCLUDED: { t: string; bonus?: boolean }[] = [
   { t: "The full 5-pillar forensic audit" },
   { t: "Price journey & 5-year ROI model" },
   { t: "The verdict — our call for your budget" },
-  { t: "A 1:1 call with the founder who signed it off", bonus: true },
+  { t: "A 1:1 call with the founder", bonus: true },
 ];
 
 export default function UnlockDesk({ onUnlock }: { onUnlock: () => void }) {
@@ -41,7 +41,7 @@ export default function UnlockDesk({ onUnlock }: { onUnlock: () => void }) {
      Reactive, so it corrects when a claim updates the cache. */
   const firstFree = useFirstFree();
   return (
-    <div className="rounded-2xl border border-[#1a1a1a]/10 bg-[#FBF8F2] p-6">
+    <div className="rounded-2xl border border-[#1a1a1a]/10 bg-[#FBF8F2] p-5">
       {/* founder as a trust seal — not a free-call offer */}
       <div className="flex items-center gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -53,18 +53,18 @@ export default function UnlockDesk({ onUnlock }: { onUnlock: () => void }) {
         </div>
       </div>
 
-      <p className="mt-4 font-serif text-[1.32rem] font-medium leading-[1.24] text-[#1a1a1a]">
+      <p className="mt-3.5 font-serif text-[1.28rem] font-medium leading-[1.22] text-[#1a1a1a]">
         I&rsquo;ve read this file. Unlock what I found.
       </p>
 
       {/* value stack — the read includes the call (the reframe) */}
-      <ul className="mt-4 space-y-2">
+      <ul className="mt-3.5 space-y-1.5">
         {INCLUDED.map((it) => (
           <li key={it.t} className="flex items-start gap-2.5 text-[0.8rem] leading-snug text-[#1a1a1a]/75">
             <span aria-hidden className="mt-[1px] shrink-0 text-[#1e6b45]">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5"><path d="M20 6 9 17l-5-5" /></svg>
             </span>
-            <span>
+            <span className={it.bonus ? "whitespace-nowrap" : undefined}>
               {it.t}
               {it.bonus && <span className="ml-1.5 rounded-full bg-[#9a7a2e]/12 px-1.5 py-[1px] text-[0.56rem] font-bold uppercase tracking-[0.1em] text-[#9a7a2e]">included</span>}
             </span>
@@ -74,7 +74,7 @@ export default function UnlockDesk({ onUnlock }: { onUnlock: () => void }) {
 
       <button
         onClick={onUnlock}
-        className="group mt-5 block w-full rounded-xl bg-[#1e6b45] px-5 py-3 text-center text-white transition-colors hover:bg-[#238c55]"
+        className="group mt-4 block w-full rounded-xl bg-[#1e6b45] px-5 py-3 text-center text-white transition-colors hover:bg-[#238c55]"
       >
         <span className="inline-flex items-center gap-1.5 text-[0.85rem] font-semibold">
           {firstFree ? "Unlock First Report at ₹0" : <>Unlock the full read — {inr(read.inr)}</>}
@@ -88,10 +88,6 @@ export default function UnlockDesk({ onUnlock }: { onUnlock: () => void }) {
             </span>
           )}
       </button>
-
-      <p className="mt-5 border-t border-[#1a1a1a]/8 pt-3.5 text-[0.64rem] font-light leading-[1.5] text-[#1a1a1a]/40">
-        Priced once — no subscription. Independent: no inventory, no builder commission.
-      </p>
     </div>
   );
 }

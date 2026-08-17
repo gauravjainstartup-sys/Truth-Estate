@@ -1513,7 +1513,7 @@ export default function ProjectProfile({
           card / desktop pill). Docks after the reader is engaged; dismiss
           quiets it for 7 days. Hidden while the in-page band is on screen. */}
       {!sample && !embedded && (p.budget?.[0] ?? 0) > 0 && (
-        <DealRoomStickyBar ticketCr={p.budget?.[0] ?? 0} onStart={() => setDealRoomOpen(true)} />
+        <DealRoomStickyBar ticketCr={p.budget?.[0] ?? 0} projectName={p.name} onStart={() => setDealRoomOpen(true)} />
       )}
 
       {/* The Deal Room sheet — the whole flow (details → target → contact →
