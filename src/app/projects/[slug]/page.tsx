@@ -296,10 +296,10 @@ function productLdFor(p: { name: string; developer?: string | null; reason?: str
           review: {
             "@type": "Review",
             name: `Truth Estate Assessment — ${p.name}`,
-            itemReviewed: {
-              "@type": "Product",
-              name: p.name,
-            },
+            // NOTE: no `itemReviewed` here — this Review is nested inside the
+            // Product it reviews, so the reviewed item is implicit. Setting it
+            // made Google parse the inner node as a phantom 2nd Product with no
+            // review, triggering the "offers/review/aggregateRating" warning.
             reviewRating: {
               "@type": "Rating",
               ratingValue: p.truthScore,
