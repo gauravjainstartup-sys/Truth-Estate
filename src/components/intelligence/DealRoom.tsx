@@ -14,29 +14,43 @@
      • rail   — compact, under the unlock/desk card in the desktop rail.
      • sticky — a mobile bottom bar that docks after the reader is engaged.
 
-   Every CTA opens the Deal Room sheet (the whole flow lives there). Figures
-   are ILLUSTRATIVE, off the project's filed entry price. Motion is one-time
-   on scroll-in and disabled under prefers-reduced-motion.
+   Every CTA opens the Deal Room sheet (the whole flow lives there).
+
+   HONEST BY DESIGN — matches /deal-room. There is no live marketplace yet;
+   the concierge desk runs each mandate by hand. So this surface shows NO
+   fabricated auction (no "sellers competing", no countdown, no invented
+   live bids). The only figures shown are the project's OWN filed asking
+   price and the 5–10% band our buyers typically settle under — a stated
+   methodology claim, consistent with the report and with /deal-room, never
+   an invented number. Anything else would contradict the truth brand.
    ════════════════════════════════════════════════════════════════ */
 
 import { useEffect, useRef, useState } from "react";
 
 export const DEAL_ROOM_BAND_ID = "deal-room";
 
-/* ── Shared deal math (also used by the sheet) ──────────────────── */
-export type Bid = { k: string; who: string; cr: number };
-export type Deal = { market: number; bids: Bid[]; best: number; saveCr: number };
+/* ── Shared deal math (also used by the sheet) ──────────────────────
+   Anchored on the project's own filed entry price (ticketCr). The target
+   band is the 5–10% our buyers typically settle under asking — the same
+   methodology /deal-room states. No fabricated bids. */
+export type Deal = {
+  market: number;    // the project's filed asking / entry price (Cr)
+  targetLow: number; // 10% under — the ambitious end
+  targetHigh: number;// 5% under — the conservative end
+  saveLow: number;   // 5% of asking
+  saveHigh: number;  // 10% of asking
+};
 
 export function computeDeal(ticketCr: number): Deal | null {
   if (!(ticketCr > 0)) return null;
   const market = ticketCr;
-  const bids: Bid[] = [
-    { k: "B", who: "Verified broker", cr: market * 0.965 },
-    { k: "O", who: "Direct owner", cr: market * 0.95 },
-    { k: "P", who: "Channel partner", cr: market * 0.935 },
-  ];
-  const best = Math.min(...bids.map((b) => b.cr));
-  return { market, bids, best, saveCr: market - best };
+  return {
+    market,
+    targetLow: market * 0.9,
+    targetHigh: market * 0.95,
+    saveLow: market * 0.05,
+    saveHigh: market * 0.1,
+  };
 }
 export const cr = (v: number) => `₹${v.toFixed(2)} Cr`;
 export const save = (c: number) => {
@@ -44,7 +58,8 @@ export const save = (c: number) => {
   return l < 100 ? `₹${Math.round(l)} L` : `₹${(Math.round(c * 10) / 10).toFixed(1)} Cr`;
 };
 /* The FOMO figure: what the read is worth at the table — the 5–10% band the
-   desk settles across, applied to this project's entry ticket. */
+   desk settles across, applied to this project's entry ticket. Stated as
+   "typical", never guaranteed. */
 export const potentialRange = (market: number) => `${save(market * 0.05)} – ${save(market * 0.1)}`;
 export function dealPotentialHighCr(ticketCr: number): number {
   const d = computeDeal(ticketCr);
@@ -63,21 +78,14 @@ const COPY = {
 };
 
 const STYLE = `
-  .tdr .tdr-pulse{position:relative;}
-  .tdr .tdr-pulse::before{content:"";position:absolute;left:-2px;top:50%;transform:translateY(-50%);width:6px;height:6px;border-radius:50%;background:#5fd39a;box-shadow:0 0 0 0 rgba(95,211,154,.5);animation:tdr-pulse 2.4s ease-out infinite;}
-  @keyframes tdr-pulse{0%{box-shadow:0 0 0 0 rgba(95,211,154,.5)}70%{box-shadow:0 0 0 7px rgba(95,211,154,0)}100%{box-shadow:0 0 0 0 rgba(95,211,154,0)}}
-  .tdr .tdr-bid{transition:opacity .55s cubic-bezier(.2,.6,.2,1),transform .55s cubic-bezier(.2,.6,.2,1);}
-  .tdr.is-armed .tdr-bid{opacity:0;transform:translateY(8px);}
-  .tdr.is-armed[data-in] .tdr-bid{opacity:1;transform:none;}
-  .tdr .tdr-fill{transform-origin:right;transition:transform .8s cubic-bezier(.2,.6,.2,1);}
-  .tdr.is-armed .tdr-fill{transform:scaleX(1);}
+  .tdr .tdr-fill{transform-origin:left;transition:transform .8s cubic-bezier(.2,.6,.2,1);}
+  .tdr.is-armed .tdr-fill{transform:scaleX(0);}
   .tdr.is-armed[data-in] .tdr-fill{transform:scaleX(var(--w));}
   .tdr .tdr-rise{transition:opacity .6s ease,transform .6s cubic-bezier(.2,.6,.2,1);}
   .tdr.is-armed .tdr-rise{opacity:0;transform:translateY(10px);}
   .tdr.is-armed[data-in] .tdr-rise{opacity:1;transform:none;}
   @media (prefers-reduced-motion:reduce){
-    .tdr .tdr-pulse::before{animation:none}
-    .tdr .tdr-bid,.tdr .tdr-rise{opacity:1!important;transform:none!important;transition:none!important;}
+    .tdr .tdr-rise{opacity:1!important;transform:none!important;transition:none!important;}
     .tdr .tdr-fill{transform:scaleX(var(--w))!important;transition:none!important;}
   }
 `;
@@ -99,48 +107,55 @@ function useReveal<T extends HTMLElement>() {
   return ref;
 }
 
-/* ── The live auction card — inset on the dark band ────────────────── */
-export function AuctionCard({ ticketCr, compact = false }: { ticketCr: number; compact?: boolean }) {
+/* ── The deal card — honest: the project's filed asking price, the band
+   buyers typically settle at, and what that keeps in your pocket. No live
+   auction, no invented bids. Inset on the dark band. ─────────────────── */
+export function DealCard({ ticketCr, compact = false }: { ticketCr: number; compact?: boolean }) {
   const deal = computeDeal(ticketCr);
   if (!deal) return null;
-  const { market, bids, best, saveCr } = deal;
+  const { market, targetLow, targetHigh, saveLow, saveHigh } = deal;
+  const typicalMid = (targetLow + targetHigh) / 2;
+  const wTypical = market > 0 ? typicalMid / market : 1;
   return (
     <div className={`rounded-2xl border border-white/12 bg-white/[0.055] ${compact ? "p-4" : "p-5"} backdrop-blur-sm`}>
       <div className="flex items-center justify-between text-[0.62rem] font-semibold uppercase tracking-[0.12em]">
-        <span className="tdr-pulse pl-3 text-[#5fd39a]">3 sellers competing</span>
-        <span className="text-white/40">2 days left</span>
+        <span className="text-[#c9a96e]">How buyers win here</span>
+        <span className="text-white/35">on the record</span>
       </div>
+
+      {/* the project's own filed asking price */}
+      <div className={compact ? "mt-3" : "mt-4"}>
+        <div className="flex items-baseline justify-between">
+          <span className="text-[0.72rem] font-light text-white/50">Current asking</span>
+          <span className="font-mono text-[0.9rem] text-white/70">{cr(market)}</span>
+        </div>
+        <span className="mt-1.5 block h-[6px] overflow-hidden rounded-full bg-white/10">
+          <span className="tdr-fill block h-full rounded-full" style={{ ["--w" as string]: "1", background: "#c9a96e" }} />
+        </span>
+      </div>
+
+      {/* the band buyers typically settle at */}
+      <div className="mt-3">
+        <div className="flex items-baseline justify-between">
+          <span className="text-[0.72rem] font-light text-white/50">Where buyers typically settle</span>
+          <span className="font-mono text-[0.9rem] font-semibold text-[#5fd39a]">{`₹${targetLow.toFixed(2)}–${targetHigh.toFixed(2)} Cr`}</span>
+        </div>
+        <span className="mt-1.5 block h-[6px] overflow-hidden rounded-full bg-white/10">
+          <span className="tdr-fill block h-full rounded-full" style={{ ["--w" as string]: wTypical.toFixed(3), background: "#5fd39a" }} />
+        </span>
+      </div>
+
+      {/* what that keeps in your pocket */}
+      <div className="mt-3.5 flex items-baseline justify-between border-t border-white/10 pt-3">
+        <span className="whitespace-nowrap text-[0.62rem] font-medium uppercase tracking-[0.1em] text-white/45">You keep</span>
+        <span className="whitespace-nowrap font-mono text-[1.05rem] font-semibold text-[#5fd39a]">{save(saveLow)} – {save(saveHigh)}</span>
+      </div>
+
       {!compact && (
-        <div className="mt-3 flex items-baseline justify-between border-b border-dashed border-white/12 pb-2.5">
-          <span className="text-[0.72rem] font-light text-white/45">Current market</span>
-          <span className="font-mono text-[0.92rem] text-white/70">{cr(market)}</span>
-        </div>
+        <p className="mt-2.5 text-[0.62rem] font-light leading-[1.5] text-white/40">
+          The 5–10% our buyers typically settle under asking. Your Deal Room targets <span className="text-white/60">your</span> number — sellers send written offers, you pick the best.
+        </p>
       )}
-      <div className={`${compact ? "mt-2.5" : "mt-3"} space-y-2`}>
-        {bids.map((b, i) => {
-          const w = market > 0 ? b.cr / market : 1;
-          const isBest = b.cr === best;
-          return (
-            <div key={b.k} className="tdr-bid flex items-center gap-2.5" style={{ transitionDelay: `${i * 90}ms` }}>
-              <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[0.6rem] font-bold ${isBest ? "bg-[#2f9a68] text-white" : "bg-white/10 text-white/60"}`}>{b.k}</span>
-              {!compact && <span className="w-24 shrink-0 truncate text-[0.72rem] font-light text-white/55">{b.who}</span>}
-              <span className="relative h-[6px] flex-1 overflow-hidden rounded-full bg-white/10">
-                <span className="tdr-fill absolute inset-y-0 left-0 w-full rounded-full" style={{ ["--w" as string]: w.toFixed(3), background: isBest ? "#5fd39a" : "#c9a96e" }} />
-              </span>
-              <span className={`w-[4.6rem] shrink-0 text-right font-mono text-[0.8rem] ${isBest ? "font-semibold text-[#5fd39a]" : "text-white/70"}`}>{cr(b.cr)}</span>
-            </div>
-          );
-        })}
-      </div>
-      <div className="mt-3 border-t border-white/10 pt-2.5">
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="shrink-0 whitespace-nowrap text-[0.62rem] font-medium uppercase tracking-[0.1em] text-white/45">Best so far</span>
-          <span className="whitespace-nowrap font-mono text-[1.05rem] font-semibold text-[#5fd39a]">{cr(best)}</span>
-        </div>
-        <div className="mt-1.5 flex justify-end">
-          <span className="whitespace-nowrap rounded-full bg-[#5fd39a]/15 px-2.5 py-0.5 font-mono text-[0.66rem] font-bold text-[#5fd39a]">−{save(saveCr)} vs market</span>
-        </div>
-      </div>
     </div>
   );
 }
@@ -188,12 +203,7 @@ export default function DealRoom({
               <span className="whitespace-nowrap font-serif text-[1.35rem] font-semibold leading-none text-[#e3c07f]">{potRange}</span>
             </div>
           )}
-          {deal && (
-            <div className="mt-2.5 flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.05] px-3 py-1.5">
-              <span className="tdr-pulse pl-3 text-[0.52rem] font-semibold uppercase tracking-[0.1em] text-[#5fd39a]">3 competing</span>
-              <span className="whitespace-nowrap font-mono text-[0.78rem] font-semibold text-[#5fd39a]">best {cr(deal.best)}</span>
-            </div>
-          )}
+          <p className="mt-2 text-[0.66rem] font-light leading-snug text-white/50">{COPY.subRail}</p>
           <button onClick={onStart} className="group mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#2f9a68] px-5 py-2.5 text-[0.84rem] font-semibold text-white transition-colors hover:bg-[#38b37c]">
             {COPY.button} <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
           </button>
@@ -229,7 +239,7 @@ export default function DealRoom({
             <p className="text-[0.72rem] font-light leading-[1.5] text-white/45">{COPY.fine}</p>
           </div>
         </div>
-        <AuctionCard ticketCr={ticketCr} />
+        <DealCard ticketCr={ticketCr} />
       </div>
     </div>
   );
