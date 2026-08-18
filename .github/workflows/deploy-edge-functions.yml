@@ -1,5 +1,13 @@
 name: Deploy Supabase Edge Functions
 
+# ⚠️ TEMPORARY (reverted immediately after use): reduced to deploy ONLY
+# capture-lead. This branch has diverged from main on chat-signin /
+# google-signin / twilio-otp (main is ahead there), so the usual all-functions
+# deploy from THIS branch would revert main's newer auth work in production.
+# capture-lead on this branch is a strict superset of main's (newer CORS + all
+# intents incl. compare-unlock / registered), so it alone is safe to ship.
+# The full step list is restored by the git revert that follows this commit.
+
 on:
   push:
     branches: [main]
@@ -10,19 +18,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # ONE env for the whole job, not one per step.
-    #
-    # Every deploy line used to carry its own two-line `env:` block. That
-    # reads as boilerplate right up until something is inserted in the
-    # middle of a pair — which is exactly what happened adding the Razorpay
-    # functions: the new steps landed between `phone-known`'s `run` and its
-    # `env`, so phone-known silently lost its token, one new step had none,
-    # and the other inherited a block that was never meant for it. Nothing
-    # about the diff looked wrong.
-    #
-    # At the job level the credential cannot be detached from the step that
-    # needs it, and adding a function is one line with nothing to get
-    # between.
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
     steps:
@@ -30,56 +25,4 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: latest
-      # Deployed individually rather than with a bare `deploy` so a new
-      # function has to be added here consciously — and so one function
-      # failing to bundle cannot silently skip the others.
-      - run: supabase functions deploy challenge-router --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-      # Deal Room step 2: the project's current resale price, grounded in live
-      # Google Search (gemini-2.5-pro, thinking on) — reuses GEMINI_API_KEY.
-      # --no-verify-jwt: the browser calls it with the anon key like the other
-      # public functions; it holds no secret beyond the model key it owns.
-      - run: supabase functions deploy resale-price --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
       - run: supabase functions deploy capture-lead --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-      - run: supabase functions deploy chat-signin --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-      # Twilio Verify for non-+91 numbers. --no-verify-jwt: the browser calls
-      # it pre-session (it is what mints the session), authorising inside via
-      # the Twilio check, exactly like chat-signin.
-      - run: supabase functions deploy twilio-otp --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-      # Resolves a Google login to the ONE canonical account (by google_sub)
-      # and mints its session, and links a Google identity onto a phone
-      # account. --no-verify-jwt: it verifies the Google token itself, and the
-      # link path verifies the phone account's HS256 signature inside.
-      - run: supabase functions deploy google-signin --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-      - run: supabase functions deploy phone-known --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-      # Razorpay. --no-verify-jwt because the browser calls these with the
-      # anon key like every other public function; the real authorisation
-      # is the verified anon→user claim inside, and for the grant, the HMAC
-      # signature that only Razorpay and this function can produce.
-      - run: supabase functions deploy razorpay-order --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-      - run: supabase functions deploy razorpay-verify --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-      # First report free for a new profile. --no-verify-jwt like the other
-      # Razorpay paths: the browser calls it with the anon key; the real
-      # authorisation is the verified anon→user claim inside, and the atomic
-      # first_free_used flag (migration 0018) is what makes "one free" safe.
-      # Needs migration 0018 applied before it can grant.
-      - run: supabase functions deploy claim-free-unlock --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-      - run: supabase functions deploy track --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-      - run: supabase functions deploy brief --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-      - run: supabase functions deploy claim-events --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-      - run: supabase functions deploy entitlements --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-      - run: supabase functions deploy billing --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-      # Public price list for the paywall/pricing UI. --no-verify-jwt: the
-      # browser reads it with no key at all, and a price is not a secret.
-      - run: supabase functions deploy pricing --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-      # The browser calls this one too (src/lib/rerank.ts) and it was live
-      # while absent from this list, so its source drifted out of CI's reach:
-      # editing the file here changed nothing in production and nothing said
-      # so. It fails soft — a blocked call just leaves the deterministic
-      # shortlist order standing — which is exactly why it could go unnoticed.
-      - run: supabase functions deploy shortlist-rerank --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
-      # NOT deployed here, deliberately: omni-router. It currently 404s on
-      # the project — never deployed — and the canvas treats that as its
-      # normal fallback (src/lib/router.ts resolves any failure to null).
-      # Adding the line would turn the Ask router on for the first time,
-      # which is a product decision and needs ANTHROPIC_API_KEY set first,
-      # not a side effect of a CORS fix.
