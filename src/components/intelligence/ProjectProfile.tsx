@@ -236,6 +236,13 @@ export default function ProjectProfile({
   const [unlockFocus3D, setUnlockFocus3D] = useState(false);
   const [threeDAccess, setThreeDAccess] = useState(false);
   const [challengeOpen, setChallengeOpen] = useState(false);
+  /* Staging-preview review shim: on a tagged Cloud Run revision ONLY (host
+     carries a "tag---" prefix — never truthestate.in or the bare production
+     .run.app URL), clicking unlock reveals the paid report + 3D locally, with
+     no backend, OTP or payment, so the founder can review both states on the
+     preview link (the live auth CORS allowlist doesn't admit the tagged
+     origin). REMOVE before promoting this branch to production. */
+  const [demoUnlocked, setDemoUnlocked] = useState(false);
   const [dealRoomOpen, setDealRoomOpen] = useState(false);
   /* Re-check when the server's answer lands, and when the session changes.
      Mount alone is too early: fetchEntitlements is still in flight, so a
@@ -344,7 +351,11 @@ export default function ProjectProfile({
   };
 
   const live = useLiveVitals(p.name);
-  const locked = !sample && !readAccess;
+  /* Only a tagged Cloud Run preview revision satisfies this — production
+     (truthestate.in and the bare .run.app URL) never carries a "---" host, so
+     the paywall is untouched there. Pairs with demoUnlocked above. */
+  const stagingPreview = typeof window !== "undefined" && window.location.hostname.includes("---");
+  const locked = !sample && !readAccess && !(stagingPreview && demoUnlocked);
   const SAMPLE_HREF = `${basePath}/projects/sample-read`;
   // "Get Independent Advice" from a report is about THIS project — open the
   // consultation with the project as its source (the advisor preps for it),
@@ -373,6 +384,9 @@ export default function ProjectProfile({
   // re-open — only genuine "unlock the full read" buttons.
   const openUnlock = () => {
     track("unlock_full_read_clicked", { projectSlug: p.slug, projectName: p.name });
+    // Staging preview only: reveal the paid report + 3D in place — no modal,
+    // no backend, no payment. Inert on production (stagingPreview is false).
+    if (stagingPreview) { setDemoUnlocked(true); return; }
     setUnlockOpen(true);
   };
   // The page's primary CTA swaps by lock state: a locked read leads with the
@@ -1474,7 +1488,7 @@ export default function ProjectProfile({
         locked={locked}
         onUnlock={() => { setUnlockFocus3D(false); setUnlockOpen(true); }}
         has3DModel={has3D}
-        has3DAccess={threeDAccess}
+        has3DAccess={threeDAccess || (stagingPreview && demoUnlocked)}
         onUnlock3D={() => { setUnlockFocus3D(true); setUnlockOpen(true); }}
       />
 
