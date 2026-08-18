@@ -460,9 +460,18 @@ export default function ProjectProfile({
 
   const con = ops?.construction;
 
+  // News & Updates (the "wire") is free to read; its index entry and its
+  // section render only when the project actually has published updates.
+  const hasWire = (p.wireItems?.length ?? 0) > 0;
+  /* TEMP production gate for News & Updates — preview hosts only while the
+     founder reviews it on staging. Flip this ONE line to `true` to launch the
+     section (and its index entry) to production. */
+  const wireLive = stagingPreview;
+
   // The free chapters a guest always sees; when locked, every other section
-  // collapses to a single "Unlock full read" jump.
-  const FREE_IDS = new Set(["match", "vitals", "masterplan", "homes", "tower-intel", "documents", "anatomy"]);
+  // collapses to a single "Unlock full read" jump. "news" is free-to-read too,
+  // so it survives the locked filter.
+  const FREE_IDS = new Set(["match", "vitals", "masterplan", "homes", "tower-intel", "documents", "anatomy", "news"]);
   const toc = [
     { id: "match", label: "Match score", show: true },
     { id: "vitals", label: "Vitals", show: true },
@@ -471,12 +480,19 @@ export default function ProjectProfile({
     { id: "tower-intel", label: "Sun & Vastu 3D", show: true },
     { id: "documents", label: "Brochure & payment plan", show: hasAnyDoc },
     { id: "anatomy", label: "Truth Score anatomy", show: true },
+    // Locked readers meet News & Updates right after Chapter II (the last
+    // freely-readable thing before the paywall), so its index entry sits here.
+    { id: "news", label: "News & Updates", show: locked && hasWire && wireLive },
     { id: "developer", label: "Developer DNA", show: !!dev },
     { id: "construction", label: "Construction & sales", show: !!con },
     { id: "location", label: "Location intelligence", show: locIntel },
     { id: "legal", label: "Legal & compliance", show: true },
     { id: "usps", label: "Project USPs", show: usps.length > 0 },
     { id: "roi", label: "Price & returns", show: !!roi },
+    // Unlocked readers meet News & Updates between Chapter III and IV, so for
+    // them the index entry sits here instead. Only one of the two "news"
+    // entries survives the filter — they gate on opposite `locked`.
+    { id: "news", label: "News & Updates", show: !locked && hasWire && wireLive },
     { id: "verdict", label: "The verdict", show: true },
     { id: "strengths", label: "Strengths & watch-outs", show: p.strengths.length > 0 || p.watchouts.length > 0 },
     { id: "negotiate", label: "Negotiate", show: levers.length > 0 },
@@ -971,15 +987,6 @@ export default function ProjectProfile({
               </div>
             )}
 
-            {/* Project Intelligence Wire — the chronological forensic ground-events
-                log. PUBLISHED dispatches only (public intel), shown to guests and
-                paid readers alike; self-hides when a project has no wire yet.
-                TEMPORARY: gated to preview hosts (stagingPreview) so it can be
-                reviewed on the staging link while it stays hidden on production
-                (truthestate.in never carries a "---" host). Remove the
-                `stagingPreview &&` gate to launch the wire to production. */}
-            {stagingPreview && <ProjectIntelligenceWire items={p.wireItems} projectName={p.name} />}
-
             <Chapter n={chap()} title="What are you actually buying?" framing="The facts of the asset — before we weigh trust." />
 
             {/* Match Score now leads the report body as the "Your Fit" band (above) */}
@@ -1162,6 +1169,12 @@ export default function ProjectProfile({
               <ReportAnatomy p={p} locked={locked} onUnlock={openUnlock} />
             </Section>
 
+            {/* News & Updates — for a LOCKED reader this is the last thing after
+                Chapter II: freely readable (no sign-up), load-more, and the watch
+                banner is the optional sign-up. Preview-gated (wireLive) until the
+                founder approves the launch to production. */}
+            {wireLive && locked && hasWire && <ProjectIntelligenceWire items={p.wireItems} projectName={p.name} />}
+
             {/* ── The paywall boundary. From Chapter II · Pillar I (Developer DNA)
                down, the analysis is paid: a guest sees nothing here (the dossier
                that names it, and the unlock, has already led the page up top);
@@ -1209,6 +1222,13 @@ export default function ProjectProfile({
                 <ReportPrice p={p} sample={sample} />
               </div>
             )}
+
+            {/* News & Updates — for an UNLOCKED reader it sits between Chapter III
+                (the money) and Chapter IV (the verdict). This block is already
+                inside the `locked ? null` fragment, so it is paid-readers-only;
+                the locked reader saw it after Chapter II above. Preview-gated
+                (wireLive) until launch. */}
+            {wireLive && hasWire && <ProjectIntelligenceWire items={p.wireItems} projectName={p.name} />}
 
             <Chapter n={chap()} title="So should you buy it?" framing="The same evidence, read for your situation." />
 
