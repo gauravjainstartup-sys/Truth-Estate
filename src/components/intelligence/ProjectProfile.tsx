@@ -463,10 +463,11 @@ export default function ProjectProfile({
   // News & Updates (the "wire") is free to read; its index entry and its
   // section render only when the project actually has published updates.
   const hasWire = (p.wireItems?.length ?? 0) > 0;
-  /* TEMP production gate for News & Updates — preview hosts only while the
-     founder reviews it on staging. Flip this ONE line to `true` to launch the
-     section (and its index entry) to production. */
-  const wireLive = stagingPreview;
+  /* News & Updates is LIVE in production — founder-approved after the staging
+     review (2026-08-18). Renders for every project that has published updates
+     (self-hides otherwise); locked readers get it after Chapter II, unlocked
+     readers between Chapter III and IV. */
+  const wireLive = true;
 
   // The free chapters a guest always sees; when locked, every other section
   // collapses to a single "Unlock full read" jump. "news" is free-to-read too,
