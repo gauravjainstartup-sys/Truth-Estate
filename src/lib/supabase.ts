@@ -1090,24 +1090,31 @@ export async function fetchProjectWire(projectSlug?: string): Promise<ProjectWir
   }));
 
   if (!projectSlug) return items;
-  /* Match the report's slug to the wire row's project_slug: exact, or either a
-     sub-slug of the other (a row filed as "…-titanium-spr" still attaches to
-     the full "gurugram-real-estate-…-titanium-spr-sector-71" report). Guard the
-     containment against trivially short slugs so nothing over-matches. */
   const target = projectSlug.toLowerCase().trim();
+
+  /* EXACT match wins outright — and returning ONLY exact matches when any exist
+     is what stops a project from stealing its sibling's dispatches. 106 of the
+     107 projects file their wire rows under the report's own slug, so this is the
+     normal path. Without this cut, the fuzzy fallback below would let a base slug
+     token-subset-match its "-phase-2" / "-ii" / "-forest-reserve-phase-N"
+     sibling (the base's tokens are a subset of the longer one), and the two
+     reports would swap news — measured at 11 such cross-matches across the 107. */
+  const exact = items.filter((it) => it.projectSlug.toLowerCase().trim() === target);
+  if (exact.length) return exact;
+
+  /* Fallback ONLY for a report with no row filed under its exact slug: a wire
+     slug that COMPRESSES the report's corridor segment — e.g. a row filed as
+     "…-titanium-spr-sector-71" for the report
+     "…-titanium-spr-southern-peripheral-road-spr-corridor-sector-71". Kept tight
+     (a long contiguous sub-slug either direction, or a ≥6-token subset); reached
+     only by a report that has no exact row, so it can't cross-match a sibling
+     that filed its own. */
   const targetTokens = target.split("-").filter(Boolean);
   const targetSet = new Set(targetTokens);
   return items.filter((it) => {
     const itSlug = it.projectSlug.toLowerCase().trim();
     if (!itSlug) return false;
-    if (itSlug === target) return true;
-    // contiguous sub-slug, either direction
     if (itSlug.length >= 8 && (target.includes(itSlug) || itSlug.includes(target))) return true;
-    // token-subset: a wire slug can COMPRESS the report slug by dropping the
-    // corridor segment — "…-titanium-spr-sector-71" vs the report's
-    // "…-titanium-spr-southern-peripheral-road-spr-corridor-sector-71". Match
-    // when every token of the shorter slug appears in the longer one, guarded
-    // to ≥6 tokens so a generic short slug can't fan out across projects.
     const itTokens = itSlug.split("-").filter(Boolean);
     const [small, big] = itTokens.length <= targetTokens.length
       ? [itTokens, targetSet]
