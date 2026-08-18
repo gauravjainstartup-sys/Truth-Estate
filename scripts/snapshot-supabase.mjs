@@ -70,6 +70,7 @@ const OTHERS = [
      developers_overview above: a fixture set that omits a view the build reads
      is a fixture set that hides bugs.) */
   ["developer_health", "select=developer_name,financial_health&limit=200"],
+  ["project_intelligence_wire", "select=*&limit=2000"],
 ];
 
 const fixtures = process.env.SUPABASE_FIXTURES;

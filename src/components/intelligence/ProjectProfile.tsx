@@ -53,6 +53,7 @@ import ReportAlternatives from "./ReportAlternatives";
 import ReportFeedback from "./ReportFeedback";
 import ReportHomes from "./ReportHomes";
 import ExecutiveDossierTeaser from "./ExecutiveDossierTeaser";
+import ProjectIntelligenceWire from "./ProjectIntelligenceWire";
 import { ReportStaticContext } from "./reportStatic";
 import { basePath, homeHref } from "@/lib/site";
 import { recordReportView, markOwned, unmarkOwned, isOwned } from "@/lib/officeReports";
@@ -923,6 +924,11 @@ export default function ProjectProfile({
 
             {/* 11/10 Executive Telemetry Index & Proprietary Teaser Bento (Scrolls 1 to 2) */}
             <ExecutiveDossierTeaser p={p} locked={locked} onUnlock={openUnlock} />
+
+            {/* Project Intelligence Wire & Chronostream Ground Updates */}
+            {p.wireItems && p.wireItems.length > 0 && (
+              <ProjectIntelligenceWire items={p.wireItems} projectName={p.name} />
+            )}
 
             {/* The short answer — structured executive read */}
             {(() => {

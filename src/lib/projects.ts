@@ -133,6 +133,8 @@ export type ProjectIntel = Project & {
      build (trackedRankOf) and consumed by rankContext. rank 0 = unscored,
      the hero context line stays hidden. */
   trackedRank?: { rank: number; total: number; topPct: number };
+  /* Chronological Project Intelligence Wire dispatches */
+  wireItems?: import("./supabase").ProjectWireItem[];
 };
 
 export type LegalRiskLevel = "Critical" | "High" | "Medium" | "Moderate" | "Low";

@@ -1027,3 +1027,64 @@ export async function fetchDeveloperHealth(): Promise<Record<string, DeveloperHe
   console.log(`[supabase] developer health → ${Object.keys(out).length} developer(s)`);
   return Object.keys(out).length ? out : null;
 }
+
+/* ── project_intelligence_wire — the chronological forensic wire log ── */
+export type ProjectWireItem = {
+  id: string;
+  projectSlug: string;
+  projectName: string;
+  eventDate: string;
+  category: "CONSTRUCTION" | "REGULATORY" | "INFRASTRUCTURE" | "CORPORATE_JV" | "LEGAL" | "PRICING";
+  headline: string;
+  verifiedFacts: string;
+  forensicImpactType: "POSITIVE" | "NEUTRAL" | "CAUTION" | "RISK";
+  forensicImpactSummary: string;
+  sourceName: string;
+  sourceUrl?: string | null;
+  sourceDocumentRef?: string | null;
+  status: "DRAFT" | "PUBLISHED" | "ARCHIVED" | "DELETED";
+  isPinned: boolean;
+  displayOrder: number;
+};
+
+export async function fetchProjectWire(projectSlug?: string): Promise<ProjectWireItem[]> {
+  const query = "select=*&status=eq.PUBLISHED&order=event_date.desc,display_order.asc&limit=1000";
+  const rows = await sbRows("project_intelligence_wire", query);
+  if (!rows) return [];
+  
+  const items: ProjectWireItem[] = rows.map((r) => ({
+    id: String(r.id),
+    projectSlug: s(r.project_slug) ?? "",
+    projectName: s(r.project_name) ?? "",
+    eventDate: s(r.event_date) ?? "",
+    category: (s(r.category) as ProjectWireItem["category"]) || "REGULATORY",
+    headline: s(r.headline) ?? "",
+    verifiedFacts: s(r.verified_facts) ?? "",
+    forensicImpactType: (s(r.forensic_impact_type) as ProjectWireItem["forensicImpactType"]) || "NEUTRAL",
+    forensicImpactSummary: s(r.forensic_impact_summary) ?? "",
+    sourceName: s(r.source_name) ?? "",
+    sourceUrl: s(r.source_url) || null,
+    sourceDocumentRef: s(r.source_document_ref) || null,
+    status: (s(r.status) as ProjectWireItem["status"]) || "PUBLISHED",
+    isPinned: Boolean(r.is_pinned),
+    displayOrder: typeof r.display_order === "number" ? r.display_order : 0,
+  }));
+
+  if (projectSlug) {
+    const cleanTarget = projectSlug.toLowerCase().trim();
+    // Match exact slug or sub-slug (e.g. titanium-spr vs gurugram-real-estate-signature-global-titanium-spr-sector-71)
+    return items.filter((it) => {
+      const itSlug = it.projectSlug.toLowerCase().trim();
+      const itName = it.projectName.toLowerCase().trim();
+      return (
+        itSlug === cleanTarget ||
+        cleanTarget.includes(itSlug) ||
+        itSlug.includes(cleanTarget) ||
+        cleanTarget.includes(itName.replace(/[^a-z0-9]/g, "-")) ||
+        (cleanTarget.includes("titanium") && itSlug.includes("titanium"))
+      );
+    });
+  }
+
+  return items;
+}

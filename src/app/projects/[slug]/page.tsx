@@ -10,6 +10,7 @@ import {
   fetchProjectPillars,
   fetchExtendedDetails,
   fetchDeveloperLedger,
+  fetchProjectWire,
   devKey,
   type LiveBacklogFull,
   type LiveConfiguration,
@@ -371,9 +372,11 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     // the whole live scored set — the rank basis; passed to the overlay too so the
     // rank can recompute from this project's LIVE score without another fetch.
     const scores = await liveScores();
+    const projectWire = await fetchProjectWire(slug);
     const intel = {
       ...liveProjectIntel(live, extKey ? ext![extKey] : null, cfgKey ? cfg![cfgKey] : null, corridorPsf),
       trackedRank: trackedRankOf(live.truthScore, scores),
+      wireItems: projectWire,
       ...(pillarSets?.[live.id] ? { livePillars: pillarSets[live.id] } : {}),
     };
     /* Attach the developer's project ledger by matching the normalised
