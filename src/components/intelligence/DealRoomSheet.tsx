@@ -31,8 +31,15 @@ import { sendOtp, verifyOtp, OTP_LENGTH } from "@/lib/shortlistAuth";
 import { saveMandate } from "@/lib/dealRoomMandate";
 import OtpDigits from "@/components/auth/OtpDigits";
 
-type Step = "details" | "target" | "verify" | "done";
-const ORDER: Step[] = ["details", "target", "verify", "done"];
+type Step = "details" | "unit" | "target" | "verify" | "done";
+const ORDER: Step[] = ["details", "unit", "target", "verify", "done"];
+
+/* Fallback configurations when the project files none — the same spread the
+   standalone /deal-room mandate offers, so the two flows read alike. */
+const FALLBACK_CONFIGS = ["1 BHK / Studio", "2 BHK", "3 BHK", "4 BHK", "5 BHK", "Penthouse"];
+
+type Home = { config: string; superSqft?: number; carpetSqft?: number | null; priceCr?: number; variant?: string };
+const uniq = (a: string[]) => Array.from(new Set(a));
 
 const DIAL = [
   { code: "+91", flag: "🇮🇳" }, { code: "+971", flag: "🇦🇪" }, { code: "+65", flag: "🇸🇬" },
@@ -40,18 +47,29 @@ const DIAL = [
 ];
 
 export default function DealRoomSheet({
-  open, onClose, projectName, projectSlug, ticketCr,
+  open, onClose, projectName, projectSlug, ticketCr, configs, homes,
 }: {
   open: boolean;
   onClose: () => void;
   projectName: string;
   projectSlug?: string;
   ticketCr: number;
+  /* The project's filed unit types + per-configuration sizes, so the buyer
+     names the exact home before setting a target. Both optional — a project
+     with neither still runs the flow via the "Other" free-text escape. */
+  configs?: string[];
+  homes?: Home[];
 }) {
   const deal = computeDeal(ticketCr);
   const [step, setStep] = useState<Step>("details");
   const [targetCr, setTargetCr] = useState<number>(deal ? deal.targetHigh : 0);
   const [signedIn, setSignedIn] = useState(false);
+
+  // unit step — which home the buyer is after (config → size, each with "Other")
+  const [cfg, setCfg] = useState("");        // "" | a config | "Other"
+  const [cfgOther, setCfgOther] = useState("");
+  const [size, setSize] = useState("");      // "" | a size label | "Other"
+  const [sizeOther, setSizeOther] = useState("");
 
   // auth (verify step)
   const [name, setName] = useState("");
@@ -66,6 +84,7 @@ export default function DealRoomSheet({
     if (!open) return;
     setStep("details");
     setErr(""); setOtpSent(false); setOtp(Array(OTP_LENGTH).fill(""));
+    setCfg(""); setCfgOther(""); setSize(""); setSizeOther("");
     if (deal) setTargetCr(deal.targetHigh);
     const acct = loadAccount();
     setSignedIn(isSignedIn());
@@ -88,6 +107,30 @@ export default function DealRoomSheet({
   const numValid = num.replace(/\D/g, "").length >= (isIndia ? 10 : 6);
   const otpComplete = otp.length === OTP_LENGTH && otp.every((x) => x !== "");
 
+  /* Unit selection — Project (fixed, this report) → Config → Size.
+     Config chips come from the project's filed unit types (or its homes), and
+     size chips from that config's filed super areas; "Other" is always offered
+     so a buyer whose exact home isn't listed can still proceed by free text. */
+  const homeList = (homes ?? []).filter((h) => h && h.config && h.config !== "NA");
+  const cfgFromHomes = uniq(homeList.map((h) => h.config));
+  const cfgFromProps = (configs ?? []).map((c) => (c || "").trim()).filter((c) => c && c !== "NA");
+  const cfgOptions = cfgFromHomes.length ? cfgFromHomes : (cfgFromProps.length ? cfgFromProps : FALLBACK_CONFIGS);
+  const sizeOptions = cfg && cfg !== "Other"
+    ? uniq(
+        homeList
+          .filter((h) => h.config === cfg && (h.superSqft ?? 0) > 0)
+          .sort((a, b) => (a.superSqft ?? 0) - (b.superSqft ?? 0))
+          .map((h) => `${Math.round(h.superSqft!).toLocaleString("en-IN")} sq ft`),
+      )
+    : [];
+  const cfgLabel = cfg === "Other" ? cfgOther.trim() : cfg;
+  const sizeLabel = size === "Other" ? (sizeOther.trim() || "flexible on size") : size;
+  const unitLabel = [cfgLabel, sizeLabel].filter(Boolean).join(" · ");
+  const cfgReady = cfg !== "" && (cfg !== "Other" || cfgOther.trim() !== "");
+  const unitReady = cfgReady && size !== "";
+
+  const pickCfg = (c: string) => { setCfg(c); setSize(""); setSizeOther(""); };
+
   const field = "w-full rounded-lg border border-white/15 bg-white/[0.06] px-3.5 py-3 text-[0.9rem] text-white placeholder-white/35 outline-none transition-colors focus:border-[#5fd39a]";
   const primary = "group inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#2f9a68] px-6 py-3.5 text-[0.92rem] font-semibold text-white transition-colors hover:bg-[#38b37c] disabled:opacity-50";
 
@@ -101,11 +144,13 @@ export default function DealRoomSheet({
       phone: via === "otp" ? `${dial} ${num}`.trim() : (s?.phone ?? ""),
       project: projectName || undefined,
       intent: "deal-room",
-      message: `Deal Room (report) — ${projectName} · target ${cr(targetCr)} · ~${save(saveCr)} under ${deal ? cr(deal.market) : "asking"}`,
+      message: `Deal Room (report) — ${projectName}${unitLabel ? ` · ${unitLabel}` : ""} · target ${cr(targetCr)} · ~${save(saveCr)} under ${deal ? cr(deal.market) : "asking"}`,
       payload: {
         kind: "deal-room-mandate",
         source: "report",
         project: projectName,
+        config: cfgLabel || null,
+        unitSize: sizeLabel || null,
         filedPriceCr: deal?.market ?? null,
         targetPriceCr: Number(targetCr.toFixed(2)),
         savingCr: Number(saveCr.toFixed(2)),
@@ -125,8 +170,8 @@ export default function DealRoomSheet({
       saveMandate({
         city: "Gurugram",
         project: projectName,
-        config: "",
-        unit: "",
+        config: cfgLabel || "",
+        unit: sizeLabel || "",
         stage: "To confirm on the call",
         target: `${targetCr.toFixed(2)} Cr`,
         timeline: "To confirm on the call",
@@ -178,8 +223,8 @@ export default function DealRoomSheet({
               <span className="text-[0.6rem] font-bold uppercase tracking-[0.24em] text-[#c9a96e]">The Deal Room</span>
               {step !== "done" && (
                 <span className="flex items-center gap-1">
-                  {ORDER.slice(0, 3).map((s, i) => (
-                    <span key={s} className={`h-1 w-4 rounded-full transition-colors ${i <= idx ? "bg-[#5fd39a]" : "bg-white/15"}`} />
+                  {ORDER.slice(0, 4).map((s, i) => (
+                    <span key={s} className={`h-1 w-3.5 rounded-full transition-colors ${i <= idx ? "bg-[#5fd39a]" : "bg-white/15"}`} />
                   ))}
                 </span>
               )}
@@ -218,11 +263,49 @@ export default function DealRoomSheet({
               </div>
             )}
 
+            {/* ── unit: Project → Config → Size ── */}
+            {step === "unit" && (
+              <div>
+                <h2 className="font-serif text-[1.6rem] font-medium leading-[1.15] text-white">Which home are you after?</h2>
+                <p className="mt-2 text-[0.86rem] font-light text-white/55">Name the configuration and size you&rsquo;d target in {projectName}. Not sure yet? Pick <span className="text-white/75">Other</span> — the advisor locks it with you on the call.</p>
+
+                {/* Configuration */}
+                <p className="mt-6 text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-white/40">Configuration</p>
+                <div className="mt-2.5 flex flex-wrap gap-2">
+                  {[...cfgOptions, "Other"].map((c) => (
+                    <button key={c} type="button" onClick={() => pickCfg(c)} aria-pressed={cfg === c}
+                      className={`rounded-xl border px-3.5 py-2.5 text-[0.82rem] transition-colors ${cfg === c ? "border-[#5fd39a] bg-[#5fd39a]/[0.12] text-white" : "border-white/15 bg-white/[0.04] text-white/70 hover:border-white/35 hover:text-white"}`}>{c}</button>
+                  ))}
+                </div>
+                {cfg === "Other" && (
+                  <input value={cfgOther} onChange={(e) => setCfgOther(e.target.value)} placeholder="Which configuration? e.g. 5 BHK, villa, plot" className={`${field} mt-2.5`} autoFocus />
+                )}
+                <p className="mt-2 text-[0.7rem] font-light text-white/40">{cfgFromHomes.length || cfgFromProps.length ? `From ${projectName}’s filed unit types.` : "Pick the configuration you’re buying."}</p>
+
+                {/* Size — revealed once a configuration is chosen */}
+                {cfgReady && (
+                  <div className="mt-6">
+                    <p className="text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-white/40">Size</p>
+                    <div className="mt-2.5 flex flex-wrap gap-2">
+                      {[...sizeOptions, "Other"].map((s) => (
+                        <button key={s} type="button" onClick={() => { setSize(s); if (s !== "Other") setSizeOther(""); }} aria-pressed={size === s}
+                          className={`rounded-xl border px-3.5 py-2.5 text-[0.82rem] transition-colors ${size === s ? "border-[#5fd39a] bg-[#5fd39a]/[0.12] text-white" : "border-white/15 bg-white/[0.04] text-white/70 hover:border-white/35 hover:text-white"}`}>{s}</button>
+                      ))}
+                    </div>
+                    {size === "Other" && (
+                      <input value={sizeOther} onChange={(e) => setSizeOther(e.target.value)} placeholder="Size you want (sq ft) — or leave blank if flexible" className={`${field} mt-2.5`} autoFocus />
+                    )}
+                    <p className="mt-2 text-[0.7rem] font-light text-white/40">{sizeOptions.length ? "Filed super-built-up areas for this configuration." : "Tell us the size you’re targeting, or stay flexible."}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* ── target ── */}
             {step === "target" && deal && (
               <div>
                 <h2 className="font-serif text-[1.6rem] font-medium leading-[1.15] text-white">What&rsquo;s your target?</h2>
-                <p className="mt-2 text-[0.86rem] font-light text-white/55">Set the price you&rsquo;d sign at for {projectName}. Sellers compete to meet it.</p>
+                <p className="mt-2 text-[0.86rem] font-light text-white/55">Set the price you&rsquo;d sign at for {unitLabel ? <>your <span className="text-white/80">{unitLabel}</span> in {projectName}</> : projectName}. Sellers compete to meet it.</p>
                 <div className="mt-7 text-center">
                   <p className="font-serif text-[3rem] font-semibold leading-none text-white">{cr(targetCr)}</p>
                   <p className="mt-2 text-[0.82rem] font-medium text-[#5fd39a]">{saveCr > 0 ? `${save(saveCr)} under the ${cr(deal.market)} asking` : "at the current asking price"}</p>
@@ -299,7 +382,7 @@ export default function DealRoomSheet({
                 </span>
                 <h2 className="mt-5 font-serif text-[1.7rem] font-medium leading-[1.15] text-white">Your Deal Room is open.</h2>
                 <p className="mt-3 text-[0.9rem] font-light leading-relaxed text-white/60">
-                  An advisor calls you <b className="font-medium text-white/85">within 24 hours</b> to confirm your mandate for {projectName} at a target of <b className="font-medium text-white/85">{cr(targetCr)}</b>. Then we float it to verified sellers — written offers land in <b className="font-medium text-white/85">2–4 days</b>, and we text you the moment the first arrives.
+                  An advisor calls you <b className="font-medium text-white/85">within 24 hours</b> to confirm your mandate for {unitLabel ? <>your <b className="font-medium text-white/85">{unitLabel}</b> in {projectName}</> : projectName} at a target of <b className="font-medium text-white/85">{cr(targetCr)}</b>. Then we float it to verified sellers — written offers land in <b className="font-medium text-white/85">2–4 days</b>, and we text you the moment the first arrives.
                 </p>
                 <p className="mx-auto mt-5 max-w-sm border-l-2 border-[#c9a96e]/25 pl-4 text-left text-[0.72rem] font-light leading-relaxed text-white/45">
                   Nothing to join. When you&rsquo;re ready to meet a seller, a fully refundable ₹11,000 holds your seat — back in 60 days if nothing closes. After that we earn only a share of what we actually save you versus the market — never a rupee from the sellers.
@@ -310,10 +393,16 @@ export default function DealRoomSheet({
 
           {/* footer CTA */}
           <div className="shrink-0 border-t border-white/10 px-6 py-4">
-            {step === "details" && <button onClick={() => setStep("target")} className={primary} disabled={!deal}>Set your target <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span></button>}
-            {step === "target" && (
+            {step === "details" && <button onClick={() => setStep("unit")} className={primary} disabled={!deal}>Get started <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span></button>}
+            {step === "unit" && (
               <div className="flex items-center gap-3">
                 <button onClick={() => setStep("details")} className="shrink-0 rounded-lg border border-white/15 px-4 py-3.5 text-[0.86rem] font-medium text-white/70 transition-colors hover:bg-white/5">Back</button>
+                <button onClick={() => setStep("target")} disabled={!unitReady} className={primary}>Continue <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span></button>
+              </div>
+            )}
+            {step === "target" && (
+              <div className="flex items-center gap-3">
+                <button onClick={() => setStep("unit")} className="shrink-0 rounded-lg border border-white/15 px-4 py-3.5 text-[0.86rem] font-medium text-white/70 transition-colors hover:bg-white/5">Back</button>
                 <button onClick={() => setStep("verify")} className={primary}>Continue <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span></button>
               </div>
             )}

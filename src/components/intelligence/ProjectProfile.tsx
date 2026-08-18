@@ -1519,7 +1519,7 @@ export default function ProjectProfile({
       {/* The Deal Room sheet — the whole flow (details → target → contact →
           open), opened by every Deal Room CTA. */}
       {(p.budget?.[0] ?? 0) > 0 && (
-        <DealRoomSheet open={dealRoomOpen} onClose={() => setDealRoomOpen(false)} projectName={p.name} projectSlug={p.slug} ticketCr={p.budget?.[0] ?? 0} />
+        <DealRoomSheet open={dealRoomOpen} onClose={() => setDealRoomOpen(false)} projectName={p.name} projectSlug={p.slug} ticketCr={p.budget?.[0] ?? 0} configs={p.configs} homes={p.ops?.homes} />
       )}
 
       {/* Sample read — a faint diagonal tiled watermark + a persistent badge so
