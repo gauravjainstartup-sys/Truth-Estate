@@ -47,7 +47,7 @@ const DIAL = [
 ];
 
 export default function DealRoomSheet({
-  open, onClose, projectName, projectSlug, ticketCr, configs, homes,
+  open, onClose, projectName, projectSlug, ticketCr, configs, homes, psfLow,
 }: {
   open: boolean;
   onClose: () => void;
@@ -59,10 +59,16 @@ export default function DealRoomSheet({
      with neither still runs the flow via the "Other" free-text escape. */
   configs?: string[];
   homes?: Home[];
+  /* The project's own current filed ₹/sqft (ops.price.currentLow). Prices the
+     selected unit at the same rate the report's ticket uses. Optional — without
+     it the target falls back to the project entry ticket. */
+  psfLow?: number;
 }) {
-  const deal = computeDeal(ticketCr);
+  // Project-entry deal (filed rate × the smallest home) — the flow opens on
+  // this; once a unit is picked, `deal` below re-bases on that unit's size.
+  const baseDeal = computeDeal(ticketCr);
   const [step, setStep] = useState<Step>("details");
-  const [targetCr, setTargetCr] = useState<number>(deal ? deal.targetHigh : 0);
+  const [targetCr, setTargetCr] = useState<number>(baseDeal ? baseDeal.targetHigh : 0);
   const [signedIn, setSignedIn] = useState(false);
 
   // unit step — which home the buyer is after (config → size, each with "Other")
@@ -70,6 +76,7 @@ export default function DealRoomSheet({
   const [cfgOther, setCfgOther] = useState("");
   const [size, setSize] = useState("");      // "" | a size label | "Other"
   const [sizeOther, setSizeOther] = useState("");
+  const [sizeSuper, setSizeSuper] = useState<number | null>(null); // super area of the picked size
 
   // auth (verify step)
   const [name, setName] = useState("");
@@ -84,8 +91,8 @@ export default function DealRoomSheet({
     if (!open) return;
     setStep("details");
     setErr(""); setOtpSent(false); setOtp(Array(OTP_LENGTH).fill(""));
-    setCfg(""); setCfgOther(""); setSize(""); setSizeOther("");
-    if (deal) setTargetCr(deal.targetHigh);
+    setCfg(""); setCfgOther(""); setSize(""); setSizeOther(""); setSizeSuper(null);
+    if (baseDeal) setTargetCr(baseDeal.targetHigh);
     const acct = loadAccount();
     setSignedIn(isSignedIn());
     if (acct?.name) setName(acct.name);
@@ -101,8 +108,6 @@ export default function DealRoomSheet({
 
   if (!open) return null;
 
-  const idx = ORDER.indexOf(step);
-  const saveCr = deal ? Math.max(0, deal.market - targetCr) : 0;
   const isIndia = dial === "+91";
   const numValid = num.replace(/\D/g, "").length >= (isIndia ? 10 : 6);
   const otpComplete = otp.length === OTP_LENGTH && otp.every((x) => x !== "");
@@ -115,21 +120,36 @@ export default function DealRoomSheet({
   const cfgFromHomes = uniq(homeList.map((h) => h.config));
   const cfgFromProps = (configs ?? []).map((c) => (c || "").trim()).filter((c) => c && c !== "NA");
   const cfgOptions = cfgFromHomes.length ? cfgFromHomes : (cfgFromProps.length ? cfgFromProps : FALLBACK_CONFIGS);
-  const sizeOptions = cfg && cfg !== "Other"
-    ? uniq(
-        homeList
-          .filter((h) => h.config === cfg && (h.superSqft ?? 0) > 0)
-          .sort((a, b) => (a.superSqft ?? 0) - (b.superSqft ?? 0))
-          .map((h) => `${Math.round(h.superSqft!).toLocaleString("en-IN")} sq ft`),
-      )
+  const sizeAreas = cfg && cfg !== "Other"
+    ? Array.from(new Set(
+        homeList.filter((h) => h.config === cfg && (h.superSqft ?? 0) > 0).map((h) => Math.round(h.superSqft!)),
+      )).sort((a, b) => a - b)
     : [];
+  const sizeChip = (area: number) => `${area.toLocaleString("en-IN")} sq ft`;
   const cfgLabel = cfg === "Other" ? cfgOther.trim() : cfg;
   const sizeLabel = size === "Other" ? (sizeOther.trim() || "flexible on size") : size;
   const unitLabel = [cfgLabel, sizeLabel].filter(Boolean).join(" · ");
   const cfgReady = cfg !== "" && (cfg !== "Other" || cfgOther.trim() !== "");
   const unitReady = cfgReady && size !== "";
+  const pickCfg = (c: string) => { setCfg(c); setSize(""); setSizeOther(""); setSizeSuper(null); };
 
-  const pickCfg = (c: string) => { setCfg(c); setSize(""); setSizeOther(""); };
+  /* Price the SELECTED unit at the project's own filed ₹/sqft — `psfLow` is the
+     report's current filed low rate (ops.price.currentLow), the exact rate the
+     report's own ticket is built from, so the Deal Room and the report never
+     disagree (a filed size × psfLow reproduces the report's ticket). A typed
+     "Other" size is priced the same way. When we can't size or rate the unit
+     (Other config, blank size, or a project with no filed psf) we fall back to
+     the project entry ticket, confirmed on the advisor call. */
+  const typedArea = size === "Other" ? parseFloat(sizeOther.replace(/[^\d.]/g, "")) : NaN;
+  const selArea = sizeSuper && sizeSuper > 0 ? sizeSuper : (typedArea > 0 ? typedArea : null);
+  const unitAskingCr =
+    psfLow && psfLow > 0 && selArea && selArea > 0
+      ? (psfLow * selArea) / 1e7
+      : ticketCr;
+  const deal = computeDeal(unitAskingCr);
+
+  const idx = ORDER.indexOf(step);
+  const saveCr = deal ? Math.max(0, deal.market - targetCr) : 0;
 
   const field = "w-full rounded-lg border border-white/15 bg-white/[0.06] px-3.5 py-3 text-[0.9rem] text-white placeholder-white/35 outline-none transition-colors focus:border-[#5fd39a]";
   const primary = "group inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#2f9a68] px-6 py-3.5 text-[0.92rem] font-semibold text-white transition-colors hover:bg-[#38b37c] disabled:opacity-50";
@@ -151,6 +171,7 @@ export default function DealRoomSheet({
         project: projectName,
         config: cfgLabel || null,
         unitSize: sizeLabel || null,
+        unitSuperSqft: selArea ?? null,
         filedPriceCr: deal?.market ?? null,
         targetPriceCr: Number(targetCr.toFixed(2)),
         savingCr: Number(saveCr.toFixed(2)),
@@ -287,15 +308,20 @@ export default function DealRoomSheet({
                   <div className="mt-6">
                     <p className="text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-white/40">Size</p>
                     <div className="mt-2.5 flex flex-wrap gap-2">
-                      {[...sizeOptions, "Other"].map((s) => (
-                        <button key={s} type="button" onClick={() => { setSize(s); if (s !== "Other") setSizeOther(""); }} aria-pressed={size === s}
-                          className={`rounded-xl border px-3.5 py-2.5 text-[0.82rem] transition-colors ${size === s ? "border-[#5fd39a] bg-[#5fd39a]/[0.12] text-white" : "border-white/15 bg-white/[0.04] text-white/70 hover:border-white/35 hover:text-white"}`}>{s}</button>
-                      ))}
+                      {sizeAreas.map((area) => {
+                        const label = sizeChip(area);
+                        return (
+                          <button key={area} type="button" onClick={() => { setSize(label); setSizeSuper(area); setSizeOther(""); }} aria-pressed={size === label}
+                            className={`rounded-xl border px-3.5 py-2.5 text-[0.82rem] transition-colors ${size === label ? "border-[#5fd39a] bg-[#5fd39a]/[0.12] text-white" : "border-white/15 bg-white/[0.04] text-white/70 hover:border-white/35 hover:text-white"}`}>{label}</button>
+                        );
+                      })}
+                      <button type="button" onClick={() => { setSize("Other"); setSizeSuper(null); }} aria-pressed={size === "Other"}
+                        className={`rounded-xl border px-3.5 py-2.5 text-[0.82rem] transition-colors ${size === "Other" ? "border-[#5fd39a] bg-[#5fd39a]/[0.12] text-white" : "border-white/15 bg-white/[0.04] text-white/70 hover:border-white/35 hover:text-white"}`}>Other</button>
                     </div>
                     {size === "Other" && (
                       <input value={sizeOther} onChange={(e) => setSizeOther(e.target.value)} placeholder="Size you want (sq ft) — or leave blank if flexible" className={`${field} mt-2.5`} autoFocus />
                     )}
-                    <p className="mt-2 text-[0.7rem] font-light text-white/40">{sizeOptions.length ? "Filed super-built-up areas for this configuration." : "Tell us the size you’re targeting, or stay flexible."}</p>
+                    <p className="mt-2 text-[0.7rem] font-light text-white/40">{sizeAreas.length ? "Filed super-built-up areas for this configuration." : "Tell us the size you’re targeting, or stay flexible."}</p>
                   </div>
                 )}
               </div>
@@ -397,7 +423,7 @@ export default function DealRoomSheet({
             {step === "unit" && (
               <div className="flex items-center gap-3">
                 <button onClick={() => setStep("details")} className="shrink-0 rounded-lg border border-white/15 px-4 py-3.5 text-[0.86rem] font-medium text-white/70 transition-colors hover:bg-white/5">Back</button>
-                <button onClick={() => setStep("target")} disabled={!unitReady} className={primary}>Continue <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span></button>
+                <button onClick={() => { if (deal) setTargetCr(deal.targetHigh); setStep("target"); }} disabled={!unitReady} className={primary}>Continue <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span></button>
               </div>
             )}
             {step === "target" && (
