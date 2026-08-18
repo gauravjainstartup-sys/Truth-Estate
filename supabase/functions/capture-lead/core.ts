@@ -44,6 +44,9 @@ export const INTENTS = [
   // Safety net: a sign-in that captured no other intent still becomes a lead,
   // so a registered user_profiles row is never orphaned from contact_leads.
   "registered",
+  // Project Intelligence Wire — buyer asks to be watched for ground events on a
+  // project; an advisor sends verified updates by hand (concierge, not automated).
+  "wire-alert",
 ] as const;
 
 export type LeadBody = {

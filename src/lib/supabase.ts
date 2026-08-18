@@ -1035,3 +1035,70 @@ export async function fetchDeveloperHealth(): Promise<Record<string, DeveloperHe
   console.log(`[supabase] developer health → ${Object.keys(out).length} developer(s)`);
   return Object.keys(out).length ? out : null;
 }
+
+/* ── project_intelligence_wire — the chronological forensic ground-events log ──
+   PUBLISHED dispatches per project (regulatory filings, EPC milestones,
+   institutional JVs, corridor infrastructure). Read-only, public: the table's
+   RLS exposes only status='PUBLISHED' rows to the anon key; the query pins that
+   too, so a DRAFT never leaks even if the policy is ever loosened. */
+export type ProjectWireItem = {
+  id: string;
+  projectSlug: string;
+  projectName: string;
+  eventDate: string;
+  category: "CONSTRUCTION" | "REGULATORY" | "INFRASTRUCTURE" | "CORPORATE_JV" | "LEGAL" | "PRICING";
+  headline: string;
+  verifiedFacts: string;
+  forensicImpactType: "POSITIVE" | "NEUTRAL" | "CAUTION" | "RISK";
+  forensicImpactSummary: string;
+  sourceName: string;
+  sourceUrl?: string | null;
+  sourceDocumentRef?: string | null;
+  status: "DRAFT" | "PUBLISHED" | "ARCHIVED" | "DELETED";
+  isPinned: boolean;
+  displayOrder: number;
+};
+
+export async function fetchProjectWire(projectSlug?: string): Promise<ProjectWireItem[]> {
+  const rows = await sbRows(
+    "project_intelligence_wire",
+    "select=*&status=eq.PUBLISHED&order=event_date.desc,display_order.asc&limit=1000",
+  );
+  if (!rows) return [];
+
+  const items: ProjectWireItem[] = rows
+    // The live query pins status=PUBLISHED, but a SNAPSHOT build reads a fixture
+    // pulled with select=* (no status filter) — so enforce PUBLISHED here too, or
+    // a DRAFT row would bake into the static HTML.
+    .filter((r) => (s(r.status) ?? "DRAFT") === "PUBLISHED")
+    .map((r) => ({
+    id: String(r.id ?? ""),
+    projectSlug: s(r.project_slug) ?? "",
+    projectName: s(r.project_name) ?? "",
+    eventDate: s(r.event_date) ?? "",
+    category: (s(r.category) as ProjectWireItem["category"]) || "REGULATORY",
+    headline: s(r.headline) ?? "",
+    verifiedFacts: s(r.verified_facts) ?? "",
+    forensicImpactType: (s(r.forensic_impact_type) as ProjectWireItem["forensicImpactType"]) || "NEUTRAL",
+    forensicImpactSummary: s(r.forensic_impact_summary) ?? "",
+    sourceName: s(r.source_name) ?? "",
+    sourceUrl: s(r.source_url),
+    sourceDocumentRef: s(r.source_document_ref),
+    status: (s(r.status) as ProjectWireItem["status"]) || "PUBLISHED",
+    isPinned: Boolean(r.is_pinned),
+    displayOrder: n(r.display_order) ?? 0,
+  }));
+
+  if (!projectSlug) return items;
+  /* Match the report's slug to the wire row's project_slug: exact, or either a
+     sub-slug of the other (a row filed as "…-titanium-spr" still attaches to
+     the full "gurugram-real-estate-…-titanium-spr-sector-71" report). Guard the
+     containment against trivially short slugs so nothing over-matches. */
+  const target = projectSlug.toLowerCase().trim();
+  return items.filter((it) => {
+    const itSlug = it.projectSlug.toLowerCase().trim();
+    if (!itSlug) return false;
+    if (itSlug === target) return true;
+    return itSlug.length >= 8 && (target.includes(itSlug) || itSlug.includes(target));
+  });
+}

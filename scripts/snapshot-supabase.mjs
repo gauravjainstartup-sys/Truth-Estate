@@ -70,6 +70,10 @@ const OTHERS = [
      developers_overview above: a fixture set that omits a view the build reads
      is a fixture set that hides bugs.) */
   ["developer_health", "select=developer_name,financial_health&limit=200"],
+  // Project Intelligence Wire — chronological forensic ground-events log.
+  // Snapshotted so SSG bakes the wire onto project pages with zero runtime egress.
+  // PUBLISHED only: a DRAFT must never enter the snapshot and bake into the site.
+  ["project_intelligence_wire", "select=*&status=eq.PUBLISHED&limit=2000"],
 ];
 
 const fixtures = process.env.SUPABASE_FIXTURES;

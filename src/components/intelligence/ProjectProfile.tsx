@@ -54,6 +54,7 @@ import ReportExplore from "./ReportExplore";
 import ReportAlternatives from "./ReportAlternatives";
 import ReportFeedback from "./ReportFeedback";
 import ReportHomes from "./ReportHomes";
+import ProjectIntelligenceWire from "./ProjectIntelligenceWire";
 import { ReportStaticContext } from "./reportStatic";
 import { basePath, homeHref } from "@/lib/site";
 import { recordReportView, markOwned, unmarkOwned, isOwned } from "@/lib/officeReports";
@@ -955,6 +956,11 @@ export default function ProjectProfile({
                 <ReportDossier projectName={p.name} truthScore={p.truthScore} grade={scoreGrade(p.truthScore)} ticket={lockedTicket} onUnlock={openUnlock} audience={audience} />
               </div>
             )}
+
+            {/* Project Intelligence Wire — the chronological forensic ground-events
+                log. PUBLISHED dispatches only (public intel), shown to guests and
+                paid readers alike; self-hides when a project has no wire yet. */}
+            <ProjectIntelligenceWire items={p.wireItems} projectName={p.name} />
 
             <Chapter n={chap()} title="What are you actually buying?" framing="The facts of the asset — before we weigh trust." />
 

@@ -133,6 +133,11 @@ export type ProjectIntel = Project & {
      build (trackedRankOf) and consumed by rankContext. rank 0 = unscored,
      the hero context line stays hidden. */
   trackedRank?: { rank: number; total: number; topPct: number };
+  /* Project Intelligence Wire — the chronological forensic ground-events log
+     (regulatory filings, EPC milestones, institutional JVs, corridor infra).
+     PUBLISHED rows for this project, newest first. Absent / empty → the wire
+     section hides itself (ProjectIntelligenceWire returns null). */
+  wireItems?: import("./supabase").ProjectWireItem[];
 };
 
 export type LegalRiskLevel = "Critical" | "High" | "Medium" | "Moderate" | "Low";
