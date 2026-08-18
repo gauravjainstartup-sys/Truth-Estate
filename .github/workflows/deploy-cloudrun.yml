@@ -134,6 +134,26 @@ jobs:
           key: supabase-snapshot-${{ github.run_id }}
           restore-keys: supabase-snapshot-
 
+      - name: Restore the media cache (baked satellites + pulled Storage media)
+        # materialize-media.mjs fetches every project's satellite tile from
+        # Google Static Maps and every Storage-URL asset, then keys them in
+        # .media-cache so the NEXT build reuses them — a fixed coordinate is
+        # pulled from Google exactly once, ever (no conditional GET on tiles).
+        # The script's header has ALWAYS documented this cache as "restored by
+        # the deploy workflow", but this production workflow never actually
+        # restored it. So every deploy re-baked ~100 satellites and re-pulled
+        # media from a cold cache: slow, spends Google + Supabase egress every
+        # run, and — the reason this step exists — long enough that a single
+        # stalled download could time out and ship a satellite-less (all
+        # gradient) build. Restoring the cache makes the bake a near-instant
+        # cache hit and removes the egress. Same per-run-key + prefix-restore
+        # pattern as the snapshot above: restore the latest, save an updated one.
+        uses: actions/cache@v4
+        with:
+          path: .media-cache
+          key: media-cache-${{ github.run_id }}
+          restore-keys: media-cache-
+
       - name: Refuse to build production without the Maps key
         # THE SECRET IS CALLED GMAPS_KEY. This workflow asked for
         # NEXT_PUBLIC_GMAPS_KEY, which does not exist, and GitHub resolves a

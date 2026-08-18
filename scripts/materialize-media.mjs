@@ -136,7 +136,18 @@ async function cachedGet(u) {
   // don't even download a body the per-file guard would throw away
   const len = Number(res.headers.get("content-length") || 0);
   if (len > MAX_BYTES) { try { await res.body?.cancel(); } catch { /* discard */ } return { skip: `too-big (${(len / 1048576).toFixed(1)} MB)` }; }
-  const buf = Buffer.from(await res.arrayBuffer());
+  let buf;
+  try {
+    buf = Buffer.from(await res.arrayBuffer());
+  } catch {
+    // A body read that stalls past AbortSignal.timeout throws HERE — after the
+    // headers already arrived — and it used to be uncaught, so one slow Storage
+    // download aborted the ENTIRE materialize run (the satellite pass included)
+    // and shipped a gradient-hero build. Keep the last good bytes if the cache
+    // has them; otherwise skip just this one asset and carry on.
+    if (cached) { cacheStats.stale++; return cached; }
+    return { skip: "read-failed" };
+  }
   if (!buf.length || buf.length > MAX_BYTES) return { skip: `too-big (${(buf.length / 1048576).toFixed(1)} MB)` };
   dlBytes += buf.length;
   cacheStats[meta ? "changed" : "fresh"]++;
@@ -188,7 +199,15 @@ async function fetchSatellite(url, cacheStr) {
   if (!res.ok) { try { await res.body?.cancel(); } catch { /* discard */ } return { skip: `http-${res.status}` }; }
   const ct = (res.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
   const ext = CT_EXT[ct] ?? "jpg";
-  const buf = Buffer.from(await res.arrayBuffer());
+  let buf;
+  try {
+    buf = Buffer.from(await res.arrayBuffer());
+  } catch {
+    // Same guard as cachedGet: a stalled satellite body read must skip THIS
+    // tile only — never throw out of the satellite pass and leave every hero a
+    // gradient. Each coordinate is independent, so one miss costs one backdrop.
+    return { skip: "read-failed" };
+  }
   if (!buf.length || buf.length > MAX_BYTES) return { skip: "empty/too-big" };
   dlBytes += buf.length;
   cacheStats.fresh++;
