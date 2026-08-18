@@ -9,7 +9,7 @@
    Reused nowhere else; developer/market compares never mount it. */
 
 import { useEffect, useRef, useState } from "react";
-import { isSignedIn, AUTH_EVENT } from "@/lib/journey";
+import { isSignedIn, AUTH_EVENT, setPendingLead } from "@/lib/journey";
 import { normalisePhone, prettyPhone, sendOtp, verifyOtp, signInWithGoogle, OTP_LENGTH } from "@/lib/phoneAuth";
 import { track } from "@/lib/events";
 
@@ -101,6 +101,9 @@ export function CompareUnlock() {
     const e164 = normalisePhone(raw);
     if (!e164) { setErr("Enter a valid mobile number — 10 digits, or with country code."); return; }
     setErr(""); setBusy(true);
+    // Declare the intent BEFORE auth so the sign-in records a compare-unlock
+    // contact_lead (not just a user_profile). Survives the Google redirect too.
+    setPendingLead({ intent: "compare-unlock" });
     const r = await sendOtp(e164);
     setBusy(false);
     if (!r.ok) { setErr(r.error ?? "Couldn't send the code — try again."); return; }
@@ -120,6 +123,7 @@ export function CompareUnlock() {
   async function google() {
     if (busy) return;
     setBusy(true);
+    setPendingLead({ intent: "compare-unlock" }); // consumed in /auth/callback after the redirect
     const r = await signInWithGoogle();
     if (!r.ok) { setBusy(false); setErr(r.error ?? "Google sign-in didn't start — try the number."); }
   }

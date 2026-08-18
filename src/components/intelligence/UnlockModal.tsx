@@ -18,7 +18,7 @@ import OtpDigits from "@/components/auth/OtpDigits";
 
 import { useEffect, useRef, useState } from "react";
 import {
-  packageById, grantPackage, isSignedIn, saveLead,
+  packageById, grantPackage, isSignedIn, setPendingLead,
   hasReadAccess, has3DAccess, isAllAccess, readStake, saveStake, discountOf,
   type PackageId, type Stake,
 } from "@/lib/journey";
@@ -231,6 +231,10 @@ export default function UnlockModal({
     if (!ten) { setErr("That number doesn't look right — go back and check it."); return; }
 
     setErr(""); setBusy(true);
+    /* Declare the intent BEFORE verify so the sign-in itself records a
+       buyer-office contact_lead (flushPendingLead, inside verifyOtp) — every
+       unlock, not only when a name was typed, and never an orphaned profile. */
+    setPendingLead({ intent: "buyer-office" });
     /* Signs in only on a server-confirmed code, and carries the name so
        the profile lands complete in one round trip. */
     const r = isIndia
@@ -239,7 +243,6 @@ export default function UnlockModal({
     setBusy(false);
     if (!r.ok) { setErr(r.error); return; }
 
-    if (name.trim()) saveLead({ name: name.trim(), email: "", phone: `${dial} ${num}`.trim(), intent: "buyer-office", createdAt: Date.now() });
     setErr("");
 
     /* WHAT DO THEY ALREADY OWN? A returning buyer signing in on a new
@@ -474,6 +477,7 @@ export default function UnlockModal({
                         if (focus3D) u.searchParams.set("u3d", "1"); else u.searchParams.delete("u3d");
                         back = u.toString();
                       } catch { /* fall back to the current URL */ }
+                      setPendingLead({ intent: "buyer-office" }); // consumed in /auth/callback after the redirect
                       const r = await signInWithGoogle(back);
                       if (!r.ok) { setBusy(false); setErr(r.error); }
                     }}

@@ -39,6 +39,11 @@ export const INTENTS = [
   // A Deal Room mandate — the buyer names an asset + target and asks the market
   // to compete. The structured mandate rides in payload.
   "deal-room",
+  // A free sign-in that unlocked the project↔project compare page (CompareGate).
+  "compare-unlock",
+  // Safety net: a sign-in that captured no other intent still becomes a lead,
+  // so a registered user_profiles row is never orphaned from contact_leads.
+  "registered",
 ] as const;
 
 export type LeadBody = {

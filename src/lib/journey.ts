@@ -969,7 +969,7 @@ export type Lead = {
   // (supabase/functions/capture-lead/core.ts). An intent here that the server
   // doesn't allow-list is a SILENT lead drop — CI enforces this via
   // scripts/lead-intent-parity.mjs.
-  intent: "tower-intel" | "buyer-office" | "documents" | "report-error" | "feedback" | "shortlist-unlock" | "custom-report" | "consultation" | "deal-room";
+  intent: "tower-intel" | "buyer-office" | "documents" | "report-error" | "feedback" | "shortlist-unlock" | "custom-report" | "consultation" | "deal-room" | "compare-unlock" | "registered";
   docs?: string[]; // requested documents (intent: "documents")
   identity?: string; // who's reporting — Developer / Investor / End User / Broker (feedback flows)
   message?: string; // free-text detail (feedback / report-error / consultation flows)
@@ -1041,6 +1041,9 @@ export function saveLead(l: Lead): void {
     /* ignore */
   }
   postLead(l);
+  /* Mark this identity as having a lead, so the sign-in "registered" safety
+     net (flushPendingLead) never doubles up on a flow that recorded its own. */
+  markLeadSeen(l.phone, l.email);
   /* Feedback and report-error are NOT enquiries. They are still recorded as
      leads (postLead, above), but they must not fire the funnel/inference
      event — leaving feedback on a report is not buying intent, and counting
@@ -1060,6 +1063,103 @@ export function saveLead(l: Lead): void {
   }
   // a project-scoped lead is a 'lead'-tier model entitlement (no-op while dormant)
   if (l.project) grantModelAccess(modelSlugFor(l.project), l.phone || l.email, "lead");
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SIGN-IN → LEAD  ·  never orphan a registration
+
+   Auth (chat-signin / Google) writes a user_profiles row; the lead
+   (contact_leads) is a SEPARATE write via saveLead. A gate that unlocked
+   by pure sign-in — the compare gate, a phone-only report unlock, any
+   Google sign-in — created the profile but no lead, so the person showed
+   up "registered" with no intent and never reached contact_leads.
+
+   flushPendingLead() runs at every auth-success choke-point (OTP verify,
+   Google callback) and closes that gap:
+     • a gate that set a pending intent before auth → that intent's lead
+       (survives the Google redirect because it rides in localStorage);
+     • otherwise → a neutral "registered" lead, at most once per identity
+       per device, so a returning sign-in never re-logs.
+   A flow that records its OWN intent lead right after verify calls
+   suppressAutoLead() first, so it isn't also tagged "registered".
+   ════════════════════════════════════════════════════════════════ */
+const PENDING_LEAD_KEY = "truthEstate.pendingLead";
+const LEAD_GUARD_PREFIX = "truthEstate.leadSeen:";
+
+export type PendingLead = { intent: Lead["intent"]; project?: string; name?: string };
+
+/* A gate declares its intent BEFORE starting auth (so it survives a Google
+   redirect); flushPendingLead consumes it once on success. */
+export function setPendingLead(p: PendingLead): void {
+  if (typeof window === "undefined") return;
+  try { window.localStorage.setItem(PENDING_LEAD_KEY, JSON.stringify(p)); } catch { /* ignore */ }
+}
+
+function readPendingLead(): PendingLead | null {
+  try {
+    const r = window.localStorage.getItem(PENDING_LEAD_KEY);
+    return r ? (JSON.parse(r) as PendingLead) : null;
+  } catch { return null; }
+}
+
+function leadIdKey(phone?: string, email?: string): string | null {
+  const p = (phone || "").replace(/\D/g, "");
+  if (p.length >= 10) return "p:" + p.slice(-10);
+  const e = (email || "").trim().toLowerCase();
+  return e ? "e:" + e : null;
+}
+
+/* Record that this identity now has a lead of some kind — set by saveLead for
+   every real lead, and checked by the "registered" safety net so it never
+   doubles up on a flow that recorded its own intent lead. */
+function markLeadSeen(phone?: string, email?: string): void {
+  const k = leadIdKey(phone, email);
+  if (!k) return;
+  try { window.localStorage.setItem(LEAD_GUARD_PREFIX + k, "1"); } catch { /* ignore */ }
+}
+function leadSeen(phone?: string, email?: string): boolean {
+  const k = leadIdKey(phone, email);
+  if (!k) return false;
+  try { return window.localStorage.getItem(LEAD_GUARD_PREFIX + k) === "1"; } catch { return false; }
+}
+
+/* Runs at every auth-success choke-point (OTP verify, Google callback). Turns a
+   sign-in into a contact_lead so a registration is never orphaned:
+     • a gate that set a pending intent → that intent's lead, now;
+     • otherwise → a neutral "registered" lead, at most once per identity/device.
+
+   The "registered" branch DEFERS on same-page (OTP) sign-ins: a flow that
+   records its own intent lead (deal-room, shortlist-unlock, …) does so within
+   milliseconds and sets the guard, so the deferred check no-ops — no double,
+   and those flows need no changes. `immediate` fires it now for the Google
+   callback, which navigates away before any timer could run. */
+export function flushPendingLead(
+  id: { phone?: string; email?: string; name?: string },
+  opts?: { immediate?: boolean },
+): void {
+  if (typeof window === "undefined") return;
+  try {
+    const name = (id.name || loadAccount()?.name || "").trim();
+    const phone = (id.phone || "").trim();
+    const email = (id.email || "").trim();
+    if (!phone && !email) return; // capture-lead requires a contact method
+
+    const pending = readPendingLead();
+    if (pending && pending.intent) {
+      try { window.localStorage.removeItem(PENDING_LEAD_KEY); } catch { /* ignore */ }
+      saveLead({ name, email, phone, intent: pending.intent, project: pending.project, createdAt: Date.now() });
+      return; // saveLead marks the guard
+    }
+
+    if (leadSeen(phone, email)) return; // already a lead on record for this identity
+
+    const registered = () => {
+      if (leadSeen(phone, email)) return; // a real intent lead landed first
+      saveLead({ name, email, phone, intent: "registered", createdAt: Date.now() });
+    };
+    if (opts?.immediate) registered();
+    else window.setTimeout(registered, 3500);
+  } catch { /* lead capture must never break sign-in */ }
 }
 
 /* Buyer Office membership — global (join once, unit intelligence unlocks

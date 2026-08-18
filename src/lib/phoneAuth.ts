@@ -28,7 +28,7 @@
    and rewriting those call sites is a separate job from putting a real
    OTP in the chat. This file is where that bridge gets cut later.
    ════════════════════════════════════════════════════════════════ */
-import { setSignedIn, signOut, loadAccount, saveAccount, emptyBuyData, type BuyData } from "@/lib/journey";
+import { setSignedIn, signOut, loadAccount, saveAccount, emptyBuyData, flushPendingLead, type BuyData } from "@/lib/journey";
 import { getAnonId, getSessionId } from "@/lib/truthGuideChat";
 import { track } from "@/lib/events";
 import { basePath } from "@/lib/site";
@@ -281,6 +281,7 @@ export async function verifyTwilioOtp(dial: string, phone: string, code: string,
     } catch { /* a full quota must not block a verified sign-in */ }
 
     setSignedIn();
+    flushPendingLead({ phone: e164, name });
     /* Under the anon_id, so it is swept up with the pre-sign-in trail. */
     track("signed_in", { props: { via: "twilio", chatsClaimed: data.chatsClaimed ?? 0, leadsClaimed: data.leadsClaimed ?? 0 } });
     return { ok: true };
@@ -367,6 +368,9 @@ export async function verifyOtp(
     } catch { /* a full quota must not block a verified sign-in */ }
 
     setSignedIn();
+    /* Turn this sign-in into a contact_lead so a registration is never
+       orphaned — the gate's declared intent, else a one-off "registered". */
+    flushPendingLead({ phone: `${dial} ${phone10}`.trim(), name });
     /* Fired BEFORE the events are claimed server-side, so it lands under
        the anon_id and is swept up with the rest of the pre-signup trail —
        putting the sign-in itself in sequence rather than after it. */

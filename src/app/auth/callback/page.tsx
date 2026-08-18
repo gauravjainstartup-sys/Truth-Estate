@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Logo from "@/components/Logo";
 import type { Session } from "@supabase/supabase-js";
 import { supabase, claimAnonymousHistory, finishGoogleAuth } from "@/lib/phoneAuth";
-import { setSignedIn, saveAccount, emptyBuyData } from "@/lib/journey";
+import { setSignedIn, saveAccount, emptyBuyData, flushPendingLead } from "@/lib/journey";
 
 export default function AuthCallbackPage() {
   const [error, setError] = useState<string | null>(null);
@@ -97,6 +97,11 @@ export default function AuthCallbackPage() {
         buy: emptyBuyData,
         booking: null,
       });
+
+      /* Turn this Google sign-in into a contact_lead — the intent a gate
+         stashed before the redirect (e.g. compare-unlock), else a one-off
+         "registered" — so a Google registration is never orphaned either. */
+      flushPendingLead({ email: u.email ?? undefined, name: fullName }, { immediate: true });
 
       /* Claim this device's anonymous trail onto the CANONICAL account — the
          RPC takes identity from the JWT, so it must be the canonical session. */
