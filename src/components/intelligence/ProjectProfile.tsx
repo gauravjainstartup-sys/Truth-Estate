@@ -973,8 +973,12 @@ export default function ProjectProfile({
 
             {/* Project Intelligence Wire — the chronological forensic ground-events
                 log. PUBLISHED dispatches only (public intel), shown to guests and
-                paid readers alike; self-hides when a project has no wire yet. */}
-            <ProjectIntelligenceWire items={p.wireItems} projectName={p.name} />
+                paid readers alike; self-hides when a project has no wire yet.
+                TEMPORARY: gated to preview hosts (stagingPreview) so it can be
+                reviewed on the staging link while it stays hidden on production
+                (truthestate.in never carries a "---" host). Remove the
+                `stagingPreview &&` gate to launch the wire to production. */}
+            {stagingPreview && <ProjectIntelligenceWire items={p.wireItems} projectName={p.name} />}
 
             <Chapter n={chap()} title="What are you actually buying?" framing="The facts of the asset — before we weigh trust." />
 
