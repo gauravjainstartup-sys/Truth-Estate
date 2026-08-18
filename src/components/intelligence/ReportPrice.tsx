@@ -42,14 +42,20 @@ const sinceLaunch = (years: number): string => {
   return `${Number.isInteger(y) ? y.toFixed(0) : y.toFixed(1)} year${y >= 2 ? "s" : ""}`;
 };
 
-export default function ReportPrice({ p, sample = false }: { p: ProjectIntel; sample?: boolean }) {
+export default function ReportPrice({ p, sample = false, unlocked: unlockedProp, onUnlock }: { p: ProjectIntel; sample?: boolean; unlocked?: boolean; onUnlock?: () => void }) {
   const journey = priceJourney(p);
   const roi = roiModel(p);
   /* Frozen sample / static export: the interactive detail is dropped; the
      record + the headline number read fine static. */
   const isStatic = useReportStatic();
   // The projection is part of the paid read — any read entitlement unlocks it.
-  const [unlocked] = useState(() => sample || (typeof window !== "undefined" ? hasReadAccess(p.slug) : false));
+  // When the parent report already knows the reader is unlocked — a real read
+  // entitlement OR the staging demo-unlock — it passes `unlocked` and we defer
+  // to it, so the ROI is never shown locked INSIDE an otherwise-unlocked report
+  // (the report body only renders when unlocked in the first place). Falls back
+  // to the direct entitlement check for any caller that doesn't pass it.
+  const [selfUnlocked] = useState(() => sample || (typeof window !== "undefined" ? hasReadAccess(p.slug) : false));
+  const unlocked = unlockedProp ?? selfUnlocked;
 
   const [holdYears, setHoldYears] = useState(8);
   // `today` starts undefined so SSR and the first client render agree; the
@@ -162,7 +168,10 @@ export default function ReportPrice({ p, sample = false }: { p: ProjectIntel; sa
                     ))}
                   </span>
                   <p className="text-[0.68rem] font-light leading-[1.5] text-[#1a1a1a]/45">The return on your cash flow (XIRR), the capital-vs-rent split, and when to exit are all inside.</p>
-                  <button onClick={openUnitIntel} className="mt-1 rounded-lg bg-[#1e6b45] px-4 py-2 text-[0.74rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Unlock the projection →</button>
+                  {/* "Unlock the projection" opens the READ unlock (the paywall,
+                      or the staging demo-unlock) — NOT the 3D advisor, which is
+                      what the old openUnitIntel handler did. */}
+                  <button onClick={onUnlock ?? openUnitIntel} className="mt-1 rounded-lg bg-[#1e6b45] px-4 py-2 text-[0.74rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Unlock the projection →</button>
                   <p className="text-[0.56rem] text-[#1a1a1a]/35">Free with membership · or ₹{packageById("read").inr.toLocaleString("en-IN")} this project</p>
                 </div>
               )}

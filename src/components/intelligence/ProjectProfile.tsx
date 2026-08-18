@@ -1219,7 +1219,7 @@ export default function ProjectProfile({
             {/* Price dynamics + projection + ROI calculator */}
             {roi && (
               <div id="roi" className="scroll-mt-24">
-                <ReportPrice p={p} sample={sample} />
+                <ReportPrice p={p} sample={sample} unlocked={!locked} onUnlock={openUnlock} />
               </div>
             )}
 
