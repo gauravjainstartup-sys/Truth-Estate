@@ -1,0 +1,36 @@
+name: Deploy One Supabase Edge Function
+
+# Deploys a SINGLE edge function from the dispatched ref — unlike
+# deploy-edge-functions.yml, which deploys all of them. Needed when a working
+# branch has diverged from main on some functions (e.g. main's newer auth work
+# in chat-signin / google-signin): deploying all-from-branch would revert those
+# in production, so we ship just the one function that changed on this branch.
+#
+# Dispatch with the branch that holds the function version you want live.
+
+on:
+  workflow_dispatch:
+    inputs:
+      function:
+        description: "Function directory under supabase/functions/ to deploy (e.g. capture-lead)"
+        type: string
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Show what will deploy
+        run: |
+          echo "ref     : ${{ github.ref_name }}"
+          echo "function: ${{ inputs.function }}"
+          test -d "supabase/functions/${{ inputs.function }}" || { echo "::error::no such function directory"; exit 1; }
+      # --no-verify-jwt: these public functions are called with the anon key and
+      # authorise inside, matching every line in deploy-edge-functions.yml.
+      - run: supabase functions deploy "${{ inputs.function }}" --no-verify-jwt --project-ref lyetvabfgaidvqrbmaoy
