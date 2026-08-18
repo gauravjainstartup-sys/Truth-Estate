@@ -1095,10 +1095,23 @@ export async function fetchProjectWire(projectSlug?: string): Promise<ProjectWir
      the full "gurugram-real-estate-…-titanium-spr-sector-71" report). Guard the
      containment against trivially short slugs so nothing over-matches. */
   const target = projectSlug.toLowerCase().trim();
+  const targetTokens = target.split("-").filter(Boolean);
+  const targetSet = new Set(targetTokens);
   return items.filter((it) => {
     const itSlug = it.projectSlug.toLowerCase().trim();
     if (!itSlug) return false;
     if (itSlug === target) return true;
-    return itSlug.length >= 8 && (target.includes(itSlug) || itSlug.includes(target));
+    // contiguous sub-slug, either direction
+    if (itSlug.length >= 8 && (target.includes(itSlug) || itSlug.includes(target))) return true;
+    // token-subset: a wire slug can COMPRESS the report slug by dropping the
+    // corridor segment — "…-titanium-spr-sector-71" vs the report's
+    // "…-titanium-spr-southern-peripheral-road-spr-corridor-sector-71". Match
+    // when every token of the shorter slug appears in the longer one, guarded
+    // to ≥6 tokens so a generic short slug can't fan out across projects.
+    const itTokens = itSlug.split("-").filter(Boolean);
+    const [small, big] = itTokens.length <= targetTokens.length
+      ? [itTokens, targetSet]
+      : [targetTokens, new Set(itTokens)];
+    return small.length >= 6 && small.every((t) => big.has(t));
   });
 }
