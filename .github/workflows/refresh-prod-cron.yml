@@ -1,0 +1,47 @@
+name: Production data refresh (6h cron)
+
+# ── WHY THIS FILE LIVES ON MAIN WHILE PRODUCTION SERVES ANOTHER BRANCH ──
+#
+# GitHub fires `schedule` triggers ONLY from the default branch, but the
+# site truthestate.in currently deploys from `claude/database-schema-summary-fhhb3k`
+# (main and that branch have diverged; reconciliation is a separate,
+# deliberate project). Re-enabling a schedule inside deploy-cloudrun.yml
+# itself would therefore rebuild MAIN and silently revert production.
+#
+# So this file does the ONE thing a main-side schedule can safely do:
+# every 6 hours it DISPATCHES deploy-cloudrun.yml on the production
+# branch with refresh_snapshot=true — the exact dispatch the founder has
+# been running by hand — so fresh Supabase data (News & Updates, prices,
+# scores) reaches the baked site ~4×/day with no manual step.
+#
+# It deploys whatever that branch's HEAD is; it never builds main and
+# never touches code. At branch reconciliation, retire this file and
+# re-enable the schedule inside deploy-cloudrun.yml instead.
+
+on:
+  schedule:
+    # Off the :00 mark deliberately — GitHub delays top-of-hour crons the most.
+    - cron: "23 */6 * * *"
+  # Manual "Run workflow" button doubles as the wiring test.
+  workflow_dispatch:
+
+concurrency:
+  group: refresh-prod-cron
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Dispatch production deploy (refresh_snapshot=true)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run deploy-cloudrun.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref claude/database-schema-summary-fhhb3k \
+            -f refresh_snapshot=true \
+            -f staging_tag=
+          echo "Dispatched deploy-cloudrun.yml on claude/database-schema-summary-fhhb3k"
