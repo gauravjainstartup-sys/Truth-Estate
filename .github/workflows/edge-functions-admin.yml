@@ -1,0 +1,97 @@
+name: Edge functions admin
+
+# Operator actions, all manual-only. This file also exists on main (same
+# path = same registered workflow); a dispatch runs the copy from the
+# dispatched ref, so this branch's copy adds `verify` without touching
+# main's behaviour.
+#   · inventory — list deployed functions with their last-updated times.
+#   · set-secrets — push EDGE_DB_KEY / EDGE_PUBLISHABLE_KEY (and the shadow
+#     functions' legacy name SERVICE_ROLE_KEY_SUPABASE) into the runtime.
+#   · download — fetch a deployed function's source into the job log.
+#   · verify — diff a deployed function's source against this ref's
+#     supabase/functions/<fn>/. Fails on mismatch, so a green run proves
+#     the repo copy IS what is deployed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "inventory | set-secrets | download | verify"
+        type: choice
+        options: [inventory, set-secrets, download, verify]
+        required: true
+      function:
+        description: "download/verify only: function slug to fetch"
+        type: string
+        required: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    steps:
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Inventory deployed functions
+        if: ${{ inputs.action == 'inventory' }}
+        run: supabase functions list --project-ref lyetvabfgaidvqrbmaoy
+      - name: Download a deployed function's source
+        if: ${{ inputs.action == 'download' }}
+        run: |
+          test -n "${{ inputs.function }}" || { echo "::error::function input required"; exit 1; }
+          supabase functions download "${{ inputs.function }}" --project-ref lyetvabfgaidvqrbmaoy
+          ls -la "supabase/functions/${{ inputs.function }}" || ls -la
+          # Print every source file into the log (artifact storage is not
+          # reachable from every operator environment; the log always is).
+          find "supabase/functions/${{ inputs.function }}" -type f | while read -r f; do
+            echo "═════FILE:$f═════"
+            cat "$f"
+            echo "═════END:$f═════"
+          done
+      - name: Upload the source as an artifact
+        if: ${{ inputs.action == 'download' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: fn-${{ inputs.function }}
+          path: supabase/functions/${{ inputs.function }}/
+          retention-days: 1
+      - name: Check out this ref for verify
+        if: ${{ inputs.action == 'verify' }}
+        uses: actions/checkout@v4
+        with:
+          path: repo
+      - name: Diff deployed source against this ref
+        if: ${{ inputs.action == 'verify' }}
+        run: |
+          test -n "${{ inputs.function }}" || { echo "::error::function input required"; exit 1; }
+          test -d "repo/supabase/functions/${{ inputs.function }}" || { echo "::error::no such function directory on this ref"; exit 1; }
+          # Download into a scratch dir so the checkout is never overwritten.
+          mkdir -p "$RUNNER_TEMP/dl" && cd "$RUNNER_TEMP/dl"
+          supabase functions download "${{ inputs.function }}" --project-ref lyetvabfgaidvqrbmaoy
+          cd "$GITHUB_WORKSPACE"
+          if diff -ru "$RUNNER_TEMP/dl/supabase/functions/${{ inputs.function }}" "repo/supabase/functions/${{ inputs.function }}"; then
+            echo "MATCH: deployed ${{ inputs.function }} is identical to this ref's copy"
+          else
+            echo "::warning::deployed ${{ inputs.function }} differs from this ref (hunks above: deployed → repo)"
+            exit 1
+          fi
+      - name: Set function secrets
+        if: ${{ inputs.action == 'set-secrets' }}
+        run: |
+          if [ -z "${{ secrets.EDGE_DB_KEY }}" ]; then
+            echo "::error::EDGE_DB_KEY repository secret is not set — add it under Settings → Secrets → Actions first."
+            exit 1
+          fi
+          # SERVICE_ROLE_KEY_SUPABASE: the custom secret name the three shadow
+          # functions (send-otp / verify-otp / scrape-rera-project) read their
+          # DB key from — its stored value was the now-revoked legacy service
+          # JWT, which is what broke OTP verification on 19 Aug. Same live
+          # value as EDGE_DB_KEY under the legacy name.
+          supabase secrets set \
+            EDGE_DB_KEY="${{ secrets.EDGE_DB_KEY }}" \
+            EDGE_PUBLISHABLE_KEY="${{ secrets.EDGE_PUBLISHABLE_KEY }}" \
+            SERVICE_ROLE_KEY_SUPABASE="${{ secrets.EDGE_DB_KEY }}" \
+            --project-ref lyetvabfgaidvqrbmaoy
+          echo "Secrets set. Functions pick them up on their next deploy or cold start."
