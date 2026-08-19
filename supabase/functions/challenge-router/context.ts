@@ -164,10 +164,142 @@ function forensicLine(p: ProjectRow): string | null {
   return bits.length ? `- ${p.name}: ${bits.join("; ")}` : null;
 }
 
+/* ════════════════════════════════════════════════════════════════
+   NEWS & UPDATES (project_intelligence_wire)
+
+   The verified ground-events log the site renders in each report's
+   "News & Updates" section — regulatory filings, EPC milestones, JVs,
+   pricing moves. The SITE bakes it at build time; TruthGuide reads it
+   LIVE here (same 5-min cache as the scoreboard), so a fresh dispatch
+   reaches the chat within minutes without a redeploy.
+
+   PUBLISHED rows only. The service key bypasses RLS, so the query pins
+   status=eq.PUBLISHED and the mapper re-checks it — a DRAFT must never
+   reach the model (it would state unreviewed claims as verified fact).
+   ════════════════════════════════════════════════════════════════ */
+export type WireRow = {
+  project_slug: string;
+  project_name: string;
+  event_date: string;
+  category: string;
+  headline: string;
+  verified_facts: string;
+  forensic_impact_type: string;
+  forensic_impact_summary: string;
+  source_name: string;
+  status: string;
+  is_pinned: boolean;
+};
+
+let wireCache: { at: number; rows: WireRow[] } | null = null;
+
+export async function fetchWireRows(deps: DbDeps, now = Date.now()): Promise<WireRow[]> {
+  if (wireCache && now - wireCache.at < CACHE_TTL_MS) return wireCache.rows;
+  const fresh = (
+    await rows<WireRow>(
+      "project_intelligence_wire?select=project_slug,project_name,event_date,category,headline,verified_facts,forensic_impact_type,forensic_impact_summary,source_name,status,is_pinned&status=eq.PUBLISHED&order=event_date.desc,display_order.asc&limit=1000",
+      deps,
+    )
+  ).filter((r) => r.status === "PUBLISHED" && r.project_slug && r.headline);
+  // Never replace a good cache with an empty read (transient blip / renamed
+  // column would otherwise strip every event).
+  if (fresh.length === 0 && wireCache) return wireCache.rows;
+  wireCache = { at: now, rows: fresh };
+  return fresh;
+}
+
+export function resetWireCache(): void {
+  wireCache = null;
+}
+
+const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s);
+
+function fmtDate(iso: string): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+}
+
+/* Which wire rows belong to this report. MIRRORS fetchProjectWire in
+   src/lib/supabase.ts — keep the two in step: exact slug match wins
+   outright (returning ONLY exact rows is what stops "m3m-capital" stealing
+   its "-phase-2" sibling's dispatches), then an exact project-NAME match
+   (for a caller that only has the name), then the same tight fuzzy
+   fallback for a report whose rows were filed under a compressed slug. */
+export function matchWire(all: WireRow[], slugOrName: string): WireRow[] {
+  const target = slugify(slugOrName);
+  if (!target) return [];
+
+  const exact = all.filter((r) => slugify(r.project_slug) === target);
+  if (exact.length) return exact;
+
+  const byName = all.filter((r) => slugify(r.project_name) === target);
+  if (byName.length) return byName;
+
+  const targetTokens = target.split("-").filter(Boolean);
+  const targetSet = new Set(targetTokens);
+  return all.filter((r) => {
+    const itSlug = slugify(r.project_slug);
+    if (!itSlug) return false;
+    if (itSlug.length >= 8 && (target.includes(itSlug) || itSlug.includes(target))) return true;
+    const itTokens = itSlug.split("-").filter(Boolean);
+    const [small, big] = itTokens.length <= targetTokens.length
+      ? [itTokens, targetSet]
+      : [targetTokens, new Set(itTokens)];
+    return small.length >= 6 && small.every((t) => big.has(t));
+  });
+}
+
+/* One event, full depth — project mode only. */
+function projectWireLine(r: WireRow): string {
+  const head = [fmtDate(r.event_date), r.category, r.forensic_impact_type].filter(Boolean).join(" · ");
+  const bits = [`${head} — ${r.headline.trim()}`];
+  const facts = clip((r.verified_facts ?? "").trim(), 300);
+  if (facts) bits.push(`Facts: ${facts}`);
+  const impact = clip((r.forensic_impact_summary ?? "").trim(), 220);
+  if (impact) bits.push(`Impact: ${impact}`);
+  const src = (r.source_name ?? "").trim();
+  if (src) bits.push(`Source: ${src}`);
+  return `- ${bits.join(" ")}`;
+}
+
+/* One event, one compact line — the cross-project digest in general mode. */
+function generalWireLine(r: WireRow): string {
+  return `- ${fmtDate(r.event_date)} · ${(r.project_name ?? "").trim() || r.project_slug} — ${r.category} · ${r.forensic_impact_type}: ${clip(r.headline.trim(), 140)}`;
+}
+
+const PROJECT_NEWS_SHOWN = 10;
+
+export async function buildProjectNews(deps: DbDeps, slugOrName: string): Promise<string | null> {
+  if (!slugOrName?.trim()) return null;
+  const mine = matchWire(await fetchWireRows(deps), slugOrName);
+  if (!mine.length) return null;
+  /* Pinned float to the top, newest first within each group — the same
+     order the report's News & Updates section renders (sort is stable, and
+     the rows arrive event_date desc). */
+  const sorted = [...mine].sort((a, b) => Number(b.is_pinned) - Number(a.is_pinned));
+  const shown = sorted.slice(0, PROJECT_NEWS_SHOWN);
+  const lines = [
+    `── NEWS & UPDATES (this project — ${mine.length} verified ground event${mine.length === 1 ? "" : "s"}, newest first. Use these for questions about recent news, progress, approvals or price moves, and quote the event date) ──`,
+    ...shown.map(projectWireLine),
+  ];
+  if (mine.length > shown.length) lines.push(`(${mine.length - shown.length} older event${mine.length - shown.length === 1 ? "" : "s"} not shown)`);
+  return lines.join("\n");
+}
+
 export type BuiltContext = { publicKnowledge: string; paidKnowledge: string | null; projectCount: number };
 
-export function renderContext(data: LiveData, unlockedProjects: string[] = []): BuiltContext {
+export function renderContext(
+  data: LiveData,
+  unlockedProjects: string[] = [],
+  wire: WireRow[] = [],
+): BuiltContext {
   const { projects, corridors, developers } = data;
+
+  /* Newest first across all projects; capped so 400+ events can't crowd the
+     scoreboard out of the prompt. The per-project chat carries that project's
+     full log via buildProjectNews. */
+  const recentWire = wire.slice(0, 25);
 
   const publicKnowledge = [
     `ROLE: You are TruthGuide, the independent real estate advisor for Truth Estate — a buyer-side-only advisory. No inventory, no developer commission, no paid placement.`,
@@ -183,6 +315,13 @@ export function renderContext(data: LiveData, unlockedProjects: string[] = []): 
     ``,
     `TRACKED PROJECTS (${projects.length}, ranked by Truth Score — this scoreboard is PUBLIC. Use it freely to name projects, quote scores, filter by budget, corridor or configuration, and rank):`,
     ...projects.map(projectLine),
+    ...(recentWire.length
+      ? [
+          ``,
+          `NEWS & UPDATES (the ${recentWire.length} most recent of ${wire.length} verified ground events across tracked projects, newest first — use these for "any recent news / what changed" questions and quote the event date. Only the latest are listed here, so absence is NOT "no news": each project report carries that project's full log in its "News & Updates" section):`,
+          ...recentWire.map(generalWireLine),
+        ]
+      : []),
   ].join("\n");
 
   if (!unlockedProjects.length) {
@@ -215,7 +354,16 @@ export async function buildGeneralContext(
   deps: DbDeps,
   unlockedProjects: string[] = [],
 ): Promise<BuiltContext> {
-  return renderContext(await getLiveData(deps), unlockedProjects);
+  /* The news digest fails soft — a wire outage must never cost the whole
+     scoreboard answer (general mode has no try/catch above this). */
+  const [data, wire] = await Promise.all([
+    getLiveData(deps),
+    fetchWireRows(deps).catch((e) => {
+      console.error("[context] wire read failed", e instanceof Error ? e.message : e);
+      return [] as WireRow[];
+    }),
+  ]);
+  return renderContext(data, unlockedProjects, wire);
 }
 
 /* ════════════════════════════════════════════════════════════════

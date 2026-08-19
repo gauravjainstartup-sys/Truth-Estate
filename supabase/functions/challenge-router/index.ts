@@ -22,7 +22,7 @@
      # optional: supabase secrets set GEMINI_MODEL=gemini-2.5-flash
    ════════════════════════════════════════════════════════════════ */
 import { routeChallenge, type Body, type FetchLike } from "./core.ts";
-import { buildGeneralContext, buildProjectExtras, type FetchLike as CtxFetch } from "./context.ts";
+import { buildGeneralContext, buildProjectExtras, buildProjectNews, type FetchLike as CtxFetch } from "./context.ts";
 import { logTurn, type FetchLike as LogFetch } from "./chatlog.ts";
 
 const MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
@@ -81,11 +81,18 @@ Deno.serve(async (req: Request) => {
           { url: DB_URL, key: DB_KEY, fetchImpl: fetch as unknown as CtxFetch },
           unlocked,
         ),
-      projectExtras: (slugOrName) =>
-        buildProjectExtras(
-          { url: DB_URL, key: DB_KEY, fetchImpl: fetch as unknown as CtxFetch },
-          slugOrName,
-        ),
+      /* Documents/pricing + the project's News & Updates log, both built
+         server-side and both failing soft to null — either block missing
+         just answers without it. */
+      projectExtras: async (slugOrName) => {
+        const deps = { url: DB_URL, key: DB_KEY, fetchImpl: fetch as unknown as CtxFetch };
+        const [ext, news] = await Promise.all([
+          buildProjectExtras(deps, slugOrName).catch(() => null),
+          buildProjectNews(deps, slugOrName).catch(() => null),
+        ]);
+        const blocks = [ext, news].filter(Boolean) as string[];
+        return blocks.length ? blocks.join("\n\n") : null;
+      },
     });
 
     /* Record the turn — BOTH modes now. The site-wide TruthGuide (general)

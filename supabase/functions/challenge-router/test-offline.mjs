@@ -139,4 +139,105 @@ function fakeGemini(reply, capture) {
   ok(!cap.body.systemInstruction.parts[0].text.includes("public scoreboard"), "no scoreboard block appended when the builder is absent");
 }
 
+/* ── 9 · News & Updates (project_intelligence_wire) into the context ── */
+const ctxMod = await import(path.join(here, "context.ts"));
+const { buildProjectNews, matchWire, fetchWireRows, resetWireCache, renderContext } = ctxMod;
+
+const wireRow = (over = {}) => ({
+  project_slug: "gurugram-real-estate-m3m-capital-dwarka-expressway-sector-113",
+  project_name: "M3M Capital",
+  event_date: "2026-08-12",
+  category: "REGULATORY",
+  headline: "RERA extension granted for Phase 1",
+  verified_facts: "HRERA order dated 12 Aug 2026 extends registration to Dec 2027.",
+  forensic_impact_type: "CAUTION",
+  forensic_impact_summary: "Handover moves out a year.",
+  source_name: "HRERA Gurugram",
+  status: "PUBLISHED",
+  is_pinned: false,
+  ...over,
+});
+
+function fakeDb(rowsByPath) {
+  return {
+    url: "http://db",
+    key: "k",
+    fetchImpl: async (url) => {
+      const hit = Object.entries(rowsByPath).find(([p]) => url.includes(p));
+      return {
+        ok: hit != null,
+        status: hit ? 200 : 404,
+        json: async () => (hit ? hit[1] : []),
+        text: async () => "",
+      };
+    },
+  };
+}
+
+{
+  const sibling = wireRow({
+    project_slug: "gurugram-real-estate-m3m-capital-phase-2-dwarka-expressway-sector-113",
+    project_name: "M3M Capital Phase 2",
+    headline: "Phase 2 tower crane erected",
+    event_date: "2026-08-15",
+  });
+  const rows = [sibling, wireRow()];
+
+  const mine = matchWire(rows, "gurugram-real-estate-m3m-capital-dwarka-expressway-sector-113");
+  ok(mine.length === 1 && mine[0].project_name === "M3M Capital", "exact slug match returns ONLY its own rows");
+  const sib = matchWire(rows, "gurugram-real-estate-m3m-capital-phase-2-dwarka-expressway-sector-113");
+  ok(sib.length === 1 && sib[0].project_name === "M3M Capital Phase 2", "sibling keeps its own rows (no cross-steal)");
+  const byName = matchWire(rows, "M3M Capital Phase 2");
+  ok(byName.length === 1 && byName[0].headline.includes("crane"), "project-NAME fallback matches exactly by name");
+}
+
+{
+  resetWireCache();
+  const deps = fakeDb({ "project_intelligence_wire": [wireRow(), wireRow({ status: "DRAFT", headline: "DRAFT LEAK" })] });
+  const news = await buildProjectNews(deps, "gurugram-real-estate-m3m-capital-dwarka-expressway-sector-113");
+  ok(news != null && news.includes("NEWS & UPDATES"), "project news block renders");
+  ok(news.includes("RERA extension granted"), "block carries the headline");
+  ok(news.includes("12 Aug 2026") && news.includes("CAUTION"), "block carries date + impact type");
+  ok(news.includes("HRERA Gurugram"), "block carries the source");
+  ok(!news.includes("DRAFT LEAK"), "a DRAFT row never reaches the model (defence in depth)");
+  const none = await buildProjectNews(deps, "gurugram-real-estate-unrelated-project-sector-1");
+  ok(none === null, "project with no events → null (section simply absent)");
+}
+
+{
+  resetWireCache();
+  const many = Array.from({ length: 14 }, (_, i) =>
+    wireRow({ event_date: `2026-07-${String(28 - i).padStart(2, "0")}`, headline: `Event ${i}` }));
+  const deps = fakeDb({ "project_intelligence_wire": many });
+  const news = await buildProjectNews(deps, "M3M Capital");
+  ok(news.includes("older events not shown"), "per-project cap of 10 announces what it dropped");
+  const pinned = await (async () => {
+    resetWireCache();
+    const d2 = fakeDb({ "project_intelligence_wire": [wireRow({ headline: "FRESH EVENT" }), wireRow({ event_date: "2026-01-01", is_pinned: true, headline: "PINNED OLD" })] });
+    return buildProjectNews(d2, "M3M Capital");
+  })();
+  ok(pinned.indexOf("PINNED OLD") < pinned.indexOf("FRESH EVENT"), "pinned event floats first (mirrors the site)");
+}
+
+{
+  resetWireCache();
+  const deps = fakeDb({ nothing: [] }); // wire path 404s → fails soft
+  const news = await buildProjectNews(deps, "M3M Capital");
+  ok(news === null, "wire read failure → null, never a throw");
+}
+
+{
+  const data = {
+    projects: [{ name: "DLF The Arbour", developer: "DLF", location: null, microMarket: "GCE", truthScore: 92, min_price_cr: 6.5, avg_cost_sqft: 22000, config: "4 BHK", deliveryYear: "2027", redFlags: null, delayRisk: null }],
+    corridors: [], developers: ["DLF"], fetchedAt: 0,
+  };
+  const withWire = renderContext(data, [], [wireRow()]);
+  ok(withWire.publicKnowledge.includes("NEWS & UPDATES"), "general context carries the cross-project news digest");
+  ok(withWire.publicKnowledge.includes("M3M Capital — REGULATORY · CAUTION"), "digest line names project, category and impact");
+  const withoutWire = renderContext(data, []);
+  ok(!withoutWire.publicKnowledge.includes("NEWS & UPDATES"), "no wire rows → no news section (unchanged prompt)");
+  const capped = renderContext(data, [], Array.from({ length: 40 }, (_, i) => wireRow({ headline: `E${i}` })));
+  ok(capped.publicKnowledge.includes("25 most recent of 40"), "general digest caps at 25 and says so");
+}
+
 console.log(`\n${pass} checks passed.`);
