@@ -40,6 +40,13 @@ jobs:
           test -n "${{ inputs.function }}" || { echo "::error::function input required"; exit 1; }
           supabase functions download "${{ inputs.function }}" --project-ref lyetvabfgaidvqrbmaoy
           ls -la "supabase/functions/${{ inputs.function }}" || ls -la
+          # Print every source file into the log (artifact storage is not
+          # reachable from every operator environment; the log always is).
+          find "supabase/functions/${{ inputs.function }}" -type f | while read -r f; do
+            echo "═════FILE:$f═════"
+            cat "$f"
+            echo "═════END:$f═════"
+          done
       - name: Upload the source as an artifact
         if: ${{ inputs.action == 'download' }}
         uses: actions/upload-artifact@v4
