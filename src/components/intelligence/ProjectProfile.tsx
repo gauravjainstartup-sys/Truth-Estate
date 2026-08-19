@@ -1174,7 +1174,7 @@ export default function ProjectProfile({
                 Chapter II: freely readable (no sign-up), load-more, and the watch
                 banner is the optional sign-up. Preview-gated (wireLive) until the
                 founder approves the launch to production. */}
-            {wireLive && locked && hasWire && <ProjectIntelligenceWire items={p.wireItems} projectName={p.name} />}
+            {wireLive && locked && hasWire && <ProjectIntelligenceWire items={p.wireItems} projectName={p.name} placement="locked" />}
 
             {/* ── The paywall boundary. From Chapter II · Pillar I (Developer DNA)
                down, the analysis is paid: a guest sees nothing here (the dossier
@@ -1229,7 +1229,7 @@ export default function ProjectProfile({
                 inside the `locked ? null` fragment, so it is paid-readers-only;
                 the locked reader saw it after Chapter II above. Preview-gated
                 (wireLive) until launch. */}
-            {wireLive && hasWire && <ProjectIntelligenceWire items={p.wireItems} projectName={p.name} />}
+            {wireLive && hasWire && <ProjectIntelligenceWire items={p.wireItems} projectName={p.name} placement="unlocked" />}
 
             <Chapter n={chap()} title="So should you buy it?" framing="The same evidence, read for your situation." />
 

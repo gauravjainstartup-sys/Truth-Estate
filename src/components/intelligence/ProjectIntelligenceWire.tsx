@@ -81,9 +81,14 @@ function sortNewestFirst(items: ProjectWireItem[]): ProjectWireItem[] {
 export default function ProjectIntelligenceWire({
   items,
   projectName,
+  placement,
 }: {
   items?: ProjectWireItem[] | null;
   projectName: string;
+  /* Where this instance is rendered — "locked" (after Ch II, the free
+     engagement probe) or "unlocked" (between Ch III and IV). Stamped onto the
+     engagement events so the two can be read apart. */
+  placement?: "locked" | "unlocked";
 }) {
   const [activeCategory, setActiveCategory] = useState<string>("ALL");
   const [expanded, setExpanded] = useState(false);
@@ -100,6 +105,15 @@ export default function ProjectIntelligenceWire({
     () => (activeCategory === "ALL" ? wireList : wireList.filter((it) => it.category === activeCategory)),
     [wireList, activeCategory],
   );
+
+  /* Engagement: the section rendered with items. Fires once per mounted
+     instance (the locked and unlocked placements are separate mounts, each
+     stamped with its own placement), batched with the page's other events. */
+  useEffect(() => {
+    if (!wireList.length) return;
+    track("news_viewed", { props: { project: projectName, placement: placement ?? "unknown", count: wireList.length } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectName]);
 
   const shown = expanded ? filteredItems : filteredItems.slice(0, INITIAL_SHOWN);
   const hiddenCount = filteredItems.length - shown.length;
@@ -253,7 +267,16 @@ export default function ProjectIntelligenceWire({
         <div className="mt-5 flex justify-center">
           <button
             type="button"
-            onClick={() => setExpanded((v) => !v)}
+            onClick={() => {
+              // Engagement signal — fire only on the expand ("load more")
+              // direction, before flipping state (no side effect in the updater).
+              if (!expanded) {
+                track("news_load_more", {
+                  props: { project: projectName, placement: placement ?? "unknown", shownBefore: INITIAL_SHOWN, total: filteredItems.length, category: activeCategory },
+                });
+              }
+              setExpanded((v) => !v);
+            }}
             className="inline-flex items-center gap-2 rounded-full border border-[#1a1a1a]/15 bg-white px-5 py-2.5 text-[0.8rem] font-semibold text-[#1a1a1a]/75 transition-colors hover:border-[#1a1a1a]/35 hover:text-[#1a1a1a]"
           >
             {expanded ? "Show less" : `Load more — ${hiddenCount} earlier update${hiddenCount === 1 ? "" : "s"}`}

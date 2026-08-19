@@ -70,7 +70,12 @@ export type EventName =
   /* ── Deal Room mandate funnel (Stage-1 demand experiment). ── */
   | "deal_room_mandate_started"      // the mandate wizard was opened
   | "deal_room_mandate_submitted"    // a Deal Room mandate was submitted — the demand signal
-  | "deal_room_track_viewed";        // the buyer reopened /deal-room/track to watch their mandate
+  | "deal_room_track_viewed"         // the buyer reopened /deal-room/track to watch their mandate
+  /* ── News & Updates engagement — the section is a free, load-more feed on the
+     report; these measure whether readers dig into it (props.placement =
+     "locked" | "unlocked", so the locked engagement probe can be read apart). ── */
+  | "news_viewed"                    // the News & Updates section rendered with items
+  | "news_load_more";                // the reader expanded past the first items
 
 type Queued = {
   name: EventName;
