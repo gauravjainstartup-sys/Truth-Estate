@@ -15,8 +15,12 @@ on:
       action:
         description: "inventory | set-secrets"
         type: choice
-        options: [inventory, set-secrets]
+        options: [inventory, set-secrets, download]
         required: true
+      function:
+        description: "download only: function slug to fetch"
+        type: string
+        required: false
 
 jobs:
   run:
@@ -30,6 +34,19 @@ jobs:
       - name: Inventory deployed functions
         if: ${{ inputs.action == 'inventory' }}
         run: supabase functions list --project-ref lyetvabfgaidvqrbmaoy
+      - name: Download a deployed function's source
+        if: ${{ inputs.action == 'download' }}
+        run: |
+          test -n "${{ inputs.function }}" || { echo "::error::function input required"; exit 1; }
+          supabase functions download "${{ inputs.function }}" --project-ref lyetvabfgaidvqrbmaoy
+          ls -la "supabase/functions/${{ inputs.function }}" || ls -la
+      - name: Upload the source as an artifact
+        if: ${{ inputs.action == 'download' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: fn-${{ inputs.function }}
+          path: supabase/functions/${{ inputs.function }}/
+          retention-days: 1
       - name: Set function secrets
         if: ${{ inputs.action == 'set-secrets' }}
         run: |
