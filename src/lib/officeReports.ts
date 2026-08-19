@@ -356,7 +356,7 @@ export function reportUpdates(dates: SectionDates | null | undefined, since: num
    ════════════════════════════════════════════════════════════════ */
 const SB_URL = "https://lyetvabfgaidvqrbmaoy.supabase.co";
 const SB_ANON =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5ZXR2YWJmZ2FpZHZxcmJtYW95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MDI2MzEsImV4cCI6MjA5MzI3ODYzMX0.zJzqyfhANxChklw7bEiOc7PwSq2R9wiJIpS39wCYS_8";
+  "sb_publishable_bLpHCRL6Xa0viqYeEuM3NA_U5VvNWwq";
 
 /* The session phoneAuth writes on a verified sign-in. Read inline rather
    than importing phoneAuth so this data layer keeps its single dependency

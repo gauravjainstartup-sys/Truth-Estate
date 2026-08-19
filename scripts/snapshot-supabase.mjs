@@ -23,7 +23,7 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 
 const SUPABASE_URL = process.env.SNAPSHOT_SUPABASE_URL || "https://lyetvabfgaidvqrbmaoy.supabase.co";
 const KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5ZXR2YWJmZ2FpZHZxcmJtYW95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MDI2MzEsImV4cCI6MjA5MzI3ODYzMX0.zJzqyfhANxChklw7bEiOc7PwSq2R9wiJIpS39wCYS_8";
+  "sb_publishable_bLpHCRL6Xa0viqYeEuM3NA_U5VvNWwq";
 const OUT = process.env.SNAPSHOT_DIR || ".data-snapshot";
 const REQUIRED = "backlog_listing_public_v3";
 const H = { apikey: KEY, Authorization: `Bearer ${KEY}` };

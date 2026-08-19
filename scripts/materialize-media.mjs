@@ -31,7 +31,7 @@ import path from "node:path";
 // same public-by-design pair the app uses (src/lib/supabase.ts)
 const SUPABASE_URL = "https://lyetvabfgaidvqrbmaoy.supabase.co";
 const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5ZXR2YWJmZ2FpZHZxcmJtYW95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MDI2MzEsImV4cCI6MjA5MzI3ODYzMX0.zJzqyfhANxChklw7bEiOc7PwSq2R9wiJIpS39wCYS_8";
+  "sb_publishable_bLpHCRL6Xa0viqYeEuM3NA_U5VvNWwq";
 
 const OUT_DIR = "public/live-media";
 const MANIFEST = "src/lib/live-media.manifest.json";

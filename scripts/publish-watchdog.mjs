@@ -35,7 +35,7 @@ const SUPABASE_URL = "https://lyetvabfgaidvqrbmaoy.supabase.co";
 /* The public anon key — the same one the browser bundle ships. It reads
    published views and nothing else; there is no secret here to leak. */
 const ANON =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5ZXR2YWJmZ2FpZHZxcmJtYW95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MDI2MzEsImV4cCI6MjA5MzI3ODYzMX0.zJzqyfhANxChklw7bEiOc7PwSq2R9wiJIpS39wCYS_8";
+  "sb_publishable_bLpHCRL6Xa0viqYeEuM3NA_U5VvNWwq";
 
 /* Every table the build reads and that carries a publish trigger. Adding
    a source to the snapshot without adding it here means the watchdog

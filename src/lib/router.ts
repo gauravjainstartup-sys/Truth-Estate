@@ -12,7 +12,7 @@ const DEFAULT_URL = "https://lyetvabfgaidvqrbmaoy.supabase.co/functions/v1/omni-
 /* public anon key (same as src/lib/supabase.ts — RLS is the boundary);
    sent so the router also works if deployed without --no-verify-jwt */
 const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5ZXR2YWJmZ2FpZHZxcmJtYW95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MDI2MzEsImV4cCI6MjA5MzI3ODYzMX0.zJzqyfhANxChklw7bEiOc7PwSq2R9wiJIpS39wCYS_8";
+  "sb_publishable_bLpHCRL6Xa0viqYeEuM3NA_U5VvNWwq";
 
 /* test seam: Playwright/local mocks point the canvas at a stub server */
 function routerUrl(): string {

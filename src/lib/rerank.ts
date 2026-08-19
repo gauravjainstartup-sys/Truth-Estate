@@ -17,7 +17,7 @@ const DEFAULT_URL = "https://lyetvabfgaidvqrbmaoy.supabase.co/functions/v1/short
 /* public anon key (same as src/lib/supabase.ts — RLS is the boundary);
    sent so the function also works if deployed WITH JWT verification on */
 const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5ZXR2YWJmZ2FpZHZxcmJtYW95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MDI2MzEsImV4cCI6MjA5MzI3ODYzMX0.zJzqyfhANxChklw7bEiOc7PwSq2R9wiJIpS39wCYS_8";
+  "sb_publishable_bLpHCRL6Xa0viqYeEuM3NA_U5VvNWwq";
 
 const TIMEOUT_MS = 1500; // never hold the shortlist longer than this — kept
                          // tight so last-submit → shortlist stays ~2–3s; the
