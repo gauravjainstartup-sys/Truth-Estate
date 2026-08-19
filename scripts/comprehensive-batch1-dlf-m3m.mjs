@@ -75,10 +75,10 @@ export async function run() {
   // ═══════════════════════════════════════════════════════════════════════════
   addWire(
     "DLF The Arbour", "2026-07-15", "CONSTRUCTION",
-    "Superstructure Crosses 26th Slab Milestone with Monolithic Formwork on GCRE",
-    "• Shapoorji Pallonji / Leighton construction consortium advancing at 7-day slab cycles across all 5 high-rise towers (G+39).\n• External facade framing and Low-E double glazing mockups approved by DLF engineering audits.\n• HARERA Q2 2026 filing confirms civil execution is 4 months ahead of internal baseline.",
+    "Superstructure Crosses 26th Slab Milestone Across All 5 High-Rise Towers on GCRE",
+    "• Lead civil contractors Ahluwalia Contracts (₹744.68 Cr civil contract) and B L Kashyap & Sons (₹369 Cr structural package) executing vertical progression at 7-day slab cycles across all 5 towers (G+39).\n• Structural engineering oversight governed by Thornton Tomasetti; Otis India destination management elevators (CompassPlus) installation underway.\n• HARERA Q2 2026 filing confirms civil execution is tracking ahead of internal delivery milestones.",
     "POSITIVE",
-    "Rapid vertical execution eliminates delay risk on Golf Course Extension Road; structural topping-out modeled for mid-2027.",
+    "Tier-1 structural execution under Ahluwalia Contracts and BL Kashyap eliminates delay risk on Golf Course Extension Road; structural topping-out modeled for mid-2027.",
     "HARERA Gurugram Q2 2026 Progress Filing", "HARERA/QPR/2026/ARBOUR", "https://haryanarera.gov.in", true, 1
   );
   addWire(
@@ -99,11 +99,11 @@ export async function run() {
   );
   addWire(
     "DLF The Arbour", "2024-08-20", "CONSTRUCTION",
-    "Raft Foundation Concrete Casting Completed Across All 5 Towers",
-    "• Continuous 35,000 cum high-strength concrete pour concluded with temperature-controlled curing.\n• Sub-structure basement retaining walls completed under strict seismic Zone IV engineering standards.",
+    "Ahluwalia Contracts & BL Kashyap Mobilized for ₹1,100+ Cr Civil Structural Works",
+    "• DLF awarded ₹744.68 Cr main civil package to Ahluwalia Contracts (India) Ltd and ₹369 Cr structural package to B L Kashyap & Sons Ltd.\n• Raft foundation casting completed with over 35,000 cum concrete poured under Thornton Tomasetti structural design.",
     "POSITIVE",
-    "Foundational milestone successfully cleared, transitioning project to rapid vertical execution.",
-    "BSE Corporate Disclosure", "DLF/CORP/EPC/63", "https://www.bseindia.com", false, 4
+    "Engaging listed civil engineering majors ensures structural integrity and eliminates subcontractor execution bottlenecks.",
+    "BSE / NSE Corporate Filings (Ahluwalia & BL Kashyap)", "AHLUWALIA/BSE/DLF63", "https://www.bseindia.com", false, 4
   );
   addWire(
     "DLF The Arbour", "2023-03-01", "REGULATORY",
