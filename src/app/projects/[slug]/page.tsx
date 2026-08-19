@@ -235,6 +235,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       minPriceCr: live.minPriceCr,
       seoSlug: live.seoSlug,
     });
+    const wire = await fetchProjectWire(slug);
+    const topWire = wire?.find((w) => w.isPinned) || wire?.[0];
+    const ogDesc = topWire
+      ? `${topWire.headline} — ${topWire.forensicImpactSummary || meta.description}`.slice(0, 220)
+      : meta.description;
+
     return {
       /* Absolute so the layout's "… | Truth Estate" template can't double up —
          meta.title already reads as a finished headline. */
@@ -247,10 +253,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       openGraph: {
         type: "article",
         title: meta.title,
-        description: meta.description,
+        description: ogDesc,
         url: `/projects/${slug}`,
       },
-      twitter: { card: "summary_large_image", title: meta.title, description: meta.description },
+      twitter: { card: "summary_large_image", title: meta.title, description: ogDesc },
     };
   }
   const target = await legacyTarget(slug);
@@ -342,6 +348,51 @@ function faqLdFor(faqs: { q: string; a: string }[]) {
   };
 }
 
+/* Ground Intelligence Timeline serialized as Schema ItemList */
+function timelineLdFor(wire: import("@/lib/supabase").ProjectWireItem[], p: { name: string; seoSlug?: string | null }) {
+  if (!wire || wire.length === 0) return null;
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: `${p.name} — Verified Ground Intelligence Timeline`,
+    description: `Chronological forensic ground updates, structural milestones, pricing benchmarks and regulatory filings for ${p.name}.`,
+    itemListElement: wire.map((item, idx) => ({
+      "@type": "ListItem",
+      position: idx + 1,
+      name: item.headline,
+      description: (item.verifiedFacts || "").replace(/\n+/g, " ").trim(),
+      url: `${SITE_URL}/projects/${p.seoSlug}`,
+    })),
+  };
+}
+
+/* Latest Ground Intelligence Dispatch as NewsArticle / Report markup */
+function newsLdFor(wire: import("@/lib/supabase").ProjectWireItem[], p: { name: string; seoSlug?: string | null }) {
+  if (!wire || wire.length === 0) return null;
+  const top = wire.find((w) => w.isPinned) || wire[0];
+  if (!top) return null;
+  return {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: top.headline,
+    description: top.forensicImpactSummary || (top.verifiedFacts || "").replace(/\n+/g, " ").trim(),
+    datePublished: top.eventDate,
+    dateModified: "2026-08-19",
+    mainEntityOfPage: `${SITE_URL}/projects/${p.seoSlug}`,
+    author: {
+      "@type": "Organization",
+      name: "Truth Estate Forensic Intelligence",
+      url: SITE_URL,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "Truth Estate",
+      url: SITE_URL,
+    },
+    articleBody: (top.verifiedFacts || "").replace(/\n+/g, " ").trim(),
+  };
+}
+
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   // The sample read is now a bottom sheet opened from the locked report — the
@@ -398,6 +449,8 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       }
     }
     const liveFaqs = projectFaqs(intel);
+    const timelineLd = timelineLdFor(projectWire, live);
+    const newsLd = newsLdFor(projectWire, live);
 
     /* The brief-ranked section runs client-side, after a reader unlocks —
        so it never appeared in a prerendered page, and it was still reading
@@ -420,6 +473,12 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(productLdFor(intel))} />
         {liveFaqs.length > 0 && (
           <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(faqLdFor(liveFaqs))} />
+        )}
+        {timelineLd && (
+          <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(timelineLd)} />
+        )}
+        {newsLd && (
+          <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(newsLd)} />
         )}
         <LiveProjectProfile baked={intel} row={live} corridorPsf={corridorPsf} related={related} alternatives={alternatives} liveScores={scores} />
       </>

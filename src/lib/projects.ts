@@ -870,6 +870,27 @@ export function projectFaqs(p: ProjectIntel): { q: string; a: string }[] {
        cards are drawn from, so the FAQ and the section agree. */
     faqs.push({ q: `Is ${p.developer} financially sound?`, a: financialAnswer(p, dev) });
   }
+
+  // Enrich with live Project Intelligence Wire facts (Contractor, Pacing & Statutory RERA)
+  if (p.wireItems && p.wireItems.length > 0) {
+    const constItem = p.wireItems.find((w) => w.category === "CONSTRUCTION") || p.wireItems[0];
+    if (constItem) {
+      const cleanFacts = (constItem.verifiedFacts || "").replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
+      faqs.push({
+        q: `What is the latest 2026 construction update and contractor for ${p.name}?`,
+        a: `${constItem.headline}. ${cleanFacts} Verified under ${constItem.sourceName}${constItem.sourceDocumentRef ? ` (${constItem.sourceDocumentRef})` : ""}.`,
+      });
+    }
+    const regItem = p.wireItems.find((w) => w.category === "REGULATORY");
+    if (regItem) {
+      const cleanFacts = (regItem.verifiedFacts || "").replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
+      faqs.push({
+        q: `What is the official HARERA registration and completion timeline for ${p.name}?`,
+        a: `${regItem.headline}. ${cleanFacts} Official statutory filing source: ${regItem.sourceName}${regItem.sourceDocumentRef ? ` (${regItem.sourceDocumentRef})` : ""}.`,
+      });
+    }
+  }
+
   if (market) {
     faqs.push({
       q: `What is the investment outlook for ${p.market}?`,
