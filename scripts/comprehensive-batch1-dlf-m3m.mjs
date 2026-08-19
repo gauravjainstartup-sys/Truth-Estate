@@ -2,7 +2,11 @@ import { readFile } from "node:fs/promises";
 import { clearExistingWires } from "./wire-cleaner.mjs";
 
 const SUPABASE_URL = "https://lyetvabfgaidvqrbmaoy.supabase.co";
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5ZXR2YWJmZ2FpZHZxcmJtYW95Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzcwMjYzMSwiZXhwIjoyMDkzMjc4NjMxfQ.imprq_CcBZ8MoVn_E26E-EmmwgC6FdNSYoc2xTgwrSI";
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!SERVICE_KEY) {
+  // Never hardcode credentials — a committed key is a leaked key.
+  throw new Error("SUPABASE_SERVICE_ROLE_KEY env var is required.");
+}
 
 function liveSlug(name) {
   return (name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
