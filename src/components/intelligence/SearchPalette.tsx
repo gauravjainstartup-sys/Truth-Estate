@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { basePath } from "@/lib/site";
 import { projectHref } from "@/lib/projectHref";
+import { track } from "@/lib/events";
 
 
 type P = { n: string; s: string; q?: string; m?: string; d?: string; ts?: number };
@@ -66,6 +67,7 @@ export default function SearchPalette({ className = "", current }: { className?:
   const [ix, setIx] = useState<Index | null>(cached);
   const [sel, setSel] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const searchLoggedRef = useRef(""); // last settled query we logged a result for
 
   const show = useCallback(() => {
     setOpen(true);
@@ -98,6 +100,23 @@ export default function SearchPalette({ className = "", current }: { className?:
 
   const hits = useMemo(() => (ix ? filter(ix, q) : []), [ix, q]);
   useEffect(() => { setSel(0); }, [q]);
+
+  /* Analytics — debounced (q here updates per keystroke, unlike the hero's), one
+     event per settled query with the hit count, and a distinct search_no_results
+     for a real query that matched nothing (the recall gap that drives a bounce). */
+  useEffect(() => {
+    if (!open) return;
+    const query = q.trim();
+    if (query.length < 2 || !ix) return;
+    const id = setTimeout(() => {
+      if (searchLoggedRef.current === query) return;
+      searchLoggedRef.current = query;
+      const n = hits.length;
+      track("search_performed", { props: { source: "palette", query, hits: n } });
+      if (n === 0) track("search_no_results", { props: { source: "palette", query } });
+    }, 600);
+    return () => clearTimeout(id);
+  }, [q, ix, open, hits.length]);
 
   const go = (h: Hit) => { window.location.href = h.href; };
   const onInputKey = (e: React.KeyboardEvent) => {

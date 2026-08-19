@@ -44,6 +44,13 @@ export type EventName =
   /* Home-page search engaged — the first keystroke, or the mobile search
      surface opened. Top-of-funnel intent, distinct from chat_opened. */
   | "search_started"
+  /* A search that SETTLED on a query (debounced), and the failure case broken
+     out: search_no_results names a query that matched nothing — the recall gap
+     that sends a searcher back to Google, and the bounce driver we could not
+     previously see. props: source ("home" | "palette"), query, hits. Together
+     they give the denominator (searches) and numerator (misses). */
+  | "search_performed"
+  | "search_no_results"
   /* ── Funnel events (GA4/Amplitude spec) — the click/attempt half the
      "completed" events above never captured. All fire via track() so they
      reach GA4 + Amplitude synchronously. ── */

@@ -93,6 +93,7 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
   const triggerRef = useRef<HTMLInputElement>(null);
   const overlayInputRef = useRef<HTMLInputElement>(null);
   const searchStartedRef = useRef(false);
+  const searchLoggedRef = useRef(""); // last settled query we logged a result for
   const rawId = useId();
   const uid = rawId.replace(/[^a-zA-Z0-9_-]/g, "");
   const panelId = `${uid}-panel`;
@@ -162,6 +163,21 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
   }, [state, recentProjects, mostList, results, devResults, nearby]);
 
   useEffect(() => { setActive(-1); }, [q, state, variant]);
+
+  /* Analytics — one event per SETTLED query (`q` is already debounced), with
+     the hit count, and a distinct search_no_results when a real query matched
+     nothing. Held until the result is FINAL: a zero-project query waits for the
+     developer index (else a match about to appear would read as a miss). This is
+     what makes "failed search → bounce" measurable — see events.ts. */
+  useEffect(() => {
+    if (!typing) return;
+    const hits = results.length + devResults.length;
+    const settled = hits > 0 || devsLoaded;
+    if (!settled || searchLoggedRef.current === q) return;
+    searchLoggedRef.current = q;
+    track("search_performed", { props: { source: "home", query: q, hits } });
+    if (hits === 0) track("search_no_results", { props: { source: "home", query: q } });
+  }, [q, typing, results.length, devResults.length, devsLoaded]);
 
   useEffect(() => {
     if (active >= 0) document.getElementById(optId(active))?.scrollIntoView({ block: "nearest" });
