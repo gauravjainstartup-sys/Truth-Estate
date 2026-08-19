@@ -399,8 +399,14 @@ function psfRange(s: string | null): [number, number] | null {
     const v = parseFloat(t.replace(/,/g, "").replace(/k/i, ""));
     return k || v < 100 ? v * 1000 : v;
   }).filter((v) => Number.isFinite(v) && v > 0);
-  if (nums.length < 2) return null;
-  const lo = Math.min(nums[0], nums[1]), hi = Math.max(nums[0], nums[1]);
+  /* A SINGLE filed value ("33500") is a real rate, not a non-answer — treat it
+     as a degenerate range [n, n]. The old `< 2` guard discarded it, which made
+     `range` null and forced the corridor fallback for every project priced with
+     one number: Oberoi 360 North filed 33500/sqft, dropped to the ~20k corridor
+     floor, and its ticket read ₹11.2 Cr — under its own ₹21 Cr filed minimum.
+     A two-value field still becomes [min, max] exactly as before. */
+  if (!nums.length) return null;
+  const lo = Math.min(...nums), hi = Math.max(...nums);
   return lo > 0 && hi >= lo ? [lo, hi] : null;
 }
 
@@ -730,7 +736,7 @@ export function liveProjectIntel(
   const smallestSuper = superAreas.length ? Math.min(...superAreas) : null;
   const largestSuper = superAreas.length ? Math.max(...superAreas) : null;
   const fallbackCr = row.minPriceCr ?? row.roiCostCr ?? (row.budget ? parseFloat(row.budget.replace(/[^\d.]/g, "")) : NaN);
-  const lo =
+  let lo =
     psfLo && smallestSuper
       ? Math.round(((psfLo * smallestSuper) / 1e7) * 10) / 10
       : Number.isFinite(fallbackCr) ? fallbackCr : 0;
@@ -750,6 +756,20 @@ export function liveProjectIntel(
   if (psfLo && largestSuper) {
     const top = Math.round(((psfLo * largestSuper) / 1e7) * 10) / 10;
     if (top > lo) hi = top;
+  }
+
+  /* THE FILED MINIMUM IS A FLOOR — never quote below it when we priced off the
+     CORRIDOR (the project has no filed psf of its own, so `range` is null and
+     psfLo fell back to corridorBand.low). The corridor floor understates an
+     above-corridor project: Oberoi 360 North has no filed psf, so its ticket
+     computed as corridor ₹20k × ~5.5k sq ft = ₹11.2 Cr — under its own filed
+     ₹21 Cr minimum. The developer's min_price is authoritative and current, so
+     lift the entry ticket to it (and carry the top up if it now trails). This
+     is scoped to the corridor-fallback path ONLY: a project WITH its own filed
+     psf keeps the reconciled psf×area ticket untouched. */
+  if (range == null && Number.isFinite(fallbackCr) && fallbackCr > lo) {
+    lo = fallbackCr;
+    if (hi < lo) hi = lo;
   }
 
   /* price journey — only when the extended row carries a parseable
