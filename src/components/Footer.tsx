@@ -50,7 +50,7 @@ const columns: {
     label: "Company",
     links: [
       { t: "About Truth Estate", h: "/about" },
-      { t: "Our Mission", h: "/about" },
+      { t: "Vision & Mission", h: "/vision" },
       { t: "FAQs", h: "/methodology#faq" },
       { t: "Contact", h: "/contact" },
     ],

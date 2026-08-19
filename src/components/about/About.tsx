@@ -446,6 +446,16 @@ export default function About() {
                 Challenge TruthGuide &rarr;
               </button>
             </div>
+
+            {/* Cross link to Vision & Mission */}
+            <div className="mt-14 border-t border-[#1a1a1a]/8 pt-8">
+              <a
+                href={`${basePath}/vision`}
+                className="text-[0.85rem] font-light text-[#1a1a1a]/45 underline underline-offset-4 transition-colors hover:text-[#1a1a1a]"
+              >
+                Read our full 10-year manifesto: Vision &amp; Mission &rarr;
+              </a>
+            </div>
           </div>
         </section>
       </div>

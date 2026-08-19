@@ -115,7 +115,18 @@ NEXT_PUBLIC_BASE_PATH="" NEXT_PUBLIC_ORIGIN=https://truthestate.in npm run build
 
 ---
 
-## 6. Future UI Enhancements (Held for Next Sprint)
+## 6. Vision & Mission Architecture (`/vision`)
+
+We deployed a dedicated, high-impact **Vision & Mission** page at `/vision` matching the exact visual luxury design system of `About.tsx` (`bg-[#0a0a0a]` dark hero, `#c9a96e` gold accents, serif typography, ivory body transition).
+
+### Structural Differentiation:
+* **`/about` (About Truth Estate)**: Focuses on **Who We Are & What We Built** (Founding thesis, traditional broken system contrast, 4 product pillars, research steps, and anti-commitments).
+* **`/vision` (Vision & Mission)**: Focuses on **Where We Are Taking the Industry & Why It Matters** (Macro vision of converting India's $300B+ property market into an institutional asset class, the 5 Mission Pillars, the 7 Immutable Truths manifesto, the 10-Year Horizon, and closing fiduciary pledge).
+* **Footer Navigation Fixed**: Updated the duplicate footer link from `"Our Mission" -> /about` to `"Vision & Mission" -> /vision`.
+
+---
+
+## 7. Future UI Enhancements (Held for Next Sprint)
 
 Per product direction, the following UI additions are queued for the subsequent release:
 1. **Corridor Wire Feeds (`/intelligence/markets/[slug]`)**: Aggregating all ground events by micro-market (e.g. Golf Course Extension corridor live stream).
