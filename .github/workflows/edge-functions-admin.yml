@@ -61,8 +61,14 @@ jobs:
             echo "::error::EDGE_DB_KEY repository secret is not set — add it under Settings → Secrets → Actions first."
             exit 1
           fi
+          # SERVICE_ROLE_KEY_SUPABASE: the custom secret name the three shadow
+          # functions (send-otp / verify-otp / scrape-rera-project) read their
+          # DB key from — its stored value was the now-revoked legacy service
+          # JWT, which is what broke OTP verification on 19 Aug. Same live
+          # value as EDGE_DB_KEY under the legacy name.
           supabase secrets set \
             EDGE_DB_KEY="${{ secrets.EDGE_DB_KEY }}" \
             EDGE_PUBLISHABLE_KEY="${{ secrets.EDGE_PUBLISHABLE_KEY }}" \
+            SERVICE_ROLE_KEY_SUPABASE="${{ secrets.EDGE_DB_KEY }}" \
             --project-ref lyetvabfgaidvqrbmaoy
           echo "Secrets set. Functions pick them up on their next deploy or cold start."
