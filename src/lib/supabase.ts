@@ -46,13 +46,38 @@ async function readFixture(view: string): Promise<Row[] | null> {
   }
 }
 
+/* ── same-origin live micro-cache ──────────────────────────────────
+   In the BROWSER, these public reads go to OUR origin (/live/rest/…),
+   where nginx holds each unique query for 120s (deploy/nginx.conf.template).
+   N simultaneous visitors then cost ONE Supabase read per query per window
+   instead of N — Supabase egress stops scaling with traffic — and a change
+   AG saves in the database reaches every surface within ~2 minutes with no
+   deploy. The proxy pins the anon key server-side, so only anon-visible
+   rows can ever sit in the shared cache.
+
+   Where the proxy does not exist (localhost dev, the github.io build), the
+   first failed call flips liveProxyAbsent and everything falls back to
+   Supabase directly — the exact pre-proxy behaviour. */
+let liveProxyAbsent = false;
+
 async function sbRows(view: string, query: string): Promise<Row[] | null> {
   if (process.env.SUPABASE_FIXTURES) return readFixture(view);
+  const headers = { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` };
+  const direct = `${SUPABASE_URL}/rest/v1/${view}?${query}`;
+  const viaProxy = typeof window !== "undefined" && !liveProxyAbsent;
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${view}?${query}`, {
-      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+    let res = await fetch(viaProxy ? `/live/rest/${view}?${query}` : direct, {
+      headers,
       signal: AbortSignal.timeout(12000),
     });
+    if (viaProxy && !res.ok) {
+      /* 404/405 = no proxy at this origin (dev server, github.io) — remember
+         and stop trying. Anything else (a 400 the query would earn anyway, a
+         transient 5xx) retries direct just this once without giving up on
+         the cache for the rest of the session. */
+      if (res.status === 404 || res.status === 405) liveProxyAbsent = true;
+      res = await fetch(direct, { headers, signal: AbortSignal.timeout(12000) });
+    }
     if (!res.ok) {
       console.warn(`[supabase] ${view} → HTTP ${res.status} — section hidden`);
       return null;
@@ -64,6 +89,31 @@ async function sbRows(view: string, query: string): Promise<Row[] | null> {
     console.warn(`[supabase] ${view} unreachable (${e instanceof Error ? e.message : "error"}) — section hidden`);
     return null;
   }
+}
+
+/* ── freshness stamps (for /build-stamp.json and the cron's dirty probe) ──
+   Max updated_at per stamped table. Live mode reads ONE row per table
+   (~200 bytes); fixtures mode scans the fixture. backlog_project_data
+   (scores/prices) carries no updated_at, so an edit there is invisible
+   here — the cron compensates by force-refreshing once the baked site is
+   older than ~a day, and those values render LIVE client-side anyway. */
+const STAMPED_TABLES = [
+  "project_intelligence_wire",
+  "project_extended_details",
+  "micro_market_data",
+  "backlog_projects",
+] as const;
+
+export async function fetchMaxStamps(): Promise<Record<string, string | null>> {
+  const out: Record<string, string | null> = {};
+  for (const t of STAMPED_TABLES) {
+    const rows = await sbRows(t, "select=updated_at&order=updated_at.desc&limit=1");
+    out[t] = (rows ?? []).reduce<string | null>((m, r) => {
+      const v = s(r.updated_at);
+      return v && (!m || v > m) ? v : m;
+    }, null);
+  }
+  return out;
 }
 
 async function sbCount(view: string, filter = ""): Promise<number | null> {

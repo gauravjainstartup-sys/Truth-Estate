@@ -380,6 +380,7 @@ jobs:
             BASE=$(gcloud run services describe "$SERVICE_NAME" --region "$GCP_REGION" \
                    --project "$GCP_PROJECT_ID" --format="value(status.url)")
             TAG_URL="https://${{ inputs.staging_tag }}---${BASE#https://}"
+            echo "TAG_URL=$TAG_URL" >> "$GITHUB_ENV"
             echo "::notice title=Staging preview URL::$TAG_URL"
             { echo "### 🔗 Staging preview (no live traffic)"; echo ""; echo "$TAG_URL"; } >> "$GITHUB_STEP_SUMMARY"
           else
@@ -404,6 +405,36 @@ jobs:
               --to-latest --quiet
             echo "Traffic routed 100% to the latest revision."
           fi
+
+      - name: Smoke-test the staging preview
+        # The tagged revision took no traffic, so this hits the TAG URL —
+        # enough to prove the image serves pages, the /live/rest micro-cache
+        # proxies AND caches, and the build stamp emitted, before anything
+        # touches production.
+        if: ${{ inputs.staging_tag != '' }}
+        run: |
+          echo "Preview: $TAG_URL"
+          fail=0
+          check() {
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$TAG_URL$1")
+            [ "$code" = "$2" ] && echo "  ok   $1 → $code" || { echo "  FAIL $1 → $code (want $2)"; fail=1; }
+          }
+          check "/" 200
+          check "/projects/gurugram-real-estate-dlf-the-arbour-golf-course-road-extension-gcre-sector-63" 200
+          check "/build-stamp.json" 200
+          LIVE="/live/rest/micro_market_data?select=slug,name&order=name.asc&limit=24"
+          # Two hits over ONE connection so both land on the same instance:
+          # the second must come from the micro-cache.
+          hits=$(curl -s -D - -o /dev/null -D - -o /dev/null "$TAG_URL$LIVE" "$TAG_URL$LIVE" \
+                 | tr -d '\r' | awk -F': ' 'tolower($1)=="x-cache-status"{print $2}' | paste -sd, -)
+          case "$hits" in
+            *,HIT) echo "  ok   /live/rest cache → $hits" ;;
+            *)     echo "  FAIL /live/rest cache → ${hits:-(no header)} (want …,HIT)"; fail=1 ;;
+          esac
+          curl -s "$TAG_URL$LIVE" | grep -q '"slug"' \
+            && echo "  ok   /live/rest returns PostgREST JSON" \
+            || { echo "  FAIL /live/rest body is not the expected JSON"; fail=1; }
+          exit $fail
 
       - name: Smoke-test what actually went live
         # Skipped for a staging preview: the live URL still serves the current
@@ -451,5 +482,18 @@ jobs:
           curl -s "$URL/intelligence" | grep -q "Truth Intelligence" \
             && echo "  ok   content served from this image" \
             || { echo "  FAIL /intelligence has no expected content"; fail=1; }
+
+          # The /live/rest micro-cache is what keeps the client in sync with
+          # the DB between deploys — prove it proxies AND caches (two hits
+          # over one connection land on the same instance; the second must
+          # be a HIT), and that the cron's dirty-probe anchor emitted.
+          check "/build-stamp.json" 200
+          LIVE="/live/rest/micro_market_data?select=slug,name&order=name.asc&limit=24"
+          hits=$(curl -s -D - -o /dev/null -D - -o /dev/null "$URL$LIVE" "$URL$LIVE" \
+                 | tr -d '\r' | awk -F': ' 'tolower($1)=="x-cache-status"{print $2}' | paste -sd, -)
+          case "$hits" in
+            *,HIT) echo "  ok   /live/rest cache → $hits" ;;
+            *)     echo "  FAIL /live/rest cache → ${hits:-(no header)} (want …,HIT)"; fail=1 ;;
+          esac
 
           exit $fail
