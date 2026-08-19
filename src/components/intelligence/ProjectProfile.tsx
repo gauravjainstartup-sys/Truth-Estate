@@ -170,21 +170,40 @@ function configsCompact(list: string[]): string {
    any distinct special types. The exact per-config breakdown lives in Homes.
    "3.5 BHK · 4.5 BHK · 4 BHK Duplex Penthouse · 5 BHK Duplex Penthouse"
      → "3.5–5 BHK · Duplex Penthouse". */
+/* The "Configs" vital is a SUMMARY: the BHK range plus any genuine config TYPE
+   (Studio, Duplex, Penthouse…). It is NOT the place for unit modifiers — the
+   "+ 2T", "+ Study", "+ Servant", "+ Utility" suffixes on the filed bhk_type are
+   variants of a home, not configurations, and joining them with " · " rendered
+   the "4–5 BHK · + Studio" mess the founder flagged. Drop the modifiers, keep
+   the real types; the per-variant detail still lives in Homes & floor plans. */
+const CONFIG_TYPE = /\b(studios?|duplex|penthouse|simplex|triplex|villas?|plots?|sco|retail|shops?|office)\b/i;
 function configsDisplay(list: string[]): string {
   if (!list.length) return "—";
   const nums: number[] = [];
-  const extras: string[] = []; // "Duplex Penthouse" etc., or a whole non-BHK label
+  const types: string[] = [];
+  const seen = new Set<string>();
+  const cap = (w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+  const addTypes = (label: string) => {
+    const found = label.match(new RegExp(CONFIG_TYPE.source, "gi"));
+    if (found) for (const w of found) { const t = cap(w); if (!seen.has(t.toLowerCase())) { seen.add(t.toLowerCase()); types.push(t); } }
+    return !!found;
+  };
   for (const c of list) {
     const m = c.match(/^\s*(\d+(?:\.\d+)?)\s*BHK\b\s*(.*)$/i);
-    if (m) { nums.push(parseFloat(m[1])); const t = m[2].trim(); if (t) extras.push(t); }
-    else { const t = c.trim(); if (t) extras.push(t); }
+    if (m) { nums.push(parseFloat(m[1])); addTypes(m[2] || ""); }
+    else {
+      // a non-BHK config: keep a recognised type, else keep the whole label so a
+      // commercial / bespoke config is never silently dropped
+      const t = c.trim();
+      if (t && !addTypes(t) && !seen.has(t.toLowerCase())) { seen.add(t.toLowerCase()); types.push(t); }
+    }
   }
   const parts: string[] = [];
   if (nums.length) {
     const lo = Math.min(...nums), hi = Math.max(...nums);
     parts.push(lo === hi ? `${lo} BHK` : `${lo}–${hi} BHK`);
   }
-  for (const e of extras) if (!parts.includes(e)) parts.push(e); // dedupe, keep order
+  parts.push(...types);
   return parts.join(" · ") || "—";
 }
 
