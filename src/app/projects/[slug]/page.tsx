@@ -377,7 +377,10 @@ function newsLdFor(wire: import("@/lib/supabase").ProjectWireItem[], p: { name: 
     headline: top.headline,
     description: top.forensicImpactSummary || (top.verifiedFacts || "").replace(/\n+/g, " ").trim(),
     datePublished: top.eventDate,
-    dateModified: "2026-08-19",
+    /* The row's own last-edit time — a hardcoded build date would claim every
+       article was freshly modified on every rebuild, which is exactly the
+       freshness-faking search engines penalise. */
+    dateModified: (top.updatedAt || "").slice(0, 10) || top.eventDate,
     mainEntityOfPage: `${SITE_URL}/projects/${p.seoSlug}`,
     author: {
       "@type": "Organization",
