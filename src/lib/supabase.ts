@@ -1045,14 +1045,22 @@ export type ProjectWireItem = {
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED" | "DELETED";
   isPinned: boolean;
   displayOrder: number;
+  /* When the row itself was last edited — the honest dateModified for the
+     NewsArticle markup (event_date is when the event HAPPENED). */
+  updatedAt?: string | null;
 };
 
 export async function fetchProjectWire(projectSlug?: string): Promise<ProjectWireItem[]> {
   const query = "select=*&status=eq.PUBLISHED&order=event_date.desc,display_order.asc&limit=1000";
   const rows = await sbRows("project_intelligence_wire", query);
   if (!rows) return [];
-  
-  const items: ProjectWireItem[] = rows.map((r) => ({
+
+  const items: ProjectWireItem[] = rows
+    // The live query pins status=PUBLISHED, but a SNAPSHOT build reads a fixture
+    // pulled with select=* (no status filter) — so enforce PUBLISHED here too, or
+    // a DRAFT row would bake into the static HTML and its SEO markup.
+    .filter((r) => (s(r.status) ?? "DRAFT") === "PUBLISHED")
+    .map((r) => ({
     id: String(r.id),
     projectSlug: s(r.project_slug) ?? "",
     projectName: s(r.project_name) ?? "",
@@ -1068,23 +1076,40 @@ export async function fetchProjectWire(projectSlug?: string): Promise<ProjectWir
     status: (s(r.status) as ProjectWireItem["status"]) || "PUBLISHED",
     isPinned: Boolean(r.is_pinned),
     displayOrder: typeof r.display_order === "number" ? r.display_order : 0,
+    updatedAt: s(r.updated_at),
   }));
 
-  if (projectSlug) {
-    const cleanTarget = projectSlug.toLowerCase().trim();
-    // Match exact slug or sub-slug (e.g. titanium-spr vs gurugram-real-estate-signature-global-titanium-spr-sector-71)
-    return items.filter((it) => {
-      const itSlug = it.projectSlug.toLowerCase().trim();
-      const itName = it.projectName.toLowerCase().trim();
-      return (
-        itSlug === cleanTarget ||
-        cleanTarget.includes(itSlug) ||
-        itSlug.includes(cleanTarget) ||
-        cleanTarget.includes(itName.replace(/[^a-z0-9]/g, "-")) ||
-        (cleanTarget.includes("titanium") && itSlug.includes("titanium"))
-      );
-    });
-  }
+  if (!projectSlug) return items;
+  const target = projectSlug.toLowerCase().trim();
 
-  return items;
+  /* EXACT match wins outright — and returning ONLY exact matches when any exist
+     is what stops a project from stealing its sibling's dispatches. 106 of the
+     107 projects file their wire rows under the report's own slug, so this is the
+     normal path. Without this cut, a substring/name rule lets a base slug match
+     its "-phase-2" / "-ii" sibling (and vice versa), and the two reports swap
+     news — measured at 11 such cross-matches across the 107, which would bake
+     the WRONG project's events into the OG cards, NewsArticle/ItemList markup
+     and wire FAQs of those pages. */
+  const exact = items.filter((it) => it.projectSlug.toLowerCase().trim() === target);
+  if (exact.length) return exact;
+
+  /* Fallback ONLY for a report with no row filed under its exact slug: a wire
+     slug that COMPRESSES the report's corridor segment — e.g. a row filed as
+     "…-titanium-spr-sector-71" for the report
+     "…-titanium-spr-southern-peripheral-road-spr-corridor-sector-71". Kept tight
+     (a long contiguous sub-slug either direction, or a ≥6-token subset); reached
+     only by a report that has no exact row, so it can't cross-match a sibling
+     that filed its own. */
+  const targetTokens = target.split("-").filter(Boolean);
+  const targetSet = new Set(targetTokens);
+  return items.filter((it) => {
+    const itSlug = it.projectSlug.toLowerCase().trim();
+    if (!itSlug) return false;
+    if (itSlug.length >= 8 && (target.includes(itSlug) || itSlug.includes(target))) return true;
+    const itTokens = itSlug.split("-").filter(Boolean);
+    const [small, big] = itTokens.length <= targetTokens.length
+      ? [itTokens, targetSet]
+      : [targetTokens, new Set(itTokens)];
+    return small.length >= 6 && small.every((t) => big.has(t));
+  });
 }
