@@ -12,7 +12,7 @@
    last_updated_qpr_date · location = location_last_updated_date · hero =
    project_extended_details.hero_date. */
 import { fetchBacklogFull, fetchExtendedDetails, fetchBacklogNameIds, fetchProjectWire, type LiveExtendedDetails } from "@/lib/supabase";
-import { newestWireEventDate } from "@/lib/reportAdapter";
+import { latestWireUpdate } from "@/lib/reportAdapter";
 
 export const dynamic = "force-static";
 
@@ -61,7 +61,7 @@ export async function GET() {
       hero,
       /* Newest News & Updates event, through the same exact-slug matcher the
          report itself uses — a fresh dispatch flips the Office badge. */
-      news: newestWireEventDate(await fetchProjectWire(r.seoSlug)),
+      news: latestWireUpdate(await fetchProjectWire(r.seoSlug)),
     };
   }
   return Response.json(out);

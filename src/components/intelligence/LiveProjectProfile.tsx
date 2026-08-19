@@ -30,7 +30,7 @@
 
 import { useEffect, useState } from "react";
 import ProjectProfile from "./ProjectProfile";
-import { liveProjectIntel, matchKey, newestWireEventDate } from "@/lib/reportAdapter";
+import { liveProjectIntel, matchKey, latestWireUpdate } from "@/lib/reportAdapter";
 import { fetchBacklogRowLive, fetchConfigsLive, fetchDeveloperFinancialsLive, fetchExtendedLive, resolveBacklogId } from "@/lib/supabaseBrowser";
 import { trackedRankOf, type ProjectIntel } from "@/lib/projects";
 import type { CorridorPsf, LiveBacklogFull } from "@/lib/supabase";
@@ -95,7 +95,7 @@ export default function LiveProjectProfile({
         /* newsLatest from the BAKED wire items — the wire isn't refetched
            live, and without this the live recompose would drop the news
            contribution to "last updated" that the build put there. */
-        { remoteMedia: true, newsLatest: newestWireEventDate(baked.wireItems) },
+        { remoteMedia: true, newsLatest: latestWireUpdate(baked.wireItems) },
       );
       // The Truth-Score pillar breakdown the adapter can't produce — fresh from
       // the live row, else the baked value.

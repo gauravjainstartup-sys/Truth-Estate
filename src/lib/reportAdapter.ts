@@ -469,18 +469,27 @@ export function matchKey<T>(id: string, name: string, table: Record<string, T> |
    Supabase fetchers, which this browser-safe module deliberately does not
    import. They call liveProjectIntel + matchKey (exported below) from here. */
 
-/* Newest News & Updates EVENT date for a project — the wire's contribution
-   to the report's "last updated" (and to report-dates.json for the Office
-   badge). Event date, not the rows' updated_at: batch upserts stamp every
-   wire row in one second, which would flatten all 107 reports onto one
-   uniform date. */
-export function newestWireEventDate(
-  items: { eventDate?: string | null }[] | null | undefined,
+/* The News & Updates contribution to the report's "last updated" (and to
+   report-dates.json for the Office badge): per event, the day it was first
+   PUBLISHED on our platform (created_at) — so a newly filed event counts
+   as an update on its publication day even when it documents something
+   older — falling back to the event's own date for rows created before
+   the ingestion pipeline preserved created_at. Before that switch the
+   pipeline wiped and re-inserted the whole table, stamping all 453 rows'
+   created_at in one batch second; trusting those would flatten every
+   report onto one uniform date (the same reason updated_at is never used
+   here). The epoch sits between the last wipe (06:15 UTC) and the first
+   genuine upsert row. */
+const WIRE_CREATED_AT_EPOCH = "2026-08-19T07:00:00+00:00";
+
+export function latestWireUpdate(
+  items: { eventDate?: string | null; createdAt?: string | null }[] | null | undefined,
 ): string | null {
   let bestT = -Infinity;
   let best: string | null = null;
   for (const it of items ?? []) {
-    const sv = it.eventDate;
+    const created = it.createdAt && it.createdAt > WIRE_CREATED_AT_EPOCH ? it.createdAt : null;
+    const sv = created ?? it.eventDate;
     if (!sv) continue;
     const t = new Date(sv).getTime();
     if (!Number.isNaN(t) && t > bestT) { bestT = t; best = sv; }

@@ -20,7 +20,7 @@ import ProjectProfile from "@/components/intelligence/ProjectProfile";
 import LiveProjectProfile from "@/components/intelligence/LiveProjectProfile";
 import { getProjectSeoMeta } from "@/lib/seoCategoryGrowth";
 import { liveProjectIntel } from "@/lib/liveReport";
-import { newestWireEventDate } from "@/lib/reportAdapter";
+import { latestWireUpdate } from "@/lib/reportAdapter";
 import { breadcrumbLd, ldJson } from "@/lib/seo";
 import { relatedProjects } from "@/lib/relatedProjects";
 import { avgSlippageFromLedger } from "@/lib/developers";
@@ -426,7 +426,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       ...liveProjectIntel(live, extKey ? ext![extKey] : null, cfgKey ? cfg![cfgKey] : null, corridorPsf, {
         /* The newest wire event joins the "last updated" candidates, so
            fresh News & Updates move the report's own updated date. */
-        newsLatest: newestWireEventDate(projectWire),
+        newsLatest: latestWireUpdate(projectWire),
       }),
       trackedRank: trackedRankOf(live.truthScore, scores),
       wireItems: projectWire,

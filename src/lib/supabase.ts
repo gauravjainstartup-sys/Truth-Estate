@@ -1110,6 +1110,11 @@ export type ProjectWireItem = {
   /* When the row itself was last edited — the honest dateModified for the
      NewsArticle markup (eventDate is when the event HAPPENED on the ground). */
   updatedAt?: string | null;
+  /* When the event was first PUBLISHED on our platform. Trustworthy only
+     after the ingestion pipeline switched to a created_at-preserving upsert
+     (19 Aug 2026) — see latestWireUpdate() in reportAdapter for the epoch
+     guard that ignores the pre-switch wipe stamps. */
+  createdAt?: string | null;
 };
 
 export async function fetchProjectWire(projectSlug?: string): Promise<ProjectWireItem[]> {
@@ -1141,6 +1146,7 @@ export async function fetchProjectWire(projectSlug?: string): Promise<ProjectWir
     isPinned: Boolean(r.is_pinned),
     displayOrder: n(r.display_order) ?? 0,
     updatedAt: s(r.updated_at),
+    createdAt: s(r.created_at),
   }));
 
   if (!projectSlug) return items;
