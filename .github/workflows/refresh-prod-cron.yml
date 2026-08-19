@@ -35,7 +35,56 @@ jobs:
     permissions:
       actions: write
     steps:
+      # ── Dirty probe ────────────────────────────────────────────────
+      # A rebuild pulls a ~7.4MB snapshot from Supabase; most 6h ticks
+      # nothing has changed, so probe first (~1KB): the newest updated_at
+      # across the stamped tables vs the live site's /build-stamp.json
+      # (emitted at bake time). Skip when the bake already has the newest
+      # data — but force a refresh once the bake is >26h old, because
+      # backlog_project_data (scores/prices) carries NO updated_at and an
+      # edit there is invisible to this probe. Fails OPEN: if either side
+      # can't be read, refresh anyway — a probe glitch must never cost
+      # freshness. The key below is the PUBLIC anon key (same one shipped
+      # in the site's client JS).
+      - name: Probe — did the data change since the live bake?
+        id: probe
+        run: |
+          ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5ZXR2YWJmZ2FpZHZxcmJtYW95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MDI2MzEsImV4cCI6MjA5MzI3ODYzMX0.zJzqyfhANxChklw7bEiOc7PwSq2R9wiJIpS39wCYS_8"
+          SB="https://lyetvabfgaidvqrbmaoy.supabase.co/rest/v1"
+          newest=""
+          for t in project_intelligence_wire project_extended_details micro_market_data backlog_projects; do
+            v=$(curl -sf --max-time 20 "$SB/$t?select=updated_at&order=updated_at.desc.nullslast&limit=1" \
+                  -H "apikey: $ANON" -H "Authorization: Bearer $ANON" \
+                | sed -n 's/.*"updated_at":"\([^"]*\)".*/\1/p')
+            echo "  $t → ${v:-none}"
+            if [ -n "$v" ] && [ "$v" \> "$newest" ]; then newest="$v"; fi
+          done
+          stamp=$(curl -sf --max-time 20 "https://truthestate.in/build-stamp.json" || true)
+          baked_max=$(printf '%s' "$stamp" | sed -n 's/.*"maxUpdatedAt":"\([^"]*\)".*/\1/p')
+          baked_at=$(printf '%s' "$stamp" | sed -n 's/.*"bakedAt":"\([^"]*\)".*/\1/p')
+          echo "newest DB stamp : ${newest:-unknown}"
+          echo "baked max stamp : ${baked_max:-unknown} (bakedAt ${baked_at:-unknown})"
+          stale=""
+          if [ -n "$baked_at" ]; then
+            baked_s=$(date -u -d "$baked_at" +%s 2>/dev/null || echo 0)
+            [ $(( $(date -u +%s) - baked_s )) -gt 93600 ] && stale="yes"
+          fi
+          if [ -z "$newest" ] || [ -z "$baked_max" ]; then
+            echo "decision: REFRESH (probe or stamp unreadable — failing open)"
+            echo "refresh=yes" >> "$GITHUB_OUTPUT"
+          elif [ "$newest" \> "$baked_max" ]; then
+            echo "decision: REFRESH (new data since the bake)"
+            echo "refresh=yes" >> "$GITHUB_OUTPUT"
+          elif [ -n "$stale" ]; then
+            echo "decision: REFRESH (bake older than 26h — stamp-less tables catch-up)"
+            echo "refresh=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "decision: SKIP (live bake already has the newest data)"
+            echo "refresh=no" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Dispatch production deploy (refresh_snapshot=true)
+        if: steps.probe.outputs.refresh == 'yes'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -45,3 +94,7 @@ jobs:
             -f refresh_snapshot=true \
             -f staging_tag=
           echo "Dispatched deploy-cloudrun.yml on claude/database-schema-summary-fhhb3k"
+
+      - name: Skip — nothing to refresh
+        if: steps.probe.outputs.refresh == 'no'
+        run: echo "No data change since the live bake and the bake is fresh — no deploy dispatched, no snapshot pulled."
