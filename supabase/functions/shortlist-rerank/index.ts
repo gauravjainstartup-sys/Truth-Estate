@@ -34,7 +34,7 @@ const MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
    response — we swallow it. Requires a one-time `shortlist_log` table. */
 function logBrief(body: Body, answer: RerankAnswer): Promise<void> {
   const url = Deno.env.get("SUPABASE_URL");
-  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const key = (Deno.env.get("EDGE_DB_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"));
   if (!url || !key || !body?.brief) return Promise.resolve();
   const entry = {
     brief: body.brief,

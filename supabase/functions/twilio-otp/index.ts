@@ -37,7 +37,7 @@ import { corsHeaders, handleTwilioOtp, type Env } from "./core.ts";
 
 const env: Env = {
   DB_URL: Deno.env.get("SUPABASE_URL") ?? "",
-  SERVICE_KEY: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+  SERVICE_KEY: (Deno.env.get("EDGE_DB_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) ?? "",
   JWT_SECRET: Deno.env.get("PROJECT_JWT_SECRET") ?? "",
   TW_SID: Deno.env.get("TWILIO_ACCOUNT_SID") ?? "",
   TW_TOKEN: Deno.env.get("TWILIO_AUTH_TOKEN") ?? "",

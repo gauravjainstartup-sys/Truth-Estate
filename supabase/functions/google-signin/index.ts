@@ -21,7 +21,7 @@ import { corsHeaders, handleGoogleSignin, type Env } from "./core.ts";
 
 const env: Env = {
   DB_URL: Deno.env.get("SUPABASE_URL") ?? "",
-  SERVICE_KEY: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+  SERVICE_KEY: (Deno.env.get("EDGE_DB_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) ?? "",
   JWT_SECRET: Deno.env.get("PROJECT_JWT_SECRET") ?? "",
 };
 

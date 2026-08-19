@@ -32,7 +32,7 @@ const MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
    evolves on the published views. */
 const DB_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const DB_KEY =
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+  (Deno.env.get("EDGE_DB_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) ?? (Deno.env.get("EDGE_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY")) ?? "";
 
 const ALLOW_ORIGIN = [
   /* THE PRODUCTION DOMAIN WAS NEVER ON THIS LIST.
