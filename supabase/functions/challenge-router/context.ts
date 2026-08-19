@@ -318,7 +318,7 @@ export function renderContext(
     ...(recentWire.length
       ? [
           ``,
-          `NEWS & UPDATES (the ${recentWire.length} most recent of ${wire.length} verified ground events across tracked projects, newest first — use these for "any recent news / what changed" questions and quote the event date. Only the latest are listed here, so absence is NOT "no news": each project report carries that project's full log in its "News & Updates" section):`,
+          `NEWS & UPDATES (the ${recentWire.length} most recent of ${wire.length} verified ground events across tracked projects, newest first — use these for "any recent news / what changed" questions and quote the event date. A news question about ANY tracked project is IN SCOPE — never give the out-of-scope line for one. Only the latest events are listed here, so absence is NOT "no news": for a tracked project not listed below, say the latest dispatches don't cover it and point the visitor to the "News & Updates" section of that project's report, which carries its full log):`,
           ...recentWire.map(generalWireLine),
         ]
       : []),
