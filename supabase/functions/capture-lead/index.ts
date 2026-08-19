@@ -21,7 +21,7 @@
 import { captureLead, type FetchLike, type LeadBody } from "./core.ts";
 
 const DB_URL = Deno.env.get("SUPABASE_URL") ?? "";
-const DB_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+const DB_KEY = (Deno.env.get("EDGE_DB_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) ?? "";
 
 const ALLOW_ORIGIN = [
   /^https:\/\/gauravjainstartup-sys\.github\.io$/,

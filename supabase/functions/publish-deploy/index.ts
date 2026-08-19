@@ -34,7 +34,7 @@ function json(body: unknown, status = 200) {
    Fails OPEN: if the table/service-role isn't available, we still dispatch. */
 async function shouldDispatch(): Promise<boolean> {
   const url = Deno.env.get("SUPABASE_URL");
-  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const key = (Deno.env.get("EDGE_DB_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"));
   if (!url || !key || DEBOUNCE_SEC <= 0) return true;
   try {
     const base = `${url}/rest/v1/deploy_throttle`;

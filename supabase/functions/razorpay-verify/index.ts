@@ -37,7 +37,7 @@
    ════════════════════════════════════════════════════════════════ */
 
 const DB_URL = Deno.env.get("SUPABASE_URL") ?? "";
-const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+const SERVICE_KEY = (Deno.env.get("EDGE_DB_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) ?? "";
 const RZP_KEY_ID = Deno.env.get("RAZORPAY_KEY_ID") ?? "";
 const RZP_KEY_SECRET = Deno.env.get("RAZORPAY_KEY_SECRET") ?? "";
 

@@ -1,0 +1,44 @@
+name: Edge functions admin
+
+# Two operator actions for the key-class migration (and future ops), both
+# manual-only:
+#   · inventory — list deployed functions with their last-updated times, so
+#     per-function branch ownership can be established before deploying.
+#   · set-secrets — push EDGE_DB_KEY / EDGE_PUBLISHABLE_KEY from the repo's
+#     Actions secrets into the functions runtime. The functions prefer these
+#     over the platform-injected legacy keys (see the key-resolution lines),
+#     which is what frees them from the legacy JWT secret before it is revoked.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "inventory | set-secrets"
+        type: choice
+        options: [inventory, set-secrets]
+        required: true
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    steps:
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Inventory deployed functions
+        if: ${{ inputs.action == 'inventory' }}
+        run: supabase functions list --project-ref lyetvabfgaidvqrbmaoy
+      - name: Set function secrets
+        if: ${{ inputs.action == 'set-secrets' }}
+        run: |
+          if [ -z "${{ secrets.EDGE_DB_KEY }}" ]; then
+            echo "::error::EDGE_DB_KEY repository secret is not set — add it under Settings → Secrets → Actions first."
+            exit 1
+          fi
+          supabase secrets set \
+            EDGE_DB_KEY="${{ secrets.EDGE_DB_KEY }}" \
+            EDGE_PUBLISHABLE_KEY="${{ secrets.EDGE_PUBLISHABLE_KEY }}" \
+            --project-ref lyetvabfgaidvqrbmaoy
+          echo "Secrets set. Functions pick them up on their next deploy or cold start."

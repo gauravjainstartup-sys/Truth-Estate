@@ -37,8 +37,8 @@
    ════════════════════════════════════════════════════════════════ */
 
 const DB_URL = Deno.env.get("SUPABASE_URL") ?? "";
-const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+const SERVICE_KEY = (Deno.env.get("EDGE_DB_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) ?? "";
+const ANON_KEY = (Deno.env.get("EDGE_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY")) ?? "";
 /* The project's JWT secret (Supabase → Settings → API → JWT Secret), set
    as a function secret. Its PRESENCE is the on-switch for real sessions:
    while it is unset, mintSession() returns null and this function behaves
