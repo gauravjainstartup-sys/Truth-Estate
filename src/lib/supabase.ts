@@ -1057,6 +1057,9 @@ export type ProjectWireItem = {
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED" | "DELETED";
   isPinned: boolean;
   displayOrder: number;
+  /* When the row itself was last edited — the honest dateModified for the
+     NewsArticle markup (eventDate is when the event HAPPENED on the ground). */
+  updatedAt?: string | null;
 };
 
 export async function fetchProjectWire(projectSlug?: string): Promise<ProjectWireItem[]> {
@@ -1087,6 +1090,7 @@ export async function fetchProjectWire(projectSlug?: string): Promise<ProjectWir
     status: (s(r.status) as ProjectWireItem["status"]) || "PUBLISHED",
     isPinned: Boolean(r.is_pinned),
     displayOrder: n(r.display_order) ?? 0,
+    updatedAt: s(r.updated_at),
   }));
 
   if (!projectSlug) return items;

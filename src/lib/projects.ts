@@ -873,6 +873,30 @@ export function projectFaqs(p: ProjectIntel): { q: string; a: string }[] {
        cards are drawn from, so the FAQ and the section agree. */
     faqs.push({ q: `Is ${p.developer} financially sound?`, a: financialAnswer(p, dev) });
   }
+  /* News & Updates facts as FAQs (AG's backend SEO pass, ported): the latest
+     construction and statutory dispatches answered in the visitor's own
+     search phrasing, with the source named. Renders through the existing FAQ
+     section and FAQPage markup — nothing new in the UI, just richer rows.
+     wireItems is exact-slug matched upstream, so the facts are this
+     project's own. */
+  if (p.wireItems && p.wireItems.length > 0) {
+    const constItem = p.wireItems.find((w) => w.category === "CONSTRUCTION") ?? p.wireItems[0];
+    if (constItem) {
+      const cleanFacts = (constItem.verifiedFacts || "").replace(/\s+/g, " ").trim();
+      faqs.push({
+        q: `What is the latest construction update and contractor for ${p.name}?`,
+        a: `${constItem.headline}. ${cleanFacts} Verified under ${constItem.sourceName}${constItem.sourceDocumentRef ? ` (${constItem.sourceDocumentRef})` : ""}.`,
+      });
+    }
+    const regItem = p.wireItems.find((w) => w.category === "REGULATORY");
+    if (regItem) {
+      const cleanFacts = (regItem.verifiedFacts || "").replace(/\s+/g, " ").trim();
+      faqs.push({
+        q: `What is the official HARERA registration and completion timeline for ${p.name}?`,
+        a: `${regItem.headline}. ${cleanFacts} Official statutory filing source: ${regItem.sourceName}${regItem.sourceDocumentRef ? ` (${regItem.sourceDocumentRef})` : ""}.`,
+      });
+    }
+  }
   if (market) {
     faqs.push({
       q: `What is the investment outlook for ${p.market}?`,

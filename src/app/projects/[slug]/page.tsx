@@ -235,6 +235,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       minPriceCr: live.minPriceCr,
       seoSlug: live.seoSlug,
     });
+    /* Social cards lead with the project's latest verified ground event (AG's
+       OG-freshness pass) — a share on WhatsApp/LinkedIn shows this month's
+       milestone instead of evergreen copy. The SEARCH description stays
+       meta.description: the curated buyer-intent copy is what should rank. */
+    const wire = await fetchProjectWire(slug);
+    const topWire = wire.find((w) => w.isPinned) ?? wire[0];
+    const ogDesc = topWire
+      ? `${topWire.headline} — ${topWire.forensicImpactSummary || meta.description}`.slice(0, 220)
+      : meta.description;
     return {
       /* Absolute so the layout's "… | Truth Estate" template can't double up —
          meta.title already reads as a finished headline. */
@@ -247,10 +256,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       openGraph: {
         type: "article",
         title: meta.title,
-        description: meta.description,
+        description: ogDesc,
         url: `/projects/${slug}`,
       },
-      twitter: { card: "summary_large_image", title: meta.title, description: meta.description },
+      twitter: { card: "summary_large_image", title: meta.title, description: ogDesc },
     };
   }
   const target = await legacyTarget(slug);
@@ -338,6 +347,49 @@ function faqLdFor(faqs: { q: string; a: string }[]) {
   };
 }
 
+/* ── News & Updates as structured data (AG's backend SEO pass, ported) ──
+   The same wire log the report renders and TruthGuide serves, exposed to
+   crawlers: the full timeline as an ItemList, and the latest dispatch as a
+   NewsArticle. Both render only when the project has events, and both key
+   on the exact-slug matcher, so a report can never carry a sibling's news. */
+type WireLite = import("@/lib/supabase").ProjectWireItem;
+
+function timelineLdFor(wire: WireLite[], p: { name: string; seoSlug?: string | null }) {
+  if (!wire.length) return null;
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: `${p.name} — Verified Ground Intelligence Timeline`,
+    description: `Chronological forensic ground updates, structural milestones, pricing benchmarks and regulatory filings for ${p.name}.`,
+    itemListElement: wire.map((item, idx) => ({
+      "@type": "ListItem",
+      position: idx + 1,
+      name: item.headline,
+      description: (item.verifiedFacts || "").replace(/\n+/g, " ").trim(),
+      url: `${SITE_URL}/projects/${p.seoSlug}`,
+    })),
+  };
+}
+
+function newsLdFor(wire: WireLite[], p: { name: string; seoSlug?: string | null }) {
+  const top = wire.find((w) => w.isPinned) ?? wire[0];
+  if (!top) return null;
+  return {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: top.headline,
+    description: top.forensicImpactSummary || (top.verifiedFacts || "").replace(/\n+/g, " ").trim(),
+    datePublished: top.eventDate,
+    /* The row's own last-edit time — a hardcoded build date would claim every
+       article was freshly modified on every rebuild (freshness-faking). */
+    dateModified: (top.updatedAt || "").slice(0, 10) || top.eventDate,
+    mainEntityOfPage: `${SITE_URL}/projects/${p.seoSlug}`,
+    author: { "@type": "Organization", name: "Truth Estate Forensic Intelligence", url: SITE_URL },
+    publisher: { "@type": "Organization", name: "Truth Estate", url: SITE_URL },
+    articleBody: (top.verifiedFacts || "").replace(/\n+/g, " ").trim(),
+  };
+}
+
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   // The sample read is now a bottom sheet opened from the locked report — the
@@ -393,6 +445,8 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       }
     }
     const liveFaqs = projectFaqs(intel);
+    const timelineLd = timelineLdFor(intel.wireItems ?? [], live);
+    const newsLd = newsLdFor(intel.wireItems ?? [], live);
 
     /* The brief-ranked section runs client-side, after a reader unlocks —
        so it never appeared in a prerendered page, and it was still reading
@@ -415,6 +469,12 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(productLdFor(intel))} />
         {liveFaqs.length > 0 && (
           <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(faqLdFor(liveFaqs))} />
+        )}
+        {timelineLd && (
+          <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(timelineLd)} />
+        )}
+        {newsLd && (
+          <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(newsLd)} />
         )}
         <LiveProjectProfile baked={intel} row={live} corridorPsf={corridorPsf} related={related} alternatives={alternatives} liveScores={scores} />
       </>
