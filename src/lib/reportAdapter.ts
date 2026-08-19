@@ -469,12 +469,31 @@ export function matchKey<T>(id: string, name: string, table: Record<string, T> |
    Supabase fetchers, which this browser-safe module deliberately does not
    import. They call liveProjectIntel + matchKey (exported below) from here. */
 
+/* Newest News & Updates EVENT date for a project — the wire's contribution
+   to the report's "last updated" (and to report-dates.json for the Office
+   badge). Event date, not the rows' updated_at: batch upserts stamp every
+   wire row in one second, which would flatten all 107 reports onto one
+   uniform date. */
+export function newestWireEventDate(
+  items: { eventDate?: string | null }[] | null | undefined,
+): string | null {
+  let bestT = -Infinity;
+  let best: string | null = null;
+  for (const it of items ?? []) {
+    const sv = it.eventDate;
+    if (!sv) continue;
+    const t = new Date(sv).getTime();
+    if (!Number.isNaN(t) && t > bestT) { bestT = t; best = sv; }
+  }
+  return best;
+}
+
 export function liveProjectIntel(
   row: LiveBacklogFull,
   extRaw?: LiveExtendedDetails | null,
   cfgs?: LiveConfiguration[] | null,
   corridorPsf?: CorridorPsf | null,
-  opts?: { remoteMedia?: boolean },
+  opts?: { remoteMedia?: boolean; newsLatest?: string | null },
 ): ProjectIntel {
   /* remoteMedia: allow raw Storage/R2 image URLs through to the <img> — the
      live overlay in the browser, where a just-uploaded asset is exactly what we
@@ -1450,18 +1469,21 @@ export function liveProjectIntel(
   if (consultants.length >= 2) usps.push({ title: "Marquee consultants on record", body: consultants.slice(0, 6).join(" · ") });
 
   /* Project-level "last updated" — the most recent change across every dated
-     section: the hero review, the legal read, the construction QPR and the
-     location refresh. These are the DB's own per-section "last updated"
-     columns, so the value is the latest date on which any part of the report
-     actually changed. DB-driven with real coverage (legal_last_updated_date is
-     filed on every live row), so the hero and pillars never fall back to a
-     hard-coded month. The row's own updated_at is deliberately NOT used: it is
-     a bulk data-build timestamp (82 of 96 rows stamped the same day), which
-     would overwrite the honest per-section dates with one uniform value. */
+     section: the hero review, the legal read, the construction QPR, the
+     location refresh, and (via opts.newsLatest) the newest News & Updates
+     event. These are the DB's own per-section "last updated" columns, so the
+     value is the latest date on which any part of the report actually
+     changed. DB-driven with real coverage (legal_last_updated_date is filed
+     on every live row), so the hero and pillars never fall back to a
+     hard-coded month. The row's own updated_at is deliberately NOT used: it
+     is a bulk data-build timestamp (82 of 96 rows stamped the same day),
+     which would overwrite the honest per-section dates with one uniform
+     value — the same reason newsLatest is the newest EVENT date, not the
+     wire rows' updated_at (batch upserts stamp all 453 rows in one second). */
   const lastUpdated = (() => {
     let bestT = -Infinity;
     let bestSv: string | null = null;
-    for (const sv of [ext?.heroDate, tIn(lh, ["retrieval_date"]), row.lastQprDate, row.locationLastUpdated]) {
+    for (const sv of [ext?.heroDate, tIn(lh, ["retrieval_date"]), row.lastQprDate, row.locationLastUpdated, opts?.newsLatest]) {
       if (!sv) continue;
       const t = new Date(sv).getTime();
       if (!Number.isNaN(t) && t > bestT) { bestT = t; bestSv = sv; }

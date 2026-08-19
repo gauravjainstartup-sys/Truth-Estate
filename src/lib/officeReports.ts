@@ -45,7 +45,7 @@ export type Payment = {
 export type Vote = "in" | "no";
 
 /* ── Per-section report dates (from report-dates.json) ── */
-export type SectionDates = { legal?: string | null; construction?: string | null; location?: string | null; hero?: string | null };
+export type SectionDates = { legal?: string | null; construction?: string | null; location?: string | null; hero?: string | null; news?: string | null };
 export type ReportDates = Record<string, SectionDates>; // keyed by seoSlug
 export type SectionUpdate = { key: string; label: string; iso: string };
 
@@ -320,8 +320,9 @@ const SECTION_LABEL: Record<string, string> = {
   construction: "Construction & Sales",
   location: "Location Intelligence",
   hero: "Report",
+  news: "News & Updates",
 };
-const SECTION_ORDER = ["legal", "construction", "location", "hero"] as const;
+const SECTION_ORDER = ["news", "legal", "construction", "location", "hero"] as const;
 
 export function reportUpdates(dates: SectionDates | null | undefined, since: number | null | undefined): SectionUpdate[] {
   if (!dates || since == null) return [];

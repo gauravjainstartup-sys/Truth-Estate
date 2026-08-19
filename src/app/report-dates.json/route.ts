@@ -11,11 +11,12 @@
    own "last updated": legal = legal_health.retrieval_date · construction =
    last_updated_qpr_date · location = location_last_updated_date · hero =
    project_extended_details.hero_date. */
-import { fetchBacklogFull, fetchExtendedDetails, fetchBacklogNameIds, type LiveExtendedDetails } from "@/lib/supabase";
+import { fetchBacklogFull, fetchExtendedDetails, fetchBacklogNameIds, fetchProjectWire, type LiveExtendedDetails } from "@/lib/supabase";
+import { newestWireEventDate } from "@/lib/reportAdapter";
 
 export const dynamic = "force-static";
 
-type SectionDates = { legal: string | null; construction: string | null; location: string | null; hero: string | null };
+type SectionDates = { legal: string | null; construction: string | null; location: string | null; hero: string | null; news: string | null };
 
 /* legal_health.retrieval_date lives inside the backlog_project_data JSON that
    fetchBacklogFull already joins onto the row as `legalHealth` (unknown). */
@@ -58,6 +59,9 @@ export async function GET() {
       construction: r.lastQprDate ?? null,
       location: r.locationLastUpdated ?? null,
       hero,
+      /* Newest News & Updates event, through the same exact-slug matcher the
+         report itself uses — a fresh dispatch flips the Office badge. */
+      news: newestWireEventDate(await fetchProjectWire(r.seoSlug)),
     };
   }
   return Response.json(out);

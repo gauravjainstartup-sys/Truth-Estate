@@ -20,6 +20,7 @@ import ProjectProfile from "@/components/intelligence/ProjectProfile";
 import LiveProjectProfile from "@/components/intelligence/LiveProjectProfile";
 import { getProjectSeoMeta } from "@/lib/seoCategoryGrowth";
 import { liveProjectIntel } from "@/lib/liveReport";
+import { newestWireEventDate } from "@/lib/reportAdapter";
 import { breadcrumbLd, ldJson } from "@/lib/seo";
 import { relatedProjects } from "@/lib/relatedProjects";
 import { avgSlippageFromLedger } from "@/lib/developers";
@@ -420,10 +421,15 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     // the whole live scored set — the rank basis; passed to the overlay too so the
     // rank can recompute from this project's LIVE score without another fetch.
     const scores = await liveScores();
+    const projectWire = await fetchProjectWire(slug);
     const intel = {
-      ...liveProjectIntel(live, extKey ? ext![extKey] : null, cfgKey ? cfg![cfgKey] : null, corridorPsf),
+      ...liveProjectIntel(live, extKey ? ext![extKey] : null, cfgKey ? cfg![cfgKey] : null, corridorPsf, {
+        /* The newest wire event joins the "last updated" candidates, so
+           fresh News & Updates move the report's own updated date. */
+        newsLatest: newestWireEventDate(projectWire),
+      }),
       trackedRank: trackedRankOf(live.truthScore, scores),
-      wireItems: await fetchProjectWire(slug),
+      wireItems: projectWire,
       ...(pillarSets?.[live.id] ? { livePillars: pillarSets[live.id] } : {}),
     };
     /* Attach the developer's project ledger by matching the normalised
