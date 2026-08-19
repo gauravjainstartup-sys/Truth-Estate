@@ -25,10 +25,10 @@ CREATE TABLE IF NOT EXISTS public.project_intelligence_wire (
   project_slug TEXT NOT NULL,
   project_name TEXT NOT NULL,
   event_date DATE NOT NULL,
-  category TEXT NOT NULL CHECK (category IN ('CONSTRUCTION', 'REGULATORY', 'PRICING', 'INFRASTRUCTURE', 'CORPORATE_JV')),
+  category TEXT NOT NULL CHECK (category IN ('CONSTRUCTION', 'REGULATORY', 'PRICING', 'INFRASTRUCTURE', 'CORPORATE_JV', 'LEGAL')),
   headline TEXT NOT NULL,
   verified_facts TEXT NOT NULL,
-  forensic_impact_type TEXT NOT NULL CHECK (forensic_impact_type IN ('POSITIVE', 'NEUTRAL', 'RISK', 'CRITICAL_FLAG')),
+  forensic_impact_type TEXT NOT NULL CHECK (forensic_impact_type IN ('POSITIVE', 'NEUTRAL', 'CAUTION', 'RISK')),
   forensic_impact_summary TEXT,
   source_name TEXT NOT NULL,
   source_document_ref TEXT,
@@ -40,7 +40,8 @@ CREATE TABLE IF NOT EXISTS public.project_intelligence_wire (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Indices for high-concurrency lookup & SSG baking:
+-- Indices for high-concurrency lookup, upserts & SSG baking:
+CREATE UNIQUE INDEX IF NOT EXISTS project_wire_natural_key ON public.project_intelligence_wire (project_slug, event_date, headline);
 CREATE INDEX IF NOT EXISTS idx_project_wire_slug ON public.project_intelligence_wire(project_slug);
 CREATE INDEX IF NOT EXISTS idx_project_wire_date ON public.project_intelligence_wire(event_date DESC);
 CREATE INDEX IF NOT EXISTS idx_project_wire_cat ON public.project_intelligence_wire(category);
@@ -95,21 +96,30 @@ We have implemented a pure backend SEO optimization layer across the Next.js App
 
 ---
 
-## 5. Ingestion Pipeline & Maintenance Scripts
+## 5. Ingestion Pipeline & True Upsert Engine (R1–R4 Compliance)
 
-All scripts reside in the `scripts/` directory and can be executed via Node.js:
+The ingestion pipeline has transitioned completely from wipe-and-reload to a **deterministic, non-destructive true upsert engine** (`scripts/wire-upsert-client.mjs`):
 
+* **R1 (Upsert, Never Wipe)**: All 4 comprehensive batch scripts write via intelligent matching on natural key `(project_slug, event_date, headline)`. No `DELETE` or `TRUNCATE` operations are ever executed.
+* **R2 (Preserve `created_at` Forever)**: `created_at` is set once upon initial publication and is strictly preserved across all subsequent batch executions and re-runs.
+* **R3 (`updated_at` Bump on Diff Only)**: The engine performs field-level comparison (`IS DISTINCT FROM`) across all content attributes (`verified_facts`, `forensic_impact_type`, `forensic_impact_summary`, `source_name`, `source_url`, `source_document_ref`, `status`, `is_pinned`, `display_order`). If identical, zero fields are updated and `updated_at` remains unchanged. If modified, only the changed content fields and `updated_at` are written.
+* **R4 (Archiving Over Deletion)**: Deprecated or retired entries transition to `status = 'ARCHIVED'` rather than being deleted from the table.
+
+### Execution Commands:
 ```bash
-# Ingest comprehensive batches (DLF, M3M, Godrej, Signature, Birla, Emaar, Sobha, Smartworld, etc.)
-node scripts/comprehensive-batch1-dlf-m3m.mjs
-node scripts/comprehensive-batch2-godrej-signature-birla.mjs
-node scripts/comprehensive-batch3-emaar-smartworld-sobha-whiteland.mjs
-node scripts/comprehensive-batch4-krisumi-ashiana-centralpark-tulip-elan-others.mjs
+# Ingest comprehensive batches with idempotent true upserts (DLF, M3M, Godrej, Signature, Birla, Emaar, Sobha, Smartworld, etc.)
+SUPABASE_SERVICE_ROLE_KEY="<pipeline_key>" node scripts/comprehensive-batch1-dlf-m3m.mjs
+SUPABASE_SERVICE_ROLE_KEY="<pipeline_key>" node scripts/comprehensive-batch2-godrej-signature-birla.mjs
+SUPABASE_SERVICE_ROLE_KEY="<pipeline_key>" node scripts/comprehensive-batch3-emaar-smartworld-sobha-whiteland.mjs
+SUPABASE_SERVICE_ROLE_KEY="<pipeline_key>" node scripts/comprehensive-batch4-krisumi-ashiana-centralpark-tulip-elan-others.mjs
+
+# Run full CTO acceptance criteria test suite (verifies R1, R2, R3 diffs, and R4 archiving)
+SUPABASE_SERVICE_ROLE_KEY="<pipeline_key>" node scripts/test-wire-upsert-acceptance.mjs
 
 # Refresh local JSON snapshot for static build optimization
 SNAPSHOT_REFRESH=1 node scripts/snapshot-supabase.mjs
 
-# Run Next.js production SSG build (bakes all 1,838 pages in ~20-25s)
+# Run Next.js production SSG build (bakes all 1,838 pages in ~14s)
 NEXT_PUBLIC_BASE_PATH="" NEXT_PUBLIC_ORIGIN=https://truthestate.in npm run build
 ```
 

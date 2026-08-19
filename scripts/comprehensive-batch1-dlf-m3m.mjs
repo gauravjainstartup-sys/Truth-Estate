@@ -1,12 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { clearExistingWires } from "./wire-cleaner.mjs";
-
-const SUPABASE_URL = "https://lyetvabfgaidvqrbmaoy.supabase.co";
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!SERVICE_KEY) {
-  // Never hardcode credentials — a committed key is a leaked key.
-  throw new Error("SUPABASE_SERVICE_ROLE_KEY env var is required.");
-}
+import { upsertWireBatch } from "./wire-upsert-client.mjs";
 
 function liveSlug(name) {
   return (name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -18,25 +11,6 @@ function seoSlug(name, microMarket, location) {
     liveSlug(microMarket || ""),
     liveSlug(location || "")
   ].filter(Boolean).join("-");
-}
-
-async function insertRows(rows) {
-  if (!rows || !rows.length) return;
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/project_intelligence_wire`, {
-    method: "POST",
-    headers: {
-      apikey: SERVICE_KEY,
-      Authorization: `Bearer ${SERVICE_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "return=minimal"
-    },
-    body: JSON.stringify(rows)
-  });
-
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(`Supabase Batch Insert Failed [${res.status}]: ${txt}`);
-  }
 }
 
 export async function run() {
@@ -768,11 +742,8 @@ export async function run() {
     "HARERA Gurugram", "HARERA GGM/709/441/2023/53", "https://haryanarera.gov.in", false, 4
   );
 
-  console.log(`Clearing old table records first...`);
-  await clearExistingWires();
-  console.log(`Generated ${allItems.length} verified 2025-2026 dispatches for Comprehensive Batch 1 (DLF & M3M). Inserting to Supabase...`);
-  await insertRows(allItems);
-  console.log(`✓ Successfully inserted 2025-2026 Batch 1 rows to Supabase!\n`);
+  console.log(`Generated ${allItems.length} verified 2025-2026 dispatches for Comprehensive Batch 1 (DLF & M3M). Upserting to Supabase...`);
+  await upsertWireBatch(allItems, "Comprehensive Batch 1 (DLF & M3M)");
 }
 
 run().catch(console.error);
