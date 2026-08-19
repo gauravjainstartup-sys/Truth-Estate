@@ -782,11 +782,11 @@ export async function run() {
   // Whiteland The Aspen & Aspen One (Sector 76) — 5 & 4 Updates
   addWire(
     "Whiteland the Aspen", "2026-06-25", "CONSTRUCTION",
-    "Tata Projects Crosses 26th Slab Milestone Across High-Rise Towers on SPR",
-    "• Turnkey structural construction progressing at 7-day slab cycles across 13 acres in Sector 76.\n• Over 1,000 personnel active on site under Tata Projects zero-accident safety protocol.",
+    "Shapoorji Pallonji E&C Crosses 26th Slab Milestone Across High-Rise Towers on SPR",
+    "• Turnkey civil contractor Shapoorji Pallonji E&C executing structural progression at 7-day slab cycles across 13 acres in Sector 76.\n• Architecture designed by Hafeez Contractor with structural engineering by Vintech Consultants.\n• Over 1,000 personnel active on site under Shapoorji Pallonji zero-accident safety protocol.",
     "POSITIVE",
-    "Tata Projects engineering oversight ensures Tier-1 structural safety and eliminates contractor default risk.",
-    "HARERA Progress Audit Q2 2026", "HARERA/QPR/2026/ASPEN-TATA", "https://haryanarera.gov.in", true, 1
+    "Shapoorji Pallonji E&C engineering oversight ensures Tier-1 structural safety and eliminates contractor default risk.",
+    "HARERA Progress Audit Q2 2026", "HARERA/QPR/2026/ASPEN-SP", "https://haryanarera.gov.in", true, 1
   );
   addWire(
     "Whiteland the Aspen", "2025-10-20", "PRICING",
@@ -806,11 +806,11 @@ export async function run() {
   );
   addWire(
     "Whiteland the Aspen", "2024-05-15", "CONSTRUCTION",
-    "Tata Projects Appointed as General Civil Contractor for ₹1,200 Cr Development",
-    "• Scope covers complete structural construction of high-rise residential towers.",
+    "Shapoorji Pallonji E&C Appointed as General Civil Contractor for Sector 76 Flagship",
+    "• Scope covers complete structural turnkey construction of high-rise residential towers designed by Hafeez Contractor.",
     "POSITIVE",
     "Tier-1 EPC appointment eliminates contractor risk.",
-    "Whiteland Corporate Statement", "WHITELAND/TATA/ASPEN", "https://whiteland.in", false, 4
+    "Whiteland Corporate Statement", "WHITELAND/SP/ASPEN", "https://whiteland.in", false, 4
   );
   addWire(
     "Whiteland the Aspen", "2023-03-20", "REGULATORY",

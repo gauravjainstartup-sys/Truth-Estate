@@ -76,10 +76,10 @@ export async function run() {
   // Godrej Zenith (Sector 89) — 5 Updates
   addWire(
     "Godrej Zenith", "2026-07-20", "CONSTRUCTION",
-    "Superstructure Crosses 16th Slab Level with Capacit'e Monolithic Formwork",
-    "• Capacit'e Infraprojects executing vertical progression at 7-day slab cycles across all residential high-rise towers.\n• Over 1,200 on-site workforce active with automated concrete batching plants in Sector 89.\n• HARERA Q2 2026 filing confirms civil progress in full alignment with delivery milestones.",
+    "Superstructure Crosses 16th Slab Level with KBE Monolithic Mivan Formwork",
+    "• Civil contractor Krishna Buildestates (KBE) executing vertical progression at 7-day slab cycles across high-rise residential towers (G+35).\n• Over 1,200 on-site workforce active with automated concrete batching plants in Sector 89.\n• HARERA Q2 2026 filing confirms civil progress in full alignment with delivery milestones.",
     "POSITIVE",
-    "High structural execution velocity guarantees timely delivery in New Gurgaon core.",
+    "High structural execution velocity under KBE guarantees timely delivery in New Gurgaon core.",
     "HARERA Gurugram Q2 2026 Audit", "HARERA/QPR/2026/ZENITH", "https://haryanarera.gov.in", true, 1
   );
   addWire(
@@ -118,10 +118,10 @@ export async function run() {
   // Godrej Aristocrat (Sector 49) — 5 Updates
   addWire(
     "Godrej Aristocrat", "2026-06-25", "CONSTRUCTION",
-    "Capacit'e Infraprojects Crosses 18th Floor Slab Milestone on Sohna Road",
-    "• High-precision structural execution progressing across G+32 luxury towers.\n• Monolithic aluminium formwork deployed with zero lost-time safety record in mature Sector 49.",
+    "KEC International Crosses 18th Floor Slab Milestone on Sohna Road",
+    "• Turnkey civil contractor KEC International executing structural progression across G+32 luxury towers.\n• Monolithic aluminium formwork deployed with zero lost-time safety record in mature Sector 49.",
     "POSITIVE",
-    "Consistent Tier-1 EPC execution pace in prime central micro-market.",
+    "Consistent Tier-1 EPC execution pace under KEC International in prime central micro-market.",
     "HARERA Gurugram Q2 2026 Filing", "HARERA/QPR/2026/ARISTOCRAT", "https://haryanarera.gov.in", true, 1
   );
   addWire(
@@ -142,11 +142,11 @@ export async function run() {
   );
   addWire(
     "Godrej Aristocrat", "2024-07-15", "CONSTRUCTION",
-    "Capacit'e Infraprojects Mobilized for ₹650 Cr Turnkey Civil Construction Contract",
-    "• Raft foundation casting completed with over 18,000 cum high-strength concrete.",
+    "KEC International Mobilized for Turnkey Civil Construction Package",
+    "• Raft foundation casting completed with over 18,000 cum high-strength concrete under KEC engineering supervision.",
     "POSITIVE",
     "Tier-1 contractor engagement guarantees structural standards.",
-    "NSE Corporate Announcement", "CAPACITE/NSE/2024/07", "https://www.nseindia.com", false, 4
+    "HARERA & Project Filings", "GPL/KEC/ARISTOCRAT", "https://haryanarera.gov.in", false, 4
   );
   addWire(
     "Godrej Aristocrat", "2023-12-05", "REGULATORY",

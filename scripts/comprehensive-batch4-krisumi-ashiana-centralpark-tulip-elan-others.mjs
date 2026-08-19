@@ -1233,7 +1233,7 @@ export async function run() {
   addWire(
     "Puri The Aravallis", "2026-05-18", "REGULATORY",
     "Final Occupation Certificate (OC) Granted & Over 300 Families Residing",
-    "• Shapoorji Pallonji engineered luxury high-rise development 100% completed in Sector 61.\n• Unobstructed Aravalli panoramic forest views and grand clubhouse operational on GCRE.",
+    "• Ahluwalia Contracts engineered luxury high-rise development 100% completed in Sector 61.\n• Unobstructed Aravalli panoramic forest views and grand clubhouse operational on GCRE.",
     "POSITIVE",
     "Zero delivery risk; top-tier luxury asset in mature Golf Course Extension corridor.",
     "DTCP Haryana OC Register 2026", "DTCP/OC/2026/ARAVALLIS", "https://tcpharyana.gov.in", true, 1
@@ -1249,7 +1249,7 @@ export async function run() {
   addWire(
     "Puri The Aravallis", "2024-06-15", "CONSTRUCTION",
     "Superstructure Crosses 28th Slab Milestone on Golf Course Extension Road",
-    "• Shapoorji Pallonji engineering oversight progressing on schedule.",
+    "• Ahluwalia Contracts (India) Limited executing structural progression on schedule.",
     "POSITIVE",
     "Strong construction velocity in mature GCRE micro-market.",
     "HARERA Progress Audit", "HARERA/QPR/ARAVALLIS", "https://haryanarera.gov.in", false, 3

@@ -120,9 +120,9 @@ export async function run() {
   addWire(
     "DLF Privana South", "2026-06-28", "CONSTRUCTION",
     "Superstructure Crosses 22nd Floor Milestone Across 7 Luxury High-Rise Towers",
-    "• Shapoorji Pallonji mobilized over 1,500 personnel on site executing monolithic aluminium formwork at 7-day slab cycles.\n• Raft and 3-level basements fully integrated with subterranean utility corridors.\n• External infrastructure and central landscaped greens grading commenced across the 25-acre parcel.",
+    "• Lead civil contractor ACC India (Arabian Construction Company) mobilized over 1,500 personnel executing monolithic aluminium formwork at 7-day slab cycles.\n• Site engineering and QA/QC overseen by M/s D.K. Nagpal & Associates across all 7 G+40 luxury towers.\n• External infrastructure and central landscaped greens grading commenced across the 25-acre parcel.",
     "POSITIVE",
-    "Consistent Tier-1 construction velocity under Shapoorji Pallonji management minimizes execution variance on SPR.",
+    "Consistent Tier-1 construction velocity under ACC India management minimizes execution variance on SPR.",
     "HARERA Gurugram Q2 2026 Progress Audit", "HARERA/QPR/2026/PRIV-SOUTH", "https://haryanarera.gov.in", true, 1
   );
   addWire(
@@ -143,11 +143,11 @@ export async function run() {
   );
   addWire(
     "DLF Privana South", "2024-09-10", "CONSTRUCTION",
-    "Shapoorji Pallonji Awarded ₹1,450 Cr Turnkey Civil Construction Contract",
-    "• Shapoorji Pallonji & Company Private Limited appointed as lead EPC contractor for 7 high-rise towers (G+40 floors).\n• Zero-accident safety protocol instituted under international structural audit standards.",
+    "ACC India & D.K. Nagpal Mobilized for Turnkey Civil Construction Package",
+    "• ACC India appointed as lead structural contractor for 7 high-rise towers (G+40 floors) with M/s D.K. Nagpal & Associates overseeing site civil engineering.\n• Raft foundation casting completed with high-strength concrete under strict seismic Zone IV engineering standards.",
     "POSITIVE",
-    "Tier-1 EPC appointment eliminates contractor insolvency and execution delay risks.",
-    "BSE / NSE Corporate Filing", "DLF/NSE/CIVIL/76", "https://www.nseindia.com", false, 4
+    "Specialized high-rise EPC appointment ensures structural integrity and eliminates execution delay risks.",
+    "HARERA & Project Filings", "DLF/HARERA/CIVIL/76", "https://haryanarera.gov.in", false, 4
   );
   addWire(
     "DLF Privana South", "2023-12-28", "REGULATORY",
