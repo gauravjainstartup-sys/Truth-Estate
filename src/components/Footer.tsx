@@ -50,7 +50,10 @@ const columns: {
     label: "Company",
     links: [
       { t: "About Truth Estate", h: "/about" },
-      { t: "Our Mission", h: "/about" },
+      /* Was a second link to /about — two labels, one destination, so
+         "Our Mission" looked like a broken redirect. Now points at the
+         page it names. */
+      { t: "Vision & Mission", h: "/vision" },
       { t: "FAQs", h: "/methodology#faq" },
       { t: "Contact", h: "/contact" },
     ],
