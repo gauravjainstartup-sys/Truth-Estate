@@ -30,7 +30,7 @@ function serializeError(error) {
   }
   try {
     return JSON.parse(JSON.stringify(error));
-  } catch {
+  } catch  {
     return String(error);
   }
 }
@@ -252,7 +252,7 @@ serve(async (req)=>{
       });
       try {
         msg91Data = JSON.parse(rawText);
-      } catch {
+      } catch  {
         msg91Data = {
           rawText
         };
