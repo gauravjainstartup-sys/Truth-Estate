@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { APARTMENT_CLUSTERS, apartmentClusterBySlug, clusterMetaOnly } from "@/lib/apartmentClusters";
-import ApartmentClusterView from "@/components/apartments/ApartmentClusterView";
+import { APARTMENT_CLUSTERS, apartmentClusterBySlug } from "@/lib/apartmentClusters";
+import ProjectsIndex from "@/components/intelligence/ProjectsIndex";
 import { buildScoredProjectIntel } from "@/lib/compareData";
+import { fetchTrackedStats } from "@/lib/supabase";
 import type { ProjectIntel } from "@/lib/projects";
-import { breadcrumbLd, ldJson } from "@/lib/seo";
-import { SITE_URL } from "@/lib/site";
+import { breadcrumbLd, collectionLd, ldJson } from "@/lib/seo";
 
 export function generateStaticParams() {
   return APARTMENT_CLUSTERS.map((c) => ({ slug: c.slug }));
@@ -24,12 +24,6 @@ export async function generateMetadata(
     alternates: { canonical: `/apartments/${cluster.slug}` },
     title: cluster.title,
     description: cluster.description,
-    openGraph: {
-      title: cluster.title,
-      description: cluster.description,
-      url: `${SITE_URL}/apartments/${cluster.slug}`,
-      type: "website",
-    },
   };
 }
 
@@ -38,51 +32,84 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const cluster = apartmentClusterBySlug(slug);
   if (!cluster) notFound();
 
-  const intelMap = await buildScoredProjectIntel();
+  const [intelMap, stats] = await Promise.all([
+    buildScoredProjectIntel(),
+    fetchTrackedStats(),
+  ]);
+
   const allProjects = Object.values(intelMap);
   const projects: ProjectIntel[] = allProjects.filter(cluster.match);
 
-  // Structured Data (JSON-LD) for SEO & GEO
   const breadcrumbs = breadcrumbLd([
-    { name: "Home", path: "/" },
-    { name: "Gurugram Apartments", path: "/intelligence/projects" },
-    { name: cluster.h1, path: `/apartments/${cluster.slug}` },
+    { name: "Home", path: "" },
+    { name: "Intelligence", path: "/intelligence" },
+    { name: "Apartments", path: "/intelligence/projects" },
+    { name: cluster.title, path: `/apartments/${cluster.slug}` },
   ]);
 
-  const itemListLd = {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    name: cluster.h1,
+  const ld = collectionLd({
+    name: cluster.title,
     description: cluster.description,
-    numberOfItems: projects.length,
-    itemListElement: projects.slice(0, 20).map((p, idx) => ({
-      "@type": "ListItem",
-      position: idx + 1,
-      name: p.name,
-      url: `${SITE_URL}/projects/${p.slug}`,
-      description: `${p.name} by ${p.developer} in ${p.market} — TruthScore ${p.truthScore}/100.`,
-    })),
-  };
+    path: `/apartments/${cluster.slug}`,
+    items: projects.map((p) => ({ name: p.name, path: `/projects/${p.slug}` })),
+  });
 
-  const faqLd = cluster.faqs && cluster.faqs.length ? {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: cluster.faqs.map((f) => ({
-      "@type": "Question",
-      name: f.q,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: f.a,
-      },
-    })),
-  } : null;
+  const faqLd = cluster.faqs?.length
+    ? {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: cluster.faqs.map((f) => ({
+          "@type": "Question",
+          name: f.q,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: f.a,
+          },
+        })),
+      }
+    : null;
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ldJson(breadcrumbs) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ldJson(itemListLd) }} />
-      {faqLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ldJson(faqLd) }} />}
-      <ApartmentClusterView cluster={clusterMetaOnly(cluster)} projects={projects} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(breadcrumbs)} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(ld)} />
+      {faqLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />}
+
+      <ProjectsIndex
+        projects={projects}
+        stats={stats}
+        crumb={cluster.title}
+        heading={cluster.h1}
+        intro={cluster.intro}
+      />
+
+      {/* Light-Themed FAQ & Ground Intelligence Section at Bottom */}
+      {cluster.faqs && cluster.faqs.length > 0 && (
+        <section aria-labelledby="faq-heading" className="bg-[#fbf8f2] border-t border-[#1a1a1a]/10 pb-24 pt-12">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="max-w-3xl">
+              <span className="font-mono text-[0.68rem] uppercase tracking-[0.14em] text-[#9a7a2e]">
+                Frequently Answered Intelligence
+              </span>
+              <h2 id="faq-heading" className="mt-2 font-serif text-[1.8rem] font-medium text-[#1a1a1a]">
+                Questions Buyers Ask About {cluster.h1}
+              </h2>
+              <div className="mt-6 divide-y divide-[#1a1a1a]/10 rounded-lg border border-[#1a1a1a]/10 bg-white shadow-xs">
+                {cluster.faqs.map((faq, i) => (
+                  <div key={i} className="p-6">
+                    <h3 className="font-serif text-[1.05rem] font-medium text-[#1a1a1a]">
+                      {faq.q}
+                    </h3>
+                    <p className="mt-2 text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/65">
+                      {faq.a}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
     </>
   );
 }
