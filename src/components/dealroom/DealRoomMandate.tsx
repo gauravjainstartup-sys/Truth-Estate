@@ -20,7 +20,7 @@ import OtpDigits from "@/components/auth/OtpDigits";
 import { basePath } from "@/lib/site";
 import { track } from "@/lib/events";
 import { saveLead, isSignedIn, loadAccount } from "@/lib/journey";
-import { getSession, signInWithGoogle } from "@/lib/phoneAuth";
+import { getSession, signInWithGoogle, normalisePhone, prettyPhone } from "@/lib/phoneAuth";
 import { sendOtp, verifyOtp, OTP_LENGTH } from "@/lib/shortlistAuth";
 import { saveMandate } from "@/lib/dealRoomMandate";
 
@@ -147,6 +147,9 @@ export default function DealRoomMandate() {
   const set = (k: keyof Draft, v: string) => setD((p) => ({ ...p, [k]: v }));
   const isIndia = dial === "+91";
   const numValid = num.replace(/\D/g, "").length >= (isIndia ? 10 : 6);
+  /* Same recipe as the unlock sheet: pretty-grouped for +91, verbatim
+     for the NRI dials (their grouping varies by country). */
+  const sentTo = isIndia && normalisePhone(num) ? `${dial} ${prettyPhone(normalisePhone(num)!)}` : `${dial} ${num.trim()}`;
   const otpComplete = otp.length === OTP_LENGTH && otp.every((x) => x !== "");
 
   /* Reach the surface + resume a Google round-trip */
@@ -861,30 +864,51 @@ export default function DealRoomMandate() {
 
                   <div>
                     <span className={label}>Mobile Number</span>
+                    {/* Once the code is out, the number is a FACT, not a
+                        field: the main sign-up replaces the inputs with the
+                        pretty number and a Change link, and this form
+                        behaves identically — two disabled inputs read as a
+                        broken form, and the tap target buyers look for is
+                        the number itself. */}
+                    {otpSent ? (
+                      <p className="text-[0.85rem] text-[#a9a196]">
+                        Code sent to{" "}
+                        <button
+                          type="button"
+                          onClick={() => { setOtpSent(false); setOtp(Array(OTP_LENGTH).fill("")); setErr(""); }}
+                          className="font-medium text-[#f4efe6] underline decoration-[#c9a96e]/50 underline-offset-4 hover:decoration-[#c9a96e]"
+                        >
+                          {sentTo}
+                        </button>
+                        {" "}via SMS{" · "}
+                        <button type="button" onClick={() => { setOtpSent(false); setOtp(Array(OTP_LENGTH).fill("")); setErr(""); }} className="font-medium text-[#c9a96e] hover:underline">
+                          Change
+                        </button>
+                      </p>
+                    ) : (
                     <div className="flex gap-3">
                       <div className="w-[116px] shrink-0">
-                        <select value={dial} onChange={(e) => setDial(e.target.value)} disabled={otpSent} className={`${field} appearance-none`}>
+                        <select value={dial} onChange={(e) => setDial(e.target.value)} className={`${field} appearance-none`}>
                           {DIAL.map((x) => <option key={x.code} value={x.code} className="bg-[#191510]">{x.flag} {x.code}</option>)}
                         </select>
                       </div>
                       <input
                         value={num}
                         onChange={(e) => setNum(e.target.value.replace(/[^\d\s]/g, ""))}
-                        disabled={otpSent}
-                        inputMode="tel"
+                        type="tel"
+                        inputMode="numeric"
+                        autoComplete="tel-national"
                         placeholder="98xxxxxx21"
                         className={`${field} min-w-0 flex-1`}
                       />
                     </div>
+                    )}
                   </div>
 
                   {otpSent && (
                     <div className="rounded-xl border border-[#c9a96e]/20 bg-[#16120d] p-4">
                       <p className="mb-3 text-[0.8rem] text-[#a9a196]">
-                        Enter the {OTP_LENGTH}-digit code sent to {dial} {num}{" · "}
-                        <button type="button" onClick={() => { setOtpSent(false); setOtp(Array(OTP_LENGTH).fill("")); setErr(""); }} className="text-[#c9a96e] hover:underline">
-                          change number
-                        </button>
+                        Enter the {OTP_LENGTH}-digit code
                       </p>
                       <OtpDigits
                         value={otp}
