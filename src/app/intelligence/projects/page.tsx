@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import ProjectsIndex from "@/components/intelligence/ProjectsIndex";
-import { fetchBacklogFull, fetchCorridorPsf, fetchTrackedStats } from "@/lib/supabase";
-import { liveProjectIntel } from "@/lib/liveReport";
+import { fetchTrackedStats } from "@/lib/supabase";
+import { buildLiveCatalog } from "@/lib/liveReport";
 import type { ProjectIntel } from "@/lib/projects";
 import { collectionLd, ldJson } from "@/lib/seo";
 
@@ -26,8 +26,14 @@ export const metadata: Metadata = {
    Pulled at build time so the page stays static; if the backend is
    unreachable the grid renders its "refreshing" state. */
 export default async function Page() {
-  const [rows, stats, corridorPsf] = await Promise.all([fetchBacklogFull(), fetchTrackedStats(), fetchCorridorPsf()]);
-  const projects: ProjectIntel[] = (rows ?? []).map((r) => liveProjectIntel(r, null, null, corridorPsf));
+  /* buildLiveCatalog, not a thinner private mapping — the SAME builder the
+     landers and market context use, extended-details join included. Before
+     this the page passed ext=null into liveProjectIntel, so cards here
+     showed corridor-derived prices/rates while the identical card one click
+     away (lander, report) showed the developer's filed ones. One builder,
+     one truth on every surface. */
+  const [projects, stats]: [ProjectIntel[], Awaited<ReturnType<typeof fetchTrackedStats>>] =
+    await Promise.all([buildLiveCatalog(), fetchTrackedStats()]);
   /* CollectionPage + ItemList of the tracked set (rows arrive Truth-Score
      ordered from the query). Capped so the markup stays lean; the list is the
      real catalogue, never invented. */
@@ -35,7 +41,7 @@ export default async function Page() {
     name: "Gurugram Projects, Ranked by Truth Score",
     description: "Independent Truth Scores for tracked Gurugram residential projects.",
     path: "/intelligence/projects",
-    items: (rows ?? []).filter((r) => r.seoSlug && r.name).slice(0, 60).map((r) => ({ name: r.name, path: `/projects/${r.seoSlug}` })),
+    items: projects.filter((p) => p.seoSlug && p.name).slice(0, 60).map((p) => ({ name: p.name, path: `/projects/${p.seoSlug}` })),
   });
   return (
     <>
