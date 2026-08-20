@@ -394,12 +394,28 @@ export async function run() {
 
   // M3M Elie Saab (Sector 111)
   addWire(
+    "M3M Elie Saab", "2026-04-01", "CONSTRUCTION",
+    "M3M Allocates Construction Capex from ₹14,500 Crore Program for Sector 111 Master Development",
+    "• International branded luxury residence collaboration with Elie Saab prioritized under M3M group delivery program across Sector 111.\n• Monolithic structural framing and civic utility lines progressing on schedule.",
+    "POSITIVE",
+    "Dedicated capital deployment accelerates structural milestones on Dwarka Expressway.",
+    "Business Standard", "BS/COMPANIES/126040100987", "https://www.business-standard.com/companies/news/m3m-to-deploy-rs-14500-crore-for-45-msf-construction-pipeline-126040100987_1.html", true, 1
+  );
+  addWire(
+    "M3M Elie Saab", "2024-03-11", "INFRASTRUCTURE",
+    "Dwarka Expressway 8-Lane Elevated Section Inaugurated; Signal-Free Airport Transit for Sector 111",
+    "• Prime Minister inaugurated the 19-km Haryana section of Dwarka Expressway, providing direct 15-minute access from Sector 111 to IGI Airport.",
+    "POSITIVE",
+    "High-speed highway connectivity significantly enhances micro-market liveability and capital value.",
+    "The Hindu", "TH/NAT/67938445", "https://www.thehindu.com/news/national/pm-modi-opens-haryana-section-of-dwarka-expressway-lays-foundation-stone-for-114-nh-projects-worth-1-lakh-crore/article67938445.ece", false, 2
+  );
+  addWire(
     "M3M Elie Saab", "2024-06-05", "REGULATORY",
     "Haute Couture Branded Residences Master Layout Approved by DTCP Haryana",
-    "• International design collaboration with Elie Saab approved for luxury high-rise residences in Sector 111.\n• Environmental clearances and municipal approvals verified.",
+    "• International design collaboration with Elie Saab approved for luxury high-rise residences in Sector 111.\n• Environmental clearances and municipal approvals verified under Haryana RERA governance.",
     "POSITIVE",
     "Clean statutory regulatory status on Dwarka Expressway luxury corridor.",
-    "HARERA Gurugram Official Registry", "HARERA/ELIESAAB/111", "https://haryanarera.gov.in", true, 1
+    "HARERA Gurugram Official Registry", "RC/REP/HARERA/GGM/ELIESAAB/111", "https://haryanarera.gov.in", false, 3
   );
 
   // M3M Opus at Merlin (Sector 67)
