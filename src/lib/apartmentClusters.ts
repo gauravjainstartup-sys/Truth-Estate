@@ -23,6 +23,12 @@ export type ApartmentClusterMeta = {
   intro: string;
   faqs: ApartmentFaq[];
   pricePage?: boolean;
+  /* The unit configuration this page is ABOUT ("4 bhk", "penthouse"…).
+     Set on every typology cluster so downstream pricing — the meta
+     line, the price-bucket chips — can quote THAT unit rather than the
+     project's cheapest config, which on a 4 BHK page is usually a
+     smaller flat's price wearing the wrong label. */
+  config?: string;
 };
 
 export type ApartmentCluster = ApartmentClusterMeta & {
@@ -30,19 +36,51 @@ export type ApartmentCluster = ApartmentClusterMeta & {
 };
 
 /* Helper predicates operating on ProjectIntel (with full filed unit configs) */
+/* One matching rule for a config STRING, shared by the page filter and
+   the unit pricer so they can never disagree about what counts as a
+   "4 BHK". */
+export function configMatches(text: string, needle: string): boolean {
+  const t = text.toLowerCase();
+  const n = needle.toLowerCase();
+  if (n === "4 bhk") return t.includes("4 bhk") || t.includes("4bhk") || t.includes("4.5");
+  if (n === "3 bhk") return t.includes("3 bhk") || t.includes("3bhk") || t.includes("3.5");
+  if (n === "5 bhk") return t.includes("5 bhk") || t.includes("5bhk") || t.includes("5.5");
+  return t.includes(n);
+}
+
 const hasConfig = (needle: string) => (p: ProjectIntel) => {
   const n = needle.toLowerCase();
   const cfgs = (p.configs ?? []).map((c) => c.toLowerCase());
   const homes = (p.ops?.homes ?? []).map((h) => h.config.toLowerCase());
   const all = [...cfgs, ...homes, p.name.toLowerCase()].join(" ");
-  if (n === "penthouse") return all.includes("penthouse");
-  if (n === "duplex") return all.includes("duplex");
-  if (n === "4 bhk") return all.includes("4 bhk") || all.includes("4bhk") || all.includes("4.5");
-  if (n === "3 bhk") return all.includes("3 bhk") || all.includes("3bhk") || all.includes("3.5");
-  if (n === "5 bhk") return all.includes("5 bhk") || all.includes("5bhk") || all.includes("5.5");
   if (n === "luxury") return (p.truthScore ?? 0) >= 70 || (p.budget?.[0] ?? 0) >= 4;
-  return all.includes(n);
+  return configMatches(all, n);
 };
+
+/* ── What does THIS page's unit cost in THIS project? ────────────────
+   Filed layout(s) matching the page's config, smallest first, priced at
+   the project's own filed rate — superSqft × psfOwn.low (corridor psf
+   as fallback), the exact arithmetic the Deal Room quotes. Falls back
+   to the project's entry budget ONLY when the project has no other
+   configs (then the entry price IS this unit's price). Returns null
+   rather than guessing: a project without a filed layout for this
+   config simply doesn't claim a unit price. */
+export function unitEntryPriceCr(p: ProjectIntel, config?: string): number | null {
+  if (!config) return (p.budget?.[0] ?? 0) > 0 ? p.budget![0] : null;
+  const homes = (p.ops?.homes ?? []).filter(
+    (h) => (h.superSqft ?? 0) > 0 && configMatches(h.config ?? "", config),
+  );
+  const psf = (p.psfOwn?.low ?? 0) > 0 ? p.psfOwn!.low : (p.psf?.low ?? 0) > 0 ? p.psf!.low : 0;
+  if (homes.length && psf > 0) {
+    const sqft = Math.min(...homes.map((h) => h.superSqft!));
+    return (sqft * psf) / 1e7;
+  }
+  const cfgs = p.configs ?? [];
+  if (cfgs.length > 0 && cfgs.every((c) => configMatches(c, config)) && (p.budget?.[0] ?? 0) > 0) {
+    return p.budget![0];
+  }
+  return null;
+}
 
 /* Corridor needles resolve through aliases because the data's names
    and the search phrases differ in word order: the corridor everyone
@@ -59,6 +97,16 @@ const hasCorridor = (needle: string) => (p: ProjectIntel) => {
   const ms = (p.marketShort || "").toLowerCase();
   const wanted = CORRIDOR_ALIASES[needle.toLowerCase()] ?? [needle.toLowerCase()];
   return wanted.some((n) => m.includes(n) || ms.includes(n));
+};
+
+/* Budget pages cap the PAGE'S UNIT, not the project's cheapest config —
+   "4 BHK under ₹5 Cr" must mean the 4 BHK costs under ₹5 Cr. A project
+   whose unit price cannot be computed is EXCLUDED from budget pages:
+   we cannot verify the promise, so we do not make it (the page's own
+   FAQ says exactly this). */
+const underUnitCr = (config: string, cap: number) => (p: ProjectIntel) => {
+  const v = unitEntryPriceCr(p, config);
+  return v != null && v > 0 && v <= cap;
 };
 
 const underCr = (cap: number) => (p: ProjectIntel) => {
@@ -78,6 +126,7 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
      ───────────────────────────────────────────────────────────── */
   {
     slug: "4-bhk-apartments-gurugram",
+    config: "4 bhk",
     h1: "4 BHK Apartments in Gurugram",
     title: "4 BHK Apartments in Gurugram (2026 Audit) — Ranked by TruthScore & ₹/sq ft | Truth Estate",
     description: "Compare verified 4 BHK luxury apartments in Gurugram. Independently audited for RERA risk, real filed ₹/sq ft rates, daylight layout analysis, and developer track record. Zero broker spam.",
@@ -100,6 +149,7 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
   },
   {
     slug: "3-bhk-apartments-gurugram",
+    config: "3 bhk",
     h1: "3 BHK Apartments in Gurugram",
     title: "3 BHK Apartments in Gurugram (2026 Verified Rates) — Scored & Ranked | Truth Estate",
     description: "Explore 3 BHK luxury & premium apartments across Gurugram. Audited on construction velocity, RERA filings, carpet area efficiency, and price credibility. 100% neutral.",
@@ -118,6 +168,7 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
   },
   {
     slug: "5-bhk-apartments-gurugram",
+    config: "5 bhk",
     h1: "5 BHK Luxury Apartments in Gurugram",
     title: "5 BHK Apartments in Gurugram (2026 Audit) — Sky Mansions & Luxury Suites | Truth Estate",
     description: "Discover verified 5 BHK ultra-luxury sky mansions in Gurugram — filed rates, developer track record, delivery risk and fair-price bands on every report.",
@@ -132,6 +183,7 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
   },
   {
     slug: "penthouses-in-gurugram",
+    config: "penthouse",
     h1: "Luxury Penthouses in Gurugram",
     title: "Penthouses in Gurugram (2026 Audit) — Rooftop Comps & Vastu Intelligence | Truth Estate",
     description: "Explore verified luxury high-rise penthouses in Gurugram — filed rates, developer track record, delivery risk and fair-price bands on every report.",
@@ -154,6 +206,7 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
   },
   {
     slug: "duplex-apartments-gurugram",
+    config: "duplex",
     h1: "Duplex Apartments in Gurugram",
     title: "Duplex Apartments in Gurugram (2026) — Multi-Level Luxury Living | Truth Estate",
     description: "Discover verified multi-level duplex apartments in Gurugram — filed layouts, developer track record and fair-price bands on every report.",
@@ -190,6 +243,7 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
      ───────────────────────────────────────────────────────────── */
   {
     slug: "4-bhk-in-gurugram-under-5-cr",
+    config: "4 bhk",
     h1: "4 BHK Apartments in Gurugram Under ₹5 Cr",
     title: "4 BHK Apartments in Gurugram Under ₹5 Cr (2026 Verified Rates) | Truth Estate",
     description: "Find verified 4 BHK apartments in Gurugram with entry prices under ₹5 Crore. Filtered against live filed RERA rates to eliminate fake broker entry prices. Zero spam.",
@@ -204,11 +258,12 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
         a: "We test the advertised price against the developer's filed ₹/sq ft rate multiplied by the minimum 4 BHK super area. If the math doesn't check out, the project is excluded.",
       },
     ],
-    match: (p) => hasConfig("4 bhk")(p) && underCr(5)(p),
+    match: (p) => hasConfig("4 bhk")(p) && underUnitCr("4 bhk", 5)(p),
     pricePage: true,
   },
   {
     slug: "4-bhk-in-gurugram-under-6-cr",
+    config: "4 bhk",
     h1: "4 BHK Apartments in Gurugram Under ₹6 Cr",
     title: "4 BHK Apartments in Gurugram Under ₹6 Cr (2026 Audit) | Truth Estate",
     description: "Explore 4 BHK residences in Gurugram under ₹6 Crore. Verified against RERA cost sheets and actual carpet area allocations.",
@@ -219,11 +274,12 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
         a: "Sectors 76, 79, 102, 106, and 113 offer top-ranked developments by DLF, Puri, and M3M in this budget tier.",
       },
     ],
-    match: (p) => hasConfig("4 bhk")(p) && underCr(6)(p),
+    match: (p) => hasConfig("4 bhk")(p) && underUnitCr("4 bhk", 6)(p),
     pricePage: true,
   },
   {
     slug: "4-bhk-in-gurugram-under-8-cr",
+    config: "4 bhk",
     h1: "4 BHK Apartments in Gurugram Under ₹8 Cr",
     title: "4 BHK Apartments in Gurugram Under ₹8 Cr (2026 Comps) | Truth Estate",
     description: "Compare verified premium 4 BHK luxury residences in Gurugram under ₹8 Crore. Audited for developer credibility and delivery timelines.",
@@ -234,11 +290,12 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
         a: "Private elevator access, 11-foot ceiling clearances, VRV air conditioning, and integrated Italian modular kitchens are standard.",
       },
     ],
-    match: (p) => hasConfig("4 bhk")(p) && underCr(8)(p),
+    match: (p) => hasConfig("4 bhk")(p) && underUnitCr("4 bhk", 8)(p),
     pricePage: true,
   },
   {
     slug: "3-bhk-in-gurugram-under-2-cr",
+    config: "3 bhk",
     h1: "3 BHK Apartments in Gurugram Under ₹2 Cr",
     title: "3 BHK Apartments in Gurugram Under ₹2 Cr (2026 Audit) | Truth Estate",
     description: "Verified 3 BHK apartments in Gurugram under ₹2 Crore. Filtered for genuine RERA pricing and reliable construction progress.",
@@ -249,11 +306,12 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
         a: "Yes, prominent developers like Ashiana, Signature Global, and Ganga Realty offer verified 3 BHK homes under ₹2 Cr in emerging growth corridors.",
       },
     ],
-    match: (p) => hasConfig("3 bhk")(p) && underCr(2)(p),
+    match: (p) => hasConfig("3 bhk")(p) && underUnitCr("3 bhk", 2)(p),
     pricePage: true,
   },
   {
     slug: "3-bhk-in-gurugram-under-3-cr",
+    config: "3 bhk",
     h1: "3 BHK Apartments in Gurugram Under ₹3 Cr",
     title: "3 BHK Apartments in Gurugram Under ₹3 Cr (2026 Grounded Comps) | Truth Estate",
     description: "Compare verified 3 BHK luxury homes in Gurugram under ₹3 Crore. Ranked by TruthScore, RERA completion velocity, and fair market price. Zero broker calls.",
@@ -264,11 +322,12 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
         a: "New Gurgaon (Sectors 89–95) and Dwarka Expressway (Sectors 102–108) offer the highest concentration of high-quality 3 BHK projects under ₹3 Cr from reputed developers.",
       },
     ],
-    match: (p) => hasConfig("3 bhk")(p) && underCr(3)(p),
+    match: (p) => hasConfig("3 bhk")(p) && underUnitCr("3 bhk", 3)(p),
     pricePage: true,
   },
   {
     slug: "penthouses-in-gurugram-under-10-cr",
+    config: "penthouse",
     h1: "Penthouses in Gurugram Under ₹10 Cr",
     title: "Penthouses in Gurugram Under ₹10 Cr (2026 Audit) | Truth Estate",
     description: "Explore verified high-rise penthouses in Gurugram under ₹10 Crore — filed rates, sanctioned-layout flags and developer delivery records on every report.",
@@ -279,7 +338,7 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
         a: "Krisumi, Signature Global, Eldeco, and Smartworld provide sanctioned duplex and triplex penthouses under ₹10 Cr.",
       },
     ],
-    match: (p) => hasConfig("penthouse")(p) && underCr(10)(p),
+    match: (p) => hasConfig("penthouse")(p) && underUnitCr("penthouse", 10)(p),
     pricePage: true,
   },
   {
@@ -303,6 +362,7 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
      ───────────────────────────────────────────────────────────── */
   {
     slug: "4-bhk-golf-course-extension",
+    config: "4 bhk",
     h1: "4 BHK Apartments on Golf Course Extension Road",
     title: "4 BHK on Golf Course Extension Road Gurugram (2026 Audit) | Truth Estate",
     description: "Explore 4 BHK luxury residences on Golf Course Extension Road. Audited for developer financial strength, construction velocity, and fair resale comps.",
@@ -317,6 +377,7 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
   },
   {
     slug: "4-bhk-dwarka-expressway",
+    config: "4 bhk",
     h1: "4 BHK Apartments on Dwarka Expressway",
     title: "4 BHK on Dwarka Expressway Gurugram (2026 Grounded Audit) | Truth Estate",
     description: "Compare verified 4 BHK apartments on Dwarka Expressway. Audited for arterial connectivity, flyover access, developer financial health, and RERA timelines.",
@@ -331,6 +392,7 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
   },
   {
     slug: "4-bhk-southern-peripheral-road-spr",
+    config: "4 bhk",
     h1: "4 BHK Apartments on SPR (Southern Peripheral Road)",
     title: "4 BHK on Southern Peripheral Road SPR Gurugram (2026 Audit) | Truth Estate",
     description: "Find verified 4 BHK apartments on Southern Peripheral Road (SPR). Audited for Cloverleaf connectivity, builder balance sheets, and RERA delivery dates.",
@@ -345,6 +407,7 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
   },
   {
     slug: "4-bhk-golf-course-road",
+    config: "4 bhk",
     h1: "4 BHK Apartments on Golf Course Road",
     title: "4 BHK on Golf Course Road Gurugram (2026 Audit) — Super Luxury | Truth Estate",
     description: "The gold standard of Gurugram luxury real estate. Audited 4 BHK residences on Golf Course Road with verified resale comps and title checks.",
@@ -359,6 +422,7 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
   },
   {
     slug: "4-bhk-new-gurgaon",
+    config: "4 bhk",
     h1: "4 BHK Apartments in New Gurgaon",
     title: "4 BHK in New Gurgaon (2026 Verified Rates) | Truth Estate",
     description: "Explore verified 4 BHK homes in New Gurgaon (Sectors 81–95). Audited for master infrastructure, highway access, and developer solvency.",
@@ -373,6 +437,7 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
   },
   {
     slug: "3-bhk-dwarka-expressway",
+    config: "3 bhk",
     h1: "3 BHK Apartments on Dwarka Expressway",
     title: "3 BHK on Dwarka Expressway Gurugram (2026 Grounded Comps) | Truth Estate",
     description: "Compare verified 3 BHK residences along Dwarka Expressway. Audited for construction milestones, RERA delivery dates, and fair price bands.",
@@ -387,6 +452,7 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
   },
   {
     slug: "3-bhk-golf-course-extension",
+    config: "3 bhk",
     h1: "3 BHK Apartments on Golf Course Extension Road",
     title: "3 BHK on Golf Course Extension Road Gurugram (2026 Audit) | Truth Estate",
     description: "Discover verified 3 BHK luxury residences on Golf Course Extension Road. Audited for living density, RERA timelines, and price credibility.",
@@ -401,6 +467,7 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
   },
   {
     slug: "penthouses-golf-course-extension",
+    config: "penthouse",
     h1: "Penthouses on Golf Course Extension Road",
     title: "Penthouses on Golf Course Extension Road Gurugram (2026 Audit) | Truth Estate",
     description: "Exclusive rooftop penthouses on Golf Course Extension Road. Audited for private pool clearances, multi-level layouts, and panoramic views.",
@@ -415,6 +482,7 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
   },
   {
     slug: "penthouses-dwarka-expressway",
+    config: "penthouse",
     h1: "Penthouses on Dwarka Expressway",
     title: "Penthouses on Dwarka Expressway Gurugram (2026 Audit) | Truth Estate",
     description: "Verified sky mansions and duplex penthouses along Dwarka Expressway. Audited for RERA sanctioned terraces, high ceilings, and panoramic city views.",
@@ -433,6 +501,7 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
      ───────────────────────────────────────────────────────────── */
   {
     slug: "4-bhk-dwarka-expressway-under-5-cr",
+    config: "4 bhk",
     h1: "4 BHK Apartments on Dwarka Expressway Under ₹5 Cr",
     title: "4 BHK on Dwarka Expressway Under ₹5 Cr (2026 Grounded Comps) | Truth Estate",
     description: "Verified 4 BHK apartments on Dwarka Expressway under ₹5 Crore. Filtered against developer filed rates to eliminate false listings.",
@@ -443,11 +512,12 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
         a: "Yes, prominent projects by Puri, Smartworld, Whiteland, and Godrej offer entry 4 BHK configurations under ₹5 Cr.",
       },
     ],
-    match: (p) => hasConfig("4 bhk")(p) && hasCorridor("dwarka expressway")(p) && underCr(5)(p),
+    match: (p) => hasConfig("4 bhk")(p) && hasCorridor("dwarka expressway")(p) && underUnitCr("4 bhk", 5)(p),
     pricePage: true,
   },
   {
     slug: "4-bhk-spr-under-5-cr",
+    config: "4 bhk",
     h1: "4 BHK Apartments on SPR Under ₹5 Cr",
     title: "4 BHK on Southern Peripheral Road SPR Under ₹5 Cr (2026 Audit) | Truth Estate",
     description: "Compare verified 4 BHK residences on SPR under ₹5 Crore. Audited for builder financial stability, RERA timelines, and fair rate benchmarks.",
@@ -458,11 +528,12 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
         a: "Signature Global Titanium, Tulip Monsella, and Whiteland provide high-ranked options in this category.",
       },
     ],
-    match: (p) => hasConfig("4 bhk")(p) && (hasCorridor("spr")(p) || hasCorridor("southern peripheral")(p)) && underCr(5)(p),
+    match: (p) => hasConfig("4 bhk")(p) && (hasCorridor("spr")(p) || hasCorridor("southern peripheral")(p)) && underUnitCr("4 bhk", 5)(p),
     pricePage: true,
   },
   {
     slug: "3-bhk-dwarka-expressway-under-2-5-cr",
+    config: "3 bhk",
     h1: "3 BHK Apartments on Dwarka Expressway Under ₹2.5 Cr",
     title: "3 BHK on Dwarka Expressway Under ₹2.5 Cr (2026 Verified Comps) | Truth Estate",
     description: "Verified 3 BHK apartments along Dwarka Expressway under ₹2.5 Crore. Ranked by construction pace, legal safety, and real usable carpet area.",
@@ -473,7 +544,7 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
         a: "Sectors 102, 103, 104, and 108 have the highest concentration of high-scoring 3 BHK units under ₹2.5 Cr.",
       },
     ],
-    match: (p) => hasConfig("3 bhk")(p) && hasCorridor("dwarka expressway")(p) && underCr(2.5)(p),
+    match: (p) => hasConfig("3 bhk")(p) && hasCorridor("dwarka expressway")(p) && underUnitCr("3 bhk", 2.5)(p),
     pricePage: true,
   },
 ];

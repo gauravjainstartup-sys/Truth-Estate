@@ -58,6 +58,7 @@ export default function ProjectsIndex({
   dense = false,
   metaLine,
   feedSlot,
+  priceChips,
 }: {
   projects: ProjectIntel[];
   stats?: TrackedStats | null;
@@ -76,11 +77,19 @@ export default function ProjectsIndex({
   dense?: boolean;
   metaLine?: string;
   feedSlot?: { after: number; node: React.ReactNode };
+  /* Price-bucket chips for the landers, REPLACING the corridor chips —
+     a budget is how a buyer actually narrows a shortlist, and on a
+     config page the bucket is the PAGE'S UNIT price (4 BHK cost), not
+     the project's cheapest flat. Server-computed (functions don't
+     cross the RSC boundary): `of` maps project slug → bucket label,
+     `labels` carries the ordered chips with real counts. */
+  priceChips?: { labels: { label: string; count: number }[]; of: Record<string, string> };
 }) {
   const { open } = useJourney();
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<Sort>("score");
   const [corridor, setCorridor] = useState<string | null>(null);
+  const [bucket, setBucket] = useState<string | null>(null);
   // ?developer=<name> deep-link from a dossier's "See all X projects" CTA —
   // filters THIS catalogue (and its ProjectOptionCard grid) to one builder.
   const [devFilter, setDevFilter] = useState<string | null>(null);
@@ -129,6 +138,7 @@ export default function ProjectsIndex({
     }
     if (needle) out = out.filter((x) => x.hay.includes(needle));
     if (corridor) out = out.filter((x) => (x.p.marketShort || x.p.market) === corridor);
+    if (bucket && priceChips) out = out.filter((x) => priceChips.of[x.p.slug] === bucket);
     const list = out.map((x) => x.p);
     /* DEFAULT ORDER IS THE SCORE. The grid used to render in whatever
        order the pipeline returned rows — 75, 77, 61, 65, 61, 59, 81 — so
@@ -140,9 +150,9 @@ export default function ProjectsIndex({
       : sort === "priceDesc" ? (b.budget?.[0] ?? 0) - (a.budget?.[0] ?? 0)
       : a.name.localeCompare(b.name),
     );
-  }, [indexed, q, corridor, sort, devFilter]);
+  }, [indexed, q, corridor, sort, devFilter, bucket, priceChips]);
 
-  const filtered = q.trim() !== "" || corridor != null;
+  const filtered = q.trim() !== "" || corridor != null || bucket != null;
   // When arrived via a developer's "See all X projects" CTA, the page reframes
   // to that builder (heading, crumb, intro) and the global stat row is hidden —
   // its counts describe the whole universe, not this one developer.
@@ -263,7 +273,16 @@ export default function ProjectsIndex({
             {/* One row that scrolls sideways on a phone rather than two that
                 wrap — eight corridors stacked would push the grid another
                 40px down every screen. */}
-            {corridors.length > 1 && (
+            {priceChips ? (
+              priceChips.labels.length > 1 && (
+                <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
+                  <Chip on={bucket == null} onClick={() => setBucket(null)}>All prices<Count n={projects.length} /></Chip>
+                  {priceChips.labels.map(({ label, count }) => (
+                    <Chip key={label} on={bucket === label} onClick={() => setBucket(bucket === label ? null : label)}>{label}<Count n={count} /></Chip>
+                  ))}
+                </div>
+              )
+            ) : corridors.length > 1 && (
               <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
                 <Chip on={corridor == null} onClick={() => setCorridor(null)}>All corridors<Count n={projects.length} /></Chip>
                 {corridors.map(([c, n]) => (
@@ -277,7 +296,7 @@ export default function ProjectsIndex({
                 ? `Showing all ${projects.length} scored projects`
                 : `${shown.length} of ${projects.length} projects`}
               {filtered && shown.length > 0 && (
-                <button onClick={() => { setQ(""); setCorridor(null); }} className="ml-3 text-[#9a7a2e] underline-offset-2 hover:underline">Clear</button>
+                <button onClick={() => { setQ(""); setCorridor(null); setBucket(null); }} className="ml-3 text-[#9a7a2e] underline-offset-2 hover:underline">Clear</button>
               )}
             </p>
 
@@ -292,11 +311,11 @@ export default function ProjectsIndex({
               </div>
             ) : (
               <div className="mt-6 rounded-lg border border-[#1a1a1a]/8 bg-white/60 px-6 py-10 text-center">
-                <p className="font-serif text-[1.15rem] font-medium text-[#1a1a1a]/75">Nothing matches “{q}”{corridor ? ` in ${corridor}` : ""}.</p>
+                <p className="font-serif text-[1.15rem] font-medium text-[#1a1a1a]/75">Nothing matches “{q}”{corridor ? ` in ${corridor}` : ""}{bucket ? ` at ${bucket}` : ""}.</p>
                 <p className="mx-auto mt-2 max-w-md text-[0.85rem] font-light leading-relaxed text-[#1a1a1a]/45">
                   We track {projects.length} scored projects across {corridors.length} corridors. Try a developer name, a sector number, or clear the filters.
                 </p>
-                <button onClick={() => { setQ(""); setCorridor(null); }} className="mt-5 rounded-sm border border-[#1a1a1a]/15 px-5 py-2.5 text-[0.78rem] font-light text-[#1a1a1a]/65 transition-colors hover:border-[#1a1a1a]/35">
+                <button onClick={() => { setQ(""); setCorridor(null); setBucket(null); }} className="mt-5 rounded-sm border border-[#1a1a1a]/15 px-5 py-2.5 text-[0.78rem] font-light text-[#1a1a1a]/65 transition-colors hover:border-[#1a1a1a]/35">
                   Show every project
                 </button>
               </div>

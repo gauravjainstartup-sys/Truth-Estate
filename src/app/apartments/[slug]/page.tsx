@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { activeApartmentClusters, apartmentClusterBySlug, MIN_CLUSTER_PROJECTS } from "@/lib/apartmentClusters";
+import { activeApartmentClusters, apartmentClusterBySlug, MIN_CLUSTER_PROJECTS, unitEntryPriceCr } from "@/lib/apartmentClusters";
 import ProjectsIndex from "@/components/intelligence/ProjectsIndex";
 import ClusterCTA from "@/components/apartments/ClusterCTA";
 import { projectHref } from "@/lib/projectHref";
@@ -96,20 +96,45 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
      first report is ₹0, so the lowest-friction next step is proof,
      not a form. */
   const top = [...projects].sort((a, b) => b.truthScore - a.truthScore)[0];
-  /* ENTRY prices only (budget[0]) — mixing in top-config prices made an
-     "under ₹5 Cr" page announce ₹22 Cr in its own header. One line, not
-     a stat wall: the grid is the page. */
-  const lows = projects.map((p) => p.budget?.[0] ?? 0).filter((v) => v > 0);
-  const psfLows = projects.map((p) => p.psfOwn?.low ?? p.psf?.low ?? 0).filter((v) => v > 0);
-  const psfHighs = projects.map((p) => p.psfOwn?.high ?? p.psf?.high ?? 0).filter((v) => v > 0);
+  /* Everything money on this page quotes THE PAGE'S UNIT — the 4 BHK's
+     filed layout at the project's filed rate — never the project's
+     cheapest config wearing the wrong label. unitEntryPriceCr returns
+     null rather than guessing; unpriced projects still list, they just
+     sit outside the bucket chips. */
+  const unitPrice = new Map(projects.map((p) => [p.slug, unitEntryPriceCr(p, cluster.config)]));
+  const priced = [...unitPrice.values()].filter((v): v is number => v != null && v > 0);
   const cr = (v: number) => (v >= 10 ? Math.round(v) : Math.round(v * 10) / 10);
-  const k = (v: number) => `₹${Math.round(v / 1000)}k`;
+  const unitWord = cluster.config ? `${cluster.h1.match(/penthouse/i) ? "penthouse" : cluster.config.toUpperCase().replace(" BHK", " BHK")} unit` : "entry";
   const metaLine = [
     `${projects.length} audited files`,
-    lows.length ? `entry ₹${cr(Math.min(...lows))}–${cr(Math.max(...lows))} Cr` : null,
-    psfLows.length && psfHighs.length ? `${k(Math.min(...psfLows))}–${k(Math.max(...psfHighs))}/sq ft filed` : null,
+    priced.length ? `${unitWord} ₹${cr(Math.min(...priced))}–${cr(Math.max(...priced))} Cr` : null,
+    "filed rates, not broker quotes",
     "no developer pays to rank",
   ].filter(Boolean).join(" · ");
+
+  /* Fixed rupee bands, chips shown only where projects actually sit.
+     Buckets price the page's unit (founder: "for 4 BHK unit only, not
+     the project"). */
+  const EDGES = [3, 5, 8, 12];
+  const bucketLabel = (v: number) => {
+    if (v < EDGES[0]) return `Under ₹${EDGES[0]} Cr`;
+    for (let i = 0; i < EDGES.length - 1; i++) if (v < EDGES[i + 1]) return `₹${EDGES[i]}–${EDGES[i + 1]} Cr`;
+    return `₹${EDGES[EDGES.length - 1]} Cr+`;
+  };
+  const of: Record<string, string> = {};
+  const counts = new Map<string, number>();
+  for (const p of projects) {
+    const v = unitPrice.get(p.slug);
+    if (v == null || v <= 0) continue;
+    const label = bucketLabel(v);
+    of[p.slug] = label;
+    counts.set(label, (counts.get(label) ?? 0) + 1);
+  }
+  const ORDER = [`Under ₹${EDGES[0]} Cr`, ...EDGES.slice(0, -1).map((e, i) => `₹${e}–${EDGES[i + 1]} Cr`), `₹${EDGES[EDGES.length - 1]} Cr+`];
+  const priceChips = {
+    labels: ORDER.filter((l) => (counts.get(l) ?? 0) > 0).map((l) => ({ label: l, count: counts.get(l)! })),
+    of,
+  };
 
   const breadcrumbs = breadcrumbLd([
     { name: "Home", path: "" },
@@ -156,6 +181,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         intro={cluster.intro}
         dense
         metaLine={metaLine}
+        priceChips={priceChips}
         feedSlot={top ? {
           /* Seventh cell: six real options first, then the next step —
              in-feed is where marketplace surfaces convert, and it costs
