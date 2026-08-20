@@ -457,35 +457,98 @@ export function WatchBanner({ projectName, variant = "band" }: { projectName: st
   const numValid = num.replace(/\D/g, "").length >= (isIndia ? 10 : 6);
   const sentTo = isIndia && normalisePhone(num) ? `${dial} ${prettyPhone(normalisePhone(num)!)}` : `${dial} ${num.trim()}`;
 
+  /* One style map, two dresses. Every control below reads from S, so the
+     two variants can look nothing alike while sharing a single code path
+     — the states, the calls and the lead are the same object either way.
+
+     "story" is LIGHT on purpose. It sits at the end of a deck of
+     near-black news cards, and the founder's note was contrast: an
+     ivory card among black ones reads instantly as a different kind of
+     thing — an invitation, not another dispatch. The band keeps the
+     dark dress it already ships in. */
+  const S = story
+    ? {
+        eyebrow: "text-[#9a7a2e]",
+        head: "text-[1.15rem] text-[#1a1a1a]",
+        select: "rounded-lg border border-[#1a1a1a]/15 bg-white px-2 py-2.5 text-[0.82rem] text-[#1a1a1a] outline-none focus:border-[#9a7a2e]",
+        field: "rounded-lg border border-[#1a1a1a]/15 bg-white px-3 py-2.5 text-[0.82rem] text-[#1a1a1a] placeholder-[#1a1a1a]/35 outline-none focus:border-[#9a7a2e]",
+        /* Ink on ivory — the inverse of the dispatch cards, so the one
+           action on this card is the darkest thing on it. The disabled
+           state is styled rather than faded: black at 40% opacity over
+           ivory reads as a broken button, where a flat grey pill reads
+           as "not yet". */
+        cta: "w-full rounded-lg bg-[#14110d] px-4 py-2.5 text-[0.78rem] font-semibold text-[#F5F0E8] transition-colors hover:bg-black disabled:cursor-not-allowed disabled:bg-[#1a1a1a]/15 disabled:text-[#1a1a1a]/45 disabled:opacity-100",
+        ghost: "flex w-full items-center justify-center gap-2.5 rounded-lg border border-[#1a1a1a]/15 bg-white py-2.5 text-[0.8rem] font-medium text-[#1a1a1a] transition-colors hover:border-[#1a1a1a]/35 disabled:opacity-50",
+        rule: "bg-[#1a1a1a]/12",
+        ruleText: "text-[#1a1a1a]/40",
+        muted: "text-[#1a1a1a]/55",
+        strong: "text-[#1a1a1a]",
+        link: "text-[#9a7a2e]",
+        err: "text-[#b0503e]",
+        ok: "rounded-lg border border-[#1e6b45]/30 bg-[#1e6b45]/10 p-3.5 text-center text-[0.8rem] font-medium text-[#1e6b45]",
+        otpBox: "h-11 min-w-0 flex-1 rounded-lg border border-[#1a1a1a]/20 bg-white text-center font-serif text-[1.2rem] text-[#1a1a1a] outline-none focus:border-[#9a7a2e] focus:ring-2 focus:ring-[#9a7a2e]/25",
+      }
+    : {
+        eyebrow: "text-[#c9a96e]",
+        head: "text-[1.3rem] text-white md:text-[1.5rem]",
+        select: "rounded-xl border border-white/15 bg-white/10 px-2.5 py-2.5 text-[0.82rem] text-white outline-none backdrop-blur-md focus:border-[#c9a96e] [&>option]:text-[#14110d]",
+        field: "rounded-xl border border-white/15 bg-white/10 px-3.5 py-2.5 text-[0.82rem] text-white placeholder-white/40 backdrop-blur-md transition-colors focus:border-[#c9a96e] focus:outline-none",
+        cta: "w-full rounded-xl bg-gradient-to-r from-[#e4cca0] to-[#c9a96e] px-4 py-2.5 text-[0.78rem] font-bold uppercase tracking-wider text-[#14110d] shadow-[0_4px_16px_rgba(201,169,110,0.25)] transition-all hover:from-[#f0dbb2] hover:to-[#d8b978] disabled:opacity-50",
+        ghost: "flex w-full items-center justify-center gap-2.5 rounded-xl border border-white/15 bg-white/[0.06] py-2.5 text-[0.8rem] font-semibold text-white transition-colors hover:bg-white/10 disabled:opacity-50",
+        rule: "bg-white/12",
+        ruleText: "text-white/35",
+        muted: "text-white/60",
+        strong: "text-white",
+        link: "text-[#c9a96e]",
+        err: "text-rose-300",
+        ok: "rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-center text-[0.82rem] font-medium text-emerald-300",
+        otpBox: "h-12 min-w-0 flex-1 rounded-lg border border-white/20 bg-white/10 text-center font-serif text-[1.25rem] text-white outline-none focus:border-[#c9a96e] focus:ring-2 focus:ring-[#c9a96e]/30",
+      };
+
   return (
-    <div className={story ? "text-[#f6f1e8]" : "mt-8 overflow-hidden rounded-2xl border border-[#c9a96e]/35 bg-[#14110d] p-6 text-[#f6f1e8] shadow-[0_16px_40px_rgba(0,0,0,0.18)] md:p-8"}>
-      <div className={story ? "flex flex-col gap-3.5" : "flex flex-col justify-between gap-6 lg:flex-row lg:items-center"}>
-        {/* Pitch — 3 skimmable points */}
+    <div className={story ? "" : "mt-8 overflow-hidden rounded-2xl border border-[#c9a96e]/35 bg-[#14110d] p-6 text-[#f6f1e8] shadow-[0_16px_40px_rgba(0,0,0,0.18)] md:p-8"}>
+      <div className={story ? "flex flex-col gap-4" : "flex flex-col justify-between gap-6 lg:flex-row lg:items-center"}>
+        {/* Pitch. The band lists three promises because it has the width
+            for them. The story card does not, and does not need them: at
+            the end of a deck of dispatches the reader has just watched
+            what "news" means here, so one line is the whole argument. */}
         <div className={story ? "" : "max-w-xl"}>
-          <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-[#c9a96e]">Discrete ground intelligence</span>
-          <h4 className={`mt-1.5 font-serif font-normal leading-tight text-white ${story ? "text-[1.12rem]" : "text-[1.3rem] md:text-[1.5rem]"}`}>
-            Get {projectName} on the watch
+          <span className={`text-[0.62rem] font-bold uppercase tracking-[0.2em] ${S.eyebrow}`}>
+            {story ? "News alerts" : "Discrete ground intelligence"}
+          </span>
+          <h4 className={`mt-1.5 font-serif font-normal leading-tight ${S.head}`}>
+            {story ? "Get the latest, first." : `Get ${projectName} on the watch`}
           </h4>
-          <ul className={`mt-3 space-y-1.5 leading-relaxed text-[#f6f1e8]/70 ${story ? "text-[0.7rem]" : "text-[0.82rem]"}`}>
-            <li className="flex items-start gap-2"><span aria-hidden>🔔</span><span>A personal heads-up the moment a real event lands — a new filing, RERA slippage, a corridor change.</span></li>
-            <li className="flex items-start gap-2"><span aria-hidden>🤝</span><span>Concierge, by a human advisor — not a broker blast.</span></li>
-            <li className="flex items-start gap-2"><span aria-hidden>🔒</span><span>Zero spam. Ever.</span></li>
-          </ul>
+          {story ? (
+            /* The project name lives in the small line, not the headline:
+               names run from "Trevoc Royal" to "Signature Global Titanium
+               SPR Sector 71" and a headline that reflows to four lines on
+               the long ones is not a headline. */
+            <p className={`mt-2 text-[0.74rem] leading-relaxed ${S.muted}`}>
+              Verified news on {projectName}, the moment it lands. No spam.
+            </p>
+          ) : (
+            <ul className="mt-3 space-y-1.5 text-[0.82rem] leading-relaxed text-[#f6f1e8]/70">
+              <li className="flex items-start gap-2"><span aria-hidden>🔔</span><span>A personal heads-up the moment a real event lands — a new filing, RERA slippage, a corridor change.</span></li>
+              <li className="flex items-start gap-2"><span aria-hidden>🤝</span><span>Concierge, by a human advisor — not a broker blast.</span></li>
+              <li className="flex items-start gap-2"><span aria-hidden>🔒</span><span>Zero spam. Ever.</span></li>
+            </ul>
+          )}
         </div>
 
         {/* Action */}
         <div className={story ? "" : "shrink-0 lg:w-[21rem]"}>
           {done ? (
-            <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-center text-[0.82rem] font-medium text-emerald-300">
+            <div className={S.ok}>
               ✓ You&rsquo;re on the watch for {projectName}. An advisor confirms and sends verified updates as they land.
             </div>
           ) : signedIn ? (
             <button
               type="button"
               onClick={watchAsMember}
-              className="w-full rounded-xl bg-gradient-to-r from-[#e4cca0] to-[#c9a96e] px-4 py-3 text-[0.82rem] font-bold uppercase tracking-wider text-[#14110d] shadow-[0_4px_16px_rgba(201,169,110,0.25)] transition-all hover:from-[#f0dbb2] hover:to-[#d8b978]"
+              className={S.cta}
             >
-              Add me to the watch 🔔
+              {story ? "Notify me" : "Add me to the watch 🔔"}
             </button>
           ) : !sent ? (
             <form onSubmit={(e) => { e.preventDefault(); sendCode(); }} className="space-y-2.5">
@@ -494,7 +557,7 @@ export function WatchBanner({ projectName, variant = "band" }: { projectName: st
                   value={dial}
                   onChange={(e) => setDial(e.target.value)}
                   aria-label="Country code"
-                  className="rounded-xl border border-white/15 bg-white/10 px-2.5 py-2.5 text-[0.82rem] text-white outline-none backdrop-blur-md focus:border-[#c9a96e] [&>option]:text-[#14110d]"
+                  className={S.select}
                 >
                   {DIAL.map((d) => <option key={d.code} value={d.code}>{d.flag} {d.code}</option>)}
                 </select>
@@ -505,33 +568,33 @@ export function WatchBanner({ projectName, variant = "band" }: { projectName: st
                   placeholder={isIndia ? "Your mobile number" : "Mobile number"}
                   value={num}
                   onChange={(e) => setNum(e.target.value)}
-                  className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/10 px-3.5 py-2.5 text-[0.82rem] text-white placeholder-white/40 backdrop-blur-md transition-colors focus:border-[#c9a96e] focus:outline-none"
+                  className={`min-w-0 flex-1 ${S.field}`}
                 />
               </div>
               <button
                 type="submit"
                 disabled={busy || !numValid}
-                className="w-full rounded-xl bg-gradient-to-r from-[#e4cca0] to-[#c9a96e] px-4 py-2.5 text-[0.78rem] font-bold uppercase tracking-wider text-[#14110d] shadow-[0_4px_16px_rgba(201,169,110,0.25)] transition-all hover:from-[#f0dbb2] hover:to-[#d8b978] disabled:opacity-50"
+                className={S.cta}
               >
-                {busy ? "Sending…" : "Add me to the watch 🔔"}
+                {busy ? "Sending…" : story ? "Notify me" : "Add me to the watch 🔔"}
               </button>
-              <div className="flex items-center gap-3 py-0.5 text-[0.66rem] text-white/35"><span className="h-px flex-1 bg-white/12" />or<span className="h-px flex-1 bg-white/12" /></div>
+              <div className={`flex items-center gap-3 py-0.5 text-[0.66rem] ${S.ruleText}`}><span className={`h-px flex-1 ${S.rule}`} />or<span className={`h-px flex-1 ${S.rule}`} /></div>
               <button
                 type="button"
                 onClick={google}
                 disabled={busy}
-                className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-white/15 bg-white/[0.06] py-2.5 text-[0.8rem] font-semibold text-white transition-colors hover:bg-white/10 disabled:opacity-50"
+                className={S.ghost}
               >
                 <GoogleG /> Continue with Google
               </button>
-              {err && <p className="text-[0.72rem] font-medium text-rose-300">{err}</p>}
+              {err && <p className={`text-[0.72rem] font-medium ${S.err}`}>{err}</p>}
             </form>
           ) : (
             <div className="space-y-2.5">
-              <p className="text-[0.76rem] text-white/60">
-                Code sent to <span className="font-medium text-white">{sentTo}</span>
+              <p className={`text-[0.76rem] ${S.muted}`}>
+                Code sent to <span className={`font-medium ${S.strong}`}>{sentTo}</span>
                 {" · "}
-                <button type="button" onClick={() => { setSent(false); setKnown(undefined); setOtp(Array(OTP_LENGTH).fill("")); setErr(""); }} className="font-medium text-[#c9a96e] hover:underline">Change</button>
+                <button type="button" onClick={() => { setSent(false); setKnown(undefined); setOtp(Array(OTP_LENGTH).fill("")); setErr(""); }} className={`font-medium hover:underline ${S.link}`}>Change</button>
               </p>
               {known !== true && (
                 <input
@@ -540,7 +603,7 @@ export function WatchBanner({ projectName, variant = "band" }: { projectName: st
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   autoComplete="name"
-                  className="w-full rounded-xl border border-white/15 bg-white/10 px-3.5 py-2.5 text-[0.82rem] text-white placeholder-white/40 outline-none focus:border-[#c9a96e]"
+                  className={`w-full ${S.field}`}
                 />
               )}
               <OtpDigits
@@ -549,17 +612,17 @@ export function WatchBanner({ projectName, variant = "band" }: { projectName: st
                 len={OTP_LENGTH}
                 autoFocus
                 onComplete={verify}
-                boxClass="h-12 min-w-0 flex-1 rounded-lg border border-white/20 bg-white/10 text-center font-serif text-[1.25rem] text-white outline-none focus:border-[#c9a96e] focus:ring-2 focus:ring-[#c9a96e]/30"
+                boxClass={S.otpBox}
               />
               <button
                 type="button"
                 onClick={verify}
                 disabled={busy}
-                className="w-full rounded-xl bg-gradient-to-r from-[#e4cca0] to-[#c9a96e] px-4 py-2.5 text-[0.78rem] font-bold uppercase tracking-wider text-[#14110d] transition-all hover:from-[#f0dbb2] hover:to-[#d8b978] disabled:opacity-50"
+                className={S.cta}
               >
                 {busy ? "Verifying…" : "Verify & watch →"}
               </button>
-              {err && <p className="text-[0.72rem] font-medium text-rose-300">{err}</p>}
+              {err && <p className={`text-[0.72rem] font-medium ${S.err}`}>{err}</p>}
             </div>
           )}
         </div>

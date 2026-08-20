@@ -93,11 +93,12 @@ function factLines(s: string): string[] {
 }
 
 /* Every slide wears the same shell — same aspect, same corners, same
-   shadow — so the sign-up reads as another card in the deck rather than
-   a panel that appeared over one. Only the surface and the edge colour
-   say which kind it is. */
+   shadow — so the sign-up sits IN the deck rather than on top of it.
+   Surface and text colour are set per card, because the sign-up is
+   deliberately the inverse of a dispatch: ivory among near-black. That
+   is the whole signal that it is a different kind of card. */
 const CARD_SHELL =
-  "relative aspect-[9/16] w-[min(21rem,80vw,33vh)] shrink-0 overflow-hidden rounded-[1.4rem] text-[#F5F0E8] shadow-[0_18px_50px_rgba(0,0,0,0.22)] max-[899px]:w-full";
+  "relative aspect-[9/16] w-[min(21rem,80vw,33vh)] shrink-0 overflow-hidden rounded-[1.4rem] shadow-[0_18px_50px_rgba(0,0,0,0.22)] max-[899px]:w-full";
 
 export default function DispatchStories({
   items,
@@ -246,14 +247,16 @@ export default function DispatchStories({
   if (!n) return null;
 
   /* One bar per DISPATCH. The sign-up is not a dispatch, so it does not
-     get a bar; standing on it, every bar is full — the news ran out. */
-  const bars = (
+     get a bar; standing on it, every bar is full — the news ran out.
+     `light` inverts them for the ivory sign-up card, where an ivory bar
+     on ivory would be no bar at all. */
+  const barsFor = (light: boolean) => (
     <div className="absolute inset-x-3 top-2.5 z-[7] flex gap-[3px]" aria-hidden>
       {items.map((_, b) => (
-        <span key={b} className="h-[2px] flex-1 overflow-hidden rounded-sm bg-[#F5F0E8]/20">
+        <span key={b} className={`h-[2px] flex-1 overflow-hidden rounded-sm ${light ? "bg-[#1a1a1a]/15" : "bg-[#F5F0E8]/20"}`}>
           <span
             ref={b === idx && !onEndCard ? fillRef : undefined}
-            className="block h-full rounded-sm bg-[#F5F0E8]"
+            className={`block h-full rounded-sm ${light ? "bg-[#1a1a1a]/55" : "bg-[#F5F0E8]"}`}
             style={{ width: b < idx || onEndCard || (b === idx && reduce) ? "100%" : "0%" }}
           />
         </span>
@@ -297,10 +300,10 @@ export default function DispatchStories({
                   key={it.id || i}
                   ref={(el) => { slideRefs.current[i] = el; }}
                   onClick={() => { if (!isActive) goto(i); }}
-                  className={`${CARD_SHELL} bg-[#0a0a0a] ${isActive ? "" : "cursor-pointer opacity-[0.44] [transform:scale(0.9)]"}`}
+                  className={`${CARD_SHELL} bg-[#0a0a0a] text-[#F5F0E8] ${isActive ? "" : "cursor-pointer opacity-[0.44] [transform:scale(0.9)]"}`}
                   style={{ transition: reduce ? "none" : "opacity .3s ease, transform .3s ease", borderLeft: `3px solid ${tone}` }}
                 >
-                  {isActive && bars}
+                  {isActive && barsFor(false)}
 
                   {isActive && (
                     <button
@@ -390,24 +393,29 @@ export default function DispatchStories({
 
             {/* ── The sign-up card ──────────────────────────────────
                 A card of its own at the end of the deck, not a panel
-                over a dispatch. Warmer surface and a gold edge mark it
-                as a different kind of card; the shell is identical, so
-                it sits in the deck rather than interrupting it. */}
+                over a dispatch — and the INVERSE of one. Every dispatch
+                is near-black; this is ivory. After five dark cards the
+                switch is the loudest signal available that the news has
+                run out and this is something else being asked of you.
+                Same shell, so it still belongs to the deck. */}
             {endCard && (
               <article
                 ref={(el) => { slideRefs.current[n] = el; }}
                 onClick={() => { if (!onEndCard) goto(n); }}
-                aria-label="Get this project on the watch"
-                className={`${CARD_SHELL} bg-[#14110d] ${onEndCard ? "" : "cursor-pointer opacity-[0.44] [transform:scale(0.9)]"}`}
+                aria-label="Sign up for news on this project"
+                /* A shade lighter than the page's own ivory: at the exact
+                   page tone the card's right edge dissolves into the
+                   background and it stops reading as a card at all. */
+                className={`${CARD_SHELL} bg-[#FDFBF7] text-[#1a1a1a] ring-1 ring-[#1a1a1a]/[0.06] ${onEndCard ? "" : "cursor-pointer opacity-[0.44] [transform:scale(0.9)]"}`}
                 style={{ transition: reduce ? "none" : "opacity .3s ease, transform .3s ease", borderLeft: "3px solid #c9a96e" }}
               >
-                {onEndCard && bars}
+                {onEndCard && barsFor(true)}
                 <div className="flex h-full flex-col justify-center overflow-y-auto px-5 pb-5 pt-8">
                   {endCard}
                   <button
                     type="button"
                     onClick={() => { seenRef.current.clear(); goto(0); }}
-                    className="mt-3 shrink-0 rounded-lg border border-[#F5F0E8]/20 py-2 text-[0.72rem] text-[#F5F0E8]/80 transition-colors hover:border-[#c9a96e] hover:text-white"
+                    className="mt-3 shrink-0 text-[0.7rem] text-[#1a1a1a]/45 underline-offset-4 transition-colors hover:text-[#1a1a1a] hover:underline"
                   >
                     Replay the dispatches
                   </button>
