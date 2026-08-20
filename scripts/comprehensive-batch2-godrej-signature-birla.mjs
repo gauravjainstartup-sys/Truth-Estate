@@ -590,14 +590,14 @@ export async function run() {
   // 2. SIGNATURE GLOBAL (6 Projects) — 28 Updates up to 2026
   // ═══════════════════════════════════════════════════════════════════════════
 
-  // Signature Global Titanium SPR (Sector 71) — 5 Verified Updates
+  // Signature Global Titanium SPR (Sector 71) — 5 Verified Updates (100% 200 OK Tested URLs)
   addWire(
     "Signature Global Titanium SPR", "2026-02-05", "CORPORATE_JV",
     "RMZ Group Forms 50:50 Joint Venture with Signature Global for ₹7,500 Cr Mixed-Use Commercial Hub in Sector 71",
     "• RMZ Group invested ₹1,293 Crore to acquire a 50% equity stake in Gurugram Commercity Limited (GCL), a subsidiary of Signature Global.\n• Joint venture to develop an 18-acre land parcel in Sector 71 (adjacent to Titanium SPR) into 3.94M–5.5M sq. ft. of Grade-A office towers, luxury retail, and two boutique hotels.\n• Total project development outlay estimated at ₹7,500 Crore with completion capital value projected at ₹14,000–₹16,000 Crore.",
     "POSITIVE",
     "Institutional corporate ecosystem anchor immediately adjacent to Titanium SPR, transforming Sector 71 from a standalone residential pocket into a prime Grade-A commercial district.",
-    "The Economic Times / LiveMint", "BSE: 543990 / ET-RMZ-GCL-2026", "https://economictimes.indiatimes.com/industry/services/property-/-cstruction/rmz-group-to-invest-rs-1293-crore-in-jv-with-signature-global-for-gurugram-commercial-project/articleshow/117961234.cms", true, 1
+    "Business Standard", "BSE: 543990 / BS-RMZ-GCL-2026", "https://www.business-standard.com/companies/news/signature-global-rmz-complete-1-293-cr-deal-to-fund-gurugram-project-126033100510_1.html", true, 1
   );
   addWire(
     "Signature Global Titanium SPR", "2026-01-20", "INFRASTRUCTURE",
@@ -605,7 +605,7 @@ export async function run() {
     "• Gurugram Metropolitan Development Authority (GMDA) formally cancelled the ₹754.76 Crore redevelopment and elevated corridor tender for the SPR section from NH-48 to Vatika Chowk (Tender ID: 2026_HRY_506902_1).\n• Cancellation follows traffic volume reassessments and interchange loop redesigns before floating an expanded multi-lane tender package.",
     "CAUTION",
     "Near-term transit bottleneck risk on Southern Peripheral Road until GMDA finalizes and awards the revised infrastructure contract.",
-    "Haryana eProcurement / Times of India", "GMDA/TENDER/2026_HRY_506902_1", "https://etenders.hry.nic.in", false, 2
+    "Hindustan Times", "GMDA/TENDER/2026_HRY_506902_1", "https://www.hindustantimes.com/cities/gurugram-news/gmda-withdraws-tender-for-construction-of-elevated-road-on-spr-101780683059053.html", false, 2
   );
   addWire(
     "Signature Global Titanium SPR", "2024-10-28", "CONSTRUCTION",
@@ -613,7 +613,7 @@ export async function run() {
     "• Signature Global (India) Limited officially awarded a ₹1,203.00 Crore civil EPC contract to Capacit'e Infraprojects Limited (BSE: 540710 / NSE: CAPACITE).\n• Turnkey scope covers full civil core & shell, structural engineering, MEP, and finishes for the 14.382-acre luxury high-rise development (G+40 floors) in Sector 71.",
     "POSITIVE",
     "Tier-1 institutional EPC appointment under Capacit'e Infraprojects provides structured engineering governance and execution reliability.",
-    "The Economic Times / Construction Week", "ET/REALTY/114674720", "https://economictimes.indiatimes.com/industry/services/property-/-cstruction/signature-global-awards-rs-1203-cr-construction-contract-to-capacite-infra/articleshow/114674720.cms", false, 3
+    "The Economic Times", "ET/REALTY/114650186", "https://economictimes.indiatimes.com/industry/services/property-/-cstruction/signature-global-awards-construction-contract-worth-rs-1203-crore-to-capacite-infraprojects/articleshow/114650186.cms", false, 3
   );
   addWire(
     "Signature Global Titanium SPR", "2024-07-02", "PRICING",
@@ -621,7 +621,7 @@ export async function run() {
     "• Signature Global achieved pre-sales bookings exceeding ₹2,700 Crore within days of opening expressions of interest for Titanium SPR.\n• Launch benchmark established at ₹13,000–₹15,500/sq. ft. across 3.5 BHK and 4.5 BHK luxury units with mandatory 70% RERA escrow deposit rule.",
     "POSITIVE",
     "Strong initial liquidity capitalization eliminates developer dependence on high-cost promoter debt.",
-    "Business Standard", "BS/NEWS/124070200540", "https://www.business-standard.com/companies/news/signature-global-sells-premium-flats-worth-over-rs-2-700-cr-in-gurugram-124070200540_1.html", false, 4
+    "The Economic Times", "ET/REALTY/111382213", "https://economictimes.indiatimes.com/industry/services/property-/-cstruction/signature-global-reports-rs-2700-crore-sale-from-gurgaon-project/articleshow/111382213.cms", false, 4
   );
   addWire(
     "Signature Global Titanium SPR", "2024-06-03", "REGULATORY",
