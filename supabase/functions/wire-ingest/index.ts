@@ -326,12 +326,63 @@ serve(async (req) => {
     }
   }
 
+  /* Publish trigger. News is baked into the HTML at build time, so a write
+     here changes nothing on the live site until something rebuilds. Fire
+     that rebuild only when the batch ACTUALLY changed something — an
+     unchanged re-run must not cost a deploy.
+
+     Deliberately fails soft: a publish-trigger problem is not an ingestion
+     problem. The rows are already written, and the hourly backstop cron
+     will pick them up, so we log and report rather than returning an error
+     the caller would reasonably retry. */
+  let published: string = "not configured";
+  if (toInsert.length + toUpdate.length > 0) {
+    const ghToken = Deno.env.get("GH_PUBLISH_TOKEN") ?? "";
+    const ghRepo = Deno.env.get("GH_PUBLISH_REPO") ?? "gauravjainstartup-sys/Truth-Estate";
+    if (!ghToken) {
+      published = "skipped — GH_PUBLISH_TOKEN not set (hourly backstop will publish)";
+      log("info", "publish_trigger_skipped", { batch });
+    } else {
+      try {
+        const reason = `${batch}: +${toInsert.length} new, ~${toUpdate.length} changed`;
+        const res = await fetch(
+          `https://api.github.com/repos/${ghRepo}/actions/workflows/publish-wire.yml/dispatches`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${ghToken}`,
+              Accept: "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+              "Content-Type": "application/json",
+              "User-Agent": "truth-estate-wire-ingest",
+            },
+            body: JSON.stringify({ ref: "main", inputs: { reason } }),
+          },
+        );
+        if (res.status === 204) {
+          published = "triggered";
+          log("info", "publish_triggered", { batch, reason });
+        } else {
+          const text = await res.text();
+          published = `trigger failed (${res.status}) — hourly backstop will publish`;
+          log("error", "publish_trigger_failed", { batch, status: res.status, text: text.slice(0, 300) });
+        }
+      } catch (err) {
+        published = "trigger errored — hourly backstop will publish";
+        log("error", "publish_trigger_error", { batch, error: String(err).slice(0, 300) });
+      }
+    }
+  } else {
+    published = "nothing changed — no rebuild needed";
+  }
+
   const summary = {
     ok: true,
     batch,
     inserted: toInsert.length,
     updated: toUpdate.length,
     unchanged,
+    published,
     rejected,
     /* Not an error: a slug we have never seen may be a new project, or a
        typo that would leave the item showing on no report at all. Surfaced

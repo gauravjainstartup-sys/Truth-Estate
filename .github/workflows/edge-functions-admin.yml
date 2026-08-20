@@ -100,6 +100,18 @@ jobs:
           else
             echo "::warning::WIRE_INGEST_TOKEN not set — wire-ingest will refuse every call until it is."
           fi
+          # GH_PUBLISH_TOKEN: fine-grained PAT, THIS REPO ONLY, Actions:
+          # read+write and nothing else. It lets wire-ingest trigger a
+          # production rebuild the moment research changes something, so
+          # News reaches the site in minutes instead of waiting for the
+          # hourly backstop. Worst case if it leaked: someone can run our
+          # own workflows. It cannot read the database or push code.
+          # Optional — without it ingestion still works, just slower.
+          if [ -n "${{ secrets.GH_PUBLISH_TOKEN }}" ]; then
+            EXTRA+=( GH_PUBLISH_TOKEN="${{ secrets.GH_PUBLISH_TOKEN }}" )
+          else
+            echo "::notice::GH_PUBLISH_TOKEN not set — News will publish on the hourly cron rather than on ingest."
+          fi
           supabase secrets set \
             EDGE_DB_KEY="${{ secrets.EDGE_DB_KEY }}" \
             EDGE_PUBLISHABLE_KEY="${{ secrets.EDGE_PUBLISHABLE_KEY }}" \
