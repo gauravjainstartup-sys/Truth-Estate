@@ -33,12 +33,18 @@ import type { ProjectWireItem } from "@/lib/supabase";
    fills the width and the neighbours sit off-view — a phone story. Same
    markup, no second code path.
 
-   The card is capped by viewport HEIGHT as well as width: at 9:16 a
-   card is 1.78x taller than wide, so on a short window width is what
-   has to give for a whole dispatch to sit above the fold. The cap is
-   deliberately tighter than a full-page player would need — this sits
-   in a report column under a section header, not on a blank page, and
-   the space above it is already spent.
+   HEIGHT IS CAPPED TWO DIFFERENT WAYS, because the two layouts fail
+   differently. On desktop the card is width-driven and the ratio bounds
+   the height, so a viewport-height cap on the WIDTH keeps a whole
+   dispatch above the fold. On a phone the card is full-bleed, so the
+   column dictates the width and a fixed ratio makes the height whatever
+   the handset is wide — on a large phone that was an 800px card with a
+   void in the middle of it. There the height is set directly and the
+   ratio is dropped.
+
+   The ratio is 9:14, not the 9:16 a full-screen story would use. This
+   is not a full-screen story: it sits in a report column under a
+   section header, and the space above it is already spent.
 
    AUTOPLAY IS GATED ON VISIBILITY. This sits inside a long report, so
    it starts only once scrolled into view and pauses the moment it
@@ -98,7 +104,8 @@ function factLines(s: string): string[] {
    deliberately the inverse of a dispatch: ivory among near-black. That
    is the whole signal that it is a different kind of card. */
 const CARD_SHELL =
-  "relative aspect-[9/16] w-[min(21rem,80vw,33vh)] shrink-0 overflow-hidden rounded-[1.4rem] shadow-[0_18px_50px_rgba(0,0,0,0.22)] max-[899px]:w-full";
+  "relative aspect-[9/14] w-[min(21rem,80vw,33vh)] shrink-0 overflow-hidden rounded-[1.4rem] shadow-[0_18px_50px_rgba(0,0,0,0.22)] " +
+  "max-[899px]:aspect-auto max-[899px]:h-[min(70vh,34rem)] max-[899px]:w-full";
 
 export default function DispatchStories({
   items,
@@ -318,28 +325,28 @@ export default function DispatchStories({
 
                   <div className="flex h-full flex-col gap-2.5 px-5 pb-5 pt-8">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="font-mono text-[0.6rem] tracking-wide text-[#F5F0E8]/60">{fullDate(it.eventDate)}</span>
+                      <span className="font-mono text-[0.6rem] tracking-wide text-[#F5F0E8]/60 max-[899px]:text-[0.72rem]">{fullDate(it.eventDate)}</span>
                       <span
-                        className="rounded border px-1.5 py-px font-mono text-[0.53rem] uppercase tracking-[0.12em]"
+                        className="rounded border px-1.5 py-px font-mono text-[0.53rem] uppercase tracking-[0.12em] max-[899px]:text-[0.62rem]"
                         style={{ borderColor: `${tone}66`, color: tone }}
                       >
                         {CAT_LABEL[it.category] || it.category}
                       </span>
                       {it.isPinned && (
-                        <span className="rounded border border-[#c9a96e]/45 px-1.5 py-px font-mono text-[0.53rem] uppercase tracking-[0.12em] text-[#c9a96e]">
+                        <span className="rounded border border-[#c9a96e]/45 px-1.5 py-px font-mono text-[0.53rem] uppercase tracking-[0.12em] text-[#c9a96e] max-[899px]:text-[0.62rem]">
                           📌 Landmark
                         </span>
                       )}
                     </div>
 
-                    <h3 className="font-serif text-[1.02rem] font-medium leading-[1.24] text-white [text-wrap:balance]">
+                    <h3 className="font-serif text-[1.02rem] font-medium leading-[1.24] text-white [text-wrap:balance] max-[899px]:text-[1.2rem]">
                       {it.headline}
                     </h3>
 
                     {facts.length > 0 && (
                       <ul className="space-y-1.5 overflow-hidden">
                         {facts.map((f, fi) => (
-                          <li key={fi} className="flex gap-1.5 text-[0.68rem] leading-[1.45] text-[#F5F0E8]/70">
+                          <li key={fi} className="flex gap-1.5 text-[0.68rem] leading-[1.45] text-[#F5F0E8]/70 max-[899px]:text-[0.82rem]">
                             <span aria-hidden style={{ color: tone }}>•</span>
                             <span>{f}</span>
                           </li>
@@ -352,18 +359,18 @@ export default function DispatchStories({
                         className="mt-auto shrink-0 rounded-lg border p-2.5"
                         style={{ borderColor: `${tone}40`, background: `${tone}14` }}
                       >
-                        <div className="flex items-center gap-1.5 font-mono text-[0.52rem] uppercase tracking-[0.16em] text-[#c9a96e]">
+                        <div className="flex items-center gap-1.5 font-mono text-[0.52rem] uppercase tracking-[0.16em] text-[#c9a96e] max-[899px]:text-[0.6rem]">
                           <span aria-hidden className="h-1.5 w-1.5 rounded-full" style={{ background: tone }} />
                           Forensic impact read
                         </div>
-                        <p className="mt-1 text-[0.7rem] leading-[1.45] text-[#F5F0E8]/85">{it.forensicImpactSummary}</p>
+                        <p className="mt-1 text-[0.7rem] leading-[1.45] text-[#F5F0E8]/85 max-[899px]:text-[0.84rem]">{it.forensicImpactSummary}</p>
                       </div>
                     )}
 
                     {/* Above the tap zones, or the source link would be
                         covered by "next" and unclickable — and the filing
                         link is the whole point of a verified dispatch. */}
-                    <div className={`relative z-[6] flex shrink-0 items-center justify-between gap-2 border-t border-[#F5F0E8]/12 pt-2 font-mono text-[0.55rem] text-[#F5F0E8]/45 ${it.forensicImpactSummary ? "" : "mt-auto"}`}>
+                    <div className={`relative z-[6] flex shrink-0 items-center justify-between gap-2 border-t border-[#F5F0E8]/12 pt-2 font-mono text-[0.55rem] text-[#F5F0E8]/45 max-[899px]:text-[0.64rem] ${it.forensicImpactSummary ? "" : "mt-auto"}`}>
                       <span className="truncate">{it.sourceDocumentRef ? `Ref ${it.sourceDocumentRef}` : it.sourceName}</span>
                       {it.sourceUrl && (
                         <a
