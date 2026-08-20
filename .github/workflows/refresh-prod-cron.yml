@@ -52,12 +52,15 @@ jobs:
       # backlog_project_data (scores/prices) carries NO updated_at and an
       # edit there is invisible to this probe. Fails OPEN: if either side
       # can't be read, refresh anyway — a probe glitch must never cost
-      # freshness. The key below is the PUBLIC anon key (same one shipped
-      # in the site's client JS).
+      # freshness. The key below is the PUBLIC publishable key (same one
+      # shipped in the site's client JS). It replaced the legacy anon JWT,
+      # which the 19 Aug key-class disable killed — with that dead key every
+      # probe 401d, "newest" came back empty, and this fell through to its
+      # fail-open branch, rebuilding production every hour regardless.
       - name: Probe — did the data change since the live bake?
         id: probe
         run: |
-          ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5ZXR2YWJmZ2FpZHZxcmJtYW95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MDI2MzEsImV4cCI6MjA5MzI3ODYzMX0.zJzqyfhANxChklw7bEiOc7PwSq2R9wiJIpS39wCYS_8"
+          ANON="sb_publishable_bLpHCRL6Xa0viqYeEuM3NA_U5VvNWwq"
           SB="https://lyetvabfgaidvqrbmaoy.supabase.co/rest/v1"
           newest=""
           for t in project_intelligence_wire project_extended_details micro_market_data backlog_projects; do
