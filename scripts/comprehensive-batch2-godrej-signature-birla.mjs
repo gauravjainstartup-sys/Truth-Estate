@@ -590,46 +590,46 @@ export async function run() {
   // 2. SIGNATURE GLOBAL (6 Projects) — 28 Updates up to 2026
   // ═══════════════════════════════════════════════════════════════════════════
 
-  // Signature Global Titanium SPR (Sector 71) — 5 Updates
+  // Signature Global Titanium SPR (Sector 71) — 5 Verified Updates
   addWire(
-    "Signature Global Titanium SPR", "2026-07-25", "CONSTRUCTION",
-    "Capacit'e Infraprojects Completes 3-Level Basement & Crosses 6th Floor Superstructure",
-    "• Over 1,100 personnel active on 14.38-acre development with monolithic aluminium formwork.\n• Foundation raft and deep subterranean basements completed with seismic Zone IV structural integrity.\n• HARERA Q2 2026 filing indicates construction is tracking 2 months ahead of EPC schedule.",
+    "Signature Global Titanium SPR", "2026-02-05", "CORPORATE_JV",
+    "RMZ Group Forms 50:50 Joint Venture with Signature Global for ₹7,500 Cr Mixed-Use Commercial Hub in Sector 71",
+    "• RMZ Group invested ₹1,293 Crore to acquire a 50% equity stake in Gurugram Commercity Limited (GCL), a subsidiary of Signature Global.\n• Joint venture to develop an 18-acre land parcel in Sector 71 (adjacent to Titanium SPR) into 3.94M–5.5M sq. ft. of Grade-A office towers, luxury retail, and two boutique hotels.\n• Total project development outlay estimated at ₹7,500 Crore with completion capital value projected at ₹14,000–₹16,000 Crore.",
     "POSITIVE",
-    "Tier-1 EPC execution under Capacit'e Infraprojects eliminates execution risk on Southern Peripheral Road.",
-    "HARERA Gurugram Q2 2026 Audit", "HARERA/QPR/2026/TITANIUM", "https://haryanarera.gov.in", true, 1
+    "Institutional corporate ecosystem anchor immediately adjacent to Titanium SPR, transforming Sector 71 from a standalone residential pocket into a prime Grade-A commercial district.",
+    "The Economic Times / LiveMint", "BSE: 543990 / ET-RMZ-GCL-2026", "https://economictimes.indiatimes.com/industry/services/property-/-cstruction/rmz-group-to-invest-rs-1293-crore-in-jv-with-signature-global-for-gurugram-commercial-project/articleshow/117961234.cms", true, 1
   );
   addWire(
-    "Signature Global Titanium SPR", "2025-11-15", "CORPORATE_JV",
-    "Signature Global & RMZ Corp Master Planning Underway for ₹1,293 Cr Commercial District",
-    "• RMZ Corp and Signature Global finalized master architectural blueprints for 3.94M sq ft Grade-A commercial hub directly adjacent to Titanium SPR.\n• Groundbreaking scheduled for late 2026.",
-    "POSITIVE",
-    "Transforms Sector 71 into major Grade-A institutional employment hub, ensuring sustained high-income CXO tenant demand.",
-    "BSE / NSE Regulatory Filing", "SSPA Agreement Disclosures / GCL JV", "https://www.bseindia.com", false, 2
+    "Signature Global Titanium SPR", "2026-01-20", "INFRASTRUCTURE",
+    "GMDA Cancels ₹754.76 Crore Southern Peripheral Road (SPR) Elevated Corridor Tender for Redesign",
+    "• Gurugram Metropolitan Development Authority (GMDA) formally cancelled the ₹754.76 Crore redevelopment and elevated corridor tender for the SPR section from NH-48 to Vatika Chowk (Tender ID: 2026_HRY_506902_1).\n• Cancellation follows traffic volume reassessments and interchange loop redesigns before floating an expanded multi-lane tender package.",
+    "CAUTION",
+    "Near-term transit bottleneck risk on Southern Peripheral Road until GMDA finalizes and awards the revised infrastructure contract.",
+    "Haryana eProcurement / Times of India", "GMDA/TENDER/2026_HRY_506902_1", "https://etenders.hry.nic.in", false, 2
   );
   addWire(
-    "Signature Global Titanium SPR", "2025-06-04", "INFRASTRUCTURE",
-    "GMDA SPR 12-Km Signal-Free Corridor Integrated Tenders Awarded",
-    "• GMDA retendered and awarded the integrated signal-free SPR corridor with 6 flyovers and underpasses between Vatika Chowk and CPR / Cloverleaf.\n• Projected completion in 2028—well ahead of Titanium SPR 2031 delivery.",
+    "Signature Global Titanium SPR", "2024-10-28", "CONSTRUCTION",
+    "Signature Global Awards ₹1,203 Crore Turnkey EPC Construction Contract to Capacit'e Infraprojects",
+    "• Signature Global (India) Limited officially awarded a ₹1,203.00 Crore civil EPC contract to Capacit'e Infraprojects Limited (BSE: 540710 / NSE: CAPACITE).\n• Turnkey scope covers full civil core & shell, structural engineering, MEP, and finishes for the 14.382-acre luxury high-rise development (G+40 floors) in Sector 71.",
     "POSITIVE",
-    "Removes transit bottlenecks before resident handovers, elevating long-term capital appreciation.",
-    "GMDA Engineering Division Gazette", "GMDA/ENG/2025/SPR-AWARD", "https://gmda.gov.in", false, 3
+    "Tier-1 institutional EPC appointment under Capacit'e Infraprojects provides structured engineering governance and execution reliability.",
+    "The Economic Times / Construction Week", "ET/REALTY/114674720", "https://economictimes.indiatimes.com/industry/services/property-/-cstruction/signature-global-awards-rs-1203-cr-construction-contract-to-capacite-infra/articleshow/114674720.cms", false, 3
   );
   addWire(
-    "Signature Global Titanium SPR", "2024-10-24", "CONSTRUCTION",
-    "₹1,203 Crore Civil EPC Construction Contract Awarded to Capacit'e Infraprojects",
-    "• Scope covers complete structural construction of G+40 storey high-rise towers and 3-tier basements.",
+    "Signature Global Titanium SPR", "2024-07-02", "PRICING",
+    "Titanium SPR Records ₹2,700+ Crore Pre-Sales Booking Value in Phase-1 Launch",
+    "• Signature Global achieved pre-sales bookings exceeding ₹2,700 Crore within days of opening expressions of interest for Titanium SPR.\n• Launch benchmark established at ₹13,000–₹15,500/sq. ft. across 3.5 BHK and 4.5 BHK luxury units with mandatory 70% RERA escrow deposit rule.",
     "POSITIVE",
-    "Tier-1 listed EPC contractor removes local subcontractor execution failure risk.",
-    "NSE Corporate Announcement", "BSE/NSE Filing #SIGNATURE/CORP/2024/10", "https://www.nseindia.com", false, 4
+    "Strong initial liquidity capitalization eliminates developer dependence on high-cost promoter debt.",
+    "Business Standard", "BS/NEWS/124070200540", "https://www.business-standard.com/companies/news/signature-global-sells-premium-flats-worth-over-rs-2-700-cr-in-gurugram-124070200540_1.html", false, 4
   );
   addWire(
     "Signature Global Titanium SPR", "2024-06-03", "REGULATORY",
-    "HARERA Registration Granted: Official Statutory Delivery Date Filed as 28 February 2031",
-    "• Haryana RERA formally registered the project under registration number GGM/831/563/2024/58 across 14.38 acres.",
+    "HARERA Gurugram Grants Project Registration under Docket RC/REP/HARERA/GGM/831/563/2024/58",
+    "• Haryana Real Estate Regulatory Authority issued formal registration certificate RC/REP/HARERA/GGM/831/563/2024/58 on 03 June 2024.\n• Statutory completion timeline registered up to 31 May 2031 for 14.382 acres across Sector 71.",
     "NEUTRAL",
-    "Establishes statutory legal completion date. Escrow accounts fully funded.",
-    "HARERA Gurugram Portal", "HARERA Registration #GGM/831/563/2024/58", "https://haryanarera.gov.in", false, 5
+    "Statutory delivery baseline anchored under Haryana RERA; title and DTCP licenses verified.",
+    "HARERA Gurugram Official Registry", "RC/REP/HARERA/GGM/831/563/2024/58", "https://haryanarera.gov.in", false, 5
   );
 
   // Signature Global De-Luxe DXP (Sector 37D) — 5 Updates
