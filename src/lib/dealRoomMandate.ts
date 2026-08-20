@@ -6,10 +6,6 @@
    their mandate stands. It is a convenience mirror of the contact_lead we
    persist server-side — not the system of record — so a missing or malformed
    value must never throw: every accessor fails soft to null.
-
-   Static export, no per-user backend for the cohort yet, so "where it stands"
-   is honest-by-construction: the mandate is logged and the advisor call is
-   pending. We never fabricate offer progress here.
    ════════════════════════════════════════════════════════════════ */
 
 export const MANDATE_KEY = "truthEstate.dealRoomMandate";
@@ -18,6 +14,7 @@ export type SavedMandate = {
   city: string;
   project: string;
   config: string;
+  sizeSqft?: string;
   unit: string;
   stage: string; // buyer readiness — "Still exploring" | "Comparing a few" | "Finalised it"
   target: string;

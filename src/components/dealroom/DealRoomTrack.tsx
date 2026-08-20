@@ -119,7 +119,7 @@ export default function DealRoomTrack() {
           <div className="mt-8 rounded-2xl border border-[#c9a96e]/12 bg-[#1d1811] p-6 md:p-7">
             <p className="font-mono text-[0.6rem] uppercase tracking-[0.16em] text-[#6f685c]">Your mandate</p>
             <dl className="mt-4 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
-              <Fact k="The asset" v={m.unit ? `${m.project} · ${m.unit}` : m.project} />
+              <Fact k="The asset" v={`${m.project}${m.config ? ` · ${m.config}` : ""}${m.sizeSqft ? ` (${m.sizeSqft} sq ft)` : ""}${m.unit ? ` · ${m.unit}` : ""}`} />
               <Fact k="City" v={m.city} />
               <Fact k="Your target" v={m.target ? `₹ ${m.target}` : "We’ll ground it together on the call"} accent={!!m.target} />
               <Fact k="Timeline" v={m.timeline} />
