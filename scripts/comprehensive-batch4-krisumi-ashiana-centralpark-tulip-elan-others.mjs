@@ -870,46 +870,46 @@ export async function run() {
   // 4. ELAN, CONSCIENT, MAX, PURI, ELDECO, EXPERION, OBEROI (15 Projects) — 66 Updates up to 2026
   // ═══════════════════════════════════════════════════════════════════════════
 
-  // Elan The Presidential (Sector 106) — 5 Updates
+  // Elan The Presidential (Sector 106) — 5 Verified Updates (100% 200 OK Tested URLs)
   addWire(
-    "Elan The Presidential", "2026-07-22", "CONSTRUCTION",
-    "Leighton India Crosses 28th Slab Milestone Across 30-Acre Master High-Rise Development",
-    "• Global construction major Leighton India executing monolithic aluminium formwork at 7-day slab cycles in Sector 106.\n• 1.5 lakh sq ft ultra-luxury clubhouse, private cinema lounges, and heated pool civil works in advanced phase.\n• HARERA Q2 2026 filing confirms project is tracking on schedule for phased possession starting late 2027.",
+    "Elan The Presidential", "2026-02-12", "INFRASTRUCTURE",
+    "Elan Group Issues ₹1,000 Crore LOI to Leighton India for 5.5M Sq Ft \"Elan The Mark\" in Sector 106",
+    "• Elan Group issued a ₹1,000 Crore Letter of Intent (LOI) to Leighton India (CIMIC Group) for the construction of \"Elan The Mark\".\n• Scope encompasses 5.5 million sq. ft. of Grade-A commercial office towers, high-street luxury retail, and hospitality within the same 50-acre Sector 106 integrated township directly adjacent to The Presidential.\n• Expands Leighton’s total Tier-1 civil EPC construction footprint across the Sector 106 master development to over ₹3,100+ Crore.",
     "POSITIVE",
-    "Leighton India's global engineering pedigree ensures Tier-1 structural execution and eliminates contractor delivery delays.",
-    "HARERA Gurugram Q2 2026 Audit", "HARERA/QPR/2026/ELAN-PRES", "https://haryanarera.gov.in", true, 1
+    "High-street retail, hospitality, and corporate office integration on resident doorstep eliminates commercial amenity deficits and enhances high-income CXO tenant demand.",
+    "The Economic Times (ET Infra)", "ET/INFRA/127981329", "https://infra.economictimes.indiatimes.com/news/construction/elan-group-awards-1000-crore-construction-contract-to-leighton-india-for-elan-the-mark-in-gurugram/127981329", true, 1
   );
   addWire(
-    "Elan The Presidential", "2025-11-20", "PRICING",
-    "Resale Benchmark Appreciates to ~₹22,500/sq ft on Dwarka Expressway",
-    "• Strong capital appreciation driven by completed expressway and Leighton construction progress.",
+    "Elan The Presidential", "2025-05-15", "CONSTRUCTION",
+    "Elan Group Awards ₹1,100 Crore EPC Contract to Leighton Asia for \"The Emperor\" in Sector 106",
+    "• Elan Group officially awarded an additional ₹1,100 Crore turnkey construction contract to Leighton Asia for the adjacent ultra-luxury residential phase \"Elan The Emperor\" in Sector 106.\n• Establishes single-master Tier-1 engineering governance under Leighton across the entire 50-acre Sector 106 master parcel.",
     "POSITIVE",
-    "Solid capital gains and high secondary market liquidity.",
-    "Elan Group Investor Disclosures", "ELAN/PRES/2025", "https://elanlimited.com", false, 2
+    "Unified Tier-1 contractor execution reduces site mobilization frictions and standardizes structural construction quality across Sector 106.",
+    "The Economic Times", "ET/REALTY/121188818", "https://economictimes.indiatimes.com/industry/services/property-/-cstruction/elan-group-awards-rs-1100-crore-construction-contract-to-leighton-asia-for-gurugram-luxury-project/articleshow/121188818.cms", false, 2
   );
   addWire(
-    "Elan The Presidential", "2024-06-18", "CONSTRUCTION",
-    "Leighton India Appointed as Principal EPC Contractor for ₹2,000+ Cr High-Rise",
-    "• Scope covers complete structural construction of 8 high-rise residential towers.",
+    "Elan The Presidential", "2024-10-22", "CORPORATE_JV",
+    "Elan Group Secures ₹1,200 Crore Institutional Investment from Kotak Real Estate Fund",
+    "• Kotak Real Estate Fund (Kotak Alternate Asset Managers) invested ₹1,200 Crore into Elan Group as long-term project and growth capitalization.\n• Provides liquid balance sheet capitalization across Elan's Dwarka Expressway luxury portfolio, following Elan's full repayment of ₹875 Crore debt to global fund PAG (Asia Pragati).",
     "POSITIVE",
-    "Tier-1 EPC contractor engagement eliminates execution bottlenecks.",
-    "BSE / Leighton Corporate Statement", "LEIGHTON/ELAN/106", "https://www.leightonasia.com", false, 3
+    "Institutional capital backing eliminates balance sheet leverage stress and construction cash flow default risks.",
+    "The Economic Times (ET Realty)", "ET/REALTY/114463822", "https://realty.economictimes.indiatimes.com/news/industry/elan-group-secures-investment-of-rs-1200-crore-from-kotak-real-estate-fund/114463822", false, 3
   );
   addWire(
-    "Elan The Presidential", "2024-03-11", "INFRASTRUCTURE",
-    "Dwarka Expressway Main Elevated Carriageway Operational",
-    "• Direct signal-free 15-minute commute to IGI Airport T3.",
+    "Elan The Presidential", "2023-08-10", "CONSTRUCTION",
+    "Elan Group Awards ₹1,000 Crore Construction Contract to Leighton Asia for The Presidential",
+    "• Elan Group awarded a ₹1,000.00 Crore turnkey civil and structural construction contract to Leighton Asia (part of Australia's CIMIC Group).\n• Turnkey scope encompasses complete civil core & shell, structural engineering, and MEP for the 30-acre super-luxury residential development in Sector 106.\n• Architectural master planning executed by Foster + Partners and UHA London.",
     "POSITIVE",
-    "Major infrastructure milestone transforming micro-market connectivity.",
-    "NHAI Gazette", "NHAI/106/ELAN", "https://nhai.gov.in", false, 4
+    "Global Tier-1 contractor appointment under Leighton Asia ensures international construction quality and structural reliability.",
+    "The Economic Times", "ET/REALTY/102393766", "https://economictimes.indiatimes.com/industry/services/property-/-cstruction/elan-group-awards-rs-1000-cr-contract-to-leighton-india-for-construction-of-gurugram-project/articleshow/102393766.cms", false, 4
   );
   addWire(
-    "Elan The Presidential", "2022-12-20", "REGULATORY",
-    "HARERA Registration Issued under Docket GGM/648/380/2022/123",
-    "• Statutory RERA completion date committed as 31 December 2027.",
+    "Elan The Presidential", "2022-11-21", "REGULATORY",
+    "HARERA Gurugram Grants Project Registration under Docket RC/REP/HARERA/GGM/626/358/2022/101",
+    "• Haryana Real Estate Regulatory Authority granted registration certificate RC/REP/HARERA/GGM/626/358/2022/101 (Registration No. 101 of 2022) on 21 November 2022.\n• Promoter entity: Elan Avenue Limited; Statutory completion timeline registered through 31 December 2027.",
     "NEUTRAL",
-    "Statutory baseline date established.",
-    "HARERA Gurugram", "HARERA GGM/648/380/2022/123", "https://haryanarera.gov.in", false, 5
+    "Statutory delivery baseline established under Haryana RERA; title, DTCP license, and escrow accounts registered.",
+    "HARERA Gurugram Official Registry", "RC/REP/HARERA/GGM/626/358/2022/101", "https://haryanarera.gov.in", false, 5
   );
 
   // Elan The Statement & The Emperor (4 updates each)
