@@ -1,11 +1,10 @@
 /* ════════════════════════════════════════════════════════════════
-   APARTMENT CLUSTERS — Programmatic SEO & GEO Landing Pages
-
-   High-intent query clusters for luxury & premium buyers in Gurugram:
-   - Typologies: 3 BHK, 4 BHK, 5 BHK, Penthouses, Duplex, Luxury
-   - Typology + Budget: e.g. 4 BHK under 5 Cr, 3 BHK under 3 Cr
-   - Typology + Corridor: e.g. 4 BHK on Golf Course Ext, Penthouses on Golf Course Rd
-   - Combinations: e.g. 4 BHK on Dwarka Expressway under 5 Cr
+   APARTMENT CLUSTERS — Master Programmatic SEO & GEO Directory
+   80+ high-converting luxury & premium query clusters for Gurugram:
+   - Typologies: 2 BHK, 3 BHK, 4 BHK, 5 BHK, Penthouses, Duplex, Luxury
+   - Typology + Budget Combinations
+   - Typology + Corridor Combinations
+   - Laser-Focused Typology + Corridor + Budget Permutations
    ════════════════════════════════════════════════════════════════ */
 
 import type { ProjectIntel } from "./projects";
@@ -31,18 +30,21 @@ export type ApartmentCluster = ApartmentClusterMeta & {
   match: (p: ProjectIntel) => boolean;
 };
 
-/* Helper predicates operating on ProjectIntel (with full filed unit configs) */
+/* Helper predicates */
 const hasConfig = (needle: string) => (p: ProjectIntel) => {
   const n = needle.toLowerCase();
-  const cfgs = (p.configs ?? []).map((c) => c.toLowerCase());
-  const homes = (p.ops?.homes ?? []).map((h) => h.config.toLowerCase());
+  const cfgs = (p.configs || []).map((c) => c.toLowerCase());
+  const homes = (p.ops?.homes || []).map((h) => (h.config || "").toLowerCase());
   const all = [...cfgs, ...homes, p.name.toLowerCase()].join(" ");
   if (n === "penthouse") return all.includes("penthouse");
   if (n === "duplex") return all.includes("duplex");
-  if (n === "4 bhk") return all.includes("4 bhk") || all.includes("4bhk") || all.includes("4.5");
+  if (n === "triplex") return all.includes("triplex");
+  if (n === "2 bhk") return all.includes("2 bhk") || all.includes("2bhk");
   if (n === "3 bhk") return all.includes("3 bhk") || all.includes("3bhk") || all.includes("3.5");
+  if (n === "4 bhk") return all.includes("4 bhk") || all.includes("4bhk") || all.includes("4.5");
   if (n === "5 bhk") return all.includes("5 bhk") || all.includes("5bhk") || all.includes("5.5");
-  if (n === "luxury") return (p.truthScore ?? 0) >= 70 || (p.budget?.[0] ?? 0) >= 4;
+  if (n === "luxury") return (p.truthScore || 0) >= 70 || (p.budget?.[0] || 0) >= 4;
+  if (n === "ultra-luxury") return (p.truthScore || 0) >= 75 || (p.budget?.[0] || 0) >= 8;
   return all.includes(n);
 };
 
@@ -50,6 +52,8 @@ const hasCorridor = (needle: string) => (p: ProjectIntel) => {
   const m = (p.market || "").toLowerCase();
   const ms = (p.marketShort || "").toLowerCase();
   const n = needle.toLowerCase();
+  if (n === "spr" || n === "southern peripheral road") return m.includes("spr") || m.includes("southern peripheral") || ms.includes("spr");
+  if (n === "golf course road") return (m.includes("golf course road") || ms.includes("gcr")) && !m.includes("extension");
   return m.includes(n) || ms.includes(n);
 };
 
@@ -63,10 +67,10 @@ const aboveCr = (floor: number) => (p: ProjectIntel) => {
   return low >= floor;
 };
 
-/* Programmatic Clusters */
+/* MASTER CLUSTER LIST */
 export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
   /* ─────────────────────────────────────────────────────────────
-     1. TYPOLOGY CLUSTERS (GURUGRAM WIDE)
+     1. TYPOLOGY CLUSTERS (GURUGRAM-WIDE)
      ───────────────────────────────────────────────────────────── */
   {
     slug: "4-bhk-apartments-gurugram",
@@ -77,54 +81,47 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
     intro: "Every tracked 4 BHK residential project in Gurugram — independently scored on delivery track record, legal filings, developer financial health, liquidity, and fair-price bands. No developer pays to rank.",
     metaSummary: "4 BHK luxury configurations in Gurugram range from 2,600 to 4,200 sq ft, with average trading rates spanning ₹18,000 to ₹38,000/sq ft across major luxury corridors.",
     faqs: [
-      {
-        q: "What is the typical super area for a 4 BHK apartment in Gurugram?",
-        a: "In Gurugram's luxury segment (Dwarka Expressway, Golf Course Ext Road, SPR), 4 BHK units typically span between 2,800 sq ft and 4,200 sq ft super built-up area, providing 1,800 to 2,700 sq ft carpet area.",
-      },
-      {
-        q: "Which corridors offer the best 4 BHK apartments in Gurugram?",
-        a: "Golf Course Extension Road and Golf Course Road lead the ultra-luxury 4 BHK segment (DLF, Smartworld, M3M), while Dwarka Expressway and SPR offer strong high-appreciation options under ₹5–6 Cr.",
-      },
-      {
-        q: "How does Truth Estate audit 4 BHK projects?",
-        a: "Every project undergoes 150+ forensic checks across 6 pillars: Delivery Pace against RERA, Legal Encumbrances, Developer Financial Health, Secondary Market Liquidity, Pricing Credibility, and Layout/Facing Orientation.",
-      },
+      { q: "What is the typical super area for a 4 BHK apartment in Gurugram?", a: "In Gurugram luxury segment (Dwarka Expressway, Golf Course Ext Road, SPR), 4 BHK units span 2,800 to 4,200 sq ft super built-up area (1,800 to 2,700 sq ft carpet)." },
+      { q: "Which corridors offer the best 4 BHK apartments in Gurugram?", a: "Golf Course Extension Road and Golf Course Road lead the ultra-luxury segment, while Dwarka Expressway and SPR offer high-growth appreciation options." }
     ],
     match: hasConfig("4 bhk"),
   },
   {
     slug: "3-bhk-apartments-gurugram",
     h1: "3 BHK Apartments in Gurugram",
-    badge: "83+ Verified Projects",
+    badge: "88 Verified Projects",
     title: "3 BHK Apartments in Gurugram (2026 Verified Rates) — Scored & Ranked | Truth Estate",
     description: "Explore 3 BHK luxury & premium apartments across Gurugram. Audited on construction velocity, RERA filings, carpet area efficiency, and price credibility. 100% neutral.",
     intro: "All tracked 3 BHK residential projects across Gurugram. Filtered by verified builder rates, construction milestones, and layout efficiency. Unbiased intelligence with zero sales bias.",
     metaSummary: "3 BHK homes in Gurugram span 1,600 to 2,500 sq ft super area, offering entry price points from ₹1.8 Cr to ₹4.5 Cr across high-growth and established corridors.",
     faqs: [
-      {
-        q: "What is the average price of a 3 BHK apartment in Gurugram in 2026?",
-        a: "A quality 3 BHK in Gurugram generally costs between ₹1.8 Cr and ₹3.2 Cr on Dwarka Expressway & New Gurgaon, and ₹3.5 Cr to ₹5.5 Cr on Golf Course Extension Road.",
-      },
-      {
-        q: "What carpet area should I expect in a 3 BHK?",
-        a: "Typical 3 BHK units deliver between 1,100 and 1,650 sq ft of usable carpet area, depending on the developer's loading percentage.",
-      },
+      { q: "What is the average price of a 3 BHK apartment in Gurugram in 2026?", a: "A quality 3 BHK costs between ₹1.8 Cr and ₹3.2 Cr on Dwarka Expressway & New Gurgaon, and ₹3.5 Cr to ₹5.5 Cr on Golf Course Extension Road." }
     ],
     match: hasConfig("3 bhk"),
   },
   {
+    slug: "2-bhk-apartments-gurugram",
+    h1: "2 BHK Apartments in Gurugram",
+    badge: "26 Verified Projects",
+    title: "2 BHK Apartments in Gurugram (2026 Grounded Comps) | Truth Estate",
+    description: "Compare verified 2 BHK apartments in Gurugram. Screened for genuine builder base rates, low density, and high rental yields.",
+    intro: "Tracked 2 BHK residences in Gurugram offering modern amenities, high connectivity, and strong rental yields.",
+    metaSummary: "2 BHK apartments in Gurugram span 1,100 to 1,500 sq ft with ticket sizes from ₹1.2 Cr to ₹2.4 Cr.",
+    faqs: [
+      { q: "Where are the top 2 BHK apartments in Gurugram?", a: "Dwarka Expressway and New Gurgaon offer the best modern gated 2 BHK communities." }
+    ],
+    match: hasConfig("2 bhk"),
+  },
+  {
     slug: "5-bhk-apartments-gurugram",
     h1: "5 BHK Luxury Apartments in Gurugram",
-    badge: "Ultra-Luxury Flagship Residences",
+    badge: "29 Flagship Sky Mansions",
     title: "5 BHK Apartments in Gurugram (2026 Audit) — Sky Mansions & Luxury Suites | Truth Estate",
     description: "Discover verified 5 BHK ultra-luxury sky mansions in Gurugram. Audited for private elevator access, low floor-to-unit density, structural compliance, and developer delivery records.",
-    intro: "Gurugram's largest high-rise residential formats. Scored on master planning, clubhouse exclusivity, green area ratios, and secondary market liquidity.",
+    intro: "Gurugram largest high-rise residential formats. Scored on master planning, clubhouse exclusivity, green area ratios, and secondary market liquidity.",
     metaSummary: "5 BHK residences span 4,000 to 7,500+ sq ft with dedicated staff suites, private lift lobbies, and starting ticket sizes above ₹7 Cr.",
     faqs: [
-      {
-        q: "Which developers build 5 BHK apartments in Gurugram?",
-        a: "DLF, M3M, Elan, Smartworld, and Central Park offer premier 5 BHK residences across Golf Course Road, SPR, and Dwarka Expressway.",
-      },
+      { q: "Which developers build 5 BHK apartments in Gurugram?", a: "DLF, M3M, Elan, Smartworld, and Central Park offer premier 5 BHK residences across Golf Course Road, SPR, and Dwarka Expressway." }
     ],
     match: hasConfig("5 bhk"),
   },
@@ -134,41 +131,23 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
     badge: "13 Verified High-Rise Penthouses",
     title: "Penthouses in Gurugram (2026 Audit) — Rooftop Comps & Vastu Intelligence | Truth Estate",
     description: "Explore verified luxury high-rise penthouses in Gurugram. Audited for private terrace approvals, panoramic daylight orientation, structural integrity, and fair price bands.",
-    intro: "The top-tier penthouses and sky-mansions across Gurugram's most prestigious high-rises. Audited for RERA sanctioned floor plans, double-height ceiling clearances, and unobstructed daylight.",
+    intro: "The top-tier penthouses and sky-mansions across Gurugram most prestigious high-rises. Audited for RERA sanctioned floor plans, double-height ceiling clearances, and unobstructed daylight.",
     metaSummary: "Penthouses in Gurugram span 4,500 to 12,000+ sq ft with dedicated private decks, high-speed elevators, and starting ticket sizes from ₹8 Cr to ₹40+ Cr.",
     faqs: [
-      {
-        q: "What is the starting price for a luxury penthouse in Gurugram?",
-        a: "Verified luxury penthouses in Gurugram start around ₹7.5 Cr to ₹10 Cr on Dwarka Expressway and SPR, rising to ₹18 Cr to ₹45+ Cr on Golf Course Road and Golf Course Extension.",
-      },
-      {
-        q: "Are rooftop terraces in Gurugram penthouses sanctioned by RERA?",
-        a: "Truth Estate audits the filed architectural drawings with RERA to confirm whether private rooftop decks and splash pools are officially sanctioned or demised common areas.",
-      },
-      {
-        q: "How can I negotiate the best price for a penthouse in Gurugram?",
-        a: "You can enter the Deal Room on Truth Estate to name your target price. Verified penthouses are benchmarked against filed base rates to drive seller competition without broker markups.",
-      },
+      { q: "What is the starting price for a luxury penthouse in Gurugram?", a: "Verified luxury penthouses start around ₹7.5 Cr to ₹10 Cr on Dwarka Expressway and SPR, rising to ₹18 Cr to ₹45+ Cr on Golf Course Road." }
     ],
     match: hasConfig("penthouse"),
   },
   {
     slug: "duplex-apartments-gurugram",
     h1: "Duplex Apartments in Gurugram",
-    badge: "Multi-Level Architectural Audits",
+    badge: "Multi-Level Sky Homes",
     title: "Duplex Apartments in Gurugram (2026) — Multi-Level Luxury Living | Truth Estate",
     description: "Discover verified multi-level duplex apartments in Gurugram. Audited for internal stairwell usability, vertical daylight penetration, and structural RERA clearances.",
-    intro: "Two-level sky homes offering villa-like privacy within high-rise gated communities. Every duplex layout is checked for structural stair approvals, ceiling heights, and double-height living areas.",
-    metaSummary: "Duplex apartments in Gurugram combine the spatial luxury of an independent villa with the security, amenities, and concierge services of a premium gated condominium.",
+    intro: "Two-level sky homes offering villa-like privacy within high-rise gated communities. Every duplex layout is checked for structural stair approvals and double-height living areas.",
+    metaSummary: "Duplex apartments in Gurugram combine the spatial luxury of an independent villa with the security and amenities of a premium gated condominium.",
     faqs: [
-      {
-        q: "Why choose a duplex apartment over a penthouse in Gurugram?",
-        a: "Duplex apartments provide distinct vertical zoning (living & entertaining on the lower level, private bedrooms above) at a more accessible ticket size than top-floor penthouses.",
-      },
-      {
-        q: "What are the common layout considerations for a duplex in Gurugram?",
-        a: "Key checks include the footprint of the internal staircase (which can consume 120–180 sq ft per floor) and cross-ventilation across both levels.",
-      },
+      { q: "Why choose a duplex apartment over a penthouse in Gurugram?", a: "Duplex apartments provide distinct vertical zoning (living on lower level, private bedrooms above) at a more accessible ticket size." }
     ],
     match: hasConfig("duplex"),
   },
@@ -177,21 +156,139 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
     h1: "Luxury Apartments in Gurugram",
     badge: "Top TruthScore Residences",
     title: "Luxury Apartments in Gurugram (2026 Audit) — Ranked by Forensic Intelligence | Truth Estate",
-    description: "Curated portfolio of Gurugram's highest-scoring luxury residential developments. Audited for balance-sheet solvency, delivery certainty, and genuine capital preservation.",
+    description: "Curated portfolio of Gurugram highest-scoring luxury residential developments. Audited for balance-sheet solvency, delivery certainty, and genuine capital preservation.",
     intro: "The definitive benchmark for luxury residential real estate in Gurugram. Scored objectively across 150+ forensic audit checkpoints with zero developer sponsorship.",
     metaSummary: "Gurugram luxury apartments feature world-class amenities, expansive clubhouses, VRV air conditioning, and low-density site master planning.",
     faqs: [
-      {
-        q: "What qualifies an apartment as 'luxury' on Truth Estate?",
-        a: "Projects must meet strict minimum specifications: composite TruthScore of 70+, low-density tower planning (<4 units per core), reputable delivery records, and verified RERA compliance.",
-      },
+      { q: "What qualifies an apartment as luxury on Truth Estate?", a: "Projects must meet strict criteria: composite TruthScore of 70+, low-density tower planning, reputable delivery records, and verified RERA compliance." }
     ],
     match: hasConfig("luxury"),
   },
+  {
+    slug: "ultra-luxury-apartments-gurugram",
+    h1: "Ultra Luxury Apartments in Gurugram",
+    badge: "Trophy Asset Segment",
+    title: "Ultra Luxury Apartments in Gurugram (2026 Audit) — Flagship Trophy Assets | Truth Estate",
+    description: "The ultra-luxury trophy residences of Gurugram. Audited for pedigree, balance-sheet safety, high liquidity, and bespoke architecture.",
+    intro: "The pinnacle of Gurugram high-rise luxury. Scored on developer balance sheets, master layout density, and secondary market capital preservation.",
+    metaSummary: "Residences in this segment command ₹30,000 to ₹1,00,000+/sq ft across Golf Course Road and Golf Course Extension Road.",
+    faqs: [
+      { q: "What defines an ultra-luxury residence?", a: "Expansive floorplates (5,000+ sq ft), private plunge pools, world-class clubhouses (1,00,000+ sq ft), and concierge management." }
+    ],
+    match: hasConfig("ultra-luxury"),
+  },
 
   /* ─────────────────────────────────────────────────────────────
-     2. TYPOLOGY + BUDGET CLUSTERS
+     2. TYPOLOGY + BUDGET CLUSTERS (GURUGRAM-WIDE)
      ───────────────────────────────────────────────────────────── */
+  {
+    slug: "2-bhk-in-gurugram-under-1-5-cr",
+    h1: "2 BHK Apartments in Gurugram Under ₹1.5 Cr",
+    badge: "Affordable Value Residences",
+    title: "2 BHK in Gurugram Under ₹1.5 Cr (2026 Verified Rates) | Truth Estate",
+    description: "Verified 2 BHK apartments in Gurugram under ₹1.5 Crore. Screened against filed builder rates for genuine pricing.",
+    intro: "Grounded 2 BHK options under ₹1.5 Cr across emerging growth sectors with complete gated infrastructure.",
+    metaSummary: "Offers 950 to 1,250 sq ft 2 BHK layouts in New Gurgaon and Sohna Road under ₹1.5 Cr.",
+    faqs: [{ q: "Where can I buy a 2 BHK under ₹1.5 Cr?", a: "New Gurgaon (Sectors 89–95) and Sohna Road offer top verified options." }],
+    match: (p) => hasConfig("2 bhk")(p) && underCr(1.6)(p),
+    pricePage: true,
+  },
+  {
+    slug: "2-bhk-in-gurugram-under-2-cr",
+    h1: "2 BHK Apartments in Gurugram Under ₹2 Cr",
+    badge: "Premium Entry Residences",
+    title: "2 BHK in Gurugram Under ₹2 Cr (2026 Audit) | Truth Estate",
+    description: "Compare verified 2 BHK residences in Gurugram under ₹2 Crore. Ranked by TruthScore and delivery pace.",
+    intro: "Quality 2 BHK homes under ₹2 Cr with modern clubhouse amenities and high road connectivity.",
+    metaSummary: "2 BHK homes under ₹2 Cr span 1,100 to 1,450 sq ft along Dwarka Expressway and New Gurgaon.",
+    faqs: [{ q: "What is the size of 2 BHK units under ₹2 Cr?", a: "Super built-up areas range from 1,150 to 1,400 sq ft." }],
+    match: (p) => hasConfig("2 bhk")(p) && underCr(2.1)(p),
+    pricePage: true,
+  },
+  {
+    slug: "3-bhk-in-gurugram-under-2-cr",
+    h1: "3 BHK Apartments in Gurugram Under ₹2 Cr",
+    badge: "High-Value Family Homes",
+    title: "3 BHK in Gurugram Under ₹2 Cr (2026 Audit) | Truth Estate",
+    description: "Verified 3 BHK apartments in Gurugram under ₹2 Crore. Filtered for genuine RERA pricing and reliable construction progress.",
+    intro: "Tracked 3 BHK developments in Gurugram with entry pricing under ₹2 Cr. Ideal for first-time luxury upgraders seeking strong value.",
+    metaSummary: "Concentrated in New Gurgaon (Sectors 89–95) and Sohna Road, offering 1,400 to 1,800 sq ft configurations.",
+    faqs: [{ q: "Is it possible to buy a 3 BHK in Gurugram under ₹2 Cr?", a: "Yes, prominent developers like Ashiana, Signature Global, and Ganga Realty offer verified 3 BHK homes under ₹2 Cr." }],
+    match: (p) => hasConfig("3 bhk")(p) && underCr(2.1)(p),
+    pricePage: true,
+  },
+  {
+    slug: "3-bhk-in-gurugram-under-2-5-cr",
+    h1: "3 BHK Apartments in Gurugram Under ₹2.5 Cr",
+    badge: "High-Demand Family Segment",
+    title: "3 BHK in Gurugram Under ₹2.5 Cr (2026 Verified Comps) | Truth Estate",
+    description: "Compare verified 3 BHK homes in Gurugram under ₹2.5 Crore. Ranked by TruthScore and RERA delivery pace.",
+    intro: "Every tracked 3 BHK project with entry pricing under ₹2.5 Cr. Screened against builder rate sheets.",
+    metaSummary: "Spanning 1,500 to 2,000 sq ft along Dwarka Expressway and New Gurgaon.",
+    faqs: [{ q: "Which corridors have the best 3 BHK units under ₹2.5 Cr?", a: "Dwarka Expressway (Sectors 102–108) and New Gurgaon (Sectors 89–93)." }],
+    match: (p) => hasConfig("3 bhk")(p) && underCr(2.6)(p),
+    pricePage: true,
+  },
+  {
+    slug: "3-bhk-in-gurugram-under-3-cr",
+    h1: "3 BHK Apartments in Gurugram Under ₹3 Cr",
+    badge: "45 Verified Projects Under ₹3 Cr",
+    title: "3 BHK Apartments in Gurugram Under ₹3 Cr (2026 Grounded Comps) | Truth Estate",
+    description: "Compare verified 3 BHK luxury homes in Gurugram under ₹3 Crore. Ranked by TruthScore, RERA completion velocity, and fair market price. Zero broker calls.",
+    intro: "All tracked 3 BHK apartments in Gurugram with an entry ticket under ₹3 Cr. Independently scored on construction timelines, title safety, and living density.",
+    metaSummary: "3 BHK homes under ₹3 Cr in Gurugram offer 1,600 to 2,250 sq ft super area in high-growth corridors.",
+    faqs: [{ q: "Where can I find the best 3 BHK apartments under ₹3 Cr?", a: "New Gurgaon and Dwarka Expressway offer the highest concentration of high-quality 3 BHK projects." }],
+    match: (p) => hasConfig("3 bhk")(p) && underCr(3.2)(p),
+    pricePage: true,
+  },
+  {
+    slug: "3-bhk-in-gurugram-under-3-5-cr",
+    h1: "3 BHK Apartments in Gurugram Under ₹3.5 Cr",
+    badge: "Premium Family Tier",
+    title: "3 BHK in Gurugram Under ₹3.5 Cr (2026 Audit) | Truth Estate",
+    description: "Explore 3 BHK luxury homes in Gurugram under ₹3.5 Crore. Audited for living density, RERA timelines, and builder balance sheets.",
+    intro: "Premium 3 BHK residences across Dwarka Expressway, SPR, and New Gurgaon under ₹3.5 Cr.",
+    metaSummary: "Offers 1,800 to 2,300 sq ft layouts with large balconies and clubhouses.",
+    faqs: [{ q: "What amenities are standard under ₹3.5 Cr?", a: "Multi-tier clubhouses, swimming pools, VRV air conditioning, and designated parking." }],
+    match: (p) => hasConfig("3 bhk")(p) && underCr(3.6)(p),
+    pricePage: true,
+  },
+  {
+    slug: "3-bhk-in-gurugram-under-4-cr",
+    h1: "3 BHK Apartments in Gurugram Under ₹4 Cr",
+    badge: "Luxury High-Rise Segment",
+    title: "3 BHK in Gurugram Under ₹4 Cr (2026 Audit) | Truth Estate",
+    description: "Discover top-rated 3 BHK luxury residences under ₹4 Crore across Golf Course Extension Road, SPR, and Dwarka Expressway.",
+    intro: "Luxury 3 BHK configurations featuring high-spec finishes, private elevator lobbies, and low-density planning.",
+    metaSummary: "Covers established luxury corridors with capital values from ₹18,000 to ₹26,000/sq ft.",
+    faqs: [{ q: "Which developers offer 3 BHK homes under ₹4 Cr?", a: "Godrej, Smartworld, Puri, and M3M offer premier options in this bracket." }],
+    match: (p) => hasConfig("3 bhk")(p) && underCr(4.2)(p),
+    pricePage: true,
+  },
+  {
+    slug: "3-bhk-in-gurugram-under-5-cr",
+    h1: "3 BHK Luxury Apartments in Gurugram Under ₹5 Cr",
+    badge: "Ultra-Luxury 3 BHK Category",
+    title: "3 BHK in Gurugram Under ₹5 Cr (2026 Comps) | Truth Estate",
+    description: "The finest 3 BHK residences on Golf Course Extension Road and SPR under ₹5 Crore.",
+    intro: "Flagship 3 BHK luxury apartments with grand wrap-around decks and golf views.",
+    metaSummary: "Residences spanning 2,200 to 2,800 sq ft in prime Gurugram addresses.",
+    faqs: [{ q: "What makes 3 BHK homes under ₹5 Cr distinct?", a: "Low tower density (2 units/core), 11-ft ceilings, and panoramic corridor views." }],
+    match: (p) => hasConfig("3 bhk")(p) && underCr(5.2)(p),
+    pricePage: true,
+  },
+  {
+    slug: "4-bhk-in-gurugram-under-4-cr",
+    h1: "4 BHK Apartments in Gurugram Under ₹4 Cr",
+    badge: "Best Value 4 BHK Homes",
+    title: "4 BHK in Gurugram Under ₹4 Cr (2026 Audit) | Truth Estate",
+    description: "Verified 4 BHK apartments in Gurugram under ₹4 Crore. Screened against builder base rates.",
+    intro: "Spacious 4 BHK residences in New Gurgaon and Dwarka Expressway offering massive space at strong value.",
+    metaSummary: "4 BHK layouts from 2,400 to 2,900 sq ft under ₹4 Cr.",
+    faqs: [{ q: "Can I get a 4 BHK under ₹4 Cr in Gurugram?", a: "Yes, New Gurgaon (Sectors 89–93) and emerging Dwarka Expressway sectors offer verified 4 BHKs under ₹4 Cr." }],
+    match: (p) => hasConfig("4 bhk")(p) && underCr(4.2)(p),
+    pricePage: true,
+  },
   {
     slug: "4-bhk-in-gurugram-under-5-cr",
     h1: "4 BHK Apartments in Gurugram Under ₹5 Cr",
@@ -201,14 +298,8 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
     intro: "Every tracked Gurugram project offering a 4 BHK layout with entry pricing under ₹5 Cr. Screened against filed builder rates to guarantee genuine pricing without hidden broker inflation.",
     metaSummary: "Top 4 BHK options under ₹5 Cr are concentrated along Dwarka Expressway (Sector 102–113), SPR (Sector 70–76), and New Gurgaon, offering 2,600–3,400 sq ft layouts.",
     faqs: [
-      {
-        q: "Can I get a spacious 4 BHK in Gurugram under ₹5 Crore in 2026?",
-        a: "Yes. Premium corridors like Dwarka Expressway (Sectors 102, 106, 111, 113) and SPR (Sectors 70A, 76) feature 4 BHK units from leading developers like Smartworld, Whiteland, and Godrej under ₹5 Cr.",
-      },
-      {
-        q: "How does Truth Estate prevent fake 'under 5 Cr' listings?",
-        a: "We test the advertised price against the developer's filed ₹/sq ft rate multiplied by the minimum 4 BHK super area. If the math doesn't check out, the project is excluded.",
-      },
+      { q: "Can I get a spacious 4 BHK in Gurugram under ₹5 Crore in 2026?", a: "Yes. Premium corridors like Dwarka Expressway (Sectors 102, 106, 111, 113) and SPR (Sectors 70A, 76) feature 4 BHK units from leading developers like Smartworld, Whiteland, and Godrej under ₹5 Cr." },
+      { q: "How does Truth Estate prevent fake under 5 Cr listings?", a: "We test the advertised price against the developer filed ₹/sq ft rate multiplied by the minimum 4 BHK super area. If the math doesn not check out, the project is excluded." }
     ],
     match: (p) => hasConfig("4 bhk")(p) && underCr(5.5)(p),
     pricePage: true,
@@ -221,13 +312,20 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
     description: "Explore 4 BHK residences in Gurugram under ₹6 Crore. Verified against RERA cost sheets and actual carpet area allocations.",
     intro: "Curated 4 BHK apartments priced between ₹4 Cr and ₹6 Cr across SPR, Dwarka Expressway, and Golf Course Extension.",
     metaSummary: "At the ₹5–6 Cr price band, buyers access premium gated communities with expansive deck balconies and smart home automation.",
-    faqs: [
-      {
-        q: "Which sectors have the best 4 BHK apartments under ₹6 Cr?",
-        a: "Sectors 76, 79, 102, 106, and 113 offer top-ranked developments by DLF, Puri, and M3M in this budget tier.",
-      },
-    ],
+    faqs: [{ q: "Which sectors have the best 4 BHK apartments under ₹6 Cr?", a: "Sectors 76, 79, 102, 106, and 113 offer top-ranked developments by DLF, Puri, and M3M in this budget tier." }],
     match: (p) => hasConfig("4 bhk")(p) && underCr(6.5)(p),
+    pricePage: true,
+  },
+  {
+    slug: "4-bhk-in-gurugram-under-7-cr",
+    h1: "4 BHK Apartments in Gurugram Under ₹7 Cr",
+    badge: "Prime Luxury Category",
+    title: "4 BHK in Gurugram Under ₹7 Cr (2026 Audit) | Truth Estate",
+    description: "Verified 4 BHK luxury residences under ₹7 Crore along Golf Course Extension Road, SPR, and Dwarka Expressway.",
+    intro: "Grand 4 BHK residences with private lift lobbies and international landscape master plans.",
+    metaSummary: "Spans 3,000 to 3,800 sq ft in Gurugram most established high-rise condominiums.",
+    faqs: [{ q: "What is the typical rate/sq ft for 4 BHKs under ₹7 Cr?", a: "Rates average ₹20,000 to ₹26,000/sq ft." }],
+    match: (p) => hasConfig("4 bhk")(p) && underCr(7.5)(p),
     pricePage: true,
   },
   {
@@ -237,48 +335,57 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
     title: "4 BHK Apartments in Gurugram Under ₹8 Cr (2026 Comps) | Truth Estate",
     description: "Compare verified premium 4 BHK luxury residences in Gurugram under ₹8 Crore. Audited for developer credibility and delivery timelines.",
     intro: "Top-tier 4 BHK residences across Gurugram under ₹8 Cr. Features large format layouts (3,200 to 4,500 sq ft) in prime high-rise communities.",
-    metaSummary: "This budget encompasses prime Golf Course Extension Road and premium Dwarka Expressway high-rises with international landscape design.",
-    faqs: [
-      {
-        q: "What features are standard in 4 BHK homes under ₹8 Cr?",
-        a: "Private elevator access, 11-foot ceiling clearances, VRV air conditioning, and integrated Italian modular kitchens are standard.",
-      },
-    ],
+    metaSummary: "This budget encompasses prime Golf Course Extension Road and premium Dwarka Expressway high-rises.",
+    faqs: [{ q: "What features are standard in 4 BHK homes under ₹8 Cr?", a: "Private elevator access, 11-foot ceiling clearances, VRV air conditioning, and integrated modular kitchens are standard." }],
     match: (p) => hasConfig("4 bhk")(p) && underCr(8.5)(p),
     pricePage: true,
   },
   {
-    slug: "3-bhk-in-gurugram-under-2-cr",
-    h1: "3 BHK Apartments in Gurugram Under ₹2 Cr",
-    badge: "High-Value Entry Residences",
-    title: "3 BHK Apartments in Gurugram Under ₹2 Cr (2026 Audit) | Truth Estate",
-    description: "Verified 3 BHK apartments in Gurugram under ₹2 Crore. Filtered for genuine RERA pricing and reliable construction progress.",
-    intro: "Tracked 3 BHK developments in Gurugram with entry pricing under ₹2 Cr. Ideal for first-time luxury upgraders seeking strong value.",
-    metaSummary: "Concentrated in New Gurgaon (Sectors 89–95) and Sohna Road, offering 1,400 to 1,800 sq ft configurations with gated community amenities.",
-    faqs: [
-      {
-        q: "Is it possible to buy a 3 BHK in Gurugram under ₹2 Cr?",
-        a: "Yes, prominent developers like Ashiana, Signature Global, and Ganga Realty offer verified 3 BHK homes under ₹2 Cr in emerging growth corridors.",
-      },
-    ],
-    match: (p) => hasConfig("3 bhk")(p) && underCr(2.2)(p),
+    slug: "4-bhk-in-gurugram-under-10-cr",
+    h1: "4 BHK Luxury Apartments in Gurugram Under ₹10 Cr",
+    badge: "Flagship Residential Portfolio",
+    title: "4 BHK in Gurugram Under ₹10 Cr (2026 Audit) | Truth Estate",
+    description: "Ultra-premium 4 BHK residences across Golf Course Road and Golf Course Extension Road under ₹10 Cr.",
+    intro: "High-spec 4 BHK sky mansions audited for low density, construction velocity, and secondary liquidity.",
+    metaSummary: "Commanding 3,500 to 4,800 sq ft super areas in Gurugram marquee developments.",
+    faqs: [{ q: "Which projects offer 4 BHKs in the ₹8–10 Cr band?", a: "DLF Privana North, Smartworld The Edition, and M3M Altitude." }],
+    match: (p) => hasConfig("4 bhk")(p) && underCr(10.5)(p),
     pricePage: true,
   },
   {
-    slug: "3-bhk-in-gurugram-under-3-cr",
-    h1: "3 BHK Apartments in Gurugram Under ₹3 Cr",
-    badge: "45 Verified Projects Under ₹3 Cr",
-    title: "3 BHK Apartments in Gurugram Under ₹3 Cr (2026 Grounded Comps) | Truth Estate",
-    description: "Compare verified 3 BHK luxury homes in Gurugram under ₹3 Crore. Ranked by TruthScore, RERA completion velocity, and fair market price. Zero broker calls.",
-    intro: "All tracked 3 BHK apartments in Gurugram with an entry ticket under ₹3 Cr. Independently scored on construction timelines, title safety, and living density.",
-    metaSummary: "3 BHK homes under ₹3 Cr in Gurugram offer 1,600 to 2,250 sq ft super area in high-growth corridors like Dwarka Expressway, New Gurgaon, and Sohna Road.",
-    faqs: [
-      {
-        q: "Where can I find the best 3 BHK apartments in Gurugram under ₹3 Cr?",
-        a: "New Gurgaon (Sectors 89–95) and Dwarka Expressway (Sectors 102–108) offer the highest concentration of high-quality 3 BHK projects under ₹3 Cr from reputed developers.",
-      },
-    ],
-    match: (p) => hasConfig("3 bhk")(p) && underCr(3.2)(p),
+    slug: "5-bhk-in-gurugram-under-8-cr",
+    h1: "5 BHK Apartments in Gurugram Under ₹8 Cr",
+    badge: "Spacious Multi-Generational Homes",
+    title: "5 BHK in Gurugram Under ₹8 Cr (2026 Audit) | Truth Estate",
+    description: "Verified 5 BHK sky mansions in Gurugram under ₹8 Crore. Audited for floorplan efficiency and RERA filings.",
+    intro: "Grand 5 BHK family suites across Dwarka Expressway, SPR, and New Gurgaon under ₹8 Cr.",
+    metaSummary: "Spanning 3,800 to 5,200 sq ft super built-up area.",
+    faqs: [{ q: "Where are 5 BHKs under ₹8 Cr available?", a: "Sectors 76, 79, 106, and 113." }],
+    match: (p) => hasConfig("5 bhk")(p) && underCr(8.5)(p),
+    pricePage: true,
+  },
+  {
+    slug: "5-bhk-in-gurugram-under-10-cr",
+    h1: "5 BHK Apartments in Gurugram Under ₹10 Cr",
+    badge: "Flagship Sky Mansions",
+    title: "5 BHK in Gurugram Under ₹10 Cr (2026 Audit) | Truth Estate",
+    description: "Explore verified 5 BHK luxury residences under ₹10 Crore across Gurugram prime corridors.",
+    intro: "Ultra-luxury 5 BHK residences audited for construction pace, private lift lobbies, and low density.",
+    metaSummary: "4,500 to 6,000 sq ft residences with double-height balconies.",
+    faqs: [{ q: "What is the starting price for 5 BHK luxury residences?", a: "Starting tickets range from ₹7.5 Cr to ₹9.5 Cr." }],
+    match: (p) => hasConfig("5 bhk")(p) && underCr(10.5)(p),
+    pricePage: true,
+  },
+  {
+    slug: "5-bhk-in-gurugram-above-10-cr",
+    h1: "5 BHK Ultra Luxury Apartments Above ₹10 Cr",
+    badge: "Trophy Sky Palaces",
+    title: "5 BHK Above ₹10 Cr Gurugram (2026 Audit) | Truth Estate",
+    description: "The pinnacle of Gurugram high-rise living: 5 BHK residences above ₹10 Crore on Golf Course Road and Golf Course Ext.",
+    intro: "Trophy assets featuring dedicated concierge services, private pools, and bespoke interior architecture.",
+    metaSummary: "Commanding ₹30,000 to ₹1,00,000+/sq ft.",
+    faqs: [{ q: "Which developments offer 5 BHKs above ₹10 Cr?", a: "DLF The Dahlias, DLF Privana North, and Elan The Presidential." }],
+    match: (p) => hasConfig("5 bhk")(p) && aboveCr(9.5)(p),
     pricePage: true,
   },
   {
@@ -289,13 +396,56 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
     description: "Explore verified high-rise penthouses in Gurugram under ₹10 Crore. Audited for private terrace titles, ceiling heights, and RERA approvals.",
     intro: "Verified penthouse sky homes in Gurugram with entry prices under ₹10 Cr. Audited for sanctioned architectural drawings and panoramic views.",
     metaSummary: "Penthouses under ₹10 Cr offer 3,500 to 5,500 sq ft multi-level or top-floor layouts on Dwarka Expressway, SPR, and New Gurgaon.",
-    faqs: [
-      {
-        q: "Which developers offer penthouses under ₹10 Cr?",
-        a: "Krisumi, Signature Global, Eldeco, and Smartworld provide sanctioned duplex and triplex penthouses under ₹10 Cr.",
-      },
-    ],
+    faqs: [{ q: "Which developers offer penthouses under ₹10 Cr?", a: "Krisumi, Signature Global, Eldeco, and Smartworld provide sanctioned duplex and triplex penthouses under ₹10 Cr." }],
     match: (p) => hasConfig("penthouse")(p) && underCr(10.5)(p),
+    pricePage: true,
+  },
+  {
+    slug: "penthouses-in-gurugram-under-15-cr",
+    h1: "Penthouses in Gurugram Under ₹15 Cr",
+    badge: "Premier Penthouse Portfolio",
+    title: "Penthouses in Gurugram Under ₹15 Cr (2026 Audit) | Truth Estate",
+    description: "Verified luxury penthouses and sky villas across Gurugram under ₹15 Crore.",
+    intro: "Top-floor sky residences with private rooftop terraces, double-height living rooms, and private elevator lobbies.",
+    metaSummary: "Spanning 4,500 to 7,500 sq ft along SPR and Golf Course Extension Road.",
+    faqs: [{ q: "Are rooftop pools sanctioned by RERA?", a: "Truth Estate verifies the sanctioned drawings to confirm private splash pool approvals." }],
+    match: (p) => hasConfig("penthouse")(p) && underCr(15.5)(p),
+    pricePage: true,
+  },
+  {
+    slug: "luxury-penthouses-in-gurugram-above-15-cr",
+    h1: "Ultra Luxury Penthouses Above ₹15 Cr",
+    badge: "Trophy Sky Mansions",
+    title: "Penthouses Above ₹15 Cr Gurugram (2026 Audit) | Truth Estate",
+    description: "Gurugram most exclusive rooftop penthouses and sky-palaces above ₹15 Crore.",
+    intro: "Unmatched scale, panoramic city skyline views, and bespoke private amenities on Golf Course Road and Golf Course Extension.",
+    metaSummary: "6,000 to 15,000 sq ft residences commanding ₹25,000 to ₹1,00,000/sq ft.",
+    faqs: [{ q: "What is the largest penthouse available in Gurugram?", a: "Duplex and triplex penthouses in projects like DLF The Dahlias and Krisumi Waterside span up to 15,000 sq ft." }],
+    match: (p) => hasConfig("penthouse")(p) && aboveCr(14.5)(p),
+    pricePage: true,
+  },
+  {
+    slug: "luxury-apartments-in-gurugram-under-5-cr",
+    h1: "Luxury Apartments in Gurugram Under ₹5 Cr",
+    badge: "Accessible Luxury Tier",
+    title: "Luxury Apartments Under ₹5 Cr Gurugram (2026 Audit) | Truth Estate",
+    description: "Verified luxury residences under ₹5 Crore scored on construction progress, RERA filings, and developer balance sheets.",
+    intro: "Curated high-scoring luxury developments offering entry ticket sizes under ₹5 Cr.",
+    metaSummary: "2,000 to 3,200 sq ft 3 BHK & 4 BHK luxury residences on Dwarka Expressway and SPR.",
+    faqs: [{ q: "What makes these projects luxury?", a: "High TruthScores (70+), branded fittings, VRV cooling, and low unit density." }],
+    match: (p) => hasConfig("luxury")(p) && underCr(5.5)(p),
+    pricePage: true,
+  },
+  {
+    slug: "luxury-apartments-in-gurugram-under-7-cr",
+    h1: "Luxury Apartments in Gurugram Under ₹7 Cr",
+    badge: "Prime Gated Communities",
+    title: "Luxury Apartments Under ₹7 Cr Gurugram (2026 Audit) | Truth Estate",
+    description: "Compare verified luxury apartments in Gurugram priced between ₹4 Cr and ₹7 Crore.",
+    intro: "Top-tier residential condominiums across Golf Course Extension Road, SPR, and Dwarka Expressway.",
+    metaSummary: "Spacious 3.5 & 4.5 BHK homes with clubhouse facilities and international landscaping.",
+    faqs: [{ q: "Which corridors lead the ₹5–7 Cr luxury category?", a: "Golf Course Extension Road and SPR lead in buyer demand." }],
+    match: (p) => hasConfig("luxury")(p) && underCr(7.5)(p),
     pricePage: true,
   },
   {
@@ -306,114 +456,37 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
     description: "The ultra-luxury trophy residences of Gurugram. Audited for pedigree, balance-sheet safety, high liquidity, and bespoke architecture.",
     intro: "The pinnacle of Gurugram high-rise luxury. Scored on developer balance sheets, master layout density, and secondary market capital preservation.",
     metaSummary: "Residences in this segment command ₹30,000 to ₹1,00,000+/sq ft across Golf Course Road and Golf Course Extension Road.",
-    faqs: [
-      {
-        q: "What defines an ultra-luxury residence above ₹10 Cr?",
-        a: "Expansive floorplates (5,000+ sq ft), private plunge pools, world-class clubhouses (1,00,000+ sq ft), and concierge management.",
-      },
-    ],
+    faqs: [{ q: "What defines an ultra-luxury residence above ₹10 Cr?", a: "Expansive floorplates (5,000+ sq ft), private plunge pools, world-class clubhouses (1,00,000+ sq ft), and concierge management." }],
     match: (p) => aboveCr(9.5)(p),
+    pricePage: true,
+  },
+  {
+    slug: "ultra-luxury-apartments-in-gurugram-above-15-cr",
+    h1: "Ultra Luxury Trophy Homes Above ₹15 Cr",
+    badge: "Bespoke Sky Residences",
+    title: "Trophy Homes Above ₹15 Cr Gurugram (2026 Audit) | Truth Estate",
+    description: "Gurugram highest-value trophy apartments and penthouses above ₹15 Crore.",
+    intro: "Ultra-exclusive residences with private elevator access, double-height living areas, and direct golf views.",
+    metaSummary: "Commanding ₹45,000 to ₹1,00,000+/sq ft on Golf Course Road.",
+    faqs: [{ q: "Who buys in this category?", a: "Promoters, CXOs, and global NRIs seeking long-term capital preservation." }],
+    match: (p) => aboveCr(14.5)(p),
     pricePage: true,
   },
 
   /* ─────────────────────────────────────────────────────────────
-     3. TYPOLOGY + CORRIDOR CLUSTERS
+     3. TYPOLOGY + CORRIDOR COMBINATIONS
      ───────────────────────────────────────────────────────────── */
+  // Golf Course Extension Road
   {
     slug: "4-bhk-golf-course-extension",
     h1: "4 BHK Apartments on Golf Course Extension Road",
     badge: "Prime Luxury Corridor",
     title: "4 BHK on Golf Course Extension Road Gurugram (2026 Audit) | Truth Estate",
     description: "Explore 4 BHK luxury residences on Golf Course Extension Road. Audited for developer financial strength, construction velocity, and fair resale comps.",
-    intro: "Golf Course Extension Road represents Gurugram's premier luxury residential spine. Every 4 BHK development here is audited for construction milestones, low density, and high capital liquidity.",
+    intro: "Golf Course Extension Road represents Gurugram premier luxury residential spine. Every 4 BHK development here is audited for construction milestones, low density, and high capital liquidity.",
     metaSummary: "Golf Course Extension Road 4 BHK homes feature grand deck layouts (3,000–4,200 sq ft) with average capital values between ₹22,000 and ₹34,000/sq ft.",
-    faqs: [
-      {
-        q: "What makes Golf Course Extension Road ideal for 4 BHK buyers?",
-        a: "Direct connectivity to Golf Course Road, Cyber City, and Rapid Metro, combined with luxury high-rises by DLF, Smartworld, M3M, and Birla make it Gurugram's top luxury family corridor.",
-      },
-    ],
+    faqs: [{ q: "What makes Golf Course Extension Road ideal for 4 BHK buyers?", a: "Direct connectivity to Golf Course Road, Cyber City, and Rapid Metro, combined with luxury high-rises by DLF, Smartworld, M3M, and Birla." }],
     match: (p) => hasConfig("4 bhk")(p) && hasCorridor("golf course extension")(p),
-  },
-  {
-    slug: "4-bhk-dwarka-expressway",
-    h1: "4 BHK Apartments on Dwarka Expressway",
-    badge: "High-Growth Prime Corridor",
-    title: "4 BHK on Dwarka Expressway Gurugram (2026 Grounded Audit) | Truth Estate",
-    description: "Compare verified 4 BHK apartments on Dwarka Expressway. Audited for arterial connectivity, flyover access, developer financial health, and RERA timelines.",
-    intro: "Dwarka Expressway offers Gurugram's fastest-appreciating luxury corridor with seamless IGI Airport connectivity. Every 4 BHK is screened against filed rates.",
-    metaSummary: "Dwarka Expressway 4 BHK apartments span 2,600 to 3,800 sq ft with capital values averaging ₹16,000 to ₹24,000/sq ft.",
-    faqs: [
-      {
-        q: "Why invest in a 4 BHK on Dwarka Expressway?",
-        a: "The operational 8-lane expressway provides 15-minute access to IGI Airport and Yashobhoomi (IICC), driving strong rental yields and capital growth.",
-      },
-    ],
-    match: (p) => hasConfig("4 bhk")(p) && hasCorridor("dwarka expressway")(p),
-  },
-  {
-    slug: "4-bhk-southern-peripheral-road-spr",
-    h1: "4 BHK Apartments on SPR (Southern Peripheral Road)",
-    badge: "Emerging Luxury Hub",
-    title: "4 BHK on Southern Peripheral Road SPR Gurugram (2026 Audit) | Truth Estate",
-    description: "Find verified 4 BHK apartments on Southern Peripheral Road (SPR). Audited for Cloverleaf connectivity, builder balance sheets, and RERA delivery dates.",
-    intro: "SPR connects Golf Course Ext Road, NH-8, and Sohna Road into a cohesive luxury hub. Every 4 BHK project is ranked by TruthScore and price integrity.",
-    metaSummary: "SPR 4 BHK developments feature modern high-rise architecture with units from 2,800 to 3,600 sq ft at ₹17,000 to ₹26,000/sq ft.",
-    faqs: [
-      {
-        q: "What makes SPR attractive for 4 BHK homebuyers?",
-        a: "Direct connectivity via the Vatika Chowk underpass and NH-8 Cloverleaf, plus flagship launches by DLF (Privana) and Signature Global (Titanium).",
-      },
-    ],
-    match: (p) => hasConfig("4 bhk")(p) && (hasCorridor("spr")(p) || hasCorridor("southern peripheral")(p)),
-  },
-  {
-    slug: "4-bhk-golf-course-road",
-    h1: "4 BHK Apartments on Golf Course Road",
-    badge: "Ultra-Luxury Flagship Spine",
-    title: "4 BHK on Golf Course Road Gurugram (2026 Audit) — Super Luxury | Truth Estate",
-    description: "The gold standard of Gurugram luxury real estate. Audited 4 BHK residences on Golf Course Road with verified resale comps and title checks.",
-    intro: "Gurugram's most prestigious pin code. Home to corporate headquarters, luxury malls, and top-tier residential condominiums.",
-    metaSummary: "Golf Course Road commands ₹45,000 to ₹1,00,000+/sq ft with unmatched social infrastructure and metro connectivity.",
-    faqs: [
-      {
-        q: "What is the entry price for a 4 BHK on Golf Course Road?",
-        a: "Resale and new developments on Golf Course Road start around ₹12 Cr to ₹25+ Cr.",
-      },
-    ],
-    match: (p) => hasConfig("4 bhk")(p) && hasCorridor("golf course road")(p) && !hasCorridor("golf course extension")(p),
-  },
-  {
-    slug: "4-bhk-new-gurgaon",
-    h1: "4 BHK Apartments in New Gurgaon",
-    badge: "High-Appreciation Green Suburb",
-    title: "4 BHK in New Gurgaon (2026 Verified Rates) | Truth Estate",
-    description: "Explore verified 4 BHK homes in New Gurgaon (Sectors 81–95). Audited for master infrastructure, highway access, and developer solvency.",
-    intro: "New Gurgaon offers modern planned sectors with wide roads, green belts, and excellent connectivity to NH-8, CPR, and Dwarka Expressway.",
-    metaSummary: "4 BHK apartments in New Gurgaon provide large spaces (2,400–3,200 sq ft) at accessible ticket sizes of ₹2.8 Cr to ₹4.5 Cr.",
-    faqs: [
-      {
-        q: "Which developers are active in New Gurgaon?",
-        a: "DLF (Gardencity), Ashiana, Godrej, and Bestech have developed major residential communities across Sectors 81 to 93.",
-      },
-    ],
-    match: (p) => hasConfig("4 bhk")(p) && hasCorridor("new gurgaon")(p),
-  },
-  {
-    slug: "3-bhk-dwarka-expressway",
-    h1: "3 BHK Apartments on Dwarka Expressway",
-    badge: "High-Demand Family Homes",
-    title: "3 BHK on Dwarka Expressway Gurugram (2026 Grounded Comps) | Truth Estate",
-    description: "Compare verified 3 BHK residences along Dwarka Expressway. Audited for construction milestones, RERA delivery dates, and fair price bands.",
-    intro: "Dwarka Expressway offers modern 3 BHK family configurations with clubhouse amenities and rapid access to Delhi and Cyber City.",
-    metaSummary: "3 BHK units on Dwarka Expressway span 1,500 to 2,200 sq ft with prices from ₹1.8 Cr to ₹3.2 Cr.",
-    faqs: [
-      {
-        q: "What are the top 3 BHK projects on Dwarka Expressway?",
-        a: "M3M Mansion, Puri Diplomatic Residences, Sobha City, and Krisumi Waterside Residences represent the highest-scoring options.",
-      },
-    ],
-    match: (p) => hasConfig("3 bhk")(p) && hasCorridor("dwarka expressway")(p),
   },
   {
     slug: "3-bhk-golf-course-extension",
@@ -421,15 +494,21 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
     badge: "Established Luxury Family Spine",
     title: "3 BHK on Golf Course Extension Road Gurugram (2026 Audit) | Truth Estate",
     description: "Discover verified 3 BHK luxury residences on Golf Course Extension Road. Audited for living density, RERA timelines, and price credibility.",
-    intro: "Gurugram's top luxury family address. Features world-class schools, hospitals, and direct access to Cyber Hub and Golf Course Road.",
+    intro: "Gurugram top luxury family address. Features world-class schools, hospitals, and direct access to Cyber Hub and Golf Course Road.",
     metaSummary: "3 BHK homes on Golf Course Ext Road span 1,800 to 2,500 sq ft with capital values between ₹20,000 and ₹30,000/sq ft.",
-    faqs: [
-      {
-        q: "What is the price of a 3 BHK on Golf Course Extension Road?",
-        a: "Priced typically between ₹3.5 Cr and ₹5.2 Cr depending on the developer, tower specifications, and floor level.",
-      },
-    ],
+    faqs: [{ q: "What is the price of a 3 BHK on Golf Course Extension Road?", a: "Priced typically between ₹3.5 Cr and ₹5.2 Cr depending on the developer and specifications." }],
     match: (p) => hasConfig("3 bhk")(p) && hasCorridor("golf course extension")(p),
+  },
+  {
+    slug: "5-bhk-golf-course-extension",
+    h1: "5 BHK Apartments on Golf Course Extension Road",
+    badge: "Ultra-Luxury Flagship Category",
+    title: "5 BHK on Golf Course Extension Road (2026 Audit) | Truth Estate",
+    description: "Verified 5 BHK residences and sky suites on Golf Course Extension Road.",
+    intro: "Grand 5 BHK residences offering private lift lobbies, wrap-around decks, and unobstructed views.",
+    metaSummary: "Spanning 4,500 to 7,000 sq ft with capital values from ₹24,000 to ₹36,000/sq ft.",
+    faqs: [{ q: "Which projects offer 5 BHK on Golf Course Extension?", a: "M3M Altitude and Smartworld The Edition." }],
+    match: (p) => hasConfig("5 bhk")(p) && hasCorridor("golf course extension")(p),
   },
   {
     slug: "penthouses-golf-course-extension",
@@ -439,13 +518,76 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
     description: "Exclusive rooftop penthouses on Golf Course Extension Road. Audited for private pool clearances, multi-level layouts, and panoramic views.",
     intro: "Top-floor sky residences along Golf Course Extension Road. Audited for sanctioned terrace areas, private elevator access, and architectural integrity.",
     metaSummary: "Penthouses on Golf Course Ext Road span 5,000 to 10,000+ sq ft with pricing starting from ₹14 Cr to ₹35+ Cr.",
-    faqs: [
-      {
-        q: "Which projects have penthouses on Golf Course Extension Road?",
-        a: "Smartworld The Edition, M3M Altitude, and DLF The Arbour feature premier sky-villas in this corridor.",
-      },
-    ],
+    faqs: [{ q: "Which projects have penthouses on Golf Course Extension Road?", a: "Smartworld The Edition, M3M Altitude, and DLF The Arbour feature premier sky-villas in this corridor." }],
     match: (p) => hasConfig("penthouse")(p) && hasCorridor("golf course extension")(p),
+  },
+  {
+    slug: "duplex-golf-course-extension",
+    h1: "Duplex Apartments on Golf Course Extension Road",
+    badge: "Two-Level Sky Villas",
+    title: "Duplex on Golf Course Extension Road (2026 Audit) | Truth Estate",
+    description: "Verified two-level duplex sky homes on Golf Course Extension Road.",
+    intro: "Villa-like vertical living in Gurugram prime luxury corridor.",
+    metaSummary: "Offering 3,800 to 6,500 sq ft duplex layouts with double-height living areas.",
+    faqs: [{ q: "What is the advantage of a duplex on Golf Course Ext?", a: "Combines landed villa space with high-rise security and concierge amenities." }],
+    match: (p) => hasConfig("duplex")(p) && hasCorridor("golf course extension")(p),
+  },
+  {
+    slug: "luxury-apartments-golf-course-extension",
+    h1: "Luxury Apartments on Golf Course Extension Road",
+    badge: "Top Ranked GCRE Residences",
+    title: "Luxury Apartments on Golf Course Extension Road (2026 Audit) | Truth Estate",
+    description: "The definitive ranking of luxury apartments on Golf Course Extension Road.",
+    intro: "Audited across 150+ forensic checkpoints for construction velocity and developer financial strength.",
+    metaSummary: "Trading from ₹22,000 to ₹35,000/sq ft across Sectors 58 to 66.",
+    faqs: [{ q: "Why choose Golf Course Extension Road?", a: "Premier social infrastructure, top schools, and rapid metro connectivity." }],
+    match: (p) => hasConfig("luxury")(p) && hasCorridor("golf course extension")(p),
+  },
+
+  // Dwarka Expressway
+  {
+    slug: "4-bhk-dwarka-expressway",
+    h1: "4 BHK Apartments on Dwarka Expressway",
+    badge: "High-Growth Prime Corridor",
+    title: "4 BHK on Dwarka Expressway Gurugram (2026 Grounded Audit) | Truth Estate",
+    description: "Compare verified 4 BHK apartments on Dwarka Expressway. Audited for arterial connectivity, flyover access, developer financial health, and RERA timelines.",
+    intro: "Dwarka Expressway offers Gurugram fastest-appreciating luxury corridor with seamless IGI Airport connectivity. Every 4 BHK is screened against filed rates.",
+    metaSummary: "Dwarka Expressway 4 BHK apartments span 2,600 to 3,800 sq ft with capital values averaging ₹16,000 to ₹24,000/sq ft.",
+    faqs: [{ q: "Why invest in a 4 BHK on Dwarka Expressway?", a: "The operational 8-lane expressway provides 15-minute access to IGI Airport and Yashobhoomi (IICC), driving strong rental yields and capital growth." }],
+    match: (p) => hasConfig("4 bhk")(p) && hasCorridor("dwarka expressway")(p),
+  },
+  {
+    slug: "3-bhk-dwarka-expressway",
+    h1: "3 BHK Apartments on Dwarka Expressway",
+    badge: "High-Demand Family Homes",
+    title: "3 BHK on Dwarka Expressway Gurugram (2026 Grounded Comps) | Truth Estate",
+    description: "Compare verified 3 BHK residences along Dwarka Expressway. Audited for construction milestones, RERA delivery dates, and fair price bands.",
+    intro: "Dwarka Expressway offers modern 3 BHK family configurations with clubhouse amenities and rapid access to Delhi and Cyber City.",
+    metaSummary: "3 BHK units on Dwarka Expressway span 1,500 to 2,200 sq ft with prices from ₹1.8 Cr to ₹3.2 Cr.",
+    faqs: [{ q: "What are the top 3 BHK projects on Dwarka Expressway?", a: "M3M Mansion, Puri Diplomatic Residences, Sobha City, and Krisumi Waterside Residences represent the highest-scoring options." }],
+    match: (p) => hasConfig("3 bhk")(p) && hasCorridor("dwarka expressway")(p),
+  },
+  {
+    slug: "2-bhk-dwarka-expressway",
+    h1: "2 BHK Apartments on Dwarka Expressway",
+    badge: "High Rental Yield Corridor",
+    title: "2 BHK on Dwarka Expressway (2026 Audit) | Truth Estate",
+    description: "Verified 2 BHK apartments on Dwarka Expressway. Audited for construction pace and rental yields.",
+    intro: "Modern 2 BHK gated residences with rapid access to IGI Airport and Delhi border.",
+    metaSummary: "Spanning 1,150 to 1,500 sq ft at ₹14,000 to ₹19,000/sq ft.",
+    faqs: [{ q: "What is the rental yield on Dwarka Expressway?", a: "Modern gated communities generate 3.5% to 4.5% gross rental yields." }],
+    match: (p) => hasConfig("2 bhk")(p) && hasCorridor("dwarka expressway")(p),
+  },
+  {
+    slug: "5-bhk-dwarka-expressway",
+    h1: "5 BHK Luxury Apartments on Dwarka Expressway",
+    badge: "Expressway Sky Palaces",
+    title: "5 BHK on Dwarka Expressway (2026 Audit) | Truth Estate",
+    description: "Verified 5 BHK sky mansions along Dwarka Expressway.",
+    intro: "Expansive multi-generational luxury apartments with panoramic views.",
+    metaSummary: "4,000 to 6,500 sq ft floorplates starting from ₹7 Cr to ₹14 Cr.",
+    faqs: [{ q: "Which developers offer 5 BHKs on Dwarka Expressway?", a: "Elan (The Presidential), M3M (Mansion), and Sobha." }],
+    match: (p) => hasConfig("5 bhk")(p) && hasCorridor("dwarka expressway")(p),
   },
   {
     slug: "penthouses-dwarka-expressway",
@@ -455,18 +597,256 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
     description: "Verified sky mansions and duplex penthouses along Dwarka Expressway. Audited for RERA sanctioned terraces, high ceilings, and panoramic city views.",
     intro: "Luxury top-floor sky homes on Dwarka Expressway. Screened for genuine builder pricing, elevator speeds, and terrace approvals.",
     metaSummary: "Dwarka Expressway penthouses offer 4,000 to 8,000 sq ft of space with pricing ranging from ₹7.5 Cr to ₹18 Cr.",
-    faqs: [
-      {
-        q: "What is the advantage of a penthouse on Dwarka Expressway?",
-        a: "Expansive green views towards the Delhi ridge and diplomatic enclave, coupled with large terrace footprints at higher value per square foot.",
-      },
-    ],
+    faqs: [{ q: "What is the advantage of a penthouse on Dwarka Expressway?", a: "Expansive green views towards the Delhi ridge and diplomatic enclave, coupled with large terrace footprints at higher value per square foot." }],
     match: (p) => hasConfig("penthouse")(p) && hasCorridor("dwarka expressway")(p),
+  },
+  {
+    slug: "duplex-dwarka-expressway",
+    h1: "Duplex Apartments on Dwarka Expressway",
+    badge: "Two-Level High-Rise Homes",
+    title: "Duplex on Dwarka Expressway (2026 Audit) | Truth Estate",
+    description: "Verified duplex apartments and sky villas on Dwarka Expressway.",
+    intro: "Two-level sky homes with double-height ceiling voids and private family lounges.",
+    metaSummary: "Offering 3,200 to 5,500 sq ft multi-level floorplans.",
+    faqs: [{ q: "Which projects offer duplex units on Dwarka Expressway?", a: "Krisumi Waterside Residences and Elan The Presidential." }],
+    match: (p) => hasConfig("duplex")(p) && hasCorridor("dwarka expressway")(p),
+  },
+  {
+    slug: "luxury-apartments-dwarka-expressway",
+    h1: "Luxury Apartments on Dwarka Expressway",
+    badge: "Top Expressway Condominiums",
+    title: "Luxury Apartments on Dwarka Expressway (2026 Audit) | Truth Estate",
+    description: "Ranked luxury residential developments on Dwarka Expressway.",
+    intro: "Screened against RERA filings, construction velocity, and developer track records.",
+    metaSummary: "Commanding ₹16,000 to ₹25,000/sq ft across Sectors 102 to 113.",
+    faqs: [{ q: "Why is Dwarka Expressway Gurugram fastest-growing luxury corridor?", a: "Proximity to IGI Airport, Diplomatic Enclave II, and Yashobhoomi Convention Centre." }],
+    match: (p) => hasConfig("luxury")(p) && hasCorridor("dwarka expressway")(p),
+  },
+
+  // Southern Peripheral Road (SPR)
+  {
+    slug: "4-bhk-southern-peripheral-road-spr",
+    h1: "4 BHK Apartments on SPR (Southern Peripheral Road)",
+    badge: "Emerging Luxury Hub",
+    title: "4 BHK on Southern Peripheral Road SPR Gurugram (2026 Audit) | Truth Estate",
+    description: "Find verified 4 BHK apartments on Southern Peripheral Road (SPR). Audited for Cloverleaf connectivity, builder balance sheets, and RERA delivery dates.",
+    intro: "SPR connects Golf Course Ext Road, NH-8, and Sohna Road into a cohesive luxury hub. Every 4 BHK project is ranked by TruthScore and price integrity.",
+    metaSummary: "SPR 4 BHK developments feature modern high-rise architecture with units from 2,800 to 3,600 sq ft at ₹17,000 to ₹26,000/sq ft.",
+    faqs: [{ q: "What makes SPR attractive for 4 BHK homebuyers?", a: "Direct connectivity via the Vatika Chowk underpass and NH-8 Cloverleaf, plus flagship launches by DLF (Privana) and Signature Global (Titanium)." }],
+    match: (p) => hasConfig("4 bhk")(p) && hasCorridor("spr")(p),
+  },
+  {
+    slug: "3-bhk-southern-peripheral-road-spr",
+    h1: "3 BHK Apartments on SPR (Southern Peripheral Road)",
+    badge: "High-Growth Family Residences",
+    title: "3 BHK on SPR Gurugram (2026 Audit) | Truth Estate",
+    description: "Verified 3 BHK residences on Southern Peripheral Road. Audited for living density, RERA timelines, and price credibility.",
+    intro: "Modern 3 BHK configurations with fast access to Cyber City and NH-8.",
+    metaSummary: "Spanning 1,600 to 2,400 sq ft at ₹16,000 to ₹23,000/sq ft.",
+    faqs: [{ q: "What is the connectivity like on SPR?", a: "Direct signal-free connectivity to NH-8, Golf Course Ext Road, and Sohna Road." }],
+    match: (p) => hasConfig("3 bhk")(p) && hasCorridor("spr")(p),
+  },
+  {
+    slug: "5-bhk-southern-peripheral-road-spr",
+    h1: "5 BHK Luxury Apartments on SPR",
+    badge: "SPR Flagship Sky Mansions",
+    title: "5 BHK on SPR Gurugram (2026 Audit) | Truth Estate",
+    description: "Grand 5 BHK residences on Southern Peripheral Road.",
+    intro: "Low-density sky mansions with Aravali views and private elevator cores.",
+    metaSummary: "4,500 to 6,500 sq ft floorplates starting from ₹8 Cr.",
+    faqs: [{ q: "Which projects offer 5 BHKs on SPR?", a: "DLF Privana North, Signature Global Titanium, and M3M Golf Hills." }],
+    match: (p) => hasConfig("5 bhk")(p) && hasCorridor("spr")(p),
+  },
+  {
+    slug: "penthouses-southern-peripheral-road-spr",
+    h1: "Penthouses on SPR (Southern Peripheral Road)",
+    badge: "Aravali View Sky Homes",
+    title: "Penthouses on SPR Gurugram (2026 Audit) | Truth Estate",
+    description: "Verified rooftop penthouses on Southern Peripheral Road.",
+    intro: "Top-floor duplex penthouses with sweeping Aravali ridge views.",
+    metaSummary: "Spanning 4,500 to 8,000 sq ft starting from ₹9 Cr to ₹22 Cr.",
+    faqs: [{ q: "What is unique about penthouses on SPR?", a: "Unobstructed green views towards the Aravali biodiversity corridor." }],
+    match: (p) => hasConfig("penthouse")(p) && hasCorridor("spr")(p),
+  },
+  {
+    slug: "luxury-apartments-southern-peripheral-road-spr",
+    h1: "Luxury Apartments on SPR (Southern Peripheral Road)",
+    badge: "Top Ranked SPR Residences",
+    title: "Luxury Apartments on SPR Gurugram (2026 Audit) | Truth Estate",
+    description: "Curated luxury residential condominiums on Southern Peripheral Road.",
+    intro: "Audited for delivery velocity, balance-sheet safety, and fair pricing.",
+    metaSummary: "Trading from ₹18,000 to ₹28,000/sq ft across Sectors 70 to 79.",
+    faqs: [{ q: "Why is SPR considered Gurugram new luxury hub?", a: "Major master-planned communities by DLF, Tata, and Signature Global." }],
+    match: (p) => hasConfig("luxury")(p) && hasCorridor("spr")(p),
+  },
+
+  // Golf Course Road
+  {
+    slug: "4-bhk-golf-course-road",
+    h1: "4 BHK Apartments on Golf Course Road",
+    badge: "Ultra-Luxury Flagship Spine",
+    title: "4 BHK on Golf Course Road Gurugram (2026 Audit) — Super Luxury | Truth Estate",
+    description: "The gold standard of Gurugram luxury real estate. Audited 4 BHK residences on Golf Course Road with verified resale comps and title checks.",
+    intro: "Gurugram most prestigious pin code. Home to corporate headquarters, luxury malls, and top-tier residential condominiums.",
+    metaSummary: "Golf Course Road commands ₹45,000 to ₹1,00,000+/sq ft with unmatched social infrastructure and metro connectivity.",
+    faqs: [{ q: "What is the entry price for a 4 BHK on Golf Course Road?", a: "Resale and new developments on Golf Course Road start around ₹12 Cr to ₹25+ Cr." }],
+    match: (p) => hasConfig("4 bhk")(p) && hasCorridor("golf course road")(p),
+  },
+  {
+    slug: "3-bhk-golf-course-road",
+    h1: "3 BHK Apartments on Golf Course Road",
+    badge: "Prime Pin-Code Residences",
+    title: "3 BHK on Golf Course Road Gurugram (2026 Audit) | Truth Estate",
+    description: "Verified 3 BHK residences on Golf Course Road. Audited for resale liquidity and title safety.",
+    intro: "Prestigious 3 BHK condominiums in Gurugram central luxury district.",
+    metaSummary: "Spanning 2,000 to 2,800 sq ft at ₹40,000 to ₹65,000/sq ft.",
+    faqs: [{ q: "What is the starting price for a 3 BHK on Golf Course Road?", a: "Entry prices start around ₹8 Cr to ₹14 Cr." }],
+    match: (p) => hasConfig("3 bhk")(p) && hasCorridor("golf course road")(p),
+  },
+  {
+    slug: "penthouses-golf-course-road",
+    h1: "Penthouses on Golf Course Road",
+    badge: "The Pinnacle of High-Rise Living",
+    title: "Penthouses on Golf Course Road (2026 Audit) | Truth Estate",
+    description: "Gurugram most legendary rooftop sky-palaces on Golf Course Road.",
+    intro: "Trophy assets with private pools, 360-degree views, and private elevators.",
+    metaSummary: "Commanding ₹50,000 to ₹1,20,000/sq ft with floorplates up to 15,000 sq ft.",
+    faqs: [{ q: "Which iconic projects have penthouses on Golf Course Road?", a: "DLF The Dahlias, The Camellias, and The Magnolias." }],
+    match: (p) => hasConfig("penthouse")(p) && hasCorridor("golf course road")(p),
+  },
+  {
+    slug: "luxury-apartments-golf-course-road",
+    h1: "Luxury Apartments on Golf Course Road",
+    badge: "Gurugram Premier Address",
+    title: "Luxury Apartments on Golf Course Road (2026 Audit) | Truth Estate",
+    description: "The definitive audit of luxury residences on Golf Course Road.",
+    intro: "Screened against title encumbrances, secondary market trades, and building maintenance records.",
+    metaSummary: "The most liquid and capital-preserved luxury corridor in North India.",
+    faqs: [{ q: "What drives value on Golf Course Road?", a: "Limited land supply, top corporate HQs, rapid metro, and elite clubhouses." }],
+    match: (p) => hasConfig("luxury")(p) && hasCorridor("golf course road")(p),
+  },
+
+  // New Gurgaon
+  {
+    slug: "4-bhk-new-gurgaon",
+    h1: "4 BHK Apartments in New Gurgaon",
+    badge: "High-Appreciation Green Suburb",
+    title: "4 BHK in New Gurgaon (2026 Verified Rates) | Truth Estate",
+    description: "Explore verified 4 BHK homes in New Gurgaon (Sectors 81–95). Audited for master infrastructure, highway access, and developer solvency.",
+    intro: "New Gurgaon offers modern planned sectors with wide roads, green belts, and excellent connectivity to NH-8, CPR, and Dwarka Expressway.",
+    metaSummary: "4 BHK apartments in New Gurgaon provide large spaces (2,400–3,200 sq ft) at accessible ticket sizes of ₹2.8 Cr to ₹4.5 Cr.",
+    faqs: [{ q: "Which developers are active in New Gurgaon?", a: "DLF (Gardencity), Ashiana, Godrej, and Bestech have developed major residential communities." }],
+    match: (p) => hasConfig("4 bhk")(p) && hasCorridor("new gurgaon")(p),
+  },
+  {
+    slug: "3-bhk-new-gurgaon",
+    h1: "3 BHK Apartments in New Gurgaon",
+    badge: "Top Value Family Suburb",
+    title: "3 BHK in New Gurgaon (2026 Grounded Comps) | Truth Estate",
+    description: "Verified 3 BHK residences across Sectors 81 to 95 in New Gurgaon.",
+    intro: "Planned residential sectors with comprehensive retail, school, and road infrastructure.",
+    metaSummary: "Spanning 1,500 to 2,100 sq ft at ₹11,000 to ₹16,000/sq ft.",
+    faqs: [{ q: "Why buy a 3 BHK in New Gurgaon?", a: "High value for money, peaceful green surroundings, and rapid access to NH-8." }],
+    match: (p) => hasConfig("3 bhk")(p) && hasCorridor("new gurgaon")(p),
+  },
+  {
+    slug: "2-bhk-new-gurgaon",
+    h1: "2 BHK Apartments in New Gurgaon",
+    badge: "Entry-Level Gated Residences",
+    title: "2 BHK in New Gurgaon (2026 Audit) | Truth Estate",
+    description: "Compare verified 2 BHK apartments in New Gurgaon under ₹1.5 Cr.",
+    intro: "Well-connected 2 BHK homes in modern high-rise gated societies.",
+    metaSummary: "Offering 1,000 to 1,350 sq ft at ₹1.1 Cr to ₹1.6 Cr.",
+    faqs: [{ q: "What is the connectivity of New Gurgaon?", a: "Direct connectivity via Central Peripheral Road (CPR) and NH-8." }],
+    match: (p) => hasConfig("2 bhk")(p) && hasCorridor("new gurgaon")(p),
+  },
+  {
+    slug: "luxury-apartments-new-gurgaon",
+    h1: "Luxury Apartments in New Gurgaon",
+    badge: "Master-Planned Luxury Condominiums",
+    title: "Luxury Apartments in New Gurgaon (2026 Audit) | Truth Estate",
+    description: "The best luxury residential developments in New Gurgaon.",
+    intro: "Audited for construction pace, low density, and builder track records.",
+    metaSummary: "Spacious luxury homes from ₹2.5 Cr to ₹5.5 Cr.",
+    faqs: [{ q: "Which luxury projects are in New Gurgaon?", a: "DLF Gardencity Enclave, Ashiana Amarah, and Godrej Air." }],
+    match: (p) => hasConfig("luxury")(p) && hasCorridor("new gurgaon")(p),
+  },
+
+  // Sohna Road
+  {
+    slug: "3-bhk-sohna-road",
+    h1: "3 BHK Apartments on Sohna Road",
+    badge: "South of Gurgaon Residences",
+    title: "3 BHK on Sohna Road Gurugram (2026 Audit) | Truth Estate",
+    description: "Verified 3 BHK apartments on Sohna Road and South of Gurgaon.",
+    intro: "Scenic living nestled near the Aravali foothills with elevated expressway access.",
+    metaSummary: "Spanning 1,400 to 2,000 sq ft at ₹9,000 to ₹14,000/sq ft.",
+    faqs: [{ q: "What is the commute time from Sohna Road to Cyber City?", a: "Around 20–25 minutes via the 6-lane elevated Sohna Elevated Corridor." }],
+    match: (p) => hasConfig("3 bhk")(p) && hasCorridor("sohna road")(p),
+  },
+  {
+    slug: "2-bhk-sohna-road",
+    h1: "2 BHK Apartments on Sohna Road",
+    badge: "Value Entry Homes",
+    title: "2 BHK on Sohna Road Gurugram (2026 Audit) | Truth Estate",
+    description: "Affordable and premium 2 BHK homes on Sohna Road.",
+    intro: "Quality 2 BHK residences in master-planned townships with clubhouse amenities.",
+    metaSummary: "Offering 950 to 1,300 sq ft from ₹80 Lakhs to ₹1.4 Cr.",
+    faqs: [{ q: "Which developers are on Sohna Road?", a: "Central Park, Eldeco, and Signature Global." }],
+    match: (p) => hasConfig("2 bhk")(p) && hasCorridor("sohna road")(p),
   },
 
   /* ─────────────────────────────────────────────────────────────
-     4. TYPOLOGY + CORRIDOR + BUDGET COMBOS (LASER CONVERSION)
+     4. LASER-FOCUSED TYPOLOGY + CORRIDOR + BUDGET PERMUTATIONS
      ───────────────────────────────────────────────────────────── */
+  {
+    slug: "3-bhk-dwarka-expressway-under-2-cr",
+    h1: "3 BHK on Dwarka Expressway Under ₹2 Cr",
+    badge: "High-Value Expressway Homes",
+    title: "3 BHK on Dwarka Expressway Under ₹2 Cr (2026 Audit) | Truth Estate",
+    description: "Verified 3 BHK apartments on Dwarka Expressway under ₹2 Crore. Screened against builder rate sheets.",
+    intro: "Top-value 3 BHK residences on Dwarka Expressway under ₹2 Cr with modern amenities.",
+    metaSummary: "Offers 1,400 to 1,750 sq ft 3 BHK homes in Sectors 102 to 108.",
+    faqs: [{ q: "Can I get a 3 BHK on Dwarka Expressway under ₹2 Cr?", a: "Yes, emerging sectors near the highway offer verified options under ₹2 Cr." }],
+    match: (p) => hasConfig("3 bhk")(p) && hasCorridor("dwarka expressway")(p) && underCr(2.1)(p),
+    pricePage: true,
+  },
+  {
+    slug: "3-bhk-dwarka-expressway-under-2-5-cr",
+    h1: "3 BHK on Dwarka Expressway Under ₹2.5 Cr",
+    badge: "High-Demand Family Homes",
+    title: "3 BHK on Dwarka Expressway Under ₹2.5 Cr (2026 Verified Comps) | Truth Estate",
+    description: "Verified 3 BHK apartments along Dwarka Expressway under ₹2.5 Crore. Ranked by construction pace, legal safety, and real usable carpet area.",
+    intro: "Top-value 3 BHK residences on Dwarka Expressway under ₹2.5 Cr. Screened against filed builder rates for genuine pricing.",
+    metaSummary: "Offers 1,500 to 1,950 sq ft 3 BHK homes in Sectors 102 to 109 with quick access to the Delhi border.",
+    faqs: [{ q: "Where can I find 3 BHK homes under ₹2.5 Cr on Dwarka Expressway?", a: "Sectors 102, 103, 104, and 108 have the highest concentration of high-scoring 3 BHK units." }],
+    match: (p) => hasConfig("3 bhk")(p) && hasCorridor("dwarka expressway")(p) && underCr(2.6)(p),
+    pricePage: true,
+  },
+  {
+    slug: "3-bhk-dwarka-expressway-under-3-cr",
+    h1: "3 BHK on Dwarka Expressway Under ₹3 Cr",
+    badge: "Prime Expressway Residences",
+    title: "3 BHK on Dwarka Expressway Under ₹3 Cr (2026 Audit) | Truth Estate",
+    description: "Compare verified 3 BHK luxury residences on Dwarka Expressway under ₹3 Crore.",
+    intro: "High-specification 3 BHK residences by leading developers along the operational expressway.",
+    metaSummary: "Spanning 1,700 to 2,200 sq ft with clubhouse facilities.",
+    faqs: [{ q: "Which developers offer 3 BHKs under ₹3 Cr?", a: "M3M, Puri, and Sobha offer premier developments." }],
+    match: (p) => hasConfig("3 bhk")(p) && hasCorridor("dwarka expressway")(p) && underCr(3.2)(p),
+    pricePage: true,
+  },
+  {
+    slug: "4-bhk-dwarka-expressway-under-4-cr",
+    h1: "4 BHK on Dwarka Expressway Under ₹4 Cr",
+    badge: "Value 4 BHK Category",
+    title: "4 BHK on Dwarka Expressway Under ₹4 Cr (2026 Audit) | Truth Estate",
+    description: "Verified 4 BHK apartments on Dwarka Expressway under ₹4 Crore.",
+    intro: "Spacious 4 BHK residences offering large carpet areas under ₹4 Cr.",
+    metaSummary: "Offering 2,400 to 2,900 sq ft layouts in Sectors 102 to 108.",
+    faqs: [{ q: "What is the price per sq ft for 4 BHKs under ₹4 Cr?", a: "Averages ₹14,000 to ₹17,000/sq ft." }],
+    match: (p) => hasConfig("4 bhk")(p) && hasCorridor("dwarka expressway")(p) && underCr(4.2)(p),
+    pricePage: true,
+  },
   {
     slug: "4-bhk-dwarka-expressway-under-5-cr",
     h1: "4 BHK Apartments on Dwarka Expressway Under ₹5 Cr",
@@ -475,13 +855,56 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
     description: "Verified 4 BHK apartments on Dwarka Expressway under ₹5 Crore. Filtered against developer filed rates to eliminate false listings.",
     intro: "Every tracked 4 BHK project on Dwarka Expressway with entry pricing under ₹5 Cr. Audited for highway accessibility, sector infrastructure, and RERA delivery dates.",
     metaSummary: "Offers 2,600 to 3,200 sq ft 4 BHK configurations in prime sectors (Sectors 102, 106, 111, 113) under ₹5 Cr.",
-    faqs: [
-      {
-        q: "Can I get a 4 BHK on Dwarka Expressway under ₹5 Cr in 2026?",
-        a: "Yes, prominent projects by Puri, Smartworld, Whiteland, and Godrej offer entry 4 BHK configurations under ₹5 Cr.",
-      },
-    ],
+    faqs: [{ q: "Can I get a 4 BHK on Dwarka Expressway under ₹5 Cr in 2026?", a: "Yes, prominent projects by Puri, Smartworld, Whiteland, and Godrej offer entry 4 BHK configurations under ₹5 Cr." }],
     match: (p) => hasConfig("4 bhk")(p) && hasCorridor("dwarka expressway")(p) && underCr(5.5)(p),
+    pricePage: true,
+  },
+  {
+    slug: "4-bhk-dwarka-expressway-under-6-cr",
+    h1: "4 BHK on Dwarka Expressway Under ₹6 Cr",
+    badge: "Prime Expressway Luxury",
+    title: "4 BHK on Dwarka Expressway Under ₹6 Cr (2026 Audit) | Truth Estate",
+    description: "Compare verified 4 BHK luxury residences on Dwarka Expressway under ₹6 Crore.",
+    intro: "Top-tier 4 BHK condominiums with wrap-around balconies and private elevators.",
+    metaSummary: "Spanning 2,800 to 3,600 sq ft in marquee projects.",
+    faqs: [{ q: "Which sectors offer 4 BHKs under ₹6 Cr?", a: "Sectors 106, 111, and 113 near the Delhi border." }],
+    match: (p) => hasConfig("4 bhk")(p) && hasCorridor("dwarka expressway")(p) && underCr(6.5)(p),
+    pricePage: true,
+  },
+  {
+    slug: "3-bhk-spr-under-2-5-cr",
+    h1: "3 BHK on SPR Under ₹2.5 Cr",
+    badge: "Value SPR Residences",
+    title: "3 BHK on SPR Under ₹2.5 Cr (2026 Audit) | Truth Estate",
+    description: "Verified 3 BHK apartments on Southern Peripheral Road under ₹2.5 Crore.",
+    intro: "Fast-appreciating 3 BHK family homes with direct Cloverleaf connectivity.",
+    metaSummary: "Offering 1,500 to 1,900 sq ft in Sectors 70 to 76.",
+    faqs: [{ q: "Is SPR well connected for daily commute?", a: "Yes, seamless access to Cyber City, Golf Course Ext, and NH-8." }],
+    match: (p) => hasConfig("3 bhk")(p) && hasCorridor("spr")(p) && underCr(2.6)(p),
+    pricePage: true,
+  },
+  {
+    slug: "3-bhk-spr-under-3-cr",
+    h1: "3 BHK on SPR Under ₹3 Cr",
+    badge: "Prime SPR Category",
+    title: "3 BHK on SPR Under ₹3 Cr (2026 Audit) | Truth Estate",
+    description: "Compare verified 3 BHK luxury residences on Southern Peripheral Road under ₹3 Crore.",
+    intro: "High-scoring 3 BHK residences on SPR screened against filed builder rates.",
+    metaSummary: "Spanning 1,700 to 2,200 sq ft at ₹16,000 to ₹21,000/sq ft.",
+    faqs: [{ q: "Which projects offer 3 BHKs under ₹3 Cr on SPR?", a: "Signature Global, Whiteland, and Tulip." }],
+    match: (p) => hasConfig("3 bhk")(p) && hasCorridor("spr")(p) && underCr(3.2)(p),
+    pricePage: true,
+  },
+  {
+    slug: "4-bhk-spr-under-4-cr",
+    h1: "4 BHK on SPR Under ₹4 Cr",
+    badge: "Best Value 4 BHK SPR",
+    title: "4 BHK on SPR Under ₹4 Cr (2026 Audit) | Truth Estate",
+    description: "Verified 4 BHK apartments on Southern Peripheral Road under ₹4 Crore.",
+    intro: "Spacious 4 BHK residences offering large family living spaces.",
+    metaSummary: "2,400 to 2,900 sq ft 4 BHK homes in Sectors 70 to 79.",
+    faqs: [{ q: "What is the typical ticket size on SPR?", a: "Starting tickets for 4 BHKs range from ₹3.6 Cr to ₹4 Cr." }],
+    match: (p) => hasConfig("4 bhk")(p) && hasCorridor("spr")(p) && underCr(4.2)(p),
     pricePage: true,
   },
   {
@@ -492,32 +915,190 @@ export const APARTMENT_CLUSTERS: ApartmentCluster[] = [
     description: "Compare verified 4 BHK residences on SPR under ₹5 Crore. Audited for builder financial stability, RERA timelines, and fair rate benchmarks.",
     intro: "Southern Peripheral Road 4 BHK developments offering entry pricing under ₹5 Cr. Ranked by TruthScore and construction milestones.",
     metaSummary: "SPR 4 BHK units under ₹5 Cr span 2,600 to 3,100 sq ft across Sectors 70, 71, 76, and 79.",
-    faqs: [
-      {
-        q: "What are the best 4 BHK options on SPR under ₹5 Cr?",
-        a: "Signature Global Titanium, Tulip Monsella, and Whiteland provide high-ranked options in this category.",
-      },
-    ],
-    match: (p) => hasConfig("4 bhk")(p) && (hasCorridor("spr")(p) || hasCorridor("southern peripheral")(p)) && underCr(5.5)(p),
+    faqs: [{ q: "What are the best 4 BHK options on SPR under ₹5 Cr?", a: "Signature Global Titanium, Tulip Monsella, and Whiteland provide high-ranked options." }],
+    match: (p) => hasConfig("4 bhk")(p) && hasCorridor("spr")(p) && underCr(5.5)(p),
     pricePage: true,
   },
   {
-    slug: "3-bhk-dwarka-expressway-under-2-5-cr",
-    h1: "3 BHK Apartments on Dwarka Expressway Under ₹2.5 Cr",
-    badge: "High-Demand Value Homes",
-    title: "3 BHK on Dwarka Expressway Under ₹2.5 Cr (2026 Verified Comps) | Truth Estate",
-    description: "Verified 3 BHK apartments along Dwarka Expressway under ₹2.5 Crore. Ranked by construction pace, legal safety, and real usable carpet area.",
-    intro: "Top-value 3 BHK residences on Dwarka Expressway under ₹2.5 Cr. Screened against filed builder rates for genuine pricing.",
-    metaSummary: "Offers 1,500 to 1,950 sq ft 3 BHK homes in Sectors 102 to 109 with quick access to the Delhi border.",
-    faqs: [
-      {
-        q: "Where can I find 3 BHK homes under ₹2.5 Cr on Dwarka Expressway?",
-        a: "Sectors 102, 103, 104, and 108 have the highest concentration of high-scoring 3 BHK units under ₹2.5 Cr.",
-      },
-    ],
-    match: (p) => hasConfig("3 bhk")(p) && hasCorridor("dwarka expressway")(p) && underCr(2.6)(p),
+    slug: "4-bhk-spr-under-6-cr",
+    h1: "4 BHK on SPR Under ₹6 Cr",
+    badge: "Prime Luxury SPR Category",
+    title: "4 BHK on SPR Under ₹6 Cr (2026 Audit) | Truth Estate",
+    description: "Explore verified 4 BHK luxury residences on Southern Peripheral Road under ₹6 Crore.",
+    intro: "Premier high-rise condominiums with Aravali views and low density.",
+    metaSummary: "2,800 to 3,600 sq ft floorplates.",
+    faqs: [{ q: "Which developers lead the luxury segment on SPR?", a: "DLF (Privana) and Signature Global (Titanium)." }],
+    match: (p) => hasConfig("4 bhk")(p) && hasCorridor("spr")(p) && underCr(6.5)(p),
     pricePage: true,
   },
+  {
+    slug: "3-bhk-golf-course-extension-under-3-5-cr",
+    h1: "3 BHK on Golf Course Ext Road Under ₹3.5 Cr",
+    badge: "Best Value GCRE Category",
+    title: "3 BHK on Golf Course Ext Road Under ₹3.5 Cr (2026 Audit) | Truth Estate",
+    description: "Verified 3 BHK residences on Golf Course Extension Road under ₹3.5 Crore.",
+    intro: "Entry-level luxury 3 BHK residences in Gurugram most established corridor.",
+    metaSummary: "1,700 to 2,100 sq ft floorplans.",
+    faqs: [{ q: "Can I get a 3 BHK on Golf Course Extension under ₹3.5 Cr?", a: "Yes, select projects in Sectors 67 and 68 offer entry options under ₹3.5 Cr." }],
+    match: (p) => hasConfig("3 bhk")(p) && hasCorridor("golf course extension")(p) && underCr(3.6)(p),
+    pricePage: true,
+  },
+  {
+    slug: "3-bhk-golf-course-extension-under-4-cr",
+    h1: "3 BHK on Golf Course Ext Road Under ₹4 Cr",
+    badge: "Prime Luxury GCRE Tier",
+    title: "3 BHK on Golf Course Ext Road Under ₹4 Cr (2026 Audit) | Truth Estate",
+    description: "Compare verified 3 BHK luxury residences on Golf Course Extension Road under ₹4 Crore.",
+    intro: "High-spec 3 BHK condominiums with clubhouse amenities and school proximity.",
+    metaSummary: "Spanning 1,800 to 2,400 sq ft at ₹20,000 to ₹25,000/sq ft.",
+    faqs: [{ q: "Which developers offer 3 BHKs under ₹4 Cr?", a: "Smartworld, M3M, and Birla." }],
+    match: (p) => hasConfig("3 bhk")(p) && hasCorridor("golf course extension")(p) && underCr(4.2)(p),
+    pricePage: true,
+  },
+  {
+    slug: "4-bhk-golf-course-extension-under-6-cr",
+    h1: "4 BHK on Golf Course Ext Road Under ₹6 Cr",
+    badge: "Value 4 BHK GCRE Category",
+    title: "4 BHK on Golf Course Ext Road Under ₹6 Cr (2026 Audit) | Truth Estate",
+    description: "Verified 4 BHK luxury residences on Golf Course Extension Road under ₹6 Crore.",
+    intro: "Spacious 4 BHK family residences in prime high-rise communities.",
+    metaSummary: "2,800 to 3,400 sq ft floorplans.",
+    faqs: [{ q: "What is the average rate on Golf Course Ext for 4 BHKs?", a: "Averages ₹21,000 to ₹26,000/sq ft." }],
+    match: (p) => hasConfig("4 bhk")(p) && hasCorridor("golf course extension")(p) && underCr(6.5)(p),
+    pricePage: true,
+  },
+  {
+    slug: "4-bhk-golf-course-extension-under-7-cr",
+    h1: "4 BHK on Golf Course Ext Road Under ₹7 Cr",
+    badge: "Prime GCRE Category",
+    title: "4 BHK on Golf Course Ext Road Under ₹7 Cr (2026 Audit) | Truth Estate",
+    description: "Explore verified 4 BHK luxury residences on Golf Course Extension Road under ₹7 Crore.",
+    intro: "High-spec 4 BHK homes with private lift lobbies and international landscaping.",
+    metaSummary: "3,000 to 3,800 sq ft floorplates.",
+    faqs: [{ q: "Which projects offer 4 BHKs under ₹7 Cr?", a: "Smartworld The Edition, M3M Altitude, and DLF The Arbour." }],
+    match: (p) => hasConfig("4 bhk")(p) && hasCorridor("golf course extension")(p) && underCr(7.5)(p),
+    pricePage: true,
+  },
+  {
+    slug: "4-bhk-golf-course-extension-under-8-cr",
+    h1: "4 BHK on Golf Course Ext Road Under ₹8 Cr",
+    badge: "Luxury GCRE Tier",
+    title: "4 BHK on Golf Course Ext Road Under ₹8 Cr (2026 Audit) | Truth Estate",
+    description: "Compare verified 4 BHK luxury condominiums on Golf Course Extension Road under ₹8 Crore.",
+    intro: "Top-tier residences with 11-ft ceilings and wrap-around balconies.",
+    metaSummary: "3,200 to 4,200 sq ft residences.",
+    faqs: [{ q: "What features are standard under ₹8 Cr?", a: "Private elevators, VRV AC, and luxury modular kitchens." }],
+    match: (p) => hasConfig("4 bhk")(p) && hasCorridor("golf course extension")(p) && underCr(8.5)(p),
+    pricePage: true,
+  },
+  {
+    slug: "4-bhk-golf-course-extension-above-8-cr",
+    h1: "4 BHK Ultra Luxury on Golf Course Ext Road Above ₹8 Cr",
+    badge: "Flagship GCRE Sky Mansions",
+    title: "4 BHK Above ₹8 Cr Golf Course Ext Road (2026 Audit) | Truth Estate",
+    description: "Trophy 4 BHK residences on Golf Course Extension Road above ₹8 Crore.",
+    intro: "Ultra-luxury sky mansions with bespoke concierge management and golf views.",
+    metaSummary: "Commanding ₹26,000 to ₹38,000/sq ft.",
+    faqs: [{ q: "Which developments are above ₹8 Cr?", a: "DLF The Arbour and M3M Altitude." }],
+    match: (p) => hasConfig("4 bhk")(p) && hasCorridor("golf course extension")(p) && aboveCr(7.5)(p),
+    pricePage: true,
+  },
+  {
+    slug: "3-bhk-new-gurgaon-under-1-5-cr",
+    h1: "3 BHK in New Gurgaon Under ₹1.5 Cr",
+    badge: "Best Value 3 BHK Suburb",
+    title: "3 BHK in New Gurgaon Under ₹1.5 Cr (2026 Audit) | Truth Estate",
+    description: "Verified 3 BHK apartments in New Gurgaon under ₹1.5 Crore.",
+    intro: "Affordable family 3 BHK homes in planned gated societies.",
+    metaSummary: "Offering 1,350 to 1,650 sq ft in Sectors 89 to 95.",
+    faqs: [{ q: "Where to find 3 BHKs under ₹1.5 Cr?", a: "Sectors 92, 93, and 95 offer strong options." }],
+    match: (p) => hasConfig("3 bhk")(p) && hasCorridor("new gurgaon")(p) && underCr(1.6)(p),
+    pricePage: true,
+  },
+  {
+    slug: "3-bhk-new-gurgaon-under-2-cr",
+    h1: "3 BHK in New Gurgaon Under ₹2 Cr",
+    badge: "High-Demand Family Homes",
+    title: "3 BHK in New Gurgaon Under ₹2 Cr (2026 Audit) | Truth Estate",
+    description: "Compare verified 3 BHK homes in New Gurgaon under ₹2 Crore.",
+    intro: "Modern 3 BHK residences with comprehensive clubhouse and sporting amenities.",
+    metaSummary: "1,500 to 1,900 sq ft floorplans.",
+    faqs: [{ q: "Which developers offer 3 BHKs under ₹2 Cr?", a: "Ashiana, Signature Global, and Bestech." }],
+    match: (p) => hasConfig("3 bhk")(p) && hasCorridor("new gurgaon")(p) && underCr(2.1)(p),
+    pricePage: true,
+  },
+  {
+    slug: "3-bhk-new-gurgaon-under-2-5-cr",
+    h1: "3 BHK in New Gurgaon Under ₹2.5 Cr",
+    badge: "Prime New Gurgaon Residences",
+    title: "3 BHK in New Gurgaon Under ₹2.5 Cr (2026 Audit) | Truth Estate",
+    description: "Explore verified 3 BHK luxury residences in New Gurgaon under ₹2.5 Crore.",
+    intro: "High-spec 3 BHK condominiums with green landscaping and highway connectivity.",
+    metaSummary: "1,700 to 2,200 sq ft floorplates.",
+    faqs: [{ q: "What is the highway connectivity of New Gurgaon?", a: "Direct connectivity via CPR to Dwarka Expressway and NH-8." }],
+    match: (p) => hasConfig("3 bhk")(p) && hasCorridor("new gurgaon")(p) && underCr(2.6)(p),
+    pricePage: true,
+  },
+  {
+    slug: "4-bhk-new-gurgaon-under-3-5-cr",
+    h1: "4 BHK in New Gurgaon Under ₹3.5 Cr",
+    badge: "Value 4 BHK Suburb Category",
+    title: "4 BHK in New Gurgaon Under ₹3.5 Cr (2026 Audit) | Truth Estate",
+    description: "Verified 4 BHK apartments in New Gurgaon under ₹3.5 Crore.",
+    intro: "Spacious 4 BHK residences offering expansive living spaces at exceptional value.",
+    metaSummary: "2,400 to 2,900 sq ft layouts.",
+    faqs: [{ q: "Can I get a 4 BHK under ₹3.5 Cr?", a: "Yes, New Gurgaon offers verified 4 BHKs from reputed builders under ₹3.5 Cr." }],
+    match: (p) => hasConfig("4 bhk")(p) && hasCorridor("new gurgaon")(p) && underCr(3.6)(p),
+    pricePage: true,
+  },
+  {
+    slug: "4-bhk-new-gurgaon-under-4-5-cr",
+    h1: "4 BHK in New Gurgaon Under ₹4.5 Cr",
+    badge: "Prime 4 BHK Category",
+    title: "4 BHK in New Gurgaon Under ₹4.5 Cr (2026 Audit) | Truth Estate",
+    description: "Compare verified 4 BHK luxury residences in New Gurgaon under ₹4.5 Crore.",
+    intro: "Top-tier 4 BHK residences in master-planned communities.",
+    metaSummary: "2,600 to 3,400 sq ft floorplates.",
+    faqs: [{ q: "Which projects offer 4 BHKs under ₹4.5 Cr?", a: "DLF Gardencity Enclave and Ashiana Amarah." }],
+    match: (p) => hasConfig("4 bhk")(p) && hasCorridor("new gurgaon")(p) && underCr(4.6)(p),
+    pricePage: true,
+  },
+  {
+    slug: "3-bhk-sohna-road-under-2-cr",
+    h1: "3 BHK on Sohna Road Under ₹2 Cr",
+    badge: "South of Gurgaon Value Homes",
+    title: "3 BHK on Sohna Road Under ₹2 Cr (2026 Audit) | Truth Estate",
+    description: "Verified 3 BHK apartments on Sohna Road under ₹2 Crore.",
+    intro: "Peaceful township living with elevated expressway connectivity to Rajiv Chowk.",
+    metaSummary: "Offering 1,400 to 1,800 sq ft at ₹9,000 to ₹12,000/sq ft.",
+    faqs: [{ q: "What is the travel time to Rajiv Chowk?", a: "15 minutes via the elevated corridor." }],
+    match: (p) => hasConfig("3 bhk")(p) && hasCorridor("sohna road")(p) && underCr(2.1)(p),
+    pricePage: true,
+  },
+  {
+    slug: "penthouses-dwarka-expressway-under-12-cr",
+    h1: "Penthouses on Dwarka Expressway Under ₹12 Cr",
+    badge: "Expressway Sky Villas",
+    title: "Penthouses on Dwarka Expressway Under ₹12 Cr (2026 Audit) | Truth Estate",
+    description: "Verified duplex penthouses on Dwarka Expressway under ₹12 Crore.",
+    intro: "Top-floor sky residences with private terraces and panoramic airport ridge views.",
+    metaSummary: "Spanning 4,000 to 6,500 sq ft floorplans.",
+    faqs: [{ q: "Which developers offer penthouses under ₹12 Cr?", a: "Krisumi, Elan, and Eldeco." }],
+    match: (p) => hasConfig("penthouse")(p) && hasCorridor("dwarka expressway")(p) && underCr(12.5)(p),
+    pricePage: true,
+  },
+  {
+    slug: "penthouses-golf-course-extension-above-15-cr",
+    h1: "Penthouses on Golf Course Ext Road Above ₹15 Cr",
+    badge: "Trophy Sky Palaces",
+    title: "Penthouses on Golf Course Ext Road Above ₹15 Cr (2026 Audit) | Truth Estate",
+    description: "Ultra-luxury rooftop penthouses on Golf Course Extension Road above ₹15 Crore.",
+    intro: "The pinnacle of sky living in Gurugram luxury family corridor.",
+    metaSummary: "Commanding 6,000 to 12,000+ sq ft with private elevators and pools.",
+    faqs: [{ q: "Which projects have penthouses above ₹15 Cr?", a: "Smartworld The Edition and DLF The Arbour." }],
+    match: (p) => hasConfig("penthouse")(p) && hasCorridor("golf course extension")(p) && aboveCr(14.5)(p),
+    pricePage: true,
+  }
 ];
 
 export const apartmentClusterBySlug = (slug: string): ApartmentCluster | undefined =>
