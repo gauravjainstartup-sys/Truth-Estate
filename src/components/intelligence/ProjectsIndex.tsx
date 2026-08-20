@@ -241,6 +241,11 @@ export default function ProjectsIndex({
                   className="w-full rounded-md border border-[#1a1a1a]/[0.14] bg-white py-3 pl-10 pr-3 text-[0.9rem] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#1a1a1a]/30 focus:border-[#c9a96e]"
                 />
               </div>
+              {/* Landers hide the sort: the default order is already the
+                  Truth Score, which is the page's whole argument — a
+                  control that re-orders the ranking is catalogue
+                  furniture, not landing-page furniture. */}
+              {!dense && (
               <label className="flex shrink-0 items-center gap-2 text-[0.72rem] font-light text-[#1a1a1a]/40">
                 Sort
                 <select
@@ -252,6 +257,7 @@ export default function ProjectsIndex({
                   {SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
                 </select>
               </label>
+              )}
             </div>
 
             {/* One row that scrolls sideways on a phone rather than two that
