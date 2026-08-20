@@ -3,7 +3,8 @@ import { SITE_URL } from "@/lib/site";
 import { resolveDevelopers } from "@/lib/developersLive";
 import { MARKETS } from "@/lib/markets";
 import { BEST_PROJECTS } from "@/lib/bestProjects";
-import { APARTMENT_CLUSTERS } from "@/lib/apartmentClusters";
+import { activeApartmentClusters } from "@/lib/apartmentClusters";
+import { buildScoredProjectIntel } from "@/lib/compareData";
 import { INDEXABLE_COMPARE_PAIRS } from "@/lib/indexableCompares";
 import { resolvableProjectPairs } from "@/lib/compare";
 import { fetchBacklogFull } from "@/lib/supabase";
@@ -45,8 +46,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
      Cr" is a more useful entry point than the catalogue it draws from. */
   BEST_PROJECTS.forEach((p) => add(`/best-projects/${p.slug}`, 0.7, "weekly"));
 
-  /* Programmatic high-intent apartment cluster landing pages */
-  APARTMENT_CLUSTERS.forEach((c) => add(`/apartments/${c.slug}`, 0.85, "weekly"));
+  /* Programmatic apartment cluster landing pages — only the clusters
+     that actually built (>= MIN_CLUSTER_PROJECTS matches); the sitemap
+     must never invite a crawl of a page generateStaticParams refused. */
+  const clusterIntel = await buildScoredProjectIntel();
+  activeApartmentClusters(Object.values(clusterIntel)).forEach((c) => add(`/apartments/${c.slug}`, 0.85, "weekly"));
 
   // Legal
   add("/privacy", 0.2, "yearly");

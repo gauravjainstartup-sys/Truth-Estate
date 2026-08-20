@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { APARTMENT_CLUSTERS, apartmentClusterBySlug } from "@/lib/apartmentClusters";
+import { activeApartmentClusters, apartmentClusterBySlug, MIN_CLUSTER_PROJECTS } from "@/lib/apartmentClusters";
 import ProjectsIndex from "@/components/intelligence/ProjectsIndex";
 import { buildScoredProjectIntel } from "@/lib/compareData";
 import { fetchTrackedStats } from "@/lib/supabase";
@@ -8,8 +8,13 @@ import type { ProjectIntel } from "@/lib/projects";
 import { breadcrumbLd, collectionLd, ldJson } from "@/lib/seo";
 import { SITE_URL } from "@/lib/site";
 
-export function generateStaticParams() {
-  return APARTMENT_CLUSTERS.map((c) => ({ slug: c.slug }));
+/* Only clusters with something to list get a page (MIN_CLUSTER_PROJECTS).
+   dynamicParams=false below turns the rest into 404s rather than empty
+   listings — a thin page is worse for the reader and for the index than
+   no page. A cluster comes back automatically once the data fills in. */
+export async function generateStaticParams() {
+  const intel = await buildScoredProjectIntel();
+  return activeApartmentClusters(Object.values(intel)).map((c) => ({ slug: c.slug }));
 }
 
 export const dynamicParams = false;
@@ -80,6 +85,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
   const allProjects = Object.values(intelMap);
   const projects: ProjectIntel[] = allProjects.filter(cluster.match);
+  if (projects.length < MIN_CLUSTER_PROJECTS) notFound();
 
   const breadcrumbs = breadcrumbLd([
     { name: "Home", path: "" },
