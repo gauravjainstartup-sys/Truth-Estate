@@ -1,4 +1,4 @@
-name: Production data refresh (6h cron)
+name: Production data refresh (hourly backstop)
 
 # ── WHY THIS FILE LIVES ON MAIN WHILE PRODUCTION SERVES ANOTHER BRANCH ──
 #
@@ -9,10 +9,10 @@ name: Production data refresh (6h cron)
 # itself would therefore rebuild MAIN and silently revert production.
 #
 # So this file does the ONE thing a main-side schedule can safely do:
-# every 6 hours it DISPATCHES deploy-cloudrun.yml on the production
+# every hour it DISPATCHES deploy-cloudrun.yml on the production
 # branch with refresh_snapshot=true — the exact dispatch the founder has
 # been running by hand — so fresh Supabase data (News & Updates, prices,
-# scores) reaches the baked site ~4×/day with no manual step.
+# scores) reaches the baked site within the hour with no manual step.
 #
 # It deploys whatever that branch's HEAD is; it never builds main and
 # never touches code. At branch reconciliation, retire this file and
@@ -21,7 +21,15 @@ name: Production data refresh (6h cron)
 on:
   schedule:
     # Off the :00 mark deliberately — GitHub delays top-of-hour crons the most.
-    - cron: "23 */6 * * *"
+    #
+    # HOURLY, not 6-hourly. publish-wire.yml is now the fast path — the
+    # ingestion gateway triggers a rebuild the moment a batch changes
+    # something — so this is the BACKSTOP, for writes that bypass the
+    # gateway (a dashboard edit, or a pipeline still holding a direct
+    # key). Hourly is affordable because the probe is ~5KB and skips
+    # without deploying when nothing changed, and because this is a
+    # public repo, so the runner minutes are free.
+    - cron: "23 * * * *"
   # Manual "Run workflow" button doubles as the wiring test.
   workflow_dispatch:
 
@@ -36,7 +44,7 @@ jobs:
       actions: write
     steps:
       # ── Dirty probe ────────────────────────────────────────────────
-      # A rebuild pulls a ~7.4MB snapshot from Supabase; most 6h ticks
+      # A rebuild pulls a ~7.4MB snapshot from Supabase; on most ticks
       # nothing has changed, so probe first (~1KB): the newest updated_at
       # across the stamped tables vs the live site's /build-stamp.json
       # (emitted at bake time). Skip when the bake already has the newest

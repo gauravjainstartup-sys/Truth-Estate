@@ -1,0 +1,70 @@
+name: Publish News & Updates (event-driven)
+
+# ── WHY THIS EXISTS ────────────────────────────────────────────────
+#
+# News & Updates is BAKED into the pages at build time, not fetched in
+# the browser — it has to be in the HTML for the NewsArticle markup to
+# be crawlable, which is the whole point of it. So a database write on
+# its own changes nothing on the live site; something must rebuild.
+#
+# refresh-prod-cron.yml polls for that on a timer. This file is the
+# fast path: the wire-ingest edge function calls it the moment a batch
+# actually changed something, so research reaches the site in minutes
+# instead of waiting out a polling interval. The cron stays on as the
+# backstop for anything that writes to the table WITHOUT going through
+# the gateway (a dashboard edit, or a pipeline still using a direct key).
+#
+# ── WHY THE 90-SECOND WAIT ─────────────────────────────────────────
+#
+# A research run typically posts several batches back to back. Without
+# debouncing that is one full production rebuild per batch. The wait,
+# combined with `cancel-in-progress: true`, coalesces a burst into ONE
+# deploy: each new call cancels the waiting run before it dispatches,
+# and only the last one survives to trigger the build. Cost of the wait
+# is ~90s added latency; benefit is not deploying five times in a row.
+#
+# ── WHY IT DISPATCHES RATHER THAN BUILDS ───────────────────────────
+#
+# Same reason as refresh-prod-cron.yml: this file must live on main
+# (that is where dispatchable workflows are registered), but production
+# serves claude/database-schema-summary-fhhb3k. Building here would
+# publish MAIN and silently revert production. So it only ever
+# dispatches deploy-cloudrun.yml against the production branch, and
+# never builds anything itself.
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "What triggered this (batch name, counts)"
+        type: string
+        required: false
+        default: "manual"
+
+concurrency:
+  group: publish-wire
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Coalesce a burst of batches into one deploy
+        run: |
+          echo "Trigger: ${{ inputs.reason }}"
+          echo "Waiting 90s — a later batch in the same run will cancel this and take over."
+          sleep 90
+
+      - name: Dispatch the production rebuild
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run deploy-cloudrun.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref claude/database-schema-summary-fhhb3k \
+            -f refresh_snapshot=true \
+            -f staging_tag=
+          echo "Dispatched production rebuild (${{ inputs.reason }})."
+          { echo "### 📰 News publish triggered"; echo ""; echo "${{ inputs.reason }}"; } >> "$GITHUB_STEP_SUMMARY"
