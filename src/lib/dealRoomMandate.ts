@@ -8,6 +8,21 @@
    value must never throw: every accessor fails soft to null.
    ════════════════════════════════════════════════════════════════ */
 
+/* ── The cohort, in ONE place ────────────────────────────────────────
+   Hand-maintained scarcity, per the founder: bump SEATS_CLAIMED as
+   mandates land — never automatically, never speculatively. Every
+   screen that mentions the cohort reads THESE values: the landing's
+   seat dots, the wizard's sidebar, the tracker's eyebrow. Two screens
+   disagreeing about how many seats remain reads as fake scarcity,
+   which is worse than no scarcity at all. */
+export const COHORT = "August cohort";
+export const SEATS_TOTAL = 10;
+export const SEATS_CLAIMED = 6;
+export const SEATS_LEFT = SEATS_TOTAL - SEATS_CLAIMED;
+/* The canonical sentence, verbatim from the founder. Render it whole
+   wherever it fits; screens too narrow for it use the same numbers. */
+export const COHORT_LINE = `${COHORT} · ${SEATS_LEFT} of ${SEATS_TOTAL} seats left — a limited number of mandates, personally run.`;
+
 export const MANDATE_KEY = "truthEstate.dealRoomMandate";
 
 export type SavedMandate = {

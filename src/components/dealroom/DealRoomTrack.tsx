@@ -19,9 +19,9 @@ import { useEffect, useState } from "react";
 import SiteHeader from "./SiteHeader";
 import { basePath } from "@/lib/site";
 import { track } from "@/lib/events";
-import { loadMandate, type SavedMandate } from "@/lib/dealRoomMandate";
+import { loadMandate, type SavedMandate, COHORT } from "@/lib/dealRoomMandate";
 
-const COHORT = "August cohort";
+
 
 type StageState = "done" | "current" | "upcoming";
 type Stage = { title: string; when: string; body: string };

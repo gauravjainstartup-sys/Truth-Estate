@@ -22,13 +22,11 @@ import { track } from "@/lib/events";
 import { saveLead, isSignedIn, loadAccount } from "@/lib/journey";
 import { getSession, signInWithGoogle, normalisePhone, prettyPhone } from "@/lib/phoneAuth";
 import { sendOtp, verifyOtp, OTP_LENGTH } from "@/lib/shortlistAuth";
-import { saveMandate } from "@/lib/dealRoomMandate";
+import { saveMandate, COHORT, SEATS_LEFT, SEATS_TOTAL } from "@/lib/dealRoomMandate";
 
-/* Cohort capacity is real — keep SEATS_CLAIMED truthful and bump it by hand as
-   mandates land (concierge-maintained). Scarcity must never be faked. */
-const SEATS_TOTAL = 10;
-const SEATS_CLAIMED = 0;
-const COHORT = "August cohort";
+/* Cohort identity + seat count come from the ONE shared source in
+   dealRoomMandate.ts — this screen said "10 seats left" while the
+   landing a click earlier said 4, which reads as fake scarcity. */
 
 const CITIES = ["Gurugram", "Delhi", "Noida", "Greater Noida", "Faridabad", "GIFT City (Gandhinagar)", "Other — NCR"];
 const DIAL = [
@@ -436,7 +434,7 @@ export default function DealRoomMandate() {
               ))}
             </div>
             <div className="mt-6 hidden rounded-lg border border-[#c9a96e]/20 px-3 py-2.5 font-mono text-[0.6rem] uppercase leading-relaxed tracking-[0.1em] text-[#d99a4e] md:block">
-              {COHORT}<br />{SEATS_TOTAL - SEATS_CLAIMED} seats left
+              {COHORT}<br />{SEATS_LEFT} of {SEATS_TOTAL} seats left
             </div>
           </aside>
 

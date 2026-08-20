@@ -17,6 +17,7 @@
 import { useState } from "react";
 import SiteHeader from "./SiteHeader";
 import { DEAL_ROOM_CSS } from "./dealRoomLandingCss";
+import { COHORT, SEATS_CLAIMED, SEATS_LEFT, SEATS_TOTAL } from "@/lib/dealRoomMandate";
 
 /* Overrides on top of the prototype's scoped CSS:
    · route type through the site's loaded fonts (Playfair + Geist),
@@ -55,8 +56,9 @@ const OVERRIDES = `
 `;
 
 const TABS = ["Audit", "Recommend", "Strategise", "Compete", "Close"];
-const SEATS_TOTAL = 10;
-const SEATS_TAKEN = 6;
+// Cohort numbers live in ONE place — src/lib/dealRoomMandate.ts —
+// so this screen can never disagree with the wizard or the tracker.
+
 
 const trimNum = (n: number) => n.toFixed(2).replace(/\.?0+$/, "");
 const inr = (lakhs: number) => (lakhs >= 100 ? "₹" + trimNum(lakhs / 100) + " Cr" : "₹" + Math.round(lakhs) + " L");
@@ -93,9 +95,9 @@ export default function DealRoomLanding({ onEnter }: { onEnter: () => void }) {
               <div className="fomo">
                 <span className="pulse" aria-hidden="true" />
                 <div className="seatbar" aria-hidden="true">
-                  {Array.from({ length: SEATS_TOTAL }).map((_, i) => <i key={i} className={i < SEATS_TAKEN ? "f" : ""} />)}
+                  {Array.from({ length: SEATS_TOTAL }).map((_, i) => <i key={i} className={i < SEATS_CLAIMED ? "f" : ""} />)}
                 </div>
-                <span className="txt">{"August cohort · "}<b>{SEATS_TOTAL - SEATS_TAKEN} of {SEATS_TOTAL} seats left</b>{" — a limited number of mandates, personally run."}</span>
+                <span className="txt">{`${COHORT} · `}<b>{SEATS_LEFT} of {SEATS_TOTAL} seats left</b>{" — a limited number of mandates, personally run."}</span>
               </div>
             </div>
             <div>
