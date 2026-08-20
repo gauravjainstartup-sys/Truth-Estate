@@ -8,7 +8,7 @@ import { buildScoredProjectIntel } from "@/lib/compareData";
 import { fetchTrackedStats } from "@/lib/supabase";
 import type { ProjectIntel } from "@/lib/projects";
 import { breadcrumbLd, collectionLd, ldJson } from "@/lib/seo";
-import { SITE_URL } from "@/lib/site";
+import { basePath, SITE_URL } from "@/lib/site";
 
 /* Only clusters with something to list get a page (MIN_CLUSTER_PROJECTS).
    dynamicParams=false below turns the rest into 404s rather than empty
@@ -136,6 +136,18 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     of,
   };
 
+  /* ── THE ADJACENT FILES — the forward flow ─────────────────────────
+     Every lander ends by opening the others: the reader who exhausted
+     "4 BHK in Gurugram" moves sideways to a budget cut or a corridor
+     cut instead of leaving, and the 24 pages link each other into one
+     mesh — internal links are how the cluster reads as a body of work
+     rather than 24 orphans. Only ACTIVE clusters are offered (same
+     gate as the build), so this can never link a page that 404s. */
+  const adjacent = activeApartmentClusters(allProjects).filter((c) => c.slug !== cluster.slug);
+  const adjBudget = adjacent.filter((c) => c.pricePage);
+  const adjCorridor = adjacent.filter((c) => !c.pricePage && /golf-course|dwarka|spr|new-gurgaon/.test(c.slug));
+  const adjType = adjacent.filter((c) => !adjBudget.includes(c) && !adjCorridor.includes(c));
+
   const breadcrumbs = breadcrumbLd([
     { name: "Home", path: "" },
     { name: "Intelligence", path: "/intelligence" },
@@ -230,6 +242,51 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
                 ))}
               </div>
             </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── The Adjacent Files — same audit, different cut ── */}
+      {adjacent.length > 0 && (
+        <section aria-labelledby="adjacent-heading" className="border-t border-[#1a1a1a]/10 bg-[#F5F0E8] pb-24 pt-12">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <span className="font-mono text-[0.68rem] uppercase tracking-[0.14em] text-[#9a7a2e]">
+              The Adjacent Files
+            </span>
+            <h2 id="adjacent-heading" className="mt-2 font-serif text-[1.8rem] font-medium text-[#1a1a1a]">
+              Same audit, different cut
+            </h2>
+            <p className="mt-2 max-w-2xl text-[0.88rem] font-light leading-relaxed text-[#1a1a1a]/55">
+              Every page below runs on the same scored files — sliced by size, budget or corridor.
+            </p>
+            <div className="mt-8 grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">
+              {([
+                ["By configuration", adjType],
+                ["By budget", adjBudget],
+                ["By corridor", adjCorridor],
+              ] as const).map(([label, list]) =>
+                list.length > 0 ? (
+                  <nav key={label} aria-label={label}>
+                    <h3 className="font-mono text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[#1a1a1a]/45">{label}</h3>
+                    <ul className="mt-3.5 space-y-2.5">
+                      {list.map((c) => (
+                        <li key={c.slug}>
+                          <a href={`${basePath}/apartments/${c.slug}`} className="text-[0.86rem] font-light leading-snug text-[#1a1a1a]/70 underline-offset-4 transition-colors hover:text-[#9a7a2e] hover:underline">
+                            {c.h1}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </nav>
+                ) : null,
+              )}
+            </div>
+            <p className="mt-10 border-t border-[#1a1a1a]/8 pt-6 text-[0.84rem] font-light text-[#1a1a1a]/55">
+              Or start from the whole universe —{" "}
+              <a href={`${basePath}/intelligence/projects`} className="text-[#9a7a2e] underline-offset-4 hover:underline">
+                all {allProjects.length} audited files, one Truth Score each →
+              </a>
+            </p>
           </div>
         </section>
       )}
