@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- CONCEPT MOCK — catalogue filter redesign. NOT part of the app: one
+     self-contained file under /mock/, imports nothing, imported by
+     nothing, deletable without trace. Data is a frozen copy of the
+     107 baked projects (20 Aug 2026); nothing here reads Supabase.
+     Noindex/nofollow — never a crawlable Truth Estate page. -->
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="theme-color" content="#F5F0E8">
+<title>Catalogue Filters</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Geist:wght@300;400;500&family=Geist+Mono:wght@400;500&display=swap">
+
+</head>
+<body>
+
+<style>
+  /* Truth Estate's own light system, painted explicitly — this mock
+     deliberately commits to the site's single catalogue look. */
+  :root {
+    --page: #F5F0E8; --card: #ffffff;
+    --ink: #1a1a1a; --ink60: rgba(26,26,26,.6); --ink40: rgba(26,26,26,.4);
+    --rule: rgba(26,26,26,.1); --rule06: rgba(26,26,26,.06);
+    --gold-ink: #9a7a2e; --gold: #c9a96e; --green: #1e6b45;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--ink);
+    font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-weight: 300;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  header.site {
+    position: sticky; top: 0; z-index: 40; backdrop-filter: blur(4px);
+    background: rgba(245,240,232,.92); border-bottom: 1px solid var(--rule06);
+  }
+  header.site .in { max-width: 80rem; margin: 0 auto; display: flex; align-items: center; gap: 1rem; padding: .9rem 1.5rem; }
+  .logo { font-family: "Playfair Display", serif; font-weight: 600; letter-spacing: .34em; font-size: .95rem; }
+  .logo small { display: block; letter-spacing: .5em; font-size: .42rem; color: var(--ink60); font-family: "Geist Mono", monospace; }
+  .cta {
+    margin-left: auto; background: var(--green); color: #fff; border: 0; border-radius: 3px;
+    padding: .62rem 1.1rem; font-size: .74rem; font-weight: 500; letter-spacing: .04em; cursor: pointer;
+  }
+
+  .wrap { max-width: 80rem; margin: 0 auto; padding: 1.5rem 1.5rem 14vh; }
+  .crumb { display: flex; gap: .5rem; font-size: .74rem; color: var(--ink40); }
+  .crumb b { font-weight: 400; color: var(--ink60); }
+  .eyebrow { margin-top: 1rem; font-size: 10px; font-weight: 500; letter-spacing: .3em; text-transform: uppercase; color: var(--gold); font-family: Geist, sans-serif; }
+  h1 {
+    margin: .6rem 0 0; font-family: "Playfair Display", ui-serif, Georgia, serif;
+    font-weight: 500; font-size: clamp(1.9rem, 3vw, 2.6rem); line-height: 1.08; letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  .meta { margin-top: .65rem; font-size: .8rem; color: rgba(26,26,26,.55); line-height: 1.6; }
+
+  /* ── the filter bar ── */
+  .bar {
+    position: sticky; top: 53px; z-index: 30; margin: 1.1rem -1.5rem 0; padding: .7rem 1.5rem;
+    background: rgba(245,240,232,.95); backdrop-filter: blur(4px); border-bottom: 1px solid var(--rule06);
+    display: grid; grid-template-columns: 1fr; gap: .55rem;
+  }
+  @media (min-width: 900px) { .bar { grid-template-columns: minmax(200px,1.4fr) repeat(4, minmax(120px,1fr)) auto; align-items: center; } }
+  .search { position: relative; }
+  .search svg { position: absolute; left: .8rem; top: 50%; translate: 0 -50%; width: 15px; height: 15px; color: var(--ink40); pointer-events: none; }
+  .search input {
+    width: 100%; border: 1px solid rgba(26,26,26,.14); background: var(--card); border-radius: 6px;
+    padding: .72rem .8rem .72rem 2.2rem; font: inherit; font-size: .88rem; color: var(--ink); outline: none;
+  }
+  .search input:focus-visible { border-color: var(--gold); }
+  .sel { display: flex; flex-direction: column; gap: .18rem; }
+  .sel label { font-family: "Geist Mono", monospace; font-size: .54rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink40); }
+  .sel select {
+    width: 100%; border: 1px solid rgba(26,26,26,.14); background: var(--card); border-radius: 6px;
+    padding: .55rem .6rem; font: inherit; font-size: .82rem; color: var(--ink); outline: none; cursor: pointer;
+  }
+  .sel select:focus-visible { border-color: var(--gold); }
+  .sortwrap { justify-self: end; }
+
+  /* pills + url + mesh */
+  .state { margin-top: .8rem; display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+  .pill {
+    display: inline-flex; align-items: center; gap: .4rem; border: 1px solid rgba(30,107,69,.35);
+    background: rgba(30,107,69,.07); color: var(--green); border-radius: 999px;
+    padding: .28rem .7rem; font-size: .74rem; cursor: pointer;
+  }
+  .pill i { font-style: normal; opacity: .55; }
+  .clear { border: 0; background: none; font: inherit; font-size: .74rem; color: var(--gold-ink); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+  .count { font-size: .76rem; color: rgba(26,26,26,.45); }
+  .url {
+    margin-top: .45rem; font-family: "Geist Mono", monospace; font-size: .62rem; color: var(--ink40);
+    overflow-x: auto; white-space: nowrap;
+  }
+  .url b { color: var(--gold-ink); font-weight: 400; }
+  .mesh { margin-top: .45rem; font-size: .78rem; color: var(--ink60); }
+  .mesh a { color: var(--gold-ink); text-decoration: underline; text-underline-offset: 3px; }
+
+  /* grid + cards, ProjectOptionCard-lite */
+  .grid { margin-top: 1.1rem; display: grid; grid-template-columns: 1fr; gap: 1.35rem; }
+  @media (min-width: 640px) { .grid { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 1024px) { .grid { grid-template-columns: 1fr 1fr 1fr; } }
+  .card {
+    display: block; background: var(--card); border: 1px solid var(--rule); border-radius: 8px;
+    padding: 1.3rem 1.35rem 1.15rem; transition: border-color .15s ease, transform .15s ease;
+  }
+  .card:hover { border-color: rgba(26,26,26,.28); transform: translateY(-1px); }
+  .card .top { display: flex; align-items: flex-start; justify-content: space-between; gap: .8rem; }
+  .tag {
+    font-family: "Geist Mono", monospace; font-size: .56rem; letter-spacing: .12em; text-transform: uppercase;
+    padding: .26rem .55rem; border-radius: 3px; border: 1px solid;
+  }
+  .tag.buy { color: var(--green); border-color: rgba(30,107,69,.4); background: rgba(30,107,69,.06); }
+  .tag.watch { color: var(--gold-ink); border-color: rgba(154,122,46,.4); background: rgba(201,169,110,.1); }
+  .score { text-align: right; }
+  .score b { display: block; font-family: "Playfair Display", serif; font-weight: 500; font-size: 1.9rem; line-height: 1; }
+  .score span { font-family: "Geist Mono", monospace; font-size: .46rem; letter-spacing: .22em; color: var(--ink40); }
+  .card h3 { margin: 1rem 0 0; font-family: "Playfair Display", serif; font-weight: 500; font-size: 1.16rem; line-height: 1.25; }
+  .addr { margin-top: .2rem; font-size: .74rem; color: var(--ink40); }
+  .price { margin-top: .7rem; font-size: .95rem; font-weight: 400; }
+  .facts {
+    margin-top: .55rem; padding-top: .6rem; border-top: 1px solid var(--rule06);
+    display: flex; flex-wrap: wrap; gap: .3rem .9rem;
+    font-family: "Geist Mono", monospace; font-size: .62rem; color: rgba(26,26,26,.55);
+    font-variant-numeric: tabular-nums;
+  }
+  .facts b { font-weight: 500; color: var(--ink60); }
+
+  .empty { margin-top: 1.4rem; border: 1px solid var(--rule); background: rgba(255,255,255,.6); border-radius: 8px; padding: 2.4rem 1.5rem; text-align: center; }
+  .empty p { margin: 0; font-family: "Playfair Display", serif; font-size: 1.1rem; color: rgba(26,26,26,.75); }
+  .empty button { margin-top: 1rem; border: 1px solid rgba(26,26,26,.15); background: none; border-radius: 3px; padding: .6rem 1.2rem; font: inherit; font-size: .78rem; color: var(--ink60); cursor: pointer; }
+
+  footer { max-width: 80rem; margin: 0 auto; padding: 0 1.5rem 3rem; font-family: "Geist Mono", monospace; font-size: .66rem; line-height: 1.7; color: var(--ink40); }
+  button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--gold-ink); outline-offset: 2px; }
+</style>
+
+<header class="site">
+  <div class="in">
+    <div class="logo">TRUTH<small>ESTATE</small></div>
+    <button class="cta" type="button">Request Independent Advice</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="crumb"><span>Intelligence</span><span>/</span><b>Projects</b></div>
+  <p class="eyebrow">Project Intelligence</p>
+  <h1>Every project, independently scored.</h1>
+  <p class="meta" id="metaline"></p>
+
+  <div class="bar">
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+      <input id="q" type="search" placeholder="Search project, developer, sector or corridor" aria-label="Search projects">
+    </div>
+    <div class="sel"><label for="f-corridor">Corridor</label><select id="f-corridor"></select></div>
+    <div class="sel"><label for="f-budget">Budget · entry</label><select id="f-budget"></select></div>
+    <div class="sel"><label for="f-config">Configuration</label><select id="f-config"></select></div>
+    <div class="sel"><label for="f-roi">Expected ROI</label><select id="f-roi"></select></div>
+    <div class="sel sortwrap"><label for="f-sort">Sort</label><select id="f-sort">
+      <option value="score">Truth Score</option><option value="priceAsc">Price · low first</option><option value="priceDesc">Price · high first</option>
+    </select></div>
+  </div>
+
+  <div class="state" id="state"></div>
+  <div class="url" id="url"></div>
+  <div class="mesh" id="mesh"></div>
+
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" hidden>
+    <p id="emptymsg">Nothing matches.</p>
+    <button type="button" id="emptyclear">Show every project</button>
+  </div>
+</div>
+
+<footer>
+  Concept mock — the catalogue with four filter dropdowns, URL-synced state and the lander mesh line.
+  All 107 projects, scores, prices and ROI figures are real (baked 20 Aug 2026); ROI is the audited
+  model&rsquo;s projected 8-yr CAGR, risk-adjusted — a projection, not a promise. Cards link to the live reports.
+</footer>
+
+<script>
+  const P = [{"n":"DLF The Arbour","d":"DLF","m":"GCE","s":87,"r":"STRONG BUY","b":[9.3,9.3],"psf":23500,"roi":12.2,"c":["4 BHK + Utility"],"addr":"Sector 63, Gurugram","slug":"gurugram-real-estate-dlf-the-arbour-golf-course-road-extension-gcre-sector-63"},{"n":"DLF Privana South","d":"DLF","m":"SPR","s":85,"r":"STRONG BUY","b":[6.8,9.5],"psf":19000,"roi":11.8,"c":["4 BHK","Penthouse"],"addr":"Sector 76/77, Gurugram","slug":"gurugram-real-estate-dlf-privana-south-southern-peripheral-road-spr-corridor-sector-76-77"},{"n":"DLF Privana North","d":"DLF","m":"SPR","s":84,"r":"STRONG BUY","b":[9.1,17.7],"psf":23000,"roi":11.7,"c":["4 BHK + SR","5 BHK Penthouse"],"addr":"Sector 76/77, Gurugram","slug":"gurugram-real-estate-dlf-privana-north-southern-peripheral-road-spr-corridor-sector-76-77"},{"n":"DLF Privana West","d":"DLF","m":"SPR","s":84,"r":"STRONG BUY","b":[6.8,6.8],"psf":19000,"roi":11.8,"c":["4 BHK"],"addr":"Sector 76/77, Gurugram","slug":"gurugram-real-estate-dlf-privana-west-southern-peripheral-road-spr-corridor-sector-76-77"},{"n":"DLF Gardencity Enclave Phase - 1","d":"DLF","m":"New Gurgaon","s":81,"r":"STRONG BUY","b":[1.6,1.8],"psf":11000,"roi":11.6,"c":["3 BHK","2 BHK"],"addr":"Sector 93, Gurugram","slug":"gurugram-real-estate-dlf-gardencity-enclave-phase-1-new-gurgaon-sector-93"},{"n":"DLF Gardencity Enclave Phase - 2","d":"DLF","m":"New Gurgaon","s":80,"r":"STRONG BUY","b":[1.5,1.5],"psf":10700,"roi":11.5,"c":["3 BHK + Servant/Store"],"addr":"Sector 93, Gurugram","slug":"gurugram-real-estate-dlf-gardencity-enclave-phase-2-new-gurgaon-sector-93"},{"n":"DLF The Dahlias","d":"DLF","m":"GCR","s":79,"r":"STRONG BUY","b":[95.7,150],"psf":100000,"roi":10.7,"c":["4 BHK","5 BHK","Duplex Penthouse"],"addr":"Sector 54, Gurugram","slug":"gurugram-real-estate-dlf-the-dahlias-golf-course-road-gcr-sector-54"},{"n":"Ashiana Amarah Phase - 3 & 3A","d":"Ashiana Group","m":"New Gurgaon","s":79,"r":"STRONG BUY","b":[1.8,2.7],"psf":13000,"roi":11.4,"c":["3 BHK + 2T","3 BHK + 3T","4 BHK + 4T"],"addr":"Sector 93, Gurugram","slug":"gurugram-real-estate-ashiana-amarah-phase-3-3a-new-gurgaon-sector-93"},{"n":"Puri Diplomatic Residences","d":"Puri Constructions","m":"Dwarka Expy","s":78,"r":"STRONG BUY","b":[4.3,6.6],"psf":19000,"roi":11.3,"c":["3 BHK + Study","4 BHK + Study"],"addr":"Sector 111, Gurugram","slug":"gurugram-real-estate-puri-diplomatic-residences-dwarka-expressway-sector-111"},{"n":"Ashiana Amarah Phase - 1 & 1A","d":"Ashiana Group","m":"New Gurgaon","s":77,"r":"STRONG BUY","b":[1.6,2.2],"psf":13000,"roi":11.2,"c":["3 BHK","4 BHK"],"addr":"Sector 93, Gurugram","slug":"gurugram-real-estate-ashiana-amarah-phase-1-1a-new-gurgaon-sector-93"},{"n":"Puri The Aravallis","d":"Puri Constructions","m":"GCE","s":77,"r":"STRONG BUY","b":[4.5,5.5],"psf":20000,"roi":11.2,"c":["3 BHK","4 BHK"],"addr":"Sector 61, Gurugram","slug":"gurugram-real-estate-puri-the-aravallis-golf-course-road-extension-gcre-sector-61"},{"n":"Ashiana Amarah Phase - 2","d":"Ashiana Group","m":"New Gurgaon","s":77,"r":"STRONG BUY","b":[2,2.4],"psf":13000,"roi":11.2,"c":["3 BHK"],"addr":"Sector 93, Gurugram","slug":"gurugram-real-estate-ashiana-amarah-phase-2-new-gurgaon-sector-93"},{"n":"Ashiana Aaroham Phase - 1","d":"Ashiana Group","m":"New Gurgaon","s":77,"r":"STRONG BUY","b":[3,3.9],"psf":14000,"roi":11.2,"c":["3 BHK","4 BHK"],"addr":"Sector 80, Gurugram","slug":"gurugram-real-estate-ashiana-aaroham-phase-1-new-gurgaon-sector-80"},{"n":"Sobha City Phase - 6","d":"Sobha","m":"Dwarka Expy","s":76,"r":"STRONG BUY","b":[2.7,5.6],"psf":19463,"roi":10.9,"c":["2 BHK","3 BHK","3 BHK + Lounge","4 BHK","4 BHK + Lounge + Utility"],"addr":"Sector 108, Gurugram","slug":"gurugram-real-estate-sobha-city-phase-6-dwarka-expressway-sector-108"},{"n":"Ashiana Amarah Phase - 4","d":"Ashiana Group","m":"New Gurgaon","s":75,"r":"STRONG BUY","b":[1.9,2.2],"psf":13000,"roi":10.7,"c":["3 BHK"],"addr":"Sector 93, Gurugram","slug":"gurugram-real-estate-ashiana-amarah-phase-4-new-gurgaon-sector-93"},{"n":"M3M Crown Phase - 1","d":"M3M","m":"Dwarka Expy","s":75,"r":"STRONG BUY","b":[2.4,3.8],"psf":15000,"roi":11,"c":["2 BHK + Utility","3 BHK + Study","3.5 BHK","3 BHK + Study + Utility","4 BHK + Utility","4.5 BHK"],"addr":"Sector 111, Gurugram","slug":"gurugram-real-estate-m3m-crown-phase-1-dwarka-expressway-sector-111"},{"n":"M3M Altitude","d":"M3M","m":"GCE","s":75,"r":"STRONG BUY","b":[7.4,18],"psf":22494,"roi":11,"c":["3 BHK + Study + Servant Quarter","4 BHK + Study + Servant Quarter","4.5 BHK","5 BHK Duplex Penthouse"],"addr":"Sector 65, Gurugram","slug":"gurugram-real-estate-m3m-altitude-golf-course-road-extension-gcre-sector-65"},{"n":"M3M Golf Hills Phase - 2","d":"M3M","m":"SPR","s":74,"r":"WATCHLIST","b":[2,3.7],"psf":14000,"roi":10.9,"c":["2.5 BHK + Study","3.5 BHK","3 BHK + Servant","4 BHK + Study","4.5 BHK + Servant"],"addr":"Sector 79, Gurugram","slug":"gurugram-real-estate-m3m-golf-hills-phase-2-southern-peripheral-road-spr-corridor-sector-79"},{"n":"Ashiana Anmol Phase - 3","d":"Ashiana Group","m":"Sohna","s":74,"r":"WATCHLIST","b":[1.3,2],"psf":10000,"roi":10.9,"c":["2 BHK","3 BHK"],"addr":"Sector 33, Gurugram","slug":"gurugram-real-estate-ashiana-anmol-phase-3-sohna-town-south-of-gurugram-sector-33"},{"n":"M3M Golf Hills Phase - 1","d":"M3M","m":"SPR","s":74,"r":"WATCHLIST","b":[1.9,3.6],"psf":13500,"roi":10.9,"c":["2 BHK + Study","3 BHK + Study","3 BHK + Servant","4 BHK + Study"],"addr":"Sector 79/ 79B, Gurugram","slug":"gurugram-real-estate-m3m-golf-hills-phase-1-southern-peripheral-road-spr-corridor-sector-79-79b"},{"n":"Sobha City Phase - 5","d":"Sobha","m":"Dwarka Expy","s":74,"r":"WATCHLIST","b":[2.4,5.2],"psf":17410,"roi":10.8,"c":["2 BHK","3 BHK","4 BHK"],"addr":"Sector 108, Gurugram","slug":"gurugram-real-estate-sobha-city-phase-5-dwarka-expressway-sector-108"},{"n":"Elan The Presidential","d":"Elan","m":"Dwarka Expy","s":73,"r":"WATCHLIST","b":[4.4,13.3],"psf":18000,"roi":10.6,"c":["3.5 BHK","4.5 BHK","3 BHK Duplex Penthouse","5.5 BHK","4 BHK Duplex Penthouse","5 BHK Duplex Penthouse"],"addr":"Sector 106, Gurugram","slug":"gurugram-real-estate-elan-the-presidential-dwarka-expressway-sector-106"},{"n":"Krisumi Waterfall Suites","d":"Krisumi Corporation Private Limited","m":"Dwarka Expy","s":73,"r":"WATCHLIST","b":[1.7,2.1],"psf":18000,"roi":10.4,"c":["1 BHK/Studio"],"addr":"Gurugram","slug":"gurugram-real-estate-krisumi-waterfall-suites-dwarka-expressway-gurugram"},{"n":"Elan the Emperor","d":"Elan","m":"Dwarka Expy","s":73,"r":"WATCHLIST","b":[10.1,24.8],"psf":24000,"roi":10.8,"c":["4.5 BHK","5.5 BHK","4 BHK Penthouse","5 BHK Penthouse"],"addr":"Sector 106, Gurugram","slug":"gurugram-real-estate-elan-the-emperor-dwarka-expressway-sector-106"},{"n":"M3M Mansion Phase - 1","d":"M3M","m":"Dwarka Expy","s":72,"r":"WATCHLIST","b":[2.9,12.2],"psf":18000,"roi":10.7,"c":["3.5 BHK","4.5 BHK","3 BHK","2 BHK","4 BHK","5 BHK"],"addr":"Sector 113, Gurugram","slug":"gurugram-real-estate-m3m-mansion-phase-1-dwarka-expressway-sector-113"},{"n":"Emaar Amaris","d":"Emaar","m":"GCE","s":72,"r":"WATCHLIST","b":[2.4,4],"psf":19000,"roi":10.5,"c":["2 BHK","3 BHK"],"addr":"Sector 62, Gurugram","slug":"gurugram-real-estate-emaar-amaris-golf-course-road-extension-gcre-sector-62"},{"n":"Emaar The 88","d":"Emaar","m":"Dwarka Expy","s":72,"r":"WATCHLIST","b":[1.9,2.5],"psf":14000,"roi":10.7,"c":["2 BHK","3 BHK"],"addr":"Sector 112, Gurugram","slug":"gurugram-real-estate-emaar-the-88-dwarka-expressway-sector-112"},{"n":"Ashiana Aaroham Phase - 2","d":"Ashiana Group","m":"New Gurgaon","s":72,"r":"WATCHLIST","b":[1.9,2.7],"psf":14000,"roi":10.7,"c":["3 BHK","4 BHK"],"addr":"Sector 80, Gurugram","slug":"gurugram-real-estate-ashiana-aaroham-phase-2-new-gurgaon-sector-80"},{"n":"Oberoi Realty 360 North","d":"Oberoi Realty","m":"GCE","s":72,"r":"WATCHLIST","b":[18.8,28.8],"psf":33500,"roi":10.7,"c":["4 BHK + Studio","5 BHK + Studio"],"addr":"Sector 58, Gurugram","slug":"gurugram-real-estate-oberoi-realty-360-north-golf-course-road-extension-gcre-sector-58"},{"n":"Elan The Statement","d":"Elan","m":"Sohna Road","s":72,"r":"WATCHLIST","b":[11.1,19.2],"psf":25900,"roi":10.7,"c":["4 BHK","4 BHK Penthouse"],"addr":"Sector 49, Gurugram","slug":"gurugram-real-estate-elan-the-statement-sohna-road-sector-49"},{"n":"Krisumi Waterside Residences","d":"Krisumi Corporation Private Limited","m":"Dwarka Expy","s":72,"r":"WATCHLIST","b":[3.7,15],"psf":21000,"roi":10.2,"c":["2 BHK","2 BHK + Study","3 BHK","3 BHK + Study","4 BHK + Servant","Penthouse"],"addr":"Gurugram","slug":"gurugram-real-estate-krisumi-waterside-residences-dwarka-expressway-gurugram"},{"n":"Smartworld One DXP Phase - 2","d":"Smartworld","m":"Dwarka Expy","s":71,"r":"WATCHLIST","b":[1.8,4.3],"psf":13500,"roi":10.6,"c":["2 BHK","3 BHK","3.5 BHK XL Deck","3.5 BHK XXL Deck","4 BHK","3.5 BHK","4.5 BHK Grand","4.5 BHK Typical"],"addr":"Sector 113, Gurugram","slug":"gurugram-real-estate-smartworld-one-dxp-phase-2-dwarka-expressway-sector-113"},{"n":"Emaar Urban Oasis Phase - 4","d":"Emaar","m":"GCE","s":71,"r":"WATCHLIST","b":[2.5,8.8],"psf":29000,"roi":10.3,"c":["2 BHK","3 BHK","4 BHK"],"addr":"Sector 62, Gurugram","slug":"gurugram-real-estate-emaar-urban-oasis-phase-4-golf-course-road-extension-gcre-sector-62"},{"n":"Signature Global Titanium SPR","d":"Signature Global","m":"SPR","s":71,"r":"WATCHLIST","b":[4.9,11.2],"psf":17500,"roi":9.9,"c":["3.5 BHK","4.5 BHK","4 BHK Duplex Penthouse","5 BHK Duplex Penthouse"],"addr":"Sector 71, Gurugram","slug":"gurugram-real-estate-signature-global-titanium-spr-southern-peripheral-road-spr-corridor-sector-71"},{"n":"Krisumi Waterfall Suites-II","d":"Krisumi Corporation Private Limited","m":"Dwarka Expy","s":71,"r":"WATCHLIST","b":[2,21.7],"psf":21000,"roi":9.9,"c":["1 BHK/Studio","4 BHK"],"addr":"Gurugram","slug":"gurugram-real-estate-krisumi-waterfall-suites-ii-dwarka-expressway-gurugram"},{"n":"Signature Global De-Luxe DXP","d":"Signature Global","m":"Dwarka Expy","s":70,"r":"WATCHLIST","b":[3.3,4.4],"psf":13500,"roi":9.9,"c":["3 BHK","4 BHK"],"addr":"Sector 37D, Gurugram","slug":"gurugram-real-estate-signature-global-de-luxe-dxp-dwarka-expressway-sector-37d"},{"n":"Emaar Urban Oasis - PHASE 1 & 2","d":"Emaar","m":"GCE","s":70,"r":"WATCHLIST","b":[3.6,8.9],"psf":17000,"roi":10.2,"c":["3 BHK","3 BHK + Utility","4 BHK + Utility","3 BHK Simplex","4 BHK Simplex"],"addr":"Sector 62, Gurugram","slug":"gurugram-real-estate-emaar-urban-oasis-phase-1-2-golf-course-road-extension-gcre-sector-62"},{"n":"M3M Capital Phase - 2","d":"M3M","m":"Dwarka Expy","s":70,"r":"WATCHLIST","b":[2,3.4],"psf":15000,"roi":10.4,"c":["2.5 BHK","3.5 BHK","4.5 BHK"],"addr":"Sector 113, Gurugram","slug":"gurugram-real-estate-m3m-capital-phase-2-dwarka-expressway-sector-113"},{"n":"Smartworld One DXP","d":"Smartworld","m":"Dwarka Expy","s":70,"r":"WATCHLIST","b":[2.1,4.5],"psf":15000,"roi":10.5,"c":["2 BHK","2.5 BHK","3 BHK","4 BHK","3.5 BHK","4.5 BHK"],"addr":"Sector 113, Gurugram","slug":"gurugram-real-estate-smartworld-one-dxp-dwarka-expressway-sector-113"},{"n":"M3M Trump Towers - 1","d":"M3M","m":"GCE","s":70,"r":"WATCHLIST","b":[12.3,21.2],"psf":35000,"roi":9,"c":["3 BHK","4 BHK","4 BHK + Lounge"],"addr":"Sector 65, Gurugram","slug":"gurugram-real-estate-m3m-trump-towers-1-golf-course-road-extension-gcre-sector-65"},{"n":"Smartworld Sky Arc","d":"Smartworld","m":"SPR","s":69,"r":"WATCHLIST","b":[3.9,5.5],"psf":16729,"roi":9.7,"c":["3 BHK","3.5 BHK","4.5 BHK"],"addr":"Sector 69, Gurugram","slug":"gurugram-real-estate-smartworld-sky-arc-southern-peripheral-road-spr-corridor-sector-69"},{"n":"Delphine Central Park Estates Phase - 2","d":"Central Park","m":"Dwarka Expy","s":69,"r":"WATCHLIST","b":[3,4.8],"psf":29000,"roi":10,"c":["Studio","1 BHK"],"addr":"Sector 104, Gurugram","slug":"gurugram-real-estate-delphine-central-park-estates-phase-2-dwarka-expressway-sector-104"},{"n":"Ashiana Amarah Phase - 5","d":"Ashiana Group","m":"New Gurgaon","s":69,"r":"WATCHLIST","b":[1.9,2.7],"psf":13000,"roi":10,"c":["3 BHK","4 BHK"],"addr":"Sector 93, Gurugram","slug":"gurugram-real-estate-ashiana-amarah-phase-5-new-gurgaon-sector-93"},{"n":"Whiteland Blissville Phase - 2","d":"Whiteland","m":"SPR","s":69,"r":"WATCHLIST","b":[2,2.5],"psf":15000,"roi":10.4,"c":["3 BHK"],"addr":"Sector 76, Gurugram","slug":"gurugram-real-estate-whiteland-blissville-phase-2-southern-peripheral-road-spr-corridor-sector-76"},{"n":"Whiteland Blissville Phase - 3","d":"Whiteland","m":"SPR","s":69,"r":"WATCHLIST","b":[2,2.6],"psf":15500,"roi":10.4,"c":["3 BHK"],"addr":"Sector 76, Gurugram","slug":"gurugram-real-estate-whiteland-blissville-phase-3-southern-peripheral-road-spr-corridor-sector-76"},{"n":"Conscient Elevate Reserve","d":"Conscient","m":"GCE","s":69,"r":"WATCHLIST","b":[5.2,6.5],"psf":19000,"roi":9.8,"c":["3 BHK","4 BHK"],"addr":"Sector 62, Gurugram","slug":"gurugram-real-estate-conscient-elevate-reserve-golf-course-road-extension-gcre-sector-62"},{"n":"Godrej Air Phase - 2","d":"Godrej","m":"New Gurgaon","s":68,"r":"WATCHLIST","b":[1.3,3.5],"psf":13466,"roi":10.3,"c":["1 BHK","2 BHK","3 BHK","3 BHK + Utility","4 BHK + Utility"],"addr":"Sector 85, Gurugram","slug":"gurugram-real-estate-godrej-air-phase-2-new-gurgaon-sector-85"},{"n":"Central Park Bignonia Towers","d":"Central Park","m":"Sohna","s":68,"r":"WATCHLIST","b":[7.2,10.6],"psf":19000,"roi":9.5,"c":["3 BHK","4 BHK"],"addr":"Sector 32, Gurugram","slug":"gurugram-real-estate-central-park-bignonia-towers-sohna-town-south-of-gurugram-sector-32"},{"n":"Whiteland the Aspen","d":"Whiteland","m":"SPR","s":68,"r":"WATCHLIST","b":[3.1,17],"psf":13500,"roi":10.3,"c":["3 BHK","4 BHK","5 BHK"],"addr":"Sector 76, Gurugram","slug":"gurugram-real-estate-whiteland-the-aspen-southern-peripheral-road-spr-corridor-sector-76"},{"n":"Ashiana Mulberry Phase - 4","d":"Ashiana Group","m":"Sohna","s":68,"r":"WATCHLIST","b":[2.3,2.9],"psf":12500,"roi":10.2,"c":["3 BHK","3 BHK + Servant","3 BHK + Servant + Deck Extra"],"addr":"Sector 2, Gurugram","slug":"gurugram-real-estate-ashiana-mulberry-phase-4-sohna-town-south-of-gurugram-sector-2"},{"n":"Smartworld Trump Residences","d":"Smartworld","m":"SPR","s":68,"r":"WATCHLIST","b":[9.6,15.3],"psf":31000,"roi":9.7,"c":["3 BHK","4 BHK"],"addr":"Sector 69, Gurugram","slug":"gurugram-real-estate-smartworld-trump-residences-southern-peripheral-road-spr-corridor-sector-69"},{"n":"Emaar Urban Ascent","d":"Emaar","m":"Dwarka Expy","s":67,"r":"WATCHLIST","b":[3.7,5.4],"psf":17000,"roi":9.7,"c":["3 BHK","4 BHK"],"addr":"Sector 112, Gurugram","slug":"gurugram-real-estate-emaar-urban-ascent-dwarka-expressway-sector-112"},{"n":"Signature Global Tonino Lamborghini Residences","d":"Signature Global","m":"SPR","s":67,"r":"WATCHLIST","b":[4.5,6.2],"psf":22000,"roi":9.7,"c":["3 BHK","4 BHK"],"addr":"Sector 71, Gurugram","slug":"gurugram-real-estate-signature-global-tonino-lamborghini-residences-southern-peripheral-road-spr-corridor-sector-71"},{"n":"Godrej Air Phase - 3","d":"Godrej","m":"New Gurgaon","s":67,"r":"WATCHLIST","b":[1.2,3.1],"psf":12000,"roi":10.2,"c":["2 BHK","3 BHK","4 BHK","3 BHK + Study","4 BHK + Study"],"addr":"Sector 85, Gurugram","slug":"gurugram-real-estate-godrej-air-phase-3-new-gurgaon-sector-85"},{"n":"M3M Antalya Hills Phase - 1","d":"M3M","m":"SPR","s":67,"r":"WATCHLIST","b":[0.9,1.5],"psf":8950,"roi":8.9,"c":["2.5 BHK","3.5 BHK","1.5 BHK"],"addr":"Sector 79, Gurugram","slug":"gurugram-real-estate-m3m-antalya-hills-phase-1-southern-peripheral-road-spr-corridor-sector-79"},{"n":"Sobha Crescent Phase - 1","d":"Sobha","m":"GCE","s":66,"r":"WATCHLIST","b":[4.7,7.1],"psf":24000,"roi":9.7,"c":["2 BHK","3 BHK","3 BHK + Utility","4 BHK","4 BHK + Utility"],"addr":"Sector 63A, Gurugram","slug":"gurugram-real-estate-sobha-crescent-phase-1-golf-course-road-extension-gcre-sector-63a"},{"n":"Tulip Monsella","d":"Tulip","m":"GCR","s":66,"r":"WATCHLIST","b":[6.1,12.4],"psf":27500,"roi":10,"c":["4 BHK","5 BHK","3 BHK"],"addr":"Sector 53, Gurugram","slug":"gurugram-real-estate-tulip-monsella-golf-course-road-gcr-sector-53"},{"n":"M3M Mansion Phase - 2","d":"M3M","m":"Dwarka Expy","s":65,"r":"WATCHLIST","b":[3.8,5.8],"psf":18500,"roi":9.7,"c":["3 BHK","4 BHK"],"addr":"Sector 113, Gurugram","slug":"gurugram-real-estate-m3m-mansion-phase-2-dwarka-expressway-sector-113"},{"n":"M3M Capital","d":"M3M","m":"Dwarka Expy","s":65,"r":"WATCHLIST","b":[2,3.6],"psf":15500,"roi":9.1,"c":["2.5 BHK","3.5 BHK","4.5 BHK"],"addr":"Sector 113, Gurugram","slug":"gurugram-real-estate-m3m-capital-dwarka-expressway-sector-113"},{"n":"Eldeco Fairway Reserve","d":"ELDECO","m":"New Gurgaon","s":65,"r":"WATCHLIST","b":[3.5,5.8],"psf":16000,"roi":9.9,"c":["3 BHK","4 BHK"],"addr":"Gurugram","slug":"gurugram-real-estate-eldeco-fairway-reserve-new-gurgaon-gurugram"},{"n":"Experion Nova / Windchants PHASE - C","d":"Experion","m":"Dwarka Expy","s":65,"r":"WATCHLIST","b":[8,8],"psf":18500,"roi":9,"c":["4 BHK"],"addr":"Sector 112, Gurugram","slug":"gurugram-real-estate-experion-nova-windchants-phase-c-dwarka-expressway-sector-112"},{"n":"Tulip Yellow","d":"Tulip","m":"SPR","s":65,"r":"WATCHLIST","b":[1.4,2.4],"psf":8010,"roi":9.4,"c":["3 BHK","5 BHK"],"addr":"Sector 69, Gurugram","slug":"gurugram-real-estate-tulip-yellow-southern-peripheral-road-spr-corridor-sector-69"},{"n":"Krisumi Waterside Residences The Forest Reserve Phase 2","d":"Krisumi Corporation Private Limited","m":"Dwarka Expy","s":65,"r":"WATCHLIST","b":[6.3,17.4],"psf":23000,"roi":9.5,"c":["3 BHK","4 BHK","Duplex Penthouse","Triplex Penthouse"],"addr":"Gurugram","slug":"gurugram-real-estate-krisumi-waterside-residences-the-forest-reserve-phase-2-dwarka-expressway-gurugram"},{"n":"Signature Global Cloverdale SPR","d":"Signature Global","m":"SPR","s":65,"r":"WATCHLIST","b":[3.9,6.4],"psf":18500,"roi":9.2,"c":["3 BHK","3.5 BHK","4 BHK"],"addr":"Sector 71, Gurugram","slug":"gurugram-real-estate-signature-global-cloverdale-spr-southern-peripheral-road-spr-corridor-sector-71"},{"n":"M3M Opus at M3M Merlin","d":"M3M","m":"GCE","s":64,"r":"WATCHLIST","b":[5,5],"psf":21000,"roi":9.5,"c":["3 BHK"],"addr":"Sector 67, Gurugram","slug":"gurugram-real-estate-m3m-opus-at-m3m-merlin-golf-course-road-extension-gcre-sector-67"},{"n":"Birla Arika","d":"Birla Estates","m":"NH-8 Corridor","s":64,"r":"WATCHLIST","b":[9.9,11.3],"psf":23000,"roi":9.3,"c":["4 BHK"],"addr":"Sector 31-32A, Gurugram","slug":"gurugram-real-estate-birla-arika-nh-8-corridor-sector-31-32a"},{"n":"Godrej Air Phase - 1","d":"Godrej","m":"New Gurgaon","s":64,"r":"WATCHLIST","b":[1.8,5],"psf":19150,"roi":9.9,"c":["2 BHK (Type 2)","1 BHK","2 BHK","3 BHK","4 BHK","3 BHK + Study","3 BHK + Utility","4 BHK + Study","4 BHK + Utility"],"addr":"Sector 85, Gurugram","slug":"gurugram-real-estate-godrej-air-phase-1-new-gurgaon-sector-85"},{"n":"Delphine Central Park Estates Phase - 3","d":"Central Park","m":"Dwarka Expy","s":64,"r":"WATCHLIST","b":[11.6,15],"psf":27000,"roi":9.5,"c":["3 BHK","4 BHK"],"addr":"Sector 104, Gurugram","slug":"gurugram-real-estate-delphine-central-park-estates-phase-3-dwarka-expressway-sector-104"},{"n":"Smartworld The Edition","d":"Smartworld","m":"GCE","s":64,"r":"WATCHLIST","b":[5.7,13.4],"psf":19200,"roi":9.5,"c":["3.5 BHK + Utility","4.5 BHK + Utility","4 BHK Penthouse"],"addr":"Sector 66, Gurugram","slug":"gurugram-real-estate-smartworld-the-edition-golf-course-road-extension-gcre-sector-66"},{"n":"Godrej Samaris","d":"Godrej","m":"GCR","s":64,"r":"WATCHLIST","b":[9.1,11.6],"psf":31000,"roi":9.9,"c":["3 BHK + Utility","4 BHK + Utility"],"addr":"Gurugram","slug":"gurugram-real-estate-godrej-samaris-golf-course-road-gcr-gurugram"},{"n":"Signature Global Twin Tower DXP","d":"Signature Global","m":"Dwarka Expy","s":64,"r":"WATCHLIST","b":[3.8,7.6],"psf":20000,"roi":9.2,"c":["3 BHK","3.5 BHK","4 BHK","4.5 BHK"],"addr":"Sector 84, Gurugram","slug":"gurugram-real-estate-signature-global-twin-tower-dxp-dwarka-expressway-sector-84"},{"n":"Godrej Meridien Grandeur Phase - 3","d":"Godrej","m":"Dwarka Expy","s":63,"r":"WATCHLIST","b":[1.5,3],"psf":11000,"roi":7.9,"c":["2 BHK","3 BHK","3 BHK + Utility","4 BHK + Utility"],"addr":"Sector 106, Gurugram","slug":"gurugram-real-estate-godrej-meridien-grandeur-phase-3-dwarka-expressway-sector-106"},{"n":"M3M Elie Saab","d":"M3M","m":"Dwarka Expy","s":63,"r":"WATCHLIST","b":[14.3,15.8],"psf":34000,"roi":9.4,"c":["4 BHK + Utility"],"addr":"Sector 111, Gurugram","slug":"gurugram-real-estate-m3m-elie-saab-dwarka-expressway-sector-111"},{"n":"Godrej Meridien Grandeur Phase - 2","d":"Godrej","m":"Dwarka Expy","s":63,"r":"WATCHLIST","b":[3,3],"psf":14500,"roi":6.4,"c":["3 BHK+"],"addr":"Sector 106, Gurugram","slug":"gurugram-real-estate-godrej-meridien-grandeur-phase-2-dwarka-expressway-sector-106"},{"n":"Max Estate 360","d":"Max Estates","m":"Dwarka Expy","s":63,"r":"WATCHLIST","b":[4.3,6.7],"psf":19000,"roi":9.3,"c":["2 BHK","3 BHK","4 BHK"],"addr":"Sector 36, Gurugram","slug":"gurugram-real-estate-max-estate-360-dwarka-expressway-sector-36"},{"n":"Godrej Aristocrat","d":"Godrej","m":"Sohna Road","s":63,"r":"WATCHLIST","b":[3,6.1],"psf":18000,"roi":8.8,"c":["2 BHK","3 BHK","3 BHK + Utility","4 BHK","4 BHK + Utility"],"addr":"Sector 49, Gurugram","slug":"gurugram-real-estate-godrej-aristocrat-sohna-road-sector-49"},{"n":"Godrej Zenith","d":"Godrej","m":"New Gurgaon","s":62,"r":"WATCHLIST","b":[1.5,4.5],"psf":14000,"roi":8.7,"c":["2 BHK","2 BHK Large","3 BHK","3 BHK Large","3 BHK + Utility","4 BHK","4 BHK Large","4 BHK Iconic"],"addr":"Sector 89, Gurugram","slug":"gurugram-real-estate-godrej-zenith-new-gurgaon-sector-89"},{"n":"Whiteland Aspen One","d":"Whiteland","m":"SPR","s":62,"r":"WATCHLIST","b":[2.7,3.5],"psf":12000,"roi":9.3,"c":["3 BHK"],"addr":"Sector 76, Gurugram","slug":"gurugram-real-estate-whiteland-aspen-one-southern-peripheral-road-spr-corridor-sector-76"},{"n":"Delphine Central Park Estates Phase - 1","d":"Central Park","m":"Dwarka Expy","s":62,"r":"WATCHLIST","b":[3,3],"psf":29000,"roi":9.7,"c":["Studio"],"addr":"Sector 104, Gurugram","slug":"gurugram-real-estate-delphine-central-park-estates-phase-1-dwarka-expressway-sector-104"},{"n":"Godrej Aria & 101 Phase - 3","d":"Godrej","m":"SPR","s":62,"r":"WATCHLIST","b":[0.8,2.6],"psf":11500,"roi":8.5,"c":["1 BHK","2 BHK","2.5 BHK","2 BHK + Study","3 BHK","3 BHK + Utility","3 BHK + Servant Room"],"addr":"Gurugram","slug":"gurugram-real-estate-godrej-aria-101-phase-3-southern-peripheral-road-spr-corridor-gurugram"},{"n":"Krisumi Waterside Residences The Forest Reserve Phase 1","d":"Krisumi Corporation Private Limited","m":"Dwarka Expy","s":62,"r":"WATCHLIST","b":[6.3,17.4],"psf":23000,"roi":9.1,"c":["3 BHK","4 BHK","Duplex Penthouse","Triplex Penthouse"],"addr":"Gurugram","slug":"gurugram-real-estate-krisumi-waterside-residences-the-forest-reserve-phase-1-dwarka-expressway-gurugram"},{"n":"BIRLA PRAVAAH","d":"Birla Estates","m":"SPR","s":61,"r":"WATCHLIST","b":[3.3,4],"psf":16500,"roi":9.3,"c":["3 BHK"],"addr":"Sector 71, Gurugram","slug":"gurugram-real-estate-birla-pravaah-southern-peripheral-road-spr-corridor-sector-71"},{"n":"Experion The Trillion","d":"Experion","m":"Sohna Road","s":61,"r":"WATCHLIST","b":[5.8,7.4],"psf":20500,"roi":8.8,"c":["3 BHK + Servant","4 BHK + Servant"],"addr":"Sector 48, Gurugram","slug":"gurugram-real-estate-experion-the-trillion-sohna-road-sector-48"},{"n":"Ashiana Mulberry Phase - 2","d":"Ashiana Group","m":"Sohna Road","s":61,"r":"WATCHLIST","b":[1.1,1.6],"psf":9000,"roi":5.6,"c":["2 BHK","2 BHK + Study","3 BHK"],"addr":"Sector 2, Gurugram","slug":"gurugram-real-estate-ashiana-mulberry-phase-2-sohna-road-sector-2"},{"n":"Whiteland Urban Resort / Westin Residences Phase - 1","d":"Whiteland","m":"Dwarka Expy","s":61,"r":"WATCHLIST","b":[6,6.6],"psf":22500,"roi":8.6,"c":["3 BHK + Servant"],"addr":"Sector 103, Gurugram","slug":"gurugram-real-estate-whiteland-urban-resort-westin-residences-phase-1-dwarka-expressway-sector-103"},{"n":"Conscient Elaira Residences Phase 2 & 2A","d":"Conscient","m":"New Gurgaon","s":61,"r":"WATCHLIST","b":[3.1,4.2],"psf":15000,"roi":9.1,"c":["3 BHK","3 BHK + Utility","3 BHK + Servant"],"addr":"Sector 80, Gurugram","slug":"gurugram-real-estate-conscient-elaira-residences-phase-2-2a-new-gurgaon-sector-80"},{"n":"Emaar Serenity Hills Phase - 1","d":"Emaar","m":"New Gurgaon","s":60,"r":"WATCHLIST","b":[2.9,3.8],"psf":16500,"roi":9,"c":["3 BHK (Small)","3 BHK (Large)"],"addr":"Sector 86, Gurugram","slug":"gurugram-real-estate-emaar-serenity-hills-phase-1-new-gurgaon-sector-86"},{"n":"Sobha Altus","d":"Sobha","m":"Dwarka Expy","s":60,"r":"WATCHLIST","b":[1.5,8.4],"psf":21500,"roi":8.6,"c":["Studio","3 BHK","4 BHK","5 BHK"],"addr":"Sector 106, Gurugram","slug":"gurugram-real-estate-sobha-altus-dwarka-expressway-sector-106"},{"n":"Signature Global Sarvam","d":"Signature Global","m":"Dwarka Expy","s":60,"r":"WATCHLIST","b":[2.8,3.9],"psf":15700,"roi":8.8,"c":["3 BHK + 2T","3 BHK + 3T + Utility","4 BHK + 4T + Utility","3 BHK + 3T"],"addr":"Sector 37D, Gurugram","slug":"gurugram-real-estate-signature-global-sarvam-dwarka-expressway-sector-37d"},{"n":"Sobha Aranya Phase-1","d":"Sobha","m":"New Gurgaon","s":60,"r":"WATCHLIST","b":[6.8,10.3],"psf":24000,"roi":8.6,"c":["3 BHK","4 BHK"],"addr":"Sector 80, Gurugram","slug":"gurugram-real-estate-sobha-aranya-phase-1-new-gurgaon-sector-80"},{"n":"Eldeco Terra & Sol","d":"ELDECO","m":"New Gurgaon","s":60,"r":"WATCHLIST","b":[2.8,5.6],"psf":13000,"roi":9.3,"c":["3 BHK","4 BHK Duplex Penthouse"],"addr":"Sector 80, Gurugram","slug":"gurugram-real-estate-eldeco-terra-sol-new-gurgaon-sector-80"},{"n":"Godrej Sora","d":"Godrej","m":"GCR","s":60,"r":"WATCHLIST","b":[7.6,10.8],"psf":27300,"roi":8.5,"c":["3 BHK","4 BHK","4 BHK XL"],"addr":"Sector 53, Gurugram","slug":"gurugram-real-estate-godrej-sora-golf-course-road-gcr-sector-53"},{"n":"Emaar Serenity Hills Phase - 2","d":"Emaar","m":"New Gurgaon","s":59,"r":"WATCHLIST","b":[2.9,2.9],"psf":16500,"roi":8.9,"c":["3 BHK+"],"addr":"Sector 86, Gurugram","slug":"gurugram-real-estate-emaar-serenity-hills-phase-2-new-gurgaon-sector-86"},{"n":"Godrej Astra","d":"Godrej","m":"GCR","s":59,"r":"WATCHLIST","b":[10.2,14.4],"psf":34250,"roi":8.2,"c":["3 BHK","4 BHK"],"addr":"Sector 54, Gurugram","slug":"gurugram-real-estate-godrej-astra-golf-course-road-gcr-sector-54"},{"n":"Conscient Elaira Residences Phase 1","d":"Conscient","m":"New Gurgaon","s":59,"r":"WATCHLIST","b":[3.1,4.2],"psf":15000,"roi":8.8,"c":["3 BHK"],"addr":"Sector 80, Gurugram","slug":"gurugram-real-estate-conscient-elaira-residences-phase-1-new-gurgaon-sector-80"},{"n":"Tulip Crimson","d":"Tulip","m":"SPR","s":58,"r":"WATCHLIST","b":[4.2,4.2],"psf":13750,"roi":7.9,"c":["4 BHK","4.5 BHK","4 BHK + Study + Utility"],"addr":"Sector 70, Gurugram","slug":"gurugram-real-estate-tulip-crimson-southern-peripheral-road-spr-corridor-sector-70"},{"n":"Godrej Miraya","d":"Godrej","m":"GCR","s":58,"r":"WATCHLIST","b":[9.5,16],"psf":35000,"roi":8.3,"c":["3 BHK","4 BHK"],"addr":"Sector 43, Gurugram","slug":"gurugram-real-estate-godrej-miraya-golf-course-road-gcr-sector-43"},{"n":"Godrej Alira","d":"Godrej","m":"NH-8 Corridor","s":58,"r":"WATCHLIST","b":[5.1,6.6],"psf":21200,"roi":8.5,"c":["3 BHK + Servant","4 BHK + Servant"],"addr":"Sector 39, Gurugram","slug":"gurugram-real-estate-godrej-alira-nh-8-corridor-sector-39"},{"n":"Birla Navya - Avik (PHASE-2)","d":"Birla Estates","m":"GCE","s":58,"r":"WATCHLIST","b":[4.5,4.5],"psf":20000,"roi":8.3,"c":["3 BHK+"],"addr":"Sector 63A, Gurugram","slug":"gurugram-real-estate-birla-navya-avik-phase-2-golf-course-road-extension-gcre-sector-63a"},{"n":"Birla Arika Phase - 2","d":"Birla Estates","m":"NH-8 Corridor","s":57,"r":"WATCHLIST","b":[10.8,10.8],"psf":25000,"roi":8.7,"c":["4 BHK"],"addr":"Sector 31-32A, Gurugram","slug":"gurugram-real-estate-birla-arika-phase-2-nh-8-corridor-sector-31-32a"},{"n":"Tulip Melrose","d":"Tulip","m":"SPR","s":57,"r":"WATCHLIST","b":[4.7,4.7],"psf":14750,"roi":8,"c":["5 BHK + Study + Powder Room"],"addr":"Sector 70, Gurugram","slug":"gurugram-real-estate-tulip-melrose-southern-peripheral-road-spr-corridor-sector-70"},{"n":"Whiteland Urban Resort / Westin Residences Phase - 2","d":"Whiteland","m":"Dwarka Expy","s":57,"r":"WATCHLIST","b":[6.7,10.8],"psf":25000,"roi":8.1,"c":["3 BHK","4 BHK"],"addr":"Sector 103, Gurugram","slug":"gurugram-real-estate-whiteland-urban-resort-westin-residences-phase-2-dwarka-expressway-sector-103"},{"n":"Birla Navya Avik Phase - 1","d":"Birla Estates","m":"GCE","s":57,"r":"WATCHLIST","b":[3.6,3.6],"psf":22100,"roi":8.3,"c":["3.5 BHK"],"addr":"Sector 63A, Gurugram","slug":"gurugram-real-estate-birla-navya-avik-phase-1-golf-course-road-extension-gcre-sector-63a"},{"n":"Birla Navya - Anaika","d":"Birla Estates","m":"GCE","s":56,"r":"WATCHLIST","b":[2.9,3.4],"psf":17950,"roi":6.6,"c":["3 BHK","4 BHK"],"addr":"Sector 63A, Gurugram","slug":"gurugram-real-estate-birla-navya-anaika-golf-course-road-extension-gcre-sector-63a"},{"n":"Max Estate 361","d":"Max Estates","m":"Dwarka Expy","s":56,"r":"WATCHLIST","b":[2.4,8.7],"psf":21350,"roi":8.5,"c":["1.5 BHK","3 BHK","2 BHK","2 BHK Loft","4 BHK","2 BHK (Senior Living)","3 BHK (Senior Living)","4 BHK (Senior Living)"],"addr":"Sector 36, Gurugram","slug":"gurugram-real-estate-max-estate-361-dwarka-expressway-sector-36"},{"n":"Godrej Habitat","d":"Godrej","m":"NH-8 Corridor","s":56,"r":"WATCHLIST","b":[1.5,2.7],"psf":10200,"roi":5.1,"c":["2 BHK","3 BHK","4 BHK"],"addr":"Sector 3, Gurugram","slug":"gurugram-real-estate-godrej-habitat-nh-8-corridor-sector-3"},{"n":"Godrej Vrikshya","d":"Godrej","m":"Dwarka Expy","s":55,"r":"WATCHLIST","b":[3,5.8],"psf":15596,"roi":8.2,"c":["3 BHK","3.5 BHK","4 BHK","4.5 BHK"],"addr":"Sector 103, Gurugram","slug":"gurugram-real-estate-godrej-vrikshya-dwarka-expressway-sector-103"}];
+
+  /* ── filter definitions ── */
+  const BUDGETS = [
+    { k: "u2",   l: "Under ₹2 Cr",  t: (v) => v < 2 },
+    { k: "2-3",  l: "₹2–3 Cr",      t: (v) => v >= 2 && v < 3 },
+    { k: "3-5",  l: "₹3–5 Cr",      t: (v) => v >= 3 && v < 5 },
+    { k: "5-8",  l: "₹5–8 Cr",      t: (v) => v >= 5 && v < 8 },
+    { k: "8-12", l: "₹8–12 Cr",     t: (v) => v >= 8 && v < 12 },
+    { k: "12p",  l: "₹12 Cr+",      t: (v) => v >= 12 },
+  ];
+  const CONFIGS = [
+    { k: "2bhk", l: "2 BHK", m: ["2 bhk", "2bhk", "2.5"] },
+    { k: "3bhk", l: "3 BHK", m: ["3 bhk", "3bhk", "3.5"] },
+    { k: "4bhk", l: "4 BHK", m: ["4 bhk", "4bhk", "4.5"] },
+    { k: "5bhk", l: "5 BHK", m: ["5 bhk", "5bhk", "5.5"] },
+    { k: "pent", l: "Penthouse", m: ["penthouse"] },
+    { k: "dup",  l: "Duplex", m: ["duplex"] },
+  ];
+  const ROIS = [
+    { k: "8",  l: "8%+ projected", t: (v) => v >= 8 },
+    { k: "10", l: "10%+ projected", t: (v) => v >= 10 },
+    { k: "12", l: "12%+ projected", t: (v) => v >= 12 },
+  ];
+
+  const cfgText = (p) => (p.c || []).join(" ").toLowerCase();
+  const matchers = {
+    corridor: (p, v) => p.m === v,
+    budget:   (p, v) => { const b = BUDGETS.find((x) => x.k === v); const e = (p.b || [0])[0]; return !!b && e > 0 && b.t(e); },
+    config:   (p, v) => { const c = CONFIGS.find((x) => x.k === v); const t = cfgText(p); return !!c && c.m.some((n) => t.includes(n)); },
+    roi:      (p, v) => { const r = ROIS.find((x) => x.k === v); return !!r && p.roi != null && r.t(p.roi); },
+  };
+
+  /* landers that exist today — the mesh line offers the permanent page
+     when the live combo sits inside one. */
+  const MESH = [
+    { c: "4bhk", b: null, co: null, s: "4-bhk-apartments-gurugram", h: "4 BHK Apartments in Gurugram" },
+    { c: "3bhk", b: null, co: null, s: "3-bhk-apartments-gurugram", h: "3 BHK Apartments in Gurugram" },
+    { c: "5bhk", b: null, co: null, s: "5-bhk-apartments-gurugram", h: "5 BHK Luxury Apartments in Gurugram" },
+    { c: "pent", b: null, co: null, s: "penthouses-in-gurugram", h: "Luxury Penthouses in Gurugram" },
+    { c: "dup",  b: null, co: null, s: "duplex-apartments-gurugram", h: "Duplex Apartments in Gurugram" },
+    { c: "4bhk", b: ["u2","2-3","3-5"], co: null, s: "4-bhk-in-gurugram-under-5-cr", h: "4 BHK in Gurugram Under ₹5 Cr" },
+    { c: "4bhk", b: ["5-8"], co: null, s: "4-bhk-in-gurugram-under-8-cr", h: "4 BHK in Gurugram Under ₹8 Cr" },
+    { c: "3bhk", b: ["u2"], co: null, s: "3-bhk-in-gurugram-under-2-cr", h: "3 BHK in Gurugram Under ₹2 Cr" },
+    { c: "3bhk", b: ["2-3"], co: null, s: "3-bhk-in-gurugram-under-3-cr", h: "3 BHK in Gurugram Under ₹3 Cr" },
+    { c: "pent", b: ["5-8","8-12"], co: null, s: "penthouses-in-gurugram-under-10-cr", h: "Penthouses in Gurugram Under ₹10 Cr" },
+    { c: null,   b: ["12p"], co: null, s: "luxury-apartments-in-gurugram-above-10-cr", h: "Ultra-Luxury Above ₹10 Cr" },
+    { c: "4bhk", b: null, co: "GCE", s: "4-bhk-golf-course-extension", h: "4 BHK on Golf Course Extension Road" },
+    { c: "4bhk", b: null, co: "Dwarka Expy", s: "4-bhk-dwarka-expressway", h: "4 BHK on Dwarka Expressway" },
+    { c: "4bhk", b: null, co: "SPR", s: "4-bhk-southern-peripheral-road-spr", h: "4 BHK on SPR" },
+    { c: "4bhk", b: null, co: "GCR", s: "4-bhk-golf-course-road", h: "4 BHK on Golf Course Road" },
+    { c: "4bhk", b: null, co: "New Gurgaon", s: "4-bhk-new-gurgaon", h: "4 BHK in New Gurgaon" },
+    { c: "3bhk", b: null, co: "Dwarka Expy", s: "3-bhk-dwarka-expressway", h: "3 BHK on Dwarka Expressway" },
+    { c: "3bhk", b: null, co: "GCE", s: "3-bhk-golf-course-extension", h: "3 BHK on Golf Course Extension Road" },
+    { c: "pent", b: null, co: "Dwarka Expy", s: "penthouses-dwarka-expressway", h: "Penthouses on Dwarka Expressway" },
+    { c: "4bhk", b: ["u2","2-3","3-5"], co: "Dwarka Expy", s: "4-bhk-dwarka-expressway-under-5-cr", h: "4 BHK on Dwarka Expressway Under ₹5 Cr" },
+    { c: "4bhk", b: ["u2","2-3","3-5"], co: "SPR", s: "4-bhk-spr-under-5-cr", h: "4 BHK on SPR Under ₹5 Cr" },
+    { c: "3bhk", b: ["u2"], co: "Dwarka Expy", s: "3-bhk-dwarka-expressway-under-2-5-cr", h: "3 BHK on Dwarka Expressway Under ₹2.5 Cr" },
+  ];
+
+  const st = { q: "", corridor: "", budget: "", config: "", roi: "", sort: "score" };
+
+  function applyAll(except) {
+    return P.filter((p) => {
+      if (st.q) {
+        const hay = [p.n, p.d, p.m, p.addr, cfgText(p)].join(" ").toLowerCase();
+        if (!hay.includes(st.q.toLowerCase().trim())) return false;
+      }
+      for (const dim of ["corridor", "budget", "config", "roi"]) {
+        if (dim === except || !st[dim]) continue;
+        if (!matchers[dim](p, st[dim])) return false;
+      }
+      return true;
+    });
+  }
+
+  /* option counts answer "what happens if I pick this", faceted against
+     every OTHER active filter. */
+  function options(sel, dim, items, current) {
+    const base = applyAll(dim);
+    const opts = [`<option value="">All (${base.length})</option>`];
+    for (const it of items) {
+      const n = base.filter((p) => matchers[dim](p, it.k)).length;
+      if (n === 0 && current !== it.k) continue;
+      opts.push(`<option value="${it.k}" ${current === it.k ? "selected" : ""}>${it.l} (${n})</option>`);
+    }
+    sel.innerHTML = opts.join("");
+  }
+
+  const $ = (id) => document.getElementById(id);
+  const fmtCr = (b) => !b || !(b[0] > 0) ? "" : (b[0] === b[1] || !(b[1] > 0) ? `₹${b[0]} Cr` : `₹${b[0]}–${b[1]} Cr`);
+
+  function render() {
+    /* dropdowns re-facet */
+    const corridors = [...new Set(P.map((p) => p.m).filter(Boolean))]
+      .map((m) => ({ k: m, l: m }))
+      .sort((a, b) => P.filter((p) => p.m === b.k).length - P.filter((p) => p.m === a.k).length);
+    options($("f-corridor"), "corridor", corridors, st.corridor);
+    options($("f-budget"), "budget", BUDGETS, st.budget);
+    options($("f-config"), "config", CONFIGS, st.config);
+    options($("f-roi"), "roi", ROIS, st.roi);
+
+    let list = applyAll(null);
+    const price = (p) => (p.b && p.b[0] > 0 ? p.b[0] : Number.MAX_SAFE_INTEGER);
+    list = [...list].sort((a, b) =>
+      st.sort === "score" ? (b.s || 0) - (a.s || 0)
+      : st.sort === "priceAsc" ? price(a) - price(b)
+      : price(b) - price(a));
+
+    /* pills + count */
+    const pills = [];
+    const name = { corridor: (v) => v, budget: (v) => BUDGETS.find((x) => x.k === v)?.l, config: (v) => CONFIGS.find((x) => x.k === v)?.l, roi: (v) => "ROI " + ROIS.find((x) => x.k === v)?.l };
+    for (const dim of ["corridor", "budget", "config", "roi"]) {
+      if (st[dim]) pills.push(`<button class="pill" data-dim="${dim}" type="button">${name[dim](st[dim])} <i>✕</i></button>`);
+    }
+    const active = pills.length > 0 || st.q;
+    $("state").innerHTML =
+      `<span class="count">${list.length === P.length ? `Showing all ${P.length} scored projects` : `${list.length} of ${P.length} projects`}</span>`
+      + pills.join("") + (active ? `<button class="clear" type="button" id="clearall">Clear all</button>` : "");
+
+    /* URL preview — what the real page would put in the address bar */
+    const qs = [];
+    if (st.corridor) qs.push(`corridor=${encodeURIComponent(st.corridor.toLowerCase().replace(/\s+/g, "-"))}`);
+    if (st.budget) qs.push(`budget=${st.budget}`);
+    if (st.config) qs.push(`config=${st.config}`);
+    if (st.roi) qs.push(`roi=${st.roi}`);
+    if (st.q) qs.push(`q=${encodeURIComponent(st.q)}`);
+    $("url").innerHTML = qs.length
+      ? `URL syncs → /intelligence/projects<b>?${qs.join("&")}</b> — shareable, bookmarkable, ad-landable`
+      : `URL syncs as you filter — every combination becomes a shareable link`;
+
+    /* mesh line */
+    const hit = MESH.find((m) =>
+      (m.c ? st.config === m.c : !st.config) &&
+      (m.co ? st.corridor === m.co : !st.corridor) &&
+      (m.b ? m.b.includes(st.budget) : !st.budget));
+    $("mesh").innerHTML = hit && (st.config || st.budget || st.corridor)
+      ? `Permanent page for this search → <a href="https://truthestate.in/apartments/${hit.s}" target="_blank" rel="noopener">${hit.h}</a>`
+      : "";
+
+    /* cards */
+    $("grid").innerHTML = list.map((p) => `
+      <a class="card" href="https://truthestate.in/projects/${p.slug}" target="_blank" rel="noopener">
+        <div class="top">
+          <span class="tag ${p.r === "STRONG BUY" ? "buy" : "watch"}">${p.r === "STRONG BUY" ? "Strong Buy" : "Watchlist"}</span>
+          <span class="score"><b>${p.s}</b><span>TRUTH&nbsp;SCORE</span></span>
+        </div>
+        <h3>${p.n}</h3>
+        <p class="addr">${p.addr || p.m || ""}</p>
+        <p class="price">${fmtCr(p.b)}${p.b && p.b[0] > 0 ? "+" : ""}</p>
+        <div class="facts">
+          ${p.psf ? `<span>₹<b>${Math.round(p.psf / 1000)}k</b>/sq ft</span>` : ""}
+          ${p.roi != null ? `<span>ROI <b>${p.roi}%</b> proj.</span>` : ""}
+          ${(() => {
+            /* When a config filter is live, show the config that MATCHED —
+               printing the project's first config under a "4 BHK" filter
+               labels the card with a different flat's name. */
+            if (!p.c || !p.c.length) return "";
+            const active = CONFIGS.find((x) => x.k === st.config);
+            const shown = active ? (p.c.find((c) => active.m.some((n) => c.toLowerCase().includes(n))) ?? p.c[0]) : p.c[0];
+            return `<span>${shown}</span>`;
+          })()}
+        </div>
+      </a>`).join("");
+    $("empty").hidden = list.length > 0;
+    if (!list.length) $("emptymsg").textContent = `Nothing matches${st.q ? ` “${st.q}”` : ""} with these filters.`;
+  }
+
+  /* wiring */
+  $("q").addEventListener("input", (e) => { st.q = e.target.value; render(); });
+  for (const dim of ["corridor", "budget", "config", "roi"]) {
+    $("f-" + dim).addEventListener("change", (e) => { st[dim] = e.target.value; render(); });
+  }
+  $("f-sort").addEventListener("change", (e) => { st.sort = e.target.value; render(); });
+  document.addEventListener("click", (e) => {
+    const pill = e.target.closest(".pill");
+    if (pill) { st[pill.dataset.dim] = ""; render(); }
+    if (e.target.id === "clearall" || e.target.id === "emptyclear") {
+      st.q = ""; st.corridor = ""; st.budget = ""; st.config = ""; st.roi = ""; $("q").value = ""; render();
+    }
+  });
+
+  const lows = P.map((p) => (p.b || [0])[0]).filter((v) => v > 0);
+  const scores = P.map((p) => p.s).filter(Boolean);
+  $("metaline").textContent =
+    `${P.length} audited files · 325 RERA projects tracked live · entry ₹${Math.min(...lows)}–${Math.max(...lows)} Cr · Truth Score ${Math.min(...scores)}–${Math.max(...scores)} · no developer pays to rank`;
+  render();
+</script>
+
+</body>
+</html>
