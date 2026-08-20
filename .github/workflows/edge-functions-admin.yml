@@ -89,9 +89,21 @@ jobs:
           # DB key from — its stored value was the now-revoked legacy service
           # JWT, which is what broke OTP verification on 19 Aug. Same live
           # value as EDGE_DB_KEY under the legacy name.
+          # WIRE_INGEST_TOKEN: the research pipeline's credential for the
+          # wire-ingest function. It is NOT a database key — it only opens
+          # that one function, which can only write project_intelligence_wire.
+          # Rotating this value revokes the pipeline's access outright.
+          # Optional here so a set-secrets run without it still succeeds.
+          EXTRA=()
+          if [ -n "${{ secrets.WIRE_INGEST_TOKEN }}" ]; then
+            EXTRA+=( WIRE_INGEST_TOKEN="${{ secrets.WIRE_INGEST_TOKEN }}" )
+          else
+            echo "::warning::WIRE_INGEST_TOKEN not set — wire-ingest will refuse every call until it is."
+          fi
           supabase secrets set \
             EDGE_DB_KEY="${{ secrets.EDGE_DB_KEY }}" \
             EDGE_PUBLISHABLE_KEY="${{ secrets.EDGE_PUBLISHABLE_KEY }}" \
             SERVICE_ROLE_KEY_SUPABASE="${{ secrets.EDGE_DB_KEY }}" \
+            "${EXTRA[@]}" \
             --project-ref lyetvabfgaidvqrbmaoy
           echo "Secrets set. Functions pick them up on their next deploy or cold start."
