@@ -112,10 +112,10 @@
   @media (min-width: 640px) { .grid { grid-template-columns: 1fr 1fr; } }
   @media (min-width: 1024px) { .grid { grid-template-columns: 1fr 1fr 1fr; } }
   .card {
-    display: block; background: var(--card); border: 1px solid var(--rule); border-radius: 8px;
-    padding: 1.3rem 1.35rem 1.15rem; transition: border-color .15s ease, transform .15s ease;
+    display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--rule); border-radius: 10px;
+    padding: 1.3rem 1.35rem 1.2rem; transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
   }
-  .card:hover { border-color: rgba(26,26,26,.28); transform: translateY(-1px); }
+  .card:hover { border-color: rgba(26,26,26,.24); transform: translateY(-2px); box-shadow: 0 14px 30px -18px rgba(26,26,26,.25); }
   .card .top { display: flex; align-items: flex-start; justify-content: space-between; gap: .8rem; }
   .tag {
     font-family: "Geist Mono", monospace; font-size: .56rem; letter-spacing: .12em; text-transform: uppercase;
@@ -126,18 +126,19 @@
   .score { text-align: right; }
   .score b { display: block; font-family: "Playfair Display", serif; font-weight: 500; font-size: 1.9rem; line-height: 1; }
   .score span { font-family: "Geist Mono", monospace; font-size: .46rem; letter-spacing: .22em; color: var(--ink40); }
-  .card h3 { margin: 1rem 0 0; font-family: "Playfair Display", serif; font-weight: 500; font-size: 1.16rem; line-height: 1.25; }
-  .addr { margin-top: .2rem; font-size: .74rem; color: var(--ink40); }
-  .price { margin-top: .7rem; font-size: .95rem; font-weight: 400; }
-  .facts {
-    margin-top: .55rem; padding-top: .6rem; border-top: 1px solid var(--rule06);
-    display: flex; flex-wrap: wrap; gap: .3rem .9rem;
-    font-family: "Geist Mono", monospace; font-size: .62rem; color: rgba(26,26,26,.55);
-    font-variant-numeric: tabular-nums;
+  /* every configuration the project files, one truncating line */
+  .cfgs {
+    margin-top: 1rem; font-family: "Geist Mono", monospace; font-size: .58rem; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--gold-ink);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .facts b { font-weight: 500; color: var(--ink60); }
-  /* the forensic strip — what no portal shows */
-  .forensic { margin-top: .65rem; display: flex; flex-wrap: wrap; gap: .35rem; }
+  .card h3 { margin: .3rem 0 0; font-family: "Playfair Display", serif; font-weight: 500; font-size: 1.16rem; line-height: 1.25; }
+  .addr { margin: .25rem 0 0; font-size: .74rem; color: var(--ink40); }
+  .price { margin: .8rem 0 0; font-size: 1.02rem; font-weight: 500; letter-spacing: .01em; }
+  .psf { margin: .15rem 0 0; font-family: "Geist Mono", monospace; font-size: .62rem; color: var(--ink40); font-variant-numeric: tabular-nums; }
+  /* the forensic strip — what no portal shows. Pinned to the card's
+     bottom edge so every card closes on the same line. */
+  .forensic { margin-top: auto; padding-top: .9rem; display: flex; flex-wrap: wrap; gap: .35rem; }
   .fchip {
     font-family: "Geist Mono", monospace; font-size: .55rem; letter-spacing: .08em; text-transform: uppercase;
     padding: .3rem .55rem; border-radius: 3px; border: 1px solid;
@@ -146,7 +147,6 @@
   .dl-med  { color: var(--gold-ink); border-color: rgba(154,122,46,.4); background: rgba(201,169,110,.12); }
   .dl-high { color: #b0503e; border-color: rgba(176,80,62,.4); background: rgba(176,80,62,.07); }
   .fl-chip { color: #b0503e; border-color: rgba(176,80,62,.35); background: rgba(176,80,62,.05); }
-
   .empty { margin-top: 1.4rem; border: 1px solid var(--rule); background: rgba(255,255,255,.6); border-radius: 8px; padding: 2.4rem 1.5rem; text-align: center; }
   .empty p { margin: 0; font-family: "Playfair Display", serif; font-size: 1.1rem; color: rgba(26,26,26,.75); }
   .empty button { margin-top: 1rem; border: 1px solid rgba(26,26,26,.15); background: none; border-radius: 3px; padding: .6rem 1.2rem; font: inherit; font-size: .78rem; color: var(--ink60); cursor: pointer; }
@@ -302,6 +302,22 @@
   }
 
   const $ = (id) => document.getElementById(id);
+  /* "3, 4, 5 BHK · Duplex Penthouse" from whatever the project filed —
+     BHK sizes collapse into one ascending list, non-BHK formats follow. */
+  function cfgLine(p) {
+    const nums = new Set(); const other = [];
+    for (const c of p.c || []) {
+      const m = c.match(/(\d+(?:\.\d+)?)\s*BHK/i);
+      if (m) nums.add(m[1]);
+      const rest = c.replace(/\d+(?:\.\d+)?\s*BHK\s*\+?\s*/i, "").trim();
+      if (/penthouse|duplex|studio|villa|suite/i.test(rest) && !other.some((o) => o.toLowerCase() === rest.toLowerCase())) other.push(rest);
+      else if (/penthouse|duplex|studio|villa|suite/i.test(c) && !m && !other.includes(c)) other.push(c);
+    }
+    const parts = [];
+    if (nums.size) parts.push([...nums].sort((a, b) => a - b).join(", ") + " BHK");
+    if (other.length) parts.push(other.join(" · "));
+    return parts.join(" · ") || "&nbsp;";
+  }
   const fmtCr = (b) => !b || !(b[0] > 0) ? "" : (b[0] === b[1] || !(b[1] > 0) ? `₹${b[0]} Cr` : `₹${b[0]}–${b[1]} Cr`);
 
   function render() {
@@ -359,25 +375,15 @@
           <span class="tag ${p.r === "STRONG BUY" ? "buy" : "watch"}">${p.r === "STRONG BUY" ? "Strong Buy" : "Watchlist"}</span>
           <span class="score"><b>${p.s}</b><span>TRUTH&nbsp;SCORE</span></span>
         </div>
+        <div class="cfgs">${cfgLine(p)}</div>
         <h3>${p.n}</h3>
         <p class="addr">${p.addr || p.m || ""}</p>
         <p class="price">${fmtCr(p.b)}${p.b && p.b[0] > 0 ? "+" : ""}</p>
-        <div class="facts">
-          ${p.psf ? `<span>₹<b>${Math.round(p.psf / 1000)}k</b>/sq ft</span>` : ""}
-          ${p.roi != null ? `<span>CAGR <b>${p.roi}%</b> proj. 8-yr</span>` : ""}
-          ${(() => {
-            /* When a config filter is live, show the config that MATCHED —
-               printing the project's first config under a "4 BHK" filter
-               labels the card with a different flat's name. */
-            if (!p.c || !p.c.length) return "";
-            const active = CONFIGS.find((x) => x.k === st.config);
-            const shown = active ? (p.c.find((c) => active.m.some((n) => c.toLowerCase().includes(n))) ?? p.c[0]) : p.c[0];
-            return `<span>${shown}</span>`;
-          })()}
-        </div>
+        ${p.psf ? `<p class="psf">₹${Math.round(p.psf).toLocaleString("en-IN")}/sq ft filed</p>` : ""}
         <div class="forensic">
           <span class="fchip dl-${p.dl === "Low" ? "low" : p.dl === "Medium" ? "med" : "high"}">Delay risk · ${p.dl}</span>
-          <span class="fchip fl-chip">${p.fl > 0 ? `⚑ ${p.fl} live red flag${p.fl > 1 ? "s" : ""} on the wire` : "⚑ multiple red flags on file"}</span>
+          <span class="fchip ${p.roi >= 11 ? "dl-low" : p.roi >= 9 ? "dl-med" : "fl-chip"}">ROI outlook · ${p.roi >= 11 ? "Strong" : p.roi >= 9 ? "Fair" : "Modest"}</span>
+          <span class="fchip fl-chip">${p.fl > 0 ? `⚑ ${p.fl} live red flag${p.fl > 1 ? "s" : ""}` : "⚑ multiple red flags"}</span>
         </div>
       </a>`).join("");
     $("empty").hidden = list.length > 0;
