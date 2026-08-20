@@ -1,9 +1,29 @@
 # Claude / Agent Handover Notes
 
-## Current Branch
-- **`feature/deal-room-flow-refresh`**: Contains the updated 3-step Deal Room demand mandate flow from the landing page (`/deal-room`).
+## Branches
+- **`feature/programmatic-apartment-clusters`**: Programmatic SEO & GEO landing pages under `/apartments/[slug]`, covering 25+ high-intent typologies, budget segments, and micro-market combinations.
+- **`feature/deal-room-flow-refresh`**: 3-step Deal Room demand mandate wizard with 0ms instant DB calculation and manual external pricing fallback.
+- **`feature/vision-and-mission`**: Vision & Mission page (kept isolated pending user sign-off).
 
-## Deal Room Flow Architecture (`src/components/dealroom/DealRoomMandate.tsx`)
+---
+
+## 1. Programmatic SEO & GEO Landing Pages (`/apartments/[slug]`)
+
+### Architecture & Ground Rules
+- **Route Namespace**: `/apartments/[slug]` (e.g. `/apartments/4-bhk-apartments-gurugram`, `/apartments/penthouses-in-gurugram`, `/apartments/4-bhk-in-gurugram-under-5-cr`, etc.).
+- **Zero Route Conflict**:
+  - `/best-projects/[filter]` is preserved exclusively for the 7 legacy filters (`under-3-cr-gurugram`, etc.).
+  - `/intelligence/markets/[slug]` is preserved exclusively for the 6 high-level corridor hubs.
+  - `/projects/[slug]` is preserved exclusively for individual project forensic dossiers (**100% untouched and identical to prod**).
+- **Component Reuse**:
+  - Reuses the site's canonical light-theme components (`ProjectsIndex` and `ProjectOptionCard`) to ensure visual consistency (`#fbf8f2` warm canvas, `#1a1a1a` typography, `border-[#1a1a1a]/10`).
+  - Includes an editorial light-themed FAQ section at the bottom formatted with Schema.org `FAQPage` JSON-LD for AI search engines (ChatGPT Search, Perplexity, Google SGE) to cite.
+- **Dynamic Sitemap**:
+  - Dynamically injected into `src/app/sitemap.ts` (`priority: 0.85`, `changeFrequency: weekly`).
+
+---
+
+## 2. Deal Room Flow Architecture (`src/components/dealroom/DealRoomMandate.tsx`)
 The Deal Room flow operates with 0ms latency (pure instant local DB + manual entry fallback):
 
 ### Step 1: The Asset
@@ -31,7 +51,7 @@ The Deal Room flow operates with 0ms latency (pure instant local DB + manual ent
   - Funding mode (`Self-funded`, `Home loan approved`, `Home loan in process`, `Not sure yet`).
 
 ### Step 3: Summary Docket & Buyer Verification
-- **Executive Summary Docket**: Displays a consolidated review card with the asset details, market benchmark, target price in Crores, discount percentage, timeline, and funding.
+- **Executive Summary Docket**: Consolidates asset details, market benchmark, target price in Crores, discount percentage, timeline, and funding.
 - **Signup & Verification**:
   - Full Name input.
   - Mobile number + country dial code with 6-digit OTP verification via `shortlistAuth`.
@@ -43,6 +63,7 @@ The Deal Room flow operates with 0ms latency (pure instant local DB + manual ent
 
 ---
 
-## Important Rules
+## 3. Important Rules & Build Invariants
+- **Report Page Invariant**: Never modify `/projects/[slug]` or `src/lib/reportAdapter.ts` when building cluster or deal room landing pages. Always verify against prod.
 - `SUPABASE_SERVICE_ROLE_KEY` is passed exclusively via environment variables and never committed to git.
-- All 1,838 static pages compile cleanly with zero errors via `npm run build`.
+- All 1,863+ static pages compile cleanly with zero errors via `npm run build`.

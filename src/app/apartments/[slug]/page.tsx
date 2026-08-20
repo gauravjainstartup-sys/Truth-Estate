@@ -6,6 +6,7 @@ import { buildScoredProjectIntel } from "@/lib/compareData";
 import { fetchTrackedStats } from "@/lib/supabase";
 import type { ProjectIntel } from "@/lib/projects";
 import { breadcrumbLd, collectionLd, ldJson } from "@/lib/seo";
+import { SITE_URL } from "@/lib/site";
 
 export function generateStaticParams() {
   return APARTMENT_CLUSTERS.map((c) => ({ slug: c.slug }));
@@ -20,10 +21,50 @@ export async function generateMetadata(
   const cluster = apartmentClusterBySlug(slug);
   if (!cluster) return { title: "Apartment Intelligence | Truth Estate" };
 
+  const canonicalUrl = `${SITE_URL}/apartments/${cluster.slug}`;
+
   return {
-    alternates: { canonical: `/apartments/${cluster.slug}` },
     title: cluster.title,
     description: cluster.description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    robots: {
+      index: true,
+      follow: true,
+      nocache: false,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
+    },
+    openGraph: {
+      title: cluster.title,
+      description: cluster.description,
+      url: canonicalUrl,
+      siteName: "Truth Estate",
+      locale: "en_IN",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: cluster.title,
+      description: cluster.description,
+    },
+    keywords: [
+      cluster.h1,
+      `${cluster.h1} 2026`,
+      "Gurugram luxury apartments",
+      "TruthScore audited apartments",
+      "RERA verified projects Gurugram",
+      "Gurugram property price per sq ft",
+      "Dwarka Expressway apartments",
+      "Golf Course Extension Road residences",
+      "SPR luxury apartments",
+    ],
   };
 }
 
@@ -83,7 +124,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         intro={cluster.intro}
       />
 
-      {/* Light-Themed FAQ & Ground Intelligence Section at Bottom */}
+      {/* Light-Themed FAQ & Ground Intelligence Section at Bottom (GEO & AI Snippet Optimization) */}
       {cluster.faqs && cluster.faqs.length > 0 && (
         <section aria-labelledby="faq-heading" className="bg-[#fbf8f2] border-t border-[#1a1a1a]/10 pb-24 pt-12">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
