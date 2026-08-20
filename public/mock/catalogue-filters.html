@@ -59,24 +59,35 @@
   .meta { margin-top: .65rem; font-size: .8rem; color: rgba(26,26,26,.55); line-height: 1.6; }
 
   /* ── the filter bar ── */
+  /* Every control — search included — is the same anatomy: a mono
+     label above a 42px field, bottom-aligned in one grid row, so
+     nothing floats at its own height. */
   .bar {
-    position: sticky; top: 53px; z-index: 30; margin: 1.1rem -1.5rem 0; padding: .7rem 1.5rem;
+    position: sticky; top: 53px; z-index: 30; margin: 1.1rem -1.5rem 0; padding: .7rem 1.5rem .6rem;
     background: rgba(245,240,232,.95); backdrop-filter: blur(4px); border-bottom: 1px solid var(--rule06);
-    display: grid; grid-template-columns: 1fr; gap: .55rem;
+    display: flex; flex-direction: column; gap: .55rem;
   }
-  @media (min-width: 900px) { .bar { grid-template-columns: minmax(200px,1.4fr) repeat(4, minmax(120px,1fr)) auto; align-items: center; } }
+  .filters { display: flex; gap: .5rem; overflow-x: auto; padding-bottom: .3rem;
+    [-ms-overflow-style]: none; scrollbar-width: none; }
+  .filters::-webkit-scrollbar { display: none; }
+  .filters .sel { flex: 0 0 auto; width: 10.2rem; }
+  @media (min-width: 900px) {
+    .bar { display: grid; grid-template-columns: minmax(200px, 1.35fr) repeat(4, minmax(118px, 1fr)) auto; align-items: end; gap: .6rem; }
+    .filters { display: contents; }
+    .filters .sel { width: auto; }
+  }
   .search { position: relative; }
   .search svg { position: absolute; left: .8rem; top: 50%; translate: 0 -50%; width: 15px; height: 15px; color: var(--ink40); pointer-events: none; }
   .search input {
-    width: 100%; border: 1px solid rgba(26,26,26,.14); background: var(--card); border-radius: 6px;
-    padding: .72rem .8rem .72rem 2.2rem; font: inherit; font-size: .88rem; color: var(--ink); outline: none;
+    width: 100%; height: 42px; border: 1px solid rgba(26,26,26,.14); background: var(--card); border-radius: 6px;
+    padding: 0 .8rem 0 2.2rem; font: inherit; font-size: .88rem; color: var(--ink); outline: none;
   }
   .search input:focus-visible { border-color: var(--gold); }
-  .sel { display: flex; flex-direction: column; gap: .18rem; }
-  .sel label { font-family: "Geist Mono", monospace; font-size: .54rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink40); }
+  .sel { display: flex; flex-direction: column; gap: .22rem; }
+  .sel label { font-family: "Geist Mono", monospace; font-size: .54rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink40); white-space: nowrap; }
   .sel select {
-    width: 100%; border: 1px solid rgba(26,26,26,.14); background: var(--card); border-radius: 6px;
-    padding: .55rem .6rem; font: inherit; font-size: .82rem; color: var(--ink); outline: none; cursor: pointer;
+    width: 100%; height: 42px; border: 1px solid rgba(26,26,26,.14); background: var(--card); border-radius: 6px;
+    padding: 0 .6rem; font: inherit; font-size: .82rem; color: var(--ink); outline: none; cursor: pointer;
   }
   .sel select:focus-visible { border-color: var(--gold); }
   .sortwrap { justify-self: end; }
@@ -151,17 +162,22 @@
   <p class="meta" id="metaline"></p>
 
   <div class="bar">
-    <div class="search">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
-      <input id="q" type="search" placeholder="Search project, developer, sector or corridor" aria-label="Search projects">
+    <div class="sel">
+      <label for="q">Search</label>
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+        <input id="q" type="search" placeholder="Search project, developer, sector or corridor" aria-label="Search projects">
+      </div>
     </div>
-    <div class="sel"><label for="f-corridor">Corridor</label><select id="f-corridor"></select></div>
-    <div class="sel"><label for="f-budget">Budget · entry</label><select id="f-budget"></select></div>
-    <div class="sel"><label for="f-config">Configuration</label><select id="f-config"></select></div>
-    <div class="sel"><label for="f-roi">Expected ROI</label><select id="f-roi"></select></div>
-    <div class="sel sortwrap"><label for="f-sort">Sort</label><select id="f-sort">
-      <option value="score">Truth Score</option><option value="priceAsc">Price · low first</option><option value="priceDesc">Price · high first</option>
-    </select></div>
+    <div class="filters">
+      <div class="sel"><label for="f-corridor">Corridor</label><select id="f-corridor"></select></div>
+      <div class="sel"><label for="f-budget">Budget · entry</label><select id="f-budget"></select></div>
+      <div class="sel"><label for="f-config">Configuration</label><select id="f-config"></select></div>
+      <div class="sel"><label for="f-roi">Expected ROI · 8-yr CAGR</label><select id="f-roi"></select></div>
+      <div class="sel sortwrap"><label for="f-sort">Sort</label><select id="f-sort">
+        <option value="score">Truth Score</option><option value="priceAsc">Price · low first</option><option value="priceDesc">Price · high first</option>
+      </select></div>
+    </div>
   </div>
 
   <div class="state" id="state"></div>
@@ -201,10 +217,13 @@
     { k: "pent", l: "Penthouse", m: ["penthouse"] },
     { k: "dup",  l: "Duplex", m: ["duplex"] },
   ];
+  /* ROI here is one thing only: the audited model's projected 8-year
+     CAGR, risk-adjusted (liveRoi.adjCagr). Not absolute appreciation,
+     not XIRR — and every label says so. */
   const ROIS = [
-    { k: "8",  l: "8%+ projected", t: (v) => v >= 8 },
-    { k: "10", l: "10%+ projected", t: (v) => v >= 10 },
-    { k: "12", l: "12%+ projected", t: (v) => v >= 12 },
+    { k: "8",  l: "8%+ proj. CAGR", t: (v) => v >= 8 },
+    { k: "10", l: "10%+ proj. CAGR", t: (v) => v >= 10 },
+    { k: "12", l: "12%+ proj. CAGR", t: (v) => v >= 12 },
   ];
 
   const cfgText = (p) => (p.c || []).join(" ").toLowerCase();
@@ -293,7 +312,7 @@
 
     /* pills + count */
     const pills = [];
-    const name = { corridor: (v) => v, budget: (v) => BUDGETS.find((x) => x.k === v)?.l, config: (v) => CONFIGS.find((x) => x.k === v)?.l, roi: (v) => "ROI " + ROIS.find((x) => x.k === v)?.l };
+    const name = { corridor: (v) => v, budget: (v) => BUDGETS.find((x) => x.k === v)?.l, config: (v) => CONFIGS.find((x) => x.k === v)?.l, roi: (v) => ROIS.find((x) => x.k === v)?.l };
     for (const dim of ["corridor", "budget", "config", "roi"]) {
       if (st[dim]) pills.push(`<button class="pill" data-dim="${dim}" type="button">${name[dim](st[dim])} <i>✕</i></button>`);
     }
@@ -334,7 +353,7 @@
         <p class="price">${fmtCr(p.b)}${p.b && p.b[0] > 0 ? "+" : ""}</p>
         <div class="facts">
           ${p.psf ? `<span>₹<b>${Math.round(p.psf / 1000)}k</b>/sq ft</span>` : ""}
-          ${p.roi != null ? `<span>ROI <b>${p.roi}%</b> proj.</span>` : ""}
+          ${p.roi != null ? `<span>CAGR <b>${p.roi}%</b> proj. 8-yr</span>` : ""}
           ${(() => {
             /* When a config filter is live, show the config that MATCHED —
                printing the project's first config under a "4 BHK" filter
