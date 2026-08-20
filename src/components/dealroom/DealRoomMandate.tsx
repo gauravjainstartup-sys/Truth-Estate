@@ -1,16 +1,16 @@
 "use client";
 
 /* ════════════════════════════════════════════════════════════════
-   THE DEAL ROOM — MANDATE (Live Demand & Pricing Flow)
+   THE DEAL ROOM — MANDATE (Instant Live DB Pricing + Manual Fallback)
 
    A 3-step structured mandate flow:
      Step 1: The Asset  → city → project name → config → size (sq ft)
-     Step 2: The Terms  → live DB psf pricing or Gemini top-model lookup → price in Crores + target slider + context questions
+     Step 2: The Terms  → instant live DB psf pricing in Crores + slider,
+                          or direct manual target price input for external projects
      Step 3: The Buyer  → mandate summary docket + signup & phone OTP verification
 
-   Everything behind "submit" is concierge-run. The mandate is
-   saved as a contact_lead with intent "deal-room" and the structured brief
-   in `payload`.
+   Zero external AI latency: Live DB resolves instantly (<10ms).
+   External/untracked projects allow direct manual price entry.
    ════════════════════════════════════════════════════════════════ */
 
 import { useEffect, useRef, useState } from "react";
@@ -23,7 +23,6 @@ import { saveLead, isSignedIn, loadAccount } from "@/lib/journey";
 import { getSession, signInWithGoogle } from "@/lib/phoneAuth";
 import { sendOtp, verifyOtp, OTP_LENGTH } from "@/lib/shortlistAuth";
 import { saveMandate } from "@/lib/dealRoomMandate";
-import { fetchResalePrice, type ResalePrice } from "@/lib/resalePrice";
 
 /* Cohort capacity is real — keep SEATS_CLAIMED truthful and bump it by hand as
    mandates land (concierge-maintained). Scarcity must never be faked. */
@@ -82,6 +81,12 @@ function formatCrRange(low: number, high: number): string {
 
 const digitsToNum = (s: string): number => Number((s || "").replace(/[^\d]/g, "")) || 0;
 
+type ResaleDbPrice = {
+  text: string;
+  low: number;
+  high: number;
+};
+
 type Draft = {
   city: string;
   project: string;
@@ -119,13 +124,9 @@ export default function DealRoomMandate() {
   const [projectHomes, setProjectHomes] = useState<Record<string, { config: string; superSqft: number }[]>>({});
   const [projOpen, setProjOpen] = useState(false);
 
-  // Pricing resolution state
-  const [resale, setResale] = useState<ResalePrice | null>(null);
-  const [resaleLoading, setResaleLoading] = useState(false);
-  const [resolvingPrice, setResolvingPrice] = useState(false);
-  const [resaleBasis, setResaleBasis] = useState<"config" | "project" | "market" | null>(null);
+  // Pricing resolution state from Live DB
+  const [resale, setResale] = useState<ResaleDbPrice | null>(null);
   const [resolvedPsf, setResolvedPsf] = useState<{ low: number; high: number } | null>(null);
-  const resaleFetchedFor = useRef("");
 
   // Auth state (buyer step)
   const [dial, setDial] = useState("+91");
@@ -153,7 +154,7 @@ export default function DealRoomMandate() {
         const draft = JSON.parse(raw) as Draft;
         submitMandate(draft, "google");
       }
-    } catch { /* a bad draft must never break the page */ }
+    } catch { /* fail soft */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -170,10 +171,9 @@ export default function DealRoomMandate() {
     }));
   };
 
-  /* Pricing Resolution:
-     1. Live DB lookup (project's filed ₹/sq ft psfOwn or corridor psf × size)
-     2. Fallback: Gemini 2.5 Pro / Flash live market lookup */
-  function computeLiveDbPrice(project: string, config: string, sizeSqft: number): { price: ResalePrice; psf: { low: number; high: number } } | null {
+  /* Instant Live DB Pricing Calculation:
+     Calculates sizeSqft × psfRate from filed project rates */
+  function computeLiveDbPrice(project: string, config: string, sizeSqft: number): { price: ResaleDbPrice; psf: { low: number; high: number } } | null {
     const psf = projectPsf[project.trim()];
     if (!psf || !(psf.low > 0) || !(sizeSqft > 0)) return null;
     const lakh = (v: number) => Math.round(v / 1e5) * 1e5;
@@ -181,53 +181,19 @@ export default function DealRoomMandate() {
     const high = lakh(sizeSqft * psf.high);
     const text = formatCrRange(low, high);
     return {
-      price: { status: "ok", text, low, high },
+      price: { text, low, high },
       psf,
     };
   }
 
-  async function resolvePrice(project: string, city: string, config: string, sizeSqft: number): Promise<{ price: ResalePrice; basis: "config" | "project" | "market"; psf: { low: number; high: number } | null }> {
-    const projKey = project.trim();
-    const effectiveSize = sizeSqft > 0 ? sizeSqft : (DEFAULT_AREAS[config.toLowerCase()] || 2000);
-
-    // 1. Live DB check
-    const fromDb = computeLiveDbPrice(projKey, config, effectiveSize);
-    if (fromDb) {
-      return { price: fromDb.price, basis: "config", psf: fromDb.psf };
-    }
-
-    // 2. Gemini Top Model lookup for external / untracked projects
-    try {
-      const geminiResult = await fetchResalePrice(projKey, city, config, "gemini-2.5-pro", 45000);
-      if (geminiResult.status === "ok" && geminiResult.low) {
-        const estPsf = Math.round(geminiResult.low / effectiveSize);
-        return {
-          price: geminiResult,
-          basis: "market",
-          psf: estPsf > 0 ? { low: estPsf, high: Math.round((geminiResult.high || geminiResult.low) / effectiveSize) } : null,
-        };
-      }
-    } catch { /* fail soft */ }
-
-    // Fallback benchmark if model returns blank
-    const fallbackPsf = { low: 18000, high: 24000 };
-    const low = Math.round((effectiveSize * fallbackPsf.low) / 1e5) * 1e5;
-    const high = Math.round((effectiveSize * fallbackPsf.high) / 1e5) * 1e5;
-    return {
-      price: { status: "ok", text: formatCrRange(low, high), low, high },
-      basis: "market",
-      psf: fallbackPsf,
-    };
-  }
-
-  const seedTarget = (r: ResalePrice) => {
+  const seedTarget = (r: ResaleDbPrice) => {
     if (r.low) {
-      setD((p) => (digitsToNum(p.target) === 0 ? { ...p, target: inrGroup(Math.round(r.low! * 0.9)) } : p));
+      setD((p) => (digitsToNum(p.target) === 0 ? { ...p, target: inrGroup(Math.round(r.low * 0.9)) } : p));
     }
   };
 
-  /* Step 1 → Interstitial loader → Step 2 */
-  async function goToTerms() {
+  /* Step 1 → Step 2 Transition (Instant, Zero Latency) */
+  function goToTerms() {
     const proj = d.project.trim();
     if (!proj) {
       setErr("Please enter a project name.");
@@ -240,38 +206,21 @@ export default function DealRoomMandate() {
 
     setErr("");
     setProjOpen(false);
-    setResolvingPrice(true);
-    window.scrollTo(0, 0);
 
-    resaleFetchedFor.current = `${proj}|${d.city}|${d.config}|${sizeNum}`;
-    const [res] = await Promise.all([
-      resolvePrice(proj, d.city, d.config, sizeNum),
-      new Promise((r) => setTimeout(r, 900)), // minimum display floor for smooth UX
-    ]);
+    // Instant local DB check
+    const fromDb = computeLiveDbPrice(proj, d.config, sizeNum);
+    if (fromDb) {
+      setResale(fromDb.price);
+      setResolvedPsf(fromDb.psf);
+      seedTarget(fromDb.price);
+    } else {
+      // External / Untracked project: user fills target price manually
+      setResale(null);
+      setResolvedPsf(null);
+    }
 
-    setResale(res.price);
-    setResaleBasis(res.basis);
-    setResolvedPsf(res.psf);
-    seedTarget(res.price);
-    setResolvingPrice(false);
     setStep(1);
-  }
-
-  /* Retry pricing check */
-  function loadResale() {
-    const proj = d.project.trim();
-    if (!proj) return;
-    const sizeNum = digitsToNum(d.sizeSqft) || 2000;
-    resaleFetchedFor.current = `${proj}|${d.city}|${d.config}|${sizeNum}`;
-    setResale(null);
-    setResaleLoading(true);
-    resolvePrice(proj, d.city, d.config, sizeNum).then((res) => {
-      setResale(res.price);
-      setResaleBasis(res.basis);
-      setResolvedPsf(res.psf);
-      setResaleLoading(false);
-      seedTarget(res.price);
-    });
+    window.scrollTo(0, 0);
   }
 
   function openWizard() {
@@ -368,6 +317,7 @@ export default function DealRoomMandate() {
       city: draft.city,
       project: draft.project.trim(),
       config: draft.config,
+      sizeSqft: draft.sizeSqft,
       unit: draft.unit.trim(),
       stage: draft.stage,
       target: draft.target.trim(),
@@ -404,6 +354,7 @@ export default function DealRoomMandate() {
     e?.preventDefault();
     if (busy) return;
     if (!name.trim()) { setErr("Please add your full name."); return; }
+    if (!d.target.trim()) { setErr("Please set your target price in Step 2."); return; }
     if (!otpSent) { await sendCode(); return; }
     if (!otpComplete) { setErr(`Enter the ${OTP_LENGTH}-digit code.`); return; }
     setErr(""); setBusy(true);
@@ -430,11 +381,11 @@ export default function DealRoomMandate() {
 
   // ── target calculation & slider anchors ──
   const targetNum = digitsToNum(d.target);
-  const mktLow = resale?.low ?? 30000000;
-  const mktHigh = resale?.high ?? 40000000;
+  const mktLow = resale?.low ?? null;
+  const mktHigh = resale?.high ?? null;
   const hasBar = mktLow != null && mktHigh != null;
-  const barMin = hasBar ? Math.round(mktLow * 0.75) : 10000000; // Steal deal floor (~25% below market low)
-  const barMax = hasBar ? Math.round(mktHigh * 1.05) : 60000000; // Market top ceiling
+  const barMin = hasBar ? Math.round(mktLow * 0.75) : 0; // Steal deal floor (~25% below market low)
+  const barMax = hasBar ? Math.round(mktHigh * 1.05) : 0; // Market top ceiling
   const barVal = hasBar ? Math.min(barMax, Math.max(barMin, targetNum || Math.round(mktLow * 0.9))) : 0;
   const barPct = (v: number) => (barMax > barMin ? Math.min(100, Math.max(0, ((v - barMin) / (barMax - barMin)) * 100)) : 0);
 
@@ -444,203 +395,190 @@ export default function DealRoomMandate() {
     <div className="min-h-screen bg-[#14110d] text-[#f4efe6]" style={{ fontFeatureSettings: '"ss01"' }}>
       <SiteHeader />
 
-      {/* Interstitial loading screen while price calculates */}
-      {screen === "wizard" && resolvingPrice && (
-        <div className="mx-auto flex min-h-[calc(100dvh-160px)] max-w-2xl flex-col items-center justify-center px-6 text-center">
-          <span className="h-10 w-10 animate-spin rounded-full border-2 border-[#c9a96e]/25 border-t-[#c9a96e]" aria-hidden />
-          <p className="mt-7 font-serif text-[1.65rem] font-medium leading-tight text-[#f4efe6]">
-            Fetching latest market rates for {d.project.trim() || "your project"}…
-          </p>
-          <p className="mt-3 max-w-[44ch] text-[0.92rem] leading-relaxed text-[#a9a196]">
-            Calculating filed rates, recent closings, and {d.sizeSqft ? `${d.sizeSqft} sq ft` : "unit"} benchmark pricing. One moment.
-          </p>
-        </div>
-      )}
+      <div className="mx-auto flex min-h-[calc(100dvh-96px)] max-w-5xl items-start px-6 pb-16 pt-6 md:items-center md:px-10">
+        <div className="grid w-full gap-10 md:grid-cols-[200px_1fr] md:gap-14">
+          
+          {/* Sidebar navigation */}
+          <aside className="md:sticky md:top-6 md:self-start">
+            <div className="flex gap-2 overflow-x-auto md:flex-col md:gap-0">
+              {PHASES.map((p, i) => (
+                <div key={p} className={`flex items-start gap-3 py-2.5 transition-opacity ${i === step ? "opacity-100" : "opacity-45"}`}>
+                  <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border font-mono text-[0.72rem] transition-colors ${i < step ? "border-[#1e6b45] bg-[#1e6b45] text-white" : i === step ? "border-[#c9a96e] bg-[#c9a96e]/[0.12] text-[#e7cf95]" : "border-[#c9a96e]/25 text-[#a9a196]"}`}>
+                    {i < step ? "✓" : i + 1}
+                  </span>
+                  <span className={`hidden pt-1 text-[0.85rem] md:block ${i === step ? "text-[#f4efe6]" : "text-[#a9a196]"}`}>{p}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 hidden rounded-lg border border-[#c9a96e]/20 px-3 py-2.5 font-mono text-[0.6rem] uppercase leading-relaxed tracking-[0.1em] text-[#d99a4e] md:block">
+              {COHORT}<br />{SEATS_TOTAL - SEATS_CLAIMED} seats left
+            </div>
+          </aside>
 
-      {screen === "wizard" && !resolvingPrice && (
-        <div className="mx-auto flex min-h-[calc(100dvh-96px)] max-w-5xl items-start px-6 pb-16 pt-6 md:items-center md:px-10">
-          <div className="grid w-full gap-10 md:grid-cols-[200px_1fr] md:gap-14">
-            
-            {/* Sidebar navigation */}
-            <aside className="md:sticky md:top-6 md:self-start">
-              <div className="flex gap-2 overflow-x-auto md:flex-col md:gap-0">
-                {PHASES.map((p, i) => (
-                  <div key={p} className={`flex items-start gap-3 py-2.5 transition-opacity ${i === step ? "opacity-100" : "opacity-45"}`}>
-                    <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border font-mono text-[0.72rem] transition-colors ${i < step ? "border-[#1e6b45] bg-[#1e6b45] text-white" : i === step ? "border-[#c9a96e] bg-[#c9a96e]/[0.12] text-[#e7cf95]" : "border-[#c9a96e]/25 text-[#a9a196]"}`}>
-                      {i < step ? "✓" : i + 1}
-                    </span>
-                    <span className={`hidden pt-1 text-[0.85rem] md:block ${i === step ? "text-[#f4efe6]" : "text-[#a9a196]"}`}>{p}</span>
+          {/* Step panels */}
+          <div>
+            {/* STEP 1: City -> Project Name -> Config -> Size */}
+            {step === 0 && (
+              <div>
+                <span className={eyebrow}>Step 1 of 3 · The asset</span>
+                <h2 className="mt-2 font-serif text-[1.85rem] font-medium leading-tight">Which home are you buying?</h2>
+                <p className="mt-3 max-w-[50ch] text-[0.96rem] leading-relaxed text-[#a9a196]">
+                  Select the city, project name, configuration, and unit size to establish the exact pricing benchmark.
+                </p>
+
+                <div className="mt-8 flex flex-col gap-7">
+                  {/* 1. City */}
+                  <div>
+                    <span className={label}>City</span>
+                    <select value={d.city} onChange={(e) => set("city", e.target.value)} className={`${field} appearance-none`}>
+                      {CITIES.map((c) => <option key={c} value={c} className="bg-[#191510]">{c}</option>)}
+                    </select>
                   </div>
-                ))}
-              </div>
-              <div className="mt-6 hidden rounded-lg border border-[#c9a96e]/20 px-3 py-2.5 font-mono text-[0.6rem] uppercase leading-relaxed tracking-[0.1em] text-[#d99a4e] md:block">
-                {COHORT}<br />{SEATS_TOTAL - SEATS_CLAIMED} seats left
-              </div>
-            </aside>
 
-            {/* Step panels */}
-            <div>
-              {/* STEP 1: City -> Project Name -> Config -> Size */}
-              {step === 0 && (
-                <div>
-                  <span className={eyebrow}>Step 1 of 3 · The asset</span>
-                  <h2 className="mt-2 font-serif text-[1.85rem] font-medium leading-tight">Which home are you buying?</h2>
-                  <p className="mt-3 max-w-[50ch] text-[0.96rem] leading-relaxed text-[#a9a196]">
-                    Select the city, project name, configuration, and unit size to establish the exact pricing benchmark.
-                  </p>
-
-                  <div className="mt-8 flex flex-col gap-7">
-                    {/* 1. City */}
-                    <div>
-                      <span className={label}>City</span>
-                      <select value={d.city} onChange={(e) => set("city", e.target.value)} className={`${field} appearance-none`}>
-                        {CITIES.map((c) => <option key={c} value={c} className="bg-[#191510]">{c}</option>)}
-                      </select>
-                    </div>
-
-                    {/* 2. Project Name */}
-                    <div>
-                      <span className={label}>Project Name</span>
-                      <div className="relative">
-                        <input
-                          value={d.project}
-                          onChange={(e) => { set("project", e.target.value); setProjOpen(true); }}
-                          onFocus={() => setProjOpen(true)}
-                          onBlur={() => setTimeout(() => setProjOpen(false), 160)}
-                          autoComplete="off"
-                          placeholder="Type or pick a project (e.g. DLF Privana, Smartworld The Edition)"
-                          className={field}
-                        />
-                        {projOpen && d.project.trim().length >= 2 && (() => {
-                          const q = d.project.trim().toLowerCase();
-                          const matches = projectNames.filter((n) => n.toLowerCase().includes(q)).slice(0, 8);
-                          if (!matches.length) return null;
-                          return (
-                            <ul className="absolute left-0 right-0 z-30 mt-1 max-h-64 overflow-auto rounded-xl border border-[#c9a96e]/25 bg-[#1d1811] py-1 shadow-[0_20px_44px_-18px_rgba(0,0,0,.75)]">
-                              {matches.map((n) => (
-                                <li key={n}>
-                                  <button
-                                    type="button"
-                                    onMouseDown={(e) => {
-                                      e.preventDefault();
-                                      set("project", n);
-                                      const cfgs = configsFor(n);
-                                      const defaultCfg = cfgs[0] || "3 BHK";
-                                      set("config", defaultCfg);
-                                      handleConfigChange(defaultCfg);
-                                      setProjOpen(false);
-                                    }}
-                                    className="block w-full px-4 py-2.5 text-left text-[0.9rem] text-[#f4efe6] transition-colors hover:bg-[#c9a96e]/[0.12]"
-                                  >
-                                    {n}
-                                  </button>
-                                </li>
-                              ))}
-                            </ul>
-                          );
-                        })()}
-                      </div>
-                      {projectNames.length > 0 && (
-                        <p className="mt-2 text-[0.72rem] text-[#6f685c]">{projectNames.length}+ tracked projects with live filed rates — or type any custom project.</p>
-                      )}
-                    </div>
-
-                    {/* 3. Configuration */}
-                    <div>
-                      <span className={label}>Configuration</span>
-                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                        {configsFor(d.project).map((c) => (
-                          <button
-                            key={c}
-                            type="button"
-                            onClick={() => handleConfigChange(c)}
-                            aria-pressed={d.config === c}
-                            className={`rounded-xl border px-3 py-3 text-[0.84rem] font-medium transition-colors ${d.config === c ? "border-[#c9a96e] bg-[#c9a96e]/[0.12] text-[#e7cf95]" : "border-[#c9a96e]/20 bg-[#191510] text-[#a9a196] hover:border-[#c9a96e]/50 hover:text-[#f4efe6]"}`}
-                          >
-                            {c}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* 4. Unit Size (Super Built-up Area) */}
-                    <div>
-                      <span className={label}>Unit Size (Super Built-up Area in Sq Ft)</span>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={d.sizeSqft}
-                          onChange={(e) => {
-                            const val = e.target.value.replace(/\D/g, "");
-                            set("sizeSqft", val ? inrGroup(Number(val)) : "");
-                          }}
-                          placeholder={String(DEFAULT_AREAS[d.config.toLowerCase()] || 2150)}
-                          className={field}
-                        />
-                        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 font-mono text-[0.82rem] text-[#6f685c]">
-                          sq ft
-                        </span>
-                      </div>
-                      {/* Size suggestions if project has filed unit areas */}
-                      {(() => {
-                        const proj = d.project.trim();
-                        const homes = (projectHomes[proj] || []).filter((h) => h.config.trim().toLowerCase() === d.config.trim().toLowerCase() && h.superSqft > 0);
-                        if (!homes.length) return null;
+                  {/* 2. Project Name */}
+                  <div>
+                    <span className={label}>Project Name</span>
+                    <div className="relative">
+                      <input
+                        value={d.project}
+                        onChange={(e) => { set("project", e.target.value); setProjOpen(true); }}
+                        onFocus={() => setProjOpen(true)}
+                        onBlur={() => setTimeout(() => setProjOpen(false), 160)}
+                        autoComplete="off"
+                        placeholder="Type or pick a project (e.g. DLF Privana, Smartworld The Edition)"
+                        className={field}
+                      />
+                      {projOpen && d.project.trim().length >= 2 && (() => {
+                        const q = d.project.trim().toLowerCase();
+                        const matches = projectNames.filter((n) => n.toLowerCase().includes(q)).slice(0, 8);
+                        if (!matches.length) return null;
                         return (
-                          <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                            <span className="text-[0.72rem] text-[#6f685c]">Filed layouts:</span>
-                            {homes.map((h) => (
-                              <button
-                                key={h.superSqft}
-                                type="button"
-                                onClick={() => set("sizeSqft", String(h.superSqft))}
-                                className={`rounded-lg border px-2.5 py-1 text-[0.74rem] transition-colors ${d.sizeSqft === String(h.superSqft) ? "border-[#c9a96e] bg-[#c9a96e]/20 text-[#e7cf95]" : "border-[#c9a96e]/20 bg-[#191510] text-[#a9a196] hover:border-[#c9a96e]/40"}`}
-                              >
-                                {inrGroup(h.superSqft)} sq ft
-                              </button>
+                          <ul className="absolute left-0 right-0 z-30 mt-1 max-h-64 overflow-auto rounded-xl border border-[#c9a96e]/25 bg-[#1d1811] py-1 shadow-[0_20px_44px_-18px_rgba(0,0,0,.75)]">
+                            {matches.map((n) => (
+                              <li key={n}>
+                                <button
+                                  type="button"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    set("project", n);
+                                    const cfgs = configsFor(n);
+                                    const defaultCfg = cfgs[0] || "3 BHK";
+                                    set("config", defaultCfg);
+                                    handleConfigChange(defaultCfg);
+                                    setProjOpen(false);
+                                  }}
+                                  className="block w-full px-4 py-2.5 text-left text-[0.9rem] text-[#f4efe6] transition-colors hover:bg-[#c9a96e]/[0.12]"
+                                >
+                                  {n}
+                                </button>
+                              </li>
                             ))}
-                          </div>
+                          </ul>
                         );
                       })()}
                     </div>
+                    {projectNames.length > 0 && (
+                      <p className="mt-2 text-[0.72rem] text-[#6f685c]">{projectNames.length}+ tracked projects with live filed rates — or type any custom project name.</p>
+                    )}
+                  </div>
 
-                    {/* Optional: Unit / Tower details */}
-                    <div>
-                      <span className={label}>Unit Details <span className="ml-1 text-[#6f685c]">optional</span></span>
-                      <input value={d.unit} onChange={(e) => set("unit", e.target.value)} placeholder="Tower / floor / facing (if finalized)" className={field} />
+                  {/* 3. Configuration */}
+                  <div>
+                    <span className={label}>Configuration</span>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {configsFor(d.project).map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => handleConfigChange(c)}
+                          aria-pressed={d.config === c}
+                          className={`rounded-xl border px-3 py-3 text-[0.84rem] font-medium transition-colors ${d.config === c ? "border-[#c9a96e] bg-[#c9a96e]/[0.12] text-[#e7cf95]" : "border-[#c9a96e]/20 bg-[#191510] text-[#a9a196] hover:border-[#c9a96e]/50 hover:text-[#f4efe6]"}`}
+                        >
+                          {c}
+                        </button>
+                      ))}
                     </div>
                   </div>
 
-                  {err && <p className="mt-4 text-[0.84rem] text-[#e6a189]">{err}</p>}
+                  {/* 4. Unit Size (Super Built-up Area) */}
+                  <div>
+                    <span className={label}>Unit Size (Super Built-up Area in Sq Ft)</span>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={d.sizeSqft}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          set("sizeSqft", val ? inrGroup(Number(val)) : "");
+                        }}
+                        placeholder={String(DEFAULT_AREAS[d.config.toLowerCase()] || 2150)}
+                        className={field}
+                      />
+                      <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 font-mono text-[0.82rem] text-[#6f685c]">
+                        sq ft
+                      </span>
+                    </div>
+                    {/* Size suggestions if project has filed unit areas */}
+                    {(() => {
+                      const proj = d.project.trim();
+                      const homes = (projectHomes[proj] || []).filter((h) => h.config.trim().toLowerCase() === d.config.trim().toLowerCase() && h.superSqft > 0);
+                      if (!homes.length) return null;
+                      return (
+                        <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                          <span className="text-[0.72rem] text-[#6f685c]">Filed layouts:</span>
+                          {homes.map((h) => (
+                            <button
+                              key={h.superSqft}
+                              type="button"
+                              onClick={() => set("sizeSqft", String(h.superSqft))}
+                              className={`rounded-lg border px-2.5 py-1 text-[0.74rem] transition-colors ${d.sizeSqft === String(h.superSqft) ? "border-[#c9a96e] bg-[#c9a96e]/20 text-[#e7cf95]" : "border-[#c9a96e]/20 bg-[#191510] text-[#a9a196] hover:border-[#c9a96e]/40"}`}
+                            >
+                              {inrGroup(h.superSqft)} sq ft
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
 
-                  <div className="mt-9 flex justify-between items-center">
-                    <button onClick={() => setScreen("landing")} className="text-[0.85rem] text-[#a9a196] hover:text-[#f4efe6]">← Back</button>
-                    <button onClick={goToTerms} disabled={!d.project.trim()} className={btnPrimary}>
-                      Continue to Pricing →
-                    </button>
+                  {/* Optional: Unit / Tower details */}
+                  <div>
+                    <span className={label}>Unit Details <span className="ml-1 text-[#6f685c]">optional</span></span>
+                    <input value={d.unit} onChange={(e) => set("unit", e.target.value)} placeholder="Tower / floor / facing (if finalized)" className={field} />
                   </div>
                 </div>
-              )}
 
-              {/* STEP 2: Live Pricing in Crores + Slider + Context Questions */}
-              {step === 1 && (
-                <div>
-                  <span className={eyebrow}>Step 2 of 3 · The terms</span>
-                  <h2 className="mt-2 font-serif text-[1.85rem] font-medium leading-tight">What would a win look like?</h2>
-                  <p className="mt-3 max-w-[52ch] text-[0.96rem] leading-relaxed text-[#a9a196]">
-                    Set the target price in Crores you&apos;d be thrilled to close at. On the call, we benchmark it against live market comps so you negotiate with verified data.
-                  </p>
+                {err && <p className="mt-4 text-[0.84rem] text-[#e6a189]">{err}</p>}
 
-                  {/* Benchmark & Target Price Card */}
-                  <div className="mt-8 overflow-hidden rounded-2xl border border-[#c9a96e]/25 bg-gradient-to-b from-[#221c13] to-[#18140f] p-6 shadow-[0_20px_40px_-20px_rgba(0,0,0,0.8)]">
-                    
-                    {/* Live Market Benchmark Header */}
+                <div className="mt-9 flex justify-between items-center">
+                  <button onClick={() => setScreen("landing")} className="text-[0.85rem] text-[#a9a196] hover:text-[#f4efe6]">← Back</button>
+                  <button onClick={goToTerms} disabled={!d.project.trim()} className={btnPrimary}>
+                    Continue to Pricing →
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 2: Live Pricing in Crores + Slider (or Manual Target Entry) + Context Questions */}
+            {step === 1 && (
+              <div>
+                <span className={eyebrow}>Step 2 of 3 · The terms</span>
+                <h2 className="mt-2 font-serif text-[1.85rem] font-medium leading-tight">What would a win look like?</h2>
+                <p className="mt-3 max-w-[52ch] text-[0.96rem] leading-relaxed text-[#a9a196]">
+                  Set the target price in Crores you&apos;d be thrilled to close at. On the call, we benchmark it against live market comps so you negotiate with verified data.
+                </p>
+
+                {/* Benchmark & Target Price Card */}
+                <div className="mt-8 overflow-hidden rounded-2xl border border-[#c9a96e]/25 bg-gradient-to-b from-[#221c13] to-[#18140f] p-6 shadow-[0_20px_40px_-20px_rgba(0,0,0,0.8)]">
+                  
+                  {/* Case A: Tracked in Live DB -> Show Benchmark Range & PSF */}
+                  {hasBar && (
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#c9a96e]/15 pb-4">
                       <div>
                         <span className="font-mono text-[0.62rem] uppercase tracking-[0.16em] text-[#c9a96e]">Estimated Current Market Price</span>
                         <p className="mt-1 font-serif text-[1.65rem] font-semibold leading-tight text-[#e7cf95]">
-                          {resale?.text || formatCrRange(mktLow, mktHigh)}
+                          {resale!.text}
                         </p>
                       </div>
                       {resolvedPsf && (
@@ -654,36 +592,51 @@ export default function DealRoomMandate() {
                         </div>
                       )}
                     </div>
+                  )}
 
-                    {/* Target Price Big Input in Crores */}
-                    <div className="mt-6">
-                      <span className={label}>Your Target Closing Price</span>
-                      <div className="relative">
-                        <span className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 font-serif text-[1.9rem] leading-none text-[#6f685c]">₹</span>
-                        <input
-                          value={d.target}
-                          onChange={(e) => {
-                            const dg = e.target.value.replace(/\D/g, "");
-                            set("target", dg ? inrGroup(Number(dg)) : "");
-                          }}
-                          inputMode="numeric"
-                          placeholder="2,10,00,000"
-                          className="w-full rounded-2xl border border-[#c9a96e]/25 bg-[#14110d] py-5 pl-12 pr-28 font-serif text-[1.9rem] font-semibold leading-none text-[#f4efe6] placeholder-[#4a453d] outline-none transition-colors focus:border-[#c9a96e]"
-                        />
-                        <span className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 font-serif text-[1.2rem] font-medium text-[#e7cf95]">
-                          {targetNum ? formatCr(targetNum) : ""}
-                        </span>
-                      </div>
+                  {/* Case B: External / Untracked Project -> Manual Entry Note */}
+                  {!hasBar && (
+                    <div className="border-b border-[#c9a96e]/15 pb-4">
+                      <span className="font-mono text-[0.62rem] uppercase tracking-[0.16em] text-[#c9a96e]">Custom Project Mandate</span>
+                      <p className="mt-1 font-serif text-[1.3rem] font-medium leading-tight text-[#f4efe6]">
+                        {d.project} ({d.config} · {d.sizeSqft ? `${d.sizeSqft} sq ft` : ""})
+                      </p>
+                      <p className="mt-1.5 text-[0.8rem] text-[#a9a196]">
+                        Enter your target price directly below. We will ground it against verified off-market seller comps on your lock-in call.
+                      </p>
                     </div>
+                  )}
 
-                    {/* Interactive Slider Bar */}
+                  {/* Target Price Big Input in Crores */}
+                  <div className="mt-6">
+                    <span className={label}>Your Target Closing Price</span>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 font-serif text-[1.9rem] leading-none text-[#6f685c]">₹</span>
+                      <input
+                        value={d.target}
+                        onChange={(e) => {
+                          const dg = e.target.value.replace(/\D/g, "");
+                          set("target", dg ? inrGroup(Number(dg)) : "");
+                        }}
+                        inputMode="numeric"
+                        placeholder="2,50,00,000"
+                        className="w-full rounded-2xl border border-[#c9a96e]/25 bg-[#14110d] py-5 pl-12 pr-28 font-serif text-[1.9rem] font-semibold leading-none text-[#f4efe6] placeholder-[#4a453d] outline-none transition-colors focus:border-[#c9a96e]"
+                      />
+                      <span className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 font-serif text-[1.2rem] font-medium text-[#e7cf95]">
+                        {targetNum ? formatCr(targetNum) : ""}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Interactive Slider Bar (rendered when DB benchmark exists) */}
+                  {hasBar && (
                     <div className="mt-7">
                       <div className="relative select-none">
                         <div className="relative h-3 rounded-full bg-gradient-to-r from-[#1e6b45] via-[#c9a96e] to-[#8a5a2b]">
                           {/* Market band overlay */}
                           <div
                             className="absolute inset-y-0 rounded-full bg-[#14110d]/40 ring-1 ring-inset ring-[#f4efe6]/30"
-                            style={{ left: `${barPct(mktLow)}%`, right: `${100 - barPct(mktHigh)}%` }}
+                            style={{ left: `${barPct(mktLow!)}%`, right: `${100 - barPct(mktHigh!)}%` }}
                             aria-hidden
                           />
                         </div>
@@ -715,8 +668,8 @@ export default function DealRoomMandate() {
                         {(() => {
                           const t = targetNum || barVal;
                           if (!t) return <span className="text-[#6f685c]">Slide to set your target price.</span>;
-                          if (t < mktLow) {
-                            const diffPct = Math.max(1, Math.round(((mktLow - t) / mktLow) * 100));
+                          if (t < mktLow!) {
+                            const diffPct = Math.max(1, Math.round(((mktLow! - t) / mktLow!) * 100));
                             return (
                               <p className="text-[#f4efe6]">
                                 Target <b className="font-serif text-[1.05rem] text-[#e7cf95]">{formatCr(t)}</b> (~₹{inrGroup(t)}) —{" "}
@@ -724,7 +677,7 @@ export default function DealRoomMandate() {
                               </p>
                             );
                           }
-                          if (t <= mktHigh) {
+                          if (t <= mktHigh!) {
                             return (
                               <p className="text-[#f4efe6]">
                                 Target <b className="font-serif text-[1.05rem] text-[#e7cf95]">{formatCr(t)}</b> (~₹{inrGroup(t)}) —{" "}
@@ -741,187 +694,189 @@ export default function DealRoomMandate() {
                         })()}
                       </div>
                     </div>
-                  </div>
+                  )}
+                </div>
 
-                  {/* Context Questions */}
-                  <div className="mt-8 flex flex-col gap-7">
-                    <div>
-                      <span className={label}>How set are you on this home?</span>
-                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                        {STAGES.map((s) => (
-                          <button
-                            key={s}
-                            type="button"
-                            onClick={() => set("stage", s)}
-                            aria-pressed={d.stage === s}
-                            className={`rounded-xl border px-3 py-3.5 text-[0.86rem] transition-colors ${d.stage === s ? "border-[#c9a96e] bg-[#c9a96e]/[0.12] text-[#e7cf95]" : "border-[#c9a96e]/20 bg-[#191510] text-[#a9a196] hover:border-[#c9a96e]/50 hover:text-[#f4efe6]"}`}
-                          >
-                            {s}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <span className={label}>Already been quoted a price? <span className="ml-1 text-[#6f685c]">optional</span></span>
-                      <textarea
-                        value={d.offer}
-                        onChange={(e) => set("offer", e.target.value)}
-                        placeholder="Paste what a broker or owner quoted — base rate, floor rise, PLC, or parking. It helps us beat it."
-                        className={`${field} min-h-[76px] resize-y text-[0.92rem]`}
-                      />
-                    </div>
-
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div>
-                        <span className={label}>Timeline to close</span>
-                        <select value={d.timeline} onChange={(e) => set("timeline", e.target.value)} className={`${field} appearance-none`}>
-                          {TIMELINES.map((t) => <option key={t} className="bg-[#191510]">{t}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <span className={label}>How are you funding it?</span>
-                        <select value={d.funding} onChange={(e) => set("funding", e.target.value)} className={`${field} appearance-none`}>
-                          {FUNDING.map((f) => <option key={f} className="bg-[#191510]">{f}</option>)}
-                        </select>
-                      </div>
+                {/* Context Questions */}
+                <div className="mt-8 flex flex-col gap-7">
+                  <div>
+                    <span className={label}>How set are you on this home?</span>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                      {STAGES.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => set("stage", s)}
+                          aria-pressed={d.stage === s}
+                          className={`rounded-xl border px-3 py-3.5 text-[0.86rem] transition-colors ${d.stage === s ? "border-[#c9a96e] bg-[#c9a96e]/[0.12] text-[#e7cf95]" : "border-[#c9a96e]/20 bg-[#191510] text-[#a9a196] hover:border-[#c9a96e]/50 hover:text-[#f4efe6]"}`}
+                        >
+                          {s}
+                        </button>
+                      ))}
                     </div>
                   </div>
 
-                  <div className="mt-9 flex justify-between items-center">
-                    <button onClick={() => go(0)} className="text-[0.85rem] text-[#a9a196] hover:text-[#f4efe6]">← Back</button>
-                    <button onClick={() => go(2)} className={btnPrimary}>Continue to Summary →</button>
+                  <div>
+                    <span className={label}>Already been quoted a price? <span className="ml-1 text-[#6f685c]">optional</span></span>
+                    <textarea
+                      value={d.offer}
+                      onChange={(e) => set("offer", e.target.value)}
+                      placeholder="Paste what a broker or owner quoted — base rate, floor rise, PLC, or parking. It helps us beat it."
+                      className={`${field} min-h-[76px] resize-y text-[0.92rem]`}
+                    />
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <span className={label}>Timeline to close</span>
+                      <select value={d.timeline} onChange={(e) => set("timeline", e.target.value)} className={`${field} appearance-none`}>
+                        {TIMELINES.map((t) => <option key={t} className="bg-[#191510]">{t}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <span className={label}>How are you funding it?</span>
+                      <select value={d.funding} onChange={(e) => set("funding", e.target.value)} className={`${field} appearance-none`}>
+                        {FUNDING.map((f) => <option key={f} className="bg-[#191510]">{f}</option>)}
+                      </select>
+                    </div>
                   </div>
                 </div>
-              )}
 
-              {/* STEP 3: Summary Docket + Buyer Signup & Verification */}
-              {step === 2 && (
-                <form onSubmit={verifySubmit}>
-                  <span className={eyebrow}>Step 3 of 3 · Summary &amp; verify</span>
-                  <h2 className="mt-2 font-serif text-[1.85rem] font-medium leading-tight">Review your mandate &amp; sign up.</h2>
-                  <p className="mt-3 max-w-[50ch] text-[0.96rem] leading-relaxed text-[#a9a196]">
-                    Sellers only compete for verified buyers — it&apos;s why offers come in writing. No upfront fee.
-                  </p>
-
-                  {/* Summary Docket Card */}
-                  <div className="mt-8 rounded-2xl border border-[#c9a96e]/30 bg-[#1b1712] p-5 shadow-[0_12px_30px_rgba(0,0,0,0.5)]">
-                    <div className="flex items-center justify-between border-b border-[#c9a96e]/15 pb-3">
-                      <span className="font-mono text-[0.62rem] uppercase tracking-[0.16em] text-[#c9a96e]">Mandate Summary Docket</span>
-                      <span className="rounded-full bg-[#1e6b45]/20 px-2.5 py-0.5 text-[0.65rem] font-semibold text-[#7fd0a3]">Ready to float</span>
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-2 gap-4 text-[0.86rem] sm:grid-cols-3">
-                      <div>
-                        <span className="block font-mono text-[0.6rem] uppercase tracking-wider text-[#6f685c]">Project &amp; Asset</span>
-                        <p className="mt-0.5 font-medium text-[#f4efe6]">{d.project}</p>
-                        <p className="text-[0.76rem] text-[#a9a196]">{d.config} · {d.sizeSqft} sq ft</p>
-                      </div>
-
-                      <div>
-                        <span className="block font-mono text-[0.6rem] uppercase tracking-wider text-[#6f685c]">Target Price</span>
-                        <p className="mt-0.5 font-serif text-[1.1rem] font-bold text-[#e7cf95]">
-                          {targetNum ? formatCr(targetNum) : `₹${d.target}`}
-                        </p>
-                        <p className="text-[0.74rem] text-[#7fd0a3]">
-                          {targetNum && mktLow && targetNum < mktLow ? `~${Math.round(((mktLow - targetNum) / mktLow) * 100)}% below market` : "Negotiated rate"}
-                        </p>
-                      </div>
-
-                      <div className="col-span-2 sm:col-span-1">
-                        <span className="block font-mono text-[0.6rem] uppercase tracking-wider text-[#6f685c]">Timeline &amp; Funding</span>
-                        <p className="mt-0.5 font-medium text-[#f4efe6]">{d.timeline}</p>
-                        <p className="text-[0.76rem] text-[#a9a196]">{d.funding}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Signup & Verification Inputs */}
-                  <div className="mt-8 flex flex-col gap-5">
-                    <div>
-                      <span className={label}>Full Name</span>
-                      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your full name" className={field} />
-                    </div>
-
-                    <div>
-                      <span className={label}>Mobile Number</span>
-                      <div className="flex gap-3">
-                        <div className="w-[116px] shrink-0">
-                          <select value={dial} onChange={(e) => setDial(e.target.value)} disabled={otpSent} className={`${field} appearance-none`}>
-                            {DIAL.map((x) => <option key={x.code} value={x.code} className="bg-[#191510]">{x.flag} {x.code}</option>)}
-                          </select>
-                        </div>
-                        <input
-                          value={num}
-                          onChange={(e) => setNum(e.target.value.replace(/[^\d\s]/g, ""))}
-                          disabled={otpSent}
-                          inputMode="tel"
-                          placeholder="98xxxxxx21"
-                          className={`${field} min-w-0 flex-1`}
-                        />
-                      </div>
-                    </div>
-
-                    {otpSent && (
-                      <div className="rounded-xl border border-[#c9a96e]/20 bg-[#16120d] p-4">
-                        <p className="mb-3 text-[0.8rem] text-[#a9a196]">
-                          Enter the {OTP_LENGTH}-digit code sent to {dial} {num}{" · "}
-                          <button type="button" onClick={() => { setOtpSent(false); setOtp(Array(OTP_LENGTH).fill("")); setErr(""); }} className="text-[#c9a96e] hover:underline">
-                            change number
-                          </button>
-                        </p>
-                        <OtpDigits
-                          value={otp}
-                          onChange={setOtp}
-                          len={OTP_LENGTH}
-                          autoFocus
-                          onComplete={verifySubmit}
-                          boxClass="h-14 w-full rounded-lg border border-[#c9a96e]/25 bg-[#191510] text-center font-serif text-[1.3rem] text-[#f4efe6] outline-none focus:border-[#c9a96e]"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {err && <p className="mt-3 text-[0.82rem] text-[#e6a189]">{err}</p>}
-
-                  <button type="submit" disabled={busy} className={`mt-6 w-full ${btnPrimary}`}>
-                    {busy ? (otpSent ? "Verifying…" : "Sending…") : otpSent ? "Verify & Submit Deal Room Mandate →" : "Send Verification Code →"}
+                <div className="mt-9 flex justify-between items-center">
+                  <button onClick={() => go(0)} className="text-[0.85rem] text-[#a9a196] hover:text-[#f4efe6]">← Back</button>
+                  <button onClick={() => go(2)} disabled={!d.target.trim()} className={btnPrimary}>
+                    Continue to Summary →
                   </button>
+                </div>
+              </div>
+            )}
 
-                  {!otpSent && (
-                    <>
-                      <div className="my-5 flex items-center gap-3 font-mono text-[0.62rem] uppercase tracking-[0.14em] text-[#6f685c]">
-                        <span className="h-px flex-1 bg-[#c9a96e]/10" />or<span className="h-px flex-1 bg-[#c9a96e]/10" />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={googleContinue}
-                        disabled={busy}
-                        className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/15 bg-white px-6 py-3.5 text-[0.92rem] font-semibold text-[#1a1a1a] transition-opacity hover:opacity-90 disabled:opacity-50"
-                      >
-                        <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
-                          <path fill="#4285F4" d="M23.7 12.3c0-.7-.1-1.4-.2-2.1H12v4.5h6.6c-.3 1.5-1.1 2.8-2.4 3.7v3h3.9c2.3-2.1 3.6-5.2 3.6-9.1z" />
-                          <path fill="#34A853" d="M12 24c3.2 0 6-1.1 7.9-2.9l-3.9-3c-1 .7-2.4 1.1-4 1.1-3.1 0-5.8-2.1-6.7-4.9H1.3v3.1C3.3 21.3 7.3 24 12 24z" />
-                          <path fill="#FBBC05" d="M5.3 14.3c-.2-.7-.4-1.5-.4-2.3s.1-1.6.4-2.3V6.6H1.3C.5 8.2 0 10 0 12s.5 3.8 1.3 5.4l4-3.1z" />
-                          <path fill="#EA4335" d="M12 4.8c1.8 0 3.3.6 4.6 1.8l3.4-3.4C17.9 1.2 15.2 0 12 0 7.3 0 3.3 2.7 1.3 6.6l4 3.1C6.2 6.9 8.9 4.8 12 4.8z" />
-                        </svg>
-                        Continue with Google
-                      </button>
-                    </>
-                  )}
+            {/* STEP 3: Summary Docket + Buyer Signup & Verification */}
+            {step === 2 && (
+              <form onSubmit={verifySubmit}>
+                <span className={eyebrow}>Step 3 of 3 · Summary &amp; verify</span>
+                <h2 className="mt-2 font-serif text-[1.85rem] font-medium leading-tight">Review your mandate &amp; sign up.</h2>
+                <p className="mt-3 max-w-[50ch] text-[0.96rem] leading-relaxed text-[#a9a196]">
+                  Sellers only compete for verified buyers — it&apos;s why offers come in writing. No upfront fee.
+                </p>
 
-                  <div className="mt-6">
-                    <button type="button" onClick={() => go(1)} className="text-[0.85rem] text-[#a9a196] hover:text-[#f4efe6]">← Back to Pricing</button>
+                {/* Summary Docket Card */}
+                <div className="mt-8 rounded-2xl border border-[#c9a96e]/30 bg-[#1b1712] p-5 shadow-[0_12px_30px_rgba(0,0,0,0.5)]">
+                  <div className="flex items-center justify-between border-b border-[#c9a96e]/15 pb-3">
+                    <span className="font-mono text-[0.62rem] uppercase tracking-[0.16em] text-[#c9a96e]">Mandate Summary Docket</span>
+                    <span className="rounded-full bg-[#1e6b45]/20 px-2.5 py-0.5 text-[0.65rem] font-semibold text-[#7fd0a3]">Ready to float</span>
                   </div>
-                  <p className="mt-4 text-[0.76rem] text-[#6f685c]">
-                    Zero upfront cost. We never share your phone number with brokers.
-                  </p>
-                </form>
-              )}
-            </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-4 text-[0.86rem] sm:grid-cols-3">
+                    <div>
+                      <span className="block font-mono text-[0.6rem] uppercase tracking-wider text-[#6f685c]">Project &amp; Asset</span>
+                      <p className="mt-0.5 font-medium text-[#f4efe6]">{d.project}</p>
+                      <p className="text-[0.76rem] text-[#a9a196]">{d.config} · {d.sizeSqft} sq ft</p>
+                    </div>
+
+                    <div>
+                      <span className="block font-mono text-[0.6rem] uppercase tracking-wider text-[#6f685c]">Target Price</span>
+                      <p className="mt-0.5 font-serif text-[1.1rem] font-bold text-[#e7cf95]">
+                        {targetNum ? formatCr(targetNum) : `₹${d.target}`}
+                      </p>
+                      <p className="text-[0.74rem] text-[#7fd0a3]">
+                        {targetNum && mktLow && targetNum < mktLow ? `~${Math.round(((mktLow - targetNum) / mktLow) * 100)}% below market` : "Negotiated rate"}
+                      </p>
+                    </div>
+
+                    <div className="col-span-2 sm:col-span-1">
+                      <span className="block font-mono text-[0.6rem] uppercase tracking-wider text-[#6f685c]">Timeline &amp; Funding</span>
+                      <p className="mt-0.5 font-medium text-[#f4efe6]">{d.timeline}</p>
+                      <p className="text-[0.76rem] text-[#a9a196]">{d.funding}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Signup & Verification Inputs */}
+                <div className="mt-8 flex flex-col gap-5">
+                  <div>
+                    <span className={label}>Full Name</span>
+                    <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your full name" className={field} />
+                  </div>
+
+                  <div>
+                    <span className={label}>Mobile Number</span>
+                    <div className="flex gap-3">
+                      <div className="w-[116px] shrink-0">
+                        <select value={dial} onChange={(e) => setDial(e.target.value)} disabled={otpSent} className={`${field} appearance-none`}>
+                          {DIAL.map((x) => <option key={x.code} value={x.code} className="bg-[#191510]">{x.flag} {x.code}</option>)}
+                        </select>
+                      </div>
+                      <input
+                        value={num}
+                        onChange={(e) => setNum(e.target.value.replace(/[^\d\s]/g, ""))}
+                        disabled={otpSent}
+                        inputMode="tel"
+                        placeholder="98xxxxxx21"
+                        className={`${field} min-w-0 flex-1`}
+                      />
+                    </div>
+                  </div>
+
+                  {otpSent && (
+                    <div className="rounded-xl border border-[#c9a96e]/20 bg-[#16120d] p-4">
+                      <p className="mb-3 text-[0.8rem] text-[#a9a196]">
+                        Enter the {OTP_LENGTH}-digit code sent to {dial} {num}{" · "}
+                        <button type="button" onClick={() => { setOtpSent(false); setOtp(Array(OTP_LENGTH).fill("")); setErr(""); }} className="text-[#c9a96e] hover:underline">
+                          change number
+                        </button>
+                      </p>
+                      <OtpDigits
+                        value={otp}
+                        onChange={setOtp}
+                        len={OTP_LENGTH}
+                        autoFocus
+                        onComplete={verifySubmit}
+                        boxClass="h-14 w-full rounded-lg border border-[#c9a96e]/25 bg-[#191510] text-center font-serif text-[1.3rem] text-[#f4efe6] outline-none focus:border-[#c9a96e]"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {err && <p className="mt-3 text-[0.82rem] text-[#e6a189]">{err}</p>}
+
+                <button type="submit" disabled={busy} className={`mt-6 w-full ${btnPrimary}`}>
+                  {busy ? (otpSent ? "Verifying…" : "Sending…") : otpSent ? "Verify & Submit Deal Room Mandate →" : "Send Verification Code →"}
+                </button>
+
+                {!otpSent && (
+                  <>
+                    <div className="my-5 flex items-center gap-3 font-mono text-[0.62rem] uppercase tracking-[0.14em] text-[#6f685c]">
+                      <span className="h-px flex-1 bg-[#c9a96e]/10" />or<span className="h-px flex-1 bg-[#c9a96e]/10" />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={googleContinue}
+                      disabled={busy}
+                      className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/15 bg-white px-6 py-3.5 text-[0.92rem] font-semibold text-[#1a1a1a] transition-opacity hover:opacity-90 disabled:opacity-50"
+                    >
+                      <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
+                        <path fill="#4285F4" d="M23.7 12.3c0-.7-.1-1.4-.2-2.1H12v4.5h6.6c-.3 1.5-1.1 2.8-2.4 3.7v3h3.9c2.3-2.1 3.6-5.2 3.6-9.1z" />
+                        <path fill="#34A853" d="M12 24c3.2 0 6-1.1 7.9-2.9l-3.9-3c-1 .7-2.4 1.1-4 1.1-3.1 0-5.8-2.1-6.7-4.9H1.3v3.1C3.3 21.3 7.3 24 12 24z" />
+                        <path fill="#FBBC05" d="M5.3 14.3c-.2-.7-.4-1.5-.4-2.3s.1-1.6.4-2.3V6.6H1.3C.5 8.2 0 10 0 12s.5 3.8 1.3 5.4l4-3.1z" />
+                        <path fill="#EA4335" d="M12 4.8c1.8 0 3.3.6 4.6 1.8l3.4-3.4C17.9 1.2 15.2 0 12 0 7.3 0 3.3 2.7 1.3 6.6l4 3.1C6.2 6.9 8.9 4.8 12 4.8z" />
+                      </svg>
+                      Continue with Google
+                    </button>
+                  </>
+                )}
+
+                <div className="mt-6">
+                  <button type="button" onClick={() => go(1)} className="text-[0.85rem] text-[#a9a196] hover:text-[#f4efe6]">← Back to Pricing</button>
+                </div>
+                <p className="mt-4 text-[0.76rem] text-[#6f685c]">
+                  Zero upfront cost. We never share your phone number with brokers.
+                </p>
+              </form>
+            )}
           </div>
         </div>
-      )}
+      </div>
 
       {/* Done Screen */}
       {screen === "done" && (

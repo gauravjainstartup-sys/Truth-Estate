@@ -4,7 +4,7 @@
 - **`feature/deal-room-flow-refresh`**: Contains the updated 3-step Deal Room demand mandate flow from the landing page (`/deal-room`).
 
 ## Deal Room Flow Architecture (`src/components/dealroom/DealRoomMandate.tsx`)
-The Deal Room flow mirrors the project-level mandate flow in a clean 3-step wizard:
+The Deal Room flow operates with 0ms latency (pure instant local DB + manual entry fallback):
 
 ### Step 1: The Asset
 - **Fields**:
@@ -13,16 +13,17 @@ The Deal Room flow mirrors the project-level mandate flow in a clean 3-step wiza
   - `config`: Configuration selector pills (1 BHK to 5 BHK / Penthouse) matching filed unit types when tracked.
   - `sizeSqft`: Super built-up area in Sq Ft. When project & config are selected, pre-populates/suggests filed unit layouts or allows custom sq ft input.
   - `unit`: Optional tower/floor/facing details.
-- **Action**: Clicking *"Continue to Pricing →"* triggers the pricing resolution interstitial.
+- **Action**: Clicking *"Continue to Pricing →"* transitions immediately (0ms) to Step 2.
 
 ### Step 2: The Terms & Target Price
-- **Pricing Engine**:
-  - **Live DB Lookup**: If the project is tracked in `compare-index.json`, computes `sizeSqft × psfRate` (using `psfOwn` or corridor `psf`).
-  - **Gemini Top-Model Fallback**: If the project is untracked/custom, calls `fetchResalePrice(project, city, config, "gemini-2.5-pro")` to ground the current market rate.
-- **Display & Target Slider**:
-  - Displays **Estimated Current Market Price** formatted cleanly in Crores (e.g. `₹4.75 – ₹5.25 Cr @ ₹24,000/sq ft`).
+- **Live DB Projects**:
+  - If the project is tracked in `compare-index.json`, computes `sizeSqft × psfRate` (using `psfOwn` or corridor `psf`).
+  - Displays **Estimated Current Market Price** in Crores (e.g. `₹9.30 – ₹12.46 Cr @ ₹23,500/sq ft`).
   - Displays **Target Closing Price** in Crores and Rupees with an interactive visual slider spanning Steal Deal (~25% below market floor) to Market Top.
   - Live target badge indicating discount percentage versus the market floor.
+- **External / Untracked Projects**:
+  - Direct manual target price input in Crores/Rupees.
+  - No AI delay or external API failure risk.
 - **Context Questions**:
   - Buyer readiness stage (`Finalised it` / `Comparing a few` / `Still exploring`).
   - Existing quote in hand (optional text).
