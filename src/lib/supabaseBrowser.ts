@@ -18,7 +18,7 @@
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabasePublic";
 import { computePillarSet, mapBacklogRowFields, ocFromOverrides, type BacklogRowFields } from "./backlogRow";
-import type { LiveBacklogFull, LiveConfiguration, LiveExtendedDetails, LivePillarSet } from "./supabase";
+import type { LiveBacklogFull, LiveConfiguration, LiveExtendedDetails, LivePillarSet, ProjectWireItem } from "./supabase";
 
 type Row = Record<string, unknown>;
 
@@ -184,4 +184,53 @@ export async function fetchConfigsLive(ids: string[]): Promise<Record<string, Li
     });
   }
   return Object.keys(out).length ? out : null;
+}
+
+/* ── News & Updates, scoped to one project ────────────────────────────────
+   Every other field on the report already refreshes live; news was the one
+   section that could only change on a rebuild, which meant it could sit an
+   hour behind its own "last updated" date.
+
+   The build-time reader (fetchProjectWire in supabase.ts) pulls the WHOLE
+   published table in one query — right when a single build needs all 107
+   projects, wrong on a page view, which would ship every project's news to
+   every visitor. This asks only for the project on screen: one or two rows,
+   smaller than the extended-assets fetch running beside it.
+
+   Exact slug only. 106 of the 107 projects file under the report's own slug;
+   the one that does not is resolved by the build's fuzzy fallback, and null
+   here leaves that report on its baked items — an hour stale at worst, never
+   wrong. Fails soft like everything else in this file.
+
+   The field mapping is duplicated from supabase.ts rather than imported
+   because this module must stay Node-free (see the header). */
+export async function fetchProjectWireLive(projectSlug: string): Promise<ProjectWireItem[] | null> {
+  const slug = projectSlug.trim();
+  if (!slug) return null;
+  const rs = await rows(
+    `project_intelligence_wire?select=*&status=eq.PUBLISHED&project_slug=eq.${encodeURIComponent(slug)}` +
+      `&order=event_date.desc,display_order.asc&limit=50`,
+  );
+  if (!rs?.length) return null;
+  return rs
+    .filter((r) => (s(r.status) ?? "DRAFT") === "PUBLISHED")
+    .map((r) => ({
+      id: String(r.id ?? ""),
+      projectSlug: s(r.project_slug) ?? "",
+      projectName: s(r.project_name) ?? "",
+      eventDate: s(r.event_date) ?? "",
+      category: (s(r.category) as ProjectWireItem["category"]) || "REGULATORY",
+      headline: s(r.headline) ?? "",
+      verifiedFacts: s(r.verified_facts) ?? "",
+      forensicImpactType: (s(r.forensic_impact_type) as ProjectWireItem["forensicImpactType"]) || "NEUTRAL",
+      forensicImpactSummary: s(r.forensic_impact_summary) ?? "",
+      sourceName: s(r.source_name) ?? "",
+      sourceUrl: s(r.source_url),
+      sourceDocumentRef: s(r.source_document_ref),
+      status: (s(r.status) as ProjectWireItem["status"]) || "PUBLISHED",
+      isPinned: Boolean(r.is_pinned),
+      displayOrder: n(r.display_order) ?? 0,
+      updatedAt: s(r.updated_at),
+      createdAt: s(r.created_at),
+    }));
 }

@@ -1117,19 +1117,10 @@ export type ProjectWireItem = {
   createdAt?: string | null;
 };
 
-export async function fetchProjectWire(projectSlug?: string): Promise<ProjectWireItem[]> {
-  const rows = await sbRows(
-    "project_intelligence_wire",
-    "select=*&status=eq.PUBLISHED&order=event_date.desc,display_order.asc&limit=1000",
-  );
-  if (!rows) return [];
-
-  const items: ProjectWireItem[] = rows
-    // The live query pins status=PUBLISHED, but a SNAPSHOT build reads a fixture
-    // pulled with select=* (no status filter) — so enforce PUBLISHED here too, or
-    // a DRAFT row would bake into the static HTML.
-    .filter((r) => (s(r.status) ?? "DRAFT") === "PUBLISHED")
-    .map((r) => ({
+/* One wire row → the shape the report renders. Shared by the build-time read
+   and the slug-scoped live read below, so the two can never drift apart. */
+function mapWireRow(r: Record<string, unknown>): ProjectWireItem {
+  return {
     id: String(r.id ?? ""),
     projectSlug: s(r.project_slug) ?? "",
     projectName: s(r.project_name) ?? "",
@@ -1147,7 +1138,26 @@ export async function fetchProjectWire(projectSlug?: string): Promise<ProjectWir
     displayOrder: n(r.display_order) ?? 0,
     updatedAt: s(r.updated_at),
     createdAt: s(r.created_at),
-  }));
+  };
+}
+
+/* The browser-side counterpart lives in supabaseBrowser.ts, NOT here: this
+   module's fixture path imports `fs`, so nothing in it can be bundled into a
+   client component. See fetchProjectWireLive there. */
+
+export async function fetchProjectWire(projectSlug?: string): Promise<ProjectWireItem[]> {
+  const rows = await sbRows(
+    "project_intelligence_wire",
+    "select=*&status=eq.PUBLISHED&order=event_date.desc,display_order.asc&limit=1000",
+  );
+  if (!rows) return [];
+
+  const items: ProjectWireItem[] = rows
+    // The live query pins status=PUBLISHED, but a SNAPSHOT build reads a fixture
+    // pulled with select=* (no status filter) — so enforce PUBLISHED here too, or
+    // a DRAFT row would bake into the static HTML.
+    .filter((r) => (s(r.status) ?? "DRAFT") === "PUBLISHED")
+    .map(mapWireRow);
 
   if (!projectSlug) return items;
   const target = projectSlug.toLowerCase().trim();

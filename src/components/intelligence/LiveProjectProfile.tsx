@@ -31,7 +31,7 @@
 import { useEffect, useState } from "react";
 import ProjectProfile from "./ProjectProfile";
 import { liveProjectIntel, matchKey, latestWireUpdate } from "@/lib/reportAdapter";
-import { fetchBacklogRowLive, fetchConfigsLive, fetchDeveloperFinancialsLive, fetchExtendedLive, resolveBacklogId } from "@/lib/supabaseBrowser";
+import { fetchBacklogRowLive, fetchConfigsLive, fetchDeveloperFinancialsLive, fetchExtendedLive, fetchProjectWireLive, resolveBacklogId } from "@/lib/supabaseBrowser";
 import { trackedRankOf, type ProjectIntel } from "@/lib/projects";
 import type { CorridorPsf, LiveBacklogFull } from "@/lib/supabase";
 import type { RelatedGroups } from "@/lib/relatedProjects";
@@ -70,17 +70,27 @@ export default function LiveProjectProfile({
       // The whole row (v3 + backlog_project_data) is keyed by the listing id;
       // assets/configs by backlog id (name-bridged above); financials by the
       // developer's name. Fetch all in parallel.
-      const [rowLive, ext, cfg, fin] = await Promise.all([
+      const [rowLive, ext, cfg, fin, wireLive] = await Promise.all([
         fetchBacklogRowLive(row.id),
         fetchExtendedLive(ids),
         fetchConfigsLive(ids),
         row.developer ? fetchDeveloperFinancialsLive(row.developer) : Promise.resolve(null),
+        /* News & Updates, scoped to this project. Without this the section was
+           the one part of the report that could only change on a rebuild —
+           every other field here already refreshes live, so news sat up to an
+           hour behind its own "last updated" date. */
+        fetchProjectWireLive(row.seoSlug || row.slug || ""),
       ]);
       if (cancelled) return;
       const eKey = matchKey(row.id, row.name, ext, null, alt);
       const cKey = matchKey(row.id, row.name, cfg, null, alt);
-      // nothing resolved for THIS project — keep the baked page (fail-safe)
-      if (!eKey && !cKey && !fin && !rowLive) return;
+      // nothing resolved for THIS project — keep the baked page (fail-safe).
+      // wireLive counts: a news-only change must still refresh the page, or the
+      // section this whole path exists to unblock would stay stale.
+      if (!eKey && !cKey && !fin && !rowLive && !wireLive) return;
+      /* Fresh news when the scoped read resolved, baked otherwise — never an
+         empty list, so a failed fetch can't blank a populated section. */
+      const wireItems = wireLive ?? baked.wireItems;
       // Compose the freshest inputs onto the baked row: the whole live row first,
       // then developer_health financials LAST so a direct edit to that table wins
       // over the row's (possibly pipeline-lagged) copy of the same five ratios.
@@ -92,10 +102,11 @@ export default function LiveProjectProfile({
         eKey ? ext![eKey] : null,
         cKey ? cfg![cKey] : null,
         corridorPsf,
-        /* newsLatest from the BAKED wire items — the wire isn't refetched
-           live, and without this the live recompose would drop the news
-           contribution to "last updated" that the build put there. */
-        { remoteMedia: true, newsLatest: latestWireUpdate(baked.wireItems) },
+        /* newsLatest from the LIVE wire items when they resolved, so the
+           report's "last updated" date moves the moment new research
+           publishes — and from the baked ones otherwise, which keeps the
+           news contribution the build put there rather than dropping it. */
+        { remoteMedia: true, newsLatest: latestWireUpdate(wireItems) },
       );
       // The Truth-Score pillar breakdown the adapter can't produce — fresh from
       // the live row, else the baked value.
@@ -134,13 +145,16 @@ export default function LiveProjectProfile({
       // (budget/configs/ops/psfOwn/sizeBand/tags) so an unmatched asset fetch
       // can't blank the media — but still apply every row-derived field. `fresh`
       // lacks the server-only trackedRank / livePillars, so set them explicitly.
+      // wireItems is set explicitly on both branches: the adapter doesn't
+      // produce it (the build grafts it on afterwards), so without this the
+      // spread would silently keep the baked news next to a live date.
       let merged: ProjectIntel;
       if (eKey || cKey) {
-        merged = { ...baked, ...fresh, ...(livePillars ? { livePillars } : {}), ...(liveDeveloper ? { liveDeveloper } : {}), ...(trackedRank ? { trackedRank } : {}) };
+        merged = { ...baked, ...fresh, ...(wireItems ? { wireItems } : {}), ...(livePillars ? { livePillars } : {}), ...(liveDeveloper ? { liveDeveloper } : {}), ...(trackedRank ? { trackedRank } : {}) };
       } else {
         const { budget, configs, ops, psfOwn, sizeBand, tags, ...rowDerived } = fresh;
         void budget; void configs; void ops; void psfOwn; void sizeBand; void tags;
-        merged = { ...baked, ...rowDerived, ...(livePillars ? { livePillars } : {}), ...(liveDeveloper ? { liveDeveloper } : {}), ...(trackedRank ? { trackedRank } : {}) };
+        merged = { ...baked, ...rowDerived, ...(wireItems ? { wireItems } : {}), ...(livePillars ? { livePillars } : {}), ...(liveDeveloper ? { liveDeveloper } : {}), ...(trackedRank ? { trackedRank } : {}) };
       }
       if (!cancelled) setP(merged);
     })().catch(() => {
