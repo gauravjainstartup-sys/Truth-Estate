@@ -96,22 +96,20 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
      first report is ₹0, so the lowest-friction next step is proof,
      not a form. */
   const top = [...projects].sort((a, b) => b.truthScore - a.truthScore)[0];
-  /* ENTRY prices only (budget[0]). Mixing in budget[1] — the top
-     configuration — made an "under ₹5 Cr" page announce a band to
-     ₹22 Cr in its own header, which reads as the page contradicting
-     its slug even though both numbers were technically true. */
+  /* ENTRY prices only (budget[0]) — mixing in top-config prices made an
+     "under ₹5 Cr" page announce ₹22 Cr in its own header. One line, not
+     a stat wall: the grid is the page. */
   const lows = projects.map((p) => p.budget?.[0] ?? 0).filter((v) => v > 0);
   const psfLows = projects.map((p) => p.psfOwn?.low ?? p.psf?.low ?? 0).filter((v) => v > 0);
   const psfHighs = projects.map((p) => p.psfOwn?.high ?? p.psf?.high ?? 0).filter((v) => v > 0);
-  const corridorCount = new Set(projects.map((p) => p.marketShort || p.market).filter(Boolean)).size;
   const cr = (v: number) => (v >= 10 ? Math.round(v) : Math.round(v * 10) / 10);
   const k = (v: number) => `₹${Math.round(v / 1000)}k`;
-  const statTiles = [
-    { v: String(projects.length), k: "audited projects listed here" },
-    ...(lows.length ? [{ v: `₹${cr(Math.min(...lows))}–${cr(Math.max(...lows))} Cr`, k: "entry prices across the set" }] : []),
-    ...(psfLows.length && psfHighs.length ? [{ v: `${k(Math.min(...psfLows))}–${k(Math.max(...psfHighs))}`, k: "filed ₹/sq ft" }] : []),
-    ...(corridorCount > 1 ? [{ v: String(corridorCount), k: "corridors covered" }] : []),
-  ];
+  const metaLine = [
+    `${projects.length} audited files`,
+    lows.length ? `entry ₹${cr(Math.min(...lows))}–${cr(Math.max(...lows))} Cr` : null,
+    psfLows.length && psfHighs.length ? `${k(Math.min(...psfLows))}–${k(Math.max(...psfHighs))}/sq ft filed` : null,
+    "no developer pays to rank",
+  ].filter(Boolean).join(" · ");
 
   const breadcrumbs = breadcrumbLd([
     { name: "Home", path: "" },
@@ -151,23 +149,28 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       <ProjectsIndex
         projects={projects}
         stats={stats}
-        /* The h1, never the meta title — "…(2026 Audit) — Ranked by
-           TruthScore & ₹/sq ft | Truth Estate" is a title tag, and as a
-           breadcrumb it read as debris. */
+        /* The h1, never the meta title — the title tag read as debris
+           in a breadcrumb. */
         crumb={cluster.h1}
         heading={cluster.h1}
         intro={cluster.intro}
-        statTiles={statTiles}
-        afterHeader={top ? (
-          <ClusterCTA
-            clusterSlug={cluster.slug}
-            topName={top.name}
-            topHref={projectHref(top)}
-            topScore={top.truthScore}
-            count={projects.length}
-            pricePage={cluster.pricePage}
-          />
-        ) : undefined}
+        dense
+        metaLine={metaLine}
+        feedSlot={top ? {
+          /* Seventh cell: six real options first, then the next step —
+             in-feed is where marketplace surfaces convert, and it costs
+             the fold nothing. */
+          after: 6,
+          node: (
+            <ClusterCTA
+              clusterSlug={cluster.slug}
+              topName={top.name}
+              topHref={projectHref(top)}
+              topScore={top.truthScore}
+              pricePage={cluster.pricePage}
+            />
+          ),
+        } : undefined}
       />
 
       {/* Light-Themed FAQ & Ground Intelligence Section at Bottom (GEO & AI Snippet Optimization) */}
@@ -175,6 +178,13 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         <section aria-labelledby="faq-heading" className="bg-[#fbf8f2] border-t border-[#1a1a1a]/10 pb-24 pt-12">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl">
+              {/* AG's editorial intro lives HERE now, not above the grid:
+                  it earns its keep as context under the list (and for
+                  crawlers, position is irrelevant) instead of costing the
+                  fold on a phone. */}
+              <p className="mb-10 max-w-2xl text-[0.95rem] font-light leading-[1.85] text-[#1a1a1a]/60">
+                {cluster.intro}
+              </p>
               <span className="font-mono text-[0.68rem] uppercase tracking-[0.14em] text-[#9a7a2e]">
                 Frequently Answered Intelligence
               </span>

@@ -5,26 +5,24 @@ import { basePath } from "@/lib/site";
 import { track } from "@/lib/events";
 
 /* ════════════════════════════════════════════════════════════════
-   CLUSTER CTA — the conversion band on a programmatic /apartments page.
+   IN-FEED CTA — one card INSIDE the cluster grid, after the first
+   rows of projects.
 
-   A reader landing from "4 bhk in gurugram under 5 cr" is the highest
-   intent traffic the site gets, and the page used to answer with a
-   library: search box, sort control, forty cards. This band gives that
-   reader the two actions the site actually converts on, before the
-   list asks them to do any work:
+   The first cut of this was a band between the header and the list;
+   the founder's verdict was right — it pushed the product further
+   down a page whose product IS the list. This is the opposite shape:
+   the reader sees six real options first, and the next step arrives
+   as the seventh card, where marketplace feeds actually convert.
 
-     · READ THE TOP-RANKED FILE — the strongest report in this exact
-       cluster, one click away. The first report is ₹0, so this is the
-       lowest-friction entry into the unlock funnel, and it starts from
-       proof (a ranked, audited file) rather than a form.
-
-     · A price cluster ("under ₹5 Cr") gets the Deal Room — a reader
-       filtering by budget is negotiating already. Every other cluster
-       gets the advice desk — the same journey the header CTA opens.
-
-   Both paths are the EXISTING funnels; this band builds no capture of
-   its own and holds no state. Ivory card, ink primary, gold accents —
-   the report pages' own grammar.
+   One dark card among white ones — instantly a different kind of
+   object, same grammar as the report's watch banner. ONE primary
+   action, chosen by intent:
+     · price clusters → the Deal Room (a buyer filtering by budget is
+       already negotiating)
+     · everything else → the cluster's №1 file, first report ₹0 (the
+       unlock funnel, led by proof instead of a form)
+   The other path survives as a one-line text link. No new capture,
+   no state — existing funnels only.
    ════════════════════════════════════════════════════════════════ */
 
 export default function ClusterCTA({
@@ -32,62 +30,69 @@ export default function ClusterCTA({
   topName,
   topHref,
   topScore,
-  count,
   pricePage,
 }: {
   clusterSlug: string;
   topName: string;
   topHref: string;
   topScore: number;
-  count: number;
   pricePage?: boolean;
 }) {
   const { open } = useJourney();
 
   return (
-    <div className="mt-9 overflow-hidden rounded-xl border border-[#1a1a1a]/10 bg-white shadow-[0_10px_34px_rgba(0,0,0,0.05)]">
-      <div className="flex flex-col gap-5 p-6 md:flex-row md:items-center md:justify-between md:p-7">
-        <div className="max-w-xl">
-          <p className="font-mono text-[0.6rem] font-semibold uppercase tracking-[0.22em] text-[#9a7a2e]">
-            Where to start
-          </p>
-          <p className="mt-2 font-serif text-[1.25rem] font-medium leading-snug text-[#1a1a1a] md:text-[1.4rem]">
-            {count} audited files below — or open the strongest one first.
-          </p>
-          <p className="mt-1.5 text-[0.84rem] font-light leading-relaxed text-[#1a1a1a]/55">
-            {topName} ranks highest here at Truth Score {topScore}. Your first full report is ₹0 — no card, no broker calls.
-          </p>
-        </div>
-
-        <div className="flex shrink-0 flex-col gap-2.5 md:w-[21rem]">
+    <div className="flex flex-col justify-between rounded-xl border border-[#c9a96e]/30 bg-[#14110d] p-6 text-[#f6f1e8]">
+      <div>
+        <p className="font-mono text-[0.58rem] font-semibold uppercase tracking-[0.22em] text-[#c9a96e]">
+          {pricePage ? "Name your price" : "Where to start"}
+        </p>
+        <p className="mt-2.5 font-serif text-[1.3rem] font-medium leading-snug text-white">
+          {pricePage ? "Have a target price for one of these?" : `${topName} ranks №1 here — Truth Score ${topScore}.`}
+        </p>
+        <p className="mt-2 text-[0.8rem] font-light leading-relaxed text-[#f6f1e8]/60">
+          {pricePage
+            ? "Set it in the Deal Room and let sellers compete to meet it — anonymous until you choose."
+            : "Read its full forensic file before you shortlist anything. Your first report is ₹0 — no card, no broker calls."}
+        </p>
+      </div>
+      <div className="mt-5">
+        {pricePage ? (
+          <a
+            href={`${basePath}/deal-room`}
+            onClick={() => track("cluster_cta_clicked", { props: { cluster: clusterSlug, action: "deal-room" } })}
+            className="block rounded-md bg-[#1e6b45] px-5 py-3 text-center text-[0.82rem] font-medium text-white transition-colors hover:bg-[#238c55]"
+          >
+            Enter the Deal Room →
+          </a>
+        ) : (
           <a
             href={topHref}
             onClick={() => track("cluster_cta_clicked", { props: { cluster: clusterSlug, action: "top-report", project: topName } })}
-            className="rounded-md bg-[#1e6b45] px-5 py-3 text-center text-[0.82rem] font-medium tracking-[0.02em] text-white transition-colors hover:bg-[#238c55]"
+            className="block rounded-md bg-[#1e6b45] px-5 py-3 text-center text-[0.82rem] font-medium text-white transition-colors hover:bg-[#238c55]"
           >
-            Read the {topName} report — ₹0 →
+            Read the {topName} file — ₹0 →
           </a>
-          {pricePage ? (
-            <a
-              href={`${basePath}/deal-room`}
-              onClick={() => track("cluster_cta_clicked", { props: { cluster: clusterSlug, action: "deal-room" } })}
-              className="rounded-md border border-[#9a7a2e]/40 px-5 py-3 text-center text-[0.8rem] font-medium text-[#9a7a2e] transition-colors hover:border-[#9a7a2e] hover:bg-[#9a7a2e]/[0.05]"
-            >
-              Have a price in mind? Enter the Deal Room
-            </a>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                track("cluster_cta_clicked", { props: { cluster: clusterSlug, action: "advice" } });
-                open();
-              }}
-              className="rounded-md border border-[#1a1a1a]/15 px-5 py-3 text-center text-[0.8rem] font-medium text-[#1a1a1a]/70 transition-colors hover:border-[#1a1a1a]/35 hover:text-[#1a1a1a]"
-            >
-              Get a 15-min independent read on your shortlist
-            </button>
-          )}
-        </div>
+        )}
+        {pricePage ? (
+          <a
+            href={topHref}
+            onClick={() => track("cluster_cta_clicked", { props: { cluster: clusterSlug, action: "top-report", project: topName } })}
+            className="mt-2.5 block text-center text-[0.72rem] text-[#f6f1e8]/55 underline-offset-4 hover:text-white hover:underline"
+          >
+            or read {topName}, the №1 file here — ₹0
+          </a>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              track("cluster_cta_clicked", { props: { cluster: clusterSlug, action: "advice" } });
+              open();
+            }}
+            className="mt-2.5 block w-full text-center text-[0.72rem] text-[#f6f1e8]/55 underline-offset-4 hover:text-white hover:underline"
+          >
+            or get a free 15-min independent read on your shortlist
+          </button>
+        )}
       </div>
     </div>
   );

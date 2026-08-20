@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Logo from "../Logo";
 import SearchPalette from "./SearchPalette";
 import { useJourney } from "../journey/JourneyProvider";
@@ -55,6 +55,9 @@ export default function ProjectsIndex({
   intro = "One Truth Score per project, built from six audited inputs — delivery, legal, developer strength, liquidity, pricing and construction. No developer pays to appear here, and none can move a score. Open any project to see exactly how it’s built.",
   statTiles,
   afterHeader,
+  dense = false,
+  metaLine,
+  feedSlot,
 }: {
   projects: ProjectIntel[];
   stats?: TrackedStats | null;
@@ -63,6 +66,16 @@ export default function ProjectsIndex({
   intro?: string;
   statTiles?: { v: string; k: string }[];
   afterHeader?: React.ReactNode;
+  /* dense: the landing-page cut. A cluster page's product is the grid,
+     so the framing collapses to crumb + a smaller h1 + ONE meta line and
+     the cards start inside the first screen — with the standard header a
+     phone showed the first card ~1,400px down, which is a library, not a
+     landing page. metaLine is that one line; feedSlot drops a node INTO
+     the grid after N cards, where a next-step card converts without
+     costing the fold. All default off; the catalogue is unchanged. */
+  dense?: boolean;
+  metaLine?: string;
+  feedSlot?: { after: number; node: React.ReactNode };
 }) {
   const { open } = useJourney();
   const [q, setQ] = useState("");
@@ -152,18 +165,24 @@ export default function ProjectsIndex({
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-6 pb-[14vh] pt-[7vh] md:px-10">
+      <div className={`mx-auto max-w-7xl px-6 pb-[14vh] md:px-10 ${dense ? "pt-6" : "pt-[7vh]"}`}>
         <div className="flex items-center gap-2 text-[0.74rem] font-light text-[#1a1a1a]/35">
           <a href={`${basePath}/intelligence`} className="transition-colors hover:text-[#1a1a1a]/70">Intelligence</a>
           <span className="text-[#1a1a1a]/20">/</span><span className="text-[#1a1a1a]/55">{displayCrumb}</span>
         </div>
 
-        <p className="mt-8 text-[11px] font-medium uppercase tracking-[0.34em] text-[#c9a96e]">Project Intelligence</p>
-        <h1 className="mt-5 max-w-2xl font-serif text-[2.6rem] font-medium leading-[1.04] tracking-[-0.02em] md:text-[4rem]">{displayHeading}</h1>
+        <p className={dense ? "mt-4 text-[10px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]" : "mt-8 text-[11px] font-medium uppercase tracking-[0.34em] text-[#c9a96e]"}>Project Intelligence</p>
+        <h1 className={dense
+          ? "mt-2.5 max-w-3xl font-serif text-[1.9rem] font-medium leading-[1.08] tracking-[-0.01em] md:text-[2.6rem]"
+          : "mt-5 max-w-2xl font-serif text-[2.6rem] font-medium leading-[1.04] tracking-[-0.02em] md:text-[4rem]"}>{displayHeading}</h1>
+        {dense ? (
+          metaLine ? <p className="mt-2.5 text-[0.8rem] font-light leading-relaxed text-[#1a1a1a]/55">{metaLine}</p> : null
+        ) : (
         <p className="mt-6 max-w-2xl text-[1rem] font-light leading-[1.85] text-[#1a1a1a]/60 md:text-[1.05rem]">
           {displayIntro}
         </p>
-        {!devActive && (
+        )}
+        {!devActive && !dense && (
           <div className="mt-8 flex flex-wrap gap-x-10 gap-y-3">
             {statTiles ? (
               /* Cluster landers pass numbers true of THIS filtered set. */
@@ -187,11 +206,13 @@ export default function ProjectsIndex({
         {!devActive && afterHeader}
 
         {/* ── The tracked universe — every project live from the pipeline ── */}
+        {!dense && (
         <div className="mt-11 flex items-center gap-3">
           <span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">The tracked universe</span>
           <span className="rounded-full border border-[#1e6b45]/35 bg-[#1e6b45]/[0.06] px-2.5 py-0.5 font-mono text-[0.54rem] tracking-[0.14em] text-[#1e6b45]">LIVE · FROM THE PIPELINE</span>
           <span className="h-px flex-1 bg-[#1a1a1a]/10" />
         </div>
+        )}
 
         {projects.length > 0 ? (
           <>
@@ -205,7 +226,7 @@ export default function ProjectsIndex({
                 the moment you started looking. It now follows the grid.
                 The negative margins let the bar's background run to the
                 full page width while its contents stay on the text column. */}
-            <div className="sticky top-[57px] z-30 -mx-6 mt-6 flex flex-col gap-3 border-b border-[#1a1a1a]/[0.06] bg-[#F5F0E8]/95 px-6 py-3 backdrop-blur-sm sm:flex-row sm:items-center md:-mx-10 md:px-10">
+            <div className="sticky top-[57px] z-30 -mx-6 mt-4 flex flex-col gap-3 border-b border-[#1a1a1a]/[0.06] bg-[#F5F0E8]/95 px-6 py-3 backdrop-blur-sm sm:flex-row sm:items-center md:-mx-10 md:px-10">
               <div className="relative flex-1">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden
                   className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#1a1a1a]/30">
@@ -256,8 +277,11 @@ export default function ProjectsIndex({
 
             {shown.length > 0 ? (
               <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {shown.map((p) => (
-                  <ProjectOptionCard key={p.slug} p={p} />
+                {shown.map((p, i) => (
+                  <React.Fragment key={p.slug}>
+                    {feedSlot && i === Math.min(feedSlot.after, shown.length - 1) && feedSlot.node}
+                    <ProjectOptionCard p={p} />
+                  </React.Fragment>
                 ))}
               </div>
             ) : (
