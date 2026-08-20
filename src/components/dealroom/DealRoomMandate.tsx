@@ -158,16 +158,28 @@ export default function DealRoomMandate() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // When config changes, auto-suggest typical size if empty or switch
-  const handleConfigChange = (cfg: string) => {
-    const proj = d.project.trim();
+  /* The auto-suggested size must never displace a number the buyer
+     TYPED — but until they have typed one, every config change should
+     re-suggest, or a stale suggestion prices the wrong layout. A flag,
+     not a value comparison: "did a human put this here?" is the actual
+     question, and comparing against past suggestions can't answer it. */
+  const sizeEdited = useRef(false);
+
+  // When config changes, auto-suggest the filed layout's size.
+  // `projOverride` exists for the typeahead pick, which selects project
+  // and config in the same tick — reading d.project there would see the
+  // HALF-TYPED text (the pick hasn't re-rendered yet), miss the filed
+  // layouts, and fall back to a generic area. That fallback then priced
+  // a 3,956 sq ft flat as 2,000 sq ft — confidently, in Crores.
+  const handleConfigChange = (cfg: string, projOverride?: string) => {
+    const proj = (projOverride ?? d.project).trim();
     const homes = projectHomes[proj] || [];
     const matchedHomes = homes.filter((h) => h.config.trim().toLowerCase() === cfg.trim().toLowerCase() && h.superSqft > 0);
     const suggestedSize = matchedHomes.length ? String(matchedHomes[0].superSqft) : String(DEFAULT_AREAS[cfg.toLowerCase()] || 2000);
     setD((prev) => ({
       ...prev,
       config: cfg,
-      sizeSqft: prev.sizeSqft ? prev.sizeSqft : suggestedSize,
+      sizeSqft: sizeEdited.current && prev.sizeSqft ? prev.sizeSqft : suggestedSize,
     }));
   };
 
@@ -461,10 +473,15 @@ export default function DealRoomMandate() {
                                   onMouseDown={(e) => {
                                     e.preventDefault();
                                     set("project", n);
+                                    // A new project is a new context: the
+                                    // suggestion engine owns the size again
+                                    // until the buyer types over it.
+                                    sizeEdited.current = false;
                                     const cfgs = configsFor(n);
                                     const defaultCfg = cfgs[0] || "3 BHK";
-                                    set("config", defaultCfg);
-                                    handleConfigChange(defaultCfg);
+                                    // Pass n explicitly — d.project still
+                                    // holds the half-typed query this tick.
+                                    handleConfigChange(defaultCfg, n);
                                     setProjOpen(false);
                                   }}
                                   className="block w-full px-4 py-2.5 text-left text-[0.9rem] text-[#f4efe6] transition-colors hover:bg-[#c9a96e]/[0.12]"
@@ -510,6 +527,9 @@ export default function DealRoomMandate() {
                         value={d.sizeSqft}
                         onChange={(e) => {
                           const val = e.target.value.replace(/\D/g, "");
+                          // A keystroke here is the buyer taking the field
+                          // over; clearing it hands it back to the engine.
+                          sizeEdited.current = !!val;
                           set("sizeSqft", val ? inrGroup(Number(val)) : "");
                         }}
                         placeholder={String(DEFAULT_AREAS[d.config.toLowerCase()] || 2150)}
@@ -531,7 +551,7 @@ export default function DealRoomMandate() {
                             <button
                               key={h.superSqft}
                               type="button"
-                              onClick={() => set("sizeSqft", String(h.superSqft))}
+                              onClick={() => { sizeEdited.current = true; set("sizeSqft", String(h.superSqft)); }}
                               className={`rounded-lg border px-2.5 py-1 text-[0.74rem] transition-colors ${d.sizeSqft === String(h.superSqft) ? "border-[#c9a96e] bg-[#c9a96e]/20 text-[#e7cf95]" : "border-[#c9a96e]/20 bg-[#191510] text-[#a9a196] hover:border-[#c9a96e]/40"}`}
                             >
                               {inrGroup(h.superSqft)} sq ft
