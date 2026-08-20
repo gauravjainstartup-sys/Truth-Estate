@@ -85,7 +85,8 @@ export type EventName =
   | "news_load_more"                 // the reader expanded past the first items
   | "news_view_changed"              // the reader switched between stories and the list
   | "news_story_advanced"            // a dispatch was reached in the story run (once each)
-  | "news_story_completed";          // the run finished — the reader is on the sign-up card
+  | "news_story_completed"           // the run finished — the reader is on the sign-up card
+  | "cluster_cta_clicked";           // an /apartments lander CTA (top-report / deal-room / advice)
 
 type Queued = {
   name: EventName;

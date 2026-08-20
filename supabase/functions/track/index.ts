@@ -66,6 +66,22 @@ const KNOWN = new Set([
   "deal_room_mandate_started",
   "deal_room_mandate_submitted",
   "deal_room_track_viewed",
+  /* Search outcomes + compare pages — valid in src/lib/events.ts since the
+     search/compare instrumentation landed, never added here, silently
+     dropped since. Same class of gap as help_centre_opened above. */
+  "search_performed",
+  "search_no_results",
+  "compare_projects",
+  "compare_developers",
+  "compare_markets",
+  /* News & Updates engagement (stories + list views on the report). */
+  "news_viewed",
+  "news_load_more",
+  "news_view_changed",
+  "news_story_advanced",
+  "news_story_completed",
+  /* /apartments cluster landers' conversion band. */
+  "cluster_cta_clicked",
 ]);
 
 const MAX_BATCH = 20;

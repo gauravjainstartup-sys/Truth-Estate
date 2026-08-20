@@ -33,25 +33,36 @@ function haystack(p: ProjectIntel): string {
    Every project is a real backlog_listing_public row adapted onto the shared
    ProjectOptionCard; no seed/demo entries.
 
-   THE THREE COPY PROPS ARE OPTIONAL AND DEFAULT TO WHAT THIS PAGE HAS
+   THE COPY AND SLOT PROPS ARE OPTIONAL AND DEFAULT TO WHAT THIS PAGE HAS
    ALWAYS SAID, so /intelligence/projects renders byte-identically and no
    layout, style or element changed. They exist because the
-   /best-projects/ pages are this same grid over a filtered set, and a
-   landing page for "under ₹3 Cr" that is headed "Every project,
-   independently scored" is a duplicate of the index in Google's eyes and
-   an answer to the wrong question in the reader's. Only the words differ. */
+   /best-projects/ and /apartments/ pages are this same grid over a
+   filtered set, and a landing page for "under ₹3 Cr" that is headed
+   "Every project, independently scored" is a duplicate of the index in
+   Google's eyes and an answer to the wrong question in the reader's.
+
+   statTiles replaces the GLOBAL stat row (325 tracked / 10% delayed…)
+   with numbers true of the filtered set — on a "4 BHK under ₹5 Cr" page
+   the universe's totals describe a different population than the list
+   below them, which reads as a mismatch even when both are correct.
+   afterHeader renders between the stats and the grid: the cluster
+   landers put their conversion band there. Both default off. */
 export default function ProjectsIndex({
   projects,
   stats,
   crumb = "Projects",
   heading = "Every project, independently scored.",
   intro = "One Truth Score per project, built from six audited inputs — delivery, legal, developer strength, liquidity, pricing and construction. No developer pays to appear here, and none can move a score. Open any project to see exactly how it’s built.",
+  statTiles,
+  afterHeader,
 }: {
   projects: ProjectIntel[];
   stats?: TrackedStats | null;
   crumb?: string;
   heading?: string;
   intro?: string;
+  statTiles?: { v: string; k: string }[];
+  afterHeader?: React.ReactNode;
 }) {
   const { open } = useJourney();
   const [q, setQ] = useState("");
@@ -154,17 +165,26 @@ export default function ProjectsIndex({
         </p>
         {!devActive && (
           <div className="mt-8 flex flex-wrap gap-x-10 gap-y-3">
-            {/* The fallback was ACTIVE_PROJECT_COUNT — a hand-set 127 against a
-                live 312. A stat that wrong is worse than a stat missing, so
-                when the pipeline cannot answer the tile simply does not draw. */}
-            {stats?.tracked != null && <Stat v={stats.tracked.toLocaleString("en-IN")} k="RERA projects tracked · live" />}
-            {stats?.delayed != null && stats.delayed > 0 && (
-              <Stat v={`${Math.round((stats.delayed / stats.tracked) * 100)}%`} k="of them running delayed" />
+            {statTiles ? (
+              /* Cluster landers pass numbers true of THIS filtered set. */
+              statTiles.map((t) => <Stat key={t.k} v={t.v} k={t.k} />)
+            ) : (
+              <>
+                {/* The fallback was ACTIVE_PROJECT_COUNT — a hand-set 127 against a
+                    live 312. A stat that wrong is worse than a stat missing, so
+                    when the pipeline cannot answer the tile simply does not draw. */}
+                {stats?.tracked != null && <Stat v={stats.tracked.toLocaleString("en-IN")} k="RERA projects tracked · live" />}
+                {stats?.delayed != null && stats.delayed > 0 && (
+                  <Stat v={`${Math.round((stats.delayed / stats.tracked) * 100)}%`} k="of them running delayed" />
+                )}
+                {projects.length > 0 && <Stat v={`${projects.length}`} k="scored & listed here" />}
+                {hi > 0 && <Stat v={`${lo}–${hi}`} k="Truth Score range" />}
+              </>
             )}
-            {projects.length > 0 && <Stat v={`${projects.length}`} k="scored & listed here" />}
-            {hi > 0 && <Stat v={`${lo}–${hi}`} k="Truth Score range" />}
           </div>
         )}
+
+        {!devActive && afterHeader}
 
         {/* ── The tracked universe — every project live from the pipeline ── */}
         <div className="mt-11 flex items-center gap-3">

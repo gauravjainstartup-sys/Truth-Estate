@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { activeApartmentClusters, apartmentClusterBySlug, MIN_CLUSTER_PROJECTS } from "@/lib/apartmentClusters";
 import ProjectsIndex from "@/components/intelligence/ProjectsIndex";
+import ClusterCTA from "@/components/apartments/ClusterCTA";
+import { projectHref } from "@/lib/projectHref";
 import { buildScoredProjectIntel } from "@/lib/compareData";
 import { fetchTrackedStats } from "@/lib/supabase";
 import type { ProjectIntel } from "@/lib/projects";
@@ -87,6 +89,30 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const projects: ProjectIntel[] = allProjects.filter(cluster.match);
   if (projects.length < MIN_CLUSTER_PROJECTS) notFound();
 
+  /* ── Conversion furniture, computed from THIS cluster's set ────────
+     The stat row must describe the list below it (the global universe's
+     numbers on a filtered page read as a mismatch even when correct),
+     and the CTA band leads with the cluster's strongest file — the
+     first report is ₹0, so the lowest-friction next step is proof,
+     not a form. */
+  const top = [...projects].sort((a, b) => b.truthScore - a.truthScore)[0];
+  /* ENTRY prices only (budget[0]). Mixing in budget[1] — the top
+     configuration — made an "under ₹5 Cr" page announce a band to
+     ₹22 Cr in its own header, which reads as the page contradicting
+     its slug even though both numbers were technically true. */
+  const lows = projects.map((p) => p.budget?.[0] ?? 0).filter((v) => v > 0);
+  const psfLows = projects.map((p) => p.psfOwn?.low ?? p.psf?.low ?? 0).filter((v) => v > 0);
+  const psfHighs = projects.map((p) => p.psfOwn?.high ?? p.psf?.high ?? 0).filter((v) => v > 0);
+  const corridorCount = new Set(projects.map((p) => p.marketShort || p.market).filter(Boolean)).size;
+  const cr = (v: number) => (v >= 10 ? Math.round(v) : Math.round(v * 10) / 10);
+  const k = (v: number) => `₹${Math.round(v / 1000)}k`;
+  const statTiles = [
+    { v: String(projects.length), k: "audited projects listed here" },
+    ...(lows.length ? [{ v: `₹${cr(Math.min(...lows))}–${cr(Math.max(...lows))} Cr`, k: "entry prices across the set" }] : []),
+    ...(psfLows.length && psfHighs.length ? [{ v: `${k(Math.min(...psfLows))}–${k(Math.max(...psfHighs))}`, k: "filed ₹/sq ft" }] : []),
+    ...(corridorCount > 1 ? [{ v: String(corridorCount), k: "corridors covered" }] : []),
+  ];
+
   const breadcrumbs = breadcrumbLd([
     { name: "Home", path: "" },
     { name: "Intelligence", path: "/intelligence" },
@@ -125,9 +151,23 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       <ProjectsIndex
         projects={projects}
         stats={stats}
-        crumb={cluster.title}
+        /* The h1, never the meta title — "…(2026 Audit) — Ranked by
+           TruthScore & ₹/sq ft | Truth Estate" is a title tag, and as a
+           breadcrumb it read as debris. */
+        crumb={cluster.h1}
         heading={cluster.h1}
         intro={cluster.intro}
+        statTiles={statTiles}
+        afterHeader={top ? (
+          <ClusterCTA
+            clusterSlug={cluster.slug}
+            topName={top.name}
+            topHref={projectHref(top)}
+            topScore={top.truthScore}
+            count={projects.length}
+            pricePage={cluster.pricePage}
+          />
+        ) : undefined}
       />
 
       {/* Light-Themed FAQ & Ground Intelligence Section at Bottom (GEO & AI Snippet Optimization) */}
