@@ -82,7 +82,10 @@ export type EventName =
      report; these measure whether readers dig into it (props.placement =
      "locked" | "unlocked", so the locked engagement probe can be read apart). ── */
   | "news_viewed"                    // the News & Updates section rendered with items
-  | "news_load_more";                // the reader expanded past the first items
+  | "news_load_more"                 // the reader expanded past the first items
+  | "news_view_changed"              // the reader switched between stories and the list
+  | "news_story_advanced"            // a dispatch was reached in the story run (once each)
+  | "news_story_completed";          // the run finished — the reader is on the sign-up card
 
 type Queued = {
   name: EventName;

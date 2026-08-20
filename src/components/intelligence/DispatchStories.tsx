@@ -1,0 +1,468 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { ProjectWireItem } from "@/lib/supabase";
+
+/* ════════════════════════════════════════════════════════════════
+   DISPATCH STORIES — News & Updates played as vertical stories.
+
+   Same events, same words, same source refs as the list view; only the
+   presentation changes. A dispatch is a discrete, dated, self-contained
+   fact carrying one forensic read — which is the shape of a story card,
+   so the format fits the content rather than decorating it.
+
+   THE CONTENT IS ALL IN THE DOM, ALWAYS. Every dispatch renders as a
+   real <article> with its headline, facts and read; only a transform
+   moves them sideways. Nothing is fetched on advance, nothing mounts
+   lazily, so a crawler — and a reader who never taps — sees the same
+   text the list view would have shown. That is not incidental: the
+   NewsArticle JSON-LD on the page asserts this content exists, and
+   markup must never claim more than the page renders.
+
+   Desktop: the playing card is centred with its neighbours peeking
+   either side, dimmed and clickable, so the width is used and you can
+   see what is coming without leaving the story. Below 900px one card
+   fills the width and the neighbours sit off-view — a phone story. Same
+   markup, no second code path.
+
+   The card is capped by viewport HEIGHT as well as width: at 9:16 a
+   card is 1.78x taller than wide, so on a short window width is what
+   has to give for a whole dispatch to sit above the fold. The cap is
+   deliberately tighter than a full-page player would need — this sits
+   in a report column under a section header, not on a blank page, and
+   the space above it is already spent.
+
+   AUTOPLAY IS GATED ON VISIBILITY. This sits inside a long report, so
+   it starts only once scrolled into view and pauses the moment it
+   leaves — a player running where nobody is looking burns the reader's
+   place in the story for nothing. prefers-reduced-motion turns the
+   timer off entirely: the bar is drawn full and the reader advances by
+   hand.
+
+   The final slide is the sign-up, passed in as `endCard`: the caller
+   hands us the real WatchBanner, so this file owns no auth, no lead
+   capture, and no copy about either.
+   ════════════════════════════════════════════════════════════════ */
+
+/* How long a dispatch holds before advancing. Long enough to read a
+   headline and its forensic read without tapping; short enough that six
+   dispatches are a minute, not a sitting. */
+const DUR = 7000;
+
+/* Impact drives the scan — the rail ring, the card's left edge and the
+   read box all carry it, so a reader sees where the catalysts and the
+   risks are before reading a word. Hex rather than Tailwind classes:
+   these are painted on a deliberately dark surface that does not follow
+   the page palette, and each value is interpolated into a per-slide
+   style. Same semantics as the list view's IMPACT_STYLES. */
+const TONE: Record<ProjectWireItem["forensicImpactType"], string> = {
+  POSITIVE: "#4aa877",
+  NEUTRAL: "#8c8c8c",
+  CAUTION: "#d9ae62",
+  RISK: "#d97a66",
+};
+
+const CAT_LABEL: Record<string, string> = {
+  CONSTRUCTION: "Construction",
+  REGULATORY: "Regulatory",
+  INFRASTRUCTURE: "Corridor Infra",
+  CORPORATE_JV: "Corporate / JV",
+  PRICING: "Pricing & Sales",
+  LEGAL: "Legal",
+};
+
+/* "Feb 2026" on the rail bubble, "12 Feb 2026" on the card. Both fall
+   back to the raw string rather than printing "Invalid Date". */
+function shortDate(d: string) {
+  const t = Date.parse(d);
+  if (!t) return d;
+  return new Date(t).toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+}
+function fullDate(d: string) {
+  const t = Date.parse(d);
+  if (!t) return d;
+  return new Date(t).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+/* verified_facts arrives newline-separated, sometimes already bulleted
+   by whoever filed it. Strip the marker so we render exactly one. */
+function factLines(s: string): string[] {
+  return s
+    .split("\n")
+    .map((l) => l.trim().replace(/^[•\-*]\s*/, ""))
+    .filter(Boolean);
+}
+
+export default function DispatchStories({
+  items,
+  endCard,
+  onAdvance,
+  onComplete,
+}: {
+  items: ProjectWireItem[];
+  /* The sign-up, rendered over the last dispatch when the run ends.
+     Passed in so this component never grows its own auth flow. */
+  endCard?: React.ReactNode;
+  /* Once per dispatch actually reached, for engagement analytics. */
+  onAdvance?: (index: number, item: ProjectWireItem) => void;
+  /* Once when the reader arrives at the sign-up. */
+  onComplete?: () => void;
+}) {
+  const count = items.length;
+  const [idx, setIdx] = useState(0);
+  const [done, setDone] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [inView, setInView] = useState(false);
+
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const slideRefs = useRef<(HTMLElement | null)[]>([]);
+  /* The one bar being filled. Written to directly, sixty times a second
+     — putting that fraction in state would re-render every card in the
+     track on every frame. */
+  const fillRef = useRef<HTMLSpanElement | null>(null);
+  const elapsedRef = useRef(0);
+  const rafRef = useRef(0);
+  const seenRef = useRef<Set<number>>(new Set());
+
+  const reduce = useReducedMotion();
+
+  /* ── Centre the active slide ──────────────────────────────────────
+     Measured from real offsets, so the gap, a width change and the
+     narrow-screen full-bleed override all come along for free rather
+     than being recomputed here. */
+  const layout = useCallback(() => {
+    const vp = viewportRef.current;
+    const track = trackRef.current;
+    const el = slideRefs.current[idx];
+    if (!vp || !track || !el) return;
+    track.style.transform = `translateX(${-(el.offsetLeft + el.offsetWidth / 2 - vp.clientWidth / 2)}px)`;
+  }, [idx]);
+
+  useEffect(() => { layout(); }, [layout, done, count]);
+
+  useEffect(() => {
+    const onResize = () => layout();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [layout]);
+
+  /* ── Play only while on screen ────────────────────────────────────
+     Mostly-visible starts it, leaving stops it. Without this a reader
+     scrolling past Chapter III would come back to find the story over.
+
+     0.4, not 0.5: a 9:16 card is tall, and on a phone the section
+     header above it eats enough of the screen that half the player is
+     never on show at once — at 0.5 the story simply never started
+     there. The card is capped by viewport height, so it can never be
+     taller than the window and the ratio is always reachable. */
+  useEffect(() => {
+    const vp = viewportRef.current;
+    if (!vp || typeof IntersectionObserver === "undefined") { setInView(true); return; }
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((e) => setInView(e.isIntersecting && e.intersectionRatio >= 0.4)),
+      { threshold: [0, 0.4, 0.75] },
+    );
+    io.observe(vp);
+    return () => io.disconnect();
+  }, []);
+
+  const goto = useCallback(
+    (i: number) => {
+      elapsedRef.current = 0;
+      if (fillRef.current) fillRef.current.style.width = "0%";
+      setDone(false);
+      setIdx(Math.max(0, Math.min(count - 1, i)));
+    },
+    [count],
+  );
+
+  const advance = useCallback(() => {
+    setIdx((cur) => {
+      if (cur + 1 < count) {
+        elapsedRef.current = 0;
+        return cur + 1;
+      }
+      setDone(true);
+      return cur;
+    });
+  }, [count]);
+
+  /* ── The timer ────────────────────────────────────────────────────
+     One rAF loop, torn down and restarted whenever the active dispatch
+     changes or play stops. Elapsed time lives in a ref, so resuming
+     after a pause does not replay the seconds already spent. Reduced
+     motion never starts it. */
+  useEffect(() => {
+    if (reduce || done || paused || !inView) return;
+    let last = 0;
+    const step = (now: number) => {
+      if (!last) last = now;
+      elapsedRef.current += now - last;
+      last = now;
+      const p = Math.min(1, elapsedRef.current / DUR);
+      if (fillRef.current) fillRef.current.style.width = `${p * 100}%`;
+      if (p >= 1) { advance(); return; }
+      rafRef.current = requestAnimationFrame(step);
+    };
+    rafRef.current = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [idx, done, paused, inView, reduce, advance]);
+
+  /* Engagement — one event per dispatch actually reached, deduped so
+     re-watching does not inflate the count, and one on arrival at the
+     sign-up. */
+  useEffect(() => {
+    if (done || !items[idx] || seenRef.current.has(idx)) return;
+    seenRef.current.add(idx);
+    onAdvance?.(idx, items[idx]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx, done]);
+
+  useEffect(() => {
+    if (done) onComplete?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done]);
+
+  /* Arrow keys move the story only while the player holds focus — a
+     report page has plenty of other things arrows should move. */
+  function onKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "ArrowRight") { e.preventDefault(); advance(); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); goto(idx - 1); }
+    else if (e.key === " ") { e.preventDefault(); setPaused((v) => !v); }
+  }
+
+  if (!count) return null;
+
+  return (
+    <div className="mt-6">
+      {/* ── The rail: how the stories are entered ──────────────────── */}
+      <div className="mb-4">
+        <div className="font-mono text-[0.62rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/45">
+          {count} dispatch{count === 1 ? "" : "es"} · tap one to play
+        </div>
+        <div className="mt-2.5 flex gap-2.5 overflow-x-auto pb-1.5">
+          {items.map((it, i) => {
+            const tone = TONE[it.forensicImpactType] ?? TONE.NEUTRAL;
+            const seen = i < idx;
+            return (
+              <button
+                key={it.id || i}
+                type="button"
+                onClick={() => goto(i)}
+                aria-label={`Play dispatch ${i + 1} of ${count}: ${it.headline}`}
+                aria-current={i === idx && !done ? "true" : undefined}
+                className="group flex w-[4.9rem] shrink-0 flex-col items-center gap-1.5"
+              >
+                <span
+                  className="relative grid h-14 w-14 place-items-center rounded-full border-2 bg-white text-center font-mono text-[0.55rem] font-medium leading-tight transition-transform group-hover:scale-105 group-focus-visible:ring-2 group-focus-visible:ring-[#9a7a2e] group-focus-visible:ring-offset-2"
+                  style={seen ? { borderColor: "rgba(26,26,26,0.14)", color: "rgba(26,26,26,0.4)" } : { borderColor: tone, color: tone }}
+                >
+                  {shortDate(it.eventDate)}
+                  {it.isPinned && <span aria-hidden className="absolute -right-0.5 -top-0.5 text-[0.6rem]">📌</span>}
+                </span>
+                <span className="line-clamp-2 text-center text-[0.6rem] leading-tight text-[#1a1a1a]/45">
+                  {CAT_LABEL[it.category] || it.category}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── The stage ──────────────────────────────────────────────── */}
+      <div className="flex items-center gap-2.5">
+        <button
+          type="button"
+          onClick={() => goto(idx - 1)}
+          disabled={idx === 0 && !done}
+          aria-label="Previous dispatch"
+          className="hidden h-10 w-10 shrink-0 place-items-center rounded-full border border-[#1a1a1a]/12 bg-white text-[#1a1a1a]/60 transition-colors hover:border-[#c9a96e] hover:text-[#1a1a1a] disabled:opacity-30 md:grid"
+        >
+          ←
+        </button>
+
+        <div
+          ref={viewportRef}
+          onKeyDown={onKeyDown}
+          tabIndex={0}
+          role="group"
+          aria-roledescription="carousel"
+          aria-label="Dispatches, played as stories"
+          className="flex-1 overflow-hidden py-1 outline-none focus-visible:ring-2 focus-visible:ring-[#9a7a2e]/40"
+        >
+          <div
+            ref={trackRef}
+            className="flex gap-6 max-[899px]:gap-0"
+            style={{ transition: reduce ? "none" : "transform .42s cubic-bezier(.4,0,.2,1)", willChange: "transform" }}
+          >
+            {items.map((it, i) => {
+              const tone = TONE[it.forensicImpactType] ?? TONE.NEUTRAL;
+              const isActive = i === idx;
+              const facts = factLines(it.verifiedFacts);
+              return (
+                <article
+                  key={it.id || i}
+                  ref={(el) => { slideRefs.current[i] = el; }}
+                  onClick={() => { if (!isActive) goto(i); }}
+                  className={`relative aspect-[9/16] w-[min(21rem,80vw,33vh)] shrink-0 overflow-hidden rounded-[1.4rem] bg-[#0a0a0a] text-[#F5F0E8] shadow-[0_18px_50px_rgba(0,0,0,0.22)] max-[899px]:w-full ${
+                    isActive ? "" : "cursor-pointer opacity-[0.44] [transform:scale(0.9)]"
+                  }`}
+                  style={{ transition: reduce ? "none" : "opacity .3s ease, transform .3s ease", borderLeft: `3px solid ${tone}` }}
+                >
+                  {/* Progress — rendered only on the playing card. One set
+                      of bars, not one per card: the neighbours are dimmed
+                      and scaled, so theirs would be decoration that costs
+                      a DOM node per dispatch squared. */}
+                  {isActive && (
+                    <div className="absolute inset-x-3 top-2.5 z-[7] flex gap-[3px]" aria-hidden>
+                      {items.map((_, b) => (
+                        <span key={b} className="h-[2px] flex-1 overflow-hidden rounded-sm bg-[#F5F0E8]/20">
+                          <span
+                            ref={b === idx ? fillRef : undefined}
+                            className="block h-full rounded-sm bg-[#F5F0E8]"
+                            style={{ width: b < idx || done || (b === idx && reduce) ? "100%" : "0%" }}
+                          />
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {isActive && !done && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setPaused((v) => !v); }}
+                      aria-label={paused ? "Play stories" : "Pause stories"}
+                      className="absolute right-3 top-[0.55rem] z-[8] grid h-6 w-6 place-items-center rounded-full bg-[#F5F0E8]/10 font-mono text-[0.55rem] text-[#F5F0E8]"
+                    >
+                      {paused ? "▶" : "❚❚"}
+                    </button>
+                  )}
+
+                  {/* The dispatch itself. */}
+                  <div className="flex h-full flex-col gap-2.5 px-5 pb-5 pt-8">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="font-mono text-[0.6rem] tracking-wide text-[#F5F0E8]/60">{fullDate(it.eventDate)}</span>
+                      <span
+                        className="rounded border px-1.5 py-px font-mono text-[0.53rem] uppercase tracking-[0.12em]"
+                        style={{ borderColor: `${tone}66`, color: tone }}
+                      >
+                        {CAT_LABEL[it.category] || it.category}
+                      </span>
+                      {it.isPinned && (
+                        <span className="rounded border border-[#c9a96e]/45 px-1.5 py-px font-mono text-[0.53rem] uppercase tracking-[0.12em] text-[#c9a96e]">
+                          📌 Landmark
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="font-serif text-[1.02rem] font-medium leading-[1.24] text-white [text-wrap:balance]">
+                      {it.headline}
+                    </h3>
+
+                    {facts.length > 0 && (
+                      <ul className="space-y-1.5 overflow-hidden">
+                        {facts.map((f, fi) => (
+                          <li key={fi} className="flex gap-1.5 text-[0.68rem] leading-[1.45] text-[#F5F0E8]/70">
+                            <span aria-hidden style={{ color: tone }}>•</span>
+                            <span>{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    {it.forensicImpactSummary && (
+                      <div
+                        className="mt-auto shrink-0 rounded-lg border p-2.5"
+                        style={{ borderColor: `${tone}40`, background: `${tone}14` }}
+                      >
+                        <div className="flex items-center gap-1.5 font-mono text-[0.52rem] uppercase tracking-[0.16em] text-[#c9a96e]">
+                          <span aria-hidden className="h-1.5 w-1.5 rounded-full" style={{ background: tone }} />
+                          Forensic impact read
+                        </div>
+                        <p className="mt-1 text-[0.7rem] leading-[1.45] text-[#F5F0E8]/85">{it.forensicImpactSummary}</p>
+                      </div>
+                    )}
+
+                    <div className={`flex shrink-0 items-center justify-between gap-2 border-t border-[#F5F0E8]/12 pt-2 font-mono text-[0.55rem] text-[#F5F0E8]/45 ${it.forensicImpactSummary ? "" : "mt-auto"}`}>
+                      <span className="truncate">{it.sourceDocumentRef ? `Ref ${it.sourceDocumentRef}` : it.sourceName}</span>
+                      {it.sourceUrl && (
+                        <a
+                          href={it.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="shrink-0 text-[#c9a96e] underline-offset-2 hover:underline"
+                        >
+                          Verify filing ↗
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Tap zones — the story convention, only on the playing
+                      card; a dimmed neighbour is a jump target instead.
+                      They sit under the end card, so the sign-up's own
+                      controls are never intercepted. */}
+                  {isActive && !done && (
+                    <>
+                      <button type="button" aria-label="Previous dispatch" onClick={(e) => { e.stopPropagation(); goto(idx - 1); }} className="absolute inset-y-0 left-0 z-[5] w-1/3 cursor-default" />
+                      <button type="button" aria-label="Next dispatch" onClick={(e) => { e.stopPropagation(); advance(); }} className="absolute inset-y-0 right-0 z-[5] w-2/3 cursor-default" />
+                    </>
+                  )}
+
+                  {/* ── The end card ──────────────────────────────────
+                      The sign-up handed in by the caller, over the last
+                      dispatch once the run completes. */}
+                  {isActive && done && endCard && (
+                    <div
+                      className="absolute inset-0 z-[6] flex flex-col justify-center overflow-y-auto bg-[#14110d] px-4 py-6"
+                      style={{ borderLeft: "3px solid #c9a96e", marginLeft: -3 }}
+                    >
+                      {endCard}
+                      <button
+                        type="button"
+                        onClick={() => { seenRef.current.clear(); goto(0); }}
+                        className="mt-3 shrink-0 rounded-lg border border-[#F5F0E8]/20 py-2 text-[0.72rem] text-[#F5F0E8]/80 transition-colors hover:border-[#c9a96e] hover:text-white"
+                      >
+                        Replay the dispatches
+                      </button>
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={advance}
+          disabled={done}
+          aria-label="Next dispatch"
+          className="hidden h-10 w-10 shrink-0 place-items-center rounded-full border border-[#1a1a1a]/12 bg-white text-[#1a1a1a]/60 transition-colors hover:border-[#c9a96e] hover:text-[#1a1a1a] disabled:opacity-30 md:grid"
+        >
+          →
+        </button>
+      </div>
+
+      <p className="mt-3 text-center font-mono text-[0.6rem] leading-relaxed text-[#1a1a1a]/40">
+        Tap the right of a card to advance, the left to go back · colour follows the report&rsquo;s own rule — green sound, amber watch, rust risk.
+      </p>
+    </div>
+  );
+}
+
+/* Reads the OS setting and keeps listening: a reader who turns reduced
+   motion on mid-session should not have to reload the report. */
+function useReducedMotion() {
+  const [reduce, setReduce] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReduce(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  return reduce;
+}

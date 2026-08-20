@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ProjectWireItem } from "@/lib/supabase";
+import DispatchStories from "./DispatchStories";
 import OtpDigits from "@/components/auth/OtpDigits";
 import { saveLead, setPendingLead, isSignedIn, AUTH_EVENT, loadAccount } from "@/lib/journey";
 import {
@@ -20,13 +21,22 @@ import { track } from "@/lib/events";
 
    Reader-facing behaviour, per the founder:
    · Newest first, "Landmark Catalyst" pinned on top.
-   · First 2 shown, "Load more" reveals the rest — free to read, no sign-up.
+   · TWO VIEWS of the same events, and the reader chooses:
+       Stories (default) — vertical, autoplaying, phone-native. Every
+         dispatch is in the DOM; see DispatchStories.
+       List — the chronological timeline: 2 shown, "Load more" reveals
+         the rest. Free to read either way, no sign-up.
+     Only the presentation differs. Same items, same sort, same filter,
+     same words — so nothing a crawler or a reader can see depends on
+     which view is up.
    · The rail is impact-coded (green/amber/red on the node + card edge) so it
      scans as a risk/catalyst map, not just a stack of cards.
    · The watch banner is a PROPER sign-up: signed-out readers go through the
      same phone-OTP (+ Google) flow the rest of the site uses — India & NRI —
      tagged intent "wire-alert" so the sign-in records a contact_lead on the
-     backend; a signed-in reader gets a one-click watch.
+     backend; a signed-in reader gets a one-click watch. ONE per section:
+     the band below the timeline in list view, the story's end card in
+     stories view — the same component either way, never two at once.
    ════════════════════════════════════════════════════════════════ */
 
 const INITIAL_SHOWN = 2;
@@ -92,6 +102,10 @@ export default function ProjectIntelligenceWire({
 }) {
   const [activeCategory, setActiveCategory] = useState<string>("ALL");
   const [expanded, setExpanded] = useState(false);
+  /* Stories is the default view. The timeline stays one tap away — a
+     reader scanning twenty dispatches for one fact wants a list, and a
+     printed or Reader-mode page wants one too. */
+  const [view, setView] = useState<"stories" | "list">("stories");
 
   const wireList = useMemo(() => sortNewestFirst(items ?? []), [items]);
 
@@ -140,6 +154,28 @@ export default function ProjectIntelligenceWire({
           </p>
         </div>
 
+        <div className="flex flex-wrap items-center gap-3">
+          {/* View switch — stories or the timeline, reader's choice. */}
+          <div className="flex items-center rounded-lg border border-[#1a1a1a]/12 bg-white p-0.5" role="group" aria-label="News display">
+            {([["stories", "Stories"], ["list", "List"]] as const).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => {
+                  if (view === key) return;
+                  setView(key);
+                  track("news_view_changed", { props: { project: projectName, placement: placement ?? "unknown", view: key } });
+                }}
+                aria-pressed={view === key}
+                className={`rounded-md px-2.5 py-1 text-[0.74rem] font-medium transition-colors ${
+                  view === key ? "bg-[#14110d] text-[#f6f1e8]" : "text-[#1a1a1a]/60 hover:text-[#1a1a1a]"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
         {/* Category filters — reset the expand state so "Load more" always
             reflects the filtered count. */}
         {categoriesPresent.length > 2 && (
@@ -166,9 +202,26 @@ export default function ProjectIntelligenceWire({
             })}
           </div>
         )}
+        </div>
       </div>
 
+      {/* ── Stories ──
+          The default view. Filtered items, so the category chips drive
+          the story set exactly as they drive the list. The end card is
+          the real WatchBanner in its story dress — one component, one
+          auth flow, one lead. */}
+      {view === "stories" && (
+        <DispatchStories
+          key={activeCategory /* a filter change is a new run, not a seek */}
+          items={filteredItems}
+          endCard={<WatchBanner projectName={projectName} variant="story" />}
+          onAdvance={(i) => track("news_story_advanced", { props: { project: projectName, placement: placement ?? "unknown", index: i, total: filteredItems.length } })}
+          onComplete={() => track("news_story_completed", { props: { project: projectName, placement: placement ?? "unknown", total: filteredItems.length } })}
+        />
+      )}
+
       {/* ── Timeline ── */}
+      {view === "list" && (
       <div className="relative mt-6 space-y-5 before:absolute before:bottom-4 before:left-[1.15rem] before:top-4 before:w-[2px] before:bg-gradient-to-b before:from-[#c9a96e]/50 before:via-[#1a1a1a]/12 before:to-transparent">
         {shown.map((item, idx) => {
           const catMeta = CATEGORY_LABELS[item.category] || { label: item.category, icon: "📌", chip: "bg-slate-100 text-slate-700" };
@@ -261,9 +314,11 @@ export default function ProjectIntelligenceWire({
           );
         })}
       </div>
+      )}
 
-      {/* Load more / less — free to read, no sign-up. */}
-      {filteredItems.length > INITIAL_SHOWN && (
+      {/* Load more / less — free to read, no sign-up. List view only:
+          in stories every dispatch is already in the run. */}
+      {view === "list" && filteredItems.length > INITIAL_SHOWN && (
         <div className="mt-5 flex justify-center">
           <button
             type="button"
@@ -285,8 +340,10 @@ export default function ProjectIntelligenceWire({
         </div>
       )}
 
-      {/* ── Watch banner ── */}
-      <WatchBanner projectName={projectName} />
+      {/* ── Watch banner ──
+          List view only. In stories the same component is the end card,
+          and two sign-ups in one section would compete with each other. */}
+      {view === "list" && <WatchBanner projectName={projectName} />}
     </section>
   );
 }
@@ -297,8 +354,16 @@ export default function ProjectIntelligenceWire({
    Google, with the intent declared BEFORE auth so the sign-in records a
    "wire-alert" contact_lead on the backend (flushPendingLead, inside verify).
    A signed-in reader just taps once — the lead is recorded against the
-   identity we already hold. */
-function WatchBanner({ projectName }: { projectName: string }) {
+   identity we already hold.
+
+   `variant` changes NOTHING but the wrapper's classes. "band" is the
+   full-width block under the timeline; "story" drops the card chrome and
+   stacks, because the story slide it sits inside already provides the
+   dark surface, the gold edge and the padding. Every state, every
+   string, every network call and the lead itself are identical — which
+   is the point of reusing the component instead of copying it. */
+export function WatchBanner({ projectName, variant = "band" }: { projectName: string; variant?: "band" | "story" }) {
+  const story = variant === "story";
   const [signedIn, setSignedIn] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -393,15 +458,15 @@ function WatchBanner({ projectName }: { projectName: string }) {
   const sentTo = isIndia && normalisePhone(num) ? `${dial} ${prettyPhone(normalisePhone(num)!)}` : `${dial} ${num.trim()}`;
 
   return (
-    <div className="mt-8 overflow-hidden rounded-2xl border border-[#c9a96e]/35 bg-[#14110d] p-6 text-[#f6f1e8] shadow-[0_16px_40px_rgba(0,0,0,0.18)] md:p-8">
-      <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
+    <div className={story ? "text-[#f6f1e8]" : "mt-8 overflow-hidden rounded-2xl border border-[#c9a96e]/35 bg-[#14110d] p-6 text-[#f6f1e8] shadow-[0_16px_40px_rgba(0,0,0,0.18)] md:p-8"}>
+      <div className={story ? "flex flex-col gap-3.5" : "flex flex-col justify-between gap-6 lg:flex-row lg:items-center"}>
         {/* Pitch — 3 skimmable points */}
-        <div className="max-w-xl">
+        <div className={story ? "" : "max-w-xl"}>
           <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-[#c9a96e]">Discrete ground intelligence</span>
-          <h4 className="mt-1.5 font-serif text-[1.3rem] font-normal leading-tight text-white md:text-[1.5rem]">
+          <h4 className={`mt-1.5 font-serif font-normal leading-tight text-white ${story ? "text-[1.12rem]" : "text-[1.3rem] md:text-[1.5rem]"}`}>
             Get {projectName} on the watch
           </h4>
-          <ul className="mt-3 space-y-1.5 text-[0.82rem] leading-relaxed text-[#f6f1e8]/70">
+          <ul className={`mt-3 space-y-1.5 leading-relaxed text-[#f6f1e8]/70 ${story ? "text-[0.7rem]" : "text-[0.82rem]"}`}>
             <li className="flex items-start gap-2"><span aria-hidden>🔔</span><span>A personal heads-up the moment a real event lands — a new filing, RERA slippage, a corridor change.</span></li>
             <li className="flex items-start gap-2"><span aria-hidden>🤝</span><span>Concierge, by a human advisor — not a broker blast.</span></li>
             <li className="flex items-start gap-2"><span aria-hidden>🔒</span><span>Zero spam. Ever.</span></li>
@@ -409,7 +474,7 @@ function WatchBanner({ projectName }: { projectName: string }) {
         </div>
 
         {/* Action */}
-        <div className="shrink-0 lg:w-[21rem]">
+        <div className={story ? "" : "shrink-0 lg:w-[21rem]"}>
           {done ? (
             <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-center text-[0.82rem] font-medium text-emerald-300">
               ✓ You&rsquo;re on the watch for {projectName}. An advisor confirms and sends verified updates as they land.
