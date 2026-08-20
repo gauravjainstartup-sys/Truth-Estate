@@ -20,6 +20,7 @@
    ════════════════════════════════════════════════════════════════ */
 
 import type { LiveBacklogFull, LivePillarSet } from "./supabase";
+import { computeRedFlags } from "./redFlags";
 
 type Row = Record<string, unknown>;
 
@@ -106,7 +107,11 @@ export function mapBacklogRowFields(r: Row, bpd: Row | null | undefined, oc: OcI
     cagr: s(r.cagr),
     expectedCagrNum: n(r.expected_cagr_num),
     adjustedRoi: n(r.adjusted_roi),
-    redFlags: n(r.redFlags) ?? n(r.listing_red_flags),
+    /* RECOMPUTED from the row's own ingredients (founder's four rules,
+       see redFlags.ts) — the stored column reproduced on only 34 of 107
+       projects and is never trusted. Stored survives only as the
+       fallback for a row carrying no ingredients at all. */
+    redFlags: computeRedFlags(r) ?? n(r.redFlags) ?? n(r.listing_red_flags),
     matchScore: n(r.matchScore),
     delayChancePct: n(r.delay_chance_pct),
     budget: s(r.budget),

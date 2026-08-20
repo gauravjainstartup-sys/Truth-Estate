@@ -98,6 +98,11 @@ export type ProjectIntel = Project & {
   /* Pure inputs for the match engine (scoreMatch). Present on live-pipeline
      projects (built in liveProjectIntel); absent on the mock fallback set. */
   matchInput?: import("./matchEngine").MatchInput;
+  /* Audited red-flag count — recomputed at bake from the founder's four
+     rules (redFlags.ts), never the stored column. Absent on the mock
+     fallback set; null when the row held no ingredient at all. The option
+     card omits its flag chip in both cases rather than guess. */
+  redFlags?: number | null;
   devSlug?: string;
   marketSlug?: string;
   marketShort: string;

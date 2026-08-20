@@ -1600,6 +1600,9 @@ export function liveProjectIntel(
        indexed via the sitemap, so nothing looked broken. */
     seoSlug: row.seoSlug,
     matchInput: toMatchInput(row, extRaw, cfgs),
+    /* already the audited recount by the time it reaches this row —
+       backlogRow.ts runs computeRedFlags over the ingredient columns */
+    redFlags: row.redFlags,
     devSlug: row.devSlug ?? (row.developer ? developerSlugOf(row.developer) : undefined),
     marketSlug: market?.slug,
     marketShort: market?.short ?? marketName,

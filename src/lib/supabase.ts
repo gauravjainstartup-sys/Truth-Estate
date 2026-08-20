@@ -18,6 +18,7 @@
 import { corridorKey } from "./journey";
 import type { DevLedgerItem } from "./developers";
 import { computePillarSet, mapBacklogRowFields, ocFromOverrides, type OcInfo } from "./backlogRow";
+import { computeRedFlags, RED_FLAG_COLUMNS } from "./redFlags";
 
 const SUPABASE_URL = "https://lyetvabfgaidvqrbmaoy.supabase.co";
 const SUPABASE_ANON_KEY =
@@ -176,7 +177,9 @@ export async function fetchScoredBacklog(): Promise<LiveScoredProject[] | null> 
   // stopped pulling to save egress.
   const rows = await sbRows(
     "backlog_listing_public_v3",
-    'select=name,developer,location,"microMarket","truthScore","delayRisk","delayDelta",cagr,"redFlags","matchScore",delay_chance_pct,listing_red_flags,budget,config&truthScore=not.is.null&order="truthScore".desc&limit=12',
+    // RED_FLAG_COLUMNS ride along so the count is recomputed from the
+    // same rules as everywhere else, never read stored (see redFlags.ts).
+    `select=name,developer,location,"microMarket","truthScore","delayRisk","delayDelta",cagr,"redFlags","matchScore",delay_chance_pct,listing_red_flags,budget,config,${RED_FLAG_COLUMNS}&truthScore=not.is.null&order="truthScore".desc&limit=12`,
   );
   if (!rows) return null;
   const out: LiveScoredProject[] = [];
@@ -193,7 +196,7 @@ export async function fetchScoredBacklog(): Promise<LiveScoredProject[] | null> 
       delayRisk: s(r.delayRisk),
       delayDelta: s(r.delayDelta),
       cagr: s(r.cagr),
-      redFlags: n(r.redFlags) ?? n(r.listing_red_flags),
+      redFlags: computeRedFlags(r) ?? n(r.redFlags) ?? n(r.listing_red_flags),
       matchScore: n(r.matchScore),
       delayChancePct: n(r.delay_chance_pct),
       budget: s(r.budget),
