@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- ════════════════════════════════════════════════════════════════
+     CONCEPT MOCK — Dispatch Stories.
+
+     NOT part of the app. A standalone page under /mock/ so the idea can
+     be reviewed on a real device and a real URL before anything is
+     built. It imports nothing from the app and the app imports nothing
+     from it; deleting this file removes it entirely.
+
+     Noindex/nofollow and absent from the sitemap — it must never be a
+     crawlable Truth Estate page. The sign-up at the end is SIMULATED:
+     no code is sent, no lead is stored, no Supabase call is made. The
+     real thing would reuse the WatchBanner component already shipping
+     under News & Updates, not this copy of it.
+     ════════════════════════════════════════════════════════════════ -->
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="theme-color" content="#F5F0E8">
+<title>Dispatch Stories</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+
+</head>
+<body>
+
+<style>
+  :root {
+    --page:      #F5F0E8;
+    --page-2:    #EDE6DA;
+    --ink:       #1a1a1a;
+    --ink-soft:  #1a1a1aa6;
+    --ink-faint: #1a1a1a66;
+    --rule:      #1a1a1a1f;
+    --gold-ink:  #9a7a2e;
+
+    /* The story surface is deliberately dark in BOTH themes: it is an
+       immersive media panel, like a photograph, not page chrome. Declared
+       here as real values so it never depends on a theme block. */
+    --card:      #0a0a0a;
+    --card-2:    #141414;
+    --card-ink:  #F5F0E8;
+    --card-soft: #F5F0E8a8;
+    --card-faint:#F5F0E866;
+    --card-rule: #F5F0E81f;
+    --gold:      #c9a96e;
+
+    /* the third term caps the card by viewport HEIGHT — at 9:16 a card
+       is 1.78x taller than wide, so width is what has to give for the
+       whole story (impact read included) to sit above the fold */
+    --slideW: min(23rem, 78vw, 38vh);
+    --gap: 1.5rem;
+
+    --good:  #4aa877;
+    --watch: #d9ae62;
+    --risk:  #d97a66;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page:      #0d0d0d;
+      --page-2:    #161616;
+      --ink:       #F5F0E8;
+      --ink-soft:  #F5F0E8a8;
+      --ink-faint: #F5F0E866;
+      --rule:      #F5F0E81f;
+      --gold-ink:  #c9a96e;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page:      #0d0d0d;
+    --page-2:    #161616;
+    --ink:       #F5F0E8;
+    --ink-soft:  #F5F0E8a8;
+    --ink-faint: #F5F0E866;
+    --rule:      #F5F0E81f;
+    --gold-ink:  #c9a96e;
+  }
+
+  @media (max-width: 899px) { :root { --slideW: 100%; --gap: 0px; } }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font-family: Geist, ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-weight: 300;
+    margin: 0;
+    padding: clamp(1.2rem, 4vw, 2.6rem) clamp(1rem, 4vw, 2rem) 4rem;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  .wrap { max-width: 60rem; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; }
+
+  /* ── framing ─────────────────────────────────── */
+  .eyebrow {
+    font-family: "Geist Mono", ui-monospace, monospace;
+    font-size: .66rem; letter-spacing: .24em; text-transform: uppercase;
+    color: var(--gold-ink); font-weight: 500;
+  }
+  h1 {
+    font-family: "Playfair Display", ui-serif, Georgia, serif;
+    font-weight: 600; font-size: clamp(1.7rem, 4.6vw, 2.2rem);
+    line-height: 1.1; margin: .5rem 0 0; text-wrap: balance;
+  }
+  .sub { margin: .5rem 0 0; color: var(--ink-soft); font-size: .92rem; max-width: 40rem; line-height: 1.6; }
+  .note {
+    font-family: "Geist Mono", monospace; font-size: .7rem; line-height: 1.7;
+    color: var(--ink-faint); border-left: 2px solid var(--gold-ink);
+    padding-left: .8rem; margin-top: 1.1rem;
+  }
+
+  /* ── the rail: how it sits IN the report ─────── */
+  .rail-block { display: flex; flex-direction: column; gap: .85rem; }
+  .rail-label {
+    font-family: "Geist Mono", monospace; font-size: .64rem; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--ink-faint); font-weight: 500;
+  }
+  .rail { display: flex; gap: .7rem; overflow-x: auto; padding-bottom: .5rem; }
+  .rail::-webkit-scrollbar { height: 4px; }
+  .rail::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 2px; }
+  .bub {
+    flex: 0 0 auto; width: 5.1rem; display: flex; flex-direction: column;
+    align-items: center; gap: .4rem; background: none; border: 0; padding: 0;
+    cursor: pointer; font-family: inherit; color: inherit;
+  }
+  .bub .ring {
+    width: 3.5rem; height: 3.5rem; border-radius: 50%; display: grid; place-items: center;
+    border: 2px solid var(--tone); background: var(--page-2);
+    font-family: "Geist Mono", monospace; font-size: .58rem; letter-spacing: .04em;
+    color: var(--tone); font-weight: 500; transition: transform .18s ease;
+    position: relative;
+  }
+  .bub:hover .ring, .bub:focus-visible .ring { transform: scale(1.06); }
+  .bub:focus-visible { outline: none; }
+  .bub:focus-visible .ring { box-shadow: 0 0 0 3px var(--gold-ink); }
+  .bub.seen .ring { border-color: var(--rule); color: var(--ink-faint); }
+  .bub .cap {
+    font-size: .62rem; line-height: 1.35; color: var(--ink-faint); text-align: center;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .bub .pin { position: absolute; top: -3px; right: -3px; font-size: .6rem; }
+
+  /* ── the player ──────────────────────────────── */
+  /* ── the stage ───────────────────────────────────
+     Desktop: the active dispatch is centred and playing, its neighbours
+     peek either side, dimmed — so the width is used and you can see what
+     is coming without leaving the story. Narrow: one slide fills the
+     viewport and the neighbours sit off-screen, so it behaves exactly
+     like a phone story. Same markup, no second code path. */
+  .stage { display: flex; align-items: center; gap: .6rem; }
+  .viewport { overflow: hidden; flex: 1; padding: .5rem 0; }
+  .track {
+    display: flex; gap: var(--gap);
+    transition: transform .42s cubic-bezier(.4,0,.2,1);
+    will-change: transform;
+  }
+  @media (prefers-reduced-motion: reduce) { .track { transition: none; } }
+
+  .nav {
+    flex: 0 0 auto; width: 2.4rem; height: 2.4rem; border-radius: 50%;
+    background: var(--page-2); border: 1px solid var(--rule); color: var(--ink-soft);
+    cursor: pointer; font-size: .9rem; display: grid; place-items: center;
+    transition: color .18s ease, border-color .18s ease;
+  }
+  .nav:hover { color: var(--ink); border-color: var(--gold-ink); }
+  .nav:focus-visible { outline: 2px solid var(--gold-ink); outline-offset: 2px; }
+  .nav[disabled] { opacity: .3; cursor: default; }
+  @media (max-width: 899px) { .nav { display: none; } }
+
+  .phone {
+    flex: 0 0 var(--slideW);
+    aspect-ratio: 9 / 16;
+    background: var(--card);
+    color: var(--card-ink);
+    border-radius: 18px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,.25), 0 28px 60px -30px rgba(0,0,0,.6);
+    user-select: none;
+    border-left: 3px solid var(--tone, var(--gold));
+    transition: opacity .42s ease, transform .42s ease, filter .42s ease;
+  }
+  .phone:not(.is-active) {
+    opacity: .44; transform: scale(.9);
+    cursor: pointer;
+  }
+  .phone:not(.is-active) .bars,
+  .phone:not(.is-active) .pausebtn { opacity: 0; }
+  .phone:not(.is-active) .zone { pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) { .phone { transition: none; } }
+
+  .bars { position: absolute; inset: .6rem .7rem auto .7rem; display: flex; gap: 3px; z-index: 7; transition: opacity .3s ease; }
+  .bar { flex: 1; height: 2px; background: #F5F0E82e; border-radius: 2px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 0; background: var(--card-ink); border-radius: 2px; }
+  .bar.done > i { width: 100%; }
+
+  .card {
+    position: absolute; inset: 0; padding: 2.1rem 1.35rem 1.2rem;
+    display: flex; flex-direction: column; gap: .7rem;
+    opacity: 0; transition: opacity .32s ease;
+  }
+  .card.on { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { .card { transition: none; } }
+
+  .meta { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; }
+  .date {
+    font-family: "Geist Mono", monospace; font-size: .66rem; letter-spacing: .06em;
+    color: var(--card-faint);
+  }
+  .chip {
+    font-family: "Geist Mono", monospace; font-size: .58rem; letter-spacing: .11em;
+    text-transform: uppercase; padding: .2rem .45rem; border-radius: 3px;
+    border: 1px solid var(--tone); color: var(--tone); font-weight: 500;
+  }
+  .chip.pin { border-color: var(--gold); color: var(--gold); }
+
+  .head {
+    font-family: "Playfair Display", ui-serif, Georgia, serif;
+    font-weight: 600; font-size: 1.32rem; line-height: 1.22; margin: .15rem 0 0;
+    text-wrap: balance; color: var(--card-ink);
+    display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .facts { display: flex; flex-direction: column; gap: .42rem; margin: 0; padding: 0; list-style: none; }
+  .facts li {
+    font-size: .76rem; line-height: 1.55; color: var(--card-soft);
+    padding-left: .7rem; position: relative;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .facts li::before { content: "·"; position: absolute; left: 0; color: var(--tone); }
+
+  .read {
+    margin-top: auto; border: 1px solid color-mix(in srgb, var(--tone) 34%, transparent);
+    background: color-mix(in srgb, var(--tone) 9%, transparent);
+    border-radius: 5px; padding: .65rem .75rem;
+    display: flex; flex-direction: column; gap: .25rem;
+  }
+  .read .lbl {
+    font-family: "Geist Mono", monospace; font-size: .55rem; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--tone); font-weight: 500;
+    display: flex; align-items: center; gap: .35rem;
+  }
+  .read .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--tone); }
+  .read p { margin: 0; font-size: .74rem; line-height: 1.5; color: var(--card-ink); }
+
+  .foot {
+    border-top: 1px solid var(--card-rule); padding-top: .6rem;
+    display: flex; justify-content: space-between; align-items: baseline; gap: .6rem;
+    font-family: "Geist Mono", monospace; font-size: .56rem; color: var(--card-faint);
+  }
+  .foot .ref { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .foot .verify { color: var(--gold); white-space: nowrap; }
+
+  /* tap zones sit above the card, below the controls */
+  .zone { position: absolute; top: 0; bottom: 0; width: 34%; z-index: 3; background: none; border: 0; cursor: pointer; }
+  .zone.prev { left: 0; }
+  .zone.next { right: 0; left: auto; width: 66%; }
+  .zone:focus-visible { outline: 2px solid var(--gold); outline-offset: -4px; }
+
+  .pausebtn {
+    position: absolute; top: .55rem; right: .75rem; z-index: 5;
+    background: #F5F0E81a; border: 0; color: var(--card-ink);
+    width: 1.6rem; height: 1.6rem; border-radius: 50%; cursor: pointer;
+    font-size: .62rem; display: grid; place-items: center; padding: 0;
+    font-family: "Geist Mono", monospace;
+  }
+  .pausebtn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+
+
+  /* ── the end card: a real sign-up, not a dead end ──────────────────
+     Mirrors the WatchBanner already shipping under News & Updates —
+     same eyebrow, headline, three points, and the same India/NRI
+     phone-OTP sequence. Built here only so the flow can be clicked
+     through; the real thing reuses that component, not a copy. */
+  .end {
+    position: absolute; inset: 0; z-index: 6; background: #14110d;
+    display: none; flex-direction: column; justify-content: center; gap: .55rem;
+    padding: 1.5rem 1.15rem 1.1rem; overflow: hidden;
+    border-left: 3px solid var(--gold); margin-left: -3px;
+  }
+  .end.on { display: flex; }
+  .end.on ~ .pausebtn, .phone:has(.end.on) .pausebtn { display: none; }
+  .end .eye {
+    font-family: "Geist Mono", monospace; font-size: .53rem; letter-spacing: .2em;
+    text-transform: uppercase; color: var(--gold); font-weight: 500;
+  }
+  .end h3 {
+    font-family: "Playfair Display", ui-serif, Georgia, serif; font-weight: 500;
+    font-size: 1.18rem; line-height: 1.22; margin: 0; color: #fff; text-wrap: balance;
+  }
+  .end .pts { list-style: none; margin: .1rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .3rem; }
+  .end .pts li {
+    display: flex; gap: .4rem; font-size: .67rem; line-height: 1.45; color: #f6f1e8b3;
+  }
+  .end .form { margin-top: 1.15rem; display: flex; flex-direction: column; gap: .45rem; }
+  /* display:flex above outranks the hidden attribute — say it explicitly. */
+  .end .form[hidden] { display: none; }
+  .row { display: flex; gap: .35rem; }
+  .end select, .end input {
+    background: #ffffff0f; border: 1px solid #f6f1e82e; border-radius: 6px;
+    color: #f6f1e8; font-family: inherit; font-size: .78rem; padding: .5rem .55rem;
+    min-width: 0;
+  }
+  .end select { flex: 0 0 4.6rem; }
+  .end input { flex: 1; }
+  .end input::placeholder { color: #f6f1e855; }
+  .end select:focus-visible, .end input:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+  .cta {
+    background: var(--gold); color: #14110d; border: 0; border-radius: 6px;
+    padding: .55rem; font-family: "Geist Mono", monospace; font-size: .68rem;
+    letter-spacing: .1em; text-transform: uppercase; font-weight: 500; cursor: pointer;
+  }
+  .cta:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  .cta:disabled { opacity: .38; cursor: not-allowed; }
+  .ghost {
+    background: none; border: 1px solid #f6f1e82e; color: #f6f1e8cc; border-radius: 6px;
+    padding: .5rem; font-family: inherit; font-size: .72rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: .4rem;
+  }
+  .ghost:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .otp { display: flex; gap: .25rem; }
+  .otp input {
+    flex: 1; text-align: center; padding: .45rem .1rem; font-family: "Geist Mono", monospace;
+    font-size: .82rem; letter-spacing: 0;
+  }
+  .sentto { font-family: "Geist Mono", monospace; font-size: .58rem; color: #f6f1e877; }
+  .fine { font-size: .58rem; line-height: 1.5; color: #f6f1e866; text-align: center; }
+  .ok {
+    border: 1px solid #4aa87766; background: #4aa87718; border-radius: 8px;
+    padding: .9rem; text-align: center; font-size: .78rem; line-height: 1.5; color: #8fd6ae;
+  }
+  .simnote {
+    font-family: "Geist Mono", monospace; font-size: .53rem; letter-spacing: .08em;
+    color: var(--gold); opacity: .75; text-align: center; text-transform: uppercase;
+  }
+
+  /* ── short viewports ───────────────────────────────────────────────
+     A story that runs off the fold stops being a story. On a laptop the
+     framing above gives up its room first; the card itself never
+     shrinks below reading size. */
+  @media (max-height: 920px) {
+    body { padding-top: 1.3rem; }
+    .wrap { gap: 1rem; }
+    .sub { font-size: .86rem; margin-top: .35rem; }
+    .rail-block { gap: .5rem; }
+    .rail { padding-bottom: .2rem; }
+    .bub .ring { width: 3.05rem; height: 3.05rem; }
+    .viewport { padding: .2rem 0; }
+  }
+  @media (max-height: 780px) {
+    /* Below this there is no room for both the explanation and the
+       story — the story wins; the framing is one line of eyebrow. */
+    .sub { display: none; }
+    h1 { font-size: 1.5rem; }
+    .bub .ring { width: 2.8rem; height: 2.8rem; }
+  }
+  @media (max-width: 899px) {
+    /* Phone: full-bleed, and the framing above it drops to a title so the
+       whole story sits inside the screen. The sub-heading's disclaimer
+       lives in the footer, where it reads on every width. */
+    .wrap { gap: .85rem; }
+    .sub { display: none; }
+    .bub .ring { width: 2.9rem; height: 2.9rem; }
+  }
+
+  .hint {
+    text-align: center; font-family: "Geist Mono", monospace; font-size: .63rem;
+    color: var(--ink-faint); line-height: 1.8; letter-spacing: .04em;
+  }
+  kbd {
+    font-family: inherit; border: 1px solid var(--rule); border-radius: 3px;
+    padding: .05rem .3rem; color: var(--ink-soft);
+  }
+  footer { border-top: 1px solid var(--rule); padding-top: 1rem; font-family: "Geist Mono", monospace; font-size: .68rem; color: var(--ink-faint); line-height: 1.7; }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Concept mock &middot; News &amp; Updates</div>
+    <h1>Dispatch Stories</h1>
+    <p class="sub">Six real Titanium SPR dispatches, played as vertical stories. No placeholder copy, not wired to the database, not in the app.</p>
+  </header>
+
+  <section class="rail-block">
+    <div class="rail-label">On the report — the rail that opens the stories</div>
+    <div class="rail" id="rail"></div>
+  </section>
+
+  <div class="stage">
+    <button class="nav" id="navPrev" aria-label="Previous dispatch">&#8592;</button>
+    <div class="viewport" id="viewport">
+      <div class="track" id="track"></div>
+    </div>
+    <button class="nav" id="navNext" aria-label="Next dispatch">&#8594;</button>
+  </div>
+
+  <p class="hint">
+    Tap the right of a card to advance, the left to go back &middot; hold to pause &middot; click a dimmed card to jump<br>
+    <kbd>&#8592;</kbd> <kbd>&#8594;</kbd> move &middot; <kbd>space</kbd> pause<br>
+    Colour follows the report's own rule &mdash; green sound, amber watch, rust risk.
+  </p>
+
+  <footer>
+    Concept mock. Six real Titanium SPR dispatches pulled from project_intelligence_wire, 20 Aug 2026 &mdash;
+    not wired to the database and not in the app. Impact colours match the live report&rsquo;s semantics;
+    the closing sign-up mirrors the WatchBanner already shipping under News &amp; Updates.
+  </footer>
+</div>
+
+<script>
+  const TONE = { POSITIVE: "var(--good)", NEUTRAL: "var(--gold)", CAUTION: "var(--watch)", RISK: "var(--risk)" };
+  const LABEL = { CORPORATE_JV: "Corporate / JV", INFRASTRUCTURE: "Corridor Infra", CONSTRUCTION: "Construction", PRICING: "Pricing & Sales", REGULATORY: "Regulatory", LEGAL: "Legal" };
+
+  const D = [
+    { date: "5 Feb 2026", cat: "CORPORATE_JV", impact: "POSITIVE", pinned: true,
+      head: "RMZ Group Forms 50:50 Joint Venture with Signature Global for ₹7,500 Cr Mixed-Use Commercial Hub in Sector 71",
+      facts: ["RMZ Group invested ₹1,293 Crore to acquire a 50% equity stake in Gurugram Commercity Limited, a Signature Global subsidiary.",
+              "Joint venture to develop an 18-acre parcel adjacent to Titanium SPR into 3.94M–5.5M sq ft of Grade-A offices, retail and two boutique hotels.",
+              "Total outlay estimated at ₹7,500 Crore, completion capital value projected at ₹14,000–₹16,000 Crore."],
+      read: "Institutional corporate anchor immediately adjacent to Titanium SPR, turning Sector 71 from a standalone residential pocket into a Grade-A commercial district.",
+      src: "Business Standard", ref: "BSE: 543990 / BS-RMZ-GCL-2026" },
+    { date: "20 Jan 2026", cat: "INFRASTRUCTURE", impact: "CAUTION", pinned: false,
+      head: "GMDA Cancels ₹754.76 Crore Southern Peripheral Road Elevated Corridor Tender for Redesign",
+      facts: ["GMDA formally cancelled the ₹754.76 Crore tender for the SPR elevated corridor.",
+              "Cancellation follows directives to redesign flyovers and underpasses around the newly approved Gurugram Metro alignment.",
+              "Timeline revised as fresh bids are prepared to avoid conflicts with future transit pillars."],
+      read: "Medium-term transit friction and construction delay along the SPR corridor; long-term positive for integrated metro connectivity.",
+      src: "Hindustan Times", ref: "HT/GGM/101780683059053" },
+    { date: "28 Oct 2024", cat: "CONSTRUCTION", impact: "POSITIVE", pinned: false,
+      head: "Signature Global Awards ₹1,203 Crore Turnkey EPC Contract to Capacit'e Infraprojects",
+      facts: ["₹1,203.00 Crore civil EPC contract awarded to Capacit'e Infraprojects (BSE: 540710 / NSE: CAPACITE).",
+              "Turnkey scope covers civil core & shell, structural engineering, MEP and finishes for the 14.382-acre G+40 development in Sector 71."],
+      read: "Tier-1 institutional EPC appointment provides structured engineering governance and execution reliability.",
+      src: "The Economic Times", ref: "ET/REALTY/114650186" },
+    { date: "2 Jul 2024", cat: "PRICING", impact: "POSITIVE", pinned: false,
+      head: "Titanium SPR Records ₹2,700+ Crore Pre-Sales Booking Value in Phase-1 Launch",
+      facts: ["Pre-sales bookings exceeded ₹2,700 Crore within days of opening expressions of interest.",
+              "Launch benchmark set at ₹13,000–₹15,500/sq ft across 3.5 and 4.5 BHK units, with the mandatory 70% RERA escrow rule."],
+      read: "Strong initial liquidity capitalisation eliminates developer dependence on high-cost promoter debt.",
+      src: "The Economic Times", ref: "ET/REALTY/111382213" },
+    { date: "3 Mar 2024", cat: "PRICING", impact: "POSITIVE", pinned: false,
+      head: "Signature Global Clocks Over ₹3,600 Crore in Launch Sales for Gurugram Luxury Housing",
+      facts: ["₹3,600+ Crore in pre-sales bookings across 1,008 luxury residences within days of launch.",
+              "Strengthens developer leadership and balance-sheet liquidity in Gurugram."],
+      read: "Strong sales cash flows ensure timely civil milestone funding.",
+      src: "Business Standard", ref: "BS/COMPANIES/124030300604" },
+    { date: "3 Nov 2023", cat: "INFRASTRUCTURE", impact: "POSITIVE", pinned: false,
+      head: "SPR Corridor Integration with Vatika Chowk Underpass & CPR Interchange Commissioned",
+      facts: ["Vatika Chowk underpass and cloverleaf ramps connect Southern Peripheral Road directly to Sohna Road and NH-48.",
+              "Improves transit efficiency across Sectors 69, 70, 71, 76 and 79."],
+      read: "Direct expressway access elevates micro-market liveability and capital value.",
+      src: "The Economic Times (ET Infra)", ref: "ET/INFRA/104958117" },
+  ];
+
+  const DUR = 7000;
+  const track   = document.getElementById("track");
+  const viewport= document.getElementById("viewport");
+  const railEl  = document.getElementById("rail");
+  const navPrev = document.getElementById("navPrev");
+  const navNext = document.getElementById("navNext");
+  const reduce  = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  let idx = 0, paused = false, t0 = 0, elapsed = 0, raf = 0, done = false;
+  const endResets = [];
+
+  /* ── end-card state machine ────────────────────────────────────────
+     The same three states the live WatchBanner moves through: phone →
+     code → watching, plus Google as the one-step alternative. Here the
+     code is not really sent and nothing is stored; the real component
+     calls sendOtp/verifyOtp and saveLead({ intent: "wire-alert" }). */
+  function wireEnd(slide) {
+    const end   = slide.querySelector(".end");
+    const steps = [...end.querySelectorAll(".form")];
+    const show  = (name) => {
+      steps.forEach((f) => { f.hidden = f.dataset.step !== name; });
+      end.dataset.at = name;
+    };
+    const dial  = end.querySelector(".dial");
+    const num   = end.querySelector(".num");
+    const send  = end.querySelector(".send");
+    const boxes = [...end.querySelectorAll(".otp input")];
+    const verify= end.querySelector(".confirm");
+    const sentto= end.querySelector(".sentto");
+
+    // A code only goes out to a plausible number — same gate as the real form.
+    const digits = () => num.value.replace(/\D/g, "");
+    const syncSend = () => { send.disabled = digits().length < 7; };
+    num.addEventListener("input", syncSend);
+    syncSend();
+
+    const syncVerify = () => { verify.disabled = boxes.some((b) => !b.value.trim()); };
+    boxes.forEach((b, i) => {
+      b.addEventListener("input", () => {
+        b.value = b.value.replace(/\D/g, "").slice(0, 1);
+        if (b.value && boxes[i + 1]) boxes[i + 1].focus();
+        syncVerify();
+      });
+      b.addEventListener("keydown", (e) => {
+        if (e.key === "Backspace" && !b.value && boxes[i - 1]) { boxes[i - 1].focus(); e.preventDefault(); }
+      });
+    });
+
+    send.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (digits().length < 7) { num.focus(); return; }
+      const code = (dial.value.match(/\+\d+/) || ["+91"])[0];
+      sentto.textContent = `Code sent to ${code} ${digits()}`;
+      show("otp");
+      syncVerify();
+      boxes[0].focus();
+    });
+
+    verify.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (boxes.some((b) => !b.value.trim())) { (boxes.find((b) => !b.value.trim())).focus(); return; }
+      show("done");
+    });
+
+    // Google returns a verified session in one step — no code screen.
+    end.querySelector(".google").addEventListener("click", (e) => { e.stopPropagation(); show("done"); });
+
+    end.querySelector(".replay").addEventListener("click", (e) => { e.stopPropagation(); setPaused(false); go(0); });
+
+    const reset = () => {
+      num.value = ""; syncSend();
+      boxes.forEach((b) => (b.value = ""));
+      end.querySelector(".nm").value = "";
+      sentto.textContent = "";
+      show("phone");
+    };
+    endResets.push(reset);
+    reset();
+  }
+
+  D.forEach((d, i) => {
+    const tone = TONE[d.impact];
+
+    const slide = document.createElement("div");
+    slide.className = "phone";
+    slide.style.setProperty("--tone", tone);
+    slide.innerHTML = `
+      <div class="bars">${D.map(() => '<div class="bar"><i></i></div>').join("")}</div>
+      <button class="pausebtn" aria-label="Pause stories">&#10073;&#10073;</button>
+      <div class="card on">
+        <div class="meta">
+          <span class="date">${d.date}</span>
+          <span class="chip">${LABEL[d.cat] || d.cat}</span>
+          ${d.pinned ? '<span class="chip pin">&#128204; Landmark</span>' : ""}
+        </div>
+        <h2 class="head">${d.head}</h2>
+        <ul class="facts">${d.facts.map((f) => `<li>${f}</li>`).join("")}</ul>
+        <div class="read">
+          <span class="lbl"><i class="dot"></i> Forensic impact read</span>
+          <p>${d.read}</p>
+        </div>
+        <div class="foot"><span class="ref">Ref ${d.ref}</span><span class="verify">Verify filing &#8599;</span></div>
+      </div>
+      <button class="zone prev" aria-label="Previous dispatch"></button>
+      <button class="zone next" aria-label="Next dispatch"></button>
+      <div class="end">
+        <span class="eye">Discrete ground intelligence</span>
+        <h3>Get Titanium SPR on the watch</h3>
+        <ul class="pts">
+          <li><span aria-hidden="true">&#128276;</span><span>A personal heads-up the moment a real event lands &mdash; a filing, RERA slippage, a corridor change.</span></li>
+          <li><span aria-hidden="true">&#129309;</span><span>Concierge, by a human advisor &mdash; not a broker blast.</span></li>
+          <li><span aria-hidden="true">&#128274;</span><span>Zero spam. Ever.</span></li>
+        </ul>
+        <div class="form" data-step="phone">
+          <div class="row">
+            <select class="dial" aria-label="Country code">
+              <option>&#127470;&#127475; +91</option><option>&#127462;&#127466; +971</option><option>&#127482;&#127480; +1</option>
+              <option>&#127468;&#127463; +44</option><option>&#127480;&#127468; +65</option><option>&#127462;&#127482; +61</option>
+              <option>&#127480;&#127462; +966</option><option>&#127465;&#127466; +49</option><option>&#127478;&#127462; +974</option>
+            </select>
+            <input class="num" type="tel" inputmode="numeric" placeholder="Your mobile number" aria-label="Mobile number">
+          </div>
+          <button class="cta send">Send code</button>
+          <button class="ghost google"><span aria-hidden="true">&#71;</span> Continue with Google</button>
+          <p class="fine">We use this only to send verified updates on this project.</p>
+        </div>
+        <div class="form" data-step="otp" hidden>
+          <span class="sentto"></span>
+          <div class="otp">
+            <input maxlength="1" inputmode="numeric" aria-label="Digit 1"><input maxlength="1" inputmode="numeric" aria-label="Digit 2">
+            <input maxlength="1" inputmode="numeric" aria-label="Digit 3"><input maxlength="1" inputmode="numeric" aria-label="Digit 4">
+            <input maxlength="1" inputmode="numeric" aria-label="Digit 5"><input maxlength="1" inputmode="numeric" aria-label="Digit 6">
+          </div>
+          <input class="nm" placeholder="Your name" aria-label="Your name">
+          <button class="cta confirm">Verify</button>
+          <p class="simnote">Mock &mdash; no code is sent</p>
+        </div>
+        <div class="form" data-step="done" hidden>
+          <div class="ok">&#10003; You&rsquo;re on the watch for Titanium SPR.<br>An advisor confirms and sends verified updates as they land.</div>
+          <button class="ghost replay">Replay the dispatches</button>
+        </div>
+      </div>`;
+    track.appendChild(slide);
+
+    // a dimmed neighbour is a jump target, not a dead decoration
+    slide.addEventListener("click", (e) => {
+      if (i !== idx) { e.stopPropagation(); go(i); }
+    });
+    slide.querySelector(".zone.next").addEventListener("click", (e) => { e.stopPropagation(); advance(); });
+    slide.querySelector(".zone.prev").addEventListener("click", (e) => { e.stopPropagation(); go(idx - 1); });
+    slide.querySelector(".pausebtn").addEventListener("click", (e) => { e.stopPropagation(); setPaused(!paused); });
+    wireEnd(slide);
+
+    const bub = document.createElement("button");
+    bub.className = "bub";
+    bub.style.setProperty("--tone", tone);
+    bub.innerHTML = `<span class="ring">${d.date.split(" ").slice(1).join(" ")}${d.pinned ? '<span class="pin">&#128204;</span>' : ""}</span><span class="cap">${LABEL[d.cat] || d.cat}</span>`;
+    bub.addEventListener("click", () => go(i));
+    railEl.appendChild(bub);
+  });
+
+  const slides = [...track.children];
+  const bubs   = [...railEl.children];
+  const barsOf = (i) => [...slides[i].querySelectorAll(".bar")];
+
+  /* Centre the active slide in the viewport. Measured from real offsets so
+     the gap and any width change come along for free. */
+  function layout() {
+    const s = slides[idx];
+    track.style.transform = `translateX(${-(s.offsetLeft + s.offsetWidth / 2 - viewport.clientWidth / 2)}px)`;
+  }
+
+  function paint() {
+    slides.forEach((s, i) => s.classList.toggle("is-active", i === idx));
+    bubs.forEach((b, i) => b.classList.toggle("seen", i < idx));
+    const bars = barsOf(idx);
+    bars.forEach((b, i) => {
+      b.classList.toggle("done", i < idx);
+      if (i >= idx) b.firstElementChild.style.width = "0";
+    });
+    navPrev.disabled = idx === 0;
+    navNext.disabled = false;
+    layout();
+  }
+
+  function tick(now) {
+    if (!t0) t0 = now;
+    if (!paused) elapsed += now - t0;
+    t0 = now;
+    const p = Math.min(1, elapsed / DUR);
+    barsOf(idx)[idx].firstElementChild.style.width = (p * 100) + "%";
+    if (p >= 1) { advance(); return; }
+    raf = requestAnimationFrame(tick);
+  }
+
+  function advance() { idx + 1 < D.length ? go(idx + 1) : finish(); }
+
+  function go(i) {
+    cancelAnimationFrame(raf);
+    done = false;
+    slides.forEach((s) => s.querySelector(".end").classList.remove("on"));
+    endResets.forEach((r) => r());
+    idx = Math.max(0, Math.min(D.length - 1, i));
+    elapsed = 0; t0 = 0;
+    paint();
+    if (!reduce) raf = requestAnimationFrame(tick);
+    else barsOf(idx)[idx].firstElementChild.style.width = "100%";
+  }
+
+  function finish() {
+    cancelAnimationFrame(raf);
+    done = true;
+    barsOf(idx).forEach((b) => b.classList.add("done"));
+    slides[idx].querySelector(".end").classList.add("on");
+  }
+
+  function setPaused(v) {
+    paused = v;
+    slides.forEach((s) => {
+      const b = s.querySelector(".pausebtn");
+      b.innerHTML = v ? "&#9654;" : "&#10073;&#10073;";
+      b.setAttribute("aria-label", v ? "Play stories" : "Pause stories");
+    });
+  }
+
+  navNext.addEventListener("click", advance);
+  navPrev.addEventListener("click", () => go(idx - 1));
+
+  ["mousedown", "touchstart"].forEach((ev) =>
+    viewport.addEventListener(ev, (e) => { if (!e.target.closest(".pausebtn,.end") && !done) setPaused(true); }, { passive: true }));
+  ["mouseup", "touchend", "mouseleave"].forEach((ev) =>
+    viewport.addEventListener(ev, () => { if (!done) setPaused(false); }, { passive: true }));
+
+  addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight") { e.preventDefault(); advance(); }
+    if (e.key === "ArrowLeft")  { e.preventDefault(); go(idx - 1); }
+    if (e.key === " ")          { e.preventDefault(); setPaused(!paused); }
+  });
+
+  addEventListener("resize", layout);
+  go(0);
+</script>
+
+</body>
+</html>
