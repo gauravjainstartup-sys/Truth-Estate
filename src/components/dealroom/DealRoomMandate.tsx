@@ -123,6 +123,12 @@ export default function DealRoomMandate() {
   const [projectPsf, setProjectPsf] = useState<Record<string, { low: number; high: number }>>({});
   const [projectHomes, setProjectHomes] = useState<Record<string, { config: string; superSqft: number }[]>>({});
   const [projOpen, setProjOpen] = useState(false);
+  /* "Other" pill: the filed configs cover what the developer sells, not
+     what a buyer may hold or hunt — a 6 BHK merge, a villa floor, a
+     serviced suite. Custom text rides in d.config unchanged, so the
+     docket, the lead payload and /track all carry it with no new
+     plumbing. */
+  const [otherCfg, setOtherCfg] = useState(false);
 
   // Pricing resolution state from Live DB
   const [resale, setResale] = useState<ResaleDbPrice | null>(null);
@@ -209,6 +215,10 @@ export default function DealRoomMandate() {
     const proj = d.project.trim();
     if (!proj) {
       setErr("Please enter a project name.");
+      return;
+    }
+    if (otherCfg && !d.config.trim()) {
+      setErr("Tell us the configuration — anything works, e.g. 6 BHK or Villa.");
       return;
     }
     const sizeNum = digitsToNum(d.sizeSqft) || DEFAULT_AREAS[d.config.toLowerCase()] || 2000;
@@ -475,8 +485,11 @@ export default function DealRoomMandate() {
                                     set("project", n);
                                     // A new project is a new context: the
                                     // suggestion engine owns the size again
-                                    // until the buyer types over it.
+                                    // until the buyer types over it, and
+                                    // the config pills return to the filed
+                                    // list.
                                     sizeEdited.current = false;
+                                    setOtherCfg(false);
                                     const cfgs = configsFor(n);
                                     const defaultCfg = cfgs[0] || "3 BHK";
                                     // Pass n explicitly — d.project still
@@ -507,14 +520,41 @@ export default function DealRoomMandate() {
                         <button
                           key={c}
                           type="button"
-                          onClick={() => handleConfigChange(c)}
-                          aria-pressed={d.config === c}
-                          className={`rounded-xl border px-3 py-3 text-[0.84rem] font-medium transition-colors ${d.config === c ? "border-[#c9a96e] bg-[#c9a96e]/[0.12] text-[#e7cf95]" : "border-[#c9a96e]/20 bg-[#191510] text-[#a9a196] hover:border-[#c9a96e]/50 hover:text-[#f4efe6]"}`}
+                          onClick={() => { setOtherCfg(false); handleConfigChange(c); }}
+                          aria-pressed={!otherCfg && d.config === c}
+                          className={`rounded-xl border px-3 py-3 text-[0.84rem] font-medium transition-colors ${!otherCfg && d.config === c ? "border-[#c9a96e] bg-[#c9a96e]/[0.12] text-[#e7cf95]" : "border-[#c9a96e]/20 bg-[#191510] text-[#a9a196] hover:border-[#c9a96e]/50 hover:text-[#f4efe6]"}`}
                         >
                           {c}
                         </button>
                       ))}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOtherCfg(true);
+                          set("config", "");
+                          // No filed layout backs a custom config — an
+                          // engine-suggested size from the PREVIOUS config
+                          // would price the wrong layout, so hand the
+                          // field back empty. A buyer-typed size stays.
+                          if (!sizeEdited.current) set("sizeSqft", "");
+                        }}
+                        aria-pressed={otherCfg}
+                        className={`rounded-xl border px-3 py-3 text-[0.84rem] font-medium transition-colors ${otherCfg ? "border-[#c9a96e] bg-[#c9a96e]/[0.12] text-[#e7cf95]" : "border-[#c9a96e]/20 bg-[#191510] text-[#a9a196] hover:border-[#c9a96e]/50 hover:text-[#f4efe6]"}`}
+                      >
+                        Other…
+                      </button>
                     </div>
+                    {otherCfg && (
+                      <input
+                        type="text"
+                        value={d.config}
+                        onChange={(e) => set("config", e.target.value)}
+                        placeholder="e.g. 6 BHK · Villa · Studio loft"
+                        autoFocus
+                        className={`mt-2.5 ${field}`}
+                        aria-label="Your configuration"
+                      />
+                    )}
                   </div>
 
                   {/* 4. Unit Size (Super Built-up Area) */}
