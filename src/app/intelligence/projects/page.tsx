@@ -46,7 +46,7 @@ export default async function Page() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(ld)} />
-      <ProjectsIndex projects={projects} stats={stats} />
+      <ProjectsIndex projects={projects} stats={stats} facetFilters />
     </>
   );
 }
