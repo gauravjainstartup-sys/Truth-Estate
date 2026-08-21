@@ -279,3 +279,10 @@ body {
   15%, 27%  { max-width: 160px; opacity: 1; transform: translateX(0); }
   38%, 100% { max-width: 0; opacity: 0; transform: translateX(8px); }
 }
+/* The desktop report FAB peeks the full brand line — wider than the
+   mobile label, same right-to-left reveal. */
+@keyframes tg-peek-wide {
+  0%, 6%    { max-width: 0; opacity: 0; transform: translateX(8px); }
+  15%, 27%  { max-width: 230px; opacity: 1; transform: translateX(0); }
+  38%, 100% { max-width: 0; opacity: 0; transform: translateX(8px); }
+}
