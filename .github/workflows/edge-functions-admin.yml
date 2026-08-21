@@ -16,12 +16,12 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: "inventory | set-secrets | download | verify"
+        description: "inventory | set-secrets | download | verify | deploy"
         type: choice
-        options: [inventory, set-secrets, download, verify]
+        options: [inventory, set-secrets, download, verify, deploy]
         required: true
       function:
-        description: "download/verify only: function slug to fetch"
+        description: "download/verify/deploy only: function slug"
         type: string
         required: false
 
@@ -77,6 +77,18 @@ jobs:
             echo "::warning::deployed ${{ inputs.function }} differs from this ref (hunks above: deployed → repo)"
             exit 1
           fi
+      # Ship THIS ref's copy of one function. The counterpart to `verify`:
+      # verify proves deployed == repo, deploy makes it so. One function per
+      # run, named explicitly — never a blanket push of everything in
+      # supabase/functions, so a deploy can only change what was asked for.
+      - name: Deploy a function from this ref
+        if: ${{ inputs.action == 'deploy' }}
+        run: |
+          test -n "${{ inputs.function }}" || { echo "::error::function input required"; exit 1; }
+          test -d "supabase/functions/${{ inputs.function }}" || { echo "::error::no such function directory on this ref"; exit 1; }
+          supabase functions deploy "${{ inputs.function }}" --project-ref lyetvabfgaidvqrbmaoy
+          echo "Deployed ${{ inputs.function }} from ${GITHUB_SHA::12}. Run this workflow again with action=verify to prove deployed == repo."
+
       - name: Set function secrets
         if: ${{ inputs.action == 'set-secrets' }}
         run: |

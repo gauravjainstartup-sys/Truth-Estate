@@ -375,6 +375,36 @@ export async function fallbackAnswer(question: string): Promise<string> {
   const q = question.toLowerCase();
   const rows = rankForContext(await trackedProjects());
 
+  /* "show it as a table" — answer in the same pipe format the model uses
+     (renderChat draws it), so a Gemini outage costs depth, not the format
+     the reader just asked for. Without this the question fell through every
+     branch to the generic capability line. */
+  if (/\btable\b|tabular|tabulate|columns?\b|spreadsheet|grid/.test(q)) {
+    const top = rows.filter((p) => p.score != null).slice(0, 12);
+    if (!top.length) return "I can put our tracked projects in a table once the index loads — try again in a moment.";
+    /* the column says Corridor, so print the corridor — `location` is
+       "Sector 76/77 · Southern Peripheral Road (SPR Corridor)", and the
+       sector belongs on the report, not in a column headed Corridor. */
+    const corridorOf = (loc: string | null) => {
+      if (!loc) return "NA";
+      const tail = loc.split("·").pop()!.trim();
+      const code = tail.match(/\(([A-Z]{2,5})(?:\s+Corridor)?\)/);
+      return code ? code[1] : tail.replace(/\s*\(.*\)$/, "").trim() || "NA";
+    };
+    const body = top
+      .map((p) => `| ${p.name} | ${p.score} | ${corridorOf(p.location)} | ${p.minPriceCr != null ? `₹${p.minPriceCr} Cr` : "NA"} |`)
+      .join("\n");
+    return [
+      `Here are the ${top.length} highest-scoring projects we track, as a table.`,
+      "",
+      "| Project | Score | Corridor | From |",
+      "| --- | --- | --- | --- |",
+      body,
+      "",
+      "Ask me to filter it by budget or corridor.",
+    ].join("\n");
+  }
+
   if (/truth\s*score|methodology|how.*score|how.*work/.test(q)) {
     return "Truth Score is our independent 0–100 rating built from five weighted pillars: Location (26%), Developer (25%), Construction (22%), Legal (15%) and USPs (12%). Re-scored quarterly — no builder can pay to move it. 90+ is Exceptional, 80–89 Strong, 70–79 Solid.";
   }

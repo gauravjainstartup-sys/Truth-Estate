@@ -128,15 +128,89 @@ function inline(text: string, links: ChatLink[], basePath: string, seen: Set<str
    asterisks showed and every line ran together. renderChat turns it into real
    blocks: numbered/bulleted rows keep their marker, bold renders, entity names
    still link (once). Used by both the project and the site-wide chat. */
+/* A pipe-table row: "| Project | Score |". The separator row (| --- | --- |)
+   carries no data and is dropped. */
+const isTableRow = (l: string) => /^\s*\|.*\|\s*$/.test(l);
+const isSeparatorRow = (l: string) => /^\s*\|[\s:|-]+\|\s*$/.test(l);
+const cellsOf = (l: string) =>
+  l.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim());
+
+/* Consecutive pipe rows render as ONE real table. TruthGuide emits them only
+   when the reader asks for a table (prompt rule 3a); before this branch the
+   bubble printed the pipes as raw text, so "show it as a table" produced
+   either a refusal or a wall of "| … |". The table scrolls inside its own
+   bubble, so seven columns can never widen a phone. */
+function chatTable(
+  rows: string[][],
+  key: number,
+  links: ChatLink[],
+  basePath: string,
+  seen: Set<string>,
+): ReactNode {
+  const [head, ...body] = rows;
+  return (
+    <div key={`tbl${key}`} className="-mx-1 overflow-x-auto px-1 pb-1">
+      <table className="w-full border-collapse text-[0.72rem]">
+        <thead>
+          <tr>
+            {head.map((h, k) => (
+              <th
+                key={k}
+                className="whitespace-nowrap border-b border-[#1a1a1a]/10 pb-1.5 pr-3 text-left font-mono text-[0.55rem] font-semibold uppercase tracking-[0.11em] text-[#1a1a1a]/45"
+              >
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {body.map((r, k) => (
+            <tr key={k}>
+              {r.map((c, m) => (
+                <td
+                  key={m}
+                  className={`border-b border-[#1a1a1a]/[0.05] py-1.5 pr-3 align-middle ${
+                    m === 0
+                      ? "min-w-[8.5rem] font-medium text-[#1a1a1a]"
+                      : "whitespace-nowrap font-mono tabular-nums text-[#1a1a1a]/75"
+                  }`}
+                >
+                  {/* only the name column links — a score or a price is not an entity */}
+                  {m === 0 ? inline(c, links, basePath, seen) : c}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function renderChat(text: string, links: ChatLink[], basePath = ""): ReactNode {
   if (!text) return null;
   const seen = new Set<string>();
   const lines = text.split(/\r?\n/).map((l) => l.replace(/\s+$/, ""));
   const blocks: ReactNode[] = [];
-  lines.forEach((line, i) => {
-    if (!line.trim()) return; // collapse blank lines — spacing comes from the gap
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (isTableRow(line)) {
+      const start = i;
+      const rows: string[][] = [];
+      while (i < lines.length && isTableRow(lines[i])) {
+        if (!isSeparatorRow(lines[i])) rows.push(cellsOf(lines[i]));
+        i++;
+      }
+      if (rows.length) blocks.push(chatTable(rows, start, links, basePath, seen));
+      continue;
+    }
+
+    i++;
+    if (!line.trim()) continue; // collapse blank lines — spacing comes from the gap
     const num = line.match(/^\s*(\d+)[.)]\s+(.*)$/);
-    const bul = line.match(/^\s*[-*•]\s+(.*)$/);
+    const bul = line.match(/^\s*[-*\u2022]\s+(.*)$/);
     if (num) {
       blocks.push(
         <div key={i} className="flex gap-2">
@@ -147,13 +221,13 @@ export function renderChat(text: string, links: ChatLink[], basePath = ""): Reac
     } else if (bul) {
       blocks.push(
         <div key={i} className="flex gap-2">
-          <span className="shrink-0 text-[#1e6b45]">•</span>
+          <span className="shrink-0 text-[#1e6b45]">\u2022</span>
           <span className="min-w-0">{inline(bul[1], links, basePath, seen)}</span>
         </div>,
       );
     } else {
       blocks.push(<p key={i}>{inline(line, links, basePath, seen)}</p>);
     }
-  });
+  }
   return <div className="space-y-2">{blocks}</div>;
 }
