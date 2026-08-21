@@ -45,6 +45,22 @@
   .toggle button[aria-pressed="true"] { background: var(--gold); color: #171310; font-weight: 600; }
   .toggle button:focus-visible { outline: 2px solid var(--gold-lt); outline-offset: 2px; }
 
+  /* ── tagline picker: the options carry their own words, so the choice is
+        read rather than decoded from a letter ── */
+  .picker { margin: 0 0 32px; padding: 20px 0 24px; border-bottom: 1px solid var(--line); }
+  .picker > p { margin: 0 0 12px; }
+  .opts { display: flex; flex-wrap: wrap; gap: 10px; }
+  .opts button {
+    text-align: left; cursor: pointer; border-radius: 6px; padding: 11px 15px;
+    background: rgba(246,241,232,.04); border: 1px solid var(--line);
+    color: rgba(246,241,232,.72); font-family: var(--sans); font-size: 13.5px; line-height: 1.35;
+    transition: border-color .18s, color .18s, background .18s;
+  }
+  .opts button:hover { border-color: rgba(201,162,75,.45); color: var(--ivory); }
+  .opts button[aria-pressed="true"] { border-color: var(--gold); background: rgba(201,162,75,.12); color: var(--ivory); }
+  .opts button:focus-visible { outline: 2px solid var(--gold-lt); outline-offset: 2px; }
+  .opts b { display: block; font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin-bottom: 5px; font-weight: 600; }
+
   .frames { display: flex; flex-direction: column; gap: 44px; }
   .label { font-family: var(--mono); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: rgba(246,241,232,.4); margin-bottom: 10px; }
   .row { display: flex; flex-wrap: wrap; gap: 36px; align-items: flex-start; }
@@ -127,6 +143,18 @@
     </div>
   </div>
 
+  <div class="picker">
+    <p class="kicker">Tagline &middot; the line under the headline</p>
+    <p class="sub">The headline now makes the promise. These carry the proof instead of making a second one &mdash; pick one to read it in place.</p>
+    <div class="opts" role="group" aria-label="Tagline option">
+      <button type="button" data-t="now" aria-pressed="false"><b>Today</b>Built for buyers. Never paid by builders.</button>
+      <button type="button" data-t="a" aria-pressed="true"><b>A &middot; the count</b>107 projects audited. Not one paid to be here.</button>
+      <button type="button" data-t="b" aria-pressed="false"><b>B &middot; the method</b>Audited from RERA filings, not brochures.</button>
+      <button type="button" data-t="c" aria-pressed="false"><b>C &middot; the scale</b>325 projects tracked, 107 audited in full.</button>
+      <button type="button" data-t="d" aria-pressed="false"><b>D &middot; the inputs</b>Six audited inputs per project. No builder pays to appear.</button>
+    </div>
+  </div>
+
   <div class="frames">
     <div>
       <p class="label">Desktop &middot; 1440</p>
@@ -137,7 +165,7 @@
         <div class="col">
           <p class="eyebrow">The Independent Buyer&rsquo;s Office</p>
           <h2 class="headline" data-headline></h2>
-          <p class="tagline">Built for buyers. Never paid by builders.</p>
+          <p class="tagline" data-tagline></p>
           <div class="search">
             <div class="field">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:1.2em;height:1.2em;flex:none" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
@@ -165,7 +193,7 @@
           <div class="col">
             <p class="eyebrow">The Independent Buyer&rsquo;s Office</p>
             <h2 class="headline" data-headline></h2>
-            <p class="tagline">Built for buyers. Never paid by builders.</p>
+            <p class="tagline" data-tagline></p>
             <div class="search">
               <div class="field">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:1.2em;height:1.2em;flex:none" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
@@ -193,8 +221,8 @@
           <p>The current line sells the outcome and leaves the method implied. The proposed line names the product &mdash; truth, before the money moves &mdash; and puts the brand&rsquo;s own word in the first thing a buyer reads.</p>
         </div>
         <div class="note">
-          <h3>Worth deciding</h3>
-          <p>The tagline underneath still reads &ldquo;Built for buyers. Never paid by builders.&rdquo; It sits well under either headline, but if the headline carries the promise you may want the tagline to carry the proof instead.</p>
+          <h3>On the numbers</h3>
+          <p>A tagline carrying a count (A or C) has to read that count from the catalogue, not from a hard-coded string &mdash; the hero already receives the search index, so 107 can move on its own as files clear review. A number nobody maintains becomes a lie on a quiet Tuesday.</p>
         </div>
       </div>
     </div>
@@ -214,4 +242,20 @@
   }
   btns.forEach(function (b) { b.addEventListener('click', function () { set(b.dataset.v); }); });
   set('new');
+
+  var TAGS = {
+    now: 'Built for buyers. Never paid by builders.',
+    a: '107 projects audited. Not one paid to be here.',
+    b: 'Audited from RERA filings, not brochures.',
+    c: '325 projects tracked, 107 audited in full.',
+    d: 'Six audited inputs per project. No builder pays to appear.'
+  };
+  var tags = document.querySelectorAll('[data-tagline]');
+  var opts = document.querySelectorAll('.opts button');
+  function setTag(t) {
+    tags.forEach(function (el) { el.textContent = TAGS[t]; });
+    opts.forEach(function (o) { o.setAttribute('aria-pressed', String(o.dataset.t === t)); });
+  }
+  opts.forEach(function (o) { o.addEventListener('click', function () { setTag(o.dataset.t); }); });
+  setTag('a');
 </script>
