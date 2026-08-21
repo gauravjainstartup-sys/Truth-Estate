@@ -119,6 +119,9 @@ export interface RoiInput {
   corridor?: string | null;
   /** Corridor 5-yr CAGR, %, shown as context. */
   corridorCagr?: number | null;
+  /** Filed construction progress %, for the CLP entry catch-up (a project
+   *  20% built takes 20% at entry). null → the 10%-down assumption. */
+  constructionPct?: number | null;
 }
 
 export interface RoiBands {
@@ -154,6 +157,12 @@ export interface RoiResult {
   // ── context & range ──
   corridorCagr: number | null;
   bands: RoiBands;
+  /** The GROSS annual yield the rent flows were built on — the corridor's
+   *  where a baseline resolved, the city default otherwise. */
+  rentalYieldPct: number;
+  // ── the CLP shape behind the XIRR ──
+  entryPct: number; // % of the ticket paid at entry (the built share, min 10)
+  tranches: PaymentTranche[]; // remaining 10% blocks, months from asOf
 }
 
 /* ── date helpers ─────────────────────────────────────────────────────────
@@ -196,22 +205,55 @@ export function xirrAnnual(cf: number[]): number | null {
   return (Math.pow(1 + (lo + hi) / 2, 12) - 1) * 100;
 }
 
-/* Cash flows for a hold: capital paid LINEARLY from today to possession, rent
-   on the then-value once ready, sale at exit. growthPct & rentalPct in %. */
+/* ── Construction-linked payment plan (CLP) ────────────────────────────
+   How the money ACTUALLY leaves a Gurugram buyer's account, per the BBA:
+   10% blocks, each released as the build crosses its next 10% mark. An
+   investor entering TODAY therefore pays the built share up front — a
+   project 20% done takes 20% at entry — and the remaining blocks fall due
+   on the CURRENT pace, i.e. the unbuilt share spread over the months to
+   our delay-adjusted possession. The linear-dribble model this replaces
+   understated the entry cheque and erased the CLP leverage: appreciation
+   accrues on the FULL locked price from day one while only part of the
+   money is deployed, which is precisely what an under-construction buyer
+   is buying. Ready / past-possession stock degrades to a full payment at
+   entry, as it should. */
+export type PaymentTranche = { month: number; pct: number };
+
+export function clpSchedule(
+  constructionPct: number | null | undefined,
+  monthsToPossession: number,
+): { entryPct: number; tranches: PaymentTranche[] } {
+  const done = constructionPct == null ? null : clamp(constructionPct, 0, 100);
+  if (monthsToPossession <= 0 || (done != null && done >= 100)) return { entryPct: 100, tranches: [] };
+  /* No filed progress → the old smooth assumption (10% down, rest linear in
+     10% blocks) rather than pretending we know the stage. */
+  const entryPct = done == null ? 10 : Math.max(10, Math.floor(done / 10) * 10);
+  const blocks = Math.round((100 - entryPct) / 10);
+  const tranches: PaymentTranche[] = [];
+  for (let k = 1; k <= blocks; k++) {
+    tranches.push({ month: Math.max(1, Math.round((monthsToPossession * k) / blocks)), pct: 10 });
+  }
+  return { entryPct, tranches };
+}
+
+/* Cash flows for a hold: CLP outflows (entry catch-up + 10% tranches to
+   possession), rent on the then-value once ready, sale at exit. */
 function buildCashflows(
   entryCr: number,
   growthPct: number,
   yearsToPossession: number,
   holdYears: number,
   rentalPct: number,
+  constructionPct: number | null | undefined,
 ): number[] {
   const M = Math.max(1, Math.round(holdYears * 12));
-  const Mp = Math.max(1, Math.min(M, Math.round(yearsToPossession * 12)));
+  const Mp = Math.max(0, Math.min(M, Math.round(yearsToPossession * 12)));
   const g = growthPct / 100;
   const cf = new Array<number>(M + 1).fill(0);
-  const per = entryCr / Mp;
-  for (let m = 0; m < Mp; m++) cf[m] -= per; // linear construction outflow
-  for (let m = Mp; m < M; m++) cf[m] += (rentalPct / 100 / 12) * entryCr * Math.pow(1 + g, m / 12); // rent
+  const { entryPct, tranches } = clpSchedule(constructionPct, Mp);
+  cf[0] -= entryCr * (entryPct / 100);
+  for (const t of tranches) cf[Math.min(t.month, M)] -= entryCr * (t.pct / 100);
+  for (let m = Math.max(1, Mp); m < M; m++) cf[m] += (rentalPct / 100 / 12) * entryCr * Math.pow(1 + g, m / 12); // rent
   cf[M] += entryCr * Math.pow(1 + g, holdYears); // sale
   return cf;
 }
@@ -244,15 +286,18 @@ export function computeRoi(input: RoiInput, params: RoiParams = DEFAULT_ROI_PARA
   const delayCost = Math.min(params.delayCostCap, base * (delayMonths / 12) / holdYears);
   const riskAdjustedCagr = expectedCagr - delayCost;
 
-  // ── cash-flow returns ──
+  // ── cash-flow returns (construction-linked payment plan) ──
   const flows = (g: number): number[] =>
-    buildCashflows(input.entryPriceCr, g, yearsToPossession, holdYears, activeRentalYield);
+    buildCashflows(input.entryPriceCr, g, yearsToPossession, holdYears, activeRentalYield, input.constructionPct);
+  const schedule = clpSchedule(input.constructionPct, Math.max(0, Math.min(Math.round(holdYears * 12), Math.round(yearsToPossession * 12))));
   const raFlows = flows(riskAdjustedCagr);
   const expectedXirr = xirrAnnual(flows(expectedCagr));
   const riskAdjustedXirr = xirrAnnual(raFlows);
 
   // ── rupee bifurcation of the risk-adjusted path: sale is the final flow,
-  //    rent is every positive flow between possession and exit ──
+  //    rent is every positive flow between possession and exit. Capital gain
+  //    = exit value − the full ticket (every tranche eventually paid), so the
+  //    split stays honest whatever the CLP shape. ──
   const lastM = raFlows.length - 1;
   const possM = Math.max(1, Math.min(lastM, Math.round(yearsToPossession * 12)));
   const rentCollectedCr = raFlows.slice(possM, lastM).reduce((s, c) => s + Math.max(0, c), 0);
@@ -291,6 +336,9 @@ export function computeRoi(input: RoiInput, params: RoiParams = DEFAULT_ROI_PARA
     rentCollectedCr: round2(rentCollectedCr),
     corridorCagr: input.corridorCagr ?? round1(base),
     bands,
+    rentalYieldPct: activeRentalYield,
+    entryPct: schedule.entryPct,
+    tranches: schedule.tranches,
   };
 }
 

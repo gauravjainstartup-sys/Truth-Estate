@@ -6,6 +6,7 @@ import { hasReadAccess, packageById } from "@/lib/journey";
 import { openUnitIntel } from "./TowerIntel";
 import { useReportStatic } from "./reportStatic";
 import { computeRoi, optimalExit, DEFAULT_ROI_PARAMS, type RoiResult } from "@/lib/analytics/roiEngine";
+import { configPriceCr, type BhkBucket } from "@/lib/matchEngine";
 
 /* Chapter III — "Will it make money?"
    a · The price since launch (PSF journey + what moved it)
@@ -18,16 +19,21 @@ import { computeRoi, optimalExit, DEFAULT_ROI_PARAMS, type RoiResult } from "@/l
 
 /** Build the roiEngine inputs from a project. CAGRs are price-independent; the
  *  ticket only shapes the XIRR cash-flow, so a missing budget is harmless. */
-function roiInputFor(p: ProjectIntel, holdYears: number, asOf: Date | undefined) {
+function roiInputFor(p: ProjectIntel, holdYears: number, asOf: Date | undefined, entryCrOverride?: number) {
   const con = p.ops?.construction;
   return {
-    entryPriceCr: Math.max(0.5, (p.budget[0] + p.budget[1]) / 2),
+    /* the chosen config's filed price when the reader picked one; the blended
+       ticket otherwise — the ₹ outputs scale with it, the rates do not */
+    entryPriceCr: entryCrOverride ?? Math.max(0.5, (p.budget[0] + p.budget[1]) / 2),
     truthScore: p.truthScore > 0 ? p.truthScore : DEFAULT_ROI_PARAMS.scoreNeutral,
     possessionDate: con?.predictedDateFull ?? con?.predictedDate ?? null,
     reraDate: con?.reraDateFull ?? con?.reraDate ?? null,
     holdYears,
     asOf,
     corridor: p.market ?? null,
+    /* filed progress drives the CLP entry catch-up — a 20%-built project
+       takes 20% at entry, and the balance tranches ride the current pace */
+    constructionPct: con?.actualPct ?? null,
   };
 }
 
@@ -66,7 +72,30 @@ export default function ReportPrice({ p, sample = false, unlocked: unlockedProp,
   const [today, setToday] = useState<Date | undefined>(undefined);
   useEffect(() => setToday(new Date()), []);
 
-  const r: RoiResult = useMemo(() => computeRoi(roiInputFor(p, holdYears, today)), [p, holdYears, today]);
+  /* The configurations a reader can price the projection against — each
+     bucket the project files with a computable ticket (filed ₹/sqft × that
+     config's super area, the same arithmetic the match engine prices with).
+     null selection = the blended ticket the panel always used. The rates
+     (CAGR/XIRR) are price-scale-invariant; picking a config changes the
+     ABSOLUTE rupees — exit value, capital gain, rent — which is the point. */
+  const cfgOptions = useMemo(() => {
+    const mi = p.matchInput;
+    if (!mi) return [] as { bucket: BhkBucket; label: string; priceCr: number }[];
+    const seen = new Map<BhkBucket, number>();
+    for (const c of mi.configs) {
+      if (!seen.has(c.bucket)) {
+        const pr = configPriceCr(mi, c.bucket);
+        if (pr != null && pr > 0) seen.set(c.bucket, pr);
+      }
+    }
+    return [...seen.entries()]
+      .sort((a, b) => (a[0] === "PH" ? 99 : +a[0]) - (b[0] === "PH" ? 99 : +b[0]))
+      .map(([bucket, priceCr]) => ({ bucket, label: bucket === "PH" ? "Penthouse" : `${bucket} BHK`, priceCr }));
+  }, [p]);
+  const [cfgBucket, setCfgBucket] = useState<BhkBucket | null>(null);
+  const cfgEntryCr = cfgBucket != null ? cfgOptions.find((c) => c.bucket === cfgBucket)?.priceCr : undefined;
+
+  const r: RoiResult = useMemo(() => computeRoi(roiInputFor(p, holdYears, today, cfgEntryCr)), [p, holdYears, today, cfgEntryCr]);
   const outlook: "Low" | "Medium" | "High" = r.expectedCagr >= 11 ? "High" : r.expectedCagr >= 9 ? "Medium" : "Low";
 
   // The headline cash return. Date-dependent, so it's the CAGR pre-mount (SSR-
@@ -156,7 +185,7 @@ export default function ReportPrice({ p, sample = false, unlocked: unlockedProp,
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <MiniStat k="Price growth" v={`${r.riskAdjustedCagr.toFixed(1)}%`} />
-                    <MiniStat k="Rental yield" v={`${DEFAULT_ROI_PARAMS.rentalYield}%`} gold />
+                    <MiniStat k="Rental yield" v={`${r.rentalYieldPct}%`} gold />
                   </div>
                 </>
               ) : (
@@ -196,6 +225,40 @@ export default function ReportPrice({ p, sample = false, unlocked: unlockedProp,
               </p>
               <div className="w-[220px] shrink-0"><Seg options={["5 yr", "8 yr", "10 yr"]} active={[5, 8, 10].indexOf(holdYears) < 0 ? 1 : [5, 8, 10].indexOf(holdYears)} onPick={(i) => setHoldYears([5, 8, 10][i])} /></div>
             </div>
+
+            {/* which unit the rupees are for — the rates don't move, the money does */}
+            {cfgOptions.length > 0 && (
+              <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                <span className="mr-1 text-[0.66rem] font-light uppercase tracking-[0.1em] text-[#1a1a1a]/40">Unit</span>
+                <button
+                  onClick={() => setCfgBucket(null)}
+                  aria-pressed={cfgBucket == null}
+                  className={`rounded-full border px-3 py-1 text-[0.7rem] transition-colors ${cfgBucket == null ? "border-[#1e6b45]/40 bg-[#1e6b45]/[0.07] text-[#1e6b45]" : "border-[#1a1a1a]/12 text-[#1a1a1a]/55 hover:border-[#1a1a1a]/30"}`}
+                >
+                  Typical
+                </button>
+                {cfgOptions.map((c) => (
+                  <button
+                    key={c.bucket}
+                    onClick={() => setCfgBucket(cfgBucket === c.bucket ? null : c.bucket)}
+                    aria-pressed={cfgBucket === c.bucket}
+                    className={`rounded-full border px-3 py-1 text-[0.7rem] tabular-nums transition-colors ${cfgBucket === c.bucket ? "border-[#1e6b45]/40 bg-[#1e6b45]/[0.07] text-[#1e6b45]" : "border-[#1a1a1a]/12 text-[#1a1a1a]/55 hover:border-[#1a1a1a]/30"}`}
+                  >
+                    {c.label} · ₹{c.priceCr.toFixed(1)} Cr
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* the CLP shape the XIRR is computed on — the money leaves in
+                builder tranches, not one cheque, and the entry catch-up is
+                the project's own filed progress */}
+            {today && (
+              <p className="mt-3 font-mono text-[0.6rem] uppercase tracking-[0.09em] text-[#1a1a1a]/45">
+                Construction-linked plan · {r.entryPct}% of the ticket at entry
+                {r.tranches.length > 0 && <> · balance {r.tranches.length} × 10% with the build (~{r.tranches[r.tranches.length - 1].month} mo to possession)</>}
+              </p>
+            )}
 
             <div className="mt-5 grid gap-5 sm:grid-cols-[auto_1fr] sm:items-center">
               <div>
@@ -247,7 +310,7 @@ export default function ReportPrice({ p, sample = false, unlocked: unlockedProp,
               Your return starts with how fast the price itself grows. That price CAGR — <b className="font-semibold text-[#1a1a1a]">{r.riskAdjustedCagr.toFixed(1)}%/yr</b>, the market rate lifted for quality and docked for the delay — is only half the story; staged payments and rent lift it to the <b className="font-semibold text-[#1e6b45]">{cashReturn.toFixed(1)}% {showingXirr ? "XIRR" : "return"}</b> above.
             </p>
             <div className="flex flex-col gap-3">
-              <FallRow label={<><b className="font-semibold text-[#1a1a1a]">Gurgaon market</b> — India {DEFAULT_ROI_PARAMS.indiaCagr}% + Gurgaon {DEFAULT_ROI_PARAMS.gurgaonAdd}%</>} value={`${r.base.toFixed(1)}%`} lo={0} hi={r.base} tone="base" r={r} />
+              <FallRow label={<><b className="font-semibold text-[#1a1a1a]">{p.marketShort || "Gurgaon"} corridor baseline</b> — the market rate where it stands</>} value={`${r.base.toFixed(1)}%`} lo={0} hi={r.base} tone="base" r={r} />
               <FallRow label={<><b className="font-semibold text-[#1a1a1a]">+ This project&apos;s quality</b> — Truth Score {p.truthScore}/100</>} value={`${r.qualityKicker >= 0 ? "+" : ""}${r.qualityKicker.toFixed(1)}%`} lo={Math.min(r.base, r.base + r.qualityKicker)} hi={Math.max(r.base, r.base + r.qualityKicker)} tone={r.qualityKicker >= 0 ? "up" : "down"} r={r} />
               {r.delayCost > 0.04 && (
                 <FallRow label={<><b className="font-semibold text-[#1a1a1a]">− Predicted delay</b> — ~{r.delayMonths} months late to possession</>} value={`−${r.delayCost.toFixed(1)}%`} lo={r.riskAdjustedCagr} hi={r.expectedCagr} tone="down" r={r} />
@@ -275,14 +338,13 @@ export default function ReportPrice({ p, sample = false, unlocked: unlockedProp,
             <span className="h-px flex-1 bg-[#1a1a1a]/10" />
           </div>
           <div className="mt-4 overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-white/70">
-            <Asm name="India base CAGR" sub="National residential — the macro floor" val={`${DEFAULT_ROI_PARAMS.indiaCagr.toFixed(1)}% / yr`} />
-            <Asm name="Gurgaon premium" sub="City's add over the national rate" val={`+${DEFAULT_ROI_PARAMS.gurgaonAdd}%`} />
-            <Asm name="Quality kicker" sub={`From Truth Score ${p.truthScore} (0.1 pt per point above ${DEFAULT_ROI_PARAMS.scoreNeutral}, ±${DEFAULT_ROI_PARAMS.scoreCap} cap)`} val={`${r.qualityKicker >= 0 ? "+" : ""}${r.qualityKicker.toFixed(1)}%`} />
+            <Asm name="Corridor baseline CAGR" sub={`${p.marketShort || "Gurugram"} 5-yr price growth, conservatively underwritten`} val={`${r.base.toFixed(1)}% / yr`} />
+            <Asm name="Quality kicker" sub={`From Truth Score ${p.truthScore} (${DEFAULT_ROI_PARAMS.scoreSlope} pt per point vs the ${DEFAULT_ROI_PARAMS.scoreNeutral} portfolio median, ±${DEFAULT_ROI_PARAMS.scoreCap} cap)`} val={`${r.qualityKicker >= 0 ? "+" : ""}${r.qualityKicker.toFixed(1)}%`} />
             {r.delayCost > 0.04 && <Asm name="Predicted-delay drag" sub={`~${r.delayMonths}-month slip vs RERA date, as opportunity cost`} val={`−${r.delayCost.toFixed(1)}%`} warn />}
-            <Asm name="Rental yield" sub="On the then-value, post-possession only" val={`${DEFAULT_ROI_PARAMS.rentalYield}% / yr`} />
-            <Asm name="Payment plan" sub="Capital paid in stages to possession, not upfront" val="Construction-linked" />
+            <Asm name="Rental yield" sub="GROSS annual, on the then-value, post-possession only" val={`${r.rentalYieldPct}% / yr`} />
+            <Asm name="Payment plan" sub={`Construction-linked: ${r.entryPct}% at entry (the built share), 10% per further block to possession`} val="CLP" />
             <Asm name="Holding horizon" sub="Adjustable — see &quot;when to exit&quot; above" val={`${holdYears} yr`} />
-            <Asm name="Entry basis" sub="Project ticket midpoint" val={crStr(r.entryPriceCr)} />
+            <Asm name="Entry basis" sub={cfgBucket != null ? `${cfgOptions.find((c) => c.bucket === cfgBucket)?.label} at the filed rate` : "Project ticket midpoint"} val={crStr(r.entryPriceCr)} />
             <Asm name="Exit costs & taxes" sub="Stamp duty, brokerage, LTCG" val="Not yet modeled" warn last />
           </div>
 

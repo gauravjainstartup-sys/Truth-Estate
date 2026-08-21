@@ -1124,6 +1124,12 @@ export function liveProjectIntel(
           truthScore: row.truthScore ?? DEFAULT_ROI_PARAMS.scoreNeutral,
           possessionDate: row.predictedDeliveryDate ?? null, // our predicted delivery — the anchor
           reraDate: row.reraPromiseDate ?? null,             // only to measure the slip
+          /* corridor-calibrated baseline + the CLP entry stage — WITHOUT these
+             this bake-time number diverged from the price panel's client-side
+             compute, and the card chip / catalogue ROI facet / verdict would
+             have told a different story than Chapter III on the same screen. */
+          corridor: row.microMarket ?? row.location ?? null,
+          constructionPct: row.constructionProgressPct ?? null,
         });
         const horizonYears = DEFAULT_ROI_PARAMS.holdYears;
         const benchCagr = eng.expectedCagr;
