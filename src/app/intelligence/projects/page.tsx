@@ -43,10 +43,34 @@ export default async function Page() {
     path: "/intelligence/projects",
     items: projects.filter((p) => p.seoSlug && p.name).slice(0, 60).map((p) => ({ name: p.name, path: `/projects/${p.seoSlug}` })),
   });
+  /* THE HEAD IS ONE LINE, NOT A HERO. This page's product is the 107
+     options; a full-height masthead (4rem headline, six-line intro, four
+     stacked stat tiles) put the first card ~1,400px down a phone — the
+     same mistake the cluster landers were corrected for. The stat tiles'
+     content survives here, in the line the founder approved on the mock,
+     and the intro paragraph moves below the grid where a reader who wants
+     the methodology will still find it (and Google still reads it). */
+  const scored = projects.map((p) => p.truthScore).filter((s) => s > 0);
+  const lo = scored.length ? Math.min(...scored) : 0;
+  const hi = scored.length ? Math.max(...scored) : 0;
+  const metaLine = [
+    `${projects.length} audited files`,
+    stats?.tracked ? `${stats.tracked.toLocaleString("en-IN")} RERA projects tracked live` : null,
+    hi > 0 ? `Truth Score ${lo}–${hi}` : null,
+    "no developer pays to rank",
+  ].filter(Boolean).join(" · ");
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(ld)} />
-      <ProjectsIndex projects={projects} stats={stats} facetFilters />
+      <ProjectsIndex
+        projects={projects}
+        stats={stats}
+        facetFilters
+        dense
+        metaLine={metaLine}
+        tailIntro="One Truth Score per project, built from six audited inputs — delivery, legal, developer strength, liquidity, pricing and construction. No developer pays to appear here, and none can move a score. Open any project to see exactly how it’s built."
+      />
     </>
   );
 }

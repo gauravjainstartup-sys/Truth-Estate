@@ -148,6 +148,7 @@ export default function ProjectsIndex({
   feedSlot,
   priceChips,
   facetFilters = false,
+  tailIntro,
 }: {
   projects: ProjectIntel[];
   stats?: TrackedStats | null;
@@ -178,6 +179,12 @@ export default function ProjectsIndex({
      pills, URL-synced state and the lander mesh line. Opt-in and off by
      default so every other surface renders exactly as before. */
   facetFilters?: boolean;
+  /* Copy that belongs on the page but not ABOVE the product. A dense page
+     leads with options; the paragraph explaining what a Truth Score is
+     reads after them, where a reader who wants it will look. (The
+     landers print their own intro above their FAQs, so they pass
+     nothing here — this is not a generic re-render of `intro`.) */
+  tailIntro?: string;
 }) {
   const { open } = useJourney();
   const [q, setQ] = useState("");
@@ -380,7 +387,11 @@ export default function ProjectsIndex({
           ? "mt-2.5 max-w-3xl font-serif text-[1.9rem] font-medium leading-[1.08] tracking-[-0.01em] md:text-[2.6rem]"
           : "mt-5 max-w-2xl font-serif text-[2.6rem] font-medium leading-[1.04] tracking-[-0.02em] md:text-[4rem]"}>{displayHeading}</h1>
         {dense ? (
-          metaLine ? <p className="mt-2.5 text-[0.8rem] font-light leading-relaxed text-[#1a1a1a]/55">{metaLine}</p> : null
+          /* One line where the hero used to be. When a developer CTA
+             scoped the page, that scoping sentence IS the line. */
+          devActive ? (
+            <p className="mt-2.5 text-[0.8rem] font-light leading-relaxed text-[#1a1a1a]/55">{displayIntro}</p>
+          ) : metaLine ? <p className="mt-2.5 text-[0.8rem] font-light leading-relaxed text-[#1a1a1a]/55">{metaLine}</p> : null
         ) : (
         <p className="mt-6 max-w-2xl text-[1rem] font-light leading-[1.85] text-[#1a1a1a]/60 md:text-[1.05rem]">
           {displayIntro}
@@ -578,6 +589,10 @@ export default function ProjectsIndex({
                   Show every project
                 </button>
               </div>
+            )}
+
+            {tailIntro && (
+              <p className="mt-10 max-w-2xl text-[0.9rem] font-light leading-[1.85] text-[#1a1a1a]/55">{tailIntro}</p>
             )}
 
             <p className="mt-6 text-[0.68rem] font-light text-[#1a1a1a]/40">
