@@ -77,6 +77,14 @@ jobs:
             echo "::warning::deployed ${{ inputs.function }} differs from this ref (hunks above: deployed → repo)"
             exit 1
           fi
+      # deploy needs the sources on disk — the job checks nothing out by
+      # default (inventory/download/set-secrets all work against the remote),
+      # and verify checks out into repo/ for the diff. This one lands at the
+      # root, where `supabase functions deploy` looks for supabase/functions/.
+      - name: Check out this ref for deploy
+        if: ${{ inputs.action == 'deploy' }}
+        uses: actions/checkout@v4
+
       # Ship THIS ref's copy of one function. The counterpart to `verify`:
       # verify proves deployed == repo, deploy makes it so. One function per
       # run, named explicitly — never a blanket push of everything in
