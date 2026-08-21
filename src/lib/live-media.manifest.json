@@ -1,4 +1,8 @@
 {
+  "19f02509-7a66-40f5-a8ae-cd9cff06009c": {
+    "brochure_url": "live-media/19f02509-7a66-40f5-a8ae-cd9cff06009c-brochure.pdf",
+    "brochure_thumb": "live-media/19f02509-7a66-40f5-a8ae-cd9cff06009c-brochure-thumb.png"
+  },
   "__urls": {
     "https://lyetvabfgaidvqrbmaoy.supabase.co/storage/v1/object/public/project_assets/general/1786350525772-3k0sua-image.webp": "live-media/u-4ca768c50385.webp",
     "https://lyetvabfgaidvqrbmaoy.supabase.co/storage/v1/object/public/project_assets/general/1786351835799-oxenoc-image.webp": "live-media/u-3d37d5c7da97.webp",
