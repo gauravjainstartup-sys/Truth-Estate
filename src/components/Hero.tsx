@@ -158,7 +158,7 @@ export default function Hero({ index }: { index: OmniIndex }) {
         <div className="w-full max-w-[380px] md:max-w-[46%] md:-translate-y-12">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#c9a24b]">The Independent Buyer&rsquo;s Office</p>
           <h1 className="mt-3 font-serif font-semibold leading-[1.05] tracking-[-0.01em] text-[#f6f1e8] text-[2.125rem] md:mt-4 md:text-[clamp(2.75rem,4vw,3.5rem)]">
-            Decisions worth<br />living with.
+            Know the Truth<br />Before you Buy.
           </h1>
           <p className="mt-3 text-[15px] leading-snug text-[#b3aa9e] md:text-[16px]">
             Built for buyers. Never paid by builders.
