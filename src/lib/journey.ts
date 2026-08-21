@@ -410,6 +410,17 @@ export function corridorKey(s: string): string {
 
 const sameCorridor = (a: string, b: string): boolean => corridorKey(a) === corridorKey(b);
 
+const CORRIDOR_ADJACENCY_LOCAL: Record<string, string[]> = {
+  gce: ["spr", "gcr", "sohna-road"],
+  spr: ["gce", "sohna-road", "new-gurgaon", "dwarka", "nh48"],
+  gcr: ["gce"],
+  dwarka: ["spr", "new-gurgaon", "nh48"],
+  "new-gurgaon": ["spr", "dwarka", "nh48"],
+  "sohna-road": ["spr", "gce", "sohna"],
+  sohna: ["sohna-road"],
+  nh48: ["spr", "dwarka", "new-gurgaon"],
+};
+
 /* ── Configuration matching ──
    A buyer's config chip ("3 BHK", "Penthouse", "Duplex", "1 BHK / Studio")
    against a project's offered configs. Tolerant of how the live pipeline
@@ -578,7 +589,8 @@ export function rankCore<T extends Rankable>(
   const investor = W.invest > 0;
 
   const budgetFit = (lo: number, hi: number): number => {
-    if (budgetCr >= lo) return budgetCr <= hi ? 1 : 0.9;
+    if (budgetCr >= lo && budgetCr <= hi) return 1;
+    if (budgetCr > hi) return Math.max(0.75, 1 - (budgetCr - hi) / 10);
     return Math.max(0, 1 - (lo - budgetCr) / 2.5);
   };
   const configFit = (p: T): number => {
@@ -589,8 +601,14 @@ export function rankCore<T extends Rankable>(
     if (configs.some((chip) => known.some((cfg) => bhkAdjacent(chip, cfg)))) return 0.45;
     return 0.2;
   };
-  const locationFit = (p: T): number =>
-    locations.length === 0 || locations.some((loc) => sameCorridor(loc, p.market)) ? 1 : 0.25;
+  const locationFit = (p: T): number => {
+    if (locations.length === 0) return 1;
+    const targetKeys = locations.map(corridorKey);
+    const pKey = corridorKey(p.market);
+    if (targetKeys.includes(pKey)) return 1;
+    if (targetKeys.some((tk) => CORRIDOR_ADJACENCY_LOCAL[tk]?.includes(pKey))) return 0.82;
+    return 0.25;
+  };
   const priorityFit = (p: T): number => {
     if (priorities.length === 0) return 1;
     const served = p.tags.filter((t) => priorities.includes(t)).length;
@@ -937,18 +955,36 @@ export function matchScoreFor(p: Project, d: BuyData): number {
 }
 
 /* BuyData → the match engine's Buyer. Persona from purchase intent; the chosen
-   config maps to a BHK bucket; timeline/exit-year mapping lands with the
-   Phase-2 sheet (until then those factors simply drop and renormalize). */
+   config maps to a BHK bucket; timeline/exit-year mapping parsed from stated timeline. */
 export function buyerFromBuyData(d: BuyData): Buyer {
   const bucket = d.configs.length && !d.configs.includes("Flexible") ? bucketOfChip(d.configs[0]) : null;
+
+  // Resolve target delivery year from stated timeline
+  let byYear: number | null = null;
+  const currentYear = new Date().getFullYear();
+  const timelineStr = (d.timeline || "").toLowerCase();
+  if (timelineStr.includes("1 year")) byYear = currentYear + 1;
+  else if (timelineStr.includes("3 years") || timelineStr.includes("3 year")) byYear = currentYear + 3;
+  else if (timelineStr.includes("5 years") || timelineStr.includes("5 year")) byYear = currentYear + 5;
+  else if (timelineStr.includes("beyond 5")) byYear = currentYear + 7;
+
+  // Resolve investor holding horizon
+  let exitYears = d.exitYears ?? null;
+  if (!exitYears && timelineStr) {
+    if (timelineStr.includes("1–3") || timelineStr.includes("1-3")) exitYears = 3;
+    else if (timelineStr.includes("3–5") || timelineStr.includes("3-5")) exitYears = 5;
+    else if (timelineStr.includes("5–10") || timelineStr.includes("5-10")) exitYears = 8;
+    else if (timelineStr.includes("10+")) exitYears = 12;
+  }
+
   return {
     persona: personaOf(d),
     budgetCr: d.budgetCr,
     bucket,
     corridors: d.locations.length ? d.locations : null,
     poi: d.poi ? { lat: d.poi.lat, lng: d.poi.lng } : null,
-    byYear: null,
-    exitYears: d.exitYears ?? null,
+    byYear,
+    exitYears,
     priorities: d.priorities,
   };
 }

@@ -10,7 +10,9 @@
 import type { ProjectIntel } from "./projects";
 import { rankCore, buyerFromBuyData } from "./journey";
 import type { BuyData, DNA } from "./journey";
-import { scoreMatch, type MarketContext } from "./matchEngine";
+import { scoreMatch, stratifyRecommendations, type MarketContext, type StratifiedRecommendation } from "./matchEngine";
+
+export { stratifyRecommendations, type StratifiedRecommendation };
 
 /* Rank the LIVE catalog (ProjectIntel from match-catalog.json) with the same
    heuristic the mock shortlist uses — so the standalone /shortlist ranks the
@@ -27,7 +29,7 @@ export function rankProjectsIntel(d: BuyData, catalog: ProjectIntel[], market: M
   const buyer = buyerFromBuyData(d);
   return catalog
     .map((p) => ({ ...p, matchPct: p.matchInput ? scoreMatch(p.matchInput, buyer, market).pct : 0 }))
-    .sort((a, b) => b.matchPct - a.matchPct);
+    .sort((a, b) => b.matchPct - a.matchPct || b.truthScore - a.truthScore);
 }
 
 type Pt = { weight: number; text: string };

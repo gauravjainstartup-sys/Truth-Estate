@@ -109,6 +109,10 @@ export const PRIORITY_FACTOR: Record<string, MatchFactor> = {
   "Value Buying": "entry",
   "Rental Yield": "liquidity",
   "Liquidity": "liquidity",
+  "Developer Reputation": "developer",
+  "Construction Quality": "delivery",
+  "Early-Entry Pricing": "entry",
+  "Flexible Payment Plan": "finance",
 };
 const PRIORITY_BOOST = 1.6;
 
@@ -119,6 +123,33 @@ function haversineKm(a: GeoPoint, b: GeoPoint): number {
   const R = 6371, dLat = ((b.lat - a.lat) * Math.PI) / 180, dLng = ((b.lng - a.lng) * Math.PI) / 180;
   const s = Math.sin(dLat / 2) ** 2 + Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+/* ── Corridor Adjacency Matrix ──
+   Physical arterial connections (Vatika Chowk underpass, CPR Cloverleaf, etc.)
+   giving high affinity to neighboring high-growth corridors. */
+const CORRIDOR_ADJACENCY: Record<string, string[]> = {
+  gce: ["spr", "gcr", "sohna-road"],
+  spr: ["gce", "sohna-road", "new-gurgaon", "dwarka", "nh48"],
+  gcr: ["gce"],
+  dwarka: ["spr", "new-gurgaon", "nh48"],
+  "new-gurgaon": ["spr", "dwarka", "nh48"],
+  "sohna-road": ["spr", "gce", "sohna"],
+  sohna: ["sohna-road"],
+  nh48: ["spr", "dwarka", "new-gurgaon"],
+};
+
+function normalizeCorridorKey(s: string): string {
+  const t = (s || "").toLowerCase();
+  if (t.includes("spr") || t.includes("southern peripheral")) return "spr";
+  if (t.includes("dwarka") || t.includes("northern peripheral") || t.includes("dxp")) return "dwarka";
+  if (t.includes("new gurgaon") || t.includes("new gurugram")) return "new-gurgaon";
+  if (t.includes("sohna")) return t.includes("road") ? "sohna-road" : "sohna";
+  if (t.includes("nh-48") || t.includes("nh48") || t.includes("nh 48")) return "nh48";
+  if (t.includes("golf course")) {
+    return t.includes("ext") || t.includes("gcre") || t.includes("gce") ? "gce" : "gcr";
+  }
+  return t.trim();
 }
 
 /* ── Config pricing (₹Cr) = Current ₹/sqft (lower) × super area, sanity-floored. ── */
@@ -161,20 +192,29 @@ const entryBucket = (p: MatchInput): BhkBucket | null => (["1", "2", "3", "4", "
 
 /* ── Factor fit curves (0..1). Return 0.5 when their inputs are absent. ── */
 const F: Record<MatchFactor, (p: MatchInput, d: Buyer, mkt: MarketContext) => number> = {
-  // Budget: ±10% band → 1; judged against the chosen config's price, or (flexible)
-  // the best-fitting of the project's config prices. Below band → wrong-tier
-  // decay; above → unaffordable decay.
+  // Budget: projects fitting within or slightly below target budget receive full marks.
+  // Never penalize value buying. Decay only kicks in on affordability stretch or severe segment mismatch.
   budget: (p, d) => {
-    const lo = d.budgetCr * 0.9, hi = d.budgetCr * 1.1;
+    const lo = d.budgetCr * 0.85, hi = d.budgetCr * 1.15;
     const prices = d.bucket ? (configPriceCr(p, d.bucket) != null ? [configPriceCr(p, d.bucket)!] : []) : allConfigPricesCr(p);
     const pool = prices.length ? prices : p.budgetLoCr != null ? [p.budgetLoCr] : [];
     if (!pool.length) return 0.5;
-    if (pool.some((pr) => pr >= lo && pr <= hi)) return 1;
+    
+    if (pool.some((pr) => pr <= hi && pr >= lo * 0.70)) return 1;
     let best = 0;
-    for (const pr of pool) best = Math.max(best, pr > hi ? clamp(1 - (pr - hi) / 2.5) : clamp(Math.pow(pr / lo, 1.6)));
+    for (const pr of pool) {
+      if (pr > hi) {
+        best = Math.max(best, clamp(1 - (pr - hi) / 2.5));
+      } else if (pr < lo * 0.70) {
+        // Drastically below budget tier (e.g. 2 Cr flat for 10 Cr buyer) -> gentle tier decay
+        best = Math.max(best, clamp(0.75 + 0.25 * (pr / (lo * 0.70))));
+      } else {
+        best = Math.max(best, 1);
+      }
+    }
     return best;
   },
-  // BHK: exact bucket → 1; project offers only a BIGGER bucket → −0.5 per step;
+  // BHK: exact bucket → 1; project offers only a BIGGER bucket → −0.4 per step;
   // only smaller (or wrong category) → 0. Penthouse matches penthouse only.
   config: (p, d) => {
     if (!d.bucket) return 1;
@@ -184,28 +224,43 @@ const F: Record<MatchFactor, (p: MatchInput, d: Buyer, mkt: MarketContext) => nu
     if (d.bucket === "PH") return 0;
     const want = Number(d.bucket);
     const upSteps = [...offered].filter((b) => b !== "PH" && Number(b) > want).map((b) => Number(b) - want);
-    return upSteps.length ? clamp(1 - 0.5 * Math.min(...upSteps)) : 0;
+    return upSteps.length ? clamp(1 - 0.4 * Math.min(...upSteps)) : 0;
   },
-  // Location: same corridor OR within 3 km of target → 1; then −0.2/km. Target =
-  // POI (geocoded) or the nearest chosen corridor's centroid.
+  // Location: same corridor → 1; adjacent corridor → 0.82; or within 3 km of target → 1; then −0.15/km.
   location: (p, d, mkt) => {
-    if (d.corridors && d.corridors.includes(p.corridor)) return 1;
+    const projectCorr = normalizeCorridorKey(p.corridor);
+    const targetCorrs = (d.corridors ?? []).map(normalizeCorridorKey);
+
+    if (targetCorrs.length > 0) {
+      if (targetCorrs.includes(projectCorr)) return 1;
+      const isAdjacent = targetCorrs.some((tc) => CORRIDOR_ADJACENCY[tc]?.includes(projectCorr));
+      if (isAdjacent) return 0.82;
+    }
+
     const targets: GeoPoint[] = [];
     if (d.poi) targets.push(d.poi);
     for (const c of d.corridors ?? []) { const g = mkt.corridorCentroid[c]; if (g) targets.push(g); }
-    if (!targets.length || p.lat == null || p.lng == null) return 0.5;
+    if (!targets.length || p.lat == null || p.lng == null) return targetCorrs.length > 0 ? 0.35 : 0.5;
     const dkm = Math.min(...targets.map((t) => haversineKm({ lat: p.lat!, lng: p.lng! }, t)));
-    return dkm <= 3 ? 1 : clamp(1 - 0.2 * (dkm - 3));
+    return dkm <= 3 ? 1 : clamp(1 - 0.15 * (dkm - 3));
   },
-  timeline: (p, d) => { if (p.deliveryYear == null || d.byYear == null) return 0.7; return p.deliveryYear <= d.byYear ? 1 : clamp(1 - (p.deliveryYear - d.byYear) * 0.3); },
+  timeline: (p, d) => {
+    if (p.deliveryYear == null || d.byYear == null) return 0.7;
+    return p.deliveryYear <= d.byYear ? 1 : clamp(1 - (p.deliveryYear - d.byYear) * 0.3);
+  },
   delivery: (p) => {
     if (p.delayChancePct == null && p.paceMonths == null) return 0.5;
     const base = p.delayChancePct != null ? 1 - p.delayChancePct / 100 : 0.5;
     const pace = p.paceMonths != null ? clamp(0.5 + p.paceMonths / 24) : 0.5;
     const prog = p.progressPct != null ? p.progressPct / 100 : 0.5;
-    return clamp(0.55 * base + 0.25 * pace + 0.2 * prog);
+    return clamp(0.50 * base + 0.30 * pace + 0.20 * prog);
   },
-  legal: (p) => (p.legalScore == null ? 0.5 : clamp(p.legalScore / 100 - 0.08 * Math.min(3, p.redFlags || 0))),
+  legal: (p) => {
+    if (p.legalScore == null) return 0.5;
+    const base = p.legalScore / 100;
+    const flagPenalty = (p.redFlags || 0) >= 2 ? 0.22 * (p.redFlags || 0) : 0.08 * (p.redFlags || 0);
+    return clamp(base - flagPenalty);
+  },
   developer: (p) => {
     if (p.devDelayedPct == null && p.devDelivered == null) return 0.5;
     const rel = p.devDelayedPct != null ? 1 - p.devDelayedPct / 100 : 0.5;
@@ -213,7 +268,13 @@ const F: Record<MatchFactor, (p: MatchInput, d: Buyer, mkt: MarketContext) => nu
     const delay = p.devAvgDelayMonths != null ? clamp(1 - Math.max(0, p.devAvgDelayMonths) / 24) : 0.5;
     return clamp(0.5 * rel + 0.2 * depth + 0.3 * delay);
   },
-  roi: (p) => { const a = p.roiActualCagr; if (a == null) return 0.5; const abs = clamp(a / 15); const beat = p.roiCityCagr ? clamp(0.5 + (a - p.roiCityCagr) / 16) : 0.5; return clamp(0.55 * abs + 0.45 * beat); },
+  roi: (p) => {
+    const a = p.roiActualCagr;
+    if (a == null) return 0.5;
+    const abs = clamp(a / 16);
+    const beat = p.roiCityCagr ? clamp(0.5 + (a - p.roiCityCagr) / 14) : 0.5;
+    return clamp(0.55 * abs + 0.45 * beat);
+  },
   entry: (p, d, mkt) => {
     const bucket = d.bucket ?? entryBucket(p);
     if (!bucket) return 0.5;
@@ -298,3 +359,60 @@ function sublineFor(bd: MatchResult["breakdown"]): string {
   if (fits.length && gaps.length) return `${cap(fits.slice(0, 2).join(" & "))} fit; ${gaps.slice(0, 2).join(" & ")} to weigh.`;
   return "A balanced fit against your brief.";
 }
+
+/* ── Recommendation Stratification Helper ──
+   Stratifies a ranked list of projects into 3 advisory tiers:
+   1. Bullseye: High-match dead-center picks within budget and target corridor
+   2. Value Arbitrage: Quality picks offering attractive entry value or adjacent sector growth
+   3. Trophy Upgrade: Institutional landmark picks at a slight budget stretch */
+export type StratifiedRecommendation<T> = {
+  bullseye: T[];
+  valueArbitrage: T[];
+  trophyUpgrade: T[];
+  allRanked: T[];
+};
+
+export function stratifyRecommendations<T extends { truthScore: number; budget: [number, number]; market: string; matchPct?: number }>(
+  items: T[],
+  buyer: Buyer
+): StratifiedRecommendation<T> {
+  const allRanked = [...items].sort((a, b) => (b.matchPct ?? 0) - (a.matchPct ?? 0) || b.truthScore - a.truthScore);
+  
+  const targetCorrs = (buyer.corridors ?? []).map(normalizeCorridorKey);
+  const bullseye: T[] = [];
+  const valueArbitrage: T[] = [];
+  const trophyUpgrade: T[] = [];
+
+  for (const item of allRanked) {
+    const [lo, hi] = item.budget;
+    const itemCorr = normalizeCorridorKey(item.market);
+    const isTargetBudget = lo <= buyer.budgetCr * 1.15;
+    const isTargetCorridor = targetCorrs.length === 0 || targetCorrs.includes(itemCorr);
+
+    if ((item.matchPct ?? 0) >= 80 && isTargetBudget && isTargetCorridor && bullseye.length < 3) {
+      bullseye.push(item);
+    } else if (
+      item.truthScore >= 68 &&
+      lo < buyer.budgetCr * 0.85 &&
+      (item.matchPct ?? 0) >= 70 &&
+      valueArbitrage.length < 2
+    ) {
+      valueArbitrage.push(item);
+    } else if (
+      item.truthScore >= 75 &&
+      hi >= buyer.budgetCr * 1.10 &&
+      lo <= buyer.budgetCr * 1.35 &&
+      trophyUpgrade.length < 2
+    ) {
+      trophyUpgrade.push(item);
+    }
+  }
+
+  return {
+    bullseye: bullseye.length ? bullseye : allRanked.slice(0, 3),
+    valueArbitrage: valueArbitrage.length ? valueArbitrage : allRanked.slice(3, 5),
+    trophyUpgrade: trophyUpgrade.length ? trophyUpgrade : allRanked.slice(5, 7),
+    allRanked,
+  };
+}
+
