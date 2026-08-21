@@ -2,6 +2,7 @@
      from the current engine (Krisumi Waterside Residences, 21 Aug 2026).
      Content identical to production; only the communication is redesigned. -->
 <title>Will It Make Money?</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap">
 <style>
@@ -113,6 +114,9 @@
   .cf-wrap svg{display:block;width:100%}
   .cf-legend{display:flex;gap:20px;flex-wrap:wrap;margin-top:10px;font-size:.72rem;color:var(--ink60)}
   .cf-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  .card-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .seg.mini{max-width:200px;flex:1 1 150px}
+  .seg.mini button{padding:6px 0;font-size:.72rem}
   .tt{position:absolute;pointer-events:none;background:var(--ink);color:#F5F0E8;font-family:var(--mono);font-size:.64rem;padding:6px 9px;border-radius:8px;white-space:nowrap;transform:translate(-50%,-130%);opacity:0;z-index:5}
   details.ledger{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}
   details.ledger summary{cursor:pointer;font-size:.78rem;font-weight:500;color:var(--ink60);list-style:none;display:flex;align-items:center;gap:8px}
@@ -170,6 +174,22 @@
   .asm .val{font-family:var(--mono);font-size:.78rem;font-weight:500;color:var(--green);white-space:nowrap;align-self:center}
   .asm .val.warn{color:var(--rust)} .asm .val.na{color:var(--ink45)}
   .disc{margin-top:14px;font-size:.72rem;color:var(--ink45);max-width:46rem}
+
+  /* ── mobile-first ── */
+  @media (max-width:560px){
+    .wrap{padding:0 16px}
+    section{margin-top:44px}
+    .card{padding:18px 16px;border-radius:16px}
+    .chap{padding-top:34px}
+    .ctx .mono[style]{margin-left:0!important}
+    .hero-x .big{font-size:3.3rem}
+    .sentence{font-size:1.3rem}
+    .strip .v{font-size:1.15rem}
+    .duo{max-width:none}
+    .controls{padding:16px 14px}
+    .scale .lab{font-size:.6rem}
+    th,td{font-size:.74rem}
+  }
 </style>
 
 <div class="ribbon">Mock · proposed redesign — Chapter III · content unchanged · <b>live engine numbers, Krisumi Waterside</b></div>
@@ -228,7 +248,7 @@
     <div class="card tint">
       <div class="answer">
         <div>
-          <p class="sentence num">You put in <span class="in" id="s-in">₹9.35 Cr</span>, staged with the build.<br>You take out <span class="out" id="s-out">₹22.48 Cr</span> — <span class="profit" id="s-profit">₹13.13 Cr profit</span>.</p>
+          <p class="sentence num">You put in <span class="in" id="s-in">₹4.70 Cr</span>, staged with the build.<br>You take out <span class="out" id="s-out">₹11.30 Cr</span> — <span class="profit" id="s-profit">₹6.60 Cr profit</span>.</p>
           <div class="hero-x">
             <div>
               <p class="cap">Return on your cash flow · XIRR</p>
@@ -243,14 +263,13 @@
         </div>
         <div class="controls">
           <p class="micro">Hold</p>
-          <div class="seg" id="seg-hold" role="group" aria-label="Holding period">
+          <div class="seg" data-holdseg role="group" aria-label="Holding period">
             <button data-h="5">5 yr</button><button data-h="8" aria-pressed="true">8 yr</button><button data-h="10">10 yr</button>
           </div>
           <p class="micro" style="margin-top:16px">Unit — the rates hold, the rupees re-base</p>
           <div class="pills" id="pills-unit" role="group" aria-label="Unit configuration">
-            <button class="pill" data-t="typ" aria-pressed="true">Typical</button>
             <button class="pill num" data-t="b2">2 BHK · ₹3.7 Cr</button>
-            <button class="pill num" data-t="b3">3 BHK · ₹4.7 Cr</button>
+            <button class="pill num" data-t="b3" aria-pressed="true">3 BHK · ₹4.7 Cr</button>
             <button class="pill num" data-t="b4">4 BHK · ₹7.6 Cr</button>
             <button class="pill num" data-t="ph">Penthouse · ₹11.5 Cr</button>
           </div>
@@ -286,6 +305,7 @@
     <div class="sk"><span class="l">c</span><h2>Where the money moves</h2><span class="rule"></span></div>
     <p class="sub" id="cf-sub">Every debit and credit behind the 8-yr number — the construction-linked outflows on the typical ticket, then the rent and the sale coming back.</p>
     <div class="card">
+      <div class="card-bar"><p class="micro">The calendar follows your hold</p><div class="seg mini" data-holdseg role="group" aria-label="Holding period"><button data-h="5">5 yr</button><button data-h="8" aria-pressed="true">8 yr</button><button data-h="10">10 yr</button></div></div>
       <div class="cf-wrap" id="cf-wrap">
         <svg id="cf-svg" viewBox="0 0 920 300" role="img" aria-label="Cash flow timeline: staged outflows with the build, then rent and the sale coming back"></svg>
         <div class="tt" id="cf-tt"></div>
@@ -313,6 +333,7 @@
     <div class="sk"><span class="l">d</span><h2>Exit year by year — where the return peaks</h2><span class="rule"></span></div>
     <p class="sub">The same engine, re-run for an exit in each of the next ten years — the rate each year earns and the rupees it puts in hand. ⚑ marks the peak-XIRR exit; the tinted row is your hold. <b style="font-weight:500;color:var(--ink)">Tap a year to make it your hold.</b></p>
     <div class="card">
+      <div class="card-bar"><p class="micro">Your hold — or tap any year below</p><div class="seg mini" data-holdseg role="group" aria-label="Holding period"><button data-h="5">5 yr</button><button data-h="8" aria-pressed="true">8 yr</button><button data-h="10">10 yr</button></div></div>
       <div class="cf-wrap" id="xc-wrap">
         <svg id="xc-svg" viewBox="0 0 920 190" role="img" aria-label="XIRR by exit year; the peak is flagged"></svg>
         <div class="tt" id="xc-tt"></div>
@@ -384,7 +405,7 @@ const SWEEP=[[10.13,.78,0,.78,8.3,15.8],[10.98,1.63,0,1.63,8.4,15.3],[12.17,2.82
  [13.49,4.14,.13,4.27,9.6,16.4],[14.94,5.59,.56,6.15,9.8,15.8],[16.56,7.21,1.04,8.25,10,15.5],
  [18.35,9,1.56,10.56,10.1,15.3],[20.33,10.98,2.15,13.13,10.2,15.1],[22.52,13.17,2.8,15.97,10.3,15],
  [24.96,15.61,3.52,19.13,10.3,14.9]];
-const TICKETS={typ:{label:"the typical ticket",cr:9.35,sub:"Project ticket midpoint"},
+const TICKETS={
  b2:{label:"the 2 BHK ticket",cr:3.65,sub:"2 BHK at the filed rate × its super area"},
  b3:{label:"the 3 BHK ticket",cr:4.7,sub:"3 BHK at the filed rate × its super area"},
  b4:{label:"the 4 BHK ticket",cr:7.6,sub:"4 BHK at the filed rate × its super area"},
@@ -397,7 +418,7 @@ const NOTES={5:"A medium hold — a few years of rent start to matter while the 
  8:"The balanced default — capital growth plus several years of rent once the flat is ready.",
  10:"The rental-compounding hold — the most total rupees and the steadiest ride; IRR dips a touch."};
 
-let hold=8, ticket="typ";
+let hold=8, ticket="b3";
 const $=id=>document.getElementById(id);
 const crF=v=>"₹"+v.toFixed(2)+" Cr";
 const inr=v=>v>=.995?crF(v):"₹"+(v*100).toFixed(1)+" L";
@@ -418,59 +439,67 @@ function render(){
  $("cf-sub").textContent=`Every debit and credit behind the ${hold}-yr number — the construction-linked outflows on ${t.label}, then the rent and the sale coming back.`;
  $("e-cagr").textContent=s.cagr.toFixed(1)+"%/yr"; $("e-xirr").textContent=s.xirr.toFixed(1)+"% XIRR";
  $("a-hold").textContent=hold+" yr"; $("a-entry").textContent=crF(s.entry); $("a-entry-sub").textContent=t.sub;
- document.querySelectorAll("#seg-hold button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.h===hold));
+ document.querySelectorAll("[data-holdseg] button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.h===hold));
  document.querySelectorAll("#pills-unit .pill").forEach(b=>b.setAttribute("aria-pressed",b.dataset.t===ticket));
  drawCF(s); drawXC(s); buildLedger(s); buildYears(s);
 }
 
 /* ── c · cashflow timeline ── */
 function drawCF(s){
- const M=hold*12, W=920,H=300, L=46,R=18, base=176;
- const x=m=>L+(W-L-R)*m/M;
+ const wrap=$("cf-wrap"), mob=(wrap.clientWidth||920)<560;
+ const W=Math.max(330,Math.min(920,wrap.clientWidth||920)), H=mob?252:300;
+ const M=hold*12, L=mob?6:46, R=mob?6:18, base=mob?152:176;
+ const x=m=>L+8+(W-L-R-26)*m/M;
  const flows=[{m:0,v:-s.entry*.2,lab:"Entry 20%",d:"Today"}];
  TRANCHES.forEach(([m,d])=>{const cm=Math.min(m,M); flows.push({m:cm,v:-s.entry*.1,lab:"Tranche 10%",d});});
  const sale={m:M,v:s.exit,d:exitLab(hold)};
- const maxUp=s.exit, maxDn=s.entry*.2;
- const up=v=>Math.max(6,v/maxUp*118), dn=v=>Math.max(6,v/maxDn*72);
- let g=`<g font-family="Geist Mono" font-size="10">`;
+ const up=v=>Math.max(6,v/s.exit*(mob?92:118)), dn=v=>Math.max(6,v/(s.entry*.2)*(mob?54:72));
+ const bw=mob?7:10, bws=mob?13:16, fs=mob?10.5:10;
+ let g=`<g font-family="Geist Mono" font-size="${fs}">`;
  g+=`<line x1="${L}" y1="${base}" x2="${W-R}" y2="${base}" stroke="rgba(26,26,26,.35)" stroke-width="1.5"/>`;
+ const yStep=(mob&&hold>6)||hold>8?2:1;
  for(let y=1;y<=hold;y++){const X=x(y*12);
-  g+=`<line x1="${X}" y1="${base-6}" x2="${X}" y2="${base+6}" stroke="rgba(26,26,26,.2)"/><text x="${X}" y="${base+40}" text-anchor="middle" fill="rgba(26,26,26,.42)">${y%2||hold<9?THIS_YEAR+y:""}</text>`;}
- if(POSS_M<M){const X=x(POSS_M), flip=X>W-210;
-  g+=`<line x1="${X}" y1="30" x2="${X}" y2="${base}" stroke="rgba(138,106,30,.45)" stroke-dasharray="3 4"/><text x="${X+(flip?-5:5)}" y="40" text-anchor="${flip?"end":"start"}" fill="#8a6a1e">possession · rent starts</text>`;
+  g+=`<line x1="${X}" y1="${base-6}" x2="${X}" y2="${base+6}" stroke="rgba(26,26,26,.2)"/>`;
+  if(y%yStep===0)g+=`<text x="${X}" y="${base+(mob?32:40)}" text-anchor="middle" fill="rgba(26,26,26,.42)">${mob?"'"+String(THIS_YEAR+y).slice(2):THIS_YEAR+y}</text>`;}
+ if(POSS_M<M){const X=x(POSS_M), flip=X>W-(mob?120:210);
+  g+=`<line x1="${X}" y1="${mob?26:30}" x2="${X}" y2="${base}" stroke="rgba(138,106,30,.45)" stroke-dasharray="3 4"/><text x="${X+(flip?-5:5)}" y="${mob?36:40}" text-anchor="${flip?"end":"start"}" fill="#8a6a1e">${mob?"possession":"possession · rent starts"}</text>`;
   const Xe=x(M);
   g+=`<path d="M${X},${base-3} L${Xe-14},${base-9}" stroke="rgba(154,122,46,.55)" stroke-width="5" stroke-linecap="round" fill="none"/>`;
   g+=`<text x="${(X+Xe)/2}" y="${base-16}" text-anchor="middle" fill="#8a6a1e">rent +${inr(s.rent)}</text>`;}
  flows.forEach(f=>{const X=x(f.m),h=dn(-f.v);
-  g+=`<rect class="cf-mark" data-tt="${f.d} · ${f.lab} · −${inr(-f.v)}" x="${X-5}" y="${base}" width="10" height="${h}" rx="3" fill="#1a1a1a"/>`;});
+  g+=`<rect class="cf-mark" data-tt="${f.d} · ${f.lab} · −${inr(-f.v)}" x="${X-bw/2}" y="${base}" width="${bw}" height="${h}" rx="3" fill="#1a1a1a"/>`;});
  const Xs=x(sale.m), hs=up(sale.v);
- g+=`<rect class="cf-mark" data-tt="${sale.d} · Sale at the projected price · +${crF(sale.v)}" x="${Xs-8}" y="${base-hs}" width="16" height="${hs}" rx="4" fill="#1e6b45"/>`;
+ g+=`<rect class="cf-mark" data-tt="${sale.d} · Sale at the projected price · +${crF(sale.v)}" x="${Xs-bws/2}" y="${base-hs}" width="${bws}" height="${hs}" rx="4" fill="#1e6b45"/>`;
  g+=`<text x="${Xs-12}" y="${base-hs-8}" text-anchor="end" font-weight="500" fill="#1e6b45">sale +${crF(sale.v)}</text>`;
- g+=`<text x="${x(0)-6}" y="${base+dn(s.entry*.2)+16}" fill="rgba(26,26,26,.6)">entry −${inr(s.entry*.2)}</text>`;
- g+=`<text x="${L}" y="18" fill="rgba(26,26,26,.42)">money in ↑ · money out ↓</text><text x="${W-R}" y="${base+64}" text-anchor="end" fill="rgba(26,26,26,.55)">net ${crF(s.exit+s.rent-s.entry)} profit over ${hold} yrs</text>`;
+ g+=`<text x="${Math.max(2,x(0)-6)}" y="${base+dn(s.entry*.2)+15}" fill="rgba(26,26,26,.6)">entry −${inr(s.entry*.2)}</text>`;
+ g+=`<text x="${L+2}" y="16" fill="rgba(26,26,26,.42)">money in ↑ · money out ↓</text><text x="${W-R}" y="${base+(mob?54:64)}" text-anchor="end" fill="rgba(26,26,26,.55)">net +${crF(s.exit+s.rent-s.entry)}${mob?"":" profit over "+hold+" yrs"}</text>`;
  g+="</g>";
- $("cf-svg").innerHTML=g; hookTT("cf-svg","cf-wrap","cf-tt");
+ const svg=$("cf-svg"); svg.setAttribute("viewBox",`0 0 ${W} ${H}`); svg.innerHTML=g;
+ hookTT("cf-svg","cf-wrap","cf-tt");
 }
 
 /* ── d · XIRR by exit year ── */
 function drawXC(s){
- const W=920,H=190,L=46,R=18,T=26,B=34;
+ const wrap=$("xc-wrap"), mob=(wrap.clientWidth||920)<560;
+ const W=Math.max(330,Math.min(920,wrap.clientWidth||920)), H=mob?170:190;
+ const L=mob?34:46, R=mob?10:18, T=26, B=32;
  const ys=SWEEP.map(r=>r[5]), lo=14.5, hi=17;
  const x=i=>L+(W-L-R)*i/9, y=v=>T+(H-T-B)*(1-(v-lo)/(hi-lo));
- let g=`<g font-family="Geist Mono" font-size="10">`;
- [15,16,17].forEach(v=>{g+=`<line x1="${L}" y1="${y(v)}" x2="${W-R}" y2="${y(v)}" stroke="rgba(26,26,26,.07)"/><text x="${L-8}" y="${y(v)+3}" text-anchor="end" fill="rgba(26,26,26,.42)">${v}%</text>`;});
+ const fs=mob?10.5:10;
+ let g=`<g font-family="Geist Mono" font-size="${fs}">`;
+ [15,16,17].forEach(v=>{g+=`<line x1="${L}" y1="${y(v)}" x2="${W-R}" y2="${y(v)}" stroke="rgba(26,26,26,.07)"/><text x="${L-6}" y="${y(v)+3}" text-anchor="end" fill="rgba(26,26,26,.42)">${v}%</text>`;});
  let solid="",dot="";
  ys.forEach((v,i)=>{const p=`${x(i)},${y(v)}`; if(i<=PRE_LAST){dot+=(dot?" L":"M")+p;} if(i>=PRE_LAST){solid+=(solid?" L":"M")+p;}});
  g+=`<path d="${dot}" fill="none" stroke="rgba(26,26,26,.35)" stroke-width="2" stroke-dasharray="2 5" stroke-linecap="round"/>`;
  g+=`<path d="${solid}" fill="none" stroke="#1e6b45" stroke-width="2.5" stroke-linecap="round"/>`;
  ys.forEach((v,i)=>{const pre=i<PRE_LAST, peak=i+1===PEAK_Y, sel=i+1===hold;
-  g+=`<circle class="cf-mark" data-tt="Year ${i+1} · ${THIS_YEAR+i+1} · XIRR ${v.toFixed(1)}%${pre?" · pre-possession":""}${peak?" · peak ⚑":""}" data-y="${i+1}" cx="${x(i)}" cy="${y(v)}" r="${sel?8:5.5}" fill="${pre?"#F5F0E8":peak?"#8a6a1e":"#1e6b45"}" stroke="${sel?"#1a1a1a":pre?"rgba(26,26,26,.4)":"#F5F0E8"}" stroke-width="${sel?2.5:2}" style="cursor:pointer"/>`;
+  g+=`<circle class="cf-mark" data-tt="Year ${i+1} · ${THIS_YEAR+i+1} · XIRR ${v.toFixed(1)}%${pre?" · pre-possession":""}${peak?" · peak ⚑":""}" data-y="${i+1}" cx="${x(i)}" cy="${y(v)}" r="${sel?(mob?9:8):(mob?6.5:5.5)}" fill="${pre?"#F5F0E8":peak?"#8a6a1e":"#1e6b45"}" stroke="${sel?"#1a1a1a":pre?"rgba(26,26,26,.4)":"#F5F0E8"}" stroke-width="${sel?2.5:2}" style="cursor:pointer"/>`;
   if(peak) g+=`<text x="${x(i)}" y="${y(v)-14}" text-anchor="middle" font-weight="500" fill="#8a6a1e">⚑ peak ${v.toFixed(1)}%</text>`;
-  g+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" fill="rgba(26,26,26,.42)">${i+1}</text>`;});
- g+=`<text x="${L}" y="${H-8}" text-anchor="end" fill="rgba(26,26,26,.42)"></text></g>`;
- $("xc-svg").innerHTML=g;
+  g+=`<text x="${x(i)}" y="${H-6}" text-anchor="middle" fill="rgba(26,26,26,.42)">${i+1}</text>`;});
+ g+="</g>";
+ const svg=$("xc-svg"); svg.setAttribute("viewBox",`0 0 ${W} ${H}`); svg.innerHTML=g;
  hookTT("xc-svg","xc-wrap","xc-tt");
- $("xc-svg").querySelectorAll("[data-y]").forEach(c=>c.addEventListener("click",()=>{hold=+c.dataset.y;render();}));
+ svg.querySelectorAll("[data-y]").forEach(c=>c.addEventListener("click",()=>{hold=+c.dataset.y;render();}));
 }
 
 function hookTT(svgId,wrapId,ttId){
@@ -511,7 +540,8 @@ function buildYears(s){
   tr.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go();}});});
 }
 
-document.querySelectorAll("#seg-hold button").forEach(b=>b.addEventListener("click",()=>{hold=+b.dataset.h;render();}));
+document.querySelectorAll("[data-holdseg] button").forEach(b=>b.addEventListener("click",()=>{hold=+b.dataset.h;render();}));
+let _rw; addEventListener("resize",()=>{clearTimeout(_rw);_rw=setTimeout(render,160);});
 document.querySelectorAll("#pills-unit .pill").forEach(b=>b.addEventListener("click",()=>{ticket=b.dataset.t;render();}));
 render();
 </script>
