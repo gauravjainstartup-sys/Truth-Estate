@@ -38,6 +38,9 @@ function roiInputFor(p: ProjectIntel, holdYears: number, asOf: Date | undefined,
 }
 
 const crStr = (v: number) => `₹${v.toFixed(2)} Cr`;
+/* Small sums (a tranche on a compact ticket, the first month's rent) read
+   better in lakhs than as ₹0.09 Cr. */
+const inr = (cr: number) => (cr >= 0.995 ? crStr(cr) : `₹${(cr * 100).toFixed(1)} L`);
 /* One PSF format across the whole chapter — full rupees with commas (₹35,000),
    never a mix of ₹35,000 and 36.0k. A range drops the second ₹: ₹34,000–36,000. */
 const psfRange = (lo: number, hi: number) => (lo === hi ? fmtPsf(lo) : `${fmtPsf(lo)}–${fmtPsf(hi).replace(/^₹/, "")}`);
@@ -111,6 +114,50 @@ export default function ReportPrice({ p, sample = false, unlocked: unlockedProp,
   // The flip: risk-adjusted IRR peaks around possession (rent trails price
   // growth, so a longer hold trades IRR for absolute gain + yield).
   const opt = useMemo(() => (today ? optimalExit(roiInputFor(p, 8, today)) : null), [p, today]);
+
+  /* The ledger the XIRR is actually computed on — every debit (entry +
+     construction tranches) and credit (rent, then the sale), dated from
+     today on the CHOSEN hold and ticket. Derived from the same RoiResult
+     the headline uses, so the calendar can never disagree with the number. */
+  const ledger = useMemo(() => {
+    if (!today) return null;
+    const mLabel = (m: number) =>
+      new Date(today.getFullYear(), today.getMonth() + m, today.getDate()).toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+    const M = Math.max(1, Math.round(holdYears * 12));
+    const Mp = Math.min(M, Math.round(r.yearsToPossession * 12));
+    type Row = { when: string; stage: string; debit?: number; credit?: number; paidPct?: number };
+    const rows: Row[] = [{ when: "Today", stage: `Entry — ${r.entryPct}% of the ticket at BBA`, debit: (r.entryPriceCr * r.entryPct) / 100, paidPct: r.entryPct }];
+    let paid = r.entryPct;
+    for (const t of r.tranches) {
+      paid += t.pct;
+      rows.push({ when: mLabel(Math.min(t.month, M)), stage: `Construction tranche · ${t.pct}%`, debit: (r.entryPriceCr * t.pct) / 100, paidPct: paid });
+    }
+    if (r.rentCollectedCr > 0.005) {
+      const startRent = (r.rentalYieldPct / 100 / 12) * r.entryPriceCr * Math.pow(1 + r.riskAdjustedCagr / 100, Mp / 12);
+      rows.push({
+        when: Mp === 0 ? "Today" : mLabel(Mp),
+        stage: `${Mp === 0 ? "Ready — rent from day one" : "Possession — rent starts"} (~${inr(startRent)}/mo, grows with price) · collected to exit`,
+        credit: r.rentCollectedCr,
+      });
+    }
+    rows.push({ when: mLabel(M), stage: Mp >= M && r.yearsToPossession > 0 ? "Sale at the projected price — resale by transfer, before possession" : "Sale at the projected price", credit: r.exitValueCr });
+    return rows;
+  }, [today, holdYears, r]);
+
+  /* Exit year by year — the SAME engine re-run for every hold, so the reader
+     sees where the XIRR peaks (the flip) and what each extra year buys in
+     absolute rupees. Rates are ticket-invariant; the money follows the pick. */
+  const sweep = useMemo(() => {
+    if (!today) return [];
+    return Array.from({ length: 10 }, (_, i) => i + 1).map((y) => ({ y, s: computeRoi(roiInputFor(p, y, today, cfgEntryCr)) }));
+  }, [p, today, cfgEntryCr]);
+  /* The ⚑ peak considers possession-onward exits only, the same domain
+     optimalExit sweeps: under the flat price path a pre-possession flip can
+     post the biggest XIRR on paper, and crowning it would push readers at
+     exactly the exit the callout above warns leans entirely on a re-rating. */
+  const held = sweep.filter((x) => x.s.rentableYears >= 0.05);
+  const peakPool = held.length ? held : sweep;
+  const peakY = peakPool.length ? peakPool.reduce((b, x) => ((x.s.riskAdjustedXirr ?? -99) > (b.s.riskAdjustedXirr ?? -99) ? x : b), peakPool[0]).y : null;
 
   const exitNote =
     holdYears <= 5
@@ -299,6 +346,111 @@ export default function ReportPrice({ p, sample = false, unlocked: unlockedProp,
               </div>
             )}
           </div>
+
+          {/* ── the payment calendar — the ledger the XIRR is computed on ── */}
+          {today && ledger && (
+            <>
+              <div className="mt-10 flex items-center gap-3">
+                <span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">Where the money moves — your payment calendar</span>
+                <span className="h-px flex-1 bg-[#1a1a1a]/10" />
+              </div>
+              <div className="mt-4 rounded-2xl border border-[#1a1a1a]/10 bg-white/70 p-6">
+                <p className="max-w-[44rem] text-[0.78rem] font-light leading-[1.6] text-[#1a1a1a]/60">
+                  Every debit and credit behind the {holdYears}-yr number — the construction-linked outflows on {cfgBucket != null ? `the ${cfgOptions.find((c) => c.bucket === cfgBucket)?.label ?? "chosen"} ticket` : "the typical ticket"}, then the rent and the sale coming back.
+                </p>
+                <div className="-mx-2 mt-4 overflow-x-auto px-2">
+                  <table className="w-full min-w-[36rem] text-left">
+                    <thead>
+                      <tr className="border-b border-[#1a1a1a]/12">
+                        <th className="py-2 pr-3 font-mono text-[0.58rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/45">When</th>
+                        <th className="py-2 pr-3 font-mono text-[0.58rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/45">Stage</th>
+                        <th className="py-2 pr-3 text-right font-mono text-[0.58rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/45">Debit</th>
+                        <th className="py-2 pr-3 text-right font-mono text-[0.58rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/45">Credit</th>
+                        <th className="py-2 text-right font-mono text-[0.58rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/45">Paid</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ledger.map((row, i) => (
+                        <tr key={i} className="border-b border-[#1a1a1a]/6">
+                          <td className="whitespace-nowrap py-2 pr-3 text-[0.72rem] font-medium tabular-nums text-[#1a1a1a]/70">{row.when}</td>
+                          <td className="py-2 pr-3 text-[0.74rem] font-light leading-snug text-[#1a1a1a]/70">{row.stage}</td>
+                          <td className="whitespace-nowrap py-2 pr-3 text-right text-[0.76rem] font-medium tabular-nums text-[#1a1a1a]">{row.debit != null ? `− ${inr(row.debit)}` : ""}</td>
+                          <td className="whitespace-nowrap py-2 pr-3 text-right text-[0.76rem] font-semibold tabular-nums text-[#1e6b45]">{row.credit != null ? `+ ${inr(row.credit)}` : ""}</td>
+                          <td className="py-2 text-right font-mono text-[0.66rem] tabular-nums text-[#1a1a1a]/45">{row.paidPct != null ? `${row.paidPct}%` : ""}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t border-[#1a1a1a]/15">
+                        <td colSpan={2} className="py-2.5 pr-3 text-[0.74rem] font-semibold text-[#1a1a1a]/80">Net of everything · <span className="text-[#1e6b45]">+{crStr(totalProfit)} profit</span></td>
+                        <td className="whitespace-nowrap py-2.5 pr-3 text-right text-[0.76rem] font-semibold tabular-nums text-[#1a1a1a]">− {crStr(r.entryPriceCr)}</td>
+                        <td className="whitespace-nowrap py-2.5 pr-3 text-right text-[0.76rem] font-semibold tabular-nums text-[#1e6b45]">+ {crStr(r.exitValueCr + r.rentCollectedCr)}</td>
+                        <td className="py-2.5 text-right font-mono text-[0.66rem] tabular-nums text-[#1a1a1a]/45">100%</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ── exit year by year — the same engine re-run for every hold ── */}
+          {today && sweep.length > 0 && (
+            <>
+              <div className="mt-10 flex items-center gap-3">
+                <span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">Exit year by year — where the return peaks</span>
+                <span className="h-px flex-1 bg-[#1a1a1a]/10" />
+              </div>
+              <div className="mt-4 rounded-2xl border border-[#1a1a1a]/10 bg-white/70 p-6">
+                <p className="max-w-[44rem] text-[0.78rem] font-light leading-[1.6] text-[#1a1a1a]/60">
+                  The same engine, re-run for an exit in each of the next ten years — the rate each year earns and the rupees it puts in hand. ⚑ marks the peak-XIRR exit; the tinted row is the hold you picked above.
+                </p>
+                <div className="-mx-2 mt-4 overflow-x-auto px-2">
+                  <table className="w-full min-w-[42rem] text-left">
+                    <thead>
+                      <tr className="border-b border-[#1a1a1a]/12">
+                        <th className="py-2 pr-3 font-mono text-[0.58rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/45">Exit</th>
+                        <th className="py-2 pr-3 text-right font-mono text-[0.58rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/45">Exit value</th>
+                        <th className="py-2 pr-3 text-right font-mono text-[0.58rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/45">Capital gain</th>
+                        <th className="py-2 pr-3 text-right font-mono text-[0.58rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/45">Rent</th>
+                        <th className="py-2 pr-3 text-right font-mono text-[0.58rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/45">Total profit</th>
+                        <th className="py-2 pr-3 text-right font-mono text-[0.58rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/45">Price CAGR</th>
+                        <th className="py-2 text-right font-mono text-[0.58rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/45">XIRR</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sweep.map(({ y, s }) => {
+                        const profit = Math.max(0, s.capitalGainCr + s.rentCollectedCr);
+                        const sel = y === holdYears;
+                        const peak = y === peakY;
+                        const pre = s.rentableYears < 0.05;
+                        return (
+                          <tr key={y} className={`border-b border-[#1a1a1a]/6 last:border-0 ${sel ? "bg-[#1e6b45]/[0.05]" : ""}`}>
+                            <td className="whitespace-nowrap py-2 pr-3 text-[0.72rem] font-medium tabular-nums text-[#1a1a1a]/75">
+                              Year {y} · {today.getFullYear() + y}
+                              {sel && <span className="ml-1.5 rounded-full bg-[#1e6b45]/10 px-1.5 py-0.5 text-[0.55rem] font-semibold uppercase tracking-[0.08em] text-[#1e6b45]">hold</span>}
+                              {pre && <span className="ml-1.5 font-mono text-[0.56rem] uppercase tracking-[0.08em] text-[#1a1a1a]/40">pre-possession</span>}
+                            </td>
+                            <td className="whitespace-nowrap py-2 pr-3 text-right text-[0.74rem] font-light tabular-nums text-[#1a1a1a]/80">{crStr(s.exitValueCr)}</td>
+                            <td className="whitespace-nowrap py-2 pr-3 text-right text-[0.74rem] font-light tabular-nums text-[#1a1a1a]/80">{crStr(s.capitalGainCr)}</td>
+                            <td className="whitespace-nowrap py-2 pr-3 text-right text-[0.74rem] font-light tabular-nums text-[#1a1a1a]/80">{s.rentCollectedCr > 0.005 ? crStr(s.rentCollectedCr) : "—"}</td>
+                            <td className="whitespace-nowrap py-2 pr-3 text-right text-[0.74rem] font-medium tabular-nums text-[#1a1a1a]">{crStr(profit)}</td>
+                            <td className="whitespace-nowrap py-2 pr-3 text-right text-[0.74rem] font-light tabular-nums text-[#1a1a1a]/80">{s.riskAdjustedCagr.toFixed(1)}%</td>
+                            <td className={`whitespace-nowrap py-2 text-right text-[0.76rem] tabular-nums ${peak ? "font-semibold text-[#8a6a1e]" : pre ? "font-medium text-[#1a1a1a]/60" : "font-medium text-[#1e6b45]"}`}>
+                              {s.riskAdjustedXirr != null ? `${s.riskAdjustedXirr.toFixed(1)}%` : "—"}{peak ? " ⚑" : ""}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="mt-3 border-t border-[#1a1a1a]/8 pt-3 font-mono text-[0.6rem] uppercase tracking-[0.09em] text-[#1a1a1a]/45">
+                  XIRR = cash-on-cash on the staged CLP outflows, rent and the sale · Price CAGR = pure price growth after the delay drag · rupee columns follow the ticket picked above · pre-possession exits are resales by transfer, so the ⚑ considers possession-onward years only
+                </p>
+              </div>
+            </>
+          )}
 
           {/* ── e · the price-growth engine that feeds the XIRR ── */}
           <div className="mt-10 flex items-center gap-3">

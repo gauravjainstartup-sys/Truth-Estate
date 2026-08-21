@@ -294,14 +294,18 @@ export function computeRoi(input: RoiInput, params: RoiParams = DEFAULT_ROI_PARA
   const expectedXirr = xirrAnnual(flows(expectedCagr));
   const riskAdjustedXirr = xirrAnnual(raFlows);
 
-  // ── rupee bifurcation of the risk-adjusted path: sale is the final flow,
-  //    rent is every positive flow between possession and exit. Capital gain
-  //    = exit value − the full ticket (every tranche eventually paid), so the
-  //    split stays honest whatever the CLP shape. ──
+  // ── rupee bifurcation of the risk-adjusted path: rent is every positive
+  //    flow between possession and exit; capital gain = sale − the full
+  //    ticket (every tranche eventually paid). The sale is computed directly
+  //    rather than read from the final cashflow cell: on a pre-possession
+  //    exit the last tranche settles in the SAME month as the sale, and the
+  //    cell nets the two — which reported an "exit value" one tranche short
+  //    (and even a negative year-1 "gain" on a rising price). The XIRR was
+  //    always right; this keeps the reported split as honest as the rate. ──
   const lastM = raFlows.length - 1;
   const possM = Math.max(1, Math.min(lastM, Math.round(yearsToPossession * 12)));
   const rentCollectedCr = raFlows.slice(possM, lastM).reduce((s, c) => s + Math.max(0, c), 0);
-  const exitValueCr = raFlows[lastM];
+  const exitValueCr = input.entryPriceCr * Math.pow(1 + riskAdjustedCagr / 100, holdYears);
   const capitalGainCr = exitValueCr - input.entryPriceCr;
 
   // ── bull / bear on corridor volatility & delivery uncertainty ──
