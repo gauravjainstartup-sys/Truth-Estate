@@ -8,7 +8,7 @@
 import { grantModelAccess, modelSlugFor, resolveModelSubject } from "./modelAccess";
 import { serverHasAccess } from "./entitlementsCache";
 import { CLEARED_ON_SIGN_OUT, KEEP_ON_DEMO_RESET } from "./durableKeys";
-import { type Buyer, bucketOfChip } from "./matchEngine";
+import { type Buyer, bucketOfChip, CORRIDOR_ADJACENCY } from "./matchEngine";
 
 /* The primary CTA is configurable in one place — we may rename later. */
 export const PRIMARY_CTA = "Start Your Journey";
@@ -410,16 +410,7 @@ export function corridorKey(s: string): string {
 
 const sameCorridor = (a: string, b: string): boolean => corridorKey(a) === corridorKey(b);
 
-const CORRIDOR_ADJACENCY_LOCAL: Record<string, string[]> = {
-  gce: ["spr", "gcr", "sohna-road"],
-  spr: ["gce", "sohna-road", "new-gurgaon", "dwarka", "nh48"],
-  gcr: ["gce"],
-  dwarka: ["spr", "new-gurgaon", "nh48"],
-  "new-gurgaon": ["spr", "dwarka", "nh48"],
-  "sohna-road": ["spr", "gce", "sohna"],
-  sohna: ["sohna-road"],
-  nh48: ["spr", "dwarka", "new-gurgaon"],
-};
+/* one matrix, owned by matchEngine — a pasted copy here would drift */
 
 /* ── Configuration matching ──
    A buyer's config chip ("3 BHK", "Penthouse", "Duplex", "1 BHK / Studio")
@@ -606,7 +597,7 @@ export function rankCore<T extends Rankable>(
     const targetKeys = locations.map(corridorKey);
     const pKey = corridorKey(p.market);
     if (targetKeys.includes(pKey)) return 1;
-    if (targetKeys.some((tk) => CORRIDOR_ADJACENCY_LOCAL[tk]?.includes(pKey))) return 0.82;
+    if (targetKeys.some((tk) => CORRIDOR_ADJACENCY[tk]?.includes(pKey))) return 0.82;
     return 0.25;
   };
   const priorityFit = (p: T): number => {
@@ -963,10 +954,13 @@ export function buyerFromBuyData(d: BuyData): Buyer {
   let byYear: number | null = null;
   const currentYear = new Date().getFullYear();
   const timelineStr = (d.timeline || "").toLowerCase();
-  if (timelineStr.includes("1 year")) byYear = currentYear + 1;
+  /* "beyond 5" FIRST — "Beyond 5 years" also contains "5 years", so the
+     substring checks must run most-specific-first or a flexible buyer gets
+     the stricter Within-5 target. */
+  if (timelineStr.includes("beyond 5")) byYear = currentYear + 7;
+  else if (timelineStr.includes("1 year")) byYear = currentYear + 1;
   else if (timelineStr.includes("3 years") || timelineStr.includes("3 year")) byYear = currentYear + 3;
   else if (timelineStr.includes("5 years") || timelineStr.includes("5 year")) byYear = currentYear + 5;
-  else if (timelineStr.includes("beyond 5")) byYear = currentYear + 7;
 
   // Resolve investor holding horizon
   let exitYears = d.exitYears ?? null;

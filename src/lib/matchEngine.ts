@@ -127,8 +127,10 @@ function haversineKm(a: GeoPoint, b: GeoPoint): number {
 
 /* ── Corridor Adjacency Matrix ──
    Physical arterial connections (Vatika Chowk underpass, CPR Cloverleaf, etc.)
-   giving high affinity to neighboring high-growth corridors. */
-const CORRIDOR_ADJACENCY: Record<string, string[]> = {
+   giving high affinity to neighboring high-growth corridors. EXPORTED as the
+   single source — journey.ts's rankCore reads this same matrix, so the two
+   rankers can never disagree about which corridors touch. */
+export const CORRIDOR_ADJACENCY: Record<string, string[]> = {
   gce: ["spr", "gcr", "sohna-road"],
   spr: ["gce", "sohna-road", "new-gurgaon", "dwarka", "nh48"],
   gcr: ["gce"],
@@ -258,7 +260,17 @@ const F: Record<MatchFactor, (p: MatchInput, d: Buyer, mkt: MarketContext) => nu
   legal: (p) => {
     if (p.legalScore == null) return 0.5;
     const base = p.legalScore / 100;
-    const flagPenalty = (p.redFlags || 0) >= 2 ? 0.22 * (p.redFlags || 0) : 0.08 * (p.redFlags || 0);
+    /* AG's 0.22×/flag was calibrated against the STORED red-flag column.
+       redFlags is now the bake-time audit (redFlags.ts), whose counts run
+       higher — 79 of 107 projects carry ≥2 flags, and at 0.22× the factor
+       zeroed for 56 of them: a 3-flag and a 9-flag project both read 0 and
+       the ranker lost the gradient exactly where it matters. Same intent,
+       recalibrated: legacy slope for the first two flags, steeper beyond,
+       capped so the factor orders the risky half instead of flooring it.
+       Measured on the live 107: median 0.48 (legacy) → 0.32; zeroed 5 → 18
+       (AG as-authored: median 0.00, zeroed 56). */
+    const f = p.redFlags || 0;
+    const flagPenalty = Math.min(0.55, 0.08 * Math.min(f, 2) + 0.16 * Math.max(0, f - 2));
     return clamp(base - flagPenalty);
   },
   developer: (p) => {
