@@ -412,7 +412,7 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
           {mostList.map((p, k) => row(p, recentProjects.length + k, false))}
           <li role="presentation" className="flex items-center justify-between gap-3 border-t px-4 py-2.5 text-[11px] text-[#8b8067]" style={{ borderTopWidth: "0.5px", borderTopColor: "#d8cfb8" }}>
             {coveredCountLabel(projects)}
-            <a href={`${basePath}/intelligence/projects`} className="shrink-0 font-medium text-[#1e6b45] hover:text-[#238c55]">See All &rarr;</a>
+            <a href={`${basePath}/intelligence/projects`} className="shrink-0 rounded-md bg-[#1e6b45] px-3 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-[#238c55]">See All &rarr;</a>
           </li>
         </>
       );
