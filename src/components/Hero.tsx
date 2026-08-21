@@ -161,7 +161,7 @@ export default function Hero({ index }: { index: OmniIndex }) {
             Know the Truth<br />Before you Buy.
           </h1>
           <p className="mt-3 text-[15px] leading-snug text-[#b3aa9e] md:text-[16px]">
-            Built for buyers. Never paid by builders.
+            We audit from RERA &amp; Court filings, not brochures.
           </p>
 
           {/* search — a real, submitting input with a results dropdown */}
