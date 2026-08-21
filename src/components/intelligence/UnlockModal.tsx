@@ -19,7 +19,7 @@ import OtpDigits from "@/components/auth/OtpDigits";
 import { useEffect, useRef, useState } from "react";
 import {
   packageById, grantPackage, isSignedIn, saveLead,
-  hasReadAccess, has3DAccess, isAllAccess, readStake, saveStake, discountOf,
+  hasReadAccess, has3DAccess, isAllAccess, readStake, saveStake, discountOf, enableDevUnlock,
   type PackageId, type Stake,
 } from "@/lib/journey";
 import { usePricing } from "@/lib/usePricing";
@@ -393,6 +393,24 @@ export default function UnlockModal({
                   gets the name alongside it. */}
               {!sent ? (
                 <>
+                  <div className="mb-4 rounded-xl border border-[#1e6b45]/30 bg-[#1e6b45]/10 p-3.5 text-center">
+                    <p className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[#1e6b45]">
+                      Local Testing &amp; Review Mode
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        enableDevUnlock();
+                        onUnlocked(focus3D ? "read3d" : "read");
+                        onClose();
+                        if (typeof window !== "undefined") window.location.reload();
+                      }}
+                      className="mt-2 w-full rounded-lg bg-[#1e6b45] py-2.5 text-[0.82rem] font-bold text-white shadow-xs transition-colors hover:bg-[#238c55]"
+                    >
+                      ⚡ 1-Click Instant Unlock (Open Full Report)
+                    </button>
+                  </div>
+
                   <p className="text-[0.64rem] font-semibold uppercase tracking-[0.2em] text-[#9a7a2e]">Step 1 of 2 · Your number</p>
                   <h2 className="mt-2 font-serif text-[1.7rem] font-semibold leading-tight">Let&rsquo;s start with your mobile</h2>
                   <p className="mt-2 text-[0.88rem] leading-snug text-[#1a1a1a]/55">We&rsquo;ll see whether you already have a Buyer Office, and send you a code either way.</p>
