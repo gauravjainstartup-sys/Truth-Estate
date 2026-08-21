@@ -1543,22 +1543,26 @@ export default function ProjectProfile({
          pill at every width — the old xl move to the left edge sat it on top
          of the report column and broke the reading line. */}
       {!embedded && !challengeOpen && (<>
-        {/* Desktop — CLOSED star FAB in the right margin, outside the report
-           column (founder spec). The brand line peeks out right→left on an
-           ~8s cycle — no arrow — then tucks back; hover holds it open. */}
+        {/* Desktop — the SAME pill as the home page, just CLOSED by default:
+           anchored at the right margin as the star alone, the text block
+           grows out leftward (right→left) on an ~8s cycle, then tucks back.
+           Hover holds it open; the open state is byte-identical to home. */}
         <button
           onClick={challenge}
           aria-label={`Ask TruthGuide about ${p.name}`}
-          className="group fixed bottom-5 right-5 z-40 hidden h-12 w-12 md:block"
+          className="group fixed bottom-5 right-5 z-40 hidden items-center rounded-full border border-[#c9a96e]/30 bg-[#0a0a0a]/95 p-2.5 text-white shadow-[0_18px_44px_-14px_rgba(0,0,0,0.7)] backdrop-blur transition-all duration-300 hover:border-[#c9a96e]/60 md:flex"
         >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1e6b45] text-[#eafff3]">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-[18px] w-[18px] motion-safe:animate-[tg-star-roll_4.5s_ease-in-out_infinite]"><path d="M12 2.4l1.75 7.1 7.1 1.75-7.1 1.75L12 21.6l-1.75-7.1L3.15 12.75l7.1-1.75z" /></svg>
+          </span>
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute right-[54px] top-1/2 flex -translate-y-1/2 items-center overflow-hidden whitespace-nowrap rounded-full border border-[#c9a96e]/25 bg-[#0a0a0a]/95 text-[0.74rem] font-medium text-[#f6f1e8] opacity-0 shadow-[0_10px_24px_-10px_rgba(0,0,0,0.7)] backdrop-blur [max-width:0] motion-safe:animate-[tg-peek-wide_8s_ease-in-out_infinite] group-hover:[animation-play-state:paused] group-hover:opacity-100 group-hover:[max-width:230px]"
+            className="overflow-hidden whitespace-nowrap opacity-0 [max-width:0] motion-safe:animate-[tg-peek-wide_8s_ease-in-out_infinite] group-hover:opacity-100 group-hover:[animation-play-state:paused] group-hover:[max-width:230px]"
           >
-            <span className="px-3.5 py-1.5"><span className="mr-1.5 text-[0.6rem] font-medium uppercase tracking-[0.14em] text-[#c9a96e]">TruthGuide</span>Just ask, don&apos;t search</span>
-          </span>
-          <span className="grid h-12 w-12 place-items-center rounded-full border border-[#c9a96e]/40 bg-[#1e6b45] text-[#eafff3] shadow-[0_14px_32px_-10px_rgba(30,107,69,0.75)] transition-transform duration-200 group-hover:scale-105">
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-[22px] w-[22px] motion-safe:animate-[tg-star-roll_4.5s_ease-in-out_infinite]"><path d="M12 2.4l1.75 7.1 7.1 1.75-7.1 1.75L12 21.6l-1.75-7.1L3.15 12.75l7.1-1.75z" /></svg>
+            <span className="block pl-3 pr-2.5 text-left leading-tight">
+              <span className="block text-[0.58rem] font-medium uppercase tracking-[0.16em] text-[#c9a96e]">TruthGuide</span>
+              <span className="block text-[0.82rem] font-medium">Just ask, don&apos;t search &rarr;</span>
+            </span>
           </span>
         </button>
         {/* Mobile — FAB with peek label */}
