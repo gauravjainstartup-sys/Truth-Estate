@@ -32,11 +32,15 @@ const DBG = process.env.BUILD_DEBUG === "1";
 
 type Row = Record<string, unknown>;
 
+const FIXTURES_DIR = process.env.SUPABASE_FIXTURES || ".data-snapshot";
+
 async function readFixture(view: string): Promise<Row[] | null> {
   if (typeof window !== "undefined") return null;
   try {
     const fs = await import(/* webpackIgnore: true */ "fs/promises");
-    const raw = await fs.readFile(`${process.env.SUPABASE_FIXTURES}/${view}.json`, "utf8");
+    const path = await import(/* webpackIgnore: true */ "path");
+    const filePath = path.resolve(process.cwd(), FIXTURES_DIR, `${view}.json`);
+    const raw = await fs.readFile(filePath, "utf8");
     const rows = JSON.parse(raw) as Row[];
     console.log(`[supabase] fixtures · ${view} → ${rows.length} rows`);
     return rows;
@@ -54,15 +58,15 @@ async function sbRows(view: string, query: string): Promise<Row[] | null> {
       signal: AbortSignal.timeout(12000),
     });
     if (!res.ok) {
-      console.warn(`[supabase] ${view} → HTTP ${res.status} — section hidden`);
-      return null;
+      console.warn(`[supabase] ${view} → HTTP ${res.status} — using local snapshot fixtures`);
+      return readFixture(view);
     }
     const rows = (await res.json()) as Row[];
     console.log(`[supabase] ${view} → ${rows.length} rows`);
     return rows;
   } catch (e) {
-    console.warn(`[supabase] ${view} unreachable (${e instanceof Error ? e.message : "error"}) — section hidden`);
-    return null;
+    console.warn(`[supabase] ${view} unreachable (${e instanceof Error ? e.message : "error"}) — using local snapshot fixtures`);
+    return readFixture(view);
   }
 }
 
