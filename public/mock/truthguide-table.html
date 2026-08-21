@@ -1,0 +1,154 @@
+<title>TruthGuide Table Reply</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&display=swap">
+<style>
+  :root {
+    --ink:#1a1a1a; --paper:#F5F0E8; --card:#fff; --green:#1e6b45; --gold:#c9a96e; --gold-ink:#9a7a2e;
+    --rust:#b0503e; --line:rgba(26,26,26,.09); --mute:rgba(26,26,26,.5);
+    --serif:"Playfair Display",Georgia,serif;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans) }
+  .wrap { max-width:1180px; margin:0 auto; padding:40px 24px 90px }
+  .kicker { font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--gold-ink); margin:0 }
+  h1 { font-family:var(--serif); font-size:clamp(1.6rem,3vw,2.1rem); font-weight:600; margin:8px 0 0; letter-spacing:-.01em }
+  .sub { color:var(--mute); font-size:14px; line-height:1.65; max-width:64ch; margin:10px 0 0 }
+  .bar { display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end; padding-bottom:22px; border-bottom:1px solid var(--line); margin-bottom:30px }
+  .toggle { margin-left:auto; display:flex; gap:6px; padding:4px; border:1px solid var(--line); border-radius:999px; background:#fff }
+  .toggle button { font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; padding:9px 16px;
+    border:0; border-radius:999px; background:transparent; color:var(--mute); cursor:pointer }
+  .toggle button[aria-pressed="true"] { background:var(--green); color:#fff; font-weight:600 }
+  .toggle button:focus-visible { outline:2px solid var(--gold-ink); outline-offset:2px }
+
+  .row { display:flex; gap:34px; align-items:flex-start; flex-wrap:wrap }
+  .lbl { font-family:var(--mono); font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:rgba(26,26,26,.4); margin:0 0 10px }
+
+  /* the chat panel, as the site draws it */
+  .panel { background:var(--paper); border:1px solid var(--line); border-radius:14px; overflow:hidden;
+    box-shadow:0 18px 44px -30px rgba(26,26,26,.4) }
+  .panel.desk { flex:1; min-width:520px }
+  .panel.mob { width:390px; max-width:100% }
+  .phead { display:flex; align-items:center; gap:9px; padding:13px 16px; background:#14110d; color:#f6f1e8 }
+  .dot { width:26px; height:26px; border-radius:50%; background:var(--green); display:grid; place-items:center; font-size:12px }
+  .phead b { font-size:13px; font-weight:600 }
+  .phead span { font-family:var(--mono); font-size:9px; letter-spacing:.14em; text-transform:uppercase; opacity:.5; margin-left:auto }
+  .thread { padding:16px; display:flex; flex-direction:column; gap:12px }
+  .me { align-self:flex-end; max-width:85%; background:var(--green); color:#fff; border-radius:16px 16px 6px 16px;
+    padding:10px 14px; font-size:13.5px; line-height:1.5 }
+  .bot { align-self:flex-start; max-width:92%; background:var(--card); border:1px solid var(--line);
+    border-radius:16px 16px 16px 6px; padding:12px 14px; font-size:13.5px; line-height:1.55; color:rgba(26,26,26,.85) }
+  .bot p { margin:0 0 9px }
+  .bot p:last-child { margin-bottom:0 }
+
+  /* THE TABLE — scrolls inside the bubble, never widens the page */
+  .tw { overflow-x:auto; margin:4px -4px 0; padding:0 4px 2px; -webkit-overflow-scrolling:touch }
+  table { border-collapse:collapse; width:100%; font-size:12px }
+  th { font-family:var(--mono); font-size:9px; letter-spacing:.11em; text-transform:uppercase; color:rgba(26,26,26,.45);
+    text-align:left; font-weight:600; padding:0 10px 7px 0; white-space:nowrap; border-bottom:1px solid var(--line) }
+  td { padding:7px 10px 7px 0; border-bottom:1px solid rgba(26,26,26,.05); white-space:nowrap; vertical-align:middle }
+  tr:last-child td { border-bottom:0 }
+  .nm { font-weight:500; color:var(--ink); white-space:normal; min-width:150px }
+  .num { font-family:var(--mono); font-variant-numeric:tabular-nums }
+  .sc { font-weight:700; color:var(--green) }
+  .pill { display:inline-block; border-radius:3px; border:1px solid; padding:2px 7px; font-family:var(--mono);
+    font-size:9.5px; letter-spacing:.05em; text-transform:uppercase }
+  .pill.ok { color:var(--green); border-color:rgba(30,107,69,.4); background:rgba(30,107,69,.06) }
+  .pill.warn { color:var(--gold-ink); border-color:rgba(154,122,46,.4); background:rgba(201,169,110,.12) }
+  .pill.bad { color:var(--rust); border-color:rgba(176,80,62,.4); background:rgba(176,80,62,.07) }
+  .pill.na { color:rgba(26,26,26,.5); border-color:rgba(26,26,26,.18); background:rgba(26,26,26,.03) }
+  .after { margin-top:10px; font-size:12.5px; color:var(--mute) }
+  .chips { display:flex; gap:7px; flex-wrap:wrap; margin-top:11px }
+  .chip { border:1px solid var(--line); background:#fff; border-radius:999px; padding:6px 11px; font-size:11.5px; color:rgba(26,26,26,.6) }
+
+  .notes { margin-top:46px; border-top:1px solid var(--line); padding-top:26px;
+    display:grid; gap:20px; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)) }
+  .note h3 { font-family:var(--mono); font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:var(--gold-ink); margin:0 0 7px }
+  .note p { margin:0; font-size:13px; line-height:1.65; color:var(--mute) }
+  .note code { font-family:var(--mono); font-size:11.5px; background:rgba(26,26,26,.05); padding:1px 5px; border-radius:3px; color:var(--ink) }
+  @media (max-width:760px) { .wrap { padding:26px 14px 60px } .panel.desk { min-width:0 } .toggle { margin-left:0 } }
+</style>
+
+<div class="wrap">
+  <div class="bar">
+    <div>
+      <p class="kicker">TruthGuide · reply format</p>
+      <h1>Ask for a table, get a table</h1>
+      <p class="sub">Today the model answers &ldquo;I cannot provide the information in a table format&rdquo; &mdash; it is obeying a prompt rule that bans markdown, and the chat bubble has no table renderer either. This is what the reply should look like instead.</p>
+    </div>
+    <div class="toggle" role="group" aria-label="Reader tier">
+      <button type="button" data-v="free" aria-pressed="true">Free reader</button>
+      <button type="button" data-v="paid" aria-pressed="false">Report unlocked</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="panel desk">
+      <div class="phead"><span class="dot">✦</span><b>TruthGuide</b><span>independent</span></div>
+      <div class="thread">
+        <div class="me">show it in the form of a table with all columns necessary</div>
+        <div class="bot">
+          <p data-lead></p>
+          <div data-table></div>
+          <p class="after" data-after></p>
+          <div class="chips"><span class="chip">Only under ₹5 Cr</span><span class="chip">Only Dwarka Expressway</span><span class="chip">Show the next 10</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <p class="lbl">Mobile · 390</p>
+      <div class="panel mob">
+        <div class="phead"><span class="dot">✦</span><b>TruthGuide</b><span>independent</span></div>
+        <div class="thread">
+          <div class="me">show it in the form of a table</div>
+          <div class="bot">
+            <p data-lead></p>
+            <div data-table></div>
+            <p class="after" data-after></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note">
+      <h3>What has to change</h3>
+      <p>Two edits. <code>core.ts</code> rule 3 currently reads &ldquo;No markdown, no headings&rdquo; &mdash; it needs an exception: when the reader asks for a table, emit a pipe table with a fixed column set. Then <code>renderChat</code> in <code>chatLinks.tsx</code> needs to turn consecutive pipe rows into a real table; today it renders bullets, numbers and bold, so a pipe table would print as raw text.</p>
+    </div>
+    <div class="note">
+      <h3>Columns, and the paywall</h3>
+      <p>Project, Score, Corridor and From-price are already public &mdash; the whole scoreboard ships in <code>/omni-index.json</code>. Delay risk, ROI outlook and red flags are the forensic layer the ₹1,100 report sells, so they appear for a reader who has unlocked, and the free table stops at four columns. Toggle above to see both.</p>
+    </div>
+    <div class="note">
+      <h3>Why it scrolls</h3>
+      <p>A seven-column table cannot fit a 390px phone. The table scrolls sideways inside its own bubble rather than widening the page, and the project name stays put as the readable anchor. Twelve rows shown, then the reply offers the next ten &mdash; the same &ldquo;max 5, then offer more&rdquo; instinct the prompt already has, relaxed for a table the reader explicitly asked for.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  var FREE = "<div class=\"tw\"><table><thead><tr><th>Project</th><th>Score</th><th>Corridor</th><th>From</th></tr></thead><tbody><tr><td class=\"nm\">DLF The Arbour</td><td class=\"num sc\">87</td><td>GCE</td><td class=\"num\">\u20b99.5 Cr</td></tr><tr><td class=\"nm\">DLF Privana South</td><td class=\"num sc\">85</td><td>SPR</td><td class=\"num\">\u20b97.5 Cr</td></tr><tr><td class=\"nm\">DLF Privana North</td><td class=\"num sc\">84</td><td>SPR</td><td class=\"num\">\u20b99.15 Cr</td></tr><tr><td class=\"nm\">DLF Privana West</td><td class=\"num sc\">84</td><td>SPR</td><td class=\"num\">\u20b97.7 Cr</td></tr><tr><td class=\"nm\">DLF Gardencity Enclave Phase - 1</td><td class=\"num sc\">81</td><td>New Gurgaon</td><td class=\"num\">\u20b91.9 Cr</td></tr><tr><td class=\"nm\">DLF Gardencity Enclave Phase - 2</td><td class=\"num sc\">80</td><td>New Gurgaon</td><td class=\"num\">\u20b91.9 Cr</td></tr><tr><td class=\"nm\">DLF The Dahlias</td><td class=\"num sc\">79</td><td>GCR</td><td class=\"num\">\u20b962 Cr</td></tr><tr><td class=\"nm\">Ashiana Amarah Phase - 3 & 3A</td><td class=\"num sc\">79</td><td>New Gurgaon</td><td class=\"num\">\u20b92.5 Cr</td></tr><tr><td class=\"nm\">Puri Diplomatic Residences</td><td class=\"num sc\">78</td><td>Dwarka Expy</td><td class=\"num\">\u20b94.5 Cr</td></tr><tr><td class=\"nm\">Ashiana Amarah Phase - 1 & 1A</td><td class=\"num sc\">77</td><td>New Gurgaon</td><td class=\"num\">\u20b92.5 Cr</td></tr><tr><td class=\"nm\">Puri The Aravallis</td><td class=\"num sc\">77</td><td>GCE</td><td class=\"num\">\u20b94.8 Cr</td></tr><tr><td class=\"nm\">Ashiana Amarah Phase - 2</td><td class=\"num sc\">77</td><td>New Gurgaon</td><td class=\"num\">\u20b91.9 Cr</td></tr></tbody></table></div>";
+  var PAID = "<div class=\"tw\"><table><thead><tr><th>Project</th><th>Score</th><th>Corridor</th><th>From</th><th>Delay risk</th><th>ROI outlook</th><th>Red flags</th></tr></thead><tbody><tr><td class=\"nm\">DLF The Arbour</td><td class=\"num sc\">87</td><td>GCE</td><td class=\"num\">\u20b99.5 Cr</td><td><span class=\"pill ok\">Low</span></td><td><span class=\"pill ok\">Strong</span></td><td><span class=\"pill ok\">None</span></td></tr><tr><td class=\"nm\">DLF Privana South</td><td class=\"num sc\">85</td><td>SPR</td><td class=\"num\">\u20b97.5 Cr</td><td><span class=\"pill warn\">Medium</span></td><td><span class=\"pill ok\">Strong</span></td><td><span class=\"pill ok\">None</span></td></tr><tr><td class=\"nm\">DLF Privana North</td><td class=\"num sc\">84</td><td>SPR</td><td class=\"num\">\u20b99.15 Cr</td><td><span class=\"pill warn\">Medium</span></td><td><span class=\"pill ok\">Strong</span></td><td><span class=\"pill ok\">None</span></td></tr><tr><td class=\"nm\">DLF Privana West</td><td class=\"num sc\">84</td><td>SPR</td><td class=\"num\">\u20b97.7 Cr</td><td><span class=\"pill warn\">Medium</span></td><td><span class=\"pill ok\">Strong</span></td><td><span class=\"pill ok\">None</span></td></tr><tr><td class=\"nm\">DLF Gardencity Enclave Phase - 1</td><td class=\"num sc\">81</td><td>New Gurgaon</td><td class=\"num\">\u20b91.9 Cr</td><td><span class=\"pill ok\">Low</span></td><td><span class=\"pill ok\">Strong</span></td><td><span class=\"pill ok\">None</span></td></tr><tr><td class=\"nm\">DLF Gardencity Enclave Phase - 2</td><td class=\"num sc\">80</td><td>New Gurgaon</td><td class=\"num\">\u20b91.9 Cr</td><td><span class=\"pill ok\">Low</span></td><td><span class=\"pill ok\">Strong</span></td><td><span class=\"pill ok\">None</span></td></tr><tr><td class=\"nm\">DLF The Dahlias</td><td class=\"num sc\">79</td><td>GCR</td><td class=\"num\">\u20b962 Cr</td><td><span class=\"pill bad\">High</span></td><td><span class=\"pill ok\">Strong</span></td><td><span class=\"pill ok\">None</span></td></tr><tr><td class=\"nm\">Ashiana Amarah Phase - 3 & 3A</td><td class=\"num sc\">79</td><td>New Gurgaon</td><td class=\"num\">\u20b92.5 Cr</td><td><span class=\"pill ok\">Low</span></td><td><span class=\"pill ok\">Strong</span></td><td><span class=\"pill bad\">1</span></td></tr><tr><td class=\"nm\">Puri Diplomatic Residences</td><td class=\"num sc\">78</td><td>Dwarka Expy</td><td class=\"num\">\u20b94.5 Cr</td><td><span class=\"pill ok\">Low</span></td><td><span class=\"pill ok\">Strong</span></td><td><span class=\"pill ok\">None</span></td></tr><tr><td class=\"nm\">Ashiana Amarah Phase - 1 & 1A</td><td class=\"num sc\">77</td><td>New Gurgaon</td><td class=\"num\">\u20b92.5 Cr</td><td><span class=\"pill ok\">Low</span></td><td><span class=\"pill ok\">Strong</span></td><td><span class=\"pill bad\">1</span></td></tr><tr><td class=\"nm\">Puri The Aravallis</td><td class=\"num sc\">77</td><td>GCE</td><td class=\"num\">\u20b94.8 Cr</td><td><span class=\"pill ok\">Low</span></td><td><span class=\"pill ok\">Strong</span></td><td><span class=\"pill ok\">None</span></td></tr><tr><td class=\"nm\">Ashiana Amarah Phase - 2</td><td class=\"num sc\">77</td><td>New Gurgaon</td><td class=\"num\">\u20b91.9 Cr</td><td><span class=\"pill ok\">Low</span></td><td><span class=\"pill ok\">Strong</span></td><td><span class=\"pill bad\">1</span></td></tr></tbody></table></div>";
+  var LEAD = {
+    free: "Here are the twelve highest-scoring projects we track, as a table.",
+    paid: "Here are the twelve highest-scoring projects we track, with the forensic columns from the files you've unlocked."
+  };
+  var AFTER = {
+    free: "Delay risk, ROI outlook and the red-flag count sit inside each project's file — unlock one and I'll add those columns here.",
+    paid: "Red flags are recomputed from filings at every build; delay risk is read from filed QPR pace. Ask me to filter this table by budget or corridor."
+  };
+  function set(v) {
+    document.querySelectorAll("[data-table]").forEach(function (el) { el.innerHTML = v === "paid" ? PAID : FREE; });
+    document.querySelectorAll("[data-lead]").forEach(function (el) { el.textContent = LEAD[v]; });
+    document.querySelectorAll("[data-after]").forEach(function (el) { el.textContent = AFTER[v]; });
+    document.querySelectorAll(".toggle button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.v === v)); });
+  }
+  document.querySelectorAll(".toggle button").forEach(function (b) {
+    b.addEventListener("click", function () { set(b.dataset.v); });
+  });
+  set("free");
+</script>
