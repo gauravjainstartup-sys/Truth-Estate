@@ -25,13 +25,24 @@ const recoPill = (reco: string) =>
     ? "border-[#9a7a2e]/40 bg-[#c9a96e]/10 text-[#9a7a2e]"
     : "border-[#1a1a1a]/20 bg-[#1a1a1a]/[0.04] text-[#1a1a1a]/60";
 
-/* "Sector 63, Golf Course Ext. Road" — sector + street, no market short and
-   no city; "Extension" trimmed to "Ext." Falls back to the corridor when we
-   hold no street address. */
+/* "Sector 63, GCE Corridor, Gurugram" — the FULL address (founder-asked,
+   21 Aug 2026): the filed sector, then the corridor, then the city. A bare
+   acronym corridor reads as an address with "Corridor" appended; names
+   that already read as places (Dwarka Expy, Sohna Road, NH-8 Corridor)
+   stand as filed. When no sector is on file the pre-city street stands in;
+   no token ever prints twice. */
 export function streetAddress(p: ProjectIntel): string {
   const parts = p.ops?.address ? p.ops.address.split(",").map((s) => s.trim()).filter(Boolean) : [];
-  const street = (parts.length >= 2 ? parts.slice(0, -1) : parts).join(", ").replace(/Extension/g, "Ext.");
-  return street || [p.marketShort, "Gurugram"].filter(Boolean).join(", ");
+  const sector = parts.find((s) => /^sector\b/i.test(s));
+  let street = sector ?? (parts.length >= 2 ? parts.slice(0, -1) : parts).join(", ").replace(/Extension/g, "Ext.");
+  if (street.toLowerCase() === "gurugram") street = "";
+  const short = p.marketShort || "";
+  const corridor = /^[A-Z]{2,4}$/.test(short) ? `${short} Corridor` : short;
+  const out: string[] = [];
+  for (const tok of [street, corridor, "Gurugram"]) {
+    if (tok && !out.some((o) => o.toLowerCase() === tok.toLowerCase())) out.push(tok);
+  }
+  return out.join(", ");
 }
 
 /* "3, 4, 5 BHK · Duplex Penthouse" from whatever the project filed — BHK
