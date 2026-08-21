@@ -27,8 +27,8 @@ export type MatchFactor =
 /* ── Configurable persona weights (each column sums to 100 as authored;
    the engine renormalizes over whatever factors apply per buyer) ── */
 export const MATCH_WEIGHTS: Record<Persona, Partial<Record<MatchFactor, number>>> = {
-  "end-user": { budget: 16, config: 14, location: 12, timeline: 8, delivery: 16, legal: 16, developer: 12, entry: 6 },
-  investor:   { budget: 14, config: 2, location: 6, timeline: 6, delivery: 10, roi: 24, entry: 14, liquidity: 14, finance: 10 },
+  "end-user": { budget: 24, config: 22, location: 20, timeline: 10, delivery: 8, legal: 8, developer: 8 },
+  investor:   { budget: 20, config: 6, location: 14, timeline: 8, delivery: 8, roi: 22, entry: 12, liquidity: 10 },
 };
 
 /* Factors that need a buyer input — dropped (and their weight renormalized
@@ -38,18 +38,17 @@ const CONDITIONAL: MatchFactor[] = ["config", "location", "timeline"];
 export const personaOf = (purchaseType: string | null | undefined): Persona =>
   purchaseType === "Investment" ? "investor" : "end-user";
 
-/* ── BHK buckets: Studio/1/1.5→"1"; 2/2.5→"2"; …; 5/5.5→"5"; any Penthouse
-   (incl. Duplex Penthouse) → "PH" (its own category). ── */
+/* ── BHK buckets: Studio/1/1.5→"1"; 2/2.5→"2"; …; 5/5.5→"5"; any Penthouse/Duplex → "PH". ── */
 export type BhkBucket = "1" | "2" | "3" | "4" | "5" | "PH";
 export function bhkBucket(bhkType: string | null | undefined): BhkBucket | null {
   if (!bhkType) return null;
-  if (/penthouse/i.test(bhkType)) return "PH";
+  if (/penthouse|duplex/i.test(bhkType)) return "PH";
   const m = String(bhkType).match(/(\d+(?:\.\d)?)/);
   if (!m) return /studio/i.test(bhkType) ? "1" : null;
   const n = Math.floor(parseFloat(m[1]));
   return (n <= 1 ? "1" : n >= 5 ? "5" : String(n)) as BhkBucket;
 }
-export const bucketOfChip = (chip: string): BhkBucket | null => (/penthouse/i.test(chip) ? "PH" : bhkBucket(chip));
+export const bucketOfChip = (chip: string): BhkBucket | null => (/penthouse|duplex/i.test(chip) ? "PH" : bhkBucket(chip));
 
 export type UnitConfig = { bucket: BhkBucket; superArea: number };
 export type GeoPoint = { lat: number; lng: number };
@@ -127,16 +126,16 @@ function haversineKm(a: GeoPoint, b: GeoPoint): number {
 
 /* ── Corridor Adjacency Matrix ──
    Physical arterial connections (Vatika Chowk underpass, CPR Cloverleaf, etc.)
-   giving high affinity to neighboring high-growth corridors. */
+   giving high affinity to true neighboring corridors. */
 const CORRIDOR_ADJACENCY: Record<string, string[]> = {
-  gce: ["spr", "gcr", "sohna-road"],
-  spr: ["gce", "sohna-road", "new-gurgaon", "dwarka", "nh48"],
+  gce: ["spr", "gcr"],
+  spr: ["gce", "sohna-road"],
   gcr: ["gce"],
-  dwarka: ["spr", "new-gurgaon", "nh48"],
-  "new-gurgaon": ["spr", "dwarka", "nh48"],
-  "sohna-road": ["spr", "gce", "sohna"],
+  dwarka: ["nh48"],
+  "new-gurgaon": ["nh48", "spr"],
+  "sohna-road": ["spr", "sohna"],
   sohna: ["sohna-road"],
-  nh48: ["spr", "dwarka", "new-gurgaon"],
+  nh48: ["dwarka", "new-gurgaon", "spr"],
 };
 
 function normalizeCorridorKey(s: string): string {
@@ -144,8 +143,9 @@ function normalizeCorridorKey(s: string): string {
   if (t.includes("spr") || t.includes("southern peripheral")) return "spr";
   if (t.includes("dwarka") || t.includes("northern peripheral") || t.includes("dxp")) return "dwarka";
   if (t.includes("new gurgaon") || t.includes("new gurugram")) return "new-gurgaon";
-  if (t.includes("sohna")) return t.includes("road") ? "sohna-road" : "sohna";
-  if (t.includes("nh-48") || t.includes("nh48") || t.includes("nh 48")) return "nh48";
+  if (t.includes("sohna-road") || t.includes("sohna road")) return "sohna-road";
+  if (t.includes("sohna")) return "sohna";
+  if (t.includes("nh-48") || t.includes("nh48") || t.includes("nh 48") || t.includes("nh-8") || t.includes("nh8")) return "nh48";
   if (t.includes("golf course")) {
     return t.includes("ext") || t.includes("gcre") || t.includes("gce") ? "gce" : "gcr";
   }
@@ -192,61 +192,73 @@ const entryBucket = (p: MatchInput): BhkBucket | null => (["1", "2", "3", "4", "
 
 /* ── Factor fit curves (0..1). Return 0.5 when their inputs are absent. ── */
 const F: Record<MatchFactor, (p: MatchInput, d: Buyer, mkt: MarketContext) => number> = {
-  // Budget: projects fitting within or slightly below target budget receive full marks.
-  // Never penalize value buying. Decay only kicks in on affordability stretch or severe segment mismatch.
+  // Budget: projects fitting within reasonable range of target budget receive top marks.
+  // Value buying is recognized within reasonable bracket, but severe segment mismatches (e.g. 1.5 Cr for 10 Cr buyer) decay steeply.
   budget: (p, d) => {
-    const lo = d.budgetCr * 0.85, hi = d.budgetCr * 1.15;
+    const lo = d.budgetCr * 0.75, hi = d.budgetCr * 1.20;
     const prices = d.bucket ? (configPriceCr(p, d.bucket) != null ? [configPriceCr(p, d.bucket)!] : []) : allConfigPricesCr(p);
     const pool = prices.length ? prices : p.budgetLoCr != null ? [p.budgetLoCr] : [];
     if (!pool.length) return 0.5;
     
-    if (pool.some((pr) => pr <= hi && pr >= lo * 0.70)) return 1;
+    if (pool.some((pr) => pr <= hi && pr >= lo)) return 1.0;
     let best = 0;
     for (const pr of pool) {
       if (pr > hi) {
-        best = Math.max(best, clamp(1 - (pr - hi) / 2.5));
-      } else if (pr < lo * 0.70) {
-        // Drastically below budget tier (e.g. 2 Cr flat for 10 Cr buyer) -> gentle tier decay
-        best = Math.max(best, clamp(0.75 + 0.25 * (pr / (lo * 0.70))));
+        best = Math.max(best, clamp(1.0 - (pr - hi) / (d.budgetCr * 0.40)));
+      } else if (pr < lo) {
+        const ratio = pr / lo;
+        best = Math.max(best, clamp(Math.pow(ratio, 2.5)));
       } else {
-        best = Math.max(best, 1);
+        best = Math.max(best, 1.0);
       }
     }
     return best;
   },
-  // BHK: exact bucket → 1; project offers only a BIGGER bucket → −0.4 per step;
-  // only smaller (or wrong category) → 0. Penthouse matches penthouse only.
+  // BHK: exact bucket → 1; Penthouse/Duplex requests match PH (or 4/5 BHK luxury partially);
+  // Mass/Mid-market low configs (2/3 BHK) get steep penalties when Penthouse requested.
   config: (p, d) => {
     if (!d.bucket) return 1;
     const offered = new Set(p.configs.map((c) => c.bucket));
     if (!offered.size) return 0.5;
-    if (offered.has(d.bucket)) return 1;
-    if (d.bucket === "PH") return 0;
+    if (offered.has(d.bucket)) return 1.0;
+    
+    if (d.bucket === "PH") {
+      if (offered.has("5")) return 0.60;
+      if (offered.has("4")) return 0.40;
+      return 0.05;
+    }
+    
     const want = Number(d.bucket);
     const upSteps = [...offered].filter((b) => b !== "PH" && Number(b) > want).map((b) => Number(b) - want);
-    return upSteps.length ? clamp(1 - 0.4 * Math.min(...upSteps)) : 0;
+    const downSteps = [...offered].filter((b) => b !== "PH" && Number(b) < want).map((b) => want - Number(b));
+    
+    if (upSteps.length) return clamp(1.0 - 0.25 * Math.min(...upSteps));
+    if (downSteps.length) return clamp(1.0 - 0.50 * Math.min(...downSteps));
+    return 0.1;
   },
-  // Location: same corridor → 1; adjacent corridor → 0.82; or within 3 km of target → 1; then −0.15/km.
+  // Location: same corridor → 1; direct adjacent corridor → 0.65; non-matching → 0.10.
   location: (p, d, mkt) => {
     const projectCorr = normalizeCorridorKey(p.corridor);
     const targetCorrs = (d.corridors ?? []).map(normalizeCorridorKey);
 
     if (targetCorrs.length > 0) {
-      if (targetCorrs.includes(projectCorr)) return 1;
+      if (targetCorrs.includes(projectCorr)) return 1.0;
       const isAdjacent = targetCorrs.some((tc) => CORRIDOR_ADJACENCY[tc]?.includes(projectCorr));
-      if (isAdjacent) return 0.82;
+      if (isAdjacent) return 0.65;
+      return 0.10;
     }
 
     const targets: GeoPoint[] = [];
     if (d.poi) targets.push(d.poi);
     for (const c of d.corridors ?? []) { const g = mkt.corridorCentroid[c]; if (g) targets.push(g); }
-    if (!targets.length || p.lat == null || p.lng == null) return targetCorrs.length > 0 ? 0.35 : 0.5;
+    if (!targets.length || p.lat == null || p.lng == null) return targetCorrs.length > 0 ? 0.20 : 0.5;
     const dkm = Math.min(...targets.map((t) => haversineKm({ lat: p.lat!, lng: p.lng! }, t)));
     return dkm <= 3 ? 1 : clamp(1 - 0.15 * (dkm - 3));
   },
   timeline: (p, d) => {
     if (p.deliveryYear == null || d.byYear == null) return 0.7;
-    return p.deliveryYear <= d.byYear ? 1 : clamp(1 - (p.deliveryYear - d.byYear) * 0.3);
+    if (p.deliveryYear <= d.byYear) return 1.0;
+    return clamp(1.0 - (p.deliveryYear - d.byYear) * 0.18);
   },
   delivery: (p) => {
     if (p.delayChancePct == null && p.paceMonths == null) return 0.5;

@@ -411,14 +411,14 @@ export function corridorKey(s: string): string {
 const sameCorridor = (a: string, b: string): boolean => corridorKey(a) === corridorKey(b);
 
 const CORRIDOR_ADJACENCY_LOCAL: Record<string, string[]> = {
-  gce: ["spr", "gcr", "sohna-road"],
-  spr: ["gce", "sohna-road", "new-gurgaon", "dwarka", "nh48"],
+  gce: ["spr", "gcr"],
+  spr: ["gce", "sohna-road"],
   gcr: ["gce"],
-  dwarka: ["spr", "new-gurgaon", "nh48"],
-  "new-gurgaon": ["spr", "dwarka", "nh48"],
-  "sohna-road": ["spr", "gce", "sohna"],
+  dwarka: ["nh48"],
+  "new-gurgaon": ["nh48", "spr"],
+  "sohna-road": ["spr", "sohna"],
   sohna: ["sohna-road"],
-  nh48: ["spr", "dwarka", "new-gurgaon"],
+  nh48: ["dwarka", "new-gurgaon", "spr"],
 };
 
 /* ── Configuration matching ──
@@ -589,8 +589,8 @@ export function rankCore<T extends Rankable>(
   const investor = W.invest > 0;
 
   const budgetFit = (lo: number, hi: number): number => {
-    if (budgetCr >= lo && budgetCr <= hi) return 1;
-    if (budgetCr > hi) return Math.max(0.75, 1 - (budgetCr - hi) / 10);
+    if (budgetCr >= lo * 0.75 && budgetCr <= hi * 1.20) return 1.0;
+    if (budgetCr > hi) return Math.max(0, 1 - (budgetCr - hi) / (budgetCr * 0.40));
     return Math.max(0, 1 - (lo - budgetCr) / 2.5);
   };
   const configFit = (p: T): number => {
@@ -599,15 +599,15 @@ export function rankCore<T extends Rankable>(
     if (known.length === 0) return 0.5;
     if (configs.some((chip) => known.some((cfg) => configMatches(chip, cfg)))) return 1;
     if (configs.some((chip) => known.some((cfg) => bhkAdjacent(chip, cfg)))) return 0.45;
-    return 0.2;
+    return 0.1;
   };
   const locationFit = (p: T): number => {
     if (locations.length === 0) return 1;
     const targetKeys = locations.map(corridorKey);
     const pKey = corridorKey(p.market);
     if (targetKeys.includes(pKey)) return 1;
-    if (targetKeys.some((tk) => CORRIDOR_ADJACENCY_LOCAL[tk]?.includes(pKey))) return 0.82;
-    return 0.25;
+    if (targetKeys.some((tk) => CORRIDOR_ADJACENCY_LOCAL[tk]?.includes(pKey))) return 0.65;
+    return 0.10;
   };
   const priorityFit = (p: T): number => {
     if (priorities.length === 0) return 1;
@@ -648,19 +648,10 @@ export function rankCore<T extends Rankable>(
     })
     .sort((a, b) => b.s - a.s || b.p.truthScore - a.p.truthScore);
 
-  /* Display Match %. Two mappings, chosen by opts.honestPct:
-     • honest (step 2, in user testing) — the weights sum to 100 so `s` already
-       IS a 0..100 score; surface it directly (cap 99, never claim perfect).
-     • legacy relative clamp (DEFAULT, still live on /shortlist) — `86 + s/max·12`
-       floored at 72, which compressed every shortlist into ~86–99.
-     Every item also carries `_score` (honest raw) and `_fit` (per-axis
-     breakdown) for the /test-rank harness; existing callers ignore them. */
-  const max = raw[0]?.s || 1;
+  /* Display Match %. Honest absolute 0..100 percentage. */
   return raw.map(({ p, s, _fit }) => ({
     ...p,
-    matchPct: opts.honestPct
-      ? Math.min(99, Math.round(s))
-      : Math.min(99, Math.max(72, Math.round(86 + (s / max) * 12))),
+    matchPct: Math.min(99, Math.max(10, Math.round(s))),
     _score: Math.round(s),
     _fit,
   })) as (T & { matchPct: number; _score: number; _fit: RankFit })[];
