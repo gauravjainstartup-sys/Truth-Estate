@@ -31,6 +31,11 @@ export type BestProjectsPage = {
   title: string;
   description: string;
   intro: string;
+  /* The qualifier between the live count and the bias claim in the dense
+     head's one-liner — "{n} {metaFact} | No Developer Bias". It restates
+     the page's claim in the fact line, the same pattern the founder
+     approved for the catalogue ("107 Audited Projects | …"). */
+  metaFact: string;
   match: (r: LiveBacklogFull) => boolean;
   /* THIS PAGE'S WHOLE CLAIM IS THE PRICE. Set on the four bands, and it
      makes the route drop any project whose listed price its own filed rate
@@ -93,6 +98,7 @@ export const BEST_PROJECTS: BestProjectsPage[] = [
       "Every tracked Gurugram project with an entry price under ₹3 Cr, independently scored on delivery, legal, developer strength, liquidity, pricing and construction. No paid rankings.",
     intro:
       "Every project we track whose entry price sits under ₹3 Cr — each one carrying the same Truth Score, built from the same six audited inputs as the rest of the catalogue. No developer pays to appear here, and none can move a score.",
+    metaFact: "Audited Projects Under ₹3 Cr Entry",
     match: underCr(3),
     pricePage: true,
   },
@@ -104,6 +110,7 @@ export const BEST_PROJECTS: BestProjectsPage[] = [
       "Every tracked Gurugram project with an entry price under ₹5 Cr, independently scored on delivery, legal, developer strength, liquidity, pricing and construction. No paid rankings.",
     intro:
       "Every project we track whose entry price sits under ₹5 Cr — each one carrying the same Truth Score, built from the same six audited inputs as the rest of the catalogue. No developer pays to appear here, and none can move a score.",
+    metaFact: "Audited Projects Under ₹5 Cr Entry",
     match: underCr(5),
     pricePage: true,
   },
@@ -115,6 +122,7 @@ export const BEST_PROJECTS: BestProjectsPage[] = [
       "Every tracked Gurugram project with an entry price under ₹8 Cr, independently scored on delivery, legal, developer strength, liquidity, pricing and construction. No paid rankings.",
     intro:
       "Every project we track whose entry price sits under ₹8 Cr — each one carrying the same Truth Score, built from the same six audited inputs as the rest of the catalogue. No developer pays to appear here, and none can move a score.",
+    metaFact: "Audited Projects Under ₹8 Cr Entry",
     match: underCr(8),
     pricePage: true,
   },
@@ -126,6 +134,7 @@ export const BEST_PROJECTS: BestProjectsPage[] = [
       "Gurugram's ₹10 Cr-and-above residential projects, independently scored on delivery, legal, developer strength, liquidity, pricing and construction. No paid rankings.",
     intro:
       "The projects we track that start at ₹10 Cr and above. A larger cheque buys a bigger flat, not a safer one — every project here is scored on the same six audited inputs as everything else in the catalogue.",
+    metaFact: "Audited Projects From ₹10 Cr Up",
     match: (r) => r.minPriceCr != null && r.minPriceCr >= 10,
     pricePage: true,
   },
@@ -140,6 +149,7 @@ export const BEST_PROJECTS: BestProjectsPage[] = [
        set, and 12 is the first threshold clearly above it. */
     intro:
       "Projects whose expected CAGR clears 12% — against a Gurugram baseline of roughly 9%. Expected appreciation is a projection, not a promise, and it is worth reading next to each project's delivery and legal score rather than on its own.",
+    metaFact: "Audited Projects Clearing 12% Projected CAGR",
     match: (r) => r.expectedCagrNum != null && r.expectedCagrNum >= 12,
   },
   {
@@ -150,6 +160,7 @@ export const BEST_PROJECTS: BestProjectsPage[] = [
       "Gurugram projects with a modelled delay probability of 30% or less, from construction pace measured against the RERA-promised date.",
     intro:
       "Projects whose modelled chance of running late is 30% or below — computed from construction pace against the date the developer promised RERA, not from what a brochure says. Most of the tracked set sits well above this.",
+    metaFact: "Audited Projects at ≤30% Delay Risk",
     match: (r) => r.delayChancePct != null && r.delayChancePct <= 30,
   },
   {
@@ -163,6 +174,7 @@ export const BEST_PROJECTS: BestProjectsPage[] = [
        leans almost entirely on the developer's record. */
     intro:
       "Projects registered with Haryana RERA in the last two years. A new launch has barely any construction history to judge, so its delivery risk rests mostly on what the developer has done before — which is exactly what the Truth Score reads.",
+    metaFact: "Audited Launches From the Last 24 Months",
     match: recentlyRegistered,
   },
 ];

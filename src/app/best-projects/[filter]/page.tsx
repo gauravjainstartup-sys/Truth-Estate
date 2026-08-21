@@ -119,12 +119,23 @@ export default async function Page({ params }: { params: Promise<{ filter: strin
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(breadcrumb)} />
       <script type="application/ld+json" dangerouslySetInnerHTML={ldJson(ld)} />
+      {/* THE DENSE CUT, same as the catalogue: these are landing pages, and
+          their product is the filtered grid — the full-height masthead
+          (4rem h1, six-line intro, four stat tiles, the universe band) put
+          the first card more than a screen down. The head collapses to
+          crumb + h1 + one fact line; the intro paragraph moves below the
+          grid where a reader who wants the methodology still finds it (and
+          Google still reads it). `intro` stays passed for the
+          ?developer=-scoped line dense mode shows in that one case. */}
       <ProjectsIndex
         projects={projects}
         stats={stats}
         crumb={page.title}
         heading={page.h1}
         intro={page.intro}
+        dense
+        metaLine={`${projects.length} ${page.metaFact} | No Developer Bias`}
+        tailIntro={page.intro}
       />
     </>
   );
