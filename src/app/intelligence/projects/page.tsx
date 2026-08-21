@@ -50,15 +50,8 @@ export default async function Page() {
      content survives here, in the line the founder approved on the mock,
      and the intro paragraph moves below the grid where a reader who wants
      the methodology will still find it (and Google still reads it). */
-  const scored = projects.map((p) => p.truthScore).filter((s) => s > 0);
-  const lo = scored.length ? Math.min(...scored) : 0;
-  const hi = scored.length ? Math.max(...scored) : 0;
-  const metaLine = [
-    `${projects.length} audited files`,
-    stats?.tracked ? `${stats.tracked.toLocaleString("en-IN")} RERA projects tracked live` : null,
-    hi > 0 ? `Truth Score ${lo}–${hi}` : null,
-    "no developer pays to rank",
-  ].filter(Boolean).join(" · ");
+  /* Two facts, one line — the count stays live off the catalogue itself. */
+  const metaLine = `${projects.length} Audited Projects | No Developer Bias`;
 
   return (
     <>
