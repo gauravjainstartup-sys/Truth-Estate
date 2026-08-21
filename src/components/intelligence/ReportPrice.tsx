@@ -27,6 +27,7 @@ function roiInputFor(p: ProjectIntel, holdYears: number, asOf: Date | undefined)
     reraDate: con?.reraDateFull ?? con?.reraDate ?? null,
     holdYears,
     asOf,
+    corridor: p.market ?? null,
   };
 }
 
