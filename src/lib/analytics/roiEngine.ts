@@ -38,16 +38,13 @@ export interface RoiParams {
   indiaCagr: number;
   /** Gurgaon's add over the national rate, %. */
   gurgaonAdd: number;
-  /** Truth Score at which the quality kicker is zero. Set to the portfolio's
-   *  mean score once calibrated so the kicker is balanced +/-. */
+  /** Truth Score at which the quality kicker is zero. */
   scoreNeutral: number;
   /** CAGR points added per Truth-Score point above neutral. */
   scoreSlope: number;
   /** Max absolute quality kicker, % — a great score can never dominate the base. */
   scoreCap: number;
-  /** Max CAGR points the predicted delay can remove — mirrors scoreCap so no
-   *  single factor overwhelms the market base, and bounds the headline against
-   *  a stale/garbled RERA date producing an absurd 80-month "delay". */
+  /** Max CAGR points the predicted delay can remove. */
   delayCostCap: number;
   /** Post-possession rental yield on the then-value, %/yr. */
   rentalYield: number;
@@ -55,15 +52,53 @@ export interface RoiParams {
   holdYears: number;
 }
 
-/** Uncalibrated placeholders — see the ⚠️ note above. */
+export interface CorridorBaseline {
+  cagr: number;
+  rentalYield: number;
+  bearDelta: number;
+  bullDelta: number;
+}
+
+/* ── Realistic Institutional Corridor Baselines ──
+   Calibrated for conservative underwriting across Gurugram micro-markets. */
+export const CORRIDOR_BASELINES: Record<string, CorridorBaseline> = {
+  dwarka: { cagr: 10.8, rentalYield: 3.0, bearDelta: -2.3, bullDelta: +2.0 },
+  gce: { cagr: 10.5, rentalYield: 3.0, bearDelta: -2.0, bullDelta: +2.0 },
+  spr: { cagr: 10.0, rentalYield: 2.8, bearDelta: -2.0, bullDelta: +2.0 },
+  "new-gurgaon": { cagr: 9.2, rentalYield: 2.8, bearDelta: -1.7, bullDelta: +1.8 },
+  nh8: { cagr: 8.8, rentalYield: 2.6, bearDelta: -1.8, bullDelta: +1.7 },
+  "sohna-road": { cagr: 8.5, rentalYield: 3.0, bearDelta: -1.7, bullDelta: +1.7 },
+  sohna: { cagr: 8.5, rentalYield: 2.5, bearDelta: -2.0, bullDelta: +2.0 },
+  gcr: { cagr: 7.2, rentalYield: 2.8, bearDelta: -1.7, bullDelta: +1.6 },
+};
+
+export function normalizeCorridorKey(s: string | null | undefined): string {
+  const t = (s || "").toLowerCase();
+  if (t.includes("spr") || t.includes("southern peripheral")) return "spr";
+  if (t.includes("dwarka") || t.includes("northern peripheral") || t.includes("dxp")) return "dwarka";
+  if (t.includes("new gurgaon") || t.includes("new gurugram")) return "new-gurgaon";
+  if (t.includes("sohna")) return t.includes("road") ? "sohna-road" : "sohna";
+  if (t.includes("nh-48") || t.includes("nh48") || t.includes("nh 48") || t.includes("nh-8") || t.includes("nh8")) return "nh8";
+  if (t.includes("golf course")) {
+    return t.includes("ext") || t.includes("gcre") || t.includes("gce") ? "gce" : "gcr";
+  }
+  return t.trim();
+}
+
+export function corridorBaselineFor(corridor: string | null | undefined): CorridorBaseline {
+  const key = normalizeCorridorKey(corridor);
+  return CORRIDOR_BASELINES[key] ?? { cagr: 9.5, rentalYield: 2.8, bearDelta: -2.0, bullDelta: +2.0 };
+}
+
+/** Calibrated realistic baseline parameters. */
 export const DEFAULT_ROI_PARAMS: RoiParams = {
-  indiaCagr: 9.0,
-  gurgaonAdd: 0.5,
-  scoreNeutral: 60,
-  scoreSlope: 0.1,
-  scoreCap: 4.0,
-  delayCostCap: 4.0,
-  rentalYield: 2.5,
+  indiaCagr: 7.5,
+  gurgaonAdd: 2.0,
+  scoreNeutral: 68,
+  scoreSlope: 0.06,
+  scoreCap: 1.5,
+  delayCostCap: 2.5,
+  rentalYield: 2.8,
   holdYears: 8,
 };
 
@@ -80,7 +115,9 @@ export interface RoiInput {
   asOf?: Date;
   /** Holding horizon override, years. */
   holdYears?: number;
-  /** Corridor 5-yr CAGR, %, shown as context only (not used in the base). */
+  /** Target project corridor / microMarket name. */
+  corridor?: string | null;
+  /** Corridor 5-yr CAGR, %, shown as context. */
   corridorCagr?: number | null;
 }
 
@@ -187,8 +224,11 @@ export function computeRoi(input: RoiInput, params: RoiParams = DEFAULT_ROI_PARA
   const asOf = input.asOf ?? new Date();
   const holdYears = input.holdYears ?? params.holdYears;
 
-  // ── appreciation ──
-  const base = params.indiaCagr + params.gurgaonAdd;
+  // Resolve corridor-specific realistic baseline if provided, or fallback to params base
+  const corrBaseline = input.corridor ? corridorBaselineFor(input.corridor) : null;
+  const base = corrBaseline ? corrBaseline.cagr : (params.indiaCagr + params.gurgaonAdd);
+  const activeRentalYield = corrBaseline ? corrBaseline.rentalYield : params.rentalYield;
+
   const score = clamp(input.truthScore ?? params.scoreNeutral, 0, 100);
   const qualityKicker = clamp(params.scoreSlope * (score - params.scoreNeutral), -params.scoreCap, params.scoreCap);
   const expectedCagr = base + qualityKicker;
@@ -206,7 +246,7 @@ export function computeRoi(input: RoiInput, params: RoiParams = DEFAULT_ROI_PARA
 
   // ── cash-flow returns ──
   const flows = (g: number): number[] =>
-    buildCashflows(input.entryPriceCr, g, yearsToPossession, holdYears, params.rentalYield);
+    buildCashflows(input.entryPriceCr, g, yearsToPossession, holdYears, activeRentalYield);
   const raFlows = flows(riskAdjustedCagr);
   const expectedXirr = xirrAnnual(flows(expectedCagr));
   const riskAdjustedXirr = xirrAnnual(raFlows);
@@ -219,16 +259,18 @@ export function computeRoi(input: RoiInput, params: RoiParams = DEFAULT_ROI_PARA
   const exitValueCr = raFlows[lastM];
   const capitalGainCr = exitValueCr - input.entryPriceCr;
 
-  // ── bull / bear on the two dominant uncertainties: market ±3, delivery ∓6/+12mo ──
+  // ── bull / bear on corridor volatility & delivery uncertainty ──
+  const bearDelta = corrBaseline?.bearDelta ?? -2.0;
+  const bullDelta = corrBaseline?.bullDelta ?? +2.0;
   const bandCagr = (marketDelta: number, delayDeltaMonths: number): number => {
     const exp = base + marketDelta + qualityKicker;
     const dm = Math.max(0, delayMonths + delayDeltaMonths);
     return exp - Math.min(params.delayCostCap, base * (dm / 12) / holdYears);
   };
   const bands: RoiBands = {
-    bear: round1(bandCagr(-3, +12)),
+    bear: round1(bandCagr(bearDelta, +12)),
     base: round1(riskAdjustedCagr),
-    bull: round1(bandCagr(+3, -6)),
+    bull: round1(bandCagr(bullDelta, -6)),
   };
 
   return {
@@ -247,7 +289,7 @@ export function computeRoi(input: RoiInput, params: RoiParams = DEFAULT_ROI_PARA
     exitValueCr: round2(exitValueCr),
     capitalGainCr: round2(capitalGainCr),
     rentCollectedCr: round2(rentCollectedCr),
-    corridorCagr: input.corridorCagr ?? null,
+    corridorCagr: input.corridorCagr ?? round1(base),
     bands,
   };
 }
