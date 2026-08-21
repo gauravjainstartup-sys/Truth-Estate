@@ -20,14 +20,10 @@ export default function TruthGuideBubble() {
   // (ProjectProfile) — suppress the generic bubble there so there's one,
   // project-aware entry rather than two competing ones.
   const onProjectReport = p.startsWith("/projects/") || p.startsWith("/intelligence/projects/");
-  // On home the desktop pill lives IN the hero (under the requirements
-  // whisper) — the floating twin would be a duplicate. Mobile keeps the FAB.
-  const onHome = p === "/";
   if (isOpen || !allowed || onProjectReport) return null;
   return (
     <>
       {/* Desktop — the full pill. */}
-      {!onHome && (
       <button
         onClick={() => open("research")}
         aria-label="Ask TruthGuide"
@@ -43,7 +39,6 @@ export default function TruthGuideBubble() {
           <span className="block text-[0.82rem] font-medium">Just ask, don&apos;t search &rarr;</span>
         </span>
       </button>
-      )}
 
       {/* Mobile — a miniature echo of the desktop pill: the guiding-star FAB.
          The star gently rolls in and out; a label peeks out then tucks back so
