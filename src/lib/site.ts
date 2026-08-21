@@ -22,7 +22,7 @@
 
 /* "" for a root-served site; "/Truth-Estate" under GitHub Pages. Never a
    trailing slash — every caller writes `${basePath}/thing`. */
-export const BASE_PATH = (process.env.NEXT_PUBLIC_BASE_PATH ?? "/Truth-Estate").replace(/\/$/, "");
+export const BASE_PATH = (process.env.NEXT_PUBLIC_BASE_PATH ?? (process.env.NODE_ENV === "development" ? "" : "/Truth-Estate")).replace(/\/$/, "");
 
 /* Origin only, no path. Canonicals, sitemap, robots, OpenGraph and every
    JSON-LD @id derive from ORIGIN + BASE_PATH. */

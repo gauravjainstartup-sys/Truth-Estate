@@ -12,10 +12,10 @@ import type { NextConfig } from "next";
    to survive. `||` would treat it as unset, fall back to "/Truth-Estate",
    and ship a production build addressed to the preview's subdirectory —
    every asset and every link 404ing, on the live domain. */
-const BASE_PATH = (process.env.NEXT_PUBLIC_BASE_PATH ?? "/Truth-Estate").replace(/\/$/, "");
+const BASE_PATH = (process.env.NEXT_PUBLIC_BASE_PATH ?? (process.env.NODE_ENV === "development" ? "" : "/Truth-Estate")).replace(/\/$/, "");
 
 const nextConfig: NextConfig = {
-  output: "export",
+  ...(process.env.NODE_ENV === "production" ? { output: "export" } : {}),
   ...(BASE_PATH ? { basePath: BASE_PATH } : {}),
   images: {
     unoptimized: true,
