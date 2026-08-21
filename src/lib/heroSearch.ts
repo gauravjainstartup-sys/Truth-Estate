@@ -119,6 +119,40 @@ export function searchDevelopers(query: string, devs: DevRow[], limit = 3): DevR
     .map((e) => e.x);
 }
 
+/* ── corridor matches ──
+   Same index, same ranking as developers, with one addition that matters
+   here: a buyer types the CODE far more often than the name — "SPR",
+   "GCE", "GCR" — so the short code is matched as its own key, and an
+   exact code match outranks a name that merely contains the letters.
+   Aliases ("dwarka expressway" → the Dwarka corridor, "golf course ext")
+   ride on the same AREA_ALIASES table the nearby-coverage strip uses, so
+   the two never disagree about what a corridor is called. */
+export type CorridorRow = { n: string; s: string; k?: string; c?: number };
+export function searchCorridors(query: string, rows: CorridorRow[], limit = 2): CorridorRow[] {
+  const t = norm(query);
+  if (t.length < 2) return [];
+  /* resolve typed aliases to the canonical corridor word first */
+  let alias: string | null = null;
+  for (const [re, nd] of AREA_ALIASES) if (re.test(t)) { alias = nd; break; }
+  const rank = (r: CorridorRow): number => {
+    const name = r.n.toLowerCase();
+    const code = (r.k ?? "").toLowerCase();
+    if (code && code === t) return 0;                 // "spr" → SPR
+    if (name === t) return 0;
+    if (name.startsWith(t)) return 1;
+    if (code && code.startsWith(t)) return 1;
+    if (alias && (name.includes(alias) || alias.includes(name))) return 2;
+    if (name.includes(t)) return 3;
+    return -1;
+  };
+  return rows
+    .map((r) => ({ r, v: rank(r) }))
+    .filter((e) => e.v >= 0)
+    .sort((a, b) => a.v - b.v || (b.r.c ?? 0) - (a.r.c ?? 0))
+    .slice(0, limit)
+    .map((e) => e.r);
+}
+
 /* scored = we hold a Truth Score for it (so it can show a verdict chip). */
 export function coveredProjects(projects: OmniProject[]): OmniProject[] {
   return projects.filter((p) => p.score != null);

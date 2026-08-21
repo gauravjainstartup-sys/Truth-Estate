@@ -15,11 +15,12 @@ import { track } from "@/lib/events";
 
 type P = { n: string; s: string; q?: string; m?: string; d?: string; ts?: number };
 type D = { n: string; s: string; c?: number };
-type Index = { p: P[]; d: D[] };
+type C = { n: string; s: string; k?: string; c?: number };
+type Index = { p: P[]; d: D[]; c?: C[] };
 
 let cached: Index | null = null;
 
-type Hit = { kind: "p" | "d"; n: string; sub: string; chip: string; href: string };
+type Hit = { kind: "p" | "d" | "c"; n: string; sub: string; chip: string; href: string };
 
 function filter(ix: Index, q: string): Hit[] {
   const t = q.trim().toLowerCase();
@@ -48,7 +49,21 @@ function filter(ix: Index, q: string): Hit[] {
       chip: "dossier",
       href: `${basePath}/intelligence/developers/${x.s}`,
     }));
-  return [...ps, ...ds];
+  /* Corridors match on the code as well as the name — "SPR" and "GCE" are
+     what people type — and route to the corridor's market page. */
+  const cs = (ix.c ?? [])
+    .map((x) => ({ x, r: Math.min(...[x.n, x.k ?? ""].filter(Boolean).map((h) => { const v = rank(h.toLowerCase()); return v < 0 ? 9 : v; })) }))
+    .filter((e) => e.r < 9)
+    .sort((a, b) => a.r - b.r || (b.x.c ?? 0) - (a.x.c ?? 0))
+    .slice(0, 2)
+    .map(({ x }): Hit => ({
+      kind: "c",
+      n: x.n,
+      sub: x.c != null ? `Corridor · ${x.c} tracked ${x.c === 1 ? "project" : "projects"}` : "Corridor intelligence",
+      chip: "corridor",
+      href: `${basePath}/intelligence/markets/${x.s}`,
+    }));
+  return [...ps, ...ds, ...cs];
 }
 
 /* `current` is the project whose page this is. Given it, the header stops
@@ -127,7 +142,7 @@ export default function SearchPalette({ className = "", current }: { className?:
 
   const groups: { label: string; items: { h: Hit; i: number }[] }[] = [];
   hits.forEach((h, i) => {
-    const label = h.kind === "p" ? "Projects" : "Developers";
+    const label = h.kind === "p" ? "Projects" : h.kind === "d" ? "Developers" : "Corridors";
     const g = groups.find((x) => x.label === label);
     if (g) g.items.push({ h, i });
     else groups.push({ label, items: [{ h, i }] });
@@ -205,7 +220,7 @@ export default function SearchPalette({ className = "", current }: { className?:
                       className={`flex w-full items-center gap-3 px-4 py-2.5 text-left md:px-5 ${i === sel ? "bg-[#c9a96e]/[0.12]" : ""}`}
                     >
                       <span className={`grid h-[26px] w-[26px] shrink-0 place-items-center rounded-lg text-[0.66rem] ${h.kind === "p" ? "bg-[#1e6b45]/10 text-[#1e6b45]" : "bg-[#c9a96e]/[0.16] text-[#8a6d1f]"}`}>
-                        {h.kind === "p" ? "▦" : "◆"}
+                        {h.kind === "p" ? "▦" : h.kind === "d" ? "◆" : "◈"}
                       </span>
                       <span className="min-w-0">
                         <span className="block truncate text-[0.85rem] font-medium text-[#1a1a1a]">{h.n}</span>

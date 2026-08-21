@@ -4,6 +4,8 @@
    (Curated dossiers no longer exist as pages — the pipeline files ARE
    the project pages, so only live rows are indexed.) */
 import { DEVELOPERS } from "@/lib/developers";
+import { MARKETS } from "@/lib/markets";
+import { corridorKey } from "@/lib/journey";
 import { fetchBacklogFull, fetchDevelopersOverview } from "@/lib/supabase";
 
 export const dynamic = "force-static";
@@ -14,11 +16,23 @@ export const dynamic = "force-static";
    the project cards had. */
 type P = { n: string; s: string; q?: string; m?: string; d?: string; ts?: number };
 type D = { n: string; s: string; c?: number };
+/* corridor: name, slug, short code (SPR/GCE/GCR — what buyers actually
+   type), and the count of projects we track there. */
+type C = { n: string; s: string; k?: string; c?: number };
 
 export async function GET() {
   const p: P[] = [];
+  /* corridor tallies, keyed the same way the reports resolve a corridor
+     (corridorKey), so "Golf Course Road Extension (GCRE)" and "Golf Course
+     Extension" land on one entry rather than two near-misses. */
+  const byCorridor = new Map<string, number>();
   for (const r of (await fetchBacklogFull()) ?? []) {
     if (p.some((e) => e.s === r.slug)) continue;
+    const mkt = r.microMarket ?? r.location;
+    if (mkt) {
+      const k = corridorKey(mkt);
+      byCorridor.set(k, (byCorridor.get(k) ?? 0) + 1);
+    }
     p.push({
       n: r.name,
       s: r.slug,
@@ -43,5 +57,15 @@ export async function GET() {
     if (d.some((e) => e.s === r.slug) || curatedNames.has(norm(r.name))) continue;
     d.push({ n: r.name, s: r.slug, ...(r.total != null ? { c: r.total } : {}) });
   }
-  return Response.json({ p, d });
+  /* Corridors, same contract as developers: only entries with a real page
+     (MARKETS drives generateStaticParams for /intelligence/markets/[slug])
+     and at least one tracked project, so a hit is never a dead end. The
+     count is OUR tracked number, not the registry's market-wide figure. */
+  const c: C[] = [];
+  for (const m of MARKETS) {
+    const n = byCorridor.get(corridorKey(m.name)) ?? 0;
+    if (n < 1) continue;
+    c.push({ n: m.name, s: m.slug, ...(m.short && m.short !== m.name ? { k: m.short } : {}), c: n });
+  }
+  return Response.json({ p, d, c });
 }

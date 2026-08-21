@@ -24,6 +24,7 @@ import {
   fuzzySearch, highlightName, defaultList, coveredNearby, coveredCountLabel,
   rowMeta, TAG_CHIP, getRecentSlugs, pushRecentSlug, pushDemand,
   searchDevelopers, type DevRow,
+  searchCorridors, type CorridorRow,
 } from "@/lib/heroSearch";
 import { projectHref } from "@/lib/projectHref";
 import { basePath } from "@/lib/site";
@@ -35,10 +36,15 @@ const MOBILE_MQ = "(max-width: 767px)";
 /* Developer dossiers come from the SAME /search-index.json the project-page
    palette reads — fetched once, lazily, on first open and cached for the tab. */
 let devIndexCache: DevRow[] | null = null;
+/* Corridors ride the same fetch — a buyer who types "SPR" or "Dwarka
+   Expressway" is asking a location question, and the corridor page is the
+   answer the site already holds. */
+let corridorIndexCache: CorridorRow[] | null = null;
 
 type NavItem =
   | { kind: "project"; p: OmniProject }
   | { kind: "developer"; d: DevRow }
+  | { kind: "corridor"; c: CorridorRow }
   | { kind: "action"; action: "report" };
 
 /* Truth Score chip — the score number, then the canonical tag pill (layout B). */
@@ -58,6 +64,7 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
   const projects = index.projects;
 
   const [devs, setDevs] = useState<DevRow[]>(() => devIndexCache ?? []);
+  const [corridors, setCorridors] = useState<CorridorRow[]>(() => corridorIndexCache ?? []);
   const [devsLoaded, setDevsLoaded] = useState<boolean>(devIndexCache != null);
   const devFetchedRef = useRef(false);
   /* Lazy, once-per-tab: pull the developer dossiers from the shared search
@@ -65,7 +72,12 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
      A non-OK/failed fetch leaves the cache null and clears the guard so the
      next open retries — never caches an empty list as if it were the answer. */
   const ensureDevs = useCallback(() => {
-    if (devIndexCache) { setDevs(devIndexCache); setDevsLoaded(true); return; }
+    if (devIndexCache) {
+      setDevs(devIndexCache);
+      if (corridorIndexCache) setCorridors(corridorIndexCache);
+      setDevsLoaded(true);
+      return;
+    }
     if (devFetchedRef.current) return;
     devFetchedRef.current = true;
     fetch(`${basePath}/search-index.json`)
@@ -73,8 +85,11 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
       .then((j) => {
         if (!j) { devFetchedRef.current = false; return; }
         const list = Array.isArray(j.d) ? (j.d as DevRow[]) : [];
+        const corr = Array.isArray(j.c) ? (j.c as CorridorRow[]) : [];
         devIndexCache = list;
+        corridorIndexCache = corr;
         setDevs(list);
+        setCorridors(corr);
         setDevsLoaded(true);
       })
       .catch(() => { devFetchedRef.current = false; });
@@ -130,10 +145,15 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
   const typing = q.length >= 2;
   const results = useMemo(() => (typing ? fuzzySearch(q, projects, 6) : []), [q, typing, projects]);
   const devResults = useMemo(() => (typing ? searchDevelopers(q, devs, 3) : []), [q, typing, devs]);
-  /* While the developer index is still loading, a no-project query is not yet
-     "no coverage" — a matching developer may be about to appear — so hold in
-     state 2 (which renders a "Searching…" row) rather than flashing state 3. */
-  const state: 1 | 2 | 3 = !typing ? 1 : results.length > 0 || devResults.length > 0 ? 2 : devsLoaded ? 3 : 2;
+  const corridorResults = useMemo(() => (typing ? searchCorridors(q, corridors, 2) : []), [q, typing, corridors]);
+  /* While the developer/corridor index is still loading, a no-project query is
+     not yet "no coverage" — a matching developer or corridor may be about to
+     appear — so hold in state 2 (which renders a "Searching…" row) rather than
+     flashing state 3. */
+  const state: 1 | 2 | 3 =
+    !typing ? 1
+    : results.length > 0 || devResults.length > 0 || corridorResults.length > 0 ? 2
+    : devsLoaded ? 3 : 2;
 
   const variant: "mobile" | "desktop" = mobileOpen ? "mobile" : "desktop";
   const recentLimit = variant === "mobile" ? 4 : 3;
@@ -155,12 +175,13 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
     if (state === 2) return [
       ...results.map((p) => ({ kind: "project", p }) as NavItem),
       ...devResults.map((d) => ({ kind: "developer", d }) as NavItem),
+      ...corridorResults.map((c) => ({ kind: "corridor", c }) as NavItem),
     ];
     return [
       { kind: "action", action: "report" },
       ...nearby.map((p) => ({ kind: "project", p }) as NavItem),
     ];
-  }, [state, recentProjects, mostList, results, devResults, nearby]);
+  }, [state, recentProjects, mostList, results, devResults, corridorResults, nearby]);
 
   useEffect(() => { setActive(-1); }, [q, state, variant]);
 
@@ -171,13 +192,13 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
      what makes "failed search → bounce" measurable — see events.ts. */
   useEffect(() => {
     if (!typing) return;
-    const hits = results.length + devResults.length;
+    const hits = results.length + devResults.length + corridorResults.length;
     const settled = hits > 0 || devsLoaded;
     if (!settled || searchLoggedRef.current === q) return;
     searchLoggedRef.current = q;
     track("search_performed", { props: { source: "home", query: q, hits } });
     if (hits === 0) track("search_no_results", { props: { source: "home", query: q } });
-  }, [q, typing, results.length, devResults.length, devsLoaded]);
+  }, [q, typing, results.length, devResults.length, corridorResults.length, devsLoaded]);
 
   useEffect(() => {
     if (active >= 0) document.getElementById(optId(active))?.scrollIntoView({ block: "nearest" });
@@ -233,11 +254,16 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
     window.location.href = `${basePath}/intelligence/developers/${d.s}`;
   }, []);
 
+  const goCorridor = useCallback((c: CorridorRow) => {
+    window.location.href = `${basePath}/intelligence/markets/${c.s}`;
+  }, []);
+
   const activate = useCallback((item: NavItem) => {
     if (item.kind === "project") go(item.p);
     else if (item.kind === "developer") goDeveloper(item.d);
+    else if (item.kind === "corridor") goCorridor(item.c);
     else requestReport();
-  }, [go, goDeveloper, requestReport]);
+  }, [go, goDeveloper, goCorridor, requestReport]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -246,10 +272,13 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
     if (!term) return;
     const hits = fuzzySearch(term, projects, 1);
     if (hits.length) { go(hits[0]); return; }
-    // no project matched — open a matching developer dossier before falling
-    // back to the custom-report ask, so a developer-only query isn't a dead end
+    // no project matched — open a matching developer dossier, then a corridor
+    // page, before falling back to the custom-report ask, so a developer- or
+    // location-only query ("SPR") isn't a dead end
     const devHits = searchDevelopers(term, devs, 1);
     if (devHits.length) { goDeveloper(devHits[0]); return; }
+    const corridorHits = searchCorridors(term, corridors, 1);
+    if (corridorHits.length) { goCorridor(corridorHits[0]); return; }
     requestReport();
   };
 
@@ -269,7 +298,7 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
     }
   };
 
-  const totalHits = results.length + devResults.length;
+  const totalHits = results.length + devResults.length + corridorResults.length;
   const announce =
     state === 1 ? "Showing suggested projects."
     : state === 2 ? `${totalHits} result${totalHits === 1 ? "" : "s"} for ${q}.`
@@ -341,6 +370,36 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
       </li>
     );
   };
+  /* corridor row — the same shell again, chipped "Corridor" and routed to the
+     market page. The name is highlighted against the typed text; a code match
+     ("SPR") highlights nothing, which is correct — the letters are the name. */
+  const corridorRowEl = (c: CorridorRow, i: number) => {
+    const segs = highlightName(c.n, q);
+    return (
+      <li
+        key={`corr-${c.s}-${i}`}
+        id={optId(i)}
+        role="option"
+        aria-selected={active === i}
+        onMouseDown={(e) => e.preventDefault()}
+        onMouseEnter={() => setActive(i)}
+        onClick={() => goCorridor(c)}
+        className={`flex min-h-[44px] cursor-pointer items-center gap-3 px-4 py-2 ${active === i ? "bg-[#e5dcc5]" : ""}`}
+      >
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-serif text-[16px] leading-tight text-[#1f1b12]">
+            {segs.map((s, k) => (s.hit ? <b key={k} className="font-semibold">{s.t}</b> : <span key={k}>{s.t}</span>))}
+          </span>
+          <span className="mt-0.5 block truncate text-[11px] text-[#7c7364]">
+            {c.c != null ? `Corridor · ${c.c} tracked project${c.c === 1 ? "" : "s"}` : "Corridor intelligence"}
+          </span>
+        </span>
+        <span className="shrink-0 rounded-[11px] px-2 py-[3px] text-[10.5px] font-medium leading-none" style={{ color: "#3d5d4c", border: "0.5px solid #9db4a6" }}>
+          Corridor
+        </span>
+      </li>
+    );
+  };
 
   /* the listbox children for the current state — shared by both surfaces */
   const panelChildren = () => {
@@ -359,14 +418,15 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
     }
     if (state === 2) {
       // the only way both are empty here is the dev index still loading (see state selector)
-      if (results.length === 0 && devResults.length === 0) {
+      if (results.length === 0 && devResults.length === 0 && corridorResults.length === 0) {
         return <li role="presentation" className="px-4 py-3 text-[13px] text-[#8b8067]">Searching&hellip;</li>;
       }
+      const hasOther = devResults.length > 0 || corridorResults.length > 0;
       return (
         <>
           {results.length > 0 && (
             <>
-              {devResults.length > 0 && label("Projects")}
+              {hasOther && label("Projects")}
               {results.map((p, i) => row(p, i, true))}
             </>
           )}
@@ -374,6 +434,12 @@ export default function HeroSearch({ index }: { index: OmniIndex }) {
             <>
               {label("Developers", results.length > 0)}
               {devResults.map((d, k) => devRowEl(d, results.length + k))}
+            </>
+          )}
+          {corridorResults.length > 0 && (
+            <>
+              {label("Corridors", results.length > 0 || devResults.length > 0)}
+              {corridorResults.map((c, k) => corridorRowEl(c, results.length + devResults.length + k))}
             </>
           )}
         </>
