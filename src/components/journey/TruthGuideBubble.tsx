@@ -26,7 +26,7 @@ export default function TruthGuideBubble() {
       {/* Desktop — the full pill. */}
       <button
         onClick={() => open("research")}
-        aria-label="Challenge TruthGuide"
+        aria-label="Ask TruthGuide"
         className="group fixed bottom-5 right-5 z-30 hidden items-center gap-3 rounded-full border border-[#c9a96e]/30 bg-[#0a0a0a]/95 py-2.5 pl-2.5 pr-5 text-white shadow-[0_18px_44px_-14px_rgba(0,0,0,0.7)] backdrop-blur transition-all duration-300 hover:border-[#c9a96e]/60 md:flex"
       >
         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1e6b45] text-[#eafff3]">
@@ -36,7 +36,7 @@ export default function TruthGuideBubble() {
         </span>
         <span className="text-left leading-tight">
           <span className="block text-[0.58rem] font-medium uppercase tracking-[0.16em] text-[#c9a96e]">TruthGuide</span>
-          <span className="block text-[0.82rem] font-medium">Challenge our read &rarr;</span>
+          <span className="block text-[0.82rem] font-medium">Just ask, don&apos;t search &rarr;</span>
         </span>
       </button>
 
