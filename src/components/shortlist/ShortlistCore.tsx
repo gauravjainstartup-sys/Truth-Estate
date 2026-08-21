@@ -8,6 +8,7 @@ import { projectByName, type ProjectIntel } from "@/lib/projects";
 import { briefChips } from "@/lib/shortlist";
 import { loadVerified, saveVerified, type Verified } from "@/lib/shortlistAuth";
 import { getSession } from "@/lib/phoneAuth";
+import { basePath } from "@/lib/site";
 import { saveLead, isSignedIn, loadAccount, ACTIVE_PROJECT_COUNT, type BuyData, type DNA, type Scored } from "@/lib/journey";
 import { track } from "@/lib/events";
 
@@ -169,6 +170,18 @@ export default function ShortlistCore({
               />
             ))}
           </div>
+
+          {/* The full field lives on its own page — all matches as the same
+              cards. Standalone /shortlist only: the in-modal journey
+              (onPickCard) closes over its own navigation. */}
+          {!onPickCard && (
+            <a
+              href={`${basePath}/shortlist/all`}
+              className="mt-5 block w-full rounded-2xl border border-dashed border-[#1a1a1a]/20 py-3.5 text-center text-[0.8rem] font-semibold text-[#1a1a1a]/60 transition-colors hover:border-[#1a1a1a]/40 hover:text-[#1a1a1a]/85"
+            >
+              See all matching projects · top 20 →
+            </a>
+          )}
         </div>
       </div>
 

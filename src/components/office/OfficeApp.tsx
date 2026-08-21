@@ -753,6 +753,14 @@ function RecommendationsSection({ thread, onActivate }: { thread: OfficeThread; 
         })}
       </div>
 
+      {/* The full field lives on its own page — all matches as cards. */}
+      <Link
+        href="/shortlist/all"
+        className="mt-5 block w-full rounded-2xl border border-dashed border-[#1a1a1a]/20 py-3.5 text-center text-[0.8rem] font-semibold text-[#1a1a1a]/60 transition-colors hover:border-[#1a1a1a]/40 hover:text-[#1a1a1a]/85"
+      >
+        See all matching projects · top 20 →
+      </Link>
+
       {/* Curated intelligence — preview before the mandate, open after */}
       {isCurated(thread.stage) && thread.curation && (
         <CuratedIntel curation={thread.curation} paid={paid} onActivate={onActivate} />
