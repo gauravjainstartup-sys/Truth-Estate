@@ -20,6 +20,9 @@ export default function TruthGuideBubble() {
   // (ProjectProfile) — suppress the generic bubble there so there's one,
   // project-aware entry rather than two competing ones.
   const onProjectReport = p.startsWith("/projects/") || p.startsWith("/intelligence/projects/");
+  // Founder call: on HOME the desktop pill sits bottom-LEFT — under the hero's
+  // own text column, off the photo — while the other pages keep bottom-right.
+  const onHome = p === "/";
   if (isOpen || !allowed || onProjectReport) return null;
   return (
     <>
@@ -27,7 +30,7 @@ export default function TruthGuideBubble() {
       <button
         onClick={() => open("research")}
         aria-label="Ask TruthGuide"
-        className="group fixed bottom-5 right-5 z-30 hidden items-center gap-3 rounded-full border border-[#c9a96e]/30 bg-[#0a0a0a]/95 py-2.5 pl-2.5 pr-5 text-white shadow-[0_18px_44px_-14px_rgba(0,0,0,0.7)] backdrop-blur transition-all duration-300 hover:border-[#c9a96e]/60 md:flex"
+        className={`group fixed bottom-5 z-30 hidden items-center gap-3 rounded-full border border-[#c9a96e]/30 bg-[#0a0a0a]/95 py-2.5 pl-2.5 pr-5 text-white shadow-[0_18px_44px_-14px_rgba(0,0,0,0.7)] backdrop-blur transition-all duration-300 hover:border-[#c9a96e]/60 md:flex ${onHome ? "left-5" : "right-5"}`}
       >
         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1e6b45] text-[#eafff3]">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-[18px] w-[18px] motion-safe:animate-[tg-star-roll_4.5s_ease-in-out_infinite]">
