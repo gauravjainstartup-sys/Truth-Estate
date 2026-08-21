@@ -1,0 +1,517 @@
+<!-- MOCK · proposed redesign of Chapter III "Will it make money?" — live numbers
+     from the current engine (Krisumi Waterside Residences, 21 Aug 2026).
+     Content identical to production; only the communication is redesigned. -->
+<title>Will It Make Money?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --ground:#F5F0E8; --card:#FFFFFF; --card2:#FBF8F2;
+    --ink:#1a1a1a; --ink80:rgba(26,26,26,.8); --ink60:rgba(26,26,26,.6); --ink45:rgba(26,26,26,.45); --ink30:rgba(26,26,26,.32);
+    --line:rgba(26,26,26,.08); --line2:rgba(26,26,26,.14);
+    --green:#1e6b45; --green-soft:rgba(30,107,69,.08);
+    --gold:#8a6a1e; --gold2:#9a7a2e; --gold-soft:rgba(154,122,46,.1);
+    --rust:#a8452f;
+    --serif:"Playfair Display",Georgia,serif;
+    --sans:"Geist","Helvetica Neue",Arial,sans-serif;
+    --mono:"Geist Mono","SFMono-Regular",Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-weight:300;line-height:1.6;padding:0 0 12vh}
+  .wrap{max-width:980px;margin:0 auto;padding:0 22px}
+  .num{font-variant-numeric:tabular-nums}
+  a{color:var(--green)}
+  button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+  button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--green);outline-offset:2px;border-radius:6px}
+  @media (prefers-reduced-motion:no-preference){
+    .seg button,.pill,.yr-row,.cf-mark{transition:background .18s,color .18s,border-color .18s,opacity .18s}
+  }
+
+  /* ── mock ribbon ── */
+  .ribbon{background:var(--ink);color:#F5F0E8;font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;text-align:center;padding:8px 14px}
+  .ribbon b{color:#c9a96e;font-weight:500}
+
+  /* ── chapter head (unchanged convention) ── */
+  .chap{padding-top:52px}
+  .chap .k{font-family:var(--mono);font-size:.66rem;letter-spacing:.22em;text-transform:uppercase;color:var(--ink45)}
+  .chap h1{font-family:var(--serif);font-weight:500;font-size:clamp(2rem,5vw,2.9rem);line-height:1.06;letter-spacing:-.01em;margin-top:10px;text-wrap:balance}
+  .chap .fr{margin-top:10px;color:var(--ink60);font-size:.95rem;max-width:34rem}
+  .ctx{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:baseline;margin-top:18px;padding:12px 16px;border:1px solid var(--line);border-radius:12px;background:var(--card);font-size:.78rem;color:var(--ink60)}
+  .ctx b{font-weight:500;color:var(--ink)}
+  .ctx .mono{font-family:var(--mono);font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink45)}
+
+  /* ── section scaffolding ── */
+  section{margin-top:58px}
+  .sk{display:flex;align-items:baseline;gap:14px}
+  .sk .l{font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+  .sk h2{font-family:var(--serif);font-weight:500;font-size:1.45rem;letter-spacing:-.005em}
+  .sk .rule{flex:1;height:1px;background:var(--line);align-self:center}
+  .sub{margin-top:6px;font-size:.82rem;color:var(--ink60);max-width:44rem}
+  .card{margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px}
+  .card.tint{background:var(--card2)}
+  .micro{font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink45)}
+
+  /* ── a · the record ── */
+  .rec{display:grid;grid-template-columns:200px 1fr;gap:26px;align-items:stretch}
+  @media (max-width:720px){.rec{grid-template-columns:1fr}}
+  .rec-stats{display:flex;flex-direction:column;justify-content:space-between;gap:14px}
+  .rstat .v{font-family:var(--serif);font-size:1.5rem;font-weight:500}
+  .rstat .v small{font-size:.8rem;color:var(--ink45);font-family:var(--sans);font-weight:300}
+  .rstat .k{margin-top:2px;font-family:var(--mono);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink45)}
+  .rstat.hero .v{color:var(--green)}
+  .rec-chart{position:relative}
+  .rec-chart svg{display:block;width:100%}
+
+  /* ── b · the answer ── */
+  .answer{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:30px}
+  @media (max-width:820px){.answer{grid-template-columns:1fr}}
+  .sentence{font-family:var(--serif);font-weight:500;font-size:clamp(1.35rem,3vw,1.7rem);line-height:1.35;letter-spacing:-.005em;text-wrap:balance}
+  .sentence .in{border-bottom:3px solid rgba(26,26,26,.25)}
+  .sentence .out{color:var(--green);border-bottom:3px solid rgba(30,107,69,.35)}
+  .sentence .profit{color:var(--green)}
+  .hero-x{margin-top:22px;display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
+  .hero-x .big{font-family:var(--serif);font-weight:500;font-size:4.4rem;line-height:.9;letter-spacing:-.02em;color:var(--green)}
+  .hero-x .big small{font-size:1rem;color:var(--ink45);font-family:var(--sans);font-weight:300;letter-spacing:0}
+  .hero-x .cap{font-family:var(--mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--green);margin-bottom:8px}
+  .trust{margin-top:12px;font-size:.78rem;color:var(--ink60);max-width:26rem}
+  .duo{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:22rem}
+  .duo .d{border:1px solid var(--line);border-radius:12px;background:var(--card2);padding:12px 14px}
+  .duo .d .v{font-family:var(--serif);font-size:1.25rem;font-weight:500}
+  .duo .d.gold .v{color:var(--gold)}
+  /* controls */
+  .controls{border:1px solid var(--line);border-radius:16px;background:var(--card2);padding:18px 20px;align-self:start}
+  .controls .micro{margin-bottom:8px}
+  .seg{display:flex;border:1px solid var(--line2);border-radius:999px;overflow:hidden;background:var(--card)}
+  .seg button{flex:1;padding:9px 0;font-size:.78rem;color:var(--ink60)}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:#F5F0E8;font-weight:500}
+  .pills{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}
+  .pill{border:1px solid var(--line2);border-radius:999px;padding:7px 13px;font-size:.74rem;color:var(--ink60);background:var(--card)}
+  .pill[aria-pressed="true"]{border-color:rgba(30,107,69,.45);background:var(--green-soft);color:var(--green);font-weight:500}
+  .clp-note{margin-top:14px;font-family:var(--mono);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink45);line-height:1.7}
+  /* outcome strip */
+  .strip{margin-top:26px;display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--card2)}
+  @media (max-width:640px){.strip{grid-template-columns:1fr 1fr}}
+  .strip .s{padding:14px 16px;border-left:1px solid var(--line)}
+  .strip .s:first-child{border-left:0}
+  @media (max-width:640px){.strip .s:nth-child(3){border-left:0;border-top:1px solid var(--line)}.strip .s:nth-child(4){border-top:1px solid var(--line)}}
+  .strip .v{font-family:var(--serif);font-size:1.3rem;font-weight:500}
+  .strip .green .v{color:var(--green)} .strip .gold .v{color:var(--gold)}
+  /* split bar */
+  .split{margin-top:16px}
+  .split .bar{display:flex;height:34px;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+  .split .cap-seg{background:var(--green);color:#fff;display:flex;align-items:center;padding:0 12px;font-size:.72rem;font-weight:500}
+  .split .rent-seg{background:var(--gold2);color:#fff;display:flex;align-items:center;padding:0 12px;font-size:.72rem;font-weight:500;border-left:2px solid var(--card2)}
+  .split .legend{display:flex;gap:22px;margin-top:8px;font-size:.74rem;color:var(--ink60);flex-wrap:wrap}
+  .split .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:7px;vertical-align:-1px}
+  .note{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);font-size:.82rem;color:var(--ink60)}
+  .flip{margin-top:14px;display:flex;gap:14px;border:1px solid rgba(154,122,46,.25);background:var(--gold-soft);border-radius:12px;padding:14px 16px;font-size:.78rem;color:var(--ink80)}
+  .flip .n{font-family:var(--serif);font-size:1.4rem;font-weight:600;color:var(--gold);line-height:1}
+
+  /* ── c · calendar chart ── */
+  .cf-wrap{position:relative}
+  .cf-wrap svg{display:block;width:100%}
+  .cf-legend{display:flex;gap:20px;flex-wrap:wrap;margin-top:10px;font-size:.72rem;color:var(--ink60)}
+  .cf-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  .tt{position:absolute;pointer-events:none;background:var(--ink);color:#F5F0E8;font-family:var(--mono);font-size:.64rem;padding:6px 9px;border-radius:8px;white-space:nowrap;transform:translate(-50%,-130%);opacity:0;z-index:5}
+  details.ledger{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}
+  details.ledger summary{cursor:pointer;font-size:.78rem;font-weight:500;color:var(--ink60);list-style:none;display:flex;align-items:center;gap:8px}
+  details.ledger summary::-webkit-details-marker{display:none}
+  details.ledger summary .chev{transition:transform .15s}
+  details.ledger[open] summary .chev{transform:rotate(90deg)}
+  .tbl-scroll{overflow-x:auto;margin:12px -6px 0;padding:0 6px}
+  table{width:100%;border-collapse:collapse;text-align:left;min-width:36rem}
+  th{padding:8px 12px 8px 0;font-family:var(--mono);font-weight:500;font-size:.56rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink45);border-bottom:1px solid var(--line2)}
+  td{padding:9px 12px 9px 0;font-size:.78rem;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  td.r,th.r{text-align:right;white-space:nowrap}
+  .deb{color:var(--ink);font-weight:500}
+  .cred{color:var(--green);font-weight:500}
+  tfoot td{border-top:1px solid var(--line2);font-weight:500}
+
+  /* ── d · exit chart + table ── */
+  .exit-grid{display:grid;grid-template-columns:1fr;gap:6px}
+  .yr-tbl tbody tr{cursor:pointer}
+  .yr-tbl tbody tr:hover{background:rgba(26,26,26,.03)}
+  .yr-row.sel{background:var(--green-soft)}
+  .yr-row.sel:hover{background:var(--green-soft)}
+  .tag{display:inline-block;margin-left:8px;border-radius:999px;padding:2px 8px;font-family:var(--mono);font-size:.52rem;letter-spacing:.08em;text-transform:uppercase}
+  .tag.hold{background:rgba(30,107,69,.12);color:var(--green);font-weight:500}
+  .tag.pre{color:var(--ink30);padding-left:0}
+  .x-peak{color:var(--gold);font-weight:600}
+  .x-pre{color:var(--ink45)} .x-ok{color:var(--green);font-weight:500}
+
+  /* ── e · engine waterfall + anchors ── */
+  .wf{display:flex;flex-direction:column;gap:14px}
+  .wf-row .top{display:flex;justify-content:space-between;align-items:baseline;gap:14px;font-size:.82rem;color:var(--ink60)}
+  .wf-row .top b{font-weight:500;color:var(--ink)}
+  .wf-row .top .v{font-family:var(--serif);font-size:1.05rem}
+  .wf-row .track{margin-top:6px;height:20px;border-radius:6px;background:rgba(26,26,26,.05);position:relative}
+  .wf-row .bar{position:absolute;top:0;height:100%;border-radius:6px}
+  .v.base{color:var(--ink)} .v.up{color:var(--green)} .v.down{color:var(--rust)} .v.fin{color:var(--gold)}
+  .anchors{margin-top:26px}
+  .scale{position:relative;height:74px;margin-top:30px}
+  .scale .axis{position:absolute;left:0;right:0;top:36px;height:2px;background:var(--line2);border-radius:2px}
+  .scale .band{position:absolute;top:32px;height:10px;background:rgba(30,107,69,.14);border-radius:5px}
+  .scale .tick{position:absolute;top:28px;width:2px;height:18px;background:var(--ink45);border-radius:2px}
+  .scale .tick.you{background:var(--gold);width:3px;top:24px;height:26px}
+  .scale .lab{position:absolute;transform:translateX(-50%);font-size:.68rem;color:var(--ink60);white-space:nowrap}
+  .scale .lab .num{font-family:var(--serif);font-weight:500;color:var(--ink)}
+  .scale .lab.above{top:0} .scale .lab.below{top:52px}
+  .scale .lab.you .num{color:var(--gold)}
+  .corr{margin-top:20px;font-size:.72rem;font-style:italic;color:var(--ink45)}
+
+  /* ── f · assumptions ── */
+  .asm{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--card);margin-top:16px}
+  .asm .row{display:grid;grid-template-columns:1fr auto;gap:14px;padding:13px 20px;border-bottom:1px solid var(--line)}
+  .asm .row:last-child{border-bottom:0}
+  .asm .n{font-size:.85rem;font-weight:500}
+  .asm .s{font-size:.72rem;color:var(--ink45)}
+  .asm .val{font-family:var(--mono);font-size:.78rem;font-weight:500;color:var(--green);white-space:nowrap;align-self:center}
+  .asm .val.warn{color:var(--rust)} .asm .val.na{color:var(--ink45)}
+  .disc{margin-top:14px;font-size:.72rem;color:var(--ink45);max-width:46rem}
+</style>
+
+<div class="ribbon">Mock · proposed redesign — Chapter III · content unchanged · <b>live engine numbers, Krisumi Waterside</b></div>
+
+<div class="wrap">
+  <!-- chapter head — the report's own convention -->
+  <div class="chap">
+    <p class="k">Chapter III</p>
+    <h1>Will it make money?</h1>
+    <p class="fr">The price journey — and where our model says it's headed.</p>
+    <div class="ctx">
+      <span class="mono">Sample report</span>
+      <span><b>Krisumi Waterside Residences</b> · Dwarka Expressway · Truth Score <b class="num">68</b>/100</span>
+      <span class="mono num" style="margin-left:auto">Updated 20 Aug 2026</span>
+    </div>
+  </div>
+
+  <!-- ── a · the record ── -->
+  <section>
+    <div class="sk"><span class="l">a</span><h2>The price, since launch</h2><span class="rule"></span></div>
+    <div class="card">
+      <div class="rec">
+        <div class="rec-stats">
+          <div class="rstat"><div class="v num">₹21,000<small> /sqft</small></div><div class="k">Launch · Apr 2024</div></div>
+          <div class="rstat"><div class="v num">₹21–23,000</div><div class="k">Current range · today</div></div>
+          <div class="rstat hero"><div class="v num">+5%</div><div class="k">Premium to date · over 2.3 years</div></div>
+        </div>
+        <div class="rec-chart">
+          <svg viewBox="0 0 640 210" role="img" aria-label="Price per sq ft since launch, with the projected range ahead">
+            <g stroke="rgba(26,26,26,.07)" stroke-width="1">
+              <line x1="0" y1="52" x2="640" y2="52"/><line x1="0" y1="104" x2="640" y2="104"/><line x1="0" y1="156" x2="640" y2="156"/>
+            </g>
+            <path d="M20,186 L120,181 L200,176 L262,170 L262,196 L20,196 Z" fill="rgba(138,106,30,.16)"/>
+            <path d="M262,170 L620,58 L620,140 Z" fill="rgba(30,107,69,.12)"/>
+            <path d="M20,186 L120,181 L200,176 L262,170" fill="none" stroke="#8a6a1e" stroke-width="3" stroke-linecap="round"/>
+            <path d="M262,170 L620,92" fill="none" stroke="#1e6b45" stroke-width="2.5" stroke-dasharray="7 5" stroke-linecap="round"/>
+            <line x1="262" y1="30" x2="262" y2="196" stroke="rgba(138,106,30,.5)" stroke-width="1.2" stroke-dasharray="3 4"/>
+            <circle cx="20" cy="186" r="4.5" fill="#8a6a1e"/>
+            <circle cx="262" cy="170" r="6" fill="#fff" stroke="#8a6a1e" stroke-width="3"/>
+            <text x="28" y="172" font-family="Geist Mono" font-size="10.5" fill="rgba(26,26,26,.6)">Launch ₹21,000</text>
+            <text x="272" y="152" font-family="Geist Mono" font-size="11" font-weight="500" fill="#1a1a1a">Today ₹21–23,000</text>
+            <text x="470" y="70" font-family="Geist Mono" font-size="10.5" fill="#1e6b45">the projected range</text>
+            <text x="20" y="208" font-family="Geist Mono" font-size="10" fill="rgba(26,26,26,.45)">2024</text>
+            <text x="252" y="208" font-family="Geist Mono" font-size="10" fill="rgba(26,26,26,.45)">now</text>
+            <text x="592" y="208" font-family="Geist Mono" font-size="10" fill="rgba(26,26,26,.45)">+5 yrs</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── b · the answer ── -->
+  <section>
+    <div class="sk"><span class="l">b</span><h2>If you enter today — the answer</h2><span class="rule"></span></div>
+    <p class="sub">Two engines, not one: the price rising, and rent once it&rsquo;s ready. Pick a hold and a unit — the return, the money and the split all move with it.</p>
+    <div class="card tint">
+      <div class="answer">
+        <div>
+          <p class="sentence num">You put in <span class="in" id="s-in">₹9.35 Cr</span>, staged with the build.<br>You take out <span class="out" id="s-out">₹22.48 Cr</span> — <span class="profit" id="s-profit">₹13.13 Cr profit</span>.</p>
+          <div class="hero-x">
+            <div>
+              <p class="cap">Return on your cash flow · XIRR</p>
+              <p class="big num" id="x-big">15.1<small> % / yr</small></p>
+            </div>
+          </div>
+          <p class="trust">The number to trust — modeled, not a promise. Higher than the <b class="num" id="t-cagr">10.2%</b> price growth: you pay in stages and it earns rent.</p>
+          <div class="duo">
+            <div class="d"><p class="micro">Price growth</p><p class="v num" id="d-cagr">10.2%<small style="font-size:.65rem;color:var(--ink45)"> / yr</small></p></div>
+            <div class="d gold"><p class="micro">Rental yield</p><p class="v num">3%<small style="font-size:.65rem;color:var(--ink45)"> / yr</small></p></div>
+          </div>
+        </div>
+        <div class="controls">
+          <p class="micro">Hold</p>
+          <div class="seg" id="seg-hold" role="group" aria-label="Holding period">
+            <button data-h="5">5 yr</button><button data-h="8" aria-pressed="true">8 yr</button><button data-h="10">10 yr</button>
+          </div>
+          <p class="micro" style="margin-top:16px">Unit — the rates hold, the rupees re-base</p>
+          <div class="pills" id="pills-unit" role="group" aria-label="Unit configuration">
+            <button class="pill" data-t="typ" aria-pressed="true">Typical</button>
+            <button class="pill num" data-t="b2">2 BHK · ₹3.7 Cr</button>
+            <button class="pill num" data-t="b3">3 BHK · ₹4.7 Cr</button>
+            <button class="pill num" data-t="b4">4 BHK · ₹7.6 Cr</button>
+            <button class="pill num" data-t="ph">Penthouse · ₹11.5 Cr</button>
+          </div>
+          <p class="clp-note">Construction-linked plan · 20% of the ticket at entry · balance 8 × 10% with the build (~43 mo to possession)</p>
+        </div>
+      </div>
+
+      <div class="strip num" id="strip">
+        <div class="s"><p class="micro">Exit value</p><p class="v" id="v-exit">₹20.33 Cr</p></div>
+        <div class="s green"><p class="micro">Capital gain</p><p class="v" id="v-gain">₹10.98 Cr</p></div>
+        <div class="s gold"><p class="micro">Rent collected</p><p class="v" id="v-rent">₹2.15 Cr</p></div>
+        <div class="s"><p class="micro">Total profit</p><p class="v" id="v-profit">₹13.13 Cr</p></div>
+      </div>
+
+      <div class="split">
+        <div class="bar" aria-hidden="true">
+          <div class="cap-seg" id="b-cap" style="width:84%">Capital 84%</div>
+          <div class="rent-seg" id="b-rent" style="flex:1">Rent 16%</div>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--green)"></i>Capital appreciation — the resale gain</span>
+          <span><i style="background:var(--gold2)"></i>Rental income — collected while held</span>
+        </div>
+      </div>
+
+      <p class="note" id="exit-note">The balanced default — capital growth plus several years of rent once the flat is ready.</p>
+      <div class="flip"><span class="n num">~17%</span><span><b style="font-weight:500">IRR actually peaks around possession (~3.6 yr) — the flip.</b> Rent trails price growth, so holding longer trades peak IRR for more total rupees and a steadier ride. Flipping is the highest-IRR play, and the highest-risk — it leans entirely on the completion re-rating.</span></div>
+    </div>
+  </section>
+
+  <!-- ── c · where the money moves ── -->
+  <section>
+    <div class="sk"><span class="l">c</span><h2>Where the money moves</h2><span class="rule"></span></div>
+    <p class="sub" id="cf-sub">Every debit and credit behind the 8-yr number — the construction-linked outflows on the typical ticket, then the rent and the sale coming back.</p>
+    <div class="card">
+      <div class="cf-wrap" id="cf-wrap">
+        <svg id="cf-svg" viewBox="0 0 920 300" role="img" aria-label="Cash flow timeline: staged outflows with the build, then rent and the sale coming back"></svg>
+        <div class="tt" id="cf-tt"></div>
+      </div>
+      <div class="cf-legend">
+        <span><i style="background:var(--ink)"></i>Money out — entry &amp; construction tranches</span>
+        <span><i style="background:var(--gold2)"></i>Rent in — from possession, grows with price</span>
+        <span><i style="background:var(--green)"></i>Sale at exit</span>
+      </div>
+      <details class="ledger">
+        <summary><span class="chev">▸</span> The ledger, dated — every row</summary>
+        <div class="tbl-scroll">
+          <table class="num" id="ledger-tbl">
+            <thead><tr><th>When</th><th>Stage</th><th class="r">Debit</th><th class="r">Credit</th><th class="r">Paid</th></tr></thead>
+            <tbody></tbody>
+            <tfoot></tfoot>
+          </table>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ── d · when to exit ── -->
+  <section>
+    <div class="sk"><span class="l">d</span><h2>Exit year by year — where the return peaks</h2><span class="rule"></span></div>
+    <p class="sub">The same engine, re-run for an exit in each of the next ten years — the rate each year earns and the rupees it puts in hand. ⚑ marks the peak-XIRR exit; the tinted row is your hold. <b style="font-weight:500;color:var(--ink)">Tap a year to make it your hold.</b></p>
+    <div class="card">
+      <div class="cf-wrap" id="xc-wrap">
+        <svg id="xc-svg" viewBox="0 0 920 190" role="img" aria-label="XIRR by exit year; the peak is flagged"></svg>
+        <div class="tt" id="xc-tt"></div>
+      </div>
+      <div class="tbl-scroll">
+        <table class="num yr-tbl" id="yr-tbl">
+          <thead><tr><th>Exit</th><th class="r">Exit value</th><th class="r">Capital gain</th><th class="r">Rent</th><th class="r">Total profit</th><th class="r">Price CAGR</th><th class="r">XIRR</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="micro" style="margin-top:14px;line-height:1.8">XIRR = cash-on-cash on the staged CLP outflows, rent and the sale · Price CAGR = pure price growth after the delay drag · rupee columns follow the ticket picked above · pre-possession exits are resales by transfer, so the ⚑ considers possession-onward years only</p>
+    </div>
+  </section>
+
+  <!-- ── e · the growth engine ── -->
+  <section>
+    <div class="sk"><span class="l">e</span><h2>The price-growth engine behind that return</h2><span class="rule"></span></div>
+    <p class="sub">Your return starts with how fast the price itself grows. That price CAGR — <b class="num" style="font-weight:500;color:var(--ink)" id="e-cagr">10.2%/yr</b>, the market rate lifted for quality and docked for the delay — is only half the story; staged payments and rent lift it to the <b class="num" style="font-weight:500;color:var(--green)" id="e-xirr">15.1% XIRR</b> above.</p>
+    <div class="card">
+      <div class="wf num">
+        <div class="wf-row"><div class="top"><span><b>Dwarka Expy corridor baseline</b> — the market rate where it stands</span><span class="v base">10.8%</span></div><div class="track"><div class="bar" style="left:0;width:78.3%;background:var(--ink);opacity:.85"></div></div></div>
+        <div class="wf-row"><div class="top"><span><b>+ This project&rsquo;s quality</b> — Truth Score 68/100</span><span class="v up">+0.0%</span></div><div class="track"><div class="bar" style="left:78.3%;width:1.4%;background:var(--green)"></div></div></div>
+        <div class="wf-row"><div class="top"><span><b>− Predicted delay</b> — ~5 months late to possession</span><span class="v down">−0.6%</span></div><div class="track"><div class="bar" style="left:73.9%;width:4.4%;background:var(--rust)"></div></div></div>
+        <div class="wf-row" style="border-top:1px dashed var(--line2);padding-top:14px"><div class="top"><span><b>= Risk-adjusted price CAGR</b></span><span class="v fin">10.2%</span></div><div class="track"><div class="bar" style="left:0;width:73.9%;background:var(--gold2)"></div></div></div>
+      </div>
+
+      <div class="anchors">
+        <p class="micro">Where that sits — cold → hot range shaded</p>
+        <div class="scale num" aria-label="A fixed deposit 7.0%, Gurgaon's overall average 10.8%, this project realistically 10.2%, range if the market runs cold to hot 6.5% to 12.8%">
+          <div class="axis"></div>
+          <div class="band" style="left:7.1%;width:90%"></div>
+          <div class="tick" style="left:14.3%"></div>
+          <div class="lab above" style="left:14.3%"><span class="num">7.0%</span> · a fixed deposit, roughly</div>
+          <div class="tick you" style="left:60%"></div>
+          <div class="lab below you" style="left:60%"><span class="num">10.2%</span> · this project — realistically</div>
+          <div class="tick" style="left:68.6%"></div>
+          <div class="lab above" style="left:68.6%"><span class="num">10.8%</span> · Gurgaon&rsquo;s overall average</div>
+          <div class="lab below" style="left:7.1%;transform:none;color:var(--ink45)"><span class="num" style="color:var(--ink60)">6.5%</span> cold</div>
+          <div class="lab below" style="left:97%;transform:translateX(-100%);color:var(--ink45)"><span class="num" style="color:var(--ink60)">12.8%</span> hot</div>
+        </div>
+        <p class="corr">Corridor context: this micro-market has run ~11%/yr — shown beside the number, deliberately not folded into the base to keep the headline conservative.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── f · assumptions ── -->
+  <section>
+    <div class="sk"><span class="l">f</span><h2>What we assumed to get here</h2><span class="rule"></span></div>
+    <div class="asm num">
+      <div class="row"><div><p class="n">Corridor baseline CAGR</p><p class="s">Dwarka Expy 5-yr price growth, conservatively underwritten</p></div><span class="val">10.8% / yr</span></div>
+      <div class="row"><div><p class="n">Quality kicker</p><p class="s">From Truth Score 68 (0.06 pt per point vs the 68 portfolio median, ±1.5 cap)</p></div><span class="val">+0.0%</span></div>
+      <div class="row"><div><p class="n">Predicted-delay drag</p><p class="s">~5-month slip vs RERA date, as opportunity cost</p></div><span class="val warn">−0.6%</span></div>
+      <div class="row"><div><p class="n">Rental yield</p><p class="s">GROSS annual, on the then-value, post-possession only</p></div><span class="val">3% / yr</span></div>
+      <div class="row"><div><p class="n">Payment plan</p><p class="s">Construction-linked: 20% at entry (the built share), 10% per further block to possession</p></div><span class="val">CLP</span></div>
+      <div class="row"><div><p class="n">Holding horizon</p><p class="s">Adjustable — see &ldquo;when to exit&rdquo; above</p></div><span class="val" id="a-hold">8 yr</span></div>
+      <div class="row"><div><p class="n">Entry basis</p><p class="s" id="a-entry-sub">Project ticket midpoint</p></div><span class="val" id="a-entry">₹9.35 Cr</span></div>
+      <div class="row"><div><p class="n">Exit costs &amp; taxes</p><p class="s">Stamp duty, brokerage, LTCG</p></div><span class="val na">Not yet modeled</span></div>
+    </div>
+    <p class="disc">Modeled, not a promise, recalculated for 21 Aug 2026. The model&rsquo;s structure is agreed; the magnitudes are uncalibrated placeholders pending a backtest against realised appreciation. It models the property&rsquo;s price return and rent only — registration &amp; stamp duty (~6–7%), interiors, and ongoing maintenance &amp; property tax are not yet included. XIRR is the annualised return on the actual cash flows: staged construction outflow, rent once ready, sale at exit.</p>
+  </section>
+</div>
+
+<script>
+/* ─── live engine data (Krisumi Waterside, 21 Aug 2026) ───
+   SWEEP: typical-ticket engine run per exit year 1..10:
+   [exitCr, gainCr, rentCr, profitCr, cagrPct, xirrPct]. ₹ scale linearly
+   with the ticket; the rates are scale-invariant (verified in QA). */
+const SWEEP=[[10.13,.78,0,.78,8.3,15.8],[10.98,1.63,0,1.63,8.4,15.3],[12.17,2.82,0,2.82,9.2,16.6],
+ [13.49,4.14,.13,4.27,9.6,16.4],[14.94,5.59,.56,6.15,9.8,15.8],[16.56,7.21,1.04,8.25,10,15.5],
+ [18.35,9,1.56,10.56,10.1,15.3],[20.33,10.98,2.15,13.13,10.2,15.1],[22.52,13.17,2.8,15.97,10.3,15],
+ [24.96,15.61,3.52,19.13,10.3,14.9]];
+const TICKETS={typ:{label:"the typical ticket",cr:9.35,sub:"Project ticket midpoint"},
+ b2:{label:"the 2 BHK ticket",cr:3.65,sub:"2 BHK at the filed rate × its super area"},
+ b3:{label:"the 3 BHK ticket",cr:4.7,sub:"3 BHK at the filed rate × its super area"},
+ b4:{label:"the 4 BHK ticket",cr:7.6,sub:"4 BHK at the filed rate × its super area"},
+ ph:{label:"the Penthouse ticket",cr:11.5,sub:"Penthouse at the filed rate × its super area"}};
+/* CLP: entry 20% today + 8×10% tranches (month, date label) to possession mo 43 */
+const TRANCHES=[[5,"Jan 2027"],[11,"Jul 2027"],[16,"Dec 2027"],[22,"Jun 2028"],[27,"Nov 2028"],[32,"Apr 2029"],[38,"Oct 2029"],[43,"Mar 2030"]];
+const POSS_M=43, PEAK_Y=4, THIS_YEAR=2026, PRE_LAST=3;
+const exitLab=h=>"Aug "+(THIS_YEAR+h);
+const NOTES={5:"A medium hold — a few years of rent start to matter while the capital gain compounds.",
+ 8:"The balanced default — capital growth plus several years of rent once the flat is ready.",
+ 10:"The rental-compounding hold — the most total rupees and the steadiest ride; IRR dips a touch."};
+
+let hold=8, ticket="typ";
+const $=id=>document.getElementById(id);
+const crF=v=>"₹"+v.toFixed(2)+" Cr";
+const inr=v=>v>=.995?crF(v):"₹"+(v*100).toFixed(1)+" L";
+const S=()=>{const k=TICKETS[ticket].cr/9.35, r=SWEEP[hold-1];
+ return {exit:r[0]*k, gain:r[1]*k, rent:r[2]*k, profit:r[3]*k, cagr:r[4], xirr:r[5], entry:TICKETS[ticket].cr, k};};
+
+function render(){
+ const s=S(), t=TICKETS[ticket];
+ $("s-in").textContent=crF(s.entry); $("s-out").textContent=crF(s.exit+s.rent);
+ $("s-profit").textContent=crF(s.profit)+" profit";
+ $("x-big").innerHTML=s.xirr.toFixed(1)+"<small> % / yr</small>";
+ $("t-cagr").textContent=s.cagr.toFixed(1)+"%"; $("d-cagr").innerHTML=s.cagr.toFixed(1)+'%<small style="font-size:.65rem;color:var(--ink45)"> / yr</small>';
+ $("v-exit").textContent=crF(s.exit); $("v-gain").textContent=crF(s.gain);
+ $("v-rent").textContent=s.rent>0?crF(s.rent):"—"; $("v-profit").textContent=crF(s.profit);
+ const cap=s.profit>0?Math.round(s.gain/s.profit*100):100;
+ $("b-cap").style.width=cap+"%"; $("b-cap").textContent="Capital "+cap+"%"; $("b-rent").textContent="Rent "+(100-cap)+"%";
+ $("exit-note").textContent=NOTES[hold]??NOTES[8];
+ $("cf-sub").textContent=`Every debit and credit behind the ${hold}-yr number — the construction-linked outflows on ${t.label}, then the rent and the sale coming back.`;
+ $("e-cagr").textContent=s.cagr.toFixed(1)+"%/yr"; $("e-xirr").textContent=s.xirr.toFixed(1)+"% XIRR";
+ $("a-hold").textContent=hold+" yr"; $("a-entry").textContent=crF(s.entry); $("a-entry-sub").textContent=t.sub;
+ document.querySelectorAll("#seg-hold button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.h===hold));
+ document.querySelectorAll("#pills-unit .pill").forEach(b=>b.setAttribute("aria-pressed",b.dataset.t===ticket));
+ drawCF(s); drawXC(s); buildLedger(s); buildYears(s);
+}
+
+/* ── c · cashflow timeline ── */
+function drawCF(s){
+ const M=hold*12, W=920,H=300, L=46,R=18, base=176;
+ const x=m=>L+(W-L-R)*m/M;
+ const flows=[{m:0,v:-s.entry*.2,lab:"Entry 20%",d:"Today"}];
+ TRANCHES.forEach(([m,d])=>{const cm=Math.min(m,M); flows.push({m:cm,v:-s.entry*.1,lab:"Tranche 10%",d});});
+ const sale={m:M,v:s.exit,d:exitLab(hold)};
+ const maxUp=s.exit, maxDn=s.entry*.2;
+ const up=v=>Math.max(6,v/maxUp*118), dn=v=>Math.max(6,v/maxDn*72);
+ let g=`<g font-family="Geist Mono" font-size="10">`;
+ g+=`<line x1="${L}" y1="${base}" x2="${W-R}" y2="${base}" stroke="rgba(26,26,26,.35)" stroke-width="1.5"/>`;
+ for(let y=1;y<=hold;y++){const X=x(y*12);
+  g+=`<line x1="${X}" y1="${base-6}" x2="${X}" y2="${base+6}" stroke="rgba(26,26,26,.2)"/><text x="${X}" y="${base+40}" text-anchor="middle" fill="rgba(26,26,26,.42)">${y%2||hold<9?THIS_YEAR+y:""}</text>`;}
+ if(POSS_M<M){const X=x(POSS_M), flip=X>W-210;
+  g+=`<line x1="${X}" y1="30" x2="${X}" y2="${base}" stroke="rgba(138,106,30,.45)" stroke-dasharray="3 4"/><text x="${X+(flip?-5:5)}" y="40" text-anchor="${flip?"end":"start"}" fill="#8a6a1e">possession · rent starts</text>`;
+  const Xe=x(M);
+  g+=`<path d="M${X},${base-3} L${Xe-14},${base-9}" stroke="rgba(154,122,46,.55)" stroke-width="5" stroke-linecap="round" fill="none"/>`;
+  g+=`<text x="${(X+Xe)/2}" y="${base-16}" text-anchor="middle" fill="#8a6a1e">rent +${inr(s.rent)}</text>`;}
+ flows.forEach(f=>{const X=x(f.m),h=dn(-f.v);
+  g+=`<rect class="cf-mark" data-tt="${f.d} · ${f.lab} · −${inr(-f.v)}" x="${X-5}" y="${base}" width="10" height="${h}" rx="3" fill="#1a1a1a"/>`;});
+ const Xs=x(sale.m), hs=up(sale.v);
+ g+=`<rect class="cf-mark" data-tt="${sale.d} · Sale at the projected price · +${crF(sale.v)}" x="${Xs-8}" y="${base-hs}" width="16" height="${hs}" rx="4" fill="#1e6b45"/>`;
+ g+=`<text x="${Xs-12}" y="${base-hs-8}" text-anchor="end" font-weight="500" fill="#1e6b45">sale +${crF(sale.v)}</text>`;
+ g+=`<text x="${x(0)-6}" y="${base+dn(s.entry*.2)+16}" fill="rgba(26,26,26,.6)">entry −${inr(s.entry*.2)}</text>`;
+ g+=`<text x="${L}" y="18" fill="rgba(26,26,26,.42)">money in ↑ · money out ↓</text><text x="${W-R}" y="${base+64}" text-anchor="end" fill="rgba(26,26,26,.55)">net ${crF(s.exit+s.rent-s.entry)} profit over ${hold} yrs</text>`;
+ g+="</g>";
+ $("cf-svg").innerHTML=g; hookTT("cf-svg","cf-wrap","cf-tt");
+}
+
+/* ── d · XIRR by exit year ── */
+function drawXC(s){
+ const W=920,H=190,L=46,R=18,T=26,B=34;
+ const ys=SWEEP.map(r=>r[5]), lo=14.5, hi=17;
+ const x=i=>L+(W-L-R)*i/9, y=v=>T+(H-T-B)*(1-(v-lo)/(hi-lo));
+ let g=`<g font-family="Geist Mono" font-size="10">`;
+ [15,16,17].forEach(v=>{g+=`<line x1="${L}" y1="${y(v)}" x2="${W-R}" y2="${y(v)}" stroke="rgba(26,26,26,.07)"/><text x="${L-8}" y="${y(v)+3}" text-anchor="end" fill="rgba(26,26,26,.42)">${v}%</text>`;});
+ let solid="",dot="";
+ ys.forEach((v,i)=>{const p=`${x(i)},${y(v)}`; if(i<=PRE_LAST){dot+=(dot?" L":"M")+p;} if(i>=PRE_LAST){solid+=(solid?" L":"M")+p;}});
+ g+=`<path d="${dot}" fill="none" stroke="rgba(26,26,26,.35)" stroke-width="2" stroke-dasharray="2 5" stroke-linecap="round"/>`;
+ g+=`<path d="${solid}" fill="none" stroke="#1e6b45" stroke-width="2.5" stroke-linecap="round"/>`;
+ ys.forEach((v,i)=>{const pre=i<PRE_LAST, peak=i+1===PEAK_Y, sel=i+1===hold;
+  g+=`<circle class="cf-mark" data-tt="Year ${i+1} · ${THIS_YEAR+i+1} · XIRR ${v.toFixed(1)}%${pre?" · pre-possession":""}${peak?" · peak ⚑":""}" data-y="${i+1}" cx="${x(i)}" cy="${y(v)}" r="${sel?8:5.5}" fill="${pre?"#F5F0E8":peak?"#8a6a1e":"#1e6b45"}" stroke="${sel?"#1a1a1a":pre?"rgba(26,26,26,.4)":"#F5F0E8"}" stroke-width="${sel?2.5:2}" style="cursor:pointer"/>`;
+  if(peak) g+=`<text x="${x(i)}" y="${y(v)-14}" text-anchor="middle" font-weight="500" fill="#8a6a1e">⚑ peak ${v.toFixed(1)}%</text>`;
+  g+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" fill="rgba(26,26,26,.42)">${i+1}</text>`;});
+ g+=`<text x="${L}" y="${H-8}" text-anchor="end" fill="rgba(26,26,26,.42)"></text></g>`;
+ $("xc-svg").innerHTML=g;
+ hookTT("xc-svg","xc-wrap","xc-tt");
+ $("xc-svg").querySelectorAll("[data-y]").forEach(c=>c.addEventListener("click",()=>{hold=+c.dataset.y;render();}));
+}
+
+function hookTT(svgId,wrapId,ttId){
+ const svg=$(svgId),wrap=$(wrapId),tt=$(ttId);
+ svg.querySelectorAll(".cf-mark").forEach(m=>{
+  m.addEventListener("mousemove",e=>{const r=wrap.getBoundingClientRect();
+   tt.textContent=m.dataset.tt; tt.style.left=(e.clientX-r.left)+"px"; tt.style.top=(e.clientY-r.top)+"px"; tt.style.opacity=1;});
+  m.addEventListener("mouseleave",()=>tt.style.opacity=0);});
+}
+
+/* ── c · the dated ledger (same rows as production) ── */
+function buildLedger(s){
+ const tb=$("ledger-tbl").querySelector("tbody"), tf=$("ledger-tbl").querySelector("tfoot");
+ const M=hold*12; let paid=20,rows="";
+ rows+=`<tr><td>Today</td><td>Entry — 20% of the ticket at BBA</td><td class="r deb">− ${inr(s.entry*.2)}</td><td></td><td class="r micro">20%</td></tr>`;
+ TRANCHES.forEach(([m,d])=>{paid+=10;
+  rows+=`<tr><td>${m<=M?d:exitLab(hold)}</td><td>Construction tranche · 10%</td><td class="r deb">− ${inr(s.entry*.1)}</td><td></td><td class="r micro">${paid}%</td></tr>`;});
+ if(s.rent>0) rows+=`<tr><td>Mar 2030</td><td>Possession — rent starts (~${inr(.03/12*s.entry*1.394)}/mo, grows with price) · collected to exit</td><td></td><td class="r cred">+ ${inr(s.rent)}</td><td></td></tr>`;
+ rows+=`<tr><td>${exitLab(hold)}</td><td>Sale at the projected price</td><td></td><td class="r cred">+ ${crF(s.exit)}</td><td></td></tr>`;
+ tb.innerHTML=rows;
+ tf.innerHTML=`<tr><td colspan="2">Net of everything · <span class="cred">+${crF(s.profit)} profit</span></td><td class="r deb">− ${crF(s.entry)}</td><td class="r cred">+ ${crF(s.exit+s.rent)}</td><td class="r micro">100%</td></tr>`;
+}
+
+/* ── d · year table ── */
+function buildYears(s){
+ const tb=$("yr-tbl").querySelector("tbody"); let rows="";
+ SWEEP.forEach((r,i)=>{const y=i+1, pre=i<PRE_LAST, sel=y===hold, peak=y===PEAK_Y, k=s.k;
+  rows+=`<tr class="yr-row${sel?" sel":""}" data-y="${y}" tabindex="0" aria-label="Set hold to year ${y}">
+   <td>Year ${y} · ${THIS_YEAR+y}${sel?'<span class="tag hold">hold</span>':""}${pre?'<span class="tag pre">pre-possession</span>':""}</td>
+   <td class="r">${crF(r[0]*k)}</td><td class="r">${crF(r[1]*k)}</td>
+   <td class="r">${r[2]>0?crF(r[2]*k):"—"}</td><td class="r" style="font-weight:500">${crF(r[3]*k)}</td>
+   <td class="r">${r[4].toFixed(1)}%</td>
+   <td class="r ${peak?"x-peak":pre?"x-pre":"x-ok"}">${r[5].toFixed(1)}%${peak?" ⚑":""}</td></tr>`;});
+ tb.innerHTML=rows;
+ tb.querySelectorAll("tr").forEach(tr=>{
+  const go=()=>{hold=+tr.dataset.y;render();};
+  tr.addEventListener("click",go);
+  tr.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go();}});});
+}
+
+document.querySelectorAll("#seg-hold button").forEach(b=>b.addEventListener("click",()=>{hold=+b.dataset.h;render();}));
+document.querySelectorAll("#pills-unit .pill").forEach(b=>b.addEventListener("click",()=>{ticket=b.dataset.t;render();}));
+render();
+</script>
