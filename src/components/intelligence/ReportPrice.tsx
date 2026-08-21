@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { priceJourney, roiModel, fmtPsf, lastUpdatedOn, type ProjectIntel } from "@/lib/projects";
 import { hasReadAccess, packageById } from "@/lib/journey";
 import { openUnitIntel } from "./TowerIntel";
@@ -8,14 +8,16 @@ import { useReportStatic } from "./reportStatic";
 import { computeRoi, optimalExit, DEFAULT_ROI_PARAMS, type RoiResult } from "@/lib/analytics/roiEngine";
 import { configPriceCr, type BhkBucket } from "@/lib/matchEngine";
 
-/* Chapter III — "Will it make money?"
-   a · The price since launch (PSF journey + what moved it)
-   b · The return on your cash — XIRR front and centre (gated to the paid read)
-   c · Where the return comes from — capital appreciation vs rental income
-   d · When to exit — the same entry, different holds, and who each suits
-   e · The waterfall — how the appreciation is built (market → quality → delay)
+/* Chapter III — "Will it make money?" (founder-approved redesign, mock v2)
+   a · The price, since launch — the record: three stats + past→projection
+   b · If you enter today — the answer FIRST: the in→out sentence, the XIRR
+       hero, and the controls (hold + unit) that rewrite it live
+   c · Where the money moves — the CLP as a cashflow timeline + dated ledger
+   d · Exit year by year — the XIRR curve + table; every year is a hold
+   e · The price-growth engine — waterfall + the anchor scale
    f · The assumptions — every lever on the table
-   Powered by src/lib/analytics/roiEngine (constants uncalibrated — labelled). */
+   Content and engine identical to the pre-redesign chapter; only the
+   communication changed. Powered by src/lib/analytics/roiEngine. */
 
 /** Build the roiEngine inputs from a project. CAGRs are price-independent; the
  *  ticket only shapes the XIRR cash-flow, so a missing budget is harmless. */
@@ -52,6 +54,25 @@ const sinceLaunch = (years: number): string => {
   return `${Number.isInteger(y) ? y.toFixed(0) : y.toFixed(1)} year${y >= 2 ? "s" : ""}`;
 };
 
+/* The charts draw to their container's REAL width (mobile-first, not a
+   desktop drawing scaled down) — the observer feeds it back, rounded so
+   sub-pixel resize noise never re-renders. */
+function useBoxWidth(): [React.RefObject<HTMLDivElement | null>, number] {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [w, setW] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver((es) => {
+      const nw = Math.round(es[0].contentRect.width);
+      setW((prev) => (Math.abs(prev - nw) > 8 ? nw : prev));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, w];
+}
+
 export default function ReportPrice({ p, sample = false, unlocked: unlockedProp, onUnlock }: { p: ProjectIntel; sample?: boolean; unlocked?: boolean; onUnlock?: () => void }) {
   const journey = priceJourney(p);
   const roi = roiModel(p);
@@ -64,7 +85,15 @@ export default function ReportPrice({ p, sample = false, unlocked: unlockedProp,
   // to it, so the ROI is never shown locked INSIDE an otherwise-unlocked report
   // (the report body only renders when unlocked in the first place). Falls back
   // to the direct entitlement check for any caller that doesn't pass it.
-  const [selfUnlocked] = useState(() => sample || (typeof window !== "undefined" ? hasReadAccess(p.slug) : false));
+  // Resolved in an effect, not a useState initializer: the initializer read
+  // localStorage during hydration, so a reader whose entitlement was already
+  // on the device hydrated "unlocked" against server HTML rendered "locked" —
+  // a React #418 text mismatch on every entitled load. One extra locked frame
+  // is invisible; the hydration is now byte-identical.
+  const [selfUnlocked, setSelfUnlocked] = useState(sample);
+  useEffect(() => {
+    if (!sample) setSelfUnlocked(hasReadAccess(p.slug));
+  }, [sample, p.slug]);
   const unlocked = unlockedProp ?? selfUnlocked;
 
   const [holdYears, setHoldYears] = useState(8);
@@ -78,9 +107,8 @@ export default function ReportPrice({ p, sample = false, unlocked: unlockedProp,
   /* The configurations a reader can price the projection against — each
      bucket the project files with a computable ticket (filed ₹/sqft × that
      config's super area, the same arithmetic the match engine prices with).
-     null selection = the blended ticket the panel always used. The rates
-     (CAGR/XIRR) are price-scale-invariant; picking a config changes the
-     ABSOLUTE rupees — exit value, capital gain, rent — which is the point. */
+     The rates (CAGR/XIRR) are price-scale-invariant; picking a config changes
+     the ABSOLUTE rupees — exit value, capital gain, rent — which is the point. */
   const cfgOptions = useMemo(() => {
     const mi = p.matchInput;
     if (!mi) return [] as { bucket: BhkBucket; label: string; priceCr: number }[];
@@ -95,7 +123,13 @@ export default function ReportPrice({ p, sample = false, unlocked: unlockedProp,
       .sort((a, b) => (a[0] === "PH" ? 99 : +a[0]) - (b[0] === "PH" ? 99 : +b[0]))
       .map(([bucket, priceCr]) => ({ bucket, label: bucket === "PH" ? "Penthouse" : `${bucket} BHK`, priceCr }));
   }, [p]);
-  const [cfgBucket, setCfgBucket] = useState<BhkBucket | null>(null);
+  /* No blended "Typical" ticket any more (founder call: confusing) — the
+     panel opens on a REAL unit: the 3 BHK when the project files one, else
+     the middle of its priced configs. A project with no priced configs keeps
+     the blended midpoint internally; the pills simply don't render. */
+  const [cfgSel, setCfgSel] = useState<BhkBucket | null>(null);
+  const cfgBucket: BhkBucket | null =
+    cfgSel ?? (cfgOptions.some((c) => c.bucket === "3") ? "3" : cfgOptions[Math.floor((cfgOptions.length - 1) / 2)]?.bucket ?? null);
   const cfgEntryCr = cfgBucket != null ? cfgOptions.find((c) => c.bucket === cfgBucket)?.priceCr : undefined;
 
   const r: RoiResult = useMemo(() => computeRoi(roiInputFor(p, holdYears, today, cfgEntryCr)), [p, holdYears, today, cfgEntryCr]);
@@ -166,6 +200,10 @@ export default function ReportPrice({ p, sample = false, unlocked: unlockedProp,
         ? "The rental-compounding hold — the most total rupees and the steadiest ride; IRR dips a touch."
         : "The balanced default — capital growth plus several years of rent once the flat is ready.";
 
+  const holdIdx = [5, 8, 10].indexOf(holdYears);
+  const cfgLabel = cfgBucket != null ? (cfgOptions.find((c) => c.bucket === cfgBucket)?.label ?? "chosen") : null;
+  const holdSeg = <Seg options={["5 yr", "8 yr", "10 yr"]} active={holdIdx} onPick={(i) => setHoldYears([5, 8, 10][i])} />;
+
   if (!journey && !roi) return null;
 
   return (
@@ -183,7 +221,7 @@ export default function ReportPrice({ p, sample = false, unlocked: unlockedProp,
             <PStat v={`+${journey.premiumPct}%`} k={`Premium to date · over ${sinceLaunch(journey.years)}`} accent className="col-span-2 lg:col-span-1" />
           </div>
 
-          <div className="mt-4 grid gap-4 lg:grid-cols-[1.55fr_1fr]">
+          <div className={unlocked ? "mt-4" : "mt-4 grid gap-4 lg:grid-cols-[1.55fr_1fr]"}>
             <div className="overflow-hidden rounded-2xl border border-[#1a1a1a]/10 bg-gradient-to-b from-white to-[#faf4ea] p-5">
               <div className="relative">
                 <svg viewBox="0 0 1000 286" className="block w-full" role="img" aria-label="Price per sq ft since launch, with the projected range ahead">
@@ -213,29 +251,10 @@ export default function ReportPrice({ p, sample = false, unlocked: unlockedProp,
               </div>
             </div>
 
-            {/* ── b · the return on your cash — XIRR (paid) / outlook teaser (free) ── */}
-            <div className="flex flex-col justify-center gap-3 rounded-2xl border border-[#1e6b45]/25 bg-[#FBF8F2] p-6">
-              {unlocked ? (
-                <>
-                  <div>
-                    <p className="text-[0.58rem] font-medium uppercase tracking-[0.14em] text-[#1e6b45]">
-                      Return on your cash flow{showingXirr ? " · XIRR" : ""}
-                    </p>
-                    <p className="mt-1 font-serif text-[3rem] font-medium leading-none tracking-[-0.02em] tabular-nums text-[#1e6b45]">
-                      {cashReturn.toFixed(1)}<span className="text-[0.9rem] font-normal text-[#1a1a1a]/40"> % / yr</span>
-                    </p>
-                    <p className="mt-2 text-[0.68rem] font-light leading-[1.5] text-[#1a1a1a]/55">
-                      {showingXirr
-                        ? <>The number to trust — modeled, not a promise. Higher than the {r.riskAdjustedCagr.toFixed(1)}% price growth: you pay in stages and it earns rent.</>
-                        : <>The realistic annual return, after the delay — modeled, not a promise.</>}
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <MiniStat k="Price growth" v={`${r.riskAdjustedCagr.toFixed(1)}%`} />
-                    <MiniStat k="Rental yield" v={`${r.rentalYieldPct}%`} gold />
-                  </div>
-                </>
-              ) : (
+            {/* ── the outlook teaser — locked readers only; the paid answer
+                   lives in section b once unlocked ── */}
+            {!unlocked && (
+              <div className="flex flex-col justify-center gap-3 rounded-2xl border border-[#1e6b45]/25 bg-[#FBF8F2] p-6">
                 <div className="flex flex-col items-center gap-2 text-center">
                   <span className="text-[1.3rem]" aria-hidden>🔒</span>
                   <p className="text-[0.6rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/45">5-year growth outlook</p>
@@ -251,8 +270,8 @@ export default function ReportPrice({ p, sample = false, unlocked: unlockedProp,
                   <button onClick={onUnlock ?? openUnitIntel} className="mt-1 rounded-lg bg-[#1e6b45] px-4 py-2 text-[0.74rem] font-semibold text-white transition-colors hover:bg-[#238c55]">Unlock the projection →</button>
                   <p className="text-[0.56rem] text-[#1a1a1a]/35">Free with membership · or ₹{packageById("read").inr.toLocaleString("en-IN")} this project</p>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </>
       )}
@@ -260,67 +279,81 @@ export default function ReportPrice({ p, sample = false, unlocked: unlockedProp,
       {/* ── the paid, interactive model (dropped in the frozen sample) ── */}
       {unlocked && !isStatic && (
         <>
-          {/* ── the return, and when to take it — bifurcation + exit, clubbed ── */}
+          {/* ── b · the answer first ── */}
           <div className="mt-10 flex items-center gap-3">
-            <span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">If you enter today, when do you exit?</span>
+            <span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">If you enter today — the answer</span>
             <span className="h-px flex-1 bg-[#1a1a1a]/10" />
           </div>
-          <div className="mt-4 rounded-2xl border border-[#1a1a1a]/10 bg-white/70 p-6">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <p className="max-w-[34rem] text-[0.78rem] font-light leading-[1.6] text-[#1a1a1a]/60">
-                Two engines, not one: the price rising, and rent once it&apos;s ready. Pick a hold — the return, the money and the split all move with it{today ? ` — on a ${crStr(r.entryPriceCr)} entry` : ""}.
-              </p>
-              <div className="w-[220px] shrink-0"><Seg options={["5 yr", "8 yr", "10 yr"]} active={[5, 8, 10].indexOf(holdYears) < 0 ? 1 : [5, 8, 10].indexOf(holdYears)} onPick={(i) => setHoldYears([5, 8, 10][i])} /></div>
-            </div>
-
-            {/* which unit the rupees are for — the rates don't move, the money does */}
-            {cfgOptions.length > 0 && (
-              <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                <span className="mr-1 text-[0.66rem] font-light uppercase tracking-[0.1em] text-[#1a1a1a]/40">Unit</span>
-                <button
-                  onClick={() => setCfgBucket(null)}
-                  aria-pressed={cfgBucket == null}
-                  className={`rounded-full border px-3 py-1 text-[0.7rem] transition-colors ${cfgBucket == null ? "border-[#1e6b45]/40 bg-[#1e6b45]/[0.07] text-[#1e6b45]" : "border-[#1a1a1a]/12 text-[#1a1a1a]/55 hover:border-[#1a1a1a]/30"}`}
-                >
-                  Typical
-                </button>
-                {cfgOptions.map((c) => (
-                  <button
-                    key={c.bucket}
-                    onClick={() => setCfgBucket(cfgBucket === c.bucket ? null : c.bucket)}
-                    aria-pressed={cfgBucket === c.bucket}
-                    className={`rounded-full border px-3 py-1 text-[0.7rem] tabular-nums transition-colors ${cfgBucket === c.bucket ? "border-[#1e6b45]/40 bg-[#1e6b45]/[0.07] text-[#1e6b45]" : "border-[#1a1a1a]/12 text-[#1a1a1a]/55 hover:border-[#1a1a1a]/30"}`}
-                  >
-                    {c.label} · ₹{c.priceCr.toFixed(1)} Cr
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* the CLP shape the XIRR is computed on — the money leaves in
-                builder tranches, not one cheque, and the entry catch-up is
-                the project's own filed progress */}
-            {today && (
-              <p className="mt-3 font-mono text-[0.6rem] uppercase tracking-[0.09em] text-[#1a1a1a]/45">
-                Construction-linked plan · {r.entryPct}% of the ticket at entry
-                {r.tranches.length > 0 && <> · balance {r.tranches.length} × 10% with the build (~{r.tranches[r.tranches.length - 1].month} mo to possession)</>}
-              </p>
-            )}
-
-            <div className="mt-5 grid gap-5 sm:grid-cols-[auto_1fr] sm:items-center">
+          <p className="mt-2 max-w-[44rem] text-[0.78rem] font-light leading-[1.6] text-[#1a1a1a]/60">
+            Two engines, not one: the price rising, and rent once it&apos;s ready. Pick a hold and a unit — the return, the money and the split all move with it.
+          </p>
+          <div className="mt-4 rounded-2xl border border-[#1a1a1a]/10 bg-[#FBF8F2] p-6">
+            <div className="grid gap-7 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
               <div>
-                <p className="text-[0.56rem] font-medium uppercase tracking-[0.14em] text-[#1e6b45]">Hold {holdYears} yr · {showingXirr ? "XIRR" : "return"}</p>
-                <p className="mt-1 font-serif text-[3.2rem] font-medium leading-none tracking-[-0.02em] tabular-nums text-[#1e6b45]">{cashReturn.toFixed(1)}<span className="text-[0.85rem] font-normal text-[#1a1a1a]/40"> % / yr</span></p>
-              </div>
-              {today && (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <BoxStat k="Exit value" v={crStr(r.exitValueCr)} />
-                  <BoxStat k="Capital gain" v={crStr(r.capitalGainCr)} tone="green" />
-                  <BoxStat k="Rent collected" v={crStr(r.rentCollectedCr)} tone="gold" />
-                  <BoxStat k="Total profit" v={crStr(totalProfit)} />
+                {today && (
+                  <p className="font-serif text-[1.3rem] font-medium leading-[1.35] tracking-[-0.005em] tabular-nums md:text-[1.6rem]" style={{ textWrap: "balance" }}>
+                    You put in <span className="border-b-[3px] border-[#1a1a1a]/25">{crStr(r.entryPriceCr)}</span>, staged with the build.<br />
+                    You take out <span className="border-b-[3px] border-[#1e6b45]/35 text-[#1e6b45]">{crStr(r.exitValueCr + r.rentCollectedCr)}</span> — <span className="text-[#1e6b45]">{crStr(totalProfit)} profit</span>.
+                  </p>
+                )}
+                <div className="mt-5">
+                  <p className="font-mono text-[0.6rem] font-medium uppercase tracking-[0.14em] text-[#1e6b45]">Return on your cash flow{showingXirr ? " · XIRR" : ""}</p>
+                  <p className="mt-1 font-serif text-[3.3rem] font-medium leading-[.95] tracking-[-0.02em] tabular-nums text-[#1e6b45] md:text-[4.2rem]">
+                    {cashReturn.toFixed(1)}<span className="text-[1rem] font-normal text-[#1a1a1a]/40"> % / yr</span>
+                  </p>
                 </div>
-              )}
+                <p className="mt-3 max-w-[26rem] text-[0.78rem] font-light leading-[1.5] text-[#1a1a1a]/55">
+                  {showingXirr
+                    ? <>The number to trust — modeled, not a promise. Higher than the {r.riskAdjustedCagr.toFixed(1)}% price growth: you pay in stages and it earns rent.</>
+                    : <>The realistic annual return, after the delay — modeled, not a promise.</>}
+                </p>
+                <div className="mt-4 grid max-w-[22rem] grid-cols-2 gap-2">
+                  <MiniStat k="Price growth" v={`${r.riskAdjustedCagr.toFixed(1)}%`} />
+                  <MiniStat k="Rental yield" v={`${r.rentalYieldPct}%`} gold />
+                </div>
+              </div>
+
+              {/* the controls that rewrite the sentence */}
+              <div className="self-start rounded-2xl border border-[#1a1a1a]/8 bg-white/70 p-5">
+                <p className="mb-2 font-mono text-[0.6rem] font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/45">Hold</p>
+                {holdSeg}
+                {cfgOptions.length > 0 && (
+                  <>
+                    <p className="mb-2 mt-4 font-mono text-[0.6rem] font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/45">Unit — the rates hold, the rupees re-base</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {cfgOptions.map((c) => (
+                        <button
+                          key={c.bucket}
+                          onClick={() => setCfgSel(c.bucket)}
+                          aria-pressed={cfgBucket === c.bucket}
+                          className={`rounded-full border px-3 py-1.5 text-[0.72rem] tabular-nums transition-colors ${cfgBucket === c.bucket ? "border-[#1e6b45]/40 bg-[#1e6b45]/[0.07] font-medium text-[#1e6b45]" : "border-[#1a1a1a]/12 text-[#1a1a1a]/55 hover:border-[#1a1a1a]/30"}`}
+                        >
+                          {c.label} · ₹{c.priceCr.toFixed(1)} Cr
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+                {/* the CLP shape the XIRR is computed on — the money leaves in
+                    builder tranches, not one cheque, and the entry catch-up is
+                    the project's own filed progress */}
+                {today && (
+                  <p className="mt-4 font-mono text-[0.6rem] uppercase leading-[1.7] tracking-[0.08em] text-[#1a1a1a]/45">
+                    Construction-linked plan · {r.entryPct}% of the ticket at entry
+                    {r.tranches.length > 0 && <> · balance {r.tranches.length} × 10% with the build (~{r.tranches[r.tranches.length - 1].month} mo to possession)</>}
+                  </p>
+                )}
+              </div>
             </div>
+
+            {today && (
+              <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <BoxStat k="Exit value" v={crStr(r.exitValueCr)} />
+                <BoxStat k="Capital gain" v={crStr(r.capitalGainCr)} tone="green" />
+                <BoxStat k="Rent collected" v={r.rentCollectedCr > 0.005 ? crStr(r.rentCollectedCr) : "—"} tone="gold" />
+                <BoxStat k="Total profit" v={crStr(totalProfit)} />
+              </div>
+            )}
 
             {today && totalProfit > 0 && (
               <>
@@ -347,64 +380,84 @@ export default function ReportPrice({ p, sample = false, unlocked: unlockedProp,
             )}
           </div>
 
-          {/* ── the payment calendar — the ledger the XIRR is computed on ── */}
+          {/* ── c · where the money moves — timeline + dated ledger ── */}
           {today && ledger && (
             <>
               <div className="mt-10 flex items-center gap-3">
                 <span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">Where the money moves — your payment calendar</span>
                 <span className="h-px flex-1 bg-[#1a1a1a]/10" />
               </div>
+              <p className="mt-2 max-w-[44rem] text-[0.78rem] font-light leading-[1.6] text-[#1a1a1a]/60">
+                Every debit and credit behind the {holdYears}-yr number — the construction-linked outflows on {cfgLabel ? `the ${cfgLabel} ticket` : "the project ticket"}, then the rent and the sale coming back.
+              </p>
               <div className="mt-4 rounded-2xl border border-[#1a1a1a]/10 bg-white/70 p-6">
-                <p className="max-w-[44rem] text-[0.78rem] font-light leading-[1.6] text-[#1a1a1a]/60">
-                  Every debit and credit behind the {holdYears}-yr number — the construction-linked outflows on {cfgBucket != null ? `the ${cfgOptions.find((c) => c.bucket === cfgBucket)?.label ?? "chosen"} ticket` : "the typical ticket"}, then the rent and the sale coming back.
-                </p>
-                <div className="-mx-2 mt-4 overflow-x-auto px-2">
-                  <table className="w-full min-w-[36rem] text-left">
-                    <thead>
-                      <tr className="border-b border-[#1a1a1a]/12">
-                        <th className="py-2 pr-3 font-mono text-[0.58rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/45">When</th>
-                        <th className="py-2 pr-3 font-mono text-[0.58rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/45">Stage</th>
-                        <th className="py-2 pr-3 text-right font-mono text-[0.58rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/45">Debit</th>
-                        <th className="py-2 pr-3 text-right font-mono text-[0.58rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/45">Credit</th>
-                        <th className="py-2 text-right font-mono text-[0.58rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/45">Paid</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {ledger.map((row, i) => (
-                        <tr key={i} className="border-b border-[#1a1a1a]/6">
-                          <td className="whitespace-nowrap py-2 pr-3 text-[0.72rem] font-medium tabular-nums text-[#1a1a1a]/70">{row.when}</td>
-                          <td className="py-2 pr-3 text-[0.74rem] font-light leading-snug text-[#1a1a1a]/70">{row.stage}</td>
-                          <td className="whitespace-nowrap py-2 pr-3 text-right text-[0.76rem] font-medium tabular-nums text-[#1a1a1a]">{row.debit != null ? `− ${inr(row.debit)}` : ""}</td>
-                          <td className="whitespace-nowrap py-2 pr-3 text-right text-[0.76rem] font-semibold tabular-nums text-[#1e6b45]">{row.credit != null ? `+ ${inr(row.credit)}` : ""}</td>
-                          <td className="py-2 text-right font-mono text-[0.66rem] tabular-nums text-[#1a1a1a]/45">{row.paidPct != null ? `${row.paidPct}%` : ""}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="border-t border-[#1a1a1a]/15">
-                        <td colSpan={2} className="py-2.5 pr-3 text-[0.74rem] font-semibold text-[#1a1a1a]/80">Net of everything · <span className="text-[#1e6b45]">+{crStr(totalProfit)} profit</span></td>
-                        <td className="whitespace-nowrap py-2.5 pr-3 text-right text-[0.76rem] font-semibold tabular-nums text-[#1a1a1a]">− {crStr(r.entryPriceCr)}</td>
-                        <td className="whitespace-nowrap py-2.5 pr-3 text-right text-[0.76rem] font-semibold tabular-nums text-[#1e6b45]">+ {crStr(r.exitValueCr + r.rentCollectedCr)}</td>
-                        <td className="py-2.5 text-right font-mono text-[0.66rem] tabular-nums text-[#1a1a1a]/45">100%</td>
-                      </tr>
-                    </tfoot>
-                  </table>
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <p className="font-mono text-[0.6rem] font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/45">The calendar follows your hold</p>
+                  <div className="w-[190px]">{holdSeg}</div>
                 </div>
+                <CashflowChart r={r} holdYears={holdYears} today={today} />
+                <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[0.72rem] font-light text-[#1a1a1a]/50">
+                  <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[#1a1a1a]" />Money out — entry &amp; construction tranches</span>
+                  <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[#9a7a2e]" />Rent in — from possession, grows with price</span>
+                  <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[#1e6b45]" />Sale at exit</span>
+                </div>
+                <details className="group mt-4 border-t border-[#1a1a1a]/8 pt-3.5">
+                  <summary className="flex cursor-pointer list-none items-center gap-2 text-[0.78rem] font-medium text-[#1a1a1a]/60 transition-colors hover:text-[#1a1a1a]/85 [&::-webkit-details-marker]:hidden">
+                    <span className="inline-block transition-transform group-open:rotate-90">▸</span> The ledger, dated — every row
+                  </summary>
+                  <div className="-mx-2 mt-3 overflow-x-auto px-2">
+                    <table className="w-full min-w-[36rem] text-left">
+                      <thead>
+                        <tr className="border-b border-[#1a1a1a]/12">
+                          <th className="py-2 pr-3 font-mono text-[0.58rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/45">When</th>
+                          <th className="py-2 pr-3 font-mono text-[0.58rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/45">Stage</th>
+                          <th className="py-2 pr-3 text-right font-mono text-[0.58rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/45">Debit</th>
+                          <th className="py-2 pr-3 text-right font-mono text-[0.58rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/45">Credit</th>
+                          <th className="py-2 text-right font-mono text-[0.58rem] font-medium uppercase tracking-[0.12em] text-[#1a1a1a]/45">Paid</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ledger.map((row, i) => (
+                          <tr key={i} className="border-b border-[#1a1a1a]/6">
+                            <td className="whitespace-nowrap py-2 pr-3 text-[0.72rem] font-medium tabular-nums text-[#1a1a1a]/70">{row.when}</td>
+                            <td className="py-2 pr-3 text-[0.74rem] font-light leading-snug text-[#1a1a1a]/70">{row.stage}</td>
+                            <td className="whitespace-nowrap py-2 pr-3 text-right text-[0.76rem] font-medium tabular-nums text-[#1a1a1a]">{row.debit != null ? `− ${inr(row.debit)}` : ""}</td>
+                            <td className="whitespace-nowrap py-2 pr-3 text-right text-[0.76rem] font-semibold tabular-nums text-[#1e6b45]">{row.credit != null ? `+ ${inr(row.credit)}` : ""}</td>
+                            <td className="py-2 text-right font-mono text-[0.66rem] tabular-nums text-[#1a1a1a]/45">{row.paidPct != null ? `${row.paidPct}%` : ""}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t border-[#1a1a1a]/15">
+                          <td colSpan={2} className="py-2.5 pr-3 text-[0.74rem] font-semibold text-[#1a1a1a]/80">Net of everything · <span className="text-[#1e6b45]">+{crStr(totalProfit)} profit</span></td>
+                          <td className="whitespace-nowrap py-2.5 pr-3 text-right text-[0.76rem] font-semibold tabular-nums text-[#1a1a1a]">− {crStr(r.entryPriceCr)}</td>
+                          <td className="whitespace-nowrap py-2.5 pr-3 text-right text-[0.76rem] font-semibold tabular-nums text-[#1e6b45]">+ {crStr(r.exitValueCr + r.rentCollectedCr)}</td>
+                          <td className="py-2.5 text-right font-mono text-[0.66rem] tabular-nums text-[#1a1a1a]/45">100%</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </details>
               </div>
             </>
           )}
 
-          {/* ── exit year by year — the same engine re-run for every hold ── */}
+          {/* ── d · exit year by year — the same engine re-run for every hold ── */}
           {today && sweep.length > 0 && (
             <>
               <div className="mt-10 flex items-center gap-3">
                 <span className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a]/70">Exit year by year — where the return peaks</span>
                 <span className="h-px flex-1 bg-[#1a1a1a]/10" />
               </div>
+              <p className="mt-2 max-w-[44rem] text-[0.78rem] font-light leading-[1.6] text-[#1a1a1a]/60">
+                The same engine, re-run for an exit in each of the next ten years — the rate each year earns and the rupees it puts in hand. ⚑ marks the peak-XIRR exit; the tinted row is your hold. <b className="font-medium text-[#1a1a1a]">Tap a year to make it your hold.</b>
+              </p>
               <div className="mt-4 rounded-2xl border border-[#1a1a1a]/10 bg-white/70 p-6">
-                <p className="max-w-[44rem] text-[0.78rem] font-light leading-[1.6] text-[#1a1a1a]/60">
-                  The same engine, re-run for an exit in each of the next ten years — the rate each year earns and the rupees it puts in hand. ⚑ marks the peak-XIRR exit; the tinted row is the hold you picked above.
-                </p>
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <p className="font-mono text-[0.6rem] font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/45">Your hold — or tap any year</p>
+                  <div className="w-[190px]">{holdSeg}</div>
+                </div>
+                <ExitCurve sweep={sweep} holdYears={holdYears} peakY={peakY} today={today} onPick={setHoldYears} />
                 <div className="-mx-2 mt-4 overflow-x-auto px-2">
                   <table className="w-full min-w-[42rem] text-left">
                     <thead>
@@ -425,7 +478,11 @@ export default function ReportPrice({ p, sample = false, unlocked: unlockedProp,
                         const peak = y === peakY;
                         const pre = s.rentableYears < 0.05;
                         return (
-                          <tr key={y} className={`border-b border-[#1a1a1a]/6 last:border-0 ${sel ? "bg-[#1e6b45]/[0.05]" : ""}`}>
+                          <tr
+                            key={y}
+                            onClick={() => setHoldYears(y)}
+                            className={`cursor-pointer border-b border-[#1a1a1a]/6 transition-colors last:border-0 ${sel ? "bg-[#1e6b45]/[0.05]" : "hover:bg-[#1a1a1a]/[0.03]"}`}
+                          >
                             <td className="whitespace-nowrap py-2 pr-3 text-[0.72rem] font-medium tabular-nums text-[#1a1a1a]/75">
                               Year {y} · {today.getFullYear() + y}
                               {sel && <span className="ml-1.5 rounded-full bg-[#1e6b45]/10 px-1.5 py-0.5 text-[0.55rem] font-semibold uppercase tracking-[0.08em] text-[#1e6b45]">hold</span>}
@@ -472,13 +529,9 @@ export default function ReportPrice({ p, sample = false, unlocked: unlockedProp,
               </div>
             </div>
 
-            {/* anchors */}
-            <div className="mt-6 overflow-hidden rounded-xl border border-[#1a1a1a]/10">
-              <Anchor k="A fixed deposit, roughly" v="7.0%" />
-              <Anchor k="Gurgaon's overall average" v={`${r.base.toFixed(1)}%`} />
-              <Anchor k="This project — realistically" v={`${r.riskAdjustedCagr.toFixed(1)}%`} you />
-              <Anchor k="Range if the market runs cold → hot" v={`${r.bands.bear.toFixed(1)}% – ${r.bands.bull.toFixed(1)}%`} faint />
-            </div>
+            {/* the anchors, on one scale — FD, the city average, this project,
+                and the cold→hot band. Same four facts the old list carried. */}
+            <ScaleStrip r={r} />
             {r.corridorCagr != null && (
               <p className="mt-3 text-[0.66rem] font-light italic text-[#1a1a1a]/40">Corridor context: this micro-market has run ~{r.corridorCagr.toFixed(0)}%/yr — shown beside the number, deliberately not folded into the base to keep the headline conservative.</p>
             )}
@@ -496,7 +549,7 @@ export default function ReportPrice({ p, sample = false, unlocked: unlockedProp,
             <Asm name="Rental yield" sub="GROSS annual, on the then-value, post-possession only" val={`${r.rentalYieldPct}% / yr`} />
             <Asm name="Payment plan" sub={`Construction-linked: ${r.entryPct}% at entry (the built share), 10% per further block to possession`} val="CLP" />
             <Asm name="Holding horizon" sub="Adjustable — see &quot;when to exit&quot; above" val={`${holdYears} yr`} />
-            <Asm name="Entry basis" sub={cfgBucket != null ? `${cfgOptions.find((c) => c.bucket === cfgBucket)?.label} at the filed rate` : "Project ticket midpoint"} val={crStr(r.entryPriceCr)} />
+            <Asm name="Entry basis" sub={cfgLabel ? `${cfgLabel} at the filed rate` : "Project ticket midpoint"} val={crStr(r.entryPriceCr)} />
             <Asm name="Exit costs & taxes" sub="Stamp duty, brokerage, LTCG" val="Not yet modeled" warn last />
           </div>
 
@@ -505,6 +558,184 @@ export default function ReportPrice({ p, sample = false, unlocked: unlockedProp,
           </p>
         </>
       )}
+    </div>
+  );
+}
+
+/* ── c · the CLP as a picture: outflows down with the build, rent and the
+   sale up — direction is the encoding, so the story reads at a glance.
+   Drawn to the container's real width; native <title> tooltips per mark. ── */
+function CashflowChart({ r, holdYears, today }: { r: RoiResult; holdYears: number; today: Date }) {
+  const [ref, w] = useBoxWidth();
+  const W = Math.max(330, Math.min(920, w || 920));
+  const mob = W < 560;
+  const H = mob ? 252 : 300;
+  const M = Math.max(1, Math.round(holdYears * 12));
+  const L = mob ? 6 : 46, R = mob ? 6 : 18, base = mob ? 152 : 176;
+  const x = (m: number) => L + 8 + ((W - L - R - 26) * m) / M;
+  const Mp = Math.min(M, Math.round(r.yearsToPossession * 12));
+  const mLab = (m: number) =>
+    new Date(today.getFullYear(), today.getMonth() + m, today.getDate()).toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+  const entryAmt = (r.entryPriceCr * r.entryPct) / 100;
+  const trAmt = r.entryPriceCr * 0.1;
+  const up = (v: number) => Math.max(6, (v / Math.max(0.01, r.exitValueCr)) * (mob ? 92 : 118));
+  const dn = (v: number) => Math.max(6, (v / Math.max(0.01, entryAmt, trAmt)) * (mob ? 54 : 72));
+  const bw = mob ? 7 : 10, bws = mob ? 13 : 16;
+  const yStep = (mob && holdYears > 6) || holdYears > 8 ? 2 : 1;
+  const yr = today.getFullYear();
+  const flows = [
+    { m: 0, v: entryAmt, tt: `Today · Entry ${r.entryPct}% · −${inr(entryAmt)}` },
+    ...r.tranches.map((t) => ({ m: Math.min(t.month, M), v: (r.entryPriceCr * t.pct) / 100, tt: `${mLab(Math.min(t.month, M))} · Construction tranche ${t.pct}% · −${inr((r.entryPriceCr * t.pct) / 100)}` })),
+  ];
+  const fs = mob ? 10.5 : 10;
+  const possFlip = x(Mp) > W - (mob ? 120 : 210);
+  return (
+    <div ref={ref}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="block w-full" role="img" aria-label="Cash flow timeline: staged outflows with the build, then rent and the sale coming back">
+        <g fontFamily="var(--font-geist-mono),monospace" fontSize={fs}>
+          <line x1={L} y1={base} x2={W - R} y2={base} stroke="rgba(26,26,26,.35)" strokeWidth="1.5" />
+          {Array.from({ length: holdYears }, (_, i) => i + 1).map((y) => (
+            <g key={y}>
+              <line x1={x(y * 12)} y1={base - 6} x2={x(y * 12)} y2={base + 6} stroke="rgba(26,26,26,.2)" />
+              {y % yStep === 0 && (
+                <text x={x(y * 12)} y={base + (mob ? 32 : 40)} textAnchor="middle" fill="rgba(26,26,26,.42)">
+                  {mob ? `'${String(yr + y).slice(2)}` : yr + y}
+                </text>
+              )}
+            </g>
+          ))}
+          {Mp < M && (
+            <>
+              <line x1={x(Mp)} y1={mob ? 26 : 30} x2={x(Mp)} y2={base} stroke="rgba(138,106,30,.45)" strokeDasharray="3 4" />
+              <text x={x(Mp) + (possFlip ? -5 : 5)} y={mob ? 36 : 40} textAnchor={possFlip ? "end" : "start"} fill="#8a6a1e">
+                {mob ? "possession" : Mp === 0 ? "ready — rent from day one" : "possession · rent starts"}
+              </text>
+              {r.rentCollectedCr > 0.005 && (
+                <>
+                  <path d={`M${x(Mp)},${base - 3} L${x(M) - 14},${base - 9}`} stroke="rgba(154,122,46,.55)" strokeWidth="5" strokeLinecap="round" fill="none" />
+                  <text x={(x(Mp) + x(M)) / 2} y={base - 16} textAnchor="middle" fill="#8a6a1e">rent +{inr(r.rentCollectedCr)}</text>
+                </>
+              )}
+            </>
+          )}
+          {flows.map((f, i) => (
+            <rect key={i} x={x(f.m) - bw / 2} y={base} width={bw} height={dn(f.v)} rx="3" fill="#1a1a1a">
+              <title>{f.tt}</title>
+            </rect>
+          ))}
+          <rect x={x(M) - bws / 2} y={base - up(r.exitValueCr)} width={bws} height={up(r.exitValueCr)} rx="4" fill="#1e6b45">
+            <title>{`${mLab(M)} · Sale at the projected price · +${crStr(r.exitValueCr)}`}</title>
+          </rect>
+          <text x={x(M) - 12} y={base - up(r.exitValueCr) - 8} textAnchor="end" fontWeight="500" fill="#1e6b45">sale +{crStr(r.exitValueCr)}</text>
+          <text x={Math.max(2, x(0) - 6)} y={base + dn(entryAmt) + 15} fill="rgba(26,26,26,.6)">entry −{inr(entryAmt)}</text>
+          <text x={L + 2} y={16} fill="rgba(26,26,26,.42)">money in ↑ · money out ↓</text>
+          <text x={W - R} y={base + (mob ? 54 : 64)} textAnchor="end" fill="rgba(26,26,26,.55)">
+            net +{crStr(r.exitValueCr + r.rentCollectedCr - r.entryPriceCr)}{mob ? "" : ` profit over ${holdYears} yrs`}
+          </text>
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+/* ── d · XIRR by exit year — the flip made visible. Pre-possession years are
+   dotted (paper flips by transfer); the ⚑ peak is gold; every dot sets the
+   hold. One axis, %. ── */
+function ExitCurve({ sweep, holdYears, peakY, today, onPick }: {
+  sweep: { y: number; s: RoiResult }[]; holdYears: number; peakY: number | null; today: Date; onPick: (y: number) => void;
+}) {
+  const [ref, w] = useBoxWidth();
+  const W = Math.max(330, Math.min(920, w || 920));
+  const mob = W < 560;
+  const H = mob ? 170 : 190;
+  const L = mob ? 34 : 46, R = mob ? 10 : 18, T = 26, B = 32;
+  const vals = sweep.map((x) => x.s.riskAdjustedXirr).filter((v): v is number => v != null);
+  if (!vals.length) return null;
+  const lo = Math.min(...vals) - 0.4, hi = Math.max(...vals) + 0.5;
+  const x = (i: number) => L + ((W - L - R) * i) / (sweep.length - 1);
+  const y = (v: number) => T + (H - T - B) * (1 - (v - lo) / Math.max(0.1, hi - lo));
+  const preLast = sweep.filter((r) => r.s.rentableYears < 0.05).length - 1;
+  const grid: number[] = [];
+  for (let g = Math.ceil(lo); g <= Math.floor(hi); g++) grid.push(g);
+  let solid = "", dot = "";
+  sweep.forEach(({ s }, i) => {
+    if (s.riskAdjustedXirr == null) return;
+    const pt = `${x(i)},${y(s.riskAdjustedXirr)}`;
+    if (i <= preLast) dot += (dot ? " L" : "M") + pt;
+    if (i >= Math.max(0, preLast)) solid += (solid ? " L" : "M") + pt;
+  });
+  const fs = mob ? 10.5 : 10;
+  return (
+    <div ref={ref}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="block w-full" role="img" aria-label="XIRR by exit year; the peak is flagged, tap a dot to set the hold">
+        <g fontFamily="var(--font-geist-mono),monospace" fontSize={fs}>
+          {grid.map((g) => (
+            <g key={g}>
+              <line x1={L} y1={y(g)} x2={W - R} y2={y(g)} stroke="rgba(26,26,26,.07)" />
+              <text x={L - 6} y={y(g) + 3} textAnchor="end" fill="rgba(26,26,26,.42)">{g}%</text>
+            </g>
+          ))}
+          {preLast >= 0 && <path d={dot} fill="none" stroke="rgba(26,26,26,.35)" strokeWidth="2" strokeDasharray="2 5" strokeLinecap="round" />}
+          <path d={solid} fill="none" stroke="#1e6b45" strokeWidth="2.5" strokeLinecap="round" />
+          {sweep.map(({ y: yy, s }, i) => {
+            if (s.riskAdjustedXirr == null) return null;
+            const pre = s.rentableYears < 0.05, peak = yy === peakY, sel = yy === holdYears;
+            return (
+              <g key={yy}>
+                <circle
+                  cx={x(i)} cy={y(s.riskAdjustedXirr)}
+                  r={sel ? (mob ? 9 : 8) : mob ? 6.5 : 5.5}
+                  fill={pre ? "#F5F0E8" : peak ? "#8a6a1e" : "#1e6b45"}
+                  stroke={sel ? "#1a1a1a" : pre ? "rgba(26,26,26,.4)" : "#F5F0E8"}
+                  strokeWidth={sel ? 2.5 : 2}
+                  style={{ cursor: "pointer" }}
+                  onClick={() => onPick(yy)}
+                >
+                  <title>{`Year ${yy} · ${today.getFullYear() + yy} · XIRR ${s.riskAdjustedXirr.toFixed(1)}%${pre ? " · pre-possession" : ""}${peak ? " · peak ⚑" : ""}`}</title>
+                </circle>
+                {peak && <text x={x(i)} y={y(s.riskAdjustedXirr) - 14} textAnchor="middle" fontWeight="500" fill="#8a6a1e">⚑ peak {s.riskAdjustedXirr.toFixed(1)}%</text>}
+                <text x={x(i)} y={H - 6} textAnchor="middle" fill="rgba(26,26,26,.42)">{yy}</text>
+              </g>
+            );
+          })}
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+/* ── e · the anchors on one scale — the same four facts the old row list
+   carried (FD, the city average, this project, the cold→hot band), placed
+   where they actually sit relative to each other. ── */
+function ScaleStrip({ r }: { r: RoiResult }) {
+  const lo = Math.min(7, r.bands.bear) - 0.8;
+  const hi = Math.max(r.bands.bull, r.base, r.riskAdjustedCagr) + 0.8;
+  const pct = (v: number) => `${Math.max(0, Math.min(100, ((v - lo) / (hi - lo)) * 100))}%`;
+  return (
+    <div className="mt-6">
+      <p className="font-mono text-[0.6rem] font-medium uppercase tracking-[0.1em] text-[#1a1a1a]/45">Where that sits — cold → hot range shaded</p>
+      <div className="relative mt-7 h-[74px]" aria-label={`A fixed deposit roughly 7.0%, Gurgaon's overall average ${r.base.toFixed(1)}%, this project realistically ${r.riskAdjustedCagr.toFixed(1)}%, range if the market runs cold to hot ${r.bands.bear.toFixed(1)}% to ${r.bands.bull.toFixed(1)}%`}>
+        <div className="absolute left-0 right-0 top-[36px] h-[2px] rounded bg-[#1a1a1a]/15" />
+        <div className="absolute top-[32px] h-[10px] rounded-[5px] bg-[#1e6b45]/15" style={{ left: pct(r.bands.bear), width: `calc(${pct(r.bands.bull)} - ${pct(r.bands.bear)})` }} />
+        <div className="absolute top-[28px] h-[18px] w-[2px] rounded bg-[#1a1a1a]/45" style={{ left: pct(7) }} />
+        <div className="absolute top-0 -translate-x-1/2 whitespace-nowrap text-[0.66rem] text-[#1a1a1a]/60" style={{ left: pct(7) }}>
+          <span className="font-serif font-medium tabular-nums text-[#1a1a1a]">7.0%</span> · a fixed deposit, roughly
+        </div>
+        <div className="absolute top-[24px] h-[26px] w-[3px] rounded bg-[#8a6a1e]" style={{ left: pct(r.riskAdjustedCagr) }} />
+        <div className="absolute top-[52px] -translate-x-1/2 whitespace-nowrap text-[0.66rem] text-[#1a1a1a]/60" style={{ left: pct(r.riskAdjustedCagr) }}>
+          <span className="font-serif font-medium tabular-nums text-[#8a6a1e]">{r.riskAdjustedCagr.toFixed(1)}%</span> · this project — realistically
+        </div>
+        <div className="absolute top-[28px] h-[18px] w-[2px] rounded bg-[#1a1a1a]/45" style={{ left: pct(r.base) }} />
+        <div className="absolute top-0 -translate-x-1/2 whitespace-nowrap text-[0.66rem] text-[#1a1a1a]/60" style={{ left: pct(r.base) }}>
+          <span className="font-serif font-medium tabular-nums text-[#1a1a1a]">{r.base.toFixed(1)}%</span> · Gurgaon&apos;s overall average
+        </div>
+        <div className="absolute top-[52px] whitespace-nowrap text-[0.62rem] text-[#1a1a1a]/45" style={{ left: pct(r.bands.bear) }}>
+          <span className="font-serif tabular-nums text-[#1a1a1a]/60">{r.bands.bear.toFixed(1)}%</span> cold
+        </div>
+        <div className="absolute top-[52px] -translate-x-full whitespace-nowrap text-[0.62rem] text-[#1a1a1a]/45" style={{ left: pct(r.bands.bull) }}>
+          <span className="font-serif tabular-nums text-[#1a1a1a]/60">{r.bands.bull.toFixed(1)}%</span> hot
+        </div>
+      </div>
     </div>
   );
 }
@@ -525,15 +756,6 @@ function FallRow({ label, value, lo, hi, tone, r }: { label: React.ReactNode; va
       <div className="mt-1.5 h-[22px] rounded-md" style={{ background: "rgba(26,26,26,.05)" }}>
         <div className="h-full rounded-md" style={{ marginLeft: `${left}%`, width: `${width}%`, background: bg, opacity: tone === "base" ? 0.82 : 1 }} />
       </div>
-    </div>
-  );
-}
-
-function Anchor({ k, v, you, faint }: { k: string; v: string; you?: boolean; faint?: boolean }) {
-  return (
-    <div className={`flex items-center justify-between border-t border-[#1a1a1a]/8 px-4 py-3 text-[0.85rem] first:border-t-0 ${you ? "bg-[#9a7a2e]/[0.08]" : ""}`}>
-      <span className={you ? "font-semibold text-[#1a1a1a]" : "text-[#1a1a1a]/60"}>{k}</span>
-      <span className={`font-serif tabular-nums ${you ? "font-semibold text-[#9a7a2e]" : faint ? "text-[#1a1a1a]/40" : "text-[#1a1a1a]"}`}>{v}</span>
     </div>
   );
 }
