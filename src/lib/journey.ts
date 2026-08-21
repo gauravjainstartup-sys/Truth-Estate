@@ -536,17 +536,9 @@ export type RankAxis = "budget" | "config" | "location" | "priority" | "trust" |
 export type RankFit = { fit: Record<RankAxis, number>; weight: Record<RankAxis, number>; contribution: Record<RankAxis, number> };
 export type Scored = Project & { matchPct: number };
 
-export type RankOpts = {
-  /* Honest absolute Match % (docs/ranking-v2-spec.md, step 2) instead of the
-     legacy relative clamp. OPT-IN — default stays the clamp so the live
-     shortlist is unchanged until the honest numbers pass user testing. */
-  honestPct?: boolean;
-};
-
 export function rankCore<T extends Rankable>(
   items: readonly T[],
   d: BuyData,
-  opts: RankOpts = {},
 ): (T & { matchPct: number; _score: number; _fit: RankFit })[] {
   const configs = Array.isArray(d?.configs) ? d.configs : [];
   const locations = Array.isArray(d?.locations) ? d.locations : [];
@@ -579,9 +571,13 @@ export function rankCore<T extends Rankable>(
   const W = weightsFor(d?.purchaseType ?? null);
   const investor = W.invest > 0;
 
+  /* Fallback fit curves, kept in step with the engine's (matchEngine F.*):
+     a rich buyer no longer floors at 0.75 against a project tiers below
+     their budget — the decay is relative to THEIR budget, so the segment
+     gate scales from ₹2 Cr briefs to ₹20 Cr ones. */
   const budgetFit = (lo: number, hi: number): number => {
-    if (budgetCr >= lo && budgetCr <= hi) return 1;
-    if (budgetCr > hi) return Math.max(0.75, 1 - (budgetCr - hi) / 10);
+    if (budgetCr >= lo * 0.75 && budgetCr <= hi * 1.2) return 1;
+    if (budgetCr > hi) return Math.max(0, 1 - (budgetCr - hi) / (budgetCr * 0.4));
     return Math.max(0, 1 - (lo - budgetCr) / 2.5);
   };
   const configFit = (p: T): number => {
@@ -590,15 +586,15 @@ export function rankCore<T extends Rankable>(
     if (known.length === 0) return 0.5;
     if (configs.some((chip) => known.some((cfg) => configMatches(chip, cfg)))) return 1;
     if (configs.some((chip) => known.some((cfg) => bhkAdjacent(chip, cfg)))) return 0.45;
-    return 0.2;
+    return 0.1;
   };
   const locationFit = (p: T): number => {
     if (locations.length === 0) return 1;
     const targetKeys = locations.map(corridorKey);
     const pKey = corridorKey(p.market);
     if (targetKeys.includes(pKey)) return 1;
-    if (targetKeys.some((tk) => CORRIDOR_ADJACENCY[tk]?.includes(pKey))) return 0.82;
-    return 0.25;
+    if (targetKeys.some((tk) => CORRIDOR_ADJACENCY[tk]?.includes(pKey))) return 0.65;
+    return 0.1;
   };
   const priorityFit = (p: T): number => {
     if (priorities.length === 0) return 1;
@@ -639,19 +635,16 @@ export function rankCore<T extends Rankable>(
     })
     .sort((a, b) => b.s - a.s || b.p.truthScore - a.p.truthScore);
 
-  /* Display Match %. Two mappings, chosen by opts.honestPct:
-     • honest (step 2, in user testing) — the weights sum to 100 so `s` already
-       IS a 0..100 score; surface it directly (cap 99, never claim perfect).
-     • legacy relative clamp (DEFAULT, still live on /shortlist) — `86 + s/max·12`
-       floored at 72, which compressed every shortlist into ~86–99.
-     Every item also carries `_score` (honest raw) and `_fit` (per-axis
-     breakdown) for the /test-rank harness; existing callers ignore them. */
-  const max = raw[0]?.s || 1;
+  /* Display Match %. Honest absolute — the weights sum to 100 so `s` already
+     IS a 0..100 score; surface it directly (cap 99, never claim perfect;
+     floor 10 so a card never prints a single-digit that reads broken). The
+     legacy relative clamp (86 + s/max·12) that compressed every list into
+     ~86–99 is gone: the live shortlist ranks through scoreMatch's honest pct
+     already, so this fallback path now simply agrees with it. Every item
+     still carries `_score` and `_fit` for the /test-rank harness. */
   return raw.map(({ p, s, _fit }) => ({
     ...p,
-    matchPct: opts.honestPct
-      ? Math.min(99, Math.round(s))
-      : Math.min(99, Math.max(72, Math.round(86 + (s / max) * 12))),
+    matchPct: Math.min(99, Math.max(10, Math.round(s))),
     _score: Math.round(s),
     _fit,
   })) as (T & { matchPct: number; _score: number; _fit: RankFit })[];

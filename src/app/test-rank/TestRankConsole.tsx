@@ -143,7 +143,7 @@ export default function TestRankConsole() {
   const run = () => {
     if (!catalog) return;
     const buy: BuyData = { possession, purchaseType, budgetCr, locations, configs, timeline, priorities, notes };
-    const results = rankCore(catalog, buy, { honestPct: true }) as Ranked[];
+    const results = rankCore(catalog, buy) as Ranked[];
     setRan({ results, musts: mustHaveConfigsFrom(notes) });
   };
 
