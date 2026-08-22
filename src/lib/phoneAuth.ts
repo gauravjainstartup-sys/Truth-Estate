@@ -472,12 +472,13 @@ export async function saveBriefToServer(buy: BuyData): Promise<void> {
   } catch { /* best effort — the localStorage copy is already saved */ }
 }
 
-/* 'Investment' → investor; any other stated type → end-user; unstated → null.
-   Kept inline (this is a leaf-ish auth module) but identical to
-   matchEngine.personaOf's split. */
-function personaFromPurchaseType(t: string | null | undefined): "investor" | "end-user" | null {
+/* 'Investment' → Investor; any other stated type → End-User; unstated → null.
+   Title-Case to match the user_profiles.persona column already live in the
+   database (populated 'Investor'/'End-User' by an earlier schema) — one
+   vocabulary, not two. The split itself mirrors matchEngine.personaOf. */
+function personaFromPurchaseType(t: string | null | undefined): "Investor" | "End-User" | null {
   if (!t || !t.trim()) return null;
-  return t === "Investment" ? "investor" : "end-user";
+  return t === "Investment" ? "Investor" : "End-User";
 }
 
 /* ── The per-project stake, kept on the account (report_stakes, 0025) ──

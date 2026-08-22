@@ -57,10 +57,13 @@ do $$ begin
 exception when duplicate_object then null; end $$;
 alter table public.report_stakes validate constraint report_stakes_stake_chk;
 
+-- Persona casing matches the EXISTING user_profiles.persona column already
+-- live in this database ('Investor' / 'End-User', Title-Case) — the two
+-- persona homes share one vocabulary rather than inventing a second.
 do $$ begin
   alter table public.report_stakes
     add constraint report_stakes_persona_chk
-    check (persona is null or persona in ('investor','end-user')) not valid;
+    check (persona is null or persona in ('Investor','End-User')) not valid;
 exception when duplicate_object then null; end $$;
 alter table public.report_stakes validate constraint report_stakes_persona_chk;
 
@@ -107,15 +110,11 @@ grant select, insert, update, delete on public.owned_properties to authenticated
 comment on view public.owned_properties is
   'DEPRECATED compat view over report_stakes (stake=invested). Drop once prod runs the new client. See migration 0025.';
 
--- ── 5 · account-level persona (denormalised out of user_profiles.brief
---        so "how many investors" is a column read, not a jsonb scan) ──
-alter table public.user_profiles
-  add column if not exists persona text;
-do $$ begin
-  alter table public.user_profiles
-    add constraint user_profiles_persona_chk
-    check (persona is null or persona in ('investor','end-user')) not valid;
-exception when duplicate_object then null; end $$;
-alter table public.user_profiles validate constraint user_profiles_persona_chk;
-comment on column public.user_profiles.persona is
-  'Denormalised buyer persona from brief.purchaseType (investor|end-user). Written alongside brief; see 0016.';
+-- ── 5 · account-level persona: ALREADY EXISTS ──
+-- user_profiles.persona is already live in this database, populated
+-- 'Investor'/'End-User' (Title-Case) by an earlier schema. This migration
+-- does NOT re-create or constrain it — that column is owned elsewhere and
+-- our client simply conforms to its casing (see saveBriefToServer). The
+-- earlier draft of this file added a lowercase CHECK here and the run
+-- aborted on the existing Title-Case rows; that block is intentionally
+-- gone. The backfill (0026) only FILLS its nulls, never rewrites a value.

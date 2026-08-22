@@ -19,16 +19,19 @@
 --     them — expected, not a gap.
 -- ════════════════════════════════════════════════════════════════
 
--- ── 1 · account persona from the stated brief ──
--- Mirrors personaOf() in src/lib/matchEngine.ts: 'Investment' → investor,
--- anything else stated ('First Home','Upgrade',…) → end-user.
+-- ── 1 · account persona from the stated brief — FILL NULLS ONLY ──
+-- user_profiles.persona already exists and is partly populated
+-- ('Investor'/'End-User', Title-Case) by an earlier schema; this only fills
+-- rows it left null and never rewrites a value. Casing matches that column.
+-- 'Investment' → Investor, anything else stated ('First Home','Upgrade',…)
+-- → End-User (mirrors personaOf() in src/lib/matchEngine.ts).
 update public.user_profiles
    set persona = case
-                   when lower(brief->>'purchaseType') = 'investment' then 'investor'
-                   else 'end-user'
+                   when lower(brief->>'purchaseType') = 'investment' then 'Investor'
+                   else 'End-User'
                  end
  where persona is null
-   and coalesce(nullif(trim(brief->>'purchaseType'), ''), null) is not null;
+   and nullif(trim(brief->>'purchaseType'), '') is not null;
 
 -- ── 2 · report↔user rows from the event trail ──
 -- One row per (user, project) that ever fired a view or a stake. The stake
