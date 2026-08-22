@@ -1,8 +1,8 @@
-<!-- MOCK · mobile header feature rotator. On mobile the three products
-     (Compare, Deal Room, Sun & Vastu 3D) are hidden — only logo + hamburger
-     show. This surfaces them as a one-by-one rolling ticker in the header,
-     using the SAME icons + labels + links as the desktop nav (Hero.tsx NAV).
-     Two placements to choose from. White-on-dark to match the hero header. -->
+<!-- MOCK · mobile header feature rotator — REFINED.
+     Placement: anchored on the RIGHT, next to the hamburger (not by the logo).
+     The rolling feature (Compare / Deal Room / Sun & Vastu 3D) sits inside a
+     pill with a LIGHT SHIMMERING BORDER — a soft highlight sweeping around the
+     outline. Same icons/labels/links as the desktop nav. White-on-dark hero. -->
 <title>Mobile Header Features</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,138 +17,121 @@
   body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-weight:300;line-height:1.6;padding:0 0 12vh}
   .ribbon{background:var(--ink);color:#F5F0E8;font-family:var(--mono);font-size:.62rem;letter-spacing:.13em;text-transform:uppercase;text-align:center;padding:9px 14px}
   .ribbon b{color:#c9a96e;font-weight:500}
-  .wrap{max-width:900px;margin:0 auto;padding:0 20px}
+  .wrap{max-width:520px;margin:0 auto;padding:0 20px}
   .lede{text-align:center;margin-top:32px}
   .lede h1{font-family:var(--serif);font-weight:600;font-size:clamp(1.6rem,5vw,2.15rem);line-height:1.12;letter-spacing:-.01em}
-  .lede p{margin-top:11px;font-size:.92rem;color:var(--ink55);max-width:40rem;margin-left:auto;margin-right:auto}
+  .lede p{margin-top:11px;font-size:.92rem;color:var(--ink55)}
   .lede p b{font-weight:600;color:var(--ink)}
-
-  .cols{display:grid;gap:30px;margin-top:38px;grid-template-columns:1fr}
-  @media(min-width:760px){.cols{grid-template-columns:1fr 1fr}}
-  .variant .tag{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:.58rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#1e6b45}
-  .variant .tag.alt{color:var(--gold)}
-  .variant .tag .d{width:6px;height:6px;border-radius:50%;background:currentColor}
-  .variant h2{margin-top:11px;font-family:var(--serif);font-weight:600;font-size:1.3rem}
-  .variant .why{margin-top:8px;font-size:.83rem;line-height:1.55;color:var(--ink55)}
-  .variant .why b{font-weight:600;color:var(--ink)}
+  .cap{margin-top:22px;text-align:center;font-family:var(--mono);font-size:.58rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:#1e6b45}
 
   /* phone hero frame (dark, evokes the dim-room + lamp hero) */
-  .phone{margin-top:18px;border-radius:22px;overflow:hidden;border:1px solid rgba(26,26,26,.14);
+  .phone{margin:14px auto 0;border-radius:22px;overflow:hidden;border:1px solid rgba(26,26,26,.14);max-width:392px;
     background:
       radial-gradient(120% 90% at 82% 118%, rgba(201,162,75,.30), transparent 46%),
       radial-gradient(90% 70% at 78% 108%, rgba(230,200,140,.20), transparent 40%),
       linear-gradient(180deg,#20180f 0%,#171008 60%,#100b06 100%);
-    color:var(--cream);min-height:330px;position:relative}
+    color:var(--cream);position:relative}
   .shadowtext{text-shadow:0 1px 2px rgba(6,4,2,.6),0 1px 14px rgba(6,4,2,.9)}
 
-  /* header row */
-  .hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 18px 0;position:relative}
-  /* logo */
+  .hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 16px 0}
   .logo{display:flex;align-items:center;gap:9px}
   .logo .mk{width:26px;height:26px;border:1.5px solid var(--cream);border-radius:5px;position:relative;opacity:.95}
   .logo .mk::before,.logo .mk::after{content:"";position:absolute;background:var(--cream);opacity:.9}
   .logo .mk::before{left:50%;top:2px;bottom:2px;width:1.5px;transform:translateX(-50%)}
   .logo .mk::after{top:50%;left:2px;right:2px;height:1.5px;transform:translateY(-50%)}
-  .logo .wm{line-height:1}
-  .logo .wm .t{font-family:var(--serif);font-weight:600;font-size:.98rem;letter-spacing:.18em}
+  .logo .wm .t{font-family:var(--serif);font-weight:600;font-size:.98rem;letter-spacing:.18em;line-height:1}
   .logo .wm .s{display:block;font-family:var(--sans);font-size:.42rem;font-weight:500;letter-spacing:.42em;opacity:.7;margin-top:2px}
-  .burger{width:34px;height:34px;display:grid;place-items:center;color:var(--cream);flex:0 0 auto}
 
-  /* the rolling ticker — icon + label roll together, one at a time */
-  .roll{overflow:hidden;height:22px}
-  .roll-col{display:flex;flex-direction:column;animation:roll 7.2s ease-in-out infinite}
-  .roll-item{height:22px;display:flex;align-items:center;gap:7px;white-space:nowrap;font-size:.82rem;font-weight:500;letter-spacing:.01em}
-  .roll-item svg{width:15px;height:15px;flex:0 0 auto;opacity:.85}
+  /* RIGHT group: rolling pill + hamburger, sat together by the menu */
+  .right{display:flex;align-items:center;gap:11px}
+  .burger{width:32px;height:32px;display:grid;place-items:center;color:var(--cream);flex:0 0 auto}
+
+  /* the shimmering pill */
+  .pill{position:relative;display:inline-flex;align-items:center;border-radius:999px;
+    background:rgba(246,241,232,.05);padding:6px 13px;backdrop-filter:blur(2px)}
+  /* animated light border via a masked gradient ring */
+  .pill::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1.3px;
+    background:
+      linear-gradient(115deg,
+        rgba(246,241,232,.22) 0%, rgba(246,241,232,.22) 36%,
+        rgba(255,251,236,.95) 50%,
+        rgba(246,241,232,.22) 64%, rgba(246,241,232,.22) 100%);
+    background-size:230% 100%;
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor;mask-composite:exclude;
+    animation:pillshimmer 3s linear infinite;pointer-events:none}
+  /* a faint outer glow so the shimmer reads as light, not just a line */
+  .pill::after{content:"";position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;
+    box-shadow:0 0 12px -3px rgba(231,207,149,.35)}
+
+  .roll{overflow:hidden;height:20px}
+  .roll-col{display:inline-flex;flex-direction:column;animation:roll 7.2s ease-in-out infinite}
+  .roll-item{height:20px;display:flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap;
+    font-size:.8rem;font-weight:500;letter-spacing:.01em;color:var(--cream)}
+  .roll-item svg{width:14px;height:14px;flex:0 0 auto;opacity:.9}
+
   @keyframes roll{
     0%,26%{transform:translateY(0)}
-    33.3%,59.3%{transform:translateY(-22px)}
-    66.6%,92.6%{transform:translateY(-44px)}
-    100%{transform:translateY(-66px)}
+    33.3%,59.3%{transform:translateY(-20px)}
+    66.6%,92.6%{transform:translateY(-40px)}
+    100%{transform:translateY(-60px)}
   }
-  @media(prefers-reduced-motion:reduce){.roll-col{animation:none}}
+  @keyframes pillshimmer{0%{background-position:210% 0}100%{background-position:-30% 0}}
+  @media(prefers-reduced-motion:reduce){.roll-col,.pill::before{animation:none}}
 
-  /* A — centered rotator, absolutely centred so logo width never shifts it */
-  .rotA{position:absolute;left:50%;top:22px;transform:translateX(-50%)}
-  .rotA .roll-item{color:var(--cream)}
-
-  /* B — a slim strip under the header row */
-  .stripB{margin-top:16px;border-top:1px solid rgba(246,241,232,.16);padding:9px 18px;display:flex;align-items:center;justify-content:center;gap:10px}
-  .stripB .lead{font-family:var(--mono);font-size:.55rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-soft)}
-  .stripB .roll-item{color:var(--cream)}
-  .stripB .dots{display:flex;gap:4px;margin-left:2px}
-  .stripB .dots i{width:4px;height:4px;border-radius:50%;background:rgba(246,241,232,.35)}
-
-  /* hero context below the header */
-  .hero{padding:26px 18px 24px}
-  .hero .eye{font-family:var(--sans);font-size:.56rem;font-weight:600;letter-spacing:.24em;text-transform:uppercase;color:var(--gold-soft)}
+  .hero{padding:26px 16px 24px}
+  .hero .eye{font-size:.56rem;font-weight:600;letter-spacing:.24em;text-transform:uppercase;color:var(--gold-soft)}
   .hero h3{margin-top:12px;font-family:var(--serif);font-weight:600;font-size:1.7rem;line-height:1.06;letter-spacing:-.01em}
   .hero p{margin-top:10px;font-size:.8rem;color:rgba(246,241,232,.72)}
-  .hero .search{margin-top:16px;display:flex;gap:0;border-radius:10px;overflow:hidden;box-shadow:0 18px 40px -20px rgba(0,0,0,.7)}
+  .hero .search{margin-top:16px;display:flex;border-radius:10px;overflow:hidden;box-shadow:0 18px 40px -20px rgba(0,0,0,.7)}
   .hero .search .in{flex:1;background:#fffdf9;color:#8f887d;font-size:.78rem;padding:11px 13px}
   .hero .search .go{background:#1e6b45;color:#fff;font-size:.78rem;font-weight:600;padding:11px 15px;white-space:nowrap}
 
-  .note{margin:30px auto 0;max-width:640px;text-align:center;font-size:.77rem;font-style:italic;color:var(--ink40);line-height:1.6}
+  /* zoomed detail of just the header, so the shimmer border reads clearly */
+  .detail{margin:26px auto 0;max-width:392px;border-radius:16px;padding:20px 16px;
+    background:linear-gradient(180deg,#1c140c,#120c06);border:1px solid rgba(26,26,26,.14)}
+  .detail .lbl{font-family:var(--mono);font-size:.52rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(246,241,232,.4);margin-bottom:12px}
+
+  .note{margin:28px auto 0;max-width:520px;text-align:center;font-size:.77rem;font-style:italic;color:var(--ink40);line-height:1.6}
 </style>
 
-<div class="ribbon">Mock · mobile header — <b>features rolling one by one</b> · Compare · Deal Room · Sun &amp; Vastu 3D</div>
+<div class="ribbon">Mock · mobile header — rolling ticker <b>by the menu</b>, with a <b>shimmering border</b></div>
 
 <div class="wrap">
   <div class="lede">
-    <h1>Put the products back in the mobile header</h1>
-    <p>On desktop the header lists <b>Compare · Deal Room · Sun &amp; Vastu 3D</b>; on mobile they vanish, leaving just the logo and the menu. This rolls them through the header <b>one at a time</b> — same icons, labels and links — so a phone visitor sees what the product does. Two placements:</p>
+    <h1>By the menu, with a shimmer</h1>
+    <p>The three products roll through one at a time — now anchored on the <b>right, beside the hamburger</b>, inside a pill with a <b>light shimmering border</b> sweeping around it.</p>
   </div>
 
-  <div class="cols">
-
-    <!-- VARIANT A -->
-    <div class="variant">
-      <span class="tag"><span class="d"></span>Recommended · in the top bar</span>
-      <h2>Centred in the header row</h2>
-      <p class="why">The rolling feature sits between the logo and the menu, dead-centre so the logo's width never nudges it. Costs <b>no extra height</b> — it lives in the space that's already empty on mobile.</p>
-      <div class="phone">
-        <div class="hdr">
-          <div class="logo shadowtext"><span class="mk"></span><span class="wm"><span class="t">TRUTH</span><span class="s">ESTATE</span></span></div>
-          <div class="rotA shadowtext">
-            <div class="roll"><div class="roll-col" id="colA"></div></div>
-          </div>
-          <span class="burger shadowtext"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></span>
-        </div>
-        <div class="hero">
-          <p class="eye shadowtext">The Independent Buyer&rsquo;s Office</p>
-          <h3 class="shadowtext">Know the Truth<br>Before you Buy.</h3>
-          <p class="shadowtext">We audit from RERA &amp; Court filings, not brochures.</p>
-          <div class="search"><span class="in">Search any project</span><span class="go">Get verdict</span></div>
-        </div>
+  <p class="cap">In context · dark hero</p>
+  <div class="phone">
+    <div class="hdr">
+      <div class="logo shadowtext"><span class="mk"></span><span class="wm"><span class="t">TRUTH</span><span class="s">ESTATE</span></span></div>
+      <div class="right">
+        <span class="pill"><span class="roll"><span class="roll-col" id="col1"></span></span></span>
+        <span class="burger shadowtext"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></span>
       </div>
     </div>
-
-    <!-- VARIANT B -->
-    <div class="variant">
-      <span class="tag alt"><span class="d"></span>Alternative · a slim strip</span>
-      <h2>A ticker under the logo</h2>
-      <p class="why">A dedicated hairline row below the logo: an &ldquo;Explore&rdquo; label, the rolling feature, and three dots for the set. More prominent and unmissable — at the cost of <b>a few px of header height</b>.</p>
-      <div class="phone">
-        <div class="hdr">
-          <div class="logo shadowtext"><span class="mk"></span><span class="wm"><span class="t">TRUTH</span><span class="s">ESTATE</span></span></div>
-          <span class="burger shadowtext"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></span>
-        </div>
-        <div class="stripB shadowtext">
-          <span class="lead">Explore</span>
-          <div class="roll"><div class="roll-col" id="colB"></div></div>
-          <span class="dots"><i></i><i></i><i></i></span>
-        </div>
-        <div class="hero">
-          <p class="eye shadowtext">The Independent Buyer&rsquo;s Office</p>
-          <h3 class="shadowtext">Know the Truth<br>Before you Buy.</h3>
-          <p class="shadowtext">We audit from RERA &amp; Court filings, not brochures.</p>
-          <div class="search"><span class="in">Search any project</span><span class="go">Get verdict</span></div>
-        </div>
-      </div>
+    <div class="hero">
+      <p class="eye shadowtext">The Independent Buyer&rsquo;s Office</p>
+      <h3 class="shadowtext">Know the Truth<br>Before you Buy.</h3>
+      <p class="shadowtext">We audit from RERA &amp; Court filings, not brochures.</p>
+      <div class="search"><span class="in">Search any project</span><span class="go">Get verdict</span></div>
     </div>
-
   </div>
 
-  <p class="note">Rolls continuously (~1.9s per product) and pauses under &ldquo;reduce motion&rdquo;. Each feature keeps its real link (Compare → /compare, Deal Room → /deal-room, Sun &amp; Vastu → /sun-vastu). Desktop header unchanged; adapts to white-on-cream once the header turns solid on scroll.</p>
+  <div class="detail">
+    <p class="lbl">Header, up close — watch the border</p>
+    <div class="hdr" style="padding:0">
+      <div class="logo shadowtext"><span class="mk"></span><span class="wm"><span class="t">TRUTH</span><span class="s">ESTATE</span></span></div>
+      <div class="right">
+        <span class="pill"><span class="roll"><span class="roll-col" id="col2"></span></span></span>
+        <span class="burger shadowtext"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></span>
+      </div>
+    </div>
+  </div>
+
+  <p class="note">Rolls ~1.9s per product; the border shimmer loops every ~3s. Pauses under &ldquo;reduce motion&rdquo;. Each feature keeps its real link; desktop header unchanged; the pill flips to a dark shimmer on cream once the header turns solid on scroll.</p>
 </div>
 
 <script>
@@ -163,11 +146,7 @@
     { k: 'cube', label: 'Sun & Vastu 3D' },
   ];
   const svg = (p) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
-  function fill(el) {
-    // 3 features + a duplicate of the first, so the roll loops seamlessly
-    const seq = [...FEATURES, FEATURES[0]];
-    el.innerHTML = seq.map((f) => `<span class="roll-item">${svg(ICONS[f.k])}${f.label}</span>`).join("");
-  }
-  fill(document.getElementById("colA"));
-  fill(document.getElementById("colB"));
+  const fill = (el) => { el.innerHTML = [...FEATURES, FEATURES[0]].map((f) => `<span class="roll-item">${svg(ICONS[f.k])}${f.label}</span>`).join(""); };
+  fill(document.getElementById("col1"));
+  fill(document.getElementById("col2"));
 </script>
