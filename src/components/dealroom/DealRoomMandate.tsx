@@ -952,7 +952,14 @@ export default function DealRoomMandate() {
                   <button type="button" onClick={() => go(1)} className="text-[0.85rem] text-[#a9a196] hover:text-[#f4efe6]">← Back to Pricing</button>
                 </div>
                 <p className="mt-4 text-[0.76rem] text-[#6f685c]">
-                  Zero upfront cost. We never share your phone number with brokers.
+                  Zero upfront cost. We never share your phone number with brokers. By submitting, you agree to our{" "}
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-[#a9a196] underline hover:text-[#f4efe6]">
+                    Privacy Policy
+                  </a>{" "}
+                  and{" "}
+                  <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-[#a9a196] underline hover:text-[#f4efe6]">
+                    Terms of Use
+                  </a>.
                 </p>
               </form>
             )}
