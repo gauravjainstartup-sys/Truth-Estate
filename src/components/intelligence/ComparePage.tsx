@@ -315,13 +315,13 @@ function ProjectCompare({ r }: { r: Extract<ResolvedCompare, { kind: "project" }
               win={ja && jb ? winHigher(ja.premiumPct, jb.premiumPct) : undefined} />
           }
           full={
-            <Row label="5-yr growth outlook"
+            <Row label="10-yr growth outlook"
               a={olA ?? "—"} b={olB ?? "—"}
               subA={olA ? "exact CAGR inside the report" : undefined}
               subB={olB ? "exact CAGR inside the report" : undefined}
               win={olA && olB ? winHigher(OUTLOOK_VAL[olA], OUTLOOK_VAL[olB]) : undefined} />
           }
-          locked={<LockRow label="5-yr growth outlook" />}
+          locked={<LockRow label="10-yr growth outlook" />}
           invite={<CompareUnlock />}
         />
       </Section>
