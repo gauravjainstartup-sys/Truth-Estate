@@ -518,25 +518,67 @@ export async function saveStakeToServer(
   } catch { /* best effort — localStorage already holds the stake */ }
 }
 
-/* Pull this account's declared stakes down as a {slug: stake} map, for the
-   sync that warms the synchronous localStorage readStake(). Null (keep the
-   local copy) when signed out, offline, or before 0025 exists. */
-export async function fetchStakesFromServer(): Promise<Record<string, "invested" | "considering"> | null> {
+/* Write the per-project persona (report_stakes.persona) — the "invest / live
+   in it" answer captured on THIS report, stored per (user, slug) so it can
+   differ from the account-level persona. Title-Case to match the column.
+   Sets ONLY persona (+ the label PostgREST needs); never the stake or
+   views. No session → no-op; 404-graceful before 0025. */
+export async function savePersonaToServer(
+  slug: string,
+  persona: "Investor" | "End-User",
+  meta?: { name?: string; market?: string; seoSlug?: string | null },
+): Promise<void> {
+  const session = getSession();
+  const token = session?.access_token;
+  const uid = session?.user_id;
+  if (!token || !uid || !slug) return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/report_stakes?on_conflict=user_id,slug`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=minimal",
+      },
+      body: JSON.stringify({
+        user_id: uid,
+        slug,
+        persona,
+        ...(meta?.name ? { name: meta.name } : {}),
+        ...(meta?.market ? { market: meta.market } : {}),
+        ...(meta?.seoSlug != null ? { seo_slug: meta.seoSlug } : {}),
+        updated_at: new Date().toISOString(),
+      }),
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch { /* best effort — localStorage already holds it */ }
+}
+
+/* Pull this account's per-project stake AND persona down, keyed by slug, for
+   the sync that warms the synchronous readStake()/readProjectPersona(). Null
+   (keep the local copy) when signed out, offline, or before 0025 exists. */
+export type RemoteReportStake = { stake: "invested" | "considering" | null; persona: "Investor" | "End-User" | null };
+export async function fetchStakesFromServer(): Promise<Record<string, RemoteReportStake> | null> {
   const session = getSession();
   const token = session?.access_token;
   const uid = session?.user_id;
   if (!token || !uid) return null;
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/report_stakes?stake=not.is.null&select=slug,stake`,
+      `${SUPABASE_URL}/rest/v1/report_stakes?or=(stake.not.is.null,persona.not.is.null)&select=slug,stake,persona`,
       { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
     );
     if (!res.ok) return null; // 404 until 0025 is run ⇒ keep the local copy
-    const rows = (await res.json().catch(() => null)) as { slug?: string; stake?: string }[] | null;
+    const rows = (await res.json().catch(() => null)) as { slug?: string; stake?: string; persona?: string }[] | null;
     if (!Array.isArray(rows)) return null;
-    const map: Record<string, "invested" | "considering"> = {};
+    const map: Record<string, RemoteReportStake> = {};
     for (const r of rows) {
-      if (r.slug && (r.stake === "invested" || r.stake === "considering")) map[r.slug] = r.stake;
+      if (!r.slug) continue;
+      map[r.slug] = {
+        stake: r.stake === "invested" || r.stake === "considering" ? r.stake : null,
+        persona: r.persona === "Investor" || r.persona === "End-User" ? r.persona : null,
+      };
     }
     return map;
   } catch { return null; }

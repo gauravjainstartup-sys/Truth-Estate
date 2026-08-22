@@ -1469,11 +1469,42 @@ export function saveStake(slug: string, stake: Stake, projectName?: string): voi
     .catch(() => { /* localStorage copy is already saved */ });
 }
 
-/* Pull the account's declared stakes DOWN into the local map, so the
-   synchronous readStake() (called during render for owner-mode) reflects
-   what this person declared on another device. Best-effort and additive —
-   a local stake the server hasn't heard of yet is kept. Returns true if
-   anything changed. Call on report / office mount. */
+/* ── Per-project persona (report_stakes.persona) ──
+   The "invest / live in it" answer captured on ONE report, stored per
+   project so this project's match can be scored as an investor even when
+   the account-level brief says end-user (or vice versa). Stored in the DB's
+   Title-Case vocabulary ('Investor'/'End-User') to match the column; the
+   match engine maps it to its own lowercase Persona at use. */
+export type ProjectPersona = "Investor" | "End-User";
+const PROJECT_PERSONA_KEY = "truthEstate.projectPersona";
+
+export function readProjectPersona(slug: string): ProjectPersona | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(PROJECT_PERSONA_KEY);
+    const map = raw ? (JSON.parse(raw) as Record<string, ProjectPersona>) : {};
+    return map[slug] ?? null;
+  } catch { return null; }
+}
+
+export function saveProjectPersona(slug: string, persona: ProjectPersona, projectName?: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = window.localStorage.getItem(PROJECT_PERSONA_KEY);
+    const map = raw ? (JSON.parse(raw) as Record<string, ProjectPersona>) : {};
+    map[slug] = persona;
+    window.localStorage.setItem(PROJECT_PERSONA_KEY, JSON.stringify(map));
+  } catch { /* quota must not block the save */ }
+  void import("@/lib/phoneAuth")
+    .then(({ savePersonaToServer }) => savePersonaToServer(slug, persona, projectName ? { name: projectName } : undefined))
+    .catch(() => { /* localStorage copy is already saved */ });
+}
+
+/* Pull the account's per-project stake AND persona DOWN into the local maps,
+   so the synchronous readStake()/readProjectPersona() (called during render)
+   reflect what this person declared on another device. Best-effort and
+   additive — a local value the server hasn't heard of yet is kept. Returns
+   true if anything changed. Call on report / office mount. */
 export async function syncStakesRemote(): Promise<boolean> {
   if (typeof window === "undefined") return false;
   const remote = await import("@/lib/phoneAuth")
@@ -1481,13 +1512,19 @@ export async function syncStakesRemote(): Promise<boolean> {
     .catch(() => null);
   if (!remote) return false;
   try {
-    const raw = window.localStorage.getItem(STAKE_KEY);
-    const map = raw ? (JSON.parse(raw) as Record<string, Stake>) : {};
+    const sRaw = window.localStorage.getItem(STAKE_KEY);
+    const sMap = sRaw ? (JSON.parse(sRaw) as Record<string, Stake>) : {};
+    const pRaw = window.localStorage.getItem(PROJECT_PERSONA_KEY);
+    const pMap = pRaw ? (JSON.parse(pRaw) as Record<string, ProjectPersona>) : {};
     let changed = false;
-    for (const [slug, stake] of Object.entries(remote)) {
-      if (map[slug] !== stake) { map[slug] = stake; changed = true; }
+    for (const [slug, row] of Object.entries(remote)) {
+      if (row.stake && sMap[slug] !== row.stake) { sMap[slug] = row.stake; changed = true; }
+      if (row.persona && pMap[slug] !== row.persona) { pMap[slug] = row.persona; changed = true; }
     }
-    if (changed) window.localStorage.setItem(STAKE_KEY, JSON.stringify(map));
+    if (changed) {
+      window.localStorage.setItem(STAKE_KEY, JSON.stringify(sMap));
+      window.localStorage.setItem(PROJECT_PERSONA_KEY, JSON.stringify(pMap));
+    }
     return changed;
   } catch { return false; }
 }

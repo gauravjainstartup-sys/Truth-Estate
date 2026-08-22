@@ -13,6 +13,8 @@ import {
   isSignedIn,
   corridorKey,
   LOCATIONS,
+  readProjectPersona,
+  saveProjectPersona,
   type BuyData,
 } from "@/lib/journey";
 import { scoreMatch, type MarketContext } from "@/lib/matchEngine";
@@ -106,7 +108,18 @@ export default function MatchScore({ project, initialBuy, variant = "card" }: { 
   const computed = buy && hasPreferences(buy);
   // The persona match engine drives the score when the project carries live
   // matchInput; the mock fallback set (no matchInput) keeps the legacy score.
-  const engine = computed && buy && project.matchInput ? scoreMatch(project.matchInput, buyerFromBuyData(buy), market) : null;
+  /* Per-project persona override: the "invest / live in it" answer captured
+     on THIS report (report_stakes.persona, synced to localStorage) wins over
+     the account-level brief for this project's own score. Absent → the brief
+     persona, exactly as before. */
+  const projPersona = readProjectPersona(project.slug);
+  const scoredBuyer = buy
+    ? (() => {
+        const b = buyerFromBuyData(buy);
+        return projPersona ? { ...b, persona: (projPersona === "Investor" ? "investor" : "end-user") as Persona } : b;
+      })()
+    : null;
+  const engine = computed && scoredBuyer && project.matchInput ? scoreMatch(project.matchInput, scoredBuyer, market) : null;
   const pct = engine ? engine.pct : computed && buy ? matchScoreFor(project, buy) : null;
   const meta = engine ? { label: engine.label, tone: engine.tone } : pct != null ? matchLabel(pct) : null;
   const bandRead = engine
@@ -125,12 +138,17 @@ export default function MatchScore({ project, initialBuy, variant = "card" }: { 
 
   function onSave(next: BuyData) {
     saveBuyData(next);
+    /* Also stamp the persona for THIS project (report_stakes.persona) so it
+       can differ from the account brief — the founder's "individual
+       relationship" persona. The full brief still saves globally above. */
+    saveProjectPersona(project.slug, next.purchaseType === "Investment" ? "Investor" : "End-User", project.name);
     setBuy(next);
     setSheet(false);
   }
 
   const seed: Draft = {
-    persona: buy?.purchaseType === "Investment" ? "investor" : "end-user",
+    // per-project persona (this report's own answer) wins over the account brief
+    persona: projPersona ? (projPersona === "Investor" ? "investor" : "end-user") : buy?.purchaseType === "Investment" ? "investor" : "end-user",
     budgetCr: buy?.budgetCr ?? 6,
     configs: buy?.configs ?? [],
     locations: buy?.locations ?? [],

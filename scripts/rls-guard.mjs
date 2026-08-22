@@ -85,7 +85,6 @@ const SENSITIVE = [
   ["payments", "amount"],
   ["events", "*"],
   ["report_stakes", "*"],
-  ["owned_properties", "*"],
   ["contact_leads", "*"],
 ];
 for (const [table, col] of SENSITIVE) {
