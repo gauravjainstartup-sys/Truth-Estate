@@ -77,6 +77,47 @@ const CHIPS = [
   { label: "Fixed Representation Fee", Icon: IconRupee },
 ];
 
+/* Mobile-only header ticker — the three products roll through one at a time
+   beside the menu (they live in the desktop nav, hidden below 900px, so on a
+   phone they'd otherwise vanish). A masked gradient ring gives the pill a light
+   shimmering border. The rolling content is decorative (aria-hidden); tapping
+   the pill opens the menu, where the real links live — so an auto-advancing
+   label can never mis-navigate. Hidden below 360px so it can't crowd the logo
+   and hamburger on the narrowest phones. */
+function MobileFeatureTicker({ onOpen }: { onOpen: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label="Explore Truth Estate features"
+      className="teh-tick relative hidden items-center rounded-full bg-[#f6f1e8]/[0.05] px-2.5 py-1.5 backdrop-blur-[2px] min-[360px]:inline-flex min-[900px]:hidden"
+    >
+      <style>{`
+        .teh-tick::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1.3px;
+          background:linear-gradient(115deg,rgba(246,241,232,.22) 0%,rgba(246,241,232,.22) 36%,rgba(255,251,236,.95) 50%,rgba(246,241,232,.22) 64%,rgba(246,241,232,.22) 100%);
+          background-size:230% 100%;
+          -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+          -webkit-mask-composite:xor;mask-composite:exclude;
+          animation:teh-tick-shimmer 3s linear infinite;pointer-events:none}
+        .teh-tick::after{content:"";position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;box-shadow:0 0 12px -3px rgba(231,207,149,.35)}
+        .teh-tick-col{animation:teh-tick-roll 7.2s ease-in-out infinite}
+        @keyframes teh-tick-roll{0%,26%{transform:translateY(0)}33.3%,59.3%{transform:translateY(-20px)}66.6%,92.6%{transform:translateY(-40px)}100%{transform:translateY(-60px)}}
+        @keyframes teh-tick-shimmer{0%{background-position:210% 0}100%{background-position:-30% 0}}
+        @media(prefers-reduced-motion:reduce){.teh-tick-col,.teh-tick::before{animation:none}}
+      `}</style>
+      <span aria-hidden className="block h-[20px] overflow-hidden">
+        <span className="teh-tick-col flex flex-col">
+          {[...NAV, NAV[0]].map((n, i) => (
+            <span key={i} className="flex h-[20px] items-center justify-center gap-1.5 whitespace-nowrap text-[0.78rem] font-medium text-[#f6f1e8] [text-shadow:0_1px_3px_rgba(6,4,2,0.55)]">
+              <n.Icon className="h-[13px] w-[13px] shrink-0 opacity-90" />{n.label}
+            </span>
+          ))}
+        </span>
+      </span>
+    </button>
+  );
+}
+
 export default function Hero({ index }: { index: OmniIndex }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [who, setWho] = useState<string | null>(null);
@@ -145,11 +186,14 @@ export default function Hero({ index }: { index: OmniIndex }) {
               )}
             </a>
           </nav>
-          {/* hamburger */}
-          <button onClick={() => setMenuOpen(true)} aria-label="Open menu"
-            className="grid h-10 w-10 place-items-center text-[#f6f1e8] min-[900px]:hidden">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
-          </button>
+          {/* mobile: rolling product ticker + hamburger, grouped by the menu */}
+          <div className="flex items-center gap-2.5 min-[900px]:hidden">
+            <MobileFeatureTicker onOpen={() => setMenuOpen(true)} />
+            <button onClick={() => setMenuOpen(true)} aria-label="Open menu"
+              className="grid h-10 w-10 place-items-center text-[#f6f1e8]">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
+            </button>
+          </div>
         </div>
       </header>
 
