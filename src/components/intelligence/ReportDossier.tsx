@@ -36,7 +36,7 @@ const ROWS: Row[] = [
   { n: "III", t: "Location intelligence", q: "What will actually move this price?", get: "The corridor, the catalysts and the connectivity that count." },
   { n: "IV", t: "Legal & compliance", q: "Anything to clear before you sign?", get: "The issues to fix — or the reason to walk." },
   { n: "V", t: "Project USPs", q: "Which claims hold real value?", get: "Real value, sorted from brochure gloss." },
-  { n: "VI", t: "Price & ROI model", q: "Does it beat the corridor?", get: "Your five-year CAGR, hold period and exit." },
+  { n: "VI", t: "Price & ROI model", q: "Does it beat the corridor?", get: "Your 10-year CAGR, hold period and exit." },
   { n: "VII", t: "The Verdict", q: "So — should you buy it?", get: "A clear buy / caution / avoid for your budget and risk." },
 ];
 
