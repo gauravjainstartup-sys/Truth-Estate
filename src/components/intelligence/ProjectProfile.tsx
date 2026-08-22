@@ -31,6 +31,7 @@ import TowerIntel, { openUnitIntel } from "./TowerIntel";
 import UnlockModal from "./UnlockModal";
 import ReportDossier from "./ReportDossier";
 import UnlockDesk from "./UnlockDesk";
+import UnlockCtaLabel from "./UnlockCtaLabel";
 import ChallengeChat from "./ChallengeChat";
 import ReportAnatomy from "./ReportAnatomy";
 import ReportDeveloper from "./ReportDeveloper";
@@ -1467,15 +1468,22 @@ export default function ProjectProfile({
 
       {/* Mobile: a single, clean primary CTA. When unlocked, the founder's face
           rides beside the advisor call (advice reads as a person); when locked,
-          a clean full-width "Get Full Read" drives the sale. */}
+          the same price CTA the desktop rail shows (UnlockCtaLabel) drives the
+          sale — the mobile bar and desktop rail render one shared component so
+          they never diverge. */}
       {!frozen && (
       <div className="sticky bottom-0 z-40 flex items-center gap-3 border-t border-[#1a1a1a]/10 bg-[#F5F0E8]/95 px-6 py-3 backdrop-blur md:hidden">
         {!locked && (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img src={`${basePath}/images/founder-gaurav.webp`} alt="Gaurav Jain — Founder, Truth Estate" className="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-[#B29668]/50" />
         )}
-        <button onClick={primaryCta.onClick} className="flex-1 rounded-sm bg-[#1e6b45] px-5 py-3.5 text-[0.82rem] font-medium tracking-[0.04em] text-white transition-colors hover:bg-[#238c55]">
-          {primaryCta.label}
+        <button
+          onClick={primaryCta.onClick}
+          className={`group flex-1 rounded-sm bg-[#1e6b45] text-white transition-colors hover:bg-[#238c55] ${locked ? "px-5 py-2.5" : "px-5 py-3.5"}`}
+        >
+          {locked
+            ? <UnlockCtaLabel />
+            : <span className="text-[0.82rem] font-medium tracking-[0.04em]">{primaryCta.label}</span>}
         </button>
       </div>
       )}

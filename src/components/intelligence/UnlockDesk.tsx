@@ -18,12 +18,8 @@
    there. This card is locked-only.
    ──────────────────────────────────────────────────────────────────────── */
 
-import { discountOf } from "@/lib/journey";
-import { usePackage } from "@/lib/usePricing";
 import { basePath } from "@/lib/site";
-import { useFirstFree } from "@/lib/useFirstFree";
-
-const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+import UnlockCtaLabel from "./UnlockCtaLabel";
 
 const INCLUDED: { t: string; bonus?: boolean }[] = [
   { t: "The full 5-pillar forensic audit" },
@@ -33,13 +29,6 @@ const INCLUDED: { t: string; bonus?: boolean }[] = [
 ];
 
 export default function UnlockDesk({ onUnlock }: { onUnlock: () => void }) {
-  const read = usePackage("read");
-  const d = discountOf(read);
-  /* First report free for a new / guest profile — matches LockedReport on the
-     same page (both read the device-trail cache the claim resolves from, so the
-     rail never quotes a price the paywall or the server disagrees with).
-     Reactive, so it corrects when a claim updates the cache. */
-  const firstFree = useFirstFree();
   return (
     <div className="rounded-2xl border border-[#1a1a1a]/10 bg-[#FBF8F2] p-5">
       {/* founder as a trust seal — not a free-call offer */}
@@ -76,17 +65,7 @@ export default function UnlockDesk({ onUnlock }: { onUnlock: () => void }) {
         onClick={onUnlock}
         className="group mt-4 block w-full rounded-xl bg-[#1e6b45] px-5 py-3 text-center text-white transition-colors hover:bg-[#238c55]"
       >
-        <span className="inline-flex items-center gap-1.5 text-[0.85rem] font-semibold">
-          {firstFree ? "Unlock First Report at ₹0" : <>Unlock the full read — {inr(read.inr)}</>}
-          <span aria-hidden className="inline-block transition-transform group-hover:translate-x-0.5">→</span>
-        </span>
-        {firstFree
-          ? <span className="mt-0.5 block text-[0.68rem] font-medium text-white/85"><span className="text-white/55 line-through">{inr(d?.mrp ?? read.inr)}</span> · your first report is free</span>
-          : d && (
-            <span className="mt-0.5 block text-[0.68rem] font-medium text-white/85">
-              <span className="text-white/55 line-through">{inr(d.mrp)}</span> · save {inr(d.mrp - read.inr)} ({d.pct}% off)
-            </span>
-          )}
+        <UnlockCtaLabel />
       </button>
     </div>
   );
