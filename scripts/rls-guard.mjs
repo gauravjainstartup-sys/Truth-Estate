@@ -84,6 +84,7 @@ const SENSITIVE = [
   ["chat_sessions", "content"],
   ["payments", "amount"],
   ["events", "*"],
+  ["report_stakes", "*"],
   ["owned_properties", "*"],
   ["contact_leads", "*"],
 ];

@@ -462,11 +462,122 @@ export async function saveBriefToServer(buy: BuyData): Promise<void> {
           "content-type": "application/json",
           Prefer: "return=minimal",
         },
-        body: JSON.stringify({ brief: buy }),
+        /* persona is the denormalised, queryable copy of the brief's
+           purchaseType (migration 0025) — written in the same PATCH so the
+           two never drift. Mirrors personaOf() in matchEngine. */
+        body: JSON.stringify({ brief: buy, persona: personaFromPurchaseType(buy.purchaseType) }),
         signal: AbortSignal.timeout(8000),
       },
     );
   } catch { /* best effort — the localStorage copy is already saved */ }
+}
+
+/* 'Investment' → investor; any other stated type → end-user; unstated → null.
+   Kept inline (this is a leaf-ish auth module) but identical to
+   matchEngine.personaOf's split. */
+function personaFromPurchaseType(t: string | null | undefined): "investor" | "end-user" | null {
+  if (!t || !t.trim()) return null;
+  return t === "Investment" ? "investor" : "end-user";
+}
+
+/* ── The per-project stake, kept on the account (report_stakes, 0025) ──
+   The shared report↔user row. Writing the stake sets ONLY the stake (and
+   the labels PostgREST needs to render the portfolio) — never the view
+   timestamps or persona, which other paths own. Upsert on (user_id, slug),
+   merge-duplicates. No session → no-op; localStorage stays the store. */
+export async function saveStakeToServer(
+  slug: string,
+  stake: "invested" | "considering",
+  meta?: { name?: string; market?: string; seoSlug?: string | null },
+): Promise<void> {
+  const session = getSession();
+  const token = session?.access_token;
+  const uid = session?.user_id;
+  if (!token || !uid || !slug) return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/report_stakes?on_conflict=user_id,slug`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=minimal",
+      },
+      body: JSON.stringify({
+        user_id: uid,
+        slug,
+        stake,
+        ...(meta?.name ? { name: meta.name } : {}),
+        ...(meta?.market ? { market: meta.market } : {}),
+        ...(meta?.seoSlug != null ? { seo_slug: meta.seoSlug } : {}),
+        updated_at: new Date().toISOString(),
+      }),
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch { /* best effort — localStorage already holds the stake */ }
+}
+
+/* Pull this account's declared stakes down as a {slug: stake} map, for the
+   sync that warms the synchronous localStorage readStake(). Null (keep the
+   local copy) when signed out, offline, or before 0025 exists. */
+export async function fetchStakesFromServer(): Promise<Record<string, "invested" | "considering"> | null> {
+  const session = getSession();
+  const token = session?.access_token;
+  const uid = session?.user_id;
+  if (!token || !uid) return null;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/report_stakes?stake=not.is.null&select=slug,stake`,
+      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
+    );
+    if (!res.ok) return null; // 404 until 0025 is run ⇒ keep the local copy
+    const rows = (await res.json().catch(() => null)) as { slug?: string; stake?: string }[] | null;
+    if (!Array.isArray(rows)) return null;
+    const map: Record<string, "invested" | "considering"> = {};
+    for (const r of rows) {
+      if (r.slug && (r.stake === "invested" || r.stake === "considering")) map[r.slug] = r.stake;
+    }
+    return map;
+  } catch { return null; }
+}
+
+/* Record that this account opened a report — the relationship view stamp
+   (report_stakes.last_viewed_at). The report_viewed EVENT still fires
+   separately for the funnel; this is the denormalised per-relationship
+   copy. first_viewed_at is set by the column default on insert and never
+   sent here, so it is preserved across every later touch. */
+export async function touchReportView(
+  slug: string,
+  meta?: { name?: string; market?: string; seoSlug?: string | null },
+): Promise<void> {
+  const session = getSession();
+  const token = session?.access_token;
+  const uid = session?.user_id;
+  if (!token || !uid || !slug) return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/report_stakes?on_conflict=user_id,slug`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=minimal",
+      },
+      /* first_viewed_at is deliberately NOT sent: the column defaults to
+         now() on insert, and omitting it here means a merge-duplicates
+         upsert never overwrites it on a later view. */
+      body: JSON.stringify({
+        user_id: uid,
+        slug,
+        last_viewed_at: new Date().toISOString(),
+        ...(meta?.name ? { name: meta.name } : {}),
+        ...(meta?.market ? { market: meta.market } : {}),
+        ...(meta?.seoSlug != null ? { seo_slug: meta.seoSlug } : {}),
+        updated_at: new Date().toISOString(),
+      }),
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch { /* best effort — a view stamp must never block the report */ }
 }
 
 export async function fetchMyBrief(): Promise<BuyData | null> {

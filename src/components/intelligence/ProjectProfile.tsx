@@ -5,7 +5,7 @@ import { track } from "@/lib/events";
 import { useRouter } from "next/navigation";
 import Logo from "../Logo";
 import { useConsultation } from "../consultation/ConsultationProvider";
-import { loadBuyData, hasPreferences, deriveDNA, clearAllDemoData, saveLead, hasReadAccess, has3DAccess, readStake, packageById, isSignedIn, AUTH_EVENT } from "@/lib/journey";
+import { loadBuyData, hasPreferences, deriveDNA, clearAllDemoData, saveLead, hasReadAccess, has3DAccess, readStake, syncStakesRemote, packageById, isSignedIn, AUTH_EVENT } from "@/lib/journey";
 import { ENTITLEMENTS_EVENT } from "@/lib/entitlementsCache";
 import { fetchEntitlements } from "@/lib/entitlements";
 import { negotiationLevers } from "@/lib/negotiation";
@@ -357,6 +357,22 @@ export default function ProjectProfile({
   useEffect(() => {
     if (sample || frozen || embedded) return;
     recordReportView(p.slug, p.name, p.market, p.seoSlug ?? null);
+  }, [sample, frozen, embedded, p.slug, p.name, p.market, p.seoSlug]);
+
+  /* The account-backed half of the same open: stamp the report↔user row's
+     last_viewed_at (report_stakes, 0025), and pull this account's declared
+     stakes DOWN so owner-mode reflects a stake made on another device. Both
+     are best-effort and signed-in-only; no-ops (and graceful 404s before
+     0025 exists) otherwise, so the anonymous read is untouched. Data only —
+     nothing here changes what renders. */
+  useEffect(() => {
+    if (sample || frozen || embedded) return;
+    void import("@/lib/phoneAuth")
+      .then(({ touchReportView }) => touchReportView(p.slug, { name: p.name, market: p.market, seoSlug: p.seoSlug ?? null }))
+      .catch(() => { /* a view stamp must never break the report */ });
+    void syncStakesRemote().then((changed) => {
+      if (changed && readStake(p.slug) === "invested") setAudience("owner");
+    });
   }, [sample, frozen, embedded, p.slug, p.name, p.market, p.seoSlug]);
 
   /* Self-declared ownership — the "I've invested / I own this" button adds this

@@ -1460,6 +1460,36 @@ export function saveStake(slug: string, stake: Stake, projectName?: string): voi
     window.localStorage.setItem(STAKE_KEY, JSON.stringify(map));
   } catch { /* a full quota must not block the unlock behind this */ }
   fireEvent("stake_declared", { projectSlug: slug, projectName, props: { stake } });
+  /* Persist to the account too (report_stakes, migration 0025) so the stake
+     survives sign-out and follows the buyer across devices — the same
+     best-effort, signed-in-only mirror saveBuyData uses for the brief. The
+     event above still fires regardless (funnel + the backfill's source). */
+  void import("@/lib/phoneAuth")
+    .then(({ saveStakeToServer }) => saveStakeToServer(slug, stake, projectName ? { name: projectName } : undefined))
+    .catch(() => { /* localStorage copy is already saved */ });
+}
+
+/* Pull the account's declared stakes DOWN into the local map, so the
+   synchronous readStake() (called during render for owner-mode) reflects
+   what this person declared on another device. Best-effort and additive —
+   a local stake the server hasn't heard of yet is kept. Returns true if
+   anything changed. Call on report / office mount. */
+export async function syncStakesRemote(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  const remote = await import("@/lib/phoneAuth")
+    .then(({ fetchStakesFromServer }) => fetchStakesFromServer())
+    .catch(() => null);
+  if (!remote) return false;
+  try {
+    const raw = window.localStorage.getItem(STAKE_KEY);
+    const map = raw ? (JSON.parse(raw) as Record<string, Stake>) : {};
+    let changed = false;
+    for (const [slug, stake] of Object.entries(remote)) {
+      if (map[slug] !== stake) { map[slug] = stake; changed = true; }
+    }
+    if (changed) window.localStorage.setItem(STAKE_KEY, JSON.stringify(map));
+    return changed;
+  } catch { return false; }
 }
 
 const ACCESS_KEY = "truthEstate.access";

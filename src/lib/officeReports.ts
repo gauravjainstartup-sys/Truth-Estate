@@ -547,12 +547,20 @@ export async function fetchMyViewedRemote(): Promise<(ViewRecord & { slug: strin
   }
 }
 
-/* ── My Portfolio, per account (owned_properties, migration 0012) ──
+/* ── My Portfolio, per account (report_stakes where stake='invested',
+   migration 0025 — renamed from owned_properties) ──
    Owned is self-declared and READ-WRITE, so unlike invoices/views it needs
    a write path too — markOwned / unmarkOwned mirror every change up. All
    three helpers are no-ops without a session and fail soft: before the
-   table exists (0012 not yet run) the read 404s to null and the writes are
-   swallowed, so the office simply stays on its localStorage copy. */
+   table exists (0025 not yet run) the read 404s to null and the writes are
+   swallowed, so the office simply stays on its localStorage copy.
+
+   report_stakes is the shared report↔user row, so a portfolio write here
+   sets stake='invested' and NEVER touches the row's other columns (the
+   unlock-modal stake, per-project persona, view timestamps) — PostgREST
+   upserts only the columns in the body. Un-marking clears the stake back
+   to null rather than deleting the row, so a project's view history and
+   persona survive being removed from the portfolio. */
 type OwnedRow = { slug?: string; name?: string | null; market?: string | null; seo_slug?: string | null; note?: string | null; created_at?: string | null };
 
 async function ownedGet(): Promise<(OwnedRecord & { slug: string })[] | null> {
@@ -560,10 +568,10 @@ async function ownedGet(): Promise<(OwnedRecord & { slug: string })[] | null> {
   if (!token) return null;
   try {
     const res = await fetch(
-      `${SB_URL}/rest/v1/owned_properties?select=slug,name,market,seo_slug,note,created_at&order=created_at.desc`,
+      `${SB_URL}/rest/v1/report_stakes?stake=eq.invested&select=slug,name,market,seo_slug,note,created_at&order=created_at.desc`,
       { headers: { apikey: SB_ANON, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
     );
-    if (!res.ok) return null; // 404 until 0012 is run ⇒ keep the local copy
+    if (!res.ok) return null; // 404 until 0025 is run ⇒ keep the local copy
     const rows = (await res.json().catch(() => null)) as OwnedRow[] | null;
     if (!Array.isArray(rows)) return null;
     return rows
@@ -589,7 +597,7 @@ function ownedPut(slug: string, rec: OwnedRecord): void {
   const token = accessToken();
   const uid = sessionUserId();
   if (!token || !uid) return;
-  void fetch(`${SB_URL}/rest/v1/owned_properties?on_conflict=user_id,slug`, {
+  void fetch(`${SB_URL}/rest/v1/report_stakes?on_conflict=user_id,slug`, {
     method: "POST",
     headers: {
       apikey: SB_ANON,
@@ -600,6 +608,7 @@ function ownedPut(slug: string, rec: OwnedRecord): void {
     body: JSON.stringify({
       user_id: uid,
       slug,
+      stake: "invested",
       name: rec.name,
       market: rec.market,
       seo_slug: rec.seoSlug,
@@ -611,13 +620,21 @@ function ownedPut(slug: string, rec: OwnedRecord): void {
   }).catch(() => { /* local copy is authoritative for the UI */ });
 }
 
+/* Un-mark = clear the stake, keep the row (its views/persona are still
+   true). A PATCH, not a DELETE — the relationship survives leaving the
+   portfolio. */
 function ownedDel(slug: string): void {
   const token = accessToken();
   const uid = sessionUserId();
   if (!token || !uid) return;
   void fetch(
-    `${SB_URL}/rest/v1/owned_properties?user_id=eq.${encodeURIComponent(uid)}&slug=eq.${encodeURIComponent(slug)}`,
-    { method: "DELETE", headers: { apikey: SB_ANON, Authorization: `Bearer ${token}`, Prefer: "return=minimal" }, signal: AbortSignal.timeout(8000) },
+    `${SB_URL}/rest/v1/report_stakes?user_id=eq.${encodeURIComponent(uid)}&slug=eq.${encodeURIComponent(slug)}`,
+    {
+      method: "PATCH",
+      headers: { apikey: SB_ANON, Authorization: `Bearer ${token}`, "content-type": "application/json", Prefer: "return=minimal" },
+      body: JSON.stringify({ stake: null, updated_at: new Date().toISOString() }),
+      signal: AbortSignal.timeout(8000),
+    },
   ).catch(() => { /* local delete already happened */ });
 }
 
