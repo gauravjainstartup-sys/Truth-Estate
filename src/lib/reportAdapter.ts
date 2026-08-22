@@ -1131,7 +1131,11 @@ export function liveProjectIntel(
           corridor: row.microMarket ?? row.location ?? null,
           constructionPct: row.constructionProgressPct ?? null,
         });
-        const horizonYears = DEFAULT_ROI_PARAMS.holdYears;
+        /* The model's headline horizon is 10 years — the full span the
+           interactive panel projects to (its exit table runs 1–10; the 8-yr
+           default hold is just where the selector starts). Founder call: the
+           read is a 10-year ROI model, so the baked value + the FAQ quote 10. */
+        const horizonYears = 10;
         const benchCagr = eng.expectedCagr;
         const adjCagr = eng.riskAdjustedCagr;
         const ticketRaw = row.roiCostCr ?? row.minPriceCr;

@@ -450,7 +450,10 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         };
       }
     }
-    const liveFaqs = projectFaqs(intel);
+    /* The FAQ schema is the PUBLIC view — search engines and anon readers —
+       so gate the paid figures out of it (locked=true); the visible section
+       re-derives ungated for an entitled reader client-side. */
+    const liveFaqs = projectFaqs(intel, true);
     const timelineLd = timelineLdFor(intel.wireItems ?? [], live);
     const newsLd = newsLdFor(intel.wireItems ?? [], live);
 

@@ -784,7 +784,7 @@ export function roiModel(p: ProjectIntel): RoiModel | null {
   if (p.liveRoi) return p.liveRoi; // pipeline-computed model for live projects
   const market = marketOf(p);
   if (!market) return null;
-  const horizonYears = 5;
+  const horizonYears = 10; // 10-year ROI model (matches the live roiModel + copy)
   const total3Y = bandMid(market.appreciation3Y);
   const benchCagr = Math.round((Math.pow(1 + total3Y / 100, 1 / 3) - 1) * 1000) / 10;
   const onTime = developerOf(p)?.performance.onTimePct ?? 80;
@@ -854,8 +854,12 @@ function financialAnswer(p: ProjectIntel, dev: DeveloperIntel): string {
   }${worst && (strained > 0 || strong < bands.length) ? `; the weakest is ${worst.label.toLowerCase()}` : ""}.${usable ? ` ${note}` : ""}`;
 }
 
-/* Forensic FAQ — composed from the data; also emitted as FAQPage schema. */
-export function projectFaqs(p: ProjectIntel): { q: string; a: string }[] {
+/* Forensic FAQ — composed from the data; also emitted as FAQPage schema.
+   `locked` gates the paid figures: the "fairly priced" answer names the
+   corridor band and our pricing grade, both of which are the paid read's
+   product, so on a locked report (and in the public FAQ schema) it collapses
+   to the thesis + an unlock pointer. Everything else here is public. */
+export function projectFaqs(p: ProjectIntel, locked = false): { q: string; a: string }[] {
   const dev = developerOf(p);
   const market = marketOf(p);
   const roi = roiModel(p);
@@ -916,9 +920,11 @@ export function projectFaqs(p: ProjectIntel): { q: string; a: string }[] {
   }
   faqs.push({
     q: `Is ${p.name} fairly priced?`,
-    a: `${p.reason} The tracked ${p.marketShort} corridor trades at ${
-      p.psf ? (p.psf.low === p.psf.high ? `≈${fmtPsf(p.psf.avg)} / sq ft` : `${fmtPsf(p.psf.low)}–${fmtPsf(p.psf.high)} / sq ft`) : "a range we track"
-    }, and we assess this project's pricing & value as ${p.anatomy.pricing === "strong" ? "attractive" : "fair"} for the address.`,
+    a: locked
+      ? `${p.reason} Whether it's fairly priced for this address — our pricing & value call, and where it sits against the corridor benchmark — is in the full read.`
+      : `${p.reason} The tracked ${p.marketShort} corridor trades at ${
+          p.psf ? (p.psf.low === p.psf.high ? `≈${fmtPsf(p.psf.avg)} / sq ft` : `${fmtPsf(p.psf.low)}–${fmtPsf(p.psf.high)} / sq ft`) : "a range we track"
+        }, and we assess this project's pricing & value as ${p.anatomy.pricing === "strong" ? "attractive" : "fair"} for the address.`,
   });
   return faqs;
 }

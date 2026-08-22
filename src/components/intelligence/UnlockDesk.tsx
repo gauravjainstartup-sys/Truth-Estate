@@ -27,7 +27,7 @@ const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
 const INCLUDED: { t: string; bonus?: boolean }[] = [
   { t: "The full 5-pillar forensic audit" },
-  { t: "Price journey & 5-year ROI model" },
+  { t: "Price journey & 10-year ROI model" },
   { t: "The verdict — our call for your budget" },
   { t: "A 1:1 call with the founder", bonus: true },
 ];

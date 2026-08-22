@@ -47,7 +47,7 @@ const PLAN_CARDS: CardDef[] = [
     id: "read", scope: "this project",
     features: [
       "150+ checks — the red flags brokers skip",
-      "Fair-price band, 5-year ROI, a clear verdict",
+      "Fair-price band, 10-year ROI, a clear verdict",
       "Every claim sourced — verify it yourself",
       "Unlimited TruthGuide + a free advisor call",
     ],

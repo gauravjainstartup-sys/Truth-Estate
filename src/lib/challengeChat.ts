@@ -322,7 +322,7 @@ export function answerChallenge(
 
     case "unknown":
     default:
-      return open(`I only speak from our own read of ${p.name}, so I won't guess at that one. But push me on what decides the cheque — the Truth Score, the biggest risk, whether ${ticket} is fair, the builder's record, or the 5-year return. Which one?`);
+      return open(`I only speak from our own read of ${p.name}, so I won't guess at that one. But push me on what decides the cheque — the Truth Score, the biggest risk, whether ${ticket} is fair, the builder's record, or the 10-year return. Which one?`);
   }
 }
 
@@ -345,7 +345,7 @@ export type ChallengeContext = {
 
 export const PAID_TOPICS = [
   "The buy / no-buy verdict for the buyer's budget & risk",
-  "The 5-year ROI and CAGR projection",
+  "The 10-year ROI and CAGR projection",
   "The developer's full delivery and financial record",
   "The title / RERA / litigation read",
   "The specific red flags to clear before signing",
@@ -427,7 +427,7 @@ export function buildChallengeContext(
   if (p.watchouts?.length) paid.push(`RED FLAGS / WATCHOUTS: ${p.watchouts.join("; ")}.`);
   if (p.ops?.usps?.length) paid.push(`USPs: ${p.ops.usps.map((u) => u.title).join("; ")}.`);
   if (p.strengths?.length) paid.push(`STRENGTHS: ${p.strengths.join("; ")}.`);
-  const faqs = projectFaqs(p).map((f) => `Q: ${f.q}\nA: ${f.a}`).join("\n");
+  const faqs = projectFaqs(p, locked).map((f) => `Q: ${f.q}\nA: ${f.a}`).join("\n");
   if (faqs) paid.push(`FAQs:\n${faqs}`);
 
   // Per-unit Sun/Vastu is the Sun & Vastu 3D tier (via All-Access) — include it ONLY for a

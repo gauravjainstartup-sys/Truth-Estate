@@ -438,7 +438,7 @@ export default function ProjectProfile({
   // reads none of the static market fields)
   const locIntel = !!market || !!p.ops?.location;
   const roi = roiModel(p);
-  const faqs = projectFaqs(p);
+  const faqs = projectFaqs(p, locked);
   /* Computed here rather than inside the section so the table of contents
      can ask whether there is anything to link to. */
   const levers = negotiationLevers(p);

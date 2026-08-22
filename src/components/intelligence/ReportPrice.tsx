@@ -257,7 +257,7 @@ export default function ReportPrice({ p, sample = false, unlocked: unlockedProp,
               <div className="flex flex-col justify-center gap-3 rounded-2xl border border-[#1e6b45]/25 bg-[#FBF8F2] p-6">
                 <div className="flex flex-col items-center gap-2 text-center">
                   <span className="text-[1.3rem]" aria-hidden>🔒</span>
-                  <p className="text-[0.6rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/45">5-year growth outlook</p>
+                  <p className="text-[0.6rem] font-medium uppercase tracking-[0.16em] text-[#1a1a1a]/45">10-year growth outlook</p>
                   <span className="inline-flex overflow-hidden rounded-full border border-[#1a1a1a]/10 bg-white">
                     {(["Low", "Medium", "High"] as const).map((o) => (
                       <span key={o} className={`px-3.5 py-1.5 text-[0.72rem] ${o === outlook ? "bg-[#1e6b45] font-bold text-white" : "text-[#1a1a1a]/35"}`}>{o}</span>

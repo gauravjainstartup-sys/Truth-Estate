@@ -21,7 +21,7 @@ const LOCKED: { k: string; t: string; hook: string }[] = [
   { k: "Pillar III", t: "Location intelligence", hook: "The metro, roads and catalysts that will actually move this price." },
   { k: "Pillar IV", t: "Legal & compliance", hook: "Title, RERA and litigation signals we'd want cleared before you sign." },
   { k: "Pillar V", t: "Project USPs", hook: "Which claims hold real value — and which are just brochure gloss." },
-  { k: "Chapter III", t: "Price & ROI model", hook: "The exact 5-year CAGR we project — and whether it beats the corridor." },
+  { k: "Chapter III", t: "Price & ROI model", hook: "The exact 10-year CAGR we project — and whether it beats the corridor." },
   { k: "Chapter IV", t: "The verdict", hook: "Should you buy it? Our tailored call for your budget, timeline and risk." },
   /* "Straight answers" was on this list, and it is not behind the wall — the
      FAQ renders free on every locked report, now under its own chapter. A
@@ -81,7 +81,7 @@ export default function LockedReport({
         </span>
         <h3 className="mt-5 text-balance font-serif text-[1.95rem] font-semibold leading-[1.1] text-[#1a1a1a] md:text-[2.5rem]">
           {owner
-            ? <>This is what you bought.</>
+            ? <>The full audit on your home.</>
             : ticket ? <>Don&rsquo;t stake {ticket} on a brochure.</> : <>Don&rsquo;t buy on a brochure.</>}
         </h3>
         {truthScore > 0 && (

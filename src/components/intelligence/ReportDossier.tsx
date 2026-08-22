@@ -116,7 +116,7 @@ export default function ReportDossier({
         </span>
         <h3 className="mt-5 text-balance font-serif text-[1.95rem] font-semibold leading-[1.1] text-[#1a1a1a] md:text-[2.5rem]">
           {owner
-            ? <>This is what you bought.</>
+            ? <>The full audit on your home.</>
             : ticket ? <>Don&rsquo;t stake {ticket} on a brochure.</> : <>Don&rsquo;t buy on a brochure.</>}
         </h3>
         {truthScore > 0 && (

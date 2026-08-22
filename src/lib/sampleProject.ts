@@ -230,7 +230,7 @@ export function sampleProjectIntel(): ProjectIntel {
       "Live High Court injunction on a developer-owned parcel next door — a funding and OC risk if title isn't ring-fenced",
       "HARERA has already ordered this developer to pay delay compensation on a comparable tower",
       "Registered mortgage over the project SPV — your unit needs a lender NOC to convey clean",
-      "Our 5-year model lands at ~3.6% CAGR — well below the ~7.4% corridor benchmark once execution risk is priced in",
+      "Our 10-year model lands at ~3.6% CAGR — well below the ~7.4% corridor benchmark once execution risk is priced in",
       "Revised HARERA completion date is later than the brochure's, and no OC application is on record yet",
     ],
     /* Every number here has to tie to every other one — this is the one
