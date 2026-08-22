@@ -20,7 +20,7 @@ import { track } from "@/lib/events";
    avoid churn); the reader only ever sees "News & Updates".
 
    Reader-facing behaviour, per the founder:
-   · Newest first, "Landmark Catalyst" pinned on top.
+   · Strict reverse chronology — newest first, always (no pinning).
    · TWO VIEWS of the same events, and the reader chooses:
        Stories (default) — vertical, autoplaying, phone-native. Every
          dispatch is in the DOM; see DispatchStories.
@@ -77,15 +77,15 @@ function formatDate(dStr: string) {
   }
 }
 
-/* Newest first; a pinned "Landmark Catalyst" floats above the rest regardless
-   of date. Sort is stable enough for our sizes; ties keep supplied order. */
+/* Strict reverse chronology — newest first, no exceptions. Pinning used to
+   float a "Landmark Catalyst" above the feed regardless of date; the founder's
+   call is that a news feed should never surface a stale item above a fresh one
+   (a 2024 launch sitting atop 2026 dispatches read as broken), so the pin no
+   longer affects order — nor does the badge/ring below still render off it.
+   Sort is stable enough for our sizes; undated items (Date.parse → NaN → 0)
+   sink to the bottom. */
 function sortNewestFirst(items: ProjectWireItem[]): ProjectWireItem[] {
-  return [...items].sort((a, b) => {
-    if (!!a.isPinned !== !!b.isPinned) return a.isPinned ? -1 : 1;
-    const ta = Date.parse(a.eventDate) || 0;
-    const tb = Date.parse(b.eventDate) || 0;
-    return tb - ta;
-  });
+  return [...items].sort((a, b) => (Date.parse(b.eventDate) || 0) - (Date.parse(a.eventDate) || 0));
 }
 
 export default function ProjectIntelligenceWire({
@@ -229,9 +229,7 @@ export default function ProjectIntelligenceWire({
           return (
             <article
               key={item.id || idx}
-              className={`relative ml-9 rounded-2xl border border-l-[3px] bg-white p-6 shadow-[0_8px_30px_rgba(0,0,0,0.03)] transition-shadow hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)] md:p-7 ${impact.edge} ${
-                item.isPinned ? "border-[#c9a96e]/60 ring-1 ring-[#c9a96e]/25" : "border-[#1a1a1a]/10"
-              }`}
+              className={`relative ml-9 rounded-2xl border border-l-[3px] border-[#1a1a1a]/10 bg-white p-6 shadow-[0_8px_30px_rgba(0,0,0,0.03)] transition-shadow hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)] md:p-7 ${impact.edge}`}
             >
               {/* Node — category icon, ringed in the impact colour so the rail
                   reads as a risk/catalyst map at a glance. */}
@@ -251,11 +249,6 @@ export default function ProjectIntelligenceWire({
                     <span aria-hidden>{catMeta.icon}</span>
                     <span>{catMeta.label}</span>
                   </span>
-                  {item.isPinned && (
-                    <span className="inline-flex items-center gap-1 rounded-md border border-[#c9a96e]/40 bg-[#c9a96e]/15 px-2 py-0.5 text-[0.63rem] font-bold uppercase tracking-wider text-[#9a7a2e]">
-                      📌 Landmark
-                    </span>
-                  )}
                 </div>
                 {item.sourceName && (
                   <div className="flex items-center gap-1.5 text-[0.7rem] text-[#1a1a1a]/50">

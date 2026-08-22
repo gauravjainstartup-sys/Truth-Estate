@@ -1160,7 +1160,12 @@ export async function fetchProjectWire(projectSlug?: string): Promise<ProjectWir
     // pulled with select=* (no status filter) — so enforce PUBLISHED here too, or
     // a DRAFT row would bake into the static HTML.
     .filter((r) => (s(r.status) ?? "DRAFT") === "PUBLISHED")
-    .map(mapWireRow);
+    .map(mapWireRow)
+    // Strict reverse chronology at the data layer too: the live query already
+    // orders event_date.desc, but the snapshot fixture is read in file order,
+    // so guarantee it here for any consumer that doesn't re-sort. Undated rows
+    // (Date.parse → NaN → 0) sink. The wire component re-applies the same order.
+    .sort((a, b) => (Date.parse(b.eventDate) || 0) - (Date.parse(a.eventDate) || 0));
 
   if (!projectSlug) return items;
   const target = projectSlug.toLowerCase().trim();
