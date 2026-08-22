@@ -72,10 +72,11 @@ export default async function LegacyProjectStub(
   const href = `${BASE}${target ?? "/intelligence/projects"}`;
   return (
     <div data-legacy-stub className="mx-auto max-w-xl px-6 py-28 text-center">
-      <script dangerouslySetInnerHTML={{ __html: `location.replace(${JSON.stringify(href)})` }} />
-      <p className="text-[0.8rem] font-light text-[#1a1a1a]/55">This report moved to a new address.</p>
-      <a href={href} className="mt-3 inline-block text-[0.95rem] font-medium text-[#1e6b45] underline underline-offset-4">
-        Continue to the report →
+      <meta httpEquiv="refresh" content={`0;url=${href}`} />
+      <p className="font-serif text-[1.25rem] font-medium text-[#1a1a1a]">Project Intelligence Report</p>
+      <p className="mt-2 text-[0.85rem] font-light text-[#1a1a1a]/60">This report has moved to our canonical project index.</p>
+      <a href={href} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#1e6b45] px-5 py-2.5 text-[0.88rem] font-medium text-white shadow-sm hover:bg-[#165034]">
+        Continue to Verified Report →
       </a>
     </div>
   );
