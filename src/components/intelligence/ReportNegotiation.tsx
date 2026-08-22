@@ -3,18 +3,17 @@
 /* ════════════════════════════════════════════════════════════════
    NEGOTIATE LIKE A KING — the leverage this file hands the buyer.
 
-   Renders on locked AND unlocked reports, deliberately. A guest sees the
-   leverage and the figure behind it; what they do not see is the ask —
-   the sentence to send, the clause to name, the number to counter with.
+   Renders on locked AND unlocked reports. A guest sees THAT a lever
+   exists and that it is read from this project's own filings; what they
+   do not see is the figure that proves it, nor the ask — the sentence to
+   send, the clause to name, the number to counter with. Both are paid.
 
-   That split is the honest one. Telling someone "you have a card here,
-   and here is the number that proves it" is worth reading on its own and
-   is true whether or not they ever pay us. Telling them exactly how to
-   play it is the work, and the work is what the ₹1,100 buys.
-
-   It is also the section that gives a locked report something for a
-   crawler to index that is unique to this project: every figure below
-   comes from this file, and a lever with no figure never renders.
+   (Founder call, Aug 2026: the figures used to show on the locked report
+   too — the construction %, the ₹/sqft against the corridor band. That
+   leaked the forensic numbers the full read is sold on, so the evidence
+   line and the corridor-premium mention are now gated behind the unlock,
+   same as the ask. The lever TITLE stays — it is a qualitative claim, and
+   it is what a crawler indexes as unique to this project.)
    ════════════════════════════════════════════════════════════════ */
 import { FREE_LEVERS, negotiationLevers, type Lever } from "@/lib/negotiation";
 import type { ProjectIntel } from "@/lib/projects";
@@ -91,7 +90,7 @@ export default function ReportNegotiation({
               The Arbour — and nobody negotiates away the entire gap between
               a landmark project and its corridor's median. The percentage is
               the true thing: something they should be made to itemise. */}
-          {premiumPct != null && premiumPct >= 5 ? (
+          {!locked && premiumPct != null && premiumPct >= 5 ? (
             <> Entry here also sits about {premiumPct}% above the corridor&rsquo;s tracked top — a premium worth making them itemise line by line.</>
           ) : null}{" "}
           A buyer who arrives with a specific number is negotiating. One who asks for the best price is waiting to be told.
@@ -114,8 +113,15 @@ export default function ReportNegotiation({
                 {l.title}
               </h3>
             </div>
+            {/* The figure behind the lever is paid content — it names the
+                exact construction %, ₹/sqft or corridor band that IS the
+                argument. Locked readers see that a lever exists and is read
+                from this project's own filings; the number itself is in the
+                full read (the same line the withheld levers below carry). */}
             <p className="mt-2.5 pl-[calc(0.62rem+0.75rem)] text-[0.9rem] font-light leading-[1.75] text-[#1a1a1a]/65">
-              {l.evidence}
+              {locked
+                ? `Read from ${p.name}'s own construction, sales and registry data — the figure that proves it is in the full read.`
+                : l.evidence}
             </p>
 
             {locked ? (
