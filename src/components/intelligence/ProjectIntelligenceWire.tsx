@@ -64,7 +64,14 @@ export default function ProjectIntelligenceWire({
   const [subscribed, setSubscribed] = useState(false);
   const [contactInput, setContactInput] = useState("");
 
-  const wireList = useMemo(() => items ?? [], [items]);
+  const wireList = useMemo(() => {
+    if (!items || !items.length) return [];
+    return [...items].sort((a, b) => {
+      const dateA = a.eventDate || "";
+      const dateB = b.eventDate || "";
+      return dateB.localeCompare(dateA);
+    });
+  }, [items]);
 
   const categoriesPresent = useMemo(() => {
     const set = new Set<string>();

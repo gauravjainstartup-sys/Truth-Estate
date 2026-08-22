@@ -1081,7 +1081,7 @@ export async function fetchProjectWire(projectSlug?: string): Promise<ProjectWir
     isPinned: Boolean(r.is_pinned),
     displayOrder: typeof r.display_order === "number" ? r.display_order : 0,
     updatedAt: s(r.updated_at),
-  }));
+  })).sort((a, b) => (b.eventDate || "").localeCompare(a.eventDate || ""));
 
   if (!projectSlug) return items;
   const target = projectSlug.toLowerCase().trim();
