@@ -103,6 +103,10 @@ export type ProjectIntel = Project & {
      fallback set; null when the row held no ingredient at all. The option
      card omits its flag chip in both cases rather than guess. */
   redFlags?: number | null;
+  /* The same count split by section (redFlags.ts) — drives the per-section
+     red-flag chips on the locked report's chapter list. Absent on the mock
+     fallback set; a section with no flag rule has no key in the object. */
+  redFlagBreakdown?: import("./redFlags").RedFlagBreakdown | null;
   devSlug?: string;
   marketSlug?: string;
   marketShort: string;

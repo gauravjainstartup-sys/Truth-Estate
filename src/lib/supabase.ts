@@ -18,7 +18,7 @@
 import { corridorKey } from "./journey";
 import type { DevLedgerItem } from "./developers";
 import { computePillarSet, mapBacklogRowFields, ocFromOverrides, type OcInfo } from "./backlogRow";
-import { computeRedFlags, RED_FLAG_COLUMNS } from "./redFlags";
+import { computeRedFlags, RED_FLAG_COLUMNS, type RedFlagBreakdown } from "./redFlags";
 
 const SUPABASE_URL = "https://lyetvabfgaidvqrbmaoy.supabase.co";
 const SUPABASE_ANON_KEY =
@@ -289,6 +289,10 @@ export type LiveBacklogFull = {
   expectedCagrNum: number | null;
   adjustedRoi: number | null;
   redFlags: number | null;
+  /* The same audited count split into the three flag-bearing report sections
+     (redFlags.ts) — powers the per-section chips on the locked dossier. null
+     when the row carried no ingredient, exactly like redFlags. */
+  redFlagBreakdown: RedFlagBreakdown | null;
   matchScore: number | null;
   delayChancePct: number | null;
   budget: string | null;

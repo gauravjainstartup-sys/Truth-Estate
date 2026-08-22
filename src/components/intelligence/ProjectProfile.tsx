@@ -1019,7 +1019,7 @@ export default function ProjectProfile({
                 report body. The unlock anchor lives here now. */}
             {locked && (
               <div id="unlock" className="mt-4 scroll-mt-24">
-                <ReportDossier projectName={p.name} truthScore={p.truthScore} grade={scoreGrade(p.truthScore)} ticket={lockedTicket} onUnlock={openUnlock} audience={audience} />
+                <ReportDossier projectName={p.name} truthScore={p.truthScore} grade={scoreGrade(p.truthScore)} ticket={lockedTicket} onUnlock={openUnlock} audience={audience} flags={p.redFlagBreakdown} />
               </div>
             )}
 

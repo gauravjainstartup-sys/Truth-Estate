@@ -20,7 +20,7 @@
    ════════════════════════════════════════════════════════════════ */
 
 import type { LiveBacklogFull, LivePillarSet } from "./supabase";
-import { computeRedFlags } from "./redFlags";
+import { computeRedFlags, computeRedFlagBreakdown } from "./redFlags";
 
 type Row = Record<string, unknown>;
 
@@ -112,6 +112,8 @@ export function mapBacklogRowFields(r: Row, bpd: Row | null | undefined, oc: OcI
        projects and is never trusted. Stored survives only as the
        fallback for a row carrying no ingredients at all. */
     redFlags: computeRedFlags(r) ?? n(r.redFlags) ?? n(r.listing_red_flags),
+    /* the same recount, split by section, for the locked dossier's chips */
+    redFlagBreakdown: computeRedFlagBreakdown(r),
     matchScore: n(r.matchScore),
     delayChancePct: n(r.delay_chance_pct),
     budget: s(r.budget),

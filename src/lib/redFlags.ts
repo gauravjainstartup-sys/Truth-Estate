@@ -33,7 +33,26 @@
 const num = (v: unknown): number | null =>
   typeof v === "number" && Number.isFinite(v) ? v : null;
 
-export function computeRedFlags(r: Record<string, unknown>): number | null {
+export type RedFlagBreakdown = {
+  /* Developer DNA — track record (max 2) + developer financials (max 5).
+     Grouped exactly as the Truth-Score pillars group them (backlogRow.ts
+     PILLAR_GROUPS.developer = past_record + developer_financial), so the
+     dossier chip agrees with the pillar the reader unlocks. */
+  dev: number;
+  /* Construction & sales — build pace behind the filed RERA date (max 1). */
+  con: number;
+  /* Legal & compliance — HIGH/CRITICAL dimensions in the filed matrix (max 4). */
+  legal: number;
+  total: number;
+};
+
+/* The audited count, split into the three report sections that carry a flag
+   RULE. Same four checks, same order, same inputs as the flat count — only
+   partitioned, so `total` is byte-identical to what computeRedFlags returned
+   before. Sections with no flag concept (location, USPs, price, verdict) have
+   no key here by construction; the dossier shows them no chip. Returns null on
+   a row with no ingredient at all — the caller may then fall back. */
+export function computeRedFlagBreakdown(r: Record<string, unknown>): RedFlagBreakdown | null {
   const delivered = num(r.developer_delivered_projects);
   const ongoing = num(r.developer_ongoing_projects);
   const lapsed = num(r.developer_lapsed_projects);
@@ -52,21 +71,19 @@ export function computeRedFlags(r: Record<string, unknown>): number | null {
     avgDelay != null || fin != null || legal != null || paceDelay != null;
   if (!anyIngredient) return null;
 
-  let flags = 0;
-
-  // 1 · track record (max 2)
+  // Developer DNA — track record (max 2) + financials (max 5)
+  let dev = 0;
   const launched = total ?? (delivered ?? 0) + (ongoing ?? 0) + (lapsed ?? 0);
-  if (launched > 0 && (lapsed ?? 0) / launched >= 0.05) flags += 1;
-  if (avgDelay != null && avgDelay >= 12) flags += 1;
-
-  // 2 · financials (max 5)
+  if (launched > 0 && (lapsed ?? 0) / launched >= 0.05) dev += 1;
+  if (avgDelay != null && avgDelay >= 12) dev += 1;
   if (fin) {
-    flags += Math.min(5, Object.values(fin).filter((v) => typeof v === "number" && v < 40).length);
+    dev += Math.min(5, Object.values(fin).filter((v) => typeof v === "number" && v < 40).length);
   }
 
-  // 3 · legal (max 4)
+  // Legal & compliance — filed risk matrix (max 4)
+  let legalFlags = 0;
   if (legal) {
-    flags += Math.min(
+    legalFlags += Math.min(
       4,
       Object.values(legal).filter(
         (v) => typeof v === "string" && ["HIGH", "CRITICAL"].includes(v.toUpperCase()),
@@ -74,10 +91,17 @@ export function computeRedFlags(r: Record<string, unknown>): number | null {
     );
   }
 
-  // 4 · construction pace (max 1)
-  if (paceDelay != null && paceDelay >= 12) flags += 1;
+  // Construction & sales — build pace behind RERA (max 1)
+  let con = 0;
+  if (paceDelay != null && paceDelay >= 12) con += 1;
 
-  return flags;
+  return { dev, con, legal: legalFlags, total: dev + con + legalFlags };
+}
+
+/* The flat audited count — the sum of the breakdown. Kept as the primary
+   entry point (option cards, scored lists) so existing callers are unchanged. */
+export function computeRedFlags(r: Record<string, unknown>): number | null {
+  return computeRedFlagBreakdown(r)?.total ?? null;
 }
 
 /* The columns the computation reads — every fetch that wants a live

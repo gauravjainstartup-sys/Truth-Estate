@@ -24,6 +24,7 @@ import { useEffect, useRef } from "react";
 import { discountOf } from "@/lib/journey";
 import { usePackage } from "@/lib/usePricing";
 import { useFirstFree } from "@/lib/useFirstFree";
+import type { RedFlagBreakdown } from "@/lib/redFlags";
 
 /* The dossier's paid chapters, in reading order. Each row is the burning
    QUESTION (the pull) and the VALUE the reader walks away with (the promise).
@@ -51,10 +52,21 @@ const OWNER_GET: Record<string, string> = {
   "The Verdict": "Hold, push the developer, or get out.",
 };
 
+/* The three chapters our audit runs a flag RULE on (redFlags.ts), keyed by row
+   title. Every other chapter has no flag concept, so it never carries a chip —
+   we don't invent a check to fill the column. */
+type FlagKey = keyof Omit<RedFlagBreakdown, "total">;
+const FLAG_OF: Record<string, FlagKey> = {
+  "Developer DNA": "dev",
+  "Construction & sales": "con",
+  "Legal & compliance": "legal",
+};
+const FLAG_SHORT: Record<FlagKey, string> = { dev: "Developer", con: "Construction", legal: "Legal" };
+
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
 export default function ReportDossier({
-  projectName, truthScore = 0, grade = "", ticket = "", onUnlock, audience = "buyer",
+  projectName, truthScore = 0, grade = "", ticket = "", onUnlock, audience = "buyer", flags = null,
 }: {
   projectName: string;
   truthScore?: number;
@@ -62,9 +74,21 @@ export default function ReportDossier({
   ticket?: string;
   onUnlock: () => void;
   audience?: "buyer" | "owner";
+  /* Per-section audited red-flag counts. null on the mock fallback set (no
+     chips render, and the pitch keeps its generic line). */
+  flags?: RedFlagBreakdown | null;
 }) {
   const lost = Math.max(0, 100 - Math.round(truthScore));
   const owner = audience === "owner";
+  /* Red-flag lead for the pitch sub-line — only when the audit actually found
+     flags. `flagWhere` names the sections carrying them (short labels), so the
+     sentence reads "all in Legal" or "across Developer & Legal". */
+  const flagTotal = flags?.total ?? 0;
+  const flagWhere = flags
+    ? (["legal", "dev", "con"] as const).filter((k) => flags[k] > 0).map((k) => FLAG_SHORT[k])
+    : [];
+  const whereClause =
+    flagWhere.length === 1 ? ` — all in ${flagWhere[0]}` : flagWhere.length > 1 ? ` across ${flagWhere.join(" & ")}` : "";
   const read = usePackage("read");
   const d = discountOf(read);
   /* First report free — offered to anyone who does not yet own a report.
@@ -122,8 +146,16 @@ export default function ReportDossier({
         {truthScore > 0 && (
           <p className="mt-4 text-[0.98rem] leading-relaxed text-[#1a1a1a]/65">
             {projectName} scored <b className="font-semibold text-[#1a1a1a]">{Math.round(truthScore)}/100</b>
-            {grade ? <> — &ldquo;{grade}&rdquo;</> : null}. The full read shows exactly what cost it the other{" "}
-            <b className="font-semibold text-[#b0503e]">{lost} points</b>
+            {grade ? <> — &ldquo;{grade}&rdquo;</> : null}.{" "}
+            {flagTotal > 0 ? (
+              <>The full read shows the{" "}
+              <b className="font-semibold text-[#b0503e]">{flagTotal} red flag{flagTotal > 1 ? "s" : ""}</b>
+              {" "}we found{whereClause}, and what cost it the other{" "}
+              <b className="font-semibold text-[#b0503e]">{lost} points</b></>
+            ) : (
+              <>The full read shows exactly what cost it the other{" "}
+              <b className="font-semibold text-[#b0503e]">{lost} points</b></>
+            )}
             {owner ? <> — and which of them you can still do something about.</> : <> — and whether that&rsquo;s a dealbreaker for you.</>}
           </p>
         )}
@@ -164,11 +196,20 @@ export default function ReportDossier({
           {ROWS.map((r) => {
             const q = (owner && OWNER_Q[r.t]) || r.q;
             const get = (owner && OWNER_GET[r.t]) || r.get;
+            /* null → no chip: either a chapter with no flag rule, or the mock
+               set (no breakdown). A number (0+) → a chip. */
+            const flagKey = FLAG_OF[r.t];
+            const flagN: number | null = flags && flagKey ? flags[flagKey] : null;
+            const hot = flagN != null && flagN > 0;
             return (
               <button
                 key={r.t}
                 onClick={onUnlock}
-                className="ted-row group flex w-full items-start gap-4 border-b border-[#1a1a1a]/8 py-5 text-left transition-colors hover:bg-[#1e6b45]/[0.04] md:gap-5"
+                className={`ted-row group flex w-full items-start gap-4 border-b border-[#1a1a1a]/8 py-5 text-left transition-colors md:gap-5 ${
+                  hot
+                    ? "bg-[linear-gradient(90deg,rgba(176,80,62,0.07),transparent_75%)]"
+                    : "hover:bg-[#1e6b45]/[0.04]"
+                }`}
               >
                 <span className="w-[2.2ch] shrink-0 pt-0.5 text-center font-serif text-[1.1rem] leading-none text-[#c9a96e]">{r.n}</span>
                 <span className="min-w-0 flex-1">
@@ -186,6 +227,18 @@ export default function ReportDossier({
                   </span>
                 </span>
                 <span className="flex shrink-0 flex-col items-end gap-1.5 pt-0.5">
+                  {/* The new bit: a per-section flag chip. Rust when the audit
+                      found issues here (the row also gets a rust wash), green
+                      when it ran the check and the section came back clean. */}
+                  {flagN != null && (flagN > 0 ? (
+                    <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-[#b0503e]/35 bg-[#b0503e]/[0.08] px-2 py-1 text-[0.68rem] font-semibold text-[#b0503e]">
+                      <span aria-hidden>⚑</span> {flagN} red flag{flagN > 1 ? "s" : ""}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-[#1e6b45]/30 bg-[#1e6b45]/[0.08] px-2 py-1 text-[0.68rem] font-semibold text-[#1e6b45]">
+                      <span aria-hidden>✓</span> No red flags
+                    </span>
+                  ))}
                   <span className="inline-flex items-center gap-1.5 text-[0.58rem] font-semibold uppercase tracking-[0.14em] text-[#1a1a1a]/40">
                     <Lock className="h-3 w-3" /> Locked
                   </span>

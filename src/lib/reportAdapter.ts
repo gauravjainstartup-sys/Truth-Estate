@@ -1613,6 +1613,7 @@ export function liveProjectIntel(
     /* already the audited recount by the time it reaches this row —
        backlogRow.ts runs computeRedFlags over the ingredient columns */
     redFlags: row.redFlags,
+    redFlagBreakdown: row.redFlagBreakdown,
     devSlug: row.devSlug ?? (row.developer ? developerSlugOf(row.developer) : undefined),
     marketSlug: market?.slug,
     marketShort: market?.short ?? marketName,
