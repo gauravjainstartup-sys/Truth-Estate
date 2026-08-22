@@ -1,0 +1,155 @@
+<!-- MOCK · red-flag chips on the locked report's chapter list, to drive the unlock.
+     Real audited numbers (computeRedFlags buckets), Aug 2026:
+       M3M Capital TS65 — 4 flags, all Legal
+       Signature Global Sarvam TS60 — 4 flags, all Developer (financials)
+       DLF Privana North TS84 — 0 flags (clean)
+     Only the three sections with flag RULES carry a chip (Developer, Construction,
+     Legal); Location/USPs/Price/Verdict have no flag concept, so they keep their
+     hook. Clean flag-sections show "✓ No red flags" (founder call). -->
+<title>Red Flags Dossier</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --ground:#F5F0E8; --card:#FFFFFF; --card2:#FBF8F2;
+    --ink:#1a1a1a; --ink70:rgba(26,26,26,.7); --ink55:rgba(26,26,26,.55); --ink40:rgba(26,26,26,.4); --ink30:rgba(26,26,26,.3);
+    --line:rgba(26,26,26,.08); --line2:rgba(26,26,26,.14);
+    --green:#1e6b45; --green2:#238c55; --green-soft:rgba(30,107,69,.08);
+    --gold:#9a7a2e; --gold-soft:rgba(201,169,110,.14);
+    --rust:#b0503e; --rust-soft:rgba(176,80,62,.08);
+    --serif:"Playfair Display",Georgia,serif; --sans:"Geist","Helvetica Neue",Arial,sans-serif; --mono:"Geist Mono",monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-weight:300;line-height:1.6;padding:0 0 12vh}
+  .num{font-variant-numeric:tabular-nums}
+  button{font:inherit;cursor:pointer}
+  .ribbon{background:var(--ink);color:#F5F0E8;font-family:var(--mono);font-size:.62rem;letter-spacing:.13em;text-transform:uppercase;text-align:center;padding:8px 14px}
+  .ribbon b{color:#c9a96e;font-weight:500}
+  .wrap{max-width:760px;margin:0 auto;padding:0 20px}
+
+  /* switcher */
+  .switch{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:26px}
+  .switch button{border:1px solid var(--line2);background:var(--card);border-radius:999px;padding:8px 15px;font-size:.76rem;color:var(--ink55);transition:.15s}
+  .switch button[aria-pressed="true"]{border-color:rgba(30,107,69,.45);background:var(--green-soft);color:var(--green);font-weight:500}
+  .switch .n{font-family:var(--mono);font-size:.6rem;margin-left:6px;opacity:.7}
+
+  /* pitch */
+  .pitch{text-align:center;margin-top:34px}
+  .locktag{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(176,80,62,.3);background:var(--rust-soft);color:var(--rust);border-radius:999px;padding:6px 14px;font-family:var(--mono);font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+  .pitch h1{margin-top:18px;font-family:var(--serif);font-weight:600;font-size:clamp(2rem,6vw,2.9rem);line-height:1.08;letter-spacing:-.01em;text-wrap:balance}
+  .pitch .sub{margin:16px auto 0;max-width:34rem;font-size:1rem;line-height:1.6;color:var(--ink55)}
+  .pitch .sub b{font-weight:600;color:var(--ink)}
+  .pitch .sub .rf{font-weight:600;color:var(--rust)}
+  .pitch .sub .clean{font-weight:600;color:var(--green)}
+  .cta{margin-top:26px;display:inline-flex;flex-direction:column;align-items:center;gap:2px;background:var(--green);color:#fff;border:0;border-radius:11px;padding:15px 40px;box-shadow:0 18px 40px -16px rgba(30,107,69,.6);transition:.15s}
+  .cta:hover{background:var(--green2)}
+  .cta .b{font-size:1rem;font-weight:600}
+  .cta .s{font-size:.72rem;font-weight:400;color:rgba(255,255,255,.8)}
+  .cta .s del{color:rgba(255,255,255,.5)}
+
+  /* dossier */
+  .dossier{margin-top:52px}
+  .dossier .head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:8px}
+  .dossier .head .t{font-family:var(--serif);font-style:italic;font-size:1.15rem;color:var(--ink70)}
+  .dossier .head .r{font-family:var(--mono);font-size:.6rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--ink40)}
+  .rows{border-top:1px solid var(--line)}
+  .row{display:grid;grid-template-columns:26px 1fr auto;gap:14px;padding:20px 2px;border-bottom:1px solid var(--line);align-items:start}
+  .row .rn{font-family:var(--serif);font-size:1.05rem;color:var(--gold)}
+  .row h3{font-family:var(--serif);font-weight:500;font-size:1.28rem;line-height:1.2}
+  .row .q{margin-top:3px;font-size:.86rem;color:var(--ink40)}
+  .row .get{margin-top:11px;font-size:.84rem;color:var(--ink55)}
+  .row .get b{font-weight:500;color:var(--green)}
+  .row .get .arw{color:var(--gold);margin-right:6px}
+  .right{display:flex;flex-direction:column;align-items:flex-end;gap:9px;text-align:right;white-space:nowrap}
+  .lockmini{font-family:var(--mono);font-size:.58rem;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:var(--ink40);display:inline-flex;align-items:center;gap:5px}
+  .unlock{font-size:.82rem;font-weight:500;color:var(--green)}
+  /* the chip — the new bit */
+  .chip{display:inline-flex;align-items:center;gap:6px;border-radius:7px;padding:5px 10px;font-size:.72rem;font-weight:600;letter-spacing:.01em}
+  .chip.flag{border:1px solid rgba(176,80,62,.35);background:var(--rust-soft);color:var(--rust)}
+  .chip.clean{border:1px solid rgba(30,107,69,.28);background:var(--green-soft);color:var(--green)}
+  .chip .g{font-size:.82rem;line-height:1}
+  .row.hot{background:linear-gradient(90deg,var(--rust-soft),transparent);margin:0 -10px;padding-left:12px;padding-right:12px;border-radius:10px}
+  .note{margin-top:22px;font-size:.75rem;font-style:italic;color:var(--ink40);text-align:center;line-height:1.6}
+</style>
+
+<div class="ribbon">Mock · red-flag chips on the locked report — <b>real audited counts</b> · driving the unlock</div>
+
+<div class="wrap">
+  <div class="switch" id="switch" role="group" aria-label="Example project">
+    <button data-k="m3m-capital" aria-pressed="true">M3M Capital <span class="n">Legal ⚑4</span></button>
+    <button data-k="sig-sarvam">Signature Global Sarvam <span class="n">Dev ⚑4</span></button>
+    <button data-k="privana-n">DLF Privana North <span class="n">clean</span></button>
+  </div>
+
+  <div class="pitch">
+    <span class="locktag" id="locktag">🔒 The part that decides it is locked</span>
+    <h1 id="h1">Don't buy on a brochure.</h1>
+    <p class="sub" id="sub"></p>
+    <button class="cta">
+      <span class="b">Get the full read — ₹1,100 →</span>
+      <span class="s"><del>₹2,100</del> · save ₹1,000 (48% off)</span>
+    </button>
+  </div>
+
+  <div class="dossier">
+    <div class="head"><span class="t">Inside the dossier</span><span class="r">Eight chapters · one read</span></div>
+    <div class="rows" id="rows"></div>
+    <p class="note">Every ⚑ is one issue our audit reproduced from the project's own filings — the same rule the full read shows. Sections we don't run a flag check on (location, USPs, price, verdict) keep their preview.</p>
+  </div>
+</div>
+
+<script>
+const CHAPTERS=[
+  {n:"I",t:"Developer DNA",q:"Has this builder finished on time before?",get:"Grounds to hold them to the delivery date.",flag:"dev"},
+  {n:"II",t:"Construction & sales",q:"On pace for its RERA date — or quietly slipping?",get:"Build-versus-promise, in numbers.",flag:"con"},
+  {n:"III",t:"Location intelligence",q:"What will actually move this price?",get:"The corridor, the catalysts and the connectivity that count.",flag:null},
+  {n:"IV",t:"Legal & compliance",q:"Anything to clear before you sign?",get:"The issues to fix — or the reason to walk.",flag:"legal"},
+  {n:"V",t:"Project USPs",q:"Which claims hold real value?",get:"Real value, sorted from brochure gloss.",flag:null},
+  {n:"VI",t:"Price & ROI model",q:"Does it beat the corridor?",get:"Your 10-year CAGR, hold period and exit.",flag:null},
+  {n:"VII",t:"The Verdict",q:"So — should you buy it?",get:"A clear buy / caution / avoid for your budget and risk.",flag:null},
+];
+const P={
+  "m3m-capital":{name:"M3M Capital",ts:65,grade:"Fair",flags:{dev:0,con:0,legal:4}},
+  "sig-sarvam":{name:"Signature Global Sarvam",ts:60,grade:"Fair",flags:{dev:4,con:0,legal:0}},
+  "privana-n":{name:"DLF Privana North",ts:84,grade:"Strong",flags:{dev:0,con:0,legal:0}},
+};
+const $=id=>document.getElementById(id);
+function total(f){return f.dev+f.con+f.legal;}
+function whereFlags(f){const w=[];if(f.legal)w.push("Legal");if(f.dev)w.push("Developer");if(f.con)w.push("Construction");return w;}
+
+function render(k){
+  const p=P[k], tot=total(p.flags), lost=100-p.ts;
+  document.querySelectorAll("#switch button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===k));
+  $("h1").textContent = tot>0 ? "The red flags are the reason to read it." : "A clean audit is worth reading too.";
+  const where=whereFlags(p.flags);
+  $("sub").innerHTML = tot>0
+    ? `${p.name} scored <b>${p.ts}/100</b> — &ldquo;${p.grade}&rdquo;. The full read shows the <span class="rf">${tot} red flag${tot>1?"s":""}</span> we found${where.length===1?` — all in ${where[0]}`:` across ${where.join(" & ")}`}, and what cost it the other <b>${lost} points</b>.`
+    : `${p.name} scored <b>${p.ts}/100</b> — &ldquo;${p.grade}&rdquo;. Our audit found <span class="clean">no red flags</span> — the full read shows exactly why it holds up, and the <b>${lost} points</b> of headroom still on the table.`;
+  $("rows").innerHTML = CHAPTERS.map(c=>{
+    let chip="";
+    if(c.flag){
+      const n=p.flags[c.flag];
+      chip = n>0
+        ? `<span class="chip flag"><span class="g">⚑</span> ${n} red flag${n>1?"s":""}</span>`
+        : `<span class="chip clean"><span class="g">✓</span> No red flags</span>`;
+    }
+    const hot = c.flag && p.flags[c.flag]>0;
+    return `<div class="row${hot?" hot":""}">
+      <div class="rn">${c.n}</div>
+      <div>
+        <h3>${c.t}</h3>
+        <div class="q">${c.q}</div>
+        <div class="get"><span class="arw">→</span>What you get: <b>${c.get}</b></div>
+      </div>
+      <div class="right">
+        ${chip || `<span class="lockmini">🔒 Locked</span>`}
+        ${chip ? `<span class="lockmini">🔒 Locked</span>` : ""}
+        <span class="unlock">Unlock →</span>
+      </div>
+    </div>`;
+  }).join("");
+}
+document.querySelectorAll("#switch button").forEach(b=>b.addEventListener("click",()=>render(b.dataset.k)));
+render("m3m-capital");
+</script>
