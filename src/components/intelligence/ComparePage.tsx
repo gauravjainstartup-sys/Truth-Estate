@@ -12,6 +12,7 @@ import { compareTitle, type ResolvedCompare } from "@/lib/compare";
 import { track } from "@/lib/events";
 import { basePath, homeHref } from "@/lib/site";
 import { useUnlocked, Gate, LockRow, LockLines, LockPill, CompareUnlock } from "./CompareGate";
+import CompareGlimpse from "./CompareGlimpse";
 
 
 const rateVal = (r: FinRating) => (r === "strong" ? 3 : r === "moderate" ? 2 : 1);
@@ -306,24 +307,28 @@ function ProjectCompare({ r }: { r: Extract<ResolvedCompare, { kind: "project" }
           b={jb ? `₹${kNum(jb.currentLow)}K–${kNum(jb.currentHigh)}K` : b.psf ? `₹${kNum(b.psf.avg)}K avg` : "—"}
           subA={ja ? `from ₹${kNum(ja.launchPsf)}K at launch` : undefined}
           subB={jb ? `from ₹${kNum(jb.launchPsf)}K at launch` : undefined} />
-        <Gate
-          open={unlocked}
-          tease={
-            <Row label="Premium since launch"
-              a={ja ? `+${ja.premiumPct}%` : "—"} b={jb ? `+${jb.premiumPct}%` : "—"}
-              subA={ja ? `over ${ja.years} yrs` : undefined} subB={jb ? `over ${jb.years} yrs` : undefined}
-              win={ja && jb ? winHigher(ja.premiumPct, jb.premiumPct) : undefined} />
-          }
-          full={
-            <Row label="10-yr growth outlook"
-              a={olA ?? "—"} b={olB ?? "—"}
-              subA={olA ? "exact CAGR inside the report" : undefined}
-              subB={olB ? "exact CAGR inside the report" : undefined}
-              win={olA && olB ? winHigher(OUTLOOK_VAL[olA], OUTLOOK_VAL[olB]) : undefined} />
-          }
-          locked={<LockRow label="10-yr growth outlook" />}
-          invite={<CompareUnlock />}
-        />
+        {/* Premium since launch — the crisp tease, shown in both states. */}
+        <Row label="Premium since launch"
+          a={ja ? `+${ja.premiumPct}%` : "—"} b={jb ? `+${jb.premiumPct}%` : "—"}
+          subA={ja ? `over ${ja.years} yrs` : undefined} subB={jb ? `over ${jb.years} yrs` : undefined}
+          win={ja && jb ? winHigher(ja.premiumPct, jb.premiumPct) : undefined} />
+        {unlocked ? (
+          <Row label="10-yr growth outlook"
+            a={olA ?? "—"} b={olB ?? "—"}
+            subA={olA ? "exact CAGR inside the report" : undefined}
+            subB={olB ? "exact CAGR inside the report" : undefined}
+            win={olA && olB ? winHigher(OUTLOOK_VAL[olA], OUTLOOK_VAL[olB]) : undefined} />
+        ) : (
+          /* Locked: the balance glimpse weighs the two projects — leak-safe (no
+             number, no resting winner) — then the free-unlock card. The real
+             head-to-head resolves on unlock via the page's AUTH_EVENT reveal. */
+          <div className="border-t border-[#1a1a1a]/8 pt-5">
+            <CompareGlimpse aName={a.name} bName={b.name} />
+            <div className="mt-5 flex justify-center px-2">
+              <CompareUnlock />
+            </div>
+          </div>
+        )}
       </Section>
 
       <Section title="The build">
